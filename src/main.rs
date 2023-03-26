@@ -6,7 +6,6 @@ use actix_session::{config::PersistentSession, storage::CookieSessionStore, Sess
 use actix_web::{cookie::Key, middleware, web, App, HttpServer};
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use ::r2d2::ManageConnection;
 use time::Duration;
 
 mod auth_handler;
@@ -20,7 +19,7 @@ mod utils;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 
-fn run_migration(mut conn: PgConnection) {
+fn run_migrations(conn: &mut impl MigrationHarness<diesel::pg::Pg>) {
     conn.run_pending_migrations(MIGRATIONS).unwrap();
 }
 
@@ -31,19 +30,13 @@ async fn main() -> std::io::Result<()> {
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
-    // create db connection to run migrations
-    let manager = r2d2::ConnectionManager::<PgConnection>::new(database_url.clone());
-    let conn = manager
-        .connect()
-        .expect("Failed to create connection to run migrations.");
-    run_migration(conn);
-
-
     // create db connection pool
     let manager = r2d2::ConnectionManager::<PgConnection>::new(database_url);
     let pool: models::Pool = r2d2::Pool::builder()
         .build(manager)
         .expect("Failed to create pool.");
+
+    run_migrations(&mut pool.get().unwrap());
     
     let domain: String = std::env::var("DOMAIN").unwrap_or_else(|_| "localhost".to_string());
 
