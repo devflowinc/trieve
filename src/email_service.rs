@@ -4,6 +4,7 @@ use sendgrid::v3::{
 use crate::{errors::ServiceError, models::Invitation};
 
 pub fn send_invitation(invitation: &Invitation) -> Result<(), ServiceError> {
+    log::info!("Sending invitation to {}", invitation.email);
     let sg_api_key = std::env::var("SENDGRID_API_KEY").expect("SENDGRID_API_KEY must be set");
     let sg_sender = Sender::new(sg_api_key);
 
