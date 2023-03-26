@@ -3,8 +3,8 @@ use diesel::prelude::*;
 use serde::Deserialize;
 
 use crate::{
-    email_service::send_invitation,
-    models::{Invitation, Pool},
+    services::email_service::send_invitation,
+    data::models::{Invitation, Pool},
 };
 
 #[derive(Deserialize)]
@@ -33,7 +33,7 @@ fn create_invitation(
 
 /// Diesel query
 fn query(eml: String, pool: web::Data<Pool>) -> Result<Invitation, crate::errors::ServiceError> {
-    use crate::schema::invitations::dsl::invitations;
+    use crate::data::schema::invitations::dsl::invitations;
 
     let mut conn = pool.get().unwrap();
 

@@ -9,9 +9,10 @@ use serde::Deserialize;
 
 use crate::{
     errors::ServiceError,
-    models::{Pool, SlimUser, User},
-    utils::verify,
+    data::models::{Pool, SlimUser, User},
 };
+
+use super::register_handler;
 
 #[derive(Debug, Deserialize)]
 pub struct AuthData {
@@ -40,6 +41,15 @@ impl FromRequest for LoggedUser {
     }
 }
 
+pub fn verify(hash: &str, password: &str) -> Result<bool, ServiceError> {
+    argon2::verify_encoded_ext(hash, password.as_bytes(), register_handler::SECRET_KEY.as_bytes(), &[]).map_err(
+        |err| {
+            dbg!(err);
+            ServiceError::Unauthorized
+        },
+    )
+}
+
 pub async fn logout(id: Identity) -> HttpResponse {
     id.logout();
     HttpResponse::NoContent().finish()
@@ -63,7 +73,7 @@ pub async fn get_me(logged_user: LoggedUser) -> HttpResponse {
 }
 /// Diesel query
 fn query(auth_data: AuthData, pool: web::Data<Pool>) -> Result<SlimUser, ServiceError> {
-    use crate::schema::users::dsl::{email, users};
+    use crate::data::schema::users::dsl::{email, users};
 
     let mut conn = pool.get().unwrap();
 

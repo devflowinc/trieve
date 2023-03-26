@@ -1,7 +1,7 @@
 use sendgrid::v3::{
     Sender, Content, Email, Message, Personalization
 };
-use crate::{errors::ServiceError, models::Invitation};
+use crate::{errors::ServiceError, data::models::Invitation};
 
 pub fn send_invitation(invitation: &Invitation) -> Result<(), ServiceError> {
     log::info!("Sending invitation to {}", invitation.email);

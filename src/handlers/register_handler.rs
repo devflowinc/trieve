@@ -1,17 +1,34 @@
 use actix_web::{web, HttpResponse};
+use argon2::{self, Config};
 use diesel::prelude::*;
+use once_cell::sync::Lazy;
 use serde::Deserialize;
 
 use crate::{
+    data::models::{Invitation, Pool, SlimUser, User},
     errors::ServiceError,
-    models::{Invitation, Pool, SlimUser, User},
-    utils::hash_password,
 };
 
 // UserData is used to extract data from a post request by the client
 #[derive(Debug, Deserialize)]
 pub struct UserData {
     pub password: String,
+}
+
+pub static SECRET_KEY: Lazy<String> =
+    Lazy::new(|| std::env::var("SECRET_KEY").unwrap_or_else(|_| "0123".repeat(16)));
+
+const SALT: &[u8] = b"supersecuresalt";
+
+pub fn hash_password(password: &str) -> Result<String, ServiceError> {
+    let config = Config {
+        secret: SECRET_KEY.as_bytes(),
+        ..Default::default()
+    };
+    argon2::hash_encoded(password.as_bytes(), SALT, &config).map_err(|err| {
+        dbg!(err);
+        ServiceError::InternalServerError
+    })
 }
 
 pub async fn register_user(
@@ -37,7 +54,7 @@ fn query(
     password: String,
     pool: web::Data<Pool>,
 ) -> Result<SlimUser, crate::errors::ServiceError> {
-    use crate::schema::{invitations::dsl::*, users::dsl::*};
+    use crate::data::schema::{invitations::dsl::*, users::dsl::*};
 
     let mut conn = pool.get().unwrap();
 

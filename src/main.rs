@@ -4,19 +4,15 @@ extern crate diesel;
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::CookieSessionStore, SessionMiddleware};
-use actix_web::{cookie::Key, middleware, web, App, HttpServer, http};
+use actix_web::{cookie::Key, http, middleware, web, App, HttpServer};
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use time::Duration;
 
-mod auth_handler;
-mod email_service;
+mod data;
 mod errors;
-mod invitation_handler;
-mod models;
-mod register_handler;
-mod schema;
-mod utils;
+mod handlers;
+mod services;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 
@@ -33,12 +29,12 @@ async fn main() -> std::io::Result<()> {
 
     // create db connection pool
     let manager = r2d2::ConnectionManager::<PgConnection>::new(database_url);
-    let pool: models::Pool = r2d2::Pool::builder()
+    let pool: data::models::Pool = r2d2::Pool::builder()
         .build(manager)
         .expect("Failed to create pool.");
 
     run_migrations(&mut pool.get().unwrap());
-    
+
     let domain: String = std::env::var("DOMAIN").unwrap_or_else(|_| "localhost".to_string());
 
     log::info!("starting HTTP server at http://localhost:8080");
@@ -71,7 +67,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(
                 SessionMiddleware::builder(
                     CookieSessionStore::default(),
-                    Key::from(utils::SECRET_KEY.as_bytes()),
+                    Key::from(handlers::register_handler::SECRET_KEY.as_bytes()),
                 )
                 .session_lifecycle(PersistentSession::default().session_ttl(Duration::days(1)))
                 .cookie_name("ai-editor".to_owned())
@@ -87,17 +83,17 @@ async fn main() -> std::io::Result<()> {
                 web::scope("/api")
                     .service(
                         web::resource("/invitation")
-                            .route(web::post().to(invitation_handler::post_invitation)),
+                            .route(web::post().to(handlers::invitation_handler::post_invitation)),
                     )
                     .service(
                         web::resource("/register/{invitation_id}")
-                            .route(web::post().to(register_handler::register_user)),
+                            .route(web::post().to(handlers::register_handler::register_user)),
                     )
                     .service(
                         web::resource("/auth")
-                            .route(web::post().to(auth_handler::login))
-                            .route(web::delete().to(auth_handler::logout))
-                            .route(web::get().to(auth_handler::get_me)),
+                            .route(web::post().to(handlers::auth_handler::login))
+                            .route(web::delete().to(handlers::auth_handler::logout))
+                            .route(web::get().to(handlers::auth_handler::get_me)),
                     ),
             )
     })
