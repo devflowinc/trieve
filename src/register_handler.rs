@@ -19,6 +19,7 @@ pub async fn register_user(
     user_data: web::Json<UserData>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    log::info!("Registering user with invitation id: {}", invitation_id);
     let user = web::block(move || {
         query(
             invitation_id.into_inner(),

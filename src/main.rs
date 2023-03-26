@@ -1,9 +1,10 @@
 #[macro_use]
 extern crate diesel;
 
+use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::CookieSessionStore, SessionMiddleware};
-use actix_web::{cookie::Key, middleware, web, App, HttpServer};
+use actix_web::{cookie::Key, middleware, web, App, HttpServer, http};
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use time::Duration;
@@ -43,9 +44,30 @@ async fn main() -> std::io::Result<()> {
     log::info!("starting HTTP server at http://localhost:8080");
 
     HttpServer::new(move || {
+        let cors = Cors::default()
+            .allowed_origin("http://localhost:3000")
+            .allowed_origin("https://editor.arguflow.gg")
+            .allowed_methods(vec!["GET", "POST"])
+            .allowed_headers(vec![
+                http::header::ACCEPT,
+                http::header::ACCEPT_ENCODING,
+                http::header::ACCEPT_LANGUAGE,
+                http::header::CACHE_CONTROL,
+                http::header::CONNECTION,
+                http::header::CONTENT_LENGTH,
+                http::header::CONTENT_TYPE,
+                http::header::HOST,
+                http::header::ORIGIN,
+                http::header::PRAGMA,
+                http::header::REFERER,
+                http::header::USER_AGENT,
+            ])
+            .max_age(3600);
+
         App::new()
             .app_data(web::Data::new(pool.clone()))
             .wrap(IdentityMiddleware::default())
+            .wrap(cors)
             .wrap(
                 SessionMiddleware::builder(
                     CookieSessionStore::default(),

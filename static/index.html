@@ -22,7 +22,7 @@
   function sendVerificationEmail() {
     let email = document.querySelector('#email');
 
-    post('api/invitation', { email: email.value }).then(data => {
+    post('http://localhost:8080/api/invitation', { email: email.value }).then(data => {
       alert('Please check your email.');
       email.value = '';
       console.error(data);
