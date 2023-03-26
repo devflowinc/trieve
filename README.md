@@ -44,3 +44,9 @@ On Ubuntu 19.10:
 ```
 sudo apt install libclang-dev libpq-dev
 ```
+
+### Directions For Serving The Static Site 
+
+1. `npm install -g reload` 
+2. `cd static`
+3. `reload -p 3000 -b`

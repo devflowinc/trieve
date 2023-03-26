@@ -31,7 +31,7 @@
     let password = document.querySelector('#password');
     let invitation_id = getUrlVars().id;
 
-    post('api/register/' + invitation_id, { password: password.value }).then(data => {
+    post('http://localhost:8080/api/register/' + invitation_id, { password: password.value }).then(data => {
       password.value = '';
       console.error(data);
     });

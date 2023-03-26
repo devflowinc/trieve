@@ -7,6 +7,7 @@ edition = "2021"
 actix-identity = { version = "0.5" }
 actix-session = { version = "0.7", features = ["cookie-session"] }
 actix-web = { version = "4.3" }
+actix-cors = { version = "0.6" }
 
 chrono = { version = "0.4.20", features = ["serde"] }
 derive_more = { version = "0.99.7" }
