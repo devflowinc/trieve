@@ -26,6 +26,7 @@ fn create_invitation(
     eml: String,
     pool: web::Data<Pool>,
 ) -> Result<(), crate::errors::ServiceError> {
+    log::info!("Creating invitation for {}", eml);
     let invitation = dbg!(query(eml, pool)?);
     send_invitation(&invitation)
 }
