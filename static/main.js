@@ -1,19 +1,21 @@
 function post(url = ``, data = {}) {
   // Default options are marked with *
   return fetch(url, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json'
+      "Content-Type": "application/json",
     },
+    credentials: "include",
     body: JSON.stringify(data),
-  }).then(response => response.json());
+  }).then((response) => response);
 }
 
 function get(url = ``) {
   return fetch(url, {
-    method: 'GET',
+    method: "GET",
     headers: {
-      'Content-Type': 'application/json'
+      "Content-Type": "application/json",
     },
-  }).then(response => response.json());
+    credentials: "include",
+  }).then((response) => response);
 }

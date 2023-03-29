@@ -3,7 +3,7 @@ extern crate diesel;
 
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
-use actix_session::{config::PersistentSession, storage::CookieSessionStore, SessionMiddleware};
+use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
 use actix_web::{cookie::Key, http, middleware, web, App, HttpServer};
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
@@ -27,6 +27,10 @@ async fn main() -> std::io::Result<()> {
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
+    let redis_store = RedisSessionStore::new("redis://localhost:6379")
+        .await
+        .unwrap();
+
     // create db connection pool
     let manager = r2d2::ConnectionManager::<PgConnection>::new(database_url);
     let pool: data::models::Pool = r2d2::Pool::builder()
@@ -44,20 +48,8 @@ async fn main() -> std::io::Result<()> {
             .allowed_origin("http://localhost:3000")
             .allowed_origin("https://editor.arguflow.gg")
             .allowed_methods(vec!["GET", "POST", "DELETE", "OPTIONS"])
-            .allowed_headers(vec![
-                http::header::ACCEPT,
-                http::header::ACCEPT_ENCODING,
-                http::header::ACCEPT_LANGUAGE,
-                http::header::CACHE_CONTROL,
-                http::header::CONNECTION,
-                http::header::CONTENT_LENGTH,
-                http::header::CONTENT_TYPE,
-                http::header::HOST,
-                http::header::ORIGIN,
-                http::header::PRAGMA,
-                http::header::REFERER,
-                http::header::USER_AGENT,
-            ])
+            .allow_any_header()
+            .supports_credentials()
             .max_age(3600);
 
         App::new()
@@ -66,7 +58,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(cors)
             .wrap(
                 SessionMiddleware::builder(
-                    CookieSessionStore::default(),
+                    redis_store.clone(),
                     Key::from(handlers::register_handler::SECRET_KEY.as_bytes()),
                 )
                 .session_lifecycle(PersistentSession::default().session_ttl(Duration::days(1)))
