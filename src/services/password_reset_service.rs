@@ -51,14 +51,10 @@ fn create_password_reset_query(
     let mut conn = pool.get().unwrap();
 
     let new_password_reset = PasswordReset::from(email);
-    // log the password reset
-    log::info!("New Password Reset: {:?}", &new_password_reset);
 
     let inserted_password_reset = diesel::insert_into(password_resets)
         .values(&new_password_reset)
         .get_result(&mut conn)?;
-
-        log::info!("Inserted Password Reset: {:?}", &inserted_password_reset);
 
     Ok(inserted_password_reset)
 }
