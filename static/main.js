@@ -19,3 +19,15 @@ function get(url = ``) {
     credentials: "include",
   }).then((response) => response);
 }
+
+function put(url = ``, data = {}) {
+  console.log("Making PUT request to " + url)
+  return fetch(url, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify(data),
+  }).then((response) => response);
+}

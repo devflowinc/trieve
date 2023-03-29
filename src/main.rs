@@ -50,8 +50,9 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         let cors = Cors::default()
             .allowed_origin("http://localhost:3000")
+            .allowed_origin("http://localhost:3001")
             .allowed_origin("https://editor.arguflow.gg")
-            .allowed_methods(vec!["GET", "POST", "DELETE", "OPTIONS"])
+            .allowed_methods(vec!["GET", "POST", "DELETE", "OPTIONS", "PUT"])
             .allow_any_header()
             .supports_credentials()
             .max_age(3600);
@@ -95,6 +96,14 @@ async fn main() -> std::io::Result<()> {
                             .route(web::post().to(handlers::auth_handler::login))
                             .route(web::delete().to(handlers::auth_handler::logout))
                             .route(web::get().to(handlers::auth_handler::get_me)),
+                    )
+                    .service(
+                        web::resource("/password/{email}")
+                            .route(web::get().to(handlers::password_reset_handler::send_password_reset_email_handler))
+                    )
+                    .service(
+                        web::resource("/password")
+                            .route(web::post().to(handlers::password_reset_handler::reset_user_password_handler)),
                     ),
             )
     })
