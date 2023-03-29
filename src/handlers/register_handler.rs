@@ -58,7 +58,7 @@ fn query(
 
     let mut conn = pool.get().unwrap();
 
-    let invitation_id = uuid::Uuid::parse_str(&invitation_id)?;
+    let invitation_id = uuid::Uuid::try_parse(&invitation_id)?;
 
     invitations
         .filter(id.eq(invitation_id))
@@ -81,6 +81,6 @@ fn query(
                     return Ok(inserted_user.into());
                 }
             }
-            Err(ServiceError::BadRequest("Invalid Invitation".into()))
+            Err(ServiceError::BadRequest("Invitation Expired".into()))
         })
 }

@@ -12,7 +12,7 @@ use crate::{
     data::models::{Pool, SlimUser, User},
 };
 
-use super::register_handler;
+use crate::handlers::register_handler;
 
 #[derive(Debug, Deserialize)]
 pub struct AuthData {

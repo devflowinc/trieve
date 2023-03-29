@@ -23,21 +23,20 @@ pub async fn post_invitation(
 }
 
 fn create_invitation(
-    eml: String,
+    email: String,
     pool: web::Data<Pool>,
 ) -> Result<(), crate::errors::ServiceError> {
-    log::info!("Creating invitation for {}", eml);
-    let invitation = dbg!(query(eml, pool)?);
+    let invitation = dbg!(create_invitation_query(email, pool)?);
     send_invitation(&invitation)
 }
 
 /// Diesel query
-fn query(eml: String, pool: web::Data<Pool>) -> Result<Invitation, crate::errors::ServiceError> {
+fn create_invitation_query(email: String, pool: web::Data<Pool>) -> Result<Invitation, crate::errors::ServiceError> {
     use crate::data::schema::invitations::dsl::invitations;
 
     let mut conn = pool.get().unwrap();
 
-    let new_invitation = Invitation::from(eml);
+    let new_invitation = Invitation::from(email);
 
     let inserted_invitation = diesel::insert_into(invitations)
         .values(&new_invitation)

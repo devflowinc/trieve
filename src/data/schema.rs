@@ -1,17 +1,36 @@
-table! {
-    users (email) {
-        email -> Varchar,
-        hash -> Varchar,
-        created_at -> Timestamp,
-    }
-}
+// @generated automatically by Diesel CLI.
 
-table! {
+diesel::table! {
     invitations (id) {
         id -> Uuid,
         email -> Varchar,
         expires_at -> Timestamp,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
     }
 }
 
-allow_tables_to_appear_in_same_query!(users, invitations);
+diesel::table! {
+    password_resets (id) {
+        id -> Uuid,
+        email -> Varchar,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+        expires_at -> Timestamp,
+    }
+}
+
+diesel::table! {
+    users (email) {
+        email -> Varchar,
+        hash -> Varchar,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::allow_tables_to_appear_in_same_query!(
+    invitations,
+    password_resets,
+    users,
+);
