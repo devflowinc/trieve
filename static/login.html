@@ -31,10 +31,10 @@
 
     post("http://localhost:8080/api/auth", {
       email: email.value,
-      password: password.value
+      password: password.value,
     }).then((data) => {
       password.value = "";
-      console.error(data);
+      console.log(data);
     });
   }
 </script>

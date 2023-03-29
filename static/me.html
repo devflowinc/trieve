@@ -17,6 +17,13 @@
 </html>
 <script>
   get("http://localhost:8080/api/auth").then((data) => {
-    document.querySelector("#email").innerHTML = data.email;
+    data.json().then(
+      (data) => {
+        document.querySelector("#email").innerHTML = data.email;
+      },
+      (err) => {
+        console.log(err);
+      }
+    );
   });
 </script>
