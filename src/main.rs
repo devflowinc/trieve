@@ -54,7 +54,12 @@ async fn main() -> std::io::Result<()> {
 
         App::new()
             .app_data(web::Data::new(pool.clone()))
-            .wrap(IdentityMiddleware::default())
+            .wrap(
+                IdentityMiddleware::builder()
+                    .login_deadline(Duration::days(5))
+                    .visit_deadline(Duration::days(5))
+                    .build(),
+            )
             .wrap(cors)
             .wrap(
                 SessionMiddleware::builder(
