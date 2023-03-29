@@ -4,10 +4,11 @@ extern crate diesel;
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
-use actix_web::{cookie::Key, http, middleware, web, App, HttpServer};
+use actix_web::{cookie::Key, middleware, web, App, HttpServer};
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use time::Duration;
+use time;
+use std;
 
 mod data;
 mod errors;
@@ -15,6 +16,9 @@ mod handlers;
 mod services;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
+pub const SECONDS_IN_MINUTE: u64 = 60;
+pub const SECONDS_IN_HOUR: u64 = 60 * SECONDS_IN_MINUTE;
+pub const SECONDS_IN_DAY: u64 = 24 * SECONDS_IN_HOUR;
 
 fn run_migrations(conn: &mut impl MigrationHarness<diesel::pg::Pg>) {
     conn.run_pending_migrations(MIGRATIONS).unwrap();
@@ -56,8 +60,8 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(pool.clone()))
             .wrap(
                 IdentityMiddleware::builder()
-                    .login_deadline(Duration::days(5))
-                    .visit_deadline(Duration::days(5))
+                    .login_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
+                    .visit_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
                     .build(),
             )
             .wrap(cors)
@@ -66,7 +70,7 @@ async fn main() -> std::io::Result<()> {
                     redis_store.clone(),
                     Key::from(handlers::register_handler::SECRET_KEY.as_bytes()),
                 )
-                .session_lifecycle(PersistentSession::default().session_ttl(Duration::days(1)))
+                .session_lifecycle(PersistentSession::default().session_ttl(time::Duration::days(1)))
                 .cookie_name("ai-editor".to_owned())
                 .cookie_secure(false)
                 .cookie_domain(Some(domain.clone()))
