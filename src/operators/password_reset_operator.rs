@@ -2,7 +2,7 @@ use crate::data::models::{PasswordReset, Pool, User};
 use crate::handlers::register_handler::hash_password;
 use crate::{diesel::prelude::*, errors::ServiceError};
 use actix_web::web;
-use crate::services::email_service::send_password_reset;
+use crate::operators::email_operator::send_password_reset;
 
 pub fn reset_user_password(
     password_reset_id: String,

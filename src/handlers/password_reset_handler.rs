@@ -1,5 +1,5 @@
 use crate::data::models::Pool;
-use crate::services::password_reset_service::{reset_user_password, send_password_reset_email};
+use crate::operators::password_reset_operator::{reset_user_password, send_password_reset_email};
 use actix_web::{HttpResponse, web};
 use serde::Deserialize;
 

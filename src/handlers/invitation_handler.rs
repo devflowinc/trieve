@@ -3,7 +3,7 @@ use diesel::prelude::*;
 use serde::Deserialize;
 
 use crate::{
-    services::email_service::send_invitation,
+    operators::email_operator::send_invitation,
     data::models::{Invitation, Pool},
 };
 

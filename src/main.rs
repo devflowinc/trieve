@@ -13,7 +13,7 @@ use std;
 mod data;
 mod errors;
 mod handlers;
-mod services;
+mod operators;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 pub const SECONDS_IN_MINUTE: u64 = 60;
