@@ -1,12 +1,13 @@
-use sendgrid::v3::{
-    Sender, Content, Email, Message, Personalization
+use crate::{
+    data::models::{Invitation, PasswordReset},
+    errors::{DefaultError},
 };
-use crate::{errors::ServiceError, data::models::{Invitation, PasswordReset}};
+use sendgrid::v3::{Content, Email, Message, Personalization, Sender};
 
-pub fn send_invitation(invitation: &Invitation) -> Result<(), ServiceError> {
+pub fn send_invitation(invitation: &Invitation) -> Result<(), DefaultError> {
     let sg_email_content = format!(
         "Please click on the link below to complete registration. <br/>
-         <a href=\"http://localhost:3000/register.html?id={}&email={}\">
+         <a href=\"http://localhost:3000/auth/register/{}?email={}\">
          http://localhost:3030/register</a> <br>
          your Invitation expires at <strong>{}</strong>",
         invitation.id,
@@ -26,7 +27,7 @@ pub fn send_invitation(invitation: &Invitation) -> Result<(), ServiceError> {
     send_email(sg_email)
 }
 
-pub fn send_password_reset(password_reset: &PasswordReset) -> Result<(), ServiceError> {
+pub fn send_password_reset(password_reset: &PasswordReset) -> Result<(), DefaultError> {
     let sg_email_content = format!(
         "Please click on the link below to reset your password. <br/>
          <a href=\"http://localhost:3000/reset-password.html?id={}&email={}\">
@@ -34,7 +35,9 @@ pub fn send_password_reset(password_reset: &PasswordReset) -> Result<(), Service
          your password reset link expires at <strong>{}</strong>",
         password_reset.id,
         password_reset.email,
-        password_reset.expires_at.format("%I:%M %p %A, %-d %B, %C%y")
+        password_reset
+            .expires_at
+            .format("%I:%M %p %A, %-d %B, %C%y")
     );
     let sg_email_personalization = Personalization::new(Email::new(password_reset.email.as_str()));
     let sg_email = Message::new(Email::new("no-reply@arguflow.com"))
@@ -49,7 +52,7 @@ pub fn send_password_reset(password_reset: &PasswordReset) -> Result<(), Service
     send_email(sg_email)
 }
 
-fn send_email(sg_email: Message) -> Result<(), ServiceError> {
+fn send_email(sg_email: Message) -> Result<(), DefaultError> {
     let sg_api_key = std::env::var("SENDGRID_API_KEY").expect("SENDGRID_API_KEY must be set");
     let sg_sender = Sender::new(sg_api_key);
     let sg_response = sg_sender.send(&sg_email);
@@ -57,10 +60,9 @@ fn send_email(sg_email: Message) -> Result<(), ServiceError> {
         Ok(_) => {
             log::info!("Email sent successfully");
             Ok(())
-        },
-        Err(e) => {
-            log::error!("Error sending email: {}", e);
-            Err(ServiceError::InternalServerError)
-        },
+        }
+        Err(_e) => Err(DefaultError {
+            message: "Error sending email.",
+        }),
     }
 }

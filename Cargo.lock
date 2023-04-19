@@ -324,6 +324,7 @@ dependencies = [
  "once_cell",
  "openssl",
  "r2d2",
+ "regex",
  "reqwest",
  "rust-argon2",
  "sendgrid",

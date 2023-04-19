@@ -6,13 +6,14 @@ use serde::Deserialize;
 
 use crate::{
     data::models::{Invitation, Pool, SlimUser, User},
-    errors::ServiceError,
+    errors::{DefaultError, ServiceError},
 };
 
 // UserData is used to extract data from a post request by the client
 #[derive(Debug, Deserialize)]
-pub struct UserData {
+pub struct SetPasswordData {
     pub password: String,
+    pub password_confirmation: String,
 }
 
 pub static SECRET_KEY: Lazy<String> =
@@ -33,54 +34,84 @@ pub fn hash_password(password: &str) -> Result<String, ServiceError> {
 
 pub async fn register_user(
     invitation_id: web::Path<String>,
-    user_data: web::Json<UserData>,
+    password_data: web::Json<SetPasswordData>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    log::info!("Registering user with invitation id: {}", invitation_id);
-    let user = web::block(move || {
-        query(
-            invitation_id.into_inner(),
-            user_data.into_inner().password,
-            pool,
-        )
-    })
-    .await??;
+    let password_data_inner = password_data.into_inner();
+    let password = password_data_inner.password;
+    let password_confirmation = password_data_inner.password_confirmation;
+    let invitation_id = invitation_id.into_inner();
 
-    Ok(HttpResponse::Ok().json(&user))
+    if password.len() < 8 {
+        log::info!("Password too short: {}", password);
+        return Ok(HttpResponse::BadRequest().json(DefaultError {
+            message: "Password must be at least 8 characters".into(),
+        }));
+    }
+    if password != password_confirmation {
+        return Ok(HttpResponse::BadRequest().json(DefaultError {
+            message: "Passwords do not match".into(),
+        }));
+    }
+    if !invitation_id.contains('-') {
+        return Ok(HttpResponse::BadRequest().json(DefaultError {
+            message: "Invalid Invitation".into(),
+        }));
+    }
+
+    let user =
+        web::block(move || insert_user_from_invitation(invitation_id, password, pool)).await?;
+
+    match user {
+        Ok(user) => Ok(HttpResponse::Ok().json(&user)),
+        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
+    }
 }
 
-fn query(
+fn insert_user_from_invitation(
     invitation_id: String,
     password: String,
     pool: web::Data<Pool>,
-) -> Result<SlimUser, crate::errors::ServiceError> {
+) -> Result<SlimUser, DefaultError> {
     use crate::data::schema::{invitations::dsl::*, users::dsl::*};
 
     let mut conn = pool.get().unwrap();
 
-    let invitation_id = uuid::Uuid::try_parse(&invitation_id)?;
+    let invitation_id =
+        uuid::Uuid::try_parse(&invitation_id).map_err(|_uuid_error| DefaultError {
+            message: "Invalid Invitation",
+        })?;
 
     invitations
         .filter(id.eq(invitation_id))
         .load::<Invitation>(&mut conn)
-        .map_err(|_db_error| ServiceError::BadRequest("Invalid Invitation".into()))
+        .map_err(|_db_error| DefaultError {
+            message: "Invalid Invitation",
+        })
         .and_then(|mut result| {
             if let Some(invitation) = result.pop() {
                 // if invitation is not expired
                 if invitation.expires_at > chrono::Local::now().naive_local() {
-                    // try hashing the password, else return the error that will be converted to ServiceError
-                    let password: String = hash_password(&password)?;
+                    let password: String =
+                        hash_password(&password).map_err(|_hash_error| DefaultError {
+                            message: "Error Processing Password, Try Again",
+                        })?;
                     dbg!(&password);
 
                     let user = User::from_details(invitation.email, password);
                     let inserted_user: User = diesel::insert_into(users)
                         .values(&user)
-                        .get_result(&mut conn)?;
+                        .get_result(&mut conn)
+                        .map_err(|_db_error| DefaultError {
+                            message: "Error Inserting User, Try Again",
+                        })?;
                     dbg!(&inserted_user);
 
                     return Ok(inserted_user.into());
                 }
             }
-            Err(ServiceError::BadRequest("Invitation Expired".into()))
+            Err(DefaultError {
+                message: "Invitation Expired",
+            })
         })
 }

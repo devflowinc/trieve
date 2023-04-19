@@ -8,8 +8,8 @@ use diesel::prelude::*;
 use serde::Deserialize;
 
 use crate::{
-    errors::ServiceError,
     data::models::{Pool, SlimUser, User},
+    errors::{DefaultError, ServiceError},
 };
 
 use crate::handlers::register_handler;
@@ -42,12 +42,16 @@ impl FromRequest for LoggedUser {
 }
 
 pub fn verify(hash: &str, password: &str) -> Result<bool, ServiceError> {
-    argon2::verify_encoded_ext(hash, password.as_bytes(), register_handler::SECRET_KEY.as_bytes(), &[]).map_err(
-        |err| {
-            dbg!(err);
-            ServiceError::Unauthorized
-        },
+    argon2::verify_encoded_ext(
+        hash,
+        password.as_bytes(),
+        register_handler::SECRET_KEY.as_bytes(),
+        &[],
     )
+    .map_err(|err| {
+        dbg!(err);
+        ServiceError::Unauthorized
+    })
 }
 
 pub async fn logout(id: Identity) -> HttpResponse {
@@ -60,26 +64,43 @@ pub async fn login(
     auth_data: web::Json<AuthData>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let user = web::block(move || query(auth_data.into_inner(), pool)).await??;
+    let auth_data_inner = auth_data.into_inner();
+    let email = auth_data_inner.email;
+    let password = auth_data_inner.password;
 
-    let user_string = serde_json::to_string(&user).unwrap();
-    Identity::login(&req.extensions(), user_string).unwrap();
+    if email.is_empty() || password.is_empty() {
+        return Ok(HttpResponse::BadRequest().json(DefaultError {
+            message: "Email or password is empty".into(),
+        }));
+    }
 
-    Ok(HttpResponse::NoContent().finish())
+    let user_match =
+        web::block(move || find_user_match(AuthData { email, password }, pool)).await?;
+
+    match user_match {
+        Ok(user) => {
+            let user_string = serde_json::to_string(&user).unwrap();
+            Identity::login(&req.extensions(), user_string).unwrap();
+
+            Ok(HttpResponse::NoContent().finish())
+        }
+        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
+    }
 }
 
 pub async fn get_me(logged_user: LoggedUser) -> HttpResponse {
     HttpResponse::Ok().json(logged_user)
 }
-/// Diesel query
-fn query(auth_data: AuthData, pool: web::Data<Pool>) -> Result<SlimUser, ServiceError> {
+
+fn find_user_match(auth_data: AuthData, pool: web::Data<Pool>) -> Result<SlimUser, DefaultError> {
     use crate::data::schema::users::dsl::{email, users};
 
     let mut conn = pool.get().unwrap();
 
     let mut items = users
         .filter(email.eq(&auth_data.email))
-        .load::<User>(&mut conn)?;
+        .load::<User>(&mut conn)
+        .unwrap();
 
     if let Some(user) = items.pop() {
         if let Ok(matching) = verify(&user.hash, &auth_data.password) {
@@ -88,5 +109,7 @@ fn query(auth_data: AuthData, pool: web::Data<Pool>) -> Result<SlimUser, Service
             }
         }
     }
-    Err(ServiceError::Unauthorized)
+    Err(DefaultError {
+        message: "Incorrect email or password",
+    })
 }

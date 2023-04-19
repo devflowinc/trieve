@@ -3,7 +3,14 @@ use std::convert::From;
 use actix_web::{error::ResponseError, HttpResponse};
 use derive_more::Display;
 use diesel::result::{DatabaseErrorKind, Error as DBError};
+use serde::{Deserialize, Serialize};
 use uuid::Error as ParseError;
+
+#[derive(Serialize, Deserialize, Debug, Display, derive_more::Error)]
+#[display(fmt = "{}", message)]
+pub struct DefaultError {
+    pub message: &'static str,
+}
 
 #[derive(Debug, Display)]
 pub enum ServiceError {
