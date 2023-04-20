@@ -72,3 +72,20 @@ pub fn get_topic_for_user_query(
             message: "This topic does not exist for the authenticated user".into(),
         })
 }
+
+pub fn get_all_topics_for_user_query(
+    topic_user_id: uuid::Uuid,
+    pool: &web::Data<Pool>,
+) -> Result<Vec<Topic>, DefaultError> {
+    use crate::data::schema::topics::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    topics
+        .filter(user_id.eq(topic_user_id))
+        .filter(deleted.eq(false))
+        .load::<Topic>(&mut conn)
+        .map_err(|_db_error| DefaultError {
+            message: "Error getting topics for user".into(),
+        })
+}

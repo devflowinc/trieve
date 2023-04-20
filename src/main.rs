@@ -114,7 +114,8 @@ async fn main() -> std::io::Result<()> {
                         web::resource("/topic")
                             .route(web::post().to(handlers::topic_handler::create_topic))
                             .route(web::delete().to(handlers::topic_handler::delete_topic))
-                            .route(web::put().to(handlers::topic_handler::update_topic)),
+                            .route(web::put().to(handlers::topic_handler::update_topic))
+                            .route(web::get().to(handlers::topic_handler::get_all_topics)),
                     ),
             )
     })

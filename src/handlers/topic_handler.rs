@@ -2,7 +2,7 @@ use crate::{
     data::models::{Pool, Topic},
     errors::DefaultError,
     handlers::auth_handler::LoggedUser,
-    operators::topic_operator::{create_topic_query, delete_topic_query, get_topic_for_user_query, update_topic_query},
+    operators::topic_operator::{create_topic_query, delete_topic_query, get_topic_for_user_query, update_topic_query, get_all_topics_for_user_query},
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -108,6 +108,18 @@ pub async fn update_topic(
                 Err(e) => Ok(HttpResponse::BadRequest().json(e)),
             }
         }
+        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
+    }
+}
+
+pub async fn get_all_topics(
+    user: LoggedUser,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let topics = web::block(move || get_all_topics_for_user_query(user.id, &pool)).await?;
+
+    match topics {
+        Ok(topics) => Ok(HttpResponse::Ok().json(topics)),
         Err(e) => Ok(HttpResponse::BadRequest().json(e)),
     }
 }
