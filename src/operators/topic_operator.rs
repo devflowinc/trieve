@@ -35,6 +35,26 @@ pub fn delete_topic_query(
     Ok(())
 }
 
+pub fn update_topic_query(
+    topic_id: uuid::Uuid,
+    topic_resolution: String,
+    topic_side: bool,
+    pool: &web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::topics::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::update(topics.filter(id.eq(topic_id)))
+        .set((resolution.eq(topic_resolution), side.eq(topic_side), updated_at.eq(diesel::dsl::now)))
+        .execute(&mut conn)
+        .map_err(|_db_error| DefaultError {
+            message: "Error updating topic, try again".into(),
+        })?;
+
+    Ok(())
+}
+
 pub fn get_topic_for_user_query(
     topic_user_id: uuid::Uuid,
     topic_id: uuid::Uuid,

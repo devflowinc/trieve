@@ -2,7 +2,7 @@ use crate::{
     data::models::{Pool, Topic},
     errors::DefaultError,
     handlers::auth_handler::LoggedUser,
-    operators::topic_operator::{create_topic_query, delete_topic_query, get_topic_for_user_query},
+    operators::topic_operator::{create_topic_query, delete_topic_query, get_topic_for_user_query, update_topic_query},
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -25,12 +25,6 @@ pub async fn create_topic(
     if resolution.is_empty() {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
             message: "Resolution must not be empty".into(),
-        }));
-    }
-
-    if user.id.is_nil() {
-        return Ok(HttpResponse::Unauthorized().json(DefaultError {
-            message: "You must be logged in to create a topic".into(),
         }));
     }
 
@@ -58,12 +52,6 @@ pub async fn delete_topic(
     let topic_id = data_inner.topic_id;
     let pool_inner = pool.clone();
 
-    if user.id.is_nil() {
-        return Ok(HttpResponse::Unauthorized().json(DefaultError {
-            message: "You must be logged in to delete a topic".into(),
-        }));
-    }
-
     let user_topic =
         web::block(move || get_topic_for_user_query(topic_id, user.id, &pool_inner)).await?;
 
@@ -73,6 +61,49 @@ pub async fn delete_topic(
                 web::block(move || delete_topic_query(topic.id, &pool)).await?;
 
             match delete_topic_result {
+                Ok(()) => Ok(HttpResponse::NoContent().finish()),
+                Err(e) => Ok(HttpResponse::BadRequest().json(e)),
+            }
+        }
+        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UpdateTopicData {
+    pub topic_id: uuid::Uuid,
+    pub resolution: String,
+    pub side: bool,
+}
+
+pub async fn update_topic(
+    data: web::Json<UpdateTopicData>,
+    user: LoggedUser,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let data_inner = data.into_inner();
+    let topic_id = data_inner.topic_id;
+    let resolution = data_inner.resolution;
+    let side = data_inner.side;
+    let pool_inner = pool.clone();
+
+    if resolution.is_empty() {
+        return Ok(HttpResponse::BadRequest().json(DefaultError {
+            message: "Resolution must not be empty".into(),
+        }));
+    }
+
+    let user_topic =
+        web::block(move || get_topic_for_user_query(topic_id, user.id, &pool_inner)).await?;
+
+    match user_topic {
+        Ok(topic) => {
+            let update_topic_result = web::block(move || {
+                update_topic_query(topic.id, resolution, side, &pool)
+            })
+            .await?;
+
+            match update_topic_result {
                 Ok(()) => Ok(HttpResponse::NoContent().finish()),
                 Err(e) => Ok(HttpResponse::BadRequest().json(e)),
             }
