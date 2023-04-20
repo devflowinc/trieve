@@ -75,7 +75,7 @@ where
         PasswordReset {
             id: uuid::Uuid::new_v4(),
             email: email.into(),
-            expires_at: chrono::Local::now().naive_local() + chrono::Duration::minutes(15),
+            expires_at: chrono::Local::now().naive_local() + chrono::Duration::minutes(5),
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
         }
