@@ -1,8 +1,8 @@
 use crate::data::models::{PasswordReset, Pool, User};
+use crate::diesel::prelude::*;
 use crate::errors::DefaultError;
 use crate::handlers::register_handler::hash_password;
 use crate::operators::email_operator::send_password_reset;
-use crate::diesel::prelude::*;
 use actix_web::web;
 
 pub fn reset_user_password(
@@ -74,11 +74,10 @@ fn get_password_reset_query(
 
     let mut conn = pool.get().unwrap();
 
-    let password_reset_id = uuid::Uuid::try_parse(&password_reset_id).map_err(|_uuid_error| {
-        DefaultError {
+    let password_reset_id =
+        uuid::Uuid::try_parse(&password_reset_id).map_err(|_uuid_error| DefaultError {
             message: "Invalid password reset id".into(),
-        }
-    })?;
+        })?;
 
     let password_reset = password_resets
         .find(password_reset_id)
@@ -101,7 +100,14 @@ fn reset_user_password_query(
 
     let password: String = hash_password(&password)?;
 
-    diesel::update(users.find(password_reset.email))
+    let user: User = users
+        .filter(email.eq(password_reset.email))
+        .first::<User>(&mut conn)
+        .map_err(|_db_error| DefaultError {
+            message: "There is no account associated with that email".into(),
+        })?;
+
+    diesel::update(users.find(user.id))
         .set(hash.eq(password))
         .execute(&mut conn)
         .map_err(|_db_error| DefaultError {

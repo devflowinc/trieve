@@ -81,7 +81,7 @@ fn insert_user_from_invitation(
         })?;
 
     invitations
-        .filter(id.eq(invitation_id))
+        .filter(crate::data::schema::invitations::columns::id.eq(invitation_id))
         .load::<Invitation>(&mut conn)
         .map_err(|_db_error| DefaultError {
             message: "Invalid Invitation",

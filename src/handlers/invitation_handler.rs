@@ -7,7 +7,8 @@ use crate::{
         models::{Invitation, Pool},
         validators::email_regex,
     },
-    operators::email_operator::send_invitation, errors::DefaultError,
+    errors::DefaultError,
+    operators::email_operator::send_invitation,
 };
 
 #[derive(Deserialize)]
@@ -31,19 +32,12 @@ pub async fn post_invitation(
     let create_invitation_result = web::block(move || create_invitation(email, pool)).await?;
 
     match create_invitation_result {
-        Ok(()) => {
-            Ok(HttpResponse::Ok().finish())
-        }
-        Err(e) => {
-            Ok(HttpResponse::BadRequest().json(e))
-        }
+        Ok(()) => Ok(HttpResponse::Ok().finish()),
+        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
     }
 }
 
-fn create_invitation(
-    email: String,
-    pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
+fn create_invitation(email: String, pool: web::Data<Pool>) -> Result<(), DefaultError> {
     let invitation = create_invitation_query(email, pool)?;
     send_invitation(&invitation)
 }

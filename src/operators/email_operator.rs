@@ -1,6 +1,6 @@
 use crate::{
     data::models::{Invitation, PasswordReset},
-    errors::{DefaultError},
+    errors::DefaultError,
 };
 use sendgrid::v3::{Content, Email, Message, Personalization, Sender};
 
