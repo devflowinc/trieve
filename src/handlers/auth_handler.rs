@@ -74,10 +74,10 @@ pub async fn login(
         }));
     }
 
-    let user_match =
+    let find_user_result =
         web::block(move || find_user_match(AuthData { email, password }, pool)).await?;
 
-    match user_match {
+    match find_user_result {
         Ok(user) => {
             let user_string = serde_json::to_string(&user).unwrap();
             Identity::login(&req.extensions(), user_string).unwrap();

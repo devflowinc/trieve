@@ -47,7 +47,7 @@ where
         Invitation {
             id: uuid::Uuid::new_v4(),
             email: email.into(),
-            expires_at: chrono::Local::now().naive_local() + chrono::Duration::minutes(15),
+            expires_at: chrono::Local::now().naive_local() + chrono::Duration::minutes(5),
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
         }
@@ -59,9 +59,9 @@ where
 pub struct PasswordReset {
     pub id: uuid::Uuid,
     pub email: String,
+    pub expires_at: chrono::NaiveDateTime,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub expires_at: chrono::NaiveDateTime,
 }
 
 // any type that implements Into<String> can be used to create Invitation
@@ -73,9 +73,9 @@ where
         PasswordReset {
             id: uuid::Uuid::new_v4(),
             email: email.into(),
+            expires_at: chrono::Local::now().naive_local() + chrono::Duration::minutes(15),
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
-            expires_at: chrono::Local::now().naive_local() + chrono::Duration::minutes(15),
         }
     }
 }

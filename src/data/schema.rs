@@ -14,9 +14,9 @@ diesel::table! {
     password_resets (id) {
         id -> Uuid,
         email -> Varchar,
+        expires_at -> Timestamp,
         created_at -> Timestamp,
         updated_at -> Timestamp,
-        expires_at -> Timestamp,
     }
 }
 
@@ -29,4 +29,8 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(invitations, password_resets, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    invitations,
+    password_resets,
+    users,
+);

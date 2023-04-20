@@ -6,7 +6,7 @@ use serde::Deserialize;
 
 use crate::{
     data::models::{Invitation, Pool, SlimUser, User},
-    errors::{DefaultError, ServiceError},
+    errors::DefaultError,
 };
 
 // UserData is used to extract data from a post request by the client
@@ -21,14 +21,13 @@ pub static SECRET_KEY: Lazy<String> =
 
 const SALT: &[u8] = b"supersecuresalt";
 
-pub fn hash_password(password: &str) -> Result<String, ServiceError> {
+pub fn hash_password(password: &str) -> Result<String, DefaultError> {
     let config = Config {
         secret: SECRET_KEY.as_bytes(),
         ..Default::default()
     };
-    argon2::hash_encoded(password.as_bytes(), SALT, &config).map_err(|err| {
-        dbg!(err);
-        ServiceError::InternalServerError
+    argon2::hash_encoded(password.as_bytes(), SALT, &config).map_err(|_err| DefaultError {
+        message: "Error processing password, try again",
     })
 }
 
@@ -43,7 +42,6 @@ pub async fn register_user(
     let invitation_id = invitation_id.into_inner();
 
     if password.len() < 8 {
-        log::info!("Password too short: {}", password);
         return Ok(HttpResponse::BadRequest().json(DefaultError {
             message: "Password must be at least 8 characters".into(),
         }));
@@ -96,7 +94,6 @@ fn insert_user_from_invitation(
                         hash_password(&password).map_err(|_hash_error| DefaultError {
                             message: "Error Processing Password, Try Again",
                         })?;
-                    dbg!(&password);
 
                     let user = User::from_details(invitation.email, password);
                     let inserted_user: User = diesel::insert_into(users)
@@ -105,7 +102,6 @@ fn insert_user_from_invitation(
                         .map_err(|_db_error| DefaultError {
                             message: "Error Inserting User, Try Again",
                         })?;
-                    dbg!(&inserted_user);
 
                     return Ok(inserted_user.into());
                 }

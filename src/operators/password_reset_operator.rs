@@ -2,19 +2,21 @@ use crate::data::models::{PasswordReset, Pool, User};
 use crate::errors::DefaultError;
 use crate::handlers::register_handler::hash_password;
 use crate::operators::email_operator::send_password_reset;
-use crate::{diesel::prelude::*, errors::ServiceError};
+use crate::diesel::prelude::*;
 use actix_web::web;
 
 pub fn reset_user_password(
     password_reset_id: String,
     password: String,
     pool: &web::Data<Pool>,
-) -> Result<(), ServiceError> {
+) -> Result<(), DefaultError> {
     let password_reset = get_password_reset_query(password_reset_id, &pool)?;
 
     // check if password reset is expired
     if password_reset.expires_at < chrono::Local::now().naive_local() {
-        return Err(ServiceError::BadRequest("Password Reset Expired".into()));
+        return Err(DefaultError {
+            message: "Password reset request expired",
+        });
     }
 
     reset_user_password_query(password_reset, password, &pool)?;
@@ -34,7 +36,7 @@ pub fn send_password_reset_email(
         .filter(email.eq(user_email))
         .first::<User>(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "User Does Not Exist".into(),
+            message: "There is no account associated with that email".into(),
         })?;
 
     let password_reset = create_password_reset_query(user.email, pool)?;
@@ -58,7 +60,7 @@ fn create_password_reset_query(
         .values(&new_password_reset)
         .get_result(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "Error Inserting New Password".into(),
+            message: "Error inserting new password reset request, try again".into(),
         })?;
 
     Ok(inserted_password_reset)
@@ -67,17 +69,23 @@ fn create_password_reset_query(
 fn get_password_reset_query(
     password_reset_id: String,
     pool: &web::Data<Pool>,
-) -> Result<PasswordReset, ServiceError> {
+) -> Result<PasswordReset, DefaultError> {
     use crate::data::schema::password_resets::dsl::*;
 
     let mut conn = pool.get().unwrap();
 
-    let password_reset_id = uuid::Uuid::try_parse(&password_reset_id)?;
+    let password_reset_id = uuid::Uuid::try_parse(&password_reset_id).map_err(|_uuid_error| {
+        DefaultError {
+            message: "Invalid password reset id".into(),
+        }
+    })?;
 
     let password_reset = password_resets
         .find(password_reset_id)
         .first(&mut conn)
-        .map_err(|_db_error| ServiceError::BadRequest("Invalid Password Reset".into()))?;
+        .map_err(|_db_error| DefaultError {
+            message: "Invalid password reset invitation".into(),
+        })?;
 
     Ok(password_reset)
 }
@@ -86,7 +94,7 @@ fn reset_user_password_query(
     password_reset: PasswordReset,
     password: String,
     pool: &web::Data<Pool>,
-) -> Result<(), ServiceError> {
+) -> Result<(), DefaultError> {
     use crate::data::schema::users::dsl::*;
 
     let mut conn = pool.get().unwrap();
@@ -95,7 +103,10 @@ fn reset_user_password_query(
 
     diesel::update(users.find(password_reset.email))
         .set(hash.eq(password))
-        .execute(&mut conn)?;
+        .execute(&mut conn)
+        .map_err(|_db_error| DefaultError {
+            message: "Error updating user password".into(),
+        })?;
 
     Ok(())
 }
