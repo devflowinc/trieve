@@ -109,6 +109,10 @@ async fn main() -> std::io::Result<()> {
                             web::post()
                                 .to(handlers::password_reset_handler::reset_user_password_handler),
                         ),
+                    )
+                    .service(
+                        web::resource("/topic")
+                            .route(web::post().to(handlers::topic_handler::create_topic)),
                     ),
             )
     })

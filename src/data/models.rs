@@ -66,7 +66,7 @@ pub struct PasswordReset {
     pub updated_at: chrono::NaiveDateTime,
 }
 
-// any type that implements Into<String> can be used to create Invitation
+// any type that implements Into<String> can be used to create PasswordReset
 impl<T> From<T> for PasswordReset
 where
     T: Into<String>,
@@ -76,6 +76,36 @@ where
             id: uuid::Uuid::new_v4(),
             email: email.into(),
             expires_at: chrono::Local::now().naive_local() + chrono::Duration::minutes(5),
+            created_at: chrono::Local::now().naive_local(),
+            updated_at: chrono::Local::now().naive_local(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable)]
+#[diesel(table_name = topics)]
+pub struct Topic {
+    pub id: uuid::Uuid,
+    pub user_id: uuid::Uuid,
+    pub resolution: String,
+    pub side: bool,
+    pub deleted: bool,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl Topic {
+    pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(
+        resolution: S,
+        user_id: T,
+        side: bool,
+    ) -> Self {
+        Topic {
+            id: uuid::Uuid::new_v4(),
+            user_id: user_id.into(),
+            resolution: resolution.into(),
+            side,
+            deleted: false,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
         }

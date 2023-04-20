@@ -9,7 +9,6 @@ use crate::{
     errors::DefaultError,
 };
 
-// UserData is used to extract data from a post request by the client
 #[derive(Debug, Deserialize)]
 pub struct SetPasswordData {
     pub password: String,

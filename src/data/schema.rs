@@ -42,6 +42,7 @@ diesel::table! {
         user_id -> Uuid,
         resolution -> Text,
         side -> Bool,
+        deleted -> Bool,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
