@@ -2,7 +2,7 @@ use crate::{
     data::models::{Pool, Topic},
     errors::DefaultError,
     handlers::auth_handler::LoggedUser,
-    operators::topic_operator::create_topic_query,
+    operators::topic_operator::{create_topic_query, delete_topic_query, get_topic_for_user_query},
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -40,6 +40,43 @@ pub async fn create_topic(
 
     match create_topic_result {
         Ok(()) => Ok(HttpResponse::NoContent().finish()),
+        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct DeleteTopicData {
+    pub topic_id: uuid::Uuid,
+}
+
+pub async fn delete_topic(
+    data: web::Json<DeleteTopicData>,
+    user: LoggedUser,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let data_inner = data.into_inner();
+    let topic_id = data_inner.topic_id;
+    let pool_inner = pool.clone();
+
+    if user.id.is_nil() {
+        return Ok(HttpResponse::Unauthorized().json(DefaultError {
+            message: "You must be logged in to delete a topic".into(),
+        }));
+    }
+
+    let user_topic =
+        web::block(move || get_topic_for_user_query(topic_id, user.id, &pool_inner)).await?;
+
+    match user_topic {
+        Ok(topic) => {
+            let delete_topic_result =
+                web::block(move || delete_topic_query(topic.id, &pool)).await?;
+
+            match delete_topic_result {
+                Ok(()) => Ok(HttpResponse::NoContent().finish()),
+                Err(e) => Ok(HttpResponse::BadRequest().json(e)),
+            }
+        }
         Err(e) => Ok(HttpResponse::BadRequest().json(e)),
     }
 }

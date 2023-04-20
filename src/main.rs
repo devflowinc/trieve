@@ -112,7 +112,8 @@ async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::resource("/topic")
-                            .route(web::post().to(handlers::topic_handler::create_topic)),
+                            .route(web::post().to(handlers::topic_handler::create_topic))
+                            .route(web::delete().to(handlers::topic_handler::delete_topic)),
                     ),
             )
     })
