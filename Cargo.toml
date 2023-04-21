@@ -22,7 +22,7 @@ serde_json = { version = "1" }
 serde = { version = "1" }
 time = {version = "0.3"}
 uuid = { version = "1", features = ["v4", "serde"] }
-reqwest = { version = "0.11" }
+reqwest = "0.11"
 openssl = { version = "0.10" }
 sendgrid = { version = "0.18" }
 diesel_migrations = { version = "2.0" }

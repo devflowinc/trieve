@@ -113,6 +113,58 @@ impl Topic {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct OpenAIMessage {
+    pub role: String,
+    pub content: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Clone)]
+#[diesel(table_name = messages)]
+pub struct Message {
+    pub id: uuid::Uuid,
+    pub topic_id: uuid::Uuid,
+    pub sort_order: i32,
+    pub content: String,
+    pub role: String,
+    pub deleted: bool,
+    pub prompt_tokens: Option<i32>,
+    pub completion_tokens: Option<i32>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl Message {
+    pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(
+        content: S,
+        topic_id: T,
+        sort_order: i32,
+        role: String,
+        prompt_tokens: Option<i32>,
+        completion_tokens: Option<i32>,
+    ) -> Self {
+        Message {
+            id: uuid::Uuid::new_v4(),
+            topic_id: topic_id.into(),
+            sort_order,
+            content: content.into(),
+            role,
+            deleted: false,
+            prompt_tokens,
+            completion_tokens,
+            created_at: chrono::Local::now().naive_local(),
+            updated_at: chrono::Local::now().naive_local(),
+        }
+    }
+
+    pub fn to_open_ai_message(&self) -> OpenAIMessage {
+        OpenAIMessage {
+            role: self.role.clone(),
+            content: self.content.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SlimUser {
     pub id: uuid::Uuid,
     pub email: String,

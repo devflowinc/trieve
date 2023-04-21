@@ -20,7 +20,6 @@ diesel::table! {
         deleted -> Bool,
         prompt_tokens -> Nullable<Int4>,
         completion_tokens -> Nullable<Int4>,
-        index -> Int4,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
