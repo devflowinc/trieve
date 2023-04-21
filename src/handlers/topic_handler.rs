@@ -53,7 +53,7 @@ pub async fn delete_topic(
     let pool_inner = pool.clone();
 
     let user_topic =
-        web::block(move || get_topic_for_user_query(topic_id, user.id, &pool_inner)).await?;
+        web::block(move || get_topic_for_user_query(user.id, topic_id, &pool_inner)).await?;
 
     match user_topic {
         Ok(topic) => {
@@ -94,7 +94,7 @@ pub async fn update_topic(
     }
 
     let user_topic =
-        web::block(move || get_topic_for_user_query(topic_id, user.id, &pool_inner)).await?;
+        web::block(move || get_topic_for_user_query(user.id, topic_id, &pool_inner)).await?;
 
     match user_topic {
         Ok(topic) => {
