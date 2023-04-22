@@ -1,6 +1,7 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
 use diesel::{r2d2::ConnectionManager, PgConnection};
+use openai_dive::v1::resources::chat_completion::{ChatMessage, Role};
 use serde::{Deserialize, Serialize};
 
 use super::schema::*;
@@ -112,12 +113,6 @@ impl Topic {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct OpenAIMessage {
-    pub role: String,
-    pub content: String,
-}
-
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Clone)]
 #[diesel(table_name = messages)]
 pub struct Message {
@@ -156,10 +151,17 @@ impl Message {
         }
     }
 
-    pub fn to_open_ai_message(&self) -> OpenAIMessage {
-        OpenAIMessage {
-            role: self.role.clone(),
+    pub fn to_open_ai_message(&self) -> ChatMessage {
+        let role = match self.role.as_str() {
+            "system" => Role::System,
+            "user" => Role::User,
+            _ => Role::Assistant,
+        };
+
+        ChatMessage {
+            role,
             content: self.content.clone(),
+            name: None,
         }
     }
 }

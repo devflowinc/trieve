@@ -1,10 +1,12 @@
-use crate::data::models::OpenAIMessage;
 use crate::diesel::prelude::*;
 use crate::{
     data::models::{Message, Pool},
     errors::DefaultError,
 };
 use actix_web::web;
+use openai_dive::v1::api::Client;
+use openai_dive::v1::resources::chat_completion::{ChatMessage, ChatCompletionParameters};
+use openai_dive::v1::resources::chat_completion_stream::ChatCompletionStreamResponse;
 
 pub fn get_topic_messages(
     messages_topic_id: uuid::Uuid,
@@ -71,8 +73,8 @@ pub async fn create_topic_message(
     previous_messages: Vec<Message>,
     new_message: Message,
     pool: &web::Data<Pool>,
-) -> Result<(), DefaultError> {
-    let mut open_ai_messages: Vec<OpenAIMessage> = previous_messages
+) -> Result<ChatCompletionStreamResponse, DefaultError> {
+    let mut open_ai_messages: Vec<ChatMessage> = previous_messages
         .iter()
         .map(|message| message.to_open_ai_message())
         .collect();
@@ -88,23 +90,27 @@ pub async fn create_topic_message(
     open_ai_messages.push(new_open_ai_message);
 
     let open_ai_api_key = std::env::var("OPEN_AI_API_KEY").expect("OPEN_AI_API_KEY must be set");
-    let reqwest_client = reqwest::Client::new();
-    let open_ai_completion = reqwest_client.post("https://api.openai.com/v1/chat/completions")
-        .header("Content-Type", "application/json")
-        .bearer_auth(open_ai_api_key)
-        .json(&serde_json::json!({
-            "model": "gpt-3.5-turbo".to_string(),
-            "messages": open_ai_messages,
-        }))
-        .send()
-        .await
-        .map_err(|_reqwest_error| DefaultError {
-            message: "Error connecting to OpenAI API".into(),
-        })
-        .unwrap();
+    let client = Client::new(open_ai_api_key);
+
+    let parameters = ChatCompletionParameters {
+        model: "gpt-3.5-turbo".into(),
+        messages: open_ai_messages,
+        temperature: None,
+        top_p: None,
+        n: None,
+        stop: None,
+        max_tokens: None,
+        presence_penalty: None,
+        frequency_penalty: None,
+        logit_bias: None,
+    };
+
+    let mut stream = client.chat().create_stream(parameters).await.map_err(|_error| DefaultError {
+        message: "Error creating open ai message".into(),
+    }).unwrap();
 
     
 
 
-    Ok(())
+    Ok(stream.next().await.unwrap())
 }
