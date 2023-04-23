@@ -118,8 +118,10 @@ async fn main() -> std::io::Result<()> {
                             .route(web::get().to(handlers::topic_handler::get_all_topics)),
                     )
                     .service(
-                        web::resource("/message")
-                            .route(web::post().to(handlers::message_handler::create_message_completion_handler)),
+                        web::resource("/message").route(
+                            web::post()
+                                .to(handlers::message_handler::create_message_completion_handler),
+                        ),
                     ),
             )
     })

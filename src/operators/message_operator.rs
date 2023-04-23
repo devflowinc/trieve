@@ -97,10 +97,13 @@ pub fn create_topic_message_query(
     Ok(ret_messages)
 }
 
+#[allow(dead_code)]
 pub async fn get_openai_completion(
     previous_messages: Vec<Message>,
     tx: mpsc::Sender<StreamItem>,
 ) -> Result<ChatCompletionDTO, DefaultError> {
+    log::info!("Getting openai completion");
+
     let open_ai_messages: Vec<ChatMessage> = previous_messages
         .iter()
         .map(|message| ChatMessage::from(message.clone()))
@@ -125,6 +128,7 @@ pub async fn get_openai_completion(
     let mut completion_tokens = 0;
     let mut stream = client.chat().create_stream(parameters).await.unwrap();
 
+    log::info!("Getting chat completion");
     while let Some(response) = stream.next().await {
         match response {
             Ok(chat_response) => {
