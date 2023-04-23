@@ -1,6 +1,7 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
 use diesel::{r2d2::ConnectionManager, PgConnection};
+use openai_dive::v1::resources::chat_completion::{ChatMessage, Role};
 use serde::{Deserialize, Serialize};
 
 use super::schema::*;
@@ -106,6 +107,61 @@ impl Topic {
             resolution: resolution.into(),
             side,
             deleted: false,
+            created_at: chrono::Local::now().naive_local(),
+            updated_at: chrono::Local::now().naive_local(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Clone)]
+#[diesel(table_name = messages)]
+pub struct Message {
+    pub id: uuid::Uuid,
+    pub topic_id: uuid::Uuid,
+    pub sort_order: i32,
+    pub content: String,
+    pub role: String,
+    pub deleted: bool,
+    pub prompt_tokens: Option<i32>,
+    pub completion_tokens: Option<i32>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl From<Message> for ChatMessage {
+    fn from(message: Message) -> Self {
+        let role = match message.role.as_str() {
+            "system" => Role::System,
+            "user" => Role::User,
+            _ => Role::Assistant,
+        };
+
+        ChatMessage {
+            role,
+            content: message.content,
+            name: None,
+        }
+    }
+}
+
+impl Message {
+    pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(
+        content: S,
+        topic_id: T,
+        sort_order: i32,
+        role: String,
+        prompt_tokens: Option<i32>,
+        completion_tokens: Option<i32>,
+    ) -> Self {
+        Message {
+            id: uuid::Uuid::new_v4(),
+            topic_id: topic_id.into(),
+            sort_order,
+            content: content.into(),
+            role,
+            deleted: false,
+            prompt_tokens,
+            completion_tokens,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
         }

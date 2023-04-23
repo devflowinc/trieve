@@ -2,7 +2,10 @@ use crate::{
     data::models::{Pool, Topic},
     errors::DefaultError,
     handlers::auth_handler::LoggedUser,
-    operators::topic_operator::{create_topic_query, delete_topic_query, get_topic_for_user_query, update_topic_query, get_all_topics_for_user_query},
+    operators::topic_operator::{
+        create_topic_query, delete_topic_query, get_all_topics_for_user_query,
+        get_topic_for_user_query, update_topic_query,
+    },
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -98,10 +101,8 @@ pub async fn update_topic(
 
     match user_topic {
         Ok(topic) => {
-            let update_topic_result = web::block(move || {
-                update_topic_query(topic.id, resolution, side, &pool)
-            })
-            .await?;
+            let update_topic_result =
+                web::block(move || update_topic_query(topic.id, resolution, side, &pool)).await?;
 
             match update_topic_result {
                 Ok(()) => Ok(HttpResponse::NoContent().finish()),

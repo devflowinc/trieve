@@ -46,13 +46,34 @@ pub fn update_topic_query(
     let mut conn = pool.get().unwrap();
 
     diesel::update(topics.filter(id.eq(topic_id)))
-        .set((resolution.eq(topic_resolution), side.eq(topic_side), updated_at.eq(diesel::dsl::now)))
+        .set((
+            resolution.eq(topic_resolution),
+            side.eq(topic_side),
+            updated_at.eq(diesel::dsl::now),
+        ))
         .execute(&mut conn)
         .map_err(|_db_error| DefaultError {
             message: "Error updating topic, try again".into(),
         })?;
 
     Ok(())
+}
+
+pub fn get_topic_query(
+    topic_id: uuid::Uuid,
+    pool: &web::Data<Pool>,
+) -> Result<Topic, DefaultError> {
+    use crate::data::schema::topics::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    topics
+        .filter(id.eq(topic_id))
+        .filter(deleted.eq(false))
+        .first::<Topic>(&mut conn)
+        .map_err(|_db_error| DefaultError {
+            message: "This topic does not exist".into(),
+        })
 }
 
 pub fn get_topic_for_user_query(
