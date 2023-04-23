@@ -78,28 +78,23 @@ pub fn create_system_message(
     Ok(system_message)
 }
 
-pub async fn create_topic_message_query(
+pub fn create_topic_message_query(
     previous_messages: Vec<Message>,
     new_message: Message,
-    new_message_topic_id: uuid::Uuid,
-    tx: mpsc::Sender<StreamItem>,
     pool: &web::Data<Pool>,
-) -> Result<(), DefaultError> {
-    let mut open_ai_messages: Vec<ChatMessage> = previous_messages
-        .iter()
-        .map(|message| message.to_open_ai_message())
-        .collect();
-    let num_messages = open_ai_messages.len();
+) -> Result<Vec<Message>, DefaultError> {
+    let mut ret_messages = previous_messages.clone();
 
-    if num_messages == 0 {
+    if previous_messages.len() == 0 {
         let system_message = create_system_message(new_message.topic_id, pool)?;
         create_message_query(system_message.clone(), pool)?;
-        open_ai_messages.push(system_message.to_open_ai_message());
+        ret_messages.push(system_message);
     }
 
     create_message_query(new_message.clone(), pool)?;
+    ret_messages.push(new_message);
 
-    Ok(())
+    Ok(ret_messages)
 }
 
 pub async fn get_openai_completion(
@@ -108,7 +103,7 @@ pub async fn get_openai_completion(
 ) -> Result<ChatCompletionDTO, DefaultError> {
     let open_ai_messages: Vec<ChatMessage> = previous_messages
         .iter()
-        .map(|message| message.to_open_ai_message())
+        .map(|message| ChatMessage::from(message.clone()))
         .collect();
     let open_ai_api_key = std::env::var("OPEN_AI_API_KEY").expect("OPEN_AI_API_KEY must be set");
     let client = Client::new(open_ai_api_key);
@@ -137,10 +132,14 @@ pub async fn get_openai_completion(
 
                 let chat_content = chat_response.choices[0].delta.content.clone().unwrap();
                 let multi_use_chat_content = chat_content.clone();
-                tx.send(Ok(chat_content.into()));
+                tx.send(Ok(chat_content.into()))
+                    .await
+                    .map_err(|_e| DefaultError {
+                        message: "Error sending message to websocket".into(),
+                    })?;
                 response_content.push_str(multi_use_chat_content.clone().as_str());
             }
-            Err(e) => eprintln!("{}", e),
+            Err(e) => log::error!("Error getting chat completion: {}", e),
         }
     }
 

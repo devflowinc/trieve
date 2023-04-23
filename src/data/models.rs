@@ -128,6 +128,22 @@ pub struct Message {
     pub updated_at: chrono::NaiveDateTime,
 }
 
+impl From<Message> for ChatMessage {
+    fn from(message: Message) -> Self {
+        let role = match message.role.as_str() {
+            "system" => Role::System,
+            "user" => Role::User,
+            _ => Role::Assistant,
+        };
+
+        ChatMessage {
+            role,
+            content: message.content,
+            name: None,
+        }
+    }
+}
+
 impl Message {
     pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(
         content: S,
@@ -148,20 +164,6 @@ impl Message {
             completion_tokens,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
-        }
-    }
-
-    pub fn to_open_ai_message(&self) -> ChatMessage {
-        let role = match self.role.as_str() {
-            "system" => Role::System,
-            "user" => Role::User,
-            _ => Role::Assistant,
-        };
-
-        ChatMessage {
-            role,
-            content: self.content.clone(),
-            name: None,
         }
     }
 }
