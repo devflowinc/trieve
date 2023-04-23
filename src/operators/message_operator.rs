@@ -84,15 +84,19 @@ pub fn create_topic_message_query(
     pool: &web::Data<Pool>,
 ) -> Result<Vec<Message>, DefaultError> {
     let mut ret_messages = previous_messages.clone();
+    let mut new_message_copy = new_message.clone();
+    let mut previous_messages_len = previous_messages.len();
 
     if previous_messages.len() == 0 {
         let system_message = create_system_message(new_message.topic_id, pool)?;
         create_message_query(system_message.clone(), pool)?;
-        ret_messages.push(system_message);
+        previous_messages_len += 1;
     }
 
-    create_message_query(new_message.clone(), pool)?;
-    ret_messages.push(new_message);
+    new_message_copy.sort_order = (previous_messages_len + 1).try_into().unwrap();
+
+    create_message_query(new_message_copy.clone(), pool)?;
+    ret_messages.push(new_message_copy);
 
     Ok(ret_messages)
 }
