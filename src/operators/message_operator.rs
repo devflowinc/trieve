@@ -1,12 +1,21 @@
 use crate::diesel::prelude::*;
+use crate::handlers::message_handler::StreamItem;
 use crate::{
     data::models::{Message, Pool},
     errors::DefaultError,
 };
 use actix_web::web;
 use openai_dive::v1::api::Client;
-use openai_dive::v1::resources::chat_completion::{ChatMessage, ChatCompletionParameters};
-use openai_dive::v1::resources::chat_completion_stream::ChatCompletionStreamResponse;
+use openai_dive::v1::resources::chat_completion::{ChatCompletionParameters, ChatMessage};
+use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc;
+use tokio_stream::StreamExt;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ChatCompletionDTO {
+    pub completion_message: Message,
+    pub completion_tokens: i32,
+}
 
 pub fn get_topic_messages(
     messages_topic_id: uuid::Uuid,
@@ -47,10 +56,10 @@ pub fn create_message_query(
 }
 
 pub fn create_system_message(
-    topic_id: uuid::Uuid,
+    messages_topic_id: uuid::Uuid,
     pool: &web::Data<Pool>,
 ) -> Result<Message, DefaultError> {
-    let topic = crate::operators::topic_operator::get_topic_query(topic_id, pool)?;
+    let topic = crate::operators::topic_operator::get_topic_query(messages_topic_id, pool)?;
     let system_message_content = format!(
         "We are going to practice lincoln douglas debate over \"{}\". You will be {}. We are speaking to a judge. After my messages, you will respond exactly as follows:\n\nfeedback: {{aggressive feedback on how my argument could be improved}}\ncounterargument: {{A simulated counterargument, including evidence, that I can respond to in order to further practice my skills}}",
         topic.resolution,
@@ -69,26 +78,38 @@ pub fn create_system_message(
     Ok(system_message)
 }
 
-pub async fn create_topic_message(
+pub async fn create_topic_message_query(
     previous_messages: Vec<Message>,
     new_message: Message,
+    new_message_topic_id: uuid::Uuid,
+    tx: mpsc::Sender<StreamItem>,
     pool: &web::Data<Pool>,
-) -> Result<ChatCompletionStreamResponse, DefaultError> {
+) -> Result<(), DefaultError> {
     let mut open_ai_messages: Vec<ChatMessage> = previous_messages
         .iter()
         .map(|message| message.to_open_ai_message())
         .collect();
+    let num_messages = open_ai_messages.len();
 
-    if open_ai_messages.len() == 0 {
+    if num_messages == 0 {
         let system_message = create_system_message(new_message.topic_id, pool)?;
         create_message_query(system_message.clone(), pool)?;
         open_ai_messages.push(system_message.to_open_ai_message());
     }
 
     create_message_query(new_message.clone(), pool)?;
-    let new_open_ai_message = new_message.to_open_ai_message();
-    open_ai_messages.push(new_open_ai_message);
 
+    Ok(())
+}
+
+pub async fn get_openai_completion(
+    previous_messages: Vec<Message>,
+    tx: mpsc::Sender<StreamItem>,
+) -> Result<ChatCompletionDTO, DefaultError> {
+    let open_ai_messages: Vec<ChatMessage> = previous_messages
+        .iter()
+        .map(|message| message.to_open_ai_message())
+        .collect();
     let open_ai_api_key = std::env::var("OPEN_AI_API_KEY").expect("OPEN_AI_API_KEY must be set");
     let client = Client::new(open_ai_api_key);
 
@@ -105,12 +126,37 @@ pub async fn create_topic_message(
         logit_bias: None,
     };
 
-    let mut stream = client.chat().create_stream(parameters).await.map_err(|_error| DefaultError {
-        message: "Error creating open ai message".into(),
-    }).unwrap();
+    let mut response_content = String::new();
+    let mut completion_tokens = 0;
+    let mut stream = client.chat().create_stream(parameters).await.unwrap();
 
-    
+    while let Some(response) = stream.next().await {
+        match response {
+            Ok(chat_response) => {
+                completion_tokens += 1;
 
+                let chat_content = chat_response.choices[0].delta.content.clone().unwrap();
+                let multi_use_chat_content = chat_content.clone();
+                tx.send(Ok(chat_content.into()));
+                response_content.push_str(multi_use_chat_content.clone().as_str());
+            }
+            Err(e) => eprintln!("{}", e),
+        }
+    }
 
-    Ok(stream.next().await.unwrap())
+    let completion_message = Message::from_details(
+        response_content,
+        previous_messages[0].topic_id,
+        (previous_messages.len() + 1).try_into().unwrap(),
+        "assistant".into(),
+        Some(0),
+        Some(completion_tokens),
+    );
+
+    let completion_message = ChatCompletionDTO {
+        completion_message,
+        completion_tokens,
+    };
+
+    Ok(completion_message)
 }
