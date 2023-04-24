@@ -11,9 +11,10 @@ use tokio::sync::mpsc;
 use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 
 use crate::{
-    data::models::{Message, Pool},
+    data::{models::{Message, Pool}, schema::topics::user_id},
     operators::message_operator::{
-        create_message_query, create_topic_message_query, get_topic_messages,
+        create_message_query, create_topic_message_query, get_messages_for_user_topic_query,
+        get_topic_messages,
     },
 };
 
@@ -143,4 +144,34 @@ pub async fn create_message_completion_handler(
     let _ = web::block(move || create_message_query(completion_message, &fourth_pool)).await?;
 
     Ok(HttpResponse::Ok().streaming(receiver_stream))
+}
+
+// get_all_topic_messages_handler
+// verify that the user owns the topic for the topic_id they are requesting
+// get all the messages for the topic_id
+// filter out deleted messages
+// return the messages
+pub async fn get_all_topic_messages(
+    user: LoggedUser,
+    topic_id: web::Path<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    // check if the user owns the topic
+    let topic_result = crate::operators::topic_operator::get_topic_query(topic_id, &pool);
+    match topic_result {
+        Ok(topic) if topic.user_id != user.id => {
+            return Ok(HttpResponse::Unauthorized().json("Unauthorized"));
+        }
+        Ok(topic) => topic,
+        Err(e) => {
+            return Ok(HttpResponse::BadRequest().json(e));
+        }
+    }; 
+
+    let messages = web::block(move || get_messages_for_user_topic_query(user.id, topic_id, &pool)).await?;
+
+    match messages {
+        Ok(messages) => Ok(HttpResponse::Ok().json(messages)),
+        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
+    }
 }
