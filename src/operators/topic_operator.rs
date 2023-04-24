@@ -110,4 +110,3 @@ pub fn get_all_topics_for_user_query(
             message: "Error getting topics for user".into(),
         })
 }
-

@@ -118,10 +118,16 @@ async fn main() -> std::io::Result<()> {
                             .route(web::get().to(handlers::topic_handler::get_all_topics)),
                     )
                     .service(
-                        web::resource("/message")
-                        .route(web::post().to(handlers::message_handler::create_message_completion_handler))
-                        .route(web::get().to(handlers::message_handler::get_all_topic_messages)),
+                        web::resource("/message").route(
+                            web::post()
+                                .to(handlers::message_handler::create_message_completion_handler),
+                        ),
                     )
+                    .service(
+                        web::resource("/messages/{messages_topic_id}").route(
+                            web::get().to(handlers::message_handler::get_all_topic_messages),
+                        ),
+                    ),
             )
     })
     .bind(("127.0.0.1", 8080))?
