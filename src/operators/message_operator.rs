@@ -1,5 +1,6 @@
 use crate::diesel::prelude::*;
 use crate::handlers::message_handler::StreamItem;
+use crate::operators::topic_operator::get_topic_query;
 use crate::{
     data::models::{Message, Pool},
     errors::DefaultError,
@@ -122,8 +123,6 @@ pub async fn get_openai_completion(
     previous_messages: Vec<Message>,
     tx: mpsc::Sender<StreamItem>,
 ) -> Result<ChatCompletionDTO, DefaultError> {
-    log::info!("Getting openai completion");
-
     let open_ai_messages: Vec<ChatMessage> = previous_messages
         .iter()
         .map(|message| ChatMessage::from(message.clone()))
@@ -148,7 +147,6 @@ pub async fn get_openai_completion(
     let mut completion_tokens = 0;
     let mut stream = client.chat().create_stream(parameters).await.unwrap();
 
-    log::info!("Getting chat completion");
     while let Some(response) = stream.next().await {
         match response {
             Ok(chat_response) => {
@@ -184,4 +182,39 @@ pub async fn get_openai_completion(
     Ok(completion_message)
 }
 
-// topic_
+pub fn delete_message_query(
+    given_user_id: &uuid::Uuid,
+    given_message_id: uuid::Uuid,
+    given_topic_id: uuid::Uuid,
+    pool: &web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::messages::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    match get_topic_query(given_topic_id, &pool) {
+        Ok(topic) if topic.user_id != *given_user_id => {
+            return Err(DefaultError {
+                message: "Unauthorized".into(),
+            })
+        }
+        Ok(topic) => {}
+        Err(e) => return Err(e),
+    };
+
+    let target_message: Message = messages
+        .find(given_message_id)
+        .first::<Message>(&mut conn)
+        .map_err(|_db_error| DefaultError {
+            message: "Error finding message".into(),
+        })?;
+
+    diesel::update(messages.filter(sort_order.ge(target_message.sort_order)))
+        .set(deleted.eq(true))
+        .execute(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Error deleting message".into(),
+        })?;
+
+    Ok(())
+}
