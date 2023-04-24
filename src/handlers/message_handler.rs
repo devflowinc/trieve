@@ -11,9 +11,9 @@ use tokio::sync::mpsc;
 use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 
 use crate::{
-    data::{models::{Message, Pool}, schema::topics::user_id},
+    data::models::{Message, Pool},
     operators::message_operator::{
-        create_message_query, create_topic_message_query, get_messages_for_user_topic_query,
+        create_message_query, create_topic_message_query, get_messages_for_topic_query,
         get_topic_messages,
     },
 };
@@ -153,9 +153,11 @@ pub async fn create_message_completion_handler(
 // return the messages
 pub async fn get_all_topic_messages(
     user: LoggedUser,
-    topic_id: web::Path<uuid::Uuid>,
+    messages_topic_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let topic_id = messages_topic_id.into_inner();
+
     // check if the user owns the topic
     let topic_result = crate::operators::topic_operator::get_topic_query(topic_id, &pool);
     match topic_result {
@@ -166,9 +168,9 @@ pub async fn get_all_topic_messages(
         Err(e) => {
             return Ok(HttpResponse::BadRequest().json(e));
         }
-    }; 
+    };
 
-    let messages = web::block(move || get_messages_for_user_topic_query(user.id, topic_id, &pool)).await?;
+    let messages = web::block(move || get_messages_for_topic_query(topic_id, &pool)).await?;
 
     match messages {
         Ok(messages) => Ok(HttpResponse::Ok().json(messages)),

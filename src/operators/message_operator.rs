@@ -100,8 +100,7 @@ pub fn create_topic_message_query(
 
     Ok(ret_messages)
 }
-pub fn get_messages_for_user_topic_query(
-    topic_user_id: uuid::Uuid,
+pub fn get_messages_for_topic_query(
     message_topic_id: uuid::Uuid,
     pool: &web::Data<Pool>,
 ) -> Result<Vec<Message>, DefaultError> {
