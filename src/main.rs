@@ -133,6 +133,11 @@ async fn main() -> std::io::Result<()> {
                         web::resource("/messages/{messages_topic_id}").route(
                             web::get().to(handlers::message_handler::get_all_topic_messages),
                         ),
+                    )
+                    .service(
+                        web::resource("/messages/{messages_topic_id}").route(
+                            web::get().to(handlers::message_handler::get_all_topic_messages),
+                        ),
                     ),
             )
     })
