@@ -100,6 +100,23 @@ pub fn create_topic_message_query(
 
     Ok(ret_messages)
 }
+pub fn get_messages_for_user_topic_query(
+    topic_user_id: uuid::Uuid,
+    message_topic_id: uuid::Uuid,
+    pool: &web::Data<Pool>,
+) -> Result<Vec<Message>, DefaultError> {
+    use crate::data::schema::messages::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    messages
+        .filter(topic_id.eq(message_topic_id))
+        .filter(deleted.eq(false))
+        .load::<Message>(&mut conn)
+        .map_err(|_db_error| DefaultError {
+            message: "This topic does not exist for the authenticated user".into(),
+        })
+}
 
 #[allow(dead_code)]
 pub async fn get_openai_completion(
@@ -167,3 +184,5 @@ pub async fn get_openai_completion(
 
     Ok(completion_message)
 }
+
+// topic_
