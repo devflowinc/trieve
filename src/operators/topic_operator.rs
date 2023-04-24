@@ -105,6 +105,7 @@ pub fn get_all_topics_for_user_query(
     topics
         .filter(user_id.eq(topic_user_id))
         .filter(deleted.eq(false))
+        .order(updated_at.desc())
         .load::<Topic>(&mut conn)
         .map_err(|_db_error| DefaultError {
             message: "Error getting topics for user".into(),
