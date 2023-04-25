@@ -81,64 +81,7 @@ pub async fn create_message_completion_handler(
         }
     };
 
-    let (tx, rx) = mpsc::channel::<StreamItem>(1000);
-    let receiver_stream: ReceiverStream<StreamItem> = ReceiverStream::new(rx);
-
-    let open_ai_messages: Vec<ChatMessage> = previous_messages
-        .iter()
-        .map(|message| ChatMessage::from(message.clone()))
-        .collect();
-    let open_ai_api_key = std::env::var("OPENAI_API_KEY").expect("OPEN_AI_API_KEY must be set");
-    let client = Client::new(open_ai_api_key);
-
-    let parameters = ChatCompletionParameters {
-        model: "gpt-3.5-turbo".into(),
-        messages: open_ai_messages,
-        temperature: None,
-        top_p: None,
-        n: None,
-        stop: None,
-        max_tokens: None,
-        presence_penalty: None,
-        frequency_penalty: None,
-        logit_bias: None,
-    };
-
-    let mut response_content = String::new();
-    let mut completion_tokens = 0;
-    let mut stream = client.chat().create_stream(parameters).await.unwrap();
-
-    while let Some(response) = stream.next().await {
-        match response {
-            Ok(chat_response) => {
-                completion_tokens += 1;
-
-                let chat_content = chat_response.choices[0].delta.content.clone();
-                if chat_content.is_none() {
-                    continue;
-                }
-                let chat_content = chat_content.unwrap();
-
-                let multi_use_chat_content = chat_content.clone();
-                let _ = tx.send(Ok(chat_content.into())).await;
-                response_content.push_str(multi_use_chat_content.clone().as_str());
-            }
-            Err(e) => log::error!("Error getting chat completion: {}", e),
-        }
-    }
-
-    let completion_message = Message::from_details(
-        response_content,
-        previous_messages[0].topic_id,
-        (previous_messages.len() + 1).try_into().unwrap(),
-        "assistant".into(),
-        Some(0),
-        Some(completion_tokens),
-    );
-
-    let _ = web::block(move || create_message_query(completion_message, &fourth_pool)).await?;
-
-    Ok(HttpResponse::Ok().streaming(receiver_stream))
+    stream_response(previous_messages, fourth_pool).await
 }
 
 // get_all_topic_messages_handler
@@ -202,10 +145,15 @@ pub async fn regenerate_message_handler(
         }
     };
 
+    stream_response(previous_messages, fourth_pool).await
+}
+
+pub async fn stream_response(messages: Vec<Message>, pool: web::Data<Pool>) -> Result<HttpResponse, actix_web::Error> {
+
     let (tx, rx) = mpsc::channel::<StreamItem>(1000);
     let receiver_stream: ReceiverStream<StreamItem> = ReceiverStream::new(rx);
 
-    let open_ai_messages: Vec<ChatMessage> = previous_messages
+    let open_ai_messages: Vec<ChatMessage> = messages
         .iter()
         .map(|message| ChatMessage::from(message.clone()))
         .collect();
@@ -253,14 +201,14 @@ pub async fn regenerate_message_handler(
 
     let completion_message = Message::from_details(
         response_content,
-        previous_messages[0].topic_id,
-        (previous_messages.len() + 1).try_into().unwrap(),
+        messages[0].topic_id,
+        (messages.len() + 1).try_into().unwrap(),
         "assistant".into(),
         Some(0),
         Some(completion_tokens),
     );
 
-    let _ = web::block(move || create_message_query(completion_message, &fourth_pool)).await?;
+    let _ = web::block(move || create_message_query(completion_message, &pool)).await?;
 
     Ok(HttpResponse::Ok().streaming(receiver_stream))
 }
