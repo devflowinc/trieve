@@ -2,6 +2,8 @@ use actix_web::{
     web::{self, Bytes},
     HttpResponse,
 };
+use async_stream::{try_stream, __private::AsyncStream};
+use futures_util::Future;
 use openai_dive::v1::{
     api::Client,
     resources::chat_completion::{ChatCompletionParameters, ChatMessage},
@@ -9,9 +11,11 @@ use openai_dive::v1::{
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
 use tokio_stream::{wrappers::ReceiverStream, StreamExt};
-
+use actix::Actor;
+use actix::prelude::*;
 use crate::{
-    data::models::{Message, Pool},
+    data::models as models,
+    data::models::Pool,
     operators::message_operator::{
         delete_message_query,
         create_message_query, create_topic_message_query, get_messages_for_topic_query,
@@ -35,7 +39,7 @@ pub async fn create_message_completion_handler(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let create_message_data = data.into_inner();
-    let new_message = Message::from_details(
+    let new_message = models::Message::from_details(
         create_message_data.new_message_content,
         create_message_data.topic_id,
         0,
@@ -148,7 +152,7 @@ pub async fn regenerate_message_handler(
     stream_response(previous_messages, fourth_pool).await
 }
 
-pub async fn stream_response(messages: Vec<Message>, pool: web::Data<Pool>) -> Result<HttpResponse, actix_web::Error> {
+pub async fn stream_response(messages: Vec<models::Message>, pool: web::Data<Pool>) -> Result<HttpResponse, actix_web::Error> {
 
     let (tx, rx) = mpsc::channel::<StreamItem>(1000);
     let receiver_stream: ReceiverStream<StreamItem> = ReceiverStream::new(rx);
@@ -157,6 +161,7 @@ pub async fn stream_response(messages: Vec<Message>, pool: web::Data<Pool>) -> R
         .iter()
         .map(|message| ChatMessage::from(message.clone()))
         .collect();
+
     let open_ai_api_key = std::env::var("OPENAI_API_KEY").expect("OPEN_AI_API_KEY must be set");
     let client = Client::new(open_ai_api_key);
 
@@ -173,14 +178,113 @@ pub async fn stream_response(messages: Vec<Message>, pool: web::Data<Pool>) -> R
         logit_bias: None,
     };
 
-    let mut response_content = String::new();
-    let mut completion_tokens = 0;
-    let mut stream = client.chat().create_stream(parameters).await.unwrap();
+    
+    {
+        // while let Some(response) = stream.next().await {
+        //
+        //     completion_tokens += 1;
+        //     let chat_response = response.map_err(|e| {
+        //         log::error!("Error: {}", e);
+        //     }).unwrap();
+        //
+        //     log::info!("Got chat completion: {:?}", chat_response);
+        //
+        //     let chat_content = chat_response.choices[0].delta.content.clone();
+        //     if chat_content.is_none() {
+        //         log::error!("Chat content is none");
+        //         continue;
+        //     }
+        //     let chat_content = chat_content.unwrap();
+        //
+        //     let multi_use_chat_content = chat_content.clone();
+        //     let _ = tx.send(Ok(chat_content.into())).await;
+            // yield Ok(chat_content.into());
+            // response_content.push_str(multi_use_chat_content.clone().as_str());
+        // }
+        // let completion_message = Message::from_details(
+        //     response_content,
+        //     messages[0].topic_id,
+        //     (messages.len() + 1).try_into().unwrap(),
+        //     "assistant".into(),
+        //     Some(0),
+        //     Some(completion_tokens),
+        // );
 
-    while let Some(response) = stream.next().await {
-        match response {
-            Ok(chat_response) => {
+
+        // Since we're on a different thread already no need to block
+        // let _ = create_message_query(completion_message, &pool);
+    };
+
+    let streamer = StreamingBoi {
+        messages,
+    };
+    let addr =streamer.start();
+
+
+    Ok(HttpResponse::Ok().streaming(receiver_stream))
+}
+
+#[derive(Message)]
+#[rtype(result = "()")]
+struct StreamNow {
+    sender: mpsc::Sender<Result<Bytes, actix_web::Error>>,
+}
+
+#[derive(Debug, Clone)]
+struct StreamingBoi {
+    messages: Vec<models::Message>,
+}
+
+impl Actor for StreamingBoi {
+    type Context = actix::Context<Self>;
+
+    fn started(&mut self, ctx: &mut actix::prelude::Context<Self>) {
+        log::info!("Starting streaming boi");
+    }
+
+    fn stopped(&mut self, ctx: &mut actix::prelude::Context<Self>) {
+        log::info!("Stopped streaming boi");
+    }
+}
+
+impl actix::prelude::Handler<StreamNow> for StreamingBoi {
+    type Result = ();
+
+    fn handle(&mut self, msg: StreamNow, _ctx: &mut Self::Context) -> Self::Result {
+        let messages = self.messages.clone();
+        actix_web::rt::spawn(async move {
+
+            let open_ai_messages: Vec<ChatMessage> = messages
+                .iter()
+                .map(|message| ChatMessage::from(message.clone()))
+                .collect();
+
+            let parameters = ChatCompletionParameters {
+                model: "gpt-3.5-turbo".into(),
+                messages: open_ai_messages,
+                temperature: None,
+                top_p: None,
+                n: None,
+                stop: None,
+                max_tokens: None,
+                presence_penalty: None,
+                frequency_penalty: None,
+                logit_bias: None,
+            };
+
+            let open_ai_api_key = std::env::var("OPENAI_API_KEY").expect("OPEN_AI_API_KEY must be set");
+            let client = Client::new(open_ai_api_key);
+
+            let mut response_content = String::new();
+            let mut completion_tokens = 0;
+            let mut stream = client.chat().create_stream(parameters).await.unwrap();
+
+            while let Some(response) = stream.next().await {
+
                 completion_tokens += 1;
+                let chat_response = response.map_err(|e| {
+                    log::error!("Error: {}", e);
+                }).unwrap();
 
                 log::info!("Got chat completion: {:?}", chat_response);
 
@@ -192,23 +296,9 @@ pub async fn stream_response(messages: Vec<Message>, pool: web::Data<Pool>) -> R
                 let chat_content = chat_content.unwrap();
 
                 let multi_use_chat_content = chat_content.clone();
-                let _ = tx.send(Ok(chat_content.into())).await;
-                response_content.push_str(multi_use_chat_content.clone().as_str());
+                let _ = msg.sender.send(Ok(chat_content.into())).await;
+                // response_content.push_str(multi_use_chat_content.clone().as_str());
             }
-            Err(e) => log::error!("Error getting chat completion: {}", e),
-        }
+        });
     }
-
-    let completion_message = Message::from_details(
-        response_content,
-        messages[0].topic_id,
-        (messages.len() + 1).try_into().unwrap(),
-        "assistant".into(),
-        Some(0),
-        Some(completion_tokens),
-    );
-
-    let _ = web::block(move || create_message_query(completion_message, &pool)).await?;
-
-    Ok(HttpResponse::Ok().streaming(receiver_stream))
 }
