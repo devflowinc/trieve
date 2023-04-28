@@ -38,6 +38,22 @@ pub fn get_topic_messages(
     Ok(topic_messages)
 }
 
+pub fn user_owns_topic_query(user_given_id: uuid::Uuid, topic_id: uuid::Uuid, pool: &web::Data<Pool>) -> bool {
+    use crate::data::schema::topics::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    let topic = topics
+        .filter(id.eq(topic_id))
+        .filter(user_id.eq(user_id))
+        .first::<crate::data::models::Topic>(&mut conn);
+    if topic.is_err() {
+        return false;
+    }
+
+    topic.unwrap().user_id == user_given_id
+}
+
 pub fn create_message_query(
     new_message: Message,
     pool: &web::Data<Pool>,
