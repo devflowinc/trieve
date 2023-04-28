@@ -1,10 +1,16 @@
 use std::panic;
 
 use actix::StreamHandler;
+use actix_web::web;
 use actix_web_actors::ws;
 use actix::prelude::*;
 use serde::{Deserialize, Serialize};
-use crate::data::models;
+use crate::{
+    data::models::{self, Pool},
+    operators::message_operator::{
+        get_messages_for_topic_query
+    },
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct MessageDTO {
@@ -29,11 +35,12 @@ enum Response {
     Error(String),
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct CompletionWebSeocket {
     pub user_id: uuid::Uuid,
     pub topic_id: Option<uuid::Uuid>,
     pub last_pong: chrono::DateTime<chrono::Utc>,
+    pub pool: web::Data<Pool>,
 }
 
 impl From<ws::Message> for Command {
@@ -105,9 +112,18 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for CompletionWebSeoc
                 log::info!("Regenerate message received");
                 todo!();
             }
-            Command::ChangeTopic(_) => {
+            Command::ChangeTopic(topic_id) => {
                 log::info!("Change topic received");
-                todo!();
+                let messages = get_messages_for_topic_query(topic_id, &self.pool);
+                match &messages {
+                    Ok(messages) => {
+                        ctx.text(serde_json::to_string(messages).unwrap())
+                    }
+                    Err(err) => {
+                        ctx.text(serde_json::to_string(err).unwrap())
+                    }
+                }
+                // ctx.text(serde_json::to_string(&messages).unwrap());
             }
             Command::Stop => {
                 log::info!("Stop received");
