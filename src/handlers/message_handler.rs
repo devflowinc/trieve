@@ -2,6 +2,7 @@ use actix_web::{
     web::{self, Bytes},
     HttpResponse,
 };
+use futures::{future::ok, stream::once};
 use async_stream::{try_stream, __private::AsyncStream};
 use futures_util::Future;
 use openai_dive::v1::{
@@ -20,7 +21,7 @@ use crate::{
         delete_message_query,
         create_message_query, create_topic_message_query, get_messages_for_topic_query,
         get_topic_messages,
-    },
+    }, errors::ServiceError,
 };
 
 use super::auth_handler::LoggedUser;
@@ -154,9 +155,6 @@ pub async fn regenerate_message_handler(
 
 pub async fn stream_response(messages: Vec<models::Message>, pool: web::Data<Pool>) -> Result<HttpResponse, actix_web::Error> {
 
-    let (tx, rx) = mpsc::channel::<StreamItem>(1000);
-    let receiver_stream: ReceiverStream<StreamItem> = ReceiverStream::new(rx);
-
     let open_ai_messages: Vec<ChatMessage> = messages
         .iter()
         .map(|message| ChatMessage::from(message.clone()))
@@ -178,127 +176,16 @@ pub async fn stream_response(messages: Vec<models::Message>, pool: web::Data<Poo
         logit_bias: None,
     };
 
-    
-    {
-        // while let Some(response) = stream.next().await {
-        //
-        //     completion_tokens += 1;
-        //     let chat_response = response.map_err(|e| {
-        //         log::error!("Error: {}", e);
-        //     }).unwrap();
-        //
-        //     log::info!("Got chat completion: {:?}", chat_response);
-        //
-        //     let chat_content = chat_response.choices[0].delta.content.clone();
-        //     if chat_content.is_none() {
-        //         log::error!("Chat content is none");
-        //         continue;
-        //     }
-        //     let chat_content = chat_content.unwrap();
-        //
-        //     let multi_use_chat_content = chat_content.clone();
-        //     let _ = tx.send(Ok(chat_content.into())).await;
-            // yield Ok(chat_content.into());
-            // response_content.push_str(multi_use_chat_content.clone().as_str());
-        // }
-        // let completion_message = Message::from_details(
-        //     response_content,
-        //     messages[0].topic_id,
-        //     (messages.len() + 1).try_into().unwrap(),
-        //     "assistant".into(),
-        //     Some(0),
-        //     Some(completion_tokens),
-        // );
+    let stream = client.chat().create_stream(parameters).await.unwrap();
 
-
-        // Since we're on a different thread already no need to block
-        // let _ = create_message_query(completion_message, &pool);
-    };
-
-    let streamer = StreamingBoi {
-        messages,
-    };
-    let addr =streamer.start();
-
-
-    Ok(HttpResponse::Ok().streaming(receiver_stream))
-}
-
-#[derive(Message)]
-#[rtype(result = "()")]
-struct StreamNow {
-    sender: mpsc::Sender<Result<Bytes, actix_web::Error>>,
-}
-
-#[derive(Debug, Clone)]
-struct StreamingBoi {
-    messages: Vec<models::Message>,
-}
-
-impl Actor for StreamingBoi {
-    type Context = actix::Context<Self>;
-
-    fn started(&mut self, ctx: &mut actix::prelude::Context<Self>) {
-        log::info!("Starting streaming boi");
-    }
-
-    fn stopped(&mut self, ctx: &mut actix::prelude::Context<Self>) {
-        log::info!("Stopped streaming boi");
-    }
-}
-
-impl actix::prelude::Handler<StreamNow> for StreamingBoi {
-    type Result = ();
-
-    fn handle(&mut self, msg: StreamNow, _ctx: &mut Self::Context) -> Self::Result {
-        let messages = self.messages.clone();
-        actix_web::rt::spawn(async move {
-
-            let open_ai_messages: Vec<ChatMessage> = messages
-                .iter()
-                .map(|message| ChatMessage::from(message.clone()))
-                .collect();
-
-            let parameters = ChatCompletionParameters {
-                model: "gpt-3.5-turbo".into(),
-                messages: open_ai_messages,
-                temperature: None,
-                top_p: None,
-                n: None,
-                stop: None,
-                max_tokens: None,
-                presence_penalty: None,
-                frequency_penalty: None,
-                logit_bias: None,
-            };
-
-            let open_ai_api_key = std::env::var("OPENAI_API_KEY").expect("OPEN_AI_API_KEY must be set");
-            let client = Client::new(open_ai_api_key);
-
-            let mut response_content = String::new();
-            let mut completion_tokens = 0;
-            let mut stream = client.chat().create_stream(parameters).await.unwrap();
-
-            while let Some(response) = stream.next().await {
-
-                completion_tokens += 1;
-                let chat_response = response.map_err(|e| {
-                    log::error!("Error: {}", e);
-                }).unwrap();
-
-                log::info!("Got chat completion: {:?}", chat_response);
-
-                let chat_content = chat_response.choices[0].delta.content.clone();
-                if chat_content.is_none() {
-                    log::error!("Chat content is none");
-                    continue;
-                }
-                let chat_content = chat_content.unwrap();
-
-                let multi_use_chat_content = chat_content.clone();
-                let _ = msg.sender.send(Ok(chat_content.into())).await;
-                // response_content.push_str(multi_use_chat_content.clone().as_str());
+    Ok(HttpResponse::Ok().streaming(
+        stream.map(|response| -> Result<Bytes, actix_web::Error> {
+            if let Ok(response) = response {
+                let chat_content = response.choices[0].delta.content.clone();
+                return Ok(Bytes::from(chat_content.unwrap_or("".to_string())));
             }
-        });
-    }
+            log::error!("Something bad");
+            Err(ServiceError::InternalServerError.into())
+        })
+    ))
 }
