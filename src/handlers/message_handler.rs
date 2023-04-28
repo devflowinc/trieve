@@ -159,9 +159,9 @@ pub async fn stream_response(req: HttpRequest, messages: Vec<models::Message>, p
     Ok(HttpResponse::Ok().json(messages))
 }
 
-pub async fn websocket_index(req: HttpRequest, stream: web::Payload, pool: web::Data<Pool>) -> Result<HttpResponse, actix_web::Error> {
+pub async fn websocket_index(req: HttpRequest, stream: web::Payload, pool: web::Data<Pool>, user: LoggedUser) -> Result<HttpResponse, actix_web::Error> {
     let resp = ws::start(CompletionWebSeocket {
-        user_id: uuid::Uuid::new_v4(),
+        user_id: user.id,
         topic_id: None,
         last_pong: Utc::now(),
         pool: pool.clone(),

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     data::models::{self, Pool},
     operators::message_operator::{
-        get_messages_for_topic_query
+        get_messages_for_topic_query, user_owns_topic_query
     },
 };
 
@@ -112,6 +112,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for CompletionWebSeoc
             }
             Command::ChangeTopic(topic_id) => {
                 log::info!("Change topic received");
+                if !user_owns_topic_query(self.user_id, topic_id, &self.pool) {
+                    return ctx.text(serde_json::to_string(&Response::Error("User does not own topic".to_string())).unwrap());
+                }
                 let messages = get_messages_for_topic_query(topic_id, &self.pool);
                 match &messages {
                     Ok(messages) => {
@@ -121,7 +124,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for CompletionWebSeoc
                         ctx.text(serde_json::to_string(err).unwrap())
                     }
                 }
-                // ctx.text(serde_json::to_string(&messages).unwrap());
             }
             Command::Stop => {
                 log::info!("Stop received");
