@@ -4,23 +4,15 @@ use actix_web::{
 };
 use actix_web_actors::ws;
 use actix_web::HttpRequest;
-use async_stream::{try_stream, __private::AsyncStream};
-use futures_util::Future;
-use openai_dive::v1::{
-    api::Client,
-    resources::chat_completion::{ChatCompletionParameters, ChatMessage},
-};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use tokio::sync::mpsc;
-use tokio_stream::{wrappers::ReceiverStream, StreamExt};
-use actix::Actor;
-use actix::prelude::*;
 use crate::{
     data::models as models,
+    actors::completion_websocket::CompletionWebSeocket,
     data::models::Pool,
     operators::message_operator::{
         delete_message_query,
-        create_message_query, create_topic_message_query, get_messages_for_topic_query,
+        create_topic_message_query, get_messages_for_topic_query,
         get_topic_messages,
     },
 };
@@ -160,39 +152,20 @@ pub async fn regenerate_message_handler(
 
 pub async fn stream_response(req: HttpRequest, messages: Vec<models::Message>, pool: web::Data<Pool>, stream: web::Payload) -> Result<HttpResponse, actix_web::Error> {
 
-    let resp = ws::start(
-        StreamingBoi {
-            messages,
-        }, &req, stream);
+    // let resp = ws::start(
+    //     CompletionWebSeocket {
+    //     }, &req, stream);
+    // resp
+    Ok(HttpResponse::Ok().json(messages))
+}
 
+pub async fn websocket_index(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, actix_web::Error> {
+    let resp = ws::start(CompletionWebSeocket {
+        user_id: uuid::Uuid::new_v4(),
+        topic_id: None,
+        last_pong: Utc::now(),
+    }, &req, stream);
+    println!("{:?}", resp);
     resp
 }
 
-#[derive(Debug, Clone)]
-struct StreamingBoi {
-    messages: Vec<models::Message>,
-}
-
-impl Actor for StreamingBoi {
-    type Context = ws::WebsocketContext<Self>;
-
-    fn started(&mut self, ctx: &mut Self::Context) {
-    }
-}
-
-/// Handler for ws::Message message
-impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for StreamingBoi {
-
-    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
-        match msg {
-            Ok(ws::Message::Ping(msg)) => {
-                ctx.pong(&msg)
-            },
-            Ok(ws::Message::Text(text)) => {
-                ctx.text(text)
-            }
-            Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
-            _ => (),
-        }
-    }
-}
