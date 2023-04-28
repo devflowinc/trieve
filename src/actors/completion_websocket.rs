@@ -1,5 +1,3 @@
-use std::panic;
-
 use actix::StreamHandler;
 use actix_web::web;
 use actix_web_actors::ws;
@@ -26,12 +24,12 @@ enum Command {
     RegenerateMessage,
     ChangeTopic(uuid::Uuid),
     Stop,
-    InvalidMessage(&'static str),
+    InvalidMessage(String),
 }
 
+#[derive(Serialize, Deserialize, Debug)]
 enum Response {
     Messages(Vec<models::Message>),
-    Pong,
     Error(String),
 }
 
@@ -52,27 +50,27 @@ impl From<ws::Message> for Command {
             ws::Message::Text(text) => {
                 let parsed_message: Result<MessageDTO, serde_json::Error> = serde_json::from_str(&text);
                 if parsed_message.is_err() {
-                    return Command::InvalidMessage("Invalid message");
+                    return Command::InvalidMessage("Invalid message".to_string());
                 }
                 let message = parsed_message.unwrap();
-                match message.command.as_str() {
-                    "ping" => Command::Ping,
-                    "prompt" => {
-                        Command::Prompt(message.previous_messages.expect("Previous messages not found"))
-                    }
-                    "regenerateMessage" => Command::RegenerateMessage,
-                    "changeTopic" => {
-                        Command::ChangeTopic(message.topic_id.expect("Topic id not found"))
-                    }
-                    "stop" => Command::Stop,
-                    _ => Command::InvalidMessage("Invalid command {:?}", ),
+                match (&message, message.command.as_str()) {
+                    (_, "ping") => Command::Ping,
+                    (msg, "prompt") if msg.previous_messages.is_some() => {
+                        Command::Prompt(message.previous_messages.unwrap())
+                    },
+                    (_, "regenerateMessage") => Command::RegenerateMessage,
+                    (msg, "changeTopic") if msg.topic_id.is_some() => {
+                        Command::ChangeTopic(message.topic_id.unwrap())
+                    },
+                    (_, "stop") => Command::Stop,
+                    (_, _) => Command::InvalidMessage("Missing properties".to_string()),
                 }
             }
-            ws::Message::Binary(_) =>Command::InvalidMessage("Binary not a valid operation"),
-            ws::Message::Close(_) => Command::InvalidMessage("Close not a operation"),
-            ws::Message::Continuation(_) => Command::InvalidMessage("Continuation not a operation"),
-            ws::Message::Nop => Command::InvalidMessage("Nop not a operation"),
-            ws::Message::Pong(_) => Command::InvalidMessage("Pong not a operation"),
+            ws::Message::Binary(_) =>Command::InvalidMessage("Binary not a valid operation".to_string()),
+            ws::Message::Close(_) => Command::InvalidMessage("Close not a operation".to_string()),
+            ws::Message::Continuation(_) => Command::InvalidMessage("Continuation not a operation".to_string()),
+            ws::Message::Nop => Command::InvalidMessage("Nop not a operation".to_string()),
+            ws::Message::Pong(_) => Command::InvalidMessage("Pong not a operation".to_string()),
         }
     }
 }
@@ -96,7 +94,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for CompletionWebSeoc
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         let command: Command = match msg {
             Ok(message) => message.into(),
-            Err(_) => Command::InvalidMessage("Invalid message"),
+            Err(_) => Command::InvalidMessage("Invalid message".to_string()),
         };
         match command {
             Command::Ping => {
@@ -117,7 +115,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for CompletionWebSeoc
                 let messages = get_messages_for_topic_query(topic_id, &self.pool);
                 match &messages {
                     Ok(messages) => {
-                        ctx.text(serde_json::to_string(messages).unwrap())
+                        ctx.text(serde_json::to_string(&Response::Messages(messages.to_vec())).unwrap())
                     }
                     Err(err) => {
                         ctx.text(serde_json::to_string(err).unwrap())
@@ -129,9 +127,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for CompletionWebSeoc
                 log::info!("Stop received");
                 todo!();
             }
-            Command::InvalidMessage(_) => {
-                log::info!("Invalid message received");
-                todo!();
+            Command::InvalidMessage(e) => {
+                ctx.text(serde_json::to_string(&Response::Error(e.to_string())).unwrap())
             }
         }
     }
