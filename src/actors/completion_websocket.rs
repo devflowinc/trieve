@@ -73,6 +73,14 @@ impl From<ws::Message> for Command {
 
 impl Actor for CompletionWebSeocket {
     type Context = ws::WebsocketContext<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        ctx.run_interval(std::time::Duration::from_secs(1), |act, ctx| {
+            if chrono::Utc::now().signed_duration_since(act.last_pong).num_seconds() > 10 {
+                ctx.stop();
+            }
+        });
+    }
 }
 
 /// Handler for ws::Message message
@@ -86,6 +94,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for CompletionWebSeoc
         match command {
             Command::Ping => {
                 log::info!("Ping received");
+                self.last_pong = chrono::Utc::now();
                 ctx.pong("Pong".as_bytes());
             }
             Command::Prompt(_) => {
