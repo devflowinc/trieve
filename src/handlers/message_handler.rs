@@ -3,14 +3,14 @@ use crate::{
     data::models::Pool,
     errors::ServiceError,
     operators::message_operator::{
-        create_topic_message_query, delete_message_query, get_messages_for_topic_query,
-        get_topic_messages, create_message_query,
+        create_message_query, create_topic_message_query, delete_message_query,
+        get_messages_for_topic_query, get_topic_messages, user_owns_topic_query,
     },
 };
-use actix::{Arbiter, Message};
+use actix::Arbiter;
 use actix_web::{
     web::{self, Bytes},
-    HttpRequest, HttpResponse,
+    HttpResponse,
 };
 use crossbeam_channel::unbounded;
 use openai_dive::v1::{
@@ -31,11 +31,9 @@ pub struct CreateMessageData {
 }
 
 pub async fn create_message_completion_handler(
-    req: HttpRequest,
     data: web::Json<CreateMessageData>,
     user: LoggedUser,
     pool: web::Data<Pool>,
-    stream: web::Payload,
 ) -> Result<HttpResponse, actix_web::Error> {
     let create_message_data = data.into_inner();
     let new_message = models::Message::from_details(
@@ -51,17 +49,10 @@ pub async fn create_message_completion_handler(
     let third_pool = pool.clone();
     let fourth_pool = pool.clone();
 
-    // check if the user owns the topic
-    let topic_result = crate::operators::topic_operator::get_topic_query(topic_id, &pool);
-    match topic_result {
-        Ok(topic) if topic.user_id != user.id => {
-            return Ok(HttpResponse::Unauthorized().json("Unauthorized"));
-        }
-        Ok(topic) => topic,
-        Err(e) => {
-            return Ok(HttpResponse::BadRequest().json(e));
-        }
-    };
+    let user_owns_topic = web::block(move || user_owns_topic_query(user.id, topic_id, &pool));
+    if let Ok(false) = user_owns_topic.await {
+        return Ok(HttpResponse::Unauthorized().json("Unauthorized"));
+    }
 
     // get the previous messages
     let previous_messages_result =
@@ -84,7 +75,7 @@ pub async fn create_message_completion_handler(
         }
     };
 
-    stream_response(req, previous_messages, topic_id, fourth_pool, stream).await
+    stream_response(previous_messages, topic_id, fourth_pool).await
 }
 
 // get_all_topic_messages_handler
@@ -97,18 +88,13 @@ pub async fn get_all_topic_messages(
     messages_topic_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let second_pool = pool.clone();
     let topic_id: uuid::Uuid = messages_topic_id.into_inner();
     // check if the user owns the topic
-    let topic_result = crate::operators::topic_operator::get_topic_query(topic_id, &pool);
-    match topic_result {
-        Ok(topic) if topic.user_id != user.id => {
-            return Ok(HttpResponse::Unauthorized().json("Unauthorized"));
-        }
-        Ok(topic) => topic,
-        Err(e) => {
-            return Ok(HttpResponse::BadRequest().json(e));
-        }
-    };
+    let user_owns_topic = web::block(move || user_owns_topic_query(user.id, topic_id, &second_pool));
+    if let Ok(false) = user_owns_topic.await {
+        return Ok(HttpResponse::Unauthorized().json("Unauthorized"));
+    }
 
     let messages = web::block(move || get_messages_for_topic_query(topic_id, &pool)).await?;
 
@@ -125,11 +111,9 @@ pub struct RegenerateMessageData {
 }
 
 pub async fn regenerate_message_handler(
-    req: HttpRequest,
     data: web::Json<RegenerateMessageData>,
     user: LoggedUser,
     pool: web::Data<Pool>,
-    stream: web::Payload,
 ) -> Result<HttpResponse, actix_web::Error> {
     // TODO: check if the user owns the message
     // Get message
@@ -150,15 +134,13 @@ pub async fn regenerate_message_handler(
         }
     };
 
-    stream_response(req, previous_messages, topic_id, fourth_pool, stream).await
+    stream_response(previous_messages, topic_id, fourth_pool).await
 }
 
 pub async fn stream_response(
-    req: HttpRequest,
     messages: Vec<models::Message>,
     topic_id: uuid::Uuid,
     pool: web::Data<Pool>,
-    stream: web::Payload,
 ) -> Result<HttpResponse, actix_web::Error> {
     let open_ai_messages: Vec<ChatMessage> = messages
         .iter()
@@ -208,8 +190,8 @@ pub async fn stream_response(
         let _ = create_message_query(new_message, &pool);
     });
 
-    Ok(
-        HttpResponse::Ok().streaming(stream.map(move |response| -> Result<Bytes, actix_web::Error> {
+    Ok(HttpResponse::Ok().streaming(stream.map(
+        move |response| -> Result<Bytes, actix_web::Error> {
             if let Ok(response) = response {
                 let chat_content = response.choices[0].delta.content.clone();
                 if let Some(message) = chat_content.clone() {
@@ -219,6 +201,6 @@ pub async fn stream_response(
             }
             log::error!("Something bad");
             Err(ServiceError::InternalServerError.into())
-        })),
-    )
+        },
+    )))
 }
