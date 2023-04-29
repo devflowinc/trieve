@@ -352,6 +352,7 @@ dependencies = [
  "actix-web",
  "async-stream",
  "chrono",
+ "crossbeam-channel",
  "derive_more",
  "diesel",
  "diesel_migrations",

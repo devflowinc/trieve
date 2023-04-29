@@ -4,13 +4,15 @@ use crate::{
     errors::ServiceError,
     operators::message_operator::{
         create_topic_message_query, delete_message_query, get_messages_for_topic_query,
-        get_topic_messages,
+        get_topic_messages, create_message_query,
     },
 };
+use actix::{Arbiter, Message};
 use actix_web::{
     web::{self, Bytes},
     HttpRequest, HttpResponse,
 };
+use crossbeam_channel::unbounded;
 use openai_dive::v1::{
     api::Client,
     resources::chat_completion::{ChatCompletionParameters, ChatMessage},
@@ -82,7 +84,7 @@ pub async fn create_message_completion_handler(
         }
     };
 
-    stream_response(req, previous_messages, fourth_pool, stream).await
+    stream_response(req, previous_messages, topic_id, fourth_pool, stream).await
 }
 
 // get_all_topic_messages_handler
@@ -148,12 +150,13 @@ pub async fn regenerate_message_handler(
         }
     };
 
-    stream_response(req, previous_messages, fourth_pool, stream).await
+    stream_response(req, previous_messages, topic_id, fourth_pool, stream).await
 }
 
 pub async fn stream_response(
     req: HttpRequest,
     messages: Vec<models::Message>,
+    topic_id: uuid::Uuid,
     pool: web::Data<Pool>,
     stream: web::Payload,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -162,8 +165,15 @@ pub async fn stream_response(
         .map(|message| ChatMessage::from(message.clone()))
         .collect();
 
-    let open_ai_api_key = std::env::var("OPENAI_API_KEY").expect("OPEN_AI_API_KEY must be set");
+    let open_ai_api_key = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
     let client = Client::new(open_ai_api_key);
+    let next_message_order = move || {
+        let messages_len = messages.len();
+        if messages_len == 0 {
+            return 3;
+        }
+        return messages_len + 1;
+    };
 
     let parameters = ChatCompletionParameters {
         model: "gpt-3.5-turbo".into(),
@@ -178,12 +188,33 @@ pub async fn stream_response(
         logit_bias: None,
     };
 
+    let (s, r) = unbounded::<String>();
     let stream = client.chat().create_stream(parameters).await.unwrap();
 
+    Arbiter::new().spawn(async move {
+        let chunk_v: Vec<String> = r.iter().collect();
+        let completion = chunk_v.join("");
+        log::info!("completion: {}", completion);
+
+        let new_message = models::Message::from_details(
+            completion,
+            topic_id,
+            next_message_order().try_into().unwrap(),
+            "assistant".to_string(),
+            None,
+            Some(chunk_v.len().try_into().unwrap()),
+        );
+
+        let _ = create_message_query(new_message, &pool);
+    });
+
     Ok(
-        HttpResponse::Ok().streaming(stream.map(|response| -> Result<Bytes, actix_web::Error> {
+        HttpResponse::Ok().streaming(stream.map(move |response| -> Result<Bytes, actix_web::Error> {
             if let Ok(response) = response {
                 let chat_content = response.choices[0].delta.content.clone();
+                if let Some(message) = chat_content.clone() {
+                    s.send(message).unwrap();
+                }
                 return Ok(Bytes::from(chat_content.unwrap_or("".to_string())));
             }
             log::error!("Something bad");
