@@ -14,7 +14,6 @@ mod data;
 mod errors;
 mod handlers;
 mod operators;
-mod actors;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 pub const SECONDS_IN_MINUTE: u64 = 60;
@@ -134,8 +133,7 @@ async fn main() -> std::io::Result<()> {
                         web::resource("/messages/{messages_topic_id}").route(
                             web::get().to(handlers::message_handler::get_all_topic_messages),
                         ),
-                    )
-                    .route("/ws", web::get().to(handlers::message_handler::websocket_index)),
+                    ),
             )
     })
     .bind(("127.0.0.1", 8080))?

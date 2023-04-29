@@ -1,21 +1,22 @@
-use actix_web::{
-    web::{self, Bytes},
-    HttpResponse,
-};
-use actix_web_actors::ws;
-use actix_web::HttpRequest;
-use chrono::Utc;
-use serde::{Deserialize, Serialize};
 use crate::{
-    data::models as models,
-    actors::completion_websocket::CompletionWebSeocket,
+    data::models,
     data::models::Pool,
+    errors::ServiceError,
     operators::message_operator::{
-        delete_message_query,
-        create_topic_message_query, get_messages_for_topic_query,
+        create_topic_message_query, delete_message_query, get_messages_for_topic_query,
         get_topic_messages,
     },
 };
+use actix_web::{
+    web::{self, Bytes},
+    HttpRequest, HttpResponse,
+};
+use openai_dive::v1::{
+    api::Client,
+    resources::chat_completion::{ChatCompletionParameters, ChatMessage},
+};
+use serde::{Deserialize, Serialize};
+use tokio_stream::StreamExt;
 
 use super::auth_handler::LoggedUser;
 
@@ -150,23 +151,43 @@ pub async fn regenerate_message_handler(
     stream_response(req, previous_messages, fourth_pool, stream).await
 }
 
-pub async fn stream_response(req: HttpRequest, messages: Vec<models::Message>, pool: web::Data<Pool>, stream: web::Payload) -> Result<HttpResponse, actix_web::Error> {
+pub async fn stream_response(
+    req: HttpRequest,
+    messages: Vec<models::Message>,
+    pool: web::Data<Pool>,
+    stream: web::Payload,
+) -> Result<HttpResponse, actix_web::Error> {
+    let open_ai_messages: Vec<ChatMessage> = messages
+        .iter()
+        .map(|message| ChatMessage::from(message.clone()))
+        .collect();
 
-    // let resp = ws::start(
-    //     CompletionWebSeocket {
-    //     }, &req, stream);
-    // resp
-    Ok(HttpResponse::Ok().json(messages))
+    let open_ai_api_key = std::env::var("OPENAI_API_KEY").expect("OPEN_AI_API_KEY must be set");
+    let client = Client::new(open_ai_api_key);
+
+    let parameters = ChatCompletionParameters {
+        model: "gpt-3.5-turbo".into(),
+        messages: open_ai_messages,
+        temperature: None,
+        top_p: None,
+        n: None,
+        stop: None,
+        max_tokens: None,
+        presence_penalty: None,
+        frequency_penalty: None,
+        logit_bias: None,
+    };
+
+    let stream = client.chat().create_stream(parameters).await.unwrap();
+
+    Ok(
+        HttpResponse::Ok().streaming(stream.map(|response| -> Result<Bytes, actix_web::Error> {
+            if let Ok(response) = response {
+                let chat_content = response.choices[0].delta.content.clone();
+                return Ok(Bytes::from(chat_content.unwrap_or("".to_string())));
+            }
+            log::error!("Something bad");
+            Err(ServiceError::InternalServerError.into())
+        })),
+    )
 }
-
-pub async fn websocket_index(req: HttpRequest, stream: web::Payload, pool: web::Data<Pool>, user: LoggedUser) -> Result<HttpResponse, actix_web::Error> {
-    let resp = ws::start(CompletionWebSeocket {
-        user_id: user.id,
-        topic_id: None,
-        last_pong: Utc::now(),
-        pool: pool.clone(),
-    }, &req, stream);
-    println!("{:?}", resp);
-    resp
-}
-

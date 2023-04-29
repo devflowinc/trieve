@@ -38,7 +38,11 @@ pub fn get_topic_messages(
     Ok(topic_messages)
 }
 
-pub fn user_owns_topic_query(user_given_id: uuid::Uuid, topic_id: uuid::Uuid, pool: &web::Data<Pool>) -> bool {
+pub fn user_owns_topic_query(
+    user_given_id: uuid::Uuid,
+    topic_id: uuid::Uuid,
+    pool: &web::Data<Pool>,
+) -> bool {
     use crate::data::schema::topics::dsl::*;
 
     let mut conn = pool.get().unwrap();
