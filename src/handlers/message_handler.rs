@@ -22,8 +22,6 @@ use tokio_stream::StreamExt;
 
 use super::auth_handler::LoggedUser;
 
-pub type StreamItem = Result<Bytes, actix_web::Error>;
-
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CreateMessageData {
     pub new_message_content: String,
@@ -115,12 +113,10 @@ pub async fn regenerate_message_handler(
     user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    // TODO: check if the user owns the message
-    // Get message
     let message_id = data.message_id.clone();
     let topic_id = data.topic_id.clone();
     let second_pool = pool.clone();
-    let fourth_pool = pool.clone();
+    let third_pool = pool.clone();
 
     let _ = web::block(move || delete_message_query(&user.id, message_id, topic_id, &pool)).await?;
 
@@ -134,7 +130,7 @@ pub async fn regenerate_message_handler(
         }
     };
 
-    stream_response(previous_messages, topic_id, fourth_pool).await
+    stream_response(previous_messages, topic_id, third_pool).await
 }
 
 pub async fn stream_response(
@@ -176,7 +172,6 @@ pub async fn stream_response(
     Arbiter::new().spawn(async move {
         let chunk_v: Vec<String> = r.iter().collect();
         let completion = chunk_v.join("");
-        log::info!("completion: {}", completion);
 
         let new_message = models::Message::from_details(
             completion,
@@ -199,7 +194,6 @@ pub async fn stream_response(
                 }
                 return Ok(Bytes::from(chat_content.unwrap_or("".to_string())));
             }
-            log::error!("Something bad");
             Err(ServiceError::InternalServerError.into())
         },
     )))

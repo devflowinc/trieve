@@ -58,7 +58,6 @@ fn send_email(sg_email: Message) -> Result<(), DefaultError> {
     let sg_response = sg_sender.send(&sg_email);
     match sg_response {
         Ok(_) => {
-            log::info!("Email sent successfully");
             Ok(())
         }
         Err(_e) => Err(DefaultError {
