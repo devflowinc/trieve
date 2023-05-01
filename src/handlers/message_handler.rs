@@ -1,7 +1,7 @@
 use crate::{
     data::models,
     data::models::Pool,
-    errors::ServiceError,
+    errors::{ServiceError, DefaultError},
     operators::message_operator::{
         create_message_query, create_topic_message_query, delete_message_query,
         get_messages_for_topic_query, get_topic_messages, user_owns_topic_query,
@@ -104,7 +104,6 @@ pub async fn get_all_topic_messages(
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct RegenerateMessageData {
-    message_id: uuid::Uuid,
     topic_id: uuid::Uuid,
 }
 
@@ -113,14 +112,10 @@ pub async fn regenerate_message_handler(
     user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let message_id = data.message_id.clone();
     let topic_id = data.topic_id.clone();
     let second_pool = pool.clone();
     let third_pool = pool.clone();
-
-    let _ = web::block(move || delete_message_query(&user.id, message_id, topic_id, &pool)).await?;
-
-    // Recreate
+    
     let previous_messages_result =
         web::block(move || get_topic_messages(topic_id, &second_pool)).await?;
     let previous_messages = match previous_messages_result {
@@ -130,7 +125,40 @@ pub async fn regenerate_message_handler(
         }
     };
 
-    stream_response(previous_messages, topic_id, third_pool).await
+    if previous_messages.len() < 3 {
+        return Ok(HttpResponse::BadRequest().json(DefaultError {
+            message: "Not enough messages to regenerate",
+        }));
+    }
+
+    let mut message_to_regenerate = None;
+    for message in previous_messages.iter().rev() {
+        if message.role == "assistant" {
+            message_to_regenerate = Some(message.clone());
+            break;
+        }
+    }
+
+    let message_id = match message_to_regenerate {
+        Some(message) => message.id,
+        None => {
+            return Ok(HttpResponse::BadRequest().json(DefaultError {
+                message: "No message to regenerate",
+            }));
+        }
+    };
+
+    let mut previous_messages_to_regenerate = Vec::new();
+    for message in previous_messages.iter() {
+        if message.id == message_id {
+            break;
+        }
+        previous_messages_to_regenerate.push(message.clone());
+    }
+
+    let _ = web::block(move || delete_message_query(&user.id, message_id, topic_id, &pool)).await?;
+
+    stream_response(previous_messages_to_regenerate, topic_id, third_pool).await
 }
 
 pub async fn stream_response(
