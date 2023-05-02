@@ -20,6 +20,14 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+  rust_app:
+    build: .
+    container_name: rust_app
+    ports:
+     - "8090:8090"
+    depends_on:
+      - db
+      - redis
 
 volumes:
   redis-data:
