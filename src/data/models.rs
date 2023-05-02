@@ -39,6 +39,7 @@ pub struct Invitation {
     pub expires_at: chrono::NaiveDateTime,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub referral_tokens: Option<String>,
 }
 
 // any type that implements Into<String> can be used to create Invitation
@@ -53,6 +54,7 @@ where
             expires_at: chrono::Local::now().naive_local() + chrono::Duration::minutes(5),
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
+            referral_tokens: None,
         }
     }
 }

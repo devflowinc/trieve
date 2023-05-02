@@ -7,6 +7,7 @@ diesel::table! {
         expires_at -> Timestamp,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        referral_tokens -> Nullable<Text>,
     }
 }
 
