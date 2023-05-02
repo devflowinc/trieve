@@ -29,7 +29,7 @@ pub async fn main() -> std::io::Result<()> {
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
-
+    println!("Connecting to redis at {}, database, {}", redis_url, database_url);
     let redis_store = RedisSessionStore::new(redis_url.as_str())
         .await
         .unwrap();
