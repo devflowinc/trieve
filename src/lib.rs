@@ -50,7 +50,7 @@ pub async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         let cors = Cors::default()
             .allowed_origin("localhost:3000")
-            .allowed_origin("arguflow.com")
+            .allowed_origin("https://arguflow.com")
             .allowed_methods(vec!["GET", "POST", "DELETE", "OPTIONS", "PUT"])
             .allow_any_header()
             .supports_credentials()
