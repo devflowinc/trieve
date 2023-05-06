@@ -8,6 +8,7 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         referral_tokens -> Nullable<Text>,
+        stripe_customer_id -> Nullable<Text>,
     }
 }
 
