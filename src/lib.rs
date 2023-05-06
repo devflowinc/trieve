@@ -44,13 +44,13 @@ pub async fn main() -> std::io::Result<()> {
     run_migrations(&mut pool.get().unwrap());
 
     let domain: String = std::env::var("DOMAIN").unwrap_or_else(|_| "localhost".to_string());
+    let allowed_origin: String = std::env::var("ALLOWED_ORIGIN").unwrap_or_else(|_| "http://localhost:3000".to_string());
 
     log::info!("starting HTTP server at http://localhost:8090");
 
     HttpServer::new(move || {
         let cors = Cors::default()
-            .allowed_origin("localhost:3000")
-            .allowed_origin("https://arguflow.com")
+            .allowed_origin(&allowed_origin)
             .allowed_methods(vec!["GET", "POST", "DELETE", "OPTIONS", "PUT"])
             .allow_any_header()
             .supports_credentials()
