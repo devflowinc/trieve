@@ -1,15 +1,17 @@
+use actix::Arbiter;
 use actix_web::{web, HttpResponse};
 use argon2::{self, Config};
 use diesel::prelude::*;
 use once_cell::sync::Lazy;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     data::models::{Invitation, Pool, SlimUser, User},
     errors::DefaultError,
+    operators::stripe_customer_operator::create_stripe_customer_query,
 };
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct SetPasswordData {
     pub password: String,
     pub password_confirmation: String,
@@ -39,6 +41,7 @@ pub async fn register_user(
     let password = password_data_inner.password;
     let password_confirmation = password_data_inner.password_confirmation;
     let invitation_id = invitation_id.into_inner();
+    let db_pool_two = pool.clone();
 
     if password.len() < 8 {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
@@ -50,17 +53,18 @@ pub async fn register_user(
             message: "Passwords do not match".into(),
         }));
     }
-    if !invitation_id.contains('-') {
-        return Ok(HttpResponse::BadRequest().json(DefaultError {
-            message: "Invalid Invitation".into(),
-        }));
-    }
 
     let user =
         web::block(move || insert_user_from_invitation(invitation_id, password, pool)).await?;
 
     match user {
-        Ok(user) => Ok(HttpResponse::Ok().json(&user)),
+        Ok(user) => {
+            let user_clone = user.clone();
+            Arbiter::new().spawn(async move {
+                let _ = create_stripe_customer_query(user_clone.email, &db_pool_two).await;
+            });
+            Ok(HttpResponse::Ok().json(&user))
+        }
         Err(e) => Ok(HttpResponse::BadRequest().json(e)),
     }
 }
@@ -86,27 +90,34 @@ fn insert_user_from_invitation(
             message: "Invalid Invitation",
         })
         .and_then(|mut result| {
-            if let Some(invitation) = result.pop() {
-                // if invitation is not expired
-                if invitation.expires_at > chrono::Local::now().naive_local() {
-                    let password: String =
-                        hash_password(&password).map_err(|_hash_error| DefaultError {
-                            message: "Error Processing Password, Try Again",
-                        })?;
-
-                    let user = User::from_details(invitation.email, password);
-                    let inserted_user: User = diesel::insert_into(users)
-                        .values(&user)
-                        .get_result(&mut conn)
-                        .map_err(|_db_error| DefaultError {
-                            message: "Error Inserting User, Try Again",
-                        })?;
-
-                    return Ok(inserted_user.into());
+            let invitation = match result.pop() {
+                Some(it) => it,
+                None => {
+                    return Err(DefaultError {
+                        message: "Invalid Invitation",
+                    })
                 }
-            }
-            Err(DefaultError {
-                message: "Invitation Expired",
-            })
+            };
+
+            if invitation.expires_at <= chrono::Local::now().naive_local() {
+                return Err(DefaultError {
+                    message: "Invitation Expired",
+                });
+            };
+
+            let password: String =
+                hash_password(&password).map_err(|_hash_error| DefaultError {
+                    message: "Error Processing Password, Try Again",
+                })?;
+
+            let user = User::from_details(invitation.email, password);
+            let inserted_user: User = diesel::insert_into(users)
+                .values(&user)
+                .get_result(&mut conn)
+                .map_err(|_db_error| DefaultError {
+                    message: "Error Inserting User, Try Again",
+                })?;
+
+            Ok(inserted_user.into())
         })
 }
