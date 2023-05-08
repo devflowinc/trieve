@@ -5,13 +5,17 @@ use crate::{
 use sendgrid::v3::{Content, Email, Message, Personalization, Sender};
 
 pub fn send_invitation(invitation: &Invitation) -> Result<(), DefaultError> {
+    let app_url: String = std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:3000".into());
+
     let sg_email_content = format!(
         "Please click on the link below to complete registration. <br/>
-         <a href=\"https://arguflow.com/auth/register/{}?email={}\">
-         https://arguflow.com/register</a> <br>
+         <a href=\"{}/auth/register/{}?email={}\">
+         {}/register</a> <br>
          your Invitation expires at <strong>{}</strong>",
+        app_url,
         invitation.id,
         invitation.email,
+        app_url,
         invitation.expires_at.format("%I:%M %p %A, %-d %B, %C%y")
     );
     let sg_email_personalization = Personalization::new(Email::new(invitation.email.as_str()));
@@ -28,13 +32,17 @@ pub fn send_invitation(invitation: &Invitation) -> Result<(), DefaultError> {
 }
 
 pub fn send_password_reset(password_reset: &PasswordReset) -> Result<(), DefaultError> {
+    let app_url: String = std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:3000".into());
+
     let sg_email_content = format!(
         "Please click on the link below to reset your password. <br/>
-         <a href=\"http://arguflow.com/auth/password/{}?email={}\">
-         https://arguflow.com/auth/password</a> <br>
+         <a href=\"{}/auth/password/{}?email={}\">
+         {}/auth/password</a> <br>
          your password reset link expires at <strong>{}</strong>",
+        app_url,
         password_reset.id,
         password_reset.email,
+        app_url,
         password_reset
             .expires_at
             .format("%I:%M %p %A, %-d %B, %C%y")
