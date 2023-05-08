@@ -192,7 +192,7 @@ impl StripeCustomer {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SlimUser {
     pub id: uuid::Uuid,
     pub email: String,

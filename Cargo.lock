@@ -466,9 +466,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "65bb25e3145c6216eafb3eca6f8cd6e016f43c9d4416d0af7984de46acf4f288"
 dependencies = [
  "chrono",
+ "futures-util",
  "hex",
  "hmac",
  "http-types",
+ "hyper",
+ "hyper-tls",
  "serde",
  "serde_json",
  "serde_path_to_error",
@@ -477,6 +480,7 @@ dependencies = [
  "smart-default",
  "smol_str",
  "thiserror",
+ "tokio",
  "uuid 0.8.2",
 ]
 
@@ -1248,6 +1252,7 @@ dependencies = [
  "async-channel",
  "base64 0.13.1",
  "futures-lite",
+ "http",
  "infer",
  "pin-project-lite",
  "rand 0.7.3",
