@@ -28,7 +28,7 @@ pub async fn post_invitation(
     if !email_regex().is_match(&email) {
         return Ok(
             HttpResponse::BadRequest().json(crate::errors::DefaultError {
-                message: "Invalid email".into(),
+                message: "Invalid email",
             }),
         );
     }
@@ -64,7 +64,7 @@ fn create_invitation_query(
         .values(&new_invitation)
         .get_result(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "Error inserting invitation.".into(),
+            message: "Error inserting invitation.",
         })?;
 
     Ok(inserted_invitation)

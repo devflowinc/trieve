@@ -112,7 +112,7 @@ pub async fn regenerate_message_handler(
     user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let topic_id = data.topic_id.clone();
+    let topic_id = data.topic_id;
     let second_pool = pool.clone();
     let third_pool = pool.clone();
     
@@ -178,7 +178,7 @@ pub async fn stream_response(
         if messages_len == 0 {
             return 3;
         }
-        return messages_len + 1;
+        messages_len + 1
     };
 
     let parameters = ChatCompletionParameters {

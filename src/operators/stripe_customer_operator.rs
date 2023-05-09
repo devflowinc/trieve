@@ -21,7 +21,7 @@ pub async fn create_stripe_checkout_session_query(
     params.cancel_url = Some(&cancel_url);
     params.customer = Some(CustomerId::from_str(&stripe_customer.stripe_id).map_err(|_err| {
         DefaultError {
-            message: "Error creating checkout session, Customer's stripe_id is invalid, try again".into(),
+            message: "Error creating checkout session, Customer's stripe_id is invalid, try again",
         }
     })?);
     params.mode = Some(CheckoutSessionMode::Subscription);
@@ -34,10 +34,10 @@ pub async fn create_stripe_checkout_session_query(
     let checkout_session = CheckoutSession::create(&stripe_client, params)
         .await
         .map_err(|_stripe_error| DefaultError {
-            message: "Error creating checkout session, try again".into(),
+            message: "Error creating checkout session, try again",
         })?;
-    let checkout_session_url = checkout_session.url.ok_or_else(|| DefaultError {
-        message: "Error creating checkout session, try again".into(),
+    let checkout_session_url = checkout_session.url.ok_or(DefaultError {
+        message: "Error creating checkout session, try again",
     })?;
 
     Ok(checkout_session_url)
@@ -57,7 +57,7 @@ pub fn get_stripe_customer_query(
         .filter(stripe_customer_email.eq(email))
         .first::<StripeCustomer>(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "Error finding stripe customer, try again".into(),
+            message: "Error finding stripe customer, try again",
         })?;
 
     Ok(stripe_customer)
@@ -79,7 +79,7 @@ pub async fn create_stripe_customer_query(
     )
     .await
     .map_err(|_stripe_error| DefaultError {
-        message: "Error creating new stripe customer, try again".into(),
+        message: "Error creating new stripe customer, try again",
     })?;
 
     let new_stripe_customer = StripeCustomer::from_details(
@@ -93,7 +93,7 @@ pub async fn create_stripe_customer_query(
         .values(&new_stripe_customer)
         .get_result(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "Error inserting new stripe customer, try again".into(),
+            message: "Error inserting new stripe customer, try again",
         })?;
 
     Ok(inserted_stripe_customer)

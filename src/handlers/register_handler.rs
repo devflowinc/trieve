@@ -45,12 +45,12 @@ pub async fn register_user(
 
     if password.len() < 8 {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
-            message: "Password must be at least 8 characters".into(),
+            message: "Password must be at least 8 characters",
         }));
     }
     if password != password_confirmation {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
-            message: "Passwords do not match".into(),
+            message: "Passwords do not match",
         }));
     }
 
