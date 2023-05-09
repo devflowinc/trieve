@@ -87,7 +87,7 @@ pub async fn create_stripe_customer_query(
 
     let new_stripe_customer = StripeCustomer::from_details(
         new_full_customer.id.to_string(),
-        new_full_customer.email.unwrap_or_else(|| "".into()),
+        new_full_customer.email,
     );
 
     let mut conn = pool.get().unwrap();

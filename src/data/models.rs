@@ -175,17 +175,17 @@ impl Message {
 pub struct StripeCustomer {
     pub id: uuid::Uuid,
     pub stripe_id: String,
-    pub email: String,
+    pub email: Option<String>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
 
 impl StripeCustomer {
-    pub fn from_details<S: Into<String>, T: Into<String>>(stripe_id: S, email: T) -> Self {
+    pub fn from_details<S: Into<String>, T: Into<String>>(stripe_id: S, email: Option<T>) -> Self {
         StripeCustomer {
             id: uuid::Uuid::new_v4(),
             stripe_id: stripe_id.into(),
-            email: email.into(),
+            email: email.map(|e| e.into()),
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
         }
