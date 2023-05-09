@@ -27,7 +27,7 @@ pub async fn create_topic(
 
     if resolution.is_empty() {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
-            message: "Resolution must not be empty".into(),
+            message: "Resolution must not be empty",
         }));
     }
 
@@ -92,7 +92,7 @@ pub async fn update_topic(
 
     if resolution.is_empty() {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
-            message: "Resolution must not be empty".into(),
+            message: "Resolution must not be empty",
         }));
     }
 

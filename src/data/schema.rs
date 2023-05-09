@@ -40,7 +40,7 @@ diesel::table! {
     stripe_customers (id) {
         id -> Uuid,
         stripe_id -> Text,
-        email -> Varchar,
+        email -> Nullable<Varchar>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }

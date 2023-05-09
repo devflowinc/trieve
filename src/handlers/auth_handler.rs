@@ -70,7 +70,7 @@ pub async fn login(
 
     if email.is_empty() || password.is_empty() {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
-            message: "Email or password is empty".into(),
+            message: "Email or password is empty",
         }));
     }
 

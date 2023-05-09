@@ -45,12 +45,12 @@ pub async fn register_user(
 
     if password.len() < 8 {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
-            message: "Password must be at least 8 characters".into(),
+            message: "Password must be at least 8 characters",
         }));
     }
     if password != password_confirmation {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
-            message: "Passwords do not match".into(),
+            message: "Passwords do not match",
         }));
     }
 
@@ -60,9 +60,8 @@ pub async fn register_user(
     match user {
         Ok(user) => {
             let user_clone = user.clone();
-            Arbiter::new().spawn(async move {
-                let _ = create_stripe_customer_query(user_clone.email, &db_pool_two).await;
-            });
+            let _ =
+                create_stripe_customer_query(Some(user_clone.email.as_str()), db_pool_two).await;
             Ok(HttpResponse::Ok().json(&user))
         }
         Err(e) => Ok(HttpResponse::BadRequest().json(e)),

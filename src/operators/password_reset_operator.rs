@@ -10,7 +10,7 @@ pub fn reset_user_password(
     password: String,
     pool: &web::Data<Pool>,
 ) -> Result<(), DefaultError> {
-    let password_reset = get_password_reset_query(password_reset_id, &pool)?;
+    let password_reset = get_password_reset_query(password_reset_id, pool)?;
 
     // check if password reset is expired
     if password_reset.expires_at < chrono::Local::now().naive_local() {
@@ -19,7 +19,7 @@ pub fn reset_user_password(
         });
     }
 
-    reset_user_password_query(password_reset, password, &pool)?;
+    reset_user_password_query(password_reset, password, pool)?;
 
     Ok(())
 }
@@ -36,7 +36,7 @@ pub fn send_password_reset_email(
         .filter(email.eq(user_email))
         .first::<User>(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "There is no account associated with that email".into(),
+            message: "There is no account associated with that email",
         })?;
 
     let password_reset = create_password_reset_query(user.email, pool)?;
@@ -60,7 +60,7 @@ fn create_password_reset_query(
         .values(&new_password_reset)
         .get_result(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "Error inserting new password reset request, try again".into(),
+            message: "Error inserting new password reset request, try again",
         })?;
 
     Ok(inserted_password_reset)
@@ -76,14 +76,14 @@ fn get_password_reset_query(
 
     let password_reset_id =
         uuid::Uuid::try_parse(&password_reset_id).map_err(|_uuid_error| DefaultError {
-            message: "Invalid password reset id".into(),
+            message: "Invalid password reset id",
         })?;
 
     let password_reset = password_resets
         .find(password_reset_id)
         .first(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "Invalid password reset invitation".into(),
+            message: "Invalid password reset invitation",
         })?;
 
     Ok(password_reset)
@@ -104,14 +104,14 @@ fn reset_user_password_query(
         .filter(email.eq(password_reset.email))
         .first::<User>(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "There is no account associated with that email".into(),
+            message: "There is no account associated with that email",
         })?;
 
     diesel::update(users.find(user.id))
         .set(hash.eq(password))
         .execute(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "Error updating user password".into(),
+            message: "Error updating user password",
         })?;
 
     Ok(())

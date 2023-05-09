@@ -5,7 +5,8 @@ use crate::{
 use sendgrid::v3::{Content, Email, Message, Personalization, Sender};
 
 pub fn send_invitation(invitation: &Invitation) -> Result<(), DefaultError> {
-    let app_url: String = std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:3000".into());
+    let app_url: String =
+        std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:3000".into());
 
     let sg_email_content = format!(
         "Please click on the link below to complete registration. <br/>
@@ -32,7 +33,8 @@ pub fn send_invitation(invitation: &Invitation) -> Result<(), DefaultError> {
 }
 
 pub fn send_password_reset(password_reset: &PasswordReset) -> Result<(), DefaultError> {
-    let app_url: String = std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:3000".into());
+    let app_url: String =
+        std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:3000".into());
 
     let sg_email_content = format!(
         "Please click on the link below to reset your password. <br/>
@@ -65,9 +67,7 @@ fn send_email(sg_email: Message) -> Result<(), DefaultError> {
     let sg_sender = Sender::new(sg_api_key);
     let sg_response = sg_sender.send(&sg_email);
     match sg_response {
-        Ok(_) => {
-            Ok(())
-        }
+        Ok(_) => Ok(()),
         Err(_e) => Err(DefaultError {
             message: "Error sending email.",
         }),

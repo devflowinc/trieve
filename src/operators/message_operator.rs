@@ -27,7 +27,7 @@ pub fn get_topic_messages(
         .order(sort_order.asc())
         .load::<Message>(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "Error getting topic messages".into(),
+            message: "Error getting topic messages",
         })?;
 
     Ok(topic_messages)
@@ -65,7 +65,7 @@ pub fn create_message_query(
         .values(&new_message)
         .execute(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "Error creating message, try again".into(),
+            message: "Error creating message, try again",
         })?;
 
     Ok(())
@@ -114,7 +114,7 @@ pub fn create_topic_message_query(
     let mut new_message_copy = new_message.clone();
     let mut previous_messages_len = previous_messages.len();
 
-    if previous_messages.len() == 0 {
+    if previous_messages.is_empty() {
         let starter_messages =
             create_generic_system_and_prompt_message(new_message.topic_id, pool)?;
         ret_messages.extend(starter_messages.clone());
@@ -144,7 +144,7 @@ pub fn get_messages_for_topic_query(
         .filter(deleted.eq(false))
         .load::<Message>(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "This topic does not exist for the authenticated user".into(),
+            message: "This topic does not exist for the authenticated user",
         })
 }
 
@@ -158,10 +158,10 @@ pub fn delete_message_query(
 
     let mut conn = pool.get().unwrap();
 
-    match get_topic_query(given_topic_id, &pool) {
+    match get_topic_query(given_topic_id, pool) {
         Ok(topic) if topic.user_id != *given_user_id => {
             return Err(DefaultError {
-                message: "Unauthorized".into(),
+                message: "Unauthorized",
             })
         }
         Ok(_topic) => {}
@@ -172,14 +172,14 @@ pub fn delete_message_query(
         .find(given_message_id)
         .first::<Message>(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "Error finding message".into(),
+            message: "Error finding message",
         })?;
 
     diesel::update(messages.filter(sort_order.ge(target_message.sort_order)))
         .set(deleted.eq(true))
         .execute(&mut conn)
         .map_err(|_| DefaultError {
-            message: "Error deleting message".into(),
+            message: "Error deleting message",
         })?;
 
     Ok(())

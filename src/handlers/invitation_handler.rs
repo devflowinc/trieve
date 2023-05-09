@@ -28,13 +28,14 @@ pub async fn post_invitation(
     if !email_regex().is_match(&email) {
         return Ok(
             HttpResponse::BadRequest().json(crate::errors::DefaultError {
-                message: "Invalid email".into(),
+                message: "Invalid email",
             }),
         );
     }
 
     let stringified_referral_tokens = to_string(&invitation_referral_tokens).unwrap();
-    let create_invitation_result = web::block(move || create_invitation(email, stringified_referral_tokens, pool)).await?;
+    let create_invitation_result =
+        web::block(move || create_invitation(email, stringified_referral_tokens, pool)).await?;
 
     match create_invitation_result {
         Ok(()) => Ok(HttpResponse::Ok().finish()),
@@ -42,7 +43,11 @@ pub async fn post_invitation(
     }
 }
 
-fn create_invitation(email: String, invitation_referral_tokens: String, pool: web::Data<Pool>) -> Result<(), DefaultError> {
+fn create_invitation(
+    email: String,
+    invitation_referral_tokens: String,
+    pool: web::Data<Pool>,
+) -> Result<(), DefaultError> {
     let invitation = create_invitation_query(email, invitation_referral_tokens, pool)?;
     send_invitation(&invitation)
 }
@@ -64,7 +69,7 @@ fn create_invitation_query(
         .values(&new_invitation)
         .get_result(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "Error inserting invitation.".into(),
+            message: "Error inserting invitation.",
         })?;
 
     Ok(inserted_invitation)

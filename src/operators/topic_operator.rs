@@ -11,7 +11,7 @@ pub fn create_topic_query(topic: Topic, pool: &web::Data<Pool>) -> Result<(), De
         .values(&topic)
         .execute(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "Error inserting new topic, try again".into(),
+            message: "Error inserting new topic, try again",
         })?;
 
     Ok(())
@@ -29,7 +29,7 @@ pub fn delete_topic_query(
         .set(deleted.eq(true))
         .execute(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "Error deleting topic, try again".into(),
+            message: "Error deleting topic, try again",
         })?;
 
     Ok(())
@@ -53,7 +53,7 @@ pub fn update_topic_query(
         ))
         .execute(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "Error updating topic, try again".into(),
+            message: "Error updating topic, try again",
         })?;
 
     Ok(())
@@ -72,7 +72,7 @@ pub fn get_topic_query(
         .filter(deleted.eq(false))
         .first::<Topic>(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "This topic does not exist".into(),
+            message: "This topic does not exist",
         })
 }
 
@@ -90,7 +90,7 @@ pub fn get_topic_for_user_query(
         .filter(user_id.eq(topic_user_id))
         .first::<Topic>(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "This topic does not exist for the authenticated user".into(),
+            message: "This topic does not exist for the authenticated user",
         })
 }
 
@@ -108,6 +108,6 @@ pub fn get_all_topics_for_user_query(
         .order(updated_at.desc())
         .load::<Topic>(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "Error getting topics for user".into(),
+            message: "Error getting topics for user",
         })
 }
