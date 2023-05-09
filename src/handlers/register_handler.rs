@@ -60,9 +60,8 @@ pub async fn register_user(
     match user {
         Ok(user) => {
             let user_clone = user.clone();
-            Arbiter::new().spawn(async move {
-                let _ = create_stripe_customer_query(user_clone.email, &db_pool_two).await;
-            });
+            let _ =
+                create_stripe_customer_query(Some(user_clone.email.as_str()), db_pool_two).await;
             Ok(HttpResponse::Ok().json(&user))
         }
         Err(e) => Ok(HttpResponse::BadRequest().json(e)),

@@ -1,7 +1,10 @@
 use std::str::FromStr;
 
 use actix_web::web;
-use stripe::{CreateCheckoutSession, CreateCustomer, CustomerId, CheckoutSessionMode, CreateCheckoutSessionLineItems, CheckoutSession };
+use stripe::{
+    CheckoutSession, CheckoutSessionMode, CreateCheckoutSession, CreateCheckoutSessionLineItems,
+    CreateCustomer, CustomerId,
+};
 
 use crate::data::models::Pool;
 use crate::diesel::prelude::*;
@@ -19,11 +22,11 @@ pub async fn create_stripe_checkout_session_query(
 
     let mut params = CreateCheckoutSession::new(&success_url);
     params.cancel_url = Some(&cancel_url);
-    params.customer = Some(CustomerId::from_str(&stripe_customer.stripe_id).map_err(|_err| {
-        DefaultError {
+    params.customer = Some(
+        CustomerId::from_str(&stripe_customer.stripe_id).map_err(|_err| DefaultError {
             message: "Error creating checkout session, Customer's stripe_id is invalid, try again",
-        }
-    })?);
+        })?,
+    );
     params.mode = Some(CheckoutSessionMode::Subscription);
     params.line_items = Some(vec![CreateCheckoutSessionLineItems {
         price: Some(plan_id),
@@ -64,8 +67,8 @@ pub fn get_stripe_customer_query(
 }
 
 pub async fn create_stripe_customer_query(
-    email: String,
-    pool: &web::Data<Pool>,
+    email: Option<&str>,
+    pool: web::Data<Pool>,
 ) -> Result<StripeCustomer, DefaultError> {
     use crate::data::schema::stripe_customers::dsl::stripe_customers;
 
@@ -73,7 +76,7 @@ pub async fn create_stripe_customer_query(
     let new_full_customer = stripe::Customer::create(
         &stripe_client,
         CreateCustomer {
-            email: Some(&email),
+            email,
             ..Default::default()
         },
     )

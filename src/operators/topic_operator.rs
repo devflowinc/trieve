@@ -53,7 +53,7 @@ pub fn update_topic_query(
         ))
         .execute(&mut conn)
         .map_err(|_db_error| DefaultError {
-            message: "Error updating topic, try again"
+            message: "Error updating topic, try again",
         })?;
 
     Ok(())

@@ -1,7 +1,7 @@
 use crate::{
     data::models,
     data::models::Pool,
-    errors::{ServiceError, DefaultError},
+    errors::{DefaultError, ServiceError},
     operators::message_operator::{
         create_message_query, create_topic_message_query, delete_message_query,
         get_messages_for_topic_query, get_topic_messages, user_owns_topic_query,
@@ -89,7 +89,8 @@ pub async fn get_all_topic_messages(
     let second_pool = pool.clone();
     let topic_id: uuid::Uuid = messages_topic_id.into_inner();
     // check if the user owns the topic
-    let user_owns_topic = web::block(move || user_owns_topic_query(user.id, topic_id, &second_pool));
+    let user_owns_topic =
+        web::block(move || user_owns_topic_query(user.id, topic_id, &second_pool));
     if let Ok(false) = user_owns_topic.await {
         return Ok(HttpResponse::Unauthorized().json("Unauthorized"));
     }
@@ -115,7 +116,7 @@ pub async fn regenerate_message_handler(
     let topic_id = data.topic_id;
     let second_pool = pool.clone();
     let third_pool = pool.clone();
-    
+
     let previous_messages_result =
         web::block(move || get_topic_messages(topic_id, &second_pool)).await?;
     let previous_messages = match previous_messages_result {

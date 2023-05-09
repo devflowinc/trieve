@@ -34,7 +34,8 @@ pub async fn post_invitation(
     }
 
     let stringified_referral_tokens = to_string(&invitation_referral_tokens).unwrap();
-    let create_invitation_result = web::block(move || create_invitation(email, stringified_referral_tokens, pool)).await?;
+    let create_invitation_result =
+        web::block(move || create_invitation(email, stringified_referral_tokens, pool)).await?;
 
     match create_invitation_result {
         Ok(()) => Ok(HttpResponse::Ok().finish()),
@@ -42,7 +43,11 @@ pub async fn post_invitation(
     }
 }
 
-fn create_invitation(email: String, invitation_referral_tokens: String, pool: web::Data<Pool>) -> Result<(), DefaultError> {
+fn create_invitation(
+    email: String,
+    invitation_referral_tokens: String,
+    pool: web::Data<Pool>,
+) -> Result<(), DefaultError> {
     let invitation = create_invitation_query(email, invitation_referral_tokens, pool)?;
     send_invitation(&invitation)
 }
