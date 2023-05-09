@@ -29,7 +29,10 @@ pub async fn main() -> std::io::Result<()> {
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
-    println!("Connecting to redis at {}, database, {}", redis_url, database_url);
+    println!(
+        "Connecting to redis at {}, database, {}",
+        redis_url, database_url
+    );
 
     // create db connection pool
     let manager = r2d2::ConnectionManager::<PgConnection>::new(database_url);
@@ -37,14 +40,13 @@ pub async fn main() -> std::io::Result<()> {
         .build(manager)
         .expect("Failed to create pool.");
 
-    let redis_store = RedisSessionStore::new(redis_url.as_str())
-        .await
-        .unwrap();
+    let redis_store = RedisSessionStore::new(redis_url.as_str()).await.unwrap();
 
     run_migrations(&mut pool.get().unwrap());
 
     let domain: String = std::env::var("DOMAIN").unwrap_or_else(|_| "localhost".to_string());
-    let allowed_origin: String = std::env::var("ALLOWED_ORIGIN").unwrap_or_else(|_| "http://localhost:3000".to_string());
+    let allowed_origin: String =
+        std::env::var("ALLOWED_ORIGIN").unwrap_or_else(|_| "http://localhost:3000".to_string());
 
     log::info!("starting HTTP server at http://localhost:8090");
 
@@ -132,8 +134,13 @@ pub async fn main() -> std::io::Result<()> {
                         web::resource("/messages/{messages_topic_id}").route(
                             web::get().to(handlers::message_handler::get_all_topic_messages),
                         ),
+                    )
+                    .service(
+                        web::resource("/stripe/{plan_id}").route(
+                            web::get().to(handlers::stripe_handler::create_stripe_checkout_session),
+                        ),
                     ),
-            )
+                )
     })
     .bind(("0.0.0.0", 8090))?
     .run()
