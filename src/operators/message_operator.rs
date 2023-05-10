@@ -1,5 +1,6 @@
 use crate::diesel::prelude::*;
-use crate::operators::topic_operator::get_topic_query;
+use crate::operators::stripe_customer_operator::get_user_plan_query;
+use crate::operators::topic_operator::{get_topic_query, get_total_messages_for_user_query};
 use crate::{
     data::models::{Message, Pool},
     errors::DefaultError,
@@ -53,11 +54,40 @@ pub fn user_owns_topic_query(
     topic.unwrap().user_id == user_given_id
 }
 
+pub fn is_allowed_to_create_message_query(
+    user_id: uuid::Uuid,
+    pool: &web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    let user_plan = get_user_plan_query(user_id, pool);
+    let mut maximum_messages_allowed = 0;
+    match user_plan {
+        Ok(plan) => {
+            if plan.plan == "silver" {
+                maximum_messages_allowed = 1000;
+            } else if plan.plan == "gold" {
+                maximum_messages_allowed = 5000;
+            }
+        }
+        Err(_error) => {
+            maximum_messages_allowed = 20;
+        }
+    }
+    let total_messages_for_user = get_total_messages_for_user_query(user_id, pool)?;
+
+    if total_messages_for_user >= maximum_messages_allowed {
+        return Err(DefaultError {
+            message: "You must be on a paid plan to create more messages",
+        });
+    };
+
+    Ok(())
+}
+
 pub fn create_message_query(
     new_message: Message,
     pool: &web::Data<Pool>,
 ) -> Result<(), DefaultError> {
-    use crate::data::schema::messages::dsl::*;
+    use crate::data::schema::messages::dsl::messages;
 
     let mut conn = pool.get().unwrap();
 

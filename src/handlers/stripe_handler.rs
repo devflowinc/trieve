@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     data::models::Pool,
     operators::stripe_customer_operator::{
-        create_stripe_checkout_session_query, create_stripe_customer_query,
+        create_stripe_checkout_session_operation, create_stripe_customer_query,
         get_stripe_customer_query,
     },
 };
@@ -31,7 +31,7 @@ pub async fn create_stripe_checkout_session(
     };
 
     let checkout_session_url =
-        create_stripe_checkout_session_query(stripe_customer, plan_id.into_inner())
+        create_stripe_checkout_session_operation(stripe_customer, plan_id.into_inner())
             .await
             .map_err(actix_web::error::ErrorInternalServerError)?;
 
