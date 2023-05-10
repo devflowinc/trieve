@@ -192,6 +192,28 @@ impl StripeCustomer {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable)]
+#[diesel(table_name = user_plans)]
+pub struct UserPlan {
+    pub id: uuid::Uuid,
+    pub user_id: uuid::Uuid,
+    pub plan: String,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl UserPlan {
+    pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(plan: S, user_id: T) -> Self {
+        UserPlan {
+            id: uuid::Uuid::new_v4(),
+            user_id: user_id.into(),
+            plan: plan.into(),
+            created_at: chrono::Local::now().naive_local(),
+            updated_at: chrono::Local::now().naive_local(),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SlimUser {
     pub id: uuid::Uuid,

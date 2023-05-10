@@ -59,6 +59,16 @@ diesel::table! {
 }
 
 diesel::table! {
+    user_plans (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        plan -> Text,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     users (id) {
         id -> Uuid,
         email -> Varchar,
@@ -70,6 +80,7 @@ diesel::table! {
 
 diesel::joinable!(messages -> topics (topic_id));
 diesel::joinable!(topics -> users (user_id));
+diesel::joinable!(user_plans -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     invitations,
@@ -77,5 +88,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     password_resets,
     stripe_customers,
     topics,
+    user_plans,
     users,
 );

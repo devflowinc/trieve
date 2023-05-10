@@ -11,7 +11,7 @@ actix-cors = { version = "0.6" }
 
 chrono = { version = "0.4.20", features = ["serde"] }
 derive_more = { version = "0.99.7" }
-diesel = { version = "2", features = ["postgres", "r2d2", "uuid", "chrono"] }
+diesel = { version = "2", features = ["postgres", "r2d2", "uuid", "chrono", "serde_json"] }
 dotenv = "0.15"
 env_logger = { version = "0.10" }
 log = "0.4"
