@@ -1,4 +1,3 @@
-use actix::Arbiter;
 use actix_web::{web, HttpResponse};
 use argon2::{self, Config};
 use diesel::prelude::*;

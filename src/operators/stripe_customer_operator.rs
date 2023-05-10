@@ -6,11 +6,11 @@ use stripe::{
     CreateCustomer, CustomerId,
 };
 
-use crate::data::models::Pool;
+use crate::data::models::{Pool, UserPlan};
 use crate::diesel::prelude::*;
 use crate::{data::models::StripeCustomer, errors::DefaultError};
 
-pub async fn create_stripe_checkout_session_query(
+pub async fn create_stripe_checkout_session_operation(
     stripe_customer: StripeCustomer,
     plan_id: String,
 ) -> Result<String, DefaultError> {
@@ -85,10 +85,8 @@ pub async fn create_stripe_customer_query(
         message: "Error creating new stripe customer, try again",
     })?;
 
-    let new_stripe_customer = StripeCustomer::from_details(
-        new_full_customer.id.to_string(),
-        new_full_customer.email,
-    );
+    let new_stripe_customer =
+        StripeCustomer::from_details(new_full_customer.id.to_string(), new_full_customer.email);
 
     let mut conn = pool.get().unwrap();
 
@@ -106,4 +104,22 @@ pub fn get_stripe_client() -> Result<stripe::Client, DefaultError> {
     let stripe_api_secret_key =
         std::env::var("STRIPE_API_SECRET_KEY").expect("STRIPE_API_SECRET_KEY must be set");
     Ok(stripe::Client::new(stripe_api_secret_key))
+}
+
+pub fn get_user_plan_query(
+    user_id: uuid::Uuid,
+    pool: &web::Data<Pool>,
+) -> Result<UserPlan, DefaultError> {
+    use crate::data::schema::user_plans::dsl::{user_id as user_id_column, user_plans};
+
+    let mut conn = pool.get().unwrap();
+
+    let user_plan = user_plans
+        .filter(user_id_column.eq(user_id))
+        .first::<UserPlan>(&mut conn)
+        .map_err(|_db_error| DefaultError {
+            message: "Error finding user plan, try again",
+        })?;
+
+    Ok(user_plan)
 }

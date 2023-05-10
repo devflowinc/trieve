@@ -111,3 +111,22 @@ pub fn get_all_topics_for_user_query(
             message: "Error getting topics for user",
         })
 }
+
+pub fn get_total_messages_for_user_query(
+    user_id: uuid::Uuid,
+    pool: &web::Data<Pool>,
+) -> Result<i64, DefaultError> {
+    use crate::data::schema::messages::dsl::{id as message_id, messages};
+    use crate::data::schema::topics::dsl::{topics, user_id as topic_user_id};
+
+    let mut conn = pool.get().unwrap();
+
+    topics
+        .filter(topic_user_id.eq(user_id))
+        .inner_join(messages)
+        .select(diesel::dsl::count(message_id))
+        .first::<i64>(&mut conn)
+        .map_err(|_db_error| DefaultError {
+            message: "Error getting total messages for user",
+        })
+}

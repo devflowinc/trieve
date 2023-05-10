@@ -4,7 +4,7 @@ use crate::{
     errors::{DefaultError, ServiceError},
     operators::message_operator::{
         create_message_query, create_topic_message_query, delete_message_query,
-        get_messages_for_topic_query, get_topic_messages, user_owns_topic_query,
+        get_messages_for_topic_query, get_topic_messages, user_owns_topic_query, is_allowed_to_create_message_query,
     },
 };
 use actix::Arbiter;
@@ -73,7 +73,7 @@ pub async fn create_message_completion_handler(
         }
     };
 
-    stream_response(previous_messages, topic_id, fourth_pool).await
+    stream_response(user.id, previous_messages, topic_id, fourth_pool).await
 }
 
 // get_all_topic_messages_handler
@@ -159,14 +159,31 @@ pub async fn regenerate_message_handler(
 
     let _ = web::block(move || delete_message_query(&user.id, message_id, topic_id, &pool)).await?;
 
-    stream_response(previous_messages_to_regenerate, topic_id, third_pool).await
+    stream_response(
+        user.id,
+        previous_messages_to_regenerate,
+        topic_id,
+        third_pool,
+    )
+    .await
 }
 
 pub async fn stream_response(
+    user_id: uuid::Uuid,
     messages: Vec<models::Message>,
     topic_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let pool_two = pool.clone();
+
+    let allowed_to_create_message = web::block(move || 
+        is_allowed_to_create_message_query(user_id, &pool_two)
+    ).await?;
+
+    if allowed_to_create_message.is_err() {
+        return Ok(HttpResponse::BadRequest().json(allowed_to_create_message.unwrap_err()));
+    }
+
     let open_ai_messages: Vec<ChatMessage> = messages
         .iter()
         .map(|message| ChatMessage::from(message.clone()))
