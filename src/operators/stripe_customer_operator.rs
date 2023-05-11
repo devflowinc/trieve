@@ -9,6 +9,7 @@ use stripe::{
 
 use crate::data::models::{Pool, UserPlan};
 use crate::diesel::prelude::*;
+use crate::handlers::invitation_handler::create_invitation;
 use crate::{data::models::StripeCustomer, errors::DefaultError};
 
 pub async fn create_stripe_checkout_session_operation(
@@ -170,7 +171,7 @@ pub fn handle_webhook_query(
         match event.type_ {
             EventType::CheckoutSessionCompleted => {
                 if let EventObject::CheckoutSession(session) = event.data.object {
-                    let stripe_customer_id = match session.customer {
+                    let stripe_customer = match session.customer {
                         Some(customer) => customer,
                         None => {
                             let err = DefaultError {
@@ -200,17 +201,15 @@ pub fn handle_webhook_query(
                         }
                     };
 
-                    // plan_price can now be used outside the if-else block
-
                     let plan_id = plan_price.id.to_string();
-                    let _created_plan = match plan_id {
+                    match plan_id {
                         id if id == gold_plan_id => create_user_plan_query(
-                            stripe_customer_id.id().to_string(),
+                            stripe_customer.id().to_string(),
                             "gold".to_owned(),
                             pool,
                         ),
                         id if id == silver_plan_id => create_user_plan_query(
-                            stripe_customer_id.id().to_string(),
+                            stripe_customer.id().to_string(),
                             "silver".to_owned(),
                             pool,
                         ),
@@ -221,19 +220,22 @@ pub fn handle_webhook_query(
                             log::error!("{}", err.message);
                             return Err(err);
                         }
-                    }
-                    .map_err(|_db_error| {
-                        log::error!("Error creating user plan, try again");
+                    }.map_err(|_db_error| {
+                        log::error!("Error creating user plan, try again {:?}", _db_error);
 
                         DefaultError {
                             message: "Error creating user plan, try again",
                         }
                     })?;
+
+                    let email = session.customer_email.unwrap();
+                    create_invitation(email, "".to_owned(), pool.to_owned())?;
                 }
             }
             EventType::CustomerCreated => {
                 if let EventObject::Customer(customer) = event.data.object {
                     log::info!("Customer created {:?}", customer);
+                    // We only care about this route if the customer has an email
                 }
             }
             _ => {
