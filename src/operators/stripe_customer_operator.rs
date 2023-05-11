@@ -1,9 +1,10 @@
+use std::borrow::Borrow;
 use std::str::FromStr;
 
 use actix_web::web;
 use stripe::{
     CheckoutSession, CheckoutSessionMode, CreateCheckoutSession, CreateCheckoutSessionLineItems,
-    CreateCustomer, CustomerId,
+    CreateCustomer, CustomerId, EventObject, EventType, Webhook,
 };
 
 use crate::data::models::{Pool, UserPlan};
@@ -107,19 +108,141 @@ pub fn get_stripe_client() -> Result<stripe::Client, DefaultError> {
 }
 
 pub fn get_user_plan_query(
-    user_id: uuid::Uuid,
+    user_email: String,
     pool: &web::Data<Pool>,
 ) -> Result<UserPlan, DefaultError> {
-    use crate::data::schema::user_plans::dsl::{user_id as user_id_column, user_plans};
+    use crate::data::schema::user_plans::dsl::{
+        stripe_customer_id as stripe_customer_id_column, user_plans,
+    };
+
+    // get the user's stripe customer id from the stripe_customers table
+    let stripe_customer_id = get_stripe_customer_query(user_email, pool)?
+        .stripe_id;
 
     let mut conn = pool.get().unwrap();
 
     let user_plan = user_plans
-        .filter(user_id_column.eq(user_id))
+        .filter(stripe_customer_id_column.eq(stripe_customer_id))
         .first::<UserPlan>(&mut conn)
         .map_err(|_db_error| DefaultError {
             message: "Error finding user plan, try again",
         })?;
 
     Ok(user_plan)
+}
+
+pub fn create_user_plan_query(
+    stripe_customer_id: String,
+    plan_name: String,
+    pool: &web::Data<Pool>,
+) -> Result<UserPlan, DefaultError> {
+    use crate::data::schema::user_plans::dsl::user_plans;
+
+    let mut conn = pool.get().unwrap();
+
+    let new_user_plan = UserPlan::from_details(stripe_customer_id, plan_name);
+
+    let inserted_user_plan = diesel::insert_into(user_plans)
+        .values(&new_user_plan)
+        .get_result(&mut conn)
+        .map_err(|_db_error| DefaultError {
+            message: "Error inserting new user plan, try again",
+        })?;
+
+    Ok(inserted_user_plan)
+}
+
+pub fn handle_webhook_query(
+    stripe_signature: &str,
+    payload: web::Bytes,
+    pool: &web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    let webhook_secret =
+        std::env::var("WEBHOOK_SIGNING_SECRET").expect("WEBHOOK_SIGNING_SECRET must be set");
+    let silver_plan_id =
+        std::env::var("STRIPE_SILVER_PLAN_ID").expect("STRIPE_SILVER_PLAN_ID must be set");
+    let gold_plan_id =
+        std::env::var("STRIPE_GOLD_PLAN_ID").expect("STRIPE_GOLD_PLAN_ID must be set");
+
+    let payload_str = std::str::from_utf8(payload.borrow()).unwrap();
+
+    if let Ok(event) = Webhook::construct_event(payload_str, stripe_signature, &webhook_secret) {
+        match event.type_ {
+            EventType::CheckoutSessionCompleted => {
+                if let EventObject::CheckoutSession(session) = event.data.object {
+                    let stripe_customer_id = match session.customer {
+                        Some(customer) => customer,
+                        None => {
+                            let err = DefaultError {
+                                message: "Stripe customer id is none",
+                            };
+                            log::error!("{}", err.message);
+                            return Err(err);
+                        }
+                    };
+
+                    if session.line_items.data.len() != 1 {
+                        let err = DefaultError {
+                            message: "Session line items length is not 1",
+                        };
+                        log::error!("{}", err.message);
+                        return Err(err);
+                    }
+
+                    let plan_price = match session.line_items.data[0].price.clone() {
+                        Some(price) => price,
+                        None => {
+                            let err = DefaultError {
+                                message: "Plan price is none",
+                            };
+                            log::error!("{}", err.message);
+                            return Err(err);
+                        }
+                    };
+
+                    // plan_price can now be used outside the if-else block
+
+                    let plan_id = plan_price.id.to_string();
+                    let _created_plan = match plan_id {
+                        id if id == gold_plan_id => create_user_plan_query(
+                            stripe_customer_id.id().to_string(),
+                            "gold".to_owned(),
+                            pool,
+                        ),
+                        id if id == silver_plan_id => create_user_plan_query(
+                            stripe_customer_id.id().to_string(),
+                            "silver".to_owned(),
+                            pool,
+                        ),
+                        _ => {
+                            let err = DefaultError {
+                                message: "Plan id is not silver or gold",
+                            };
+                            log::error!("{}", err.message);
+                            return Err(err);
+                        }
+                    }
+                    .map_err(|_db_error| {
+                        log::error!("Error creating user plan, try again");
+
+                        DefaultError {
+                            message: "Error creating user plan, try again",
+                        }
+                    })?;
+                }
+            }
+            EventType::CustomerCreated => {
+                if let EventObject::Customer(customer) = event.data.object {
+                    log::info!("Customer created {:?}", customer);
+                }
+            }
+            _ => {
+                log::error!("Unknown event encountered in webhook: {:?}", event.type_);
+            }
+        }
+    } else {
+        log::error!("Failed to construct webhook event, ensure your webhook secret is correct.");
+    }
+
+    Ok(())
 }

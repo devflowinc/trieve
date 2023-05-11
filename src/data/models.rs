@@ -196,17 +196,17 @@ impl StripeCustomer {
 #[diesel(table_name = user_plans)]
 pub struct UserPlan {
     pub id: uuid::Uuid,
-    pub user_id: uuid::Uuid,
+    pub stripe_customer_id: String,
     pub plan: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
 
 impl UserPlan {
-    pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(plan: S, user_id: T) -> Self {
+    pub fn from_details<S: Into<String>>(stripe_customer_id: S, plan: S) -> Self {
         UserPlan {
             id: uuid::Uuid::new_v4(),
-            user_id: user_id.into(),
+            stripe_customer_id: stripe_customer_id.into(),
             plan: plan.into(),
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
