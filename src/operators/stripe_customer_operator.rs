@@ -116,9 +116,8 @@ pub fn get_user_plan_query(
     };
 
     // get the user's stripe customer id from the stripe_customers table
-    let stripe_customer_id = get_stripe_customer_query(user_email.clone(), pool)?
-        .stripe_id
-        .clone();
+    let stripe_customer_id = get_stripe_customer_query(user_email, pool)?
+        .stripe_id;
 
     let mut conn = pool.get().unwrap();
 
@@ -232,20 +231,9 @@ pub fn handle_webhook_query(
                     })?;
                 }
             }
-            EventType::CheckoutSessionExpired => {
-                if let EventObject::CheckoutSession(session) = event.data.object {
-                    let customer = session.customer.unwrap();
-                    log::info!("Customer {:?} checkout expired", customer);
-                }
-            }
-            EventType::PaymentIntentSucceeded => {
-                if let EventObject::PaymentIntent(payment_intent) = event.data.object {
-                    describe_payment_intent(payment_intent);
-                }
-            }
-            EventType::PaymentIntentCreated => {
-                if let EventObject::PaymentIntent(payment_intent) = event.data.object {
-                    describe_payment_intent(payment_intent);
+            EventType::CustomerCreated => {
+                if let EventObject::Customer(customer) = event.data.object {
+                    log::info!("Customer created {:?}", customer);
                 }
             }
             _ => {
@@ -257,18 +245,4 @@ pub fn handle_webhook_query(
     }
 
     Ok(())
-}
-
-fn describe_payment_intent(payment_intent: stripe::PaymentIntent) {
-    let status = payment_intent.status;
-    let amount_received = payment_intent.amount_received;
-    let email = payment_intent.receipt_email;
-    let customer = payment_intent.customer;
-    log::info!(
-        "Customer {:?} payment, email {:?}, status {:?} {:?}",
-        customer,
-        email,
-        status,
-        amount_received
-    );
 }
