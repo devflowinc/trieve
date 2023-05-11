@@ -43,7 +43,7 @@ pub async fn post_invitation(
     }
 }
 
-fn create_invitation(
+pub fn create_invitation(
     email: String,
     invitation_referral_tokens: String,
     pool: web::Data<Pool>,
