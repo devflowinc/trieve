@@ -1,11 +1,11 @@
-use actix_web::{web, HttpResponse};
+use actix_web::{web, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     data::models::Pool,
     operators::stripe_customer_operator::{
         create_stripe_checkout_session_operation, create_stripe_customer_query,
-        get_stripe_customer_query,
+        get_stripe_customer_query, handle_webhook,
     },
 };
 
@@ -38,4 +38,13 @@ pub async fn create_stripe_checkout_session(
     Ok(HttpResponse::Ok().json(StripeCheckoutSessionResponseDTO {
         checkout_session_url,
     }))
+}
+
+pub async fn stripe_webhook(
+    req: HttpRequest,
+    payload: web::Bytes,
+) -> Result<HttpResponse, actix_web::Error> {
+    handle_webhook(req, payload).map_err(actix_web::error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().finish())
 }

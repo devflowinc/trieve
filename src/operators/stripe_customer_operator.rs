@@ -1,9 +1,10 @@
+use std::borrow::Borrow;
 use std::str::FromStr;
 
-use actix_web::web;
+use actix_web::{web, HttpRequest};
 use stripe::{
     CheckoutSession, CheckoutSessionMode, CreateCheckoutSession, CreateCheckoutSessionLineItems,
-    CreateCustomer, CustomerId,
+    CreateCustomer, CustomerId, EventObject, EventType, Webhook,
 };
 
 use crate::data::models::{Pool, UserPlan};
@@ -122,4 +123,67 @@ pub fn get_user_plan_query(
         })?;
 
     Ok(user_plan)
+}
+
+fn get_header_value<'b>(req: &'b HttpRequest, key: &'b str) -> Option<&'b str> {
+    req.headers().get(key)?.to_str().ok()
+}
+
+pub fn handle_webhook(req: HttpRequest, payload: web::Bytes) -> Result<(), DefaultError> {
+    let webhook_secret =
+        std::env::var("WEBHOOK_SIGNING_SECRET").expect("WEBHOOK_SIGNING_SECRET must be set");
+
+    let payload_str = std::str::from_utf8(payload.borrow()).unwrap();
+
+    let stripe_signature = get_header_value(&req, "Stripe-Signature").unwrap_or_default();
+
+    log::info!("secret: {}", webhook_secret);
+
+    if let Ok(event) = Webhook::construct_event(payload_str, stripe_signature, &webhook_secret) {
+        match event.type_ {
+            EventType::CheckoutSessionCompleted => {
+                if let EventObject::CheckoutSession(session) = event.data.object {
+                    let customer = session.customer.unwrap();
+                    log::info!("Customer {:?} checkout complete", customer);
+                }
+            }
+            EventType::CheckoutSessionExpired => {
+                if let EventObject::CheckoutSession(session) = event.data.object {
+                    let customer = session.customer.unwrap();
+                    log::info!("Customer {:?} checkout expired", customer);
+                }
+            }
+            EventType::PaymentIntentSucceeded => {
+                if let EventObject::PaymentIntent(payment_intent) = event.data.object {
+                    describe_payment_intent(payment_intent);
+                }
+            }
+            EventType::PaymentIntentCreated => {
+                if let EventObject::PaymentIntent(payment_intent) = event.data.object {
+                    describe_payment_intent(payment_intent);
+                }
+            }
+            _ => {
+                log::error!("Unknown event encountered in webhook: {:?}", event.type_);
+            }
+        }
+    } else {
+        log::error!("Failed to construct webhook event, ensure your webhook secret is correct.");
+    }
+
+    Ok(())
+}
+
+fn describe_payment_intent(payment_intent: stripe::PaymentIntent) {
+    let status = payment_intent.status;
+    let amount_received = payment_intent.amount_received;
+    let email = payment_intent.receipt_email;
+    let customer = payment_intent.customer;
+    log::info!(
+        "Customer {:?} payment, email {:?}, status {:?} {:?}",
+        customer,
+        email,
+        status,
+        amount_received
+    );
 }

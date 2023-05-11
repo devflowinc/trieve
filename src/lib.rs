@@ -135,9 +135,21 @@ pub async fn main() -> std::io::Result<()> {
                             web::get().to(handlers::message_handler::get_all_topic_messages),
                         ),
                     )
-                    .service(web::resource("/stripe/{plan_id}").route(
-                        web::get().to(handlers::stripe_handler::create_stripe_checkout_session),
-                    )),
+                    .service(
+                        web::scope("/stripe")
+                            .service(
+                                web::resource("/webhook").route(
+                                    web::post().to(handlers::stripe_handler::stripe_webhook),
+                                ),
+                            )
+                            .service(
+                                web::resource("/stripe/{plan_id}").route(
+                                    web::get().to(
+                                        handlers::stripe_handler::create_stripe_checkout_session,
+                                    ),
+                                ),
+                            ),
+                    ),
             )
     })
     .bind(("0.0.0.0", 8090))?
