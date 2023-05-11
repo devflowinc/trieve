@@ -5,7 +5,7 @@ use crate::{
     data::models::Pool,
     operators::stripe_customer_operator::{
         create_stripe_checkout_session_operation, create_stripe_customer_query,
-        get_stripe_customer_query, handle_webhook,
+        get_stripe_customer_query, handle_webhook_query,
     },
 };
 
@@ -43,8 +43,24 @@ pub async fn create_stripe_checkout_session(
 pub async fn stripe_webhook(
     req: HttpRequest,
     payload: web::Bytes,
+    pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    handle_webhook(req, payload).map_err(actix_web::error::ErrorInternalServerError)?;
+    let stripe_signature = intermediary_header(req);
+
+    let _ = web::block(move || handle_webhook_query(&stripe_signature, payload, &pool))
+        .await
+        .map_err(actix_web::error::ErrorInternalServerError)?;
 
     Ok(HttpResponse::Ok().finish())
+}
+
+// TODO: remove this hack to get around some static lifetime issues
+fn intermediary_header(req: HttpRequest) -> String {
+    let stripe_signature = get_header_value(&req, "Stripe-Signature").unwrap_or_default();
+
+    stripe_signature.to_string()
+}
+
+fn get_header_value<'b>(req: &'b HttpRequest, key: &'b str) -> Option<&'b str> {
+    req.headers().get(key)?.to_str().ok()
 }

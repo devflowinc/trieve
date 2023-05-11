@@ -56,9 +56,10 @@ pub fn user_owns_topic_query(
 
 pub fn is_allowed_to_create_message_query(
     user_id: uuid::Uuid,
+    user_email: String,
     pool: &web::Data<Pool>,
 ) -> Result<(), DefaultError> {
-    let user_plan = get_user_plan_query(user_id, pool);
+    let user_plan = get_user_plan_query(user_email, pool);
     let mut maximum_messages_allowed = 0;
     match user_plan {
         Ok(plan) => {
