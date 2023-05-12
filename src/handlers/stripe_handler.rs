@@ -45,7 +45,10 @@ pub async fn stripe_webhook(
     payload: web::Bytes,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let stripe_signature = intermediary_header(req);
+    let stripe_signature = match get_header_value(&req, "Stripe-Signature") {
+        None => return Ok(HttpResponse::BadRequest().finish()),
+        Some(stripe_signature) => stripe_signature,
+    };
 
     let _ = web::block(move || handle_webhook_query(&stripe_signature, payload, &pool))
         .await
@@ -54,13 +57,11 @@ pub async fn stripe_webhook(
     Ok(HttpResponse::Ok().finish())
 }
 
-// TODO: remove this hack to get around some static lifetime issues
-fn intermediary_header(req: HttpRequest) -> String {
-    let stripe_signature = get_header_value(&req, "Stripe-Signature").unwrap_or_default();
+fn get_header_value<'b>(req: &'b HttpRequest, key: &'b str) -> Option<String> {
+    let header_val = req.headers().get(key)?.to_str().ok();
 
-    stripe_signature.to_string()
-}
-
-fn get_header_value<'b>(req: &'b HttpRequest, key: &'b str) -> Option<&'b str> {
-    req.headers().get(key)?.to_str().ok()
+    match header_val {
+        Some(val) => Some(val.to_string()),
+        None => None,
+    }
 }
