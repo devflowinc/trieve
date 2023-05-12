@@ -25,10 +25,8 @@ pub async fn create_stripe_checkout_session_operation(
 
     let mut params = CreateCheckoutSession::new(&success_url);
     params.cancel_url = Some(&cancel_url);
-    params.customer = stripe_customer.map(|customer| {
-            CustomerId::from_str(&customer.stripe_id).unwrap()
-        }
-    );
+    params.customer =
+        stripe_customer.map(|customer| CustomerId::from_str(&customer.stripe_id).unwrap());
     params.mode = Some(CheckoutSessionMode::Subscription);
     params.line_items = Some(vec![CreateCheckoutSessionLineItems {
         price: Some(plan_id),
@@ -117,8 +115,7 @@ pub fn get_user_plan_query(
     };
 
     // get the user's stripe customer id from the stripe_customers table
-    let stripe_customer_id = get_stripe_customer_query(user_email, pool)?
-        .stripe_id;
+    let stripe_customer_id = get_stripe_customer_query(user_email, pool)?.stripe_id;
 
     let mut conn = pool.get().unwrap();
 
@@ -220,7 +217,8 @@ pub fn handle_webhook_query(
                             log::error!("{}", err.message);
                             return Err(err);
                         }
-                    }.map_err(|_db_error| {
+                    }
+                    .map_err(|_db_error| {
                         log::error!("Error creating user plan, try again {:?}", _db_error);
 
                         DefaultError {

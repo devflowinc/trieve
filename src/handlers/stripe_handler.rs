@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     data::models::Pool,
     operators::stripe_customer_operator::{
-        create_stripe_checkout_session_operation, create_stripe_customer_query,
+        create_stripe_checkout_session_operation,
         get_stripe_customer_query, handle_webhook_query,
     },
 };
@@ -22,16 +22,14 @@ pub async fn create_stripe_checkout_session(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let stripe_customer = match user {
-        Some(user) => web::block(move || get_stripe_customer_query(user.email, &pool))
+        Some(user) => Some(web::block(move || get_stripe_customer_query(user.email, &pool))
             .await?
-            .map_err(actix_web::error::ErrorInternalServerError)?,
-        None => create_stripe_customer_query(None, pool)
-            .await
-            .map_err(actix_web::error::ErrorInternalServerError)?,
+            .map_err(actix_web::error::ErrorInternalServerError)?),
+        None => None
     };
 
     let checkout_session_url =
-        create_stripe_checkout_session_operation(Some(stripe_customer), plan_id.into_inner())
+        create_stripe_checkout_session_operation(stripe_customer, plan_id.into_inner())
             .await
             .map_err(actix_web::error::ErrorInternalServerError)?;
 
