@@ -21,7 +21,12 @@ pub async fn create_stripe_checkout_session(
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let stripe_customer = match user {
+    let app_url: String =
+        std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:3000".into());
+    let user_one = user.clone();
+    let user_two = user.clone();
+
+    let stripe_customer = match user_one {
         Some(user) => web::block(move || get_stripe_customer_query(user.email, &pool))
             .await?
             .map_err(actix_web::error::ErrorInternalServerError)?,
@@ -29,11 +34,18 @@ pub async fn create_stripe_checkout_session(
             .await
             .map_err(actix_web::error::ErrorInternalServerError)?,
     };
+    let success_url = match user_two {
+        Some(_user) => format!("{}/debate", app_url),
+        None => format!("{}/payment/success", app_url),
+    };
 
-    let checkout_session_url =
-        create_stripe_checkout_session_operation(stripe_customer, plan_id.into_inner())
-            .await
-            .map_err(actix_web::error::ErrorInternalServerError)?;
+    let checkout_session_url = create_stripe_checkout_session_operation(
+        stripe_customer,
+        plan_id.into_inner(),
+        success_url,
+    )
+    .await
+    .map_err(actix_web::error::ErrorInternalServerError)?;
 
     Ok(HttpResponse::Ok().json(StripeCheckoutSessionResponseDTO {
         checkout_session_url,
