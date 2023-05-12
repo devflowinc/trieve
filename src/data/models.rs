@@ -3,6 +3,9 @@
 use diesel::{r2d2::ConnectionManager, PgConnection};
 use openai_dive::v1::resources::chat_completion::{ChatMessage, Role};
 use serde::{Deserialize, Serialize};
+use stripe::EventObject;
+
+use crate::errors::DefaultError;
 
 use super::schema::*;
 
