@@ -14,7 +14,7 @@ use crate::operators::password_reset_operator::get_user_query;
 use crate::{data::models::StripeCustomer, errors::DefaultError};
 
 pub async fn create_stripe_checkout_session_operation(
-    stripe_customer: StripeCustomer,
+    stripe_customer: Option<StripeCustomer>,
     plan_id: String,
 ) -> Result<String, DefaultError> {
     let stripe_client = get_stripe_client()?;
@@ -25,10 +25,9 @@ pub async fn create_stripe_checkout_session_operation(
 
     let mut params = CreateCheckoutSession::new(&success_url);
     params.cancel_url = Some(&cancel_url);
-    params.customer = Some(
-        CustomerId::from_str(&stripe_customer.stripe_id).map_err(|_err| DefaultError {
-            message: "Error creating checkout session, Customer's stripe_id is invalid, try again",
-        })?,
+    params.customer = stripe_customer.map(|customer| {
+            CustomerId::from_str(&customer.stripe_id).unwrap()
+        }
     );
     params.mode = Some(CheckoutSessionMode::Subscription);
     params.line_items = Some(vec![CreateCheckoutSessionLineItems {
@@ -172,7 +171,7 @@ pub fn handle_webhook_query(
         match event.type_ {
             EventType::CheckoutSessionCompleted => {
                 if let EventObject::CheckoutSession(session) = event.data.object {
-                    let stripe_customer = match session.customer {
+                    let stripe_customer = match &session.customer {
                         Some(customer) => customer,
                         None => {
                             let err = DefaultError {
@@ -182,7 +181,7 @@ pub fn handle_webhook_query(
                             return Err(err);
                         }
                     };
-
+                    log::info!("Session {:?}", &session);
                     if session.line_items.data.len() != 1 {
                         let err = DefaultError {
                             message: "Session line items length is not 1",
@@ -231,7 +230,7 @@ pub fn handle_webhook_query(
 
                     let email = session.customer_email.unwrap();
                     log::info!("Customer email {:?}", email);
-                    let arguflow_user = get_user_query(email, pool).ok();
+                    let arguflow_user = get_user_query(&email, pool).ok();
                     if arguflow_user.is_none() {
                         create_invitation(email, "".to_owned(), pool.to_owned())?;
                     }
@@ -239,16 +238,13 @@ pub fn handle_webhook_query(
             }
             EventType::CustomerCreated => {
                 if let EventObject::Customer(customer) = event.data.object {
-                    // We only care about this route if the customer has an email
                     if let Some(email) = customer.email {
                         // If they are not in our db now, send invite
                         log::info!("Customer email {:?}", email);
-                        let arguflow_user = get_user_query(email, pool).ok();
+                        let arguflow_user = get_user_query(&email, pool).ok();
                         if arguflow_user.is_none() {
                             create_invitation(email, "".to_owned(), pool.to_owned())?;
                         }
-
-                        let id = customer.id;
                     }
                 }
             }

@@ -31,7 +31,7 @@ pub async fn create_stripe_checkout_session(
     };
 
     let checkout_session_url =
-        create_stripe_checkout_session_operation(stripe_customer, plan_id.into_inner())
+        create_stripe_checkout_session_operation(Some(stripe_customer), plan_id.into_inner())
             .await
             .map_err(actix_web::error::ErrorInternalServerError)?;
 

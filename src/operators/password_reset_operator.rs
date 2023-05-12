@@ -28,7 +28,7 @@ pub fn send_password_reset_email(
     user_email: String,
     pool: &web::Data<Pool>,
 ) -> Result<(), DefaultError> {
-	let user = get_user_query(user_email.clone(), pool)?;
+	let user = get_user_query(&user_email, pool)?;
 
     let password_reset = create_password_reset_query(user.email, pool)?;
 
@@ -37,7 +37,7 @@ pub fn send_password_reset_email(
     Ok(())
 }
 
-pub fn get_user_query(user_email: String, pool: &web::Data<Pool>) -> Result<User, DefaultError> {
+pub fn get_user_query(user_email: &String, pool: &web::Data<Pool>) -> Result<User, DefaultError> {
     use crate::data::schema::users::dsl::*;
 
     let mut conn = pool.get().unwrap();
