@@ -143,7 +143,7 @@ pub async fn main() -> std::io::Result<()> {
                                 ),
                             )
                             .service(
-                                web::resource("{plan_id}").route(
+                                web::resource("/{plan_id}").route(
                                     web::get().to(
                                         handlers::stripe_handler::create_stripe_checkout_session,
                                     ),

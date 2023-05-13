@@ -2,10 +2,9 @@ use actix_web::{web, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    data::models::Pool,
+    data::models::{Pool, StripeCustomer},
     operators::stripe_customer_operator::{
-        create_stripe_checkout_session_operation, create_stripe_customer_query,
-        get_stripe_customer_query, handle_webhook_query,
+        create_stripe_checkout_session_operation, get_stripe_customer_query, handle_webhook_query,
     },
 };
 
@@ -26,13 +25,13 @@ pub async fn create_stripe_checkout_session(
     let user_one = user.clone();
     let user_two = user.clone();
 
-    let stripe_customer = match user_one {
-        Some(user) => web::block(move || get_stripe_customer_query(user.email, &pool))
-            .await?
-            .map_err(actix_web::error::ErrorInternalServerError)?,
-        None => create_stripe_customer_query(None, pool)
-            .await
-            .map_err(actix_web::error::ErrorInternalServerError)?,
+    let stripe_customer: Option<StripeCustomer> = match user_one {
+        Some(user) => Some(
+            web::block(move || get_stripe_customer_query(user.email, &pool))
+                .await?
+                .map_err(actix_web::error::ErrorInternalServerError)?,
+        ),
+        None => None,
     };
     let success_url = match user_two {
         Some(_user) => format!("{}/debate", app_url),

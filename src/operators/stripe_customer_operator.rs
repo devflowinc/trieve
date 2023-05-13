@@ -9,10 +9,12 @@ use stripe::{
 
 use crate::data::models::{Pool, UserPlan};
 use crate::diesel::prelude::*;
+use crate::handlers::invitation_handler::create_invitation;
+use crate::operators::password_reset_operator::get_user_query;
 use crate::{data::models::StripeCustomer, errors::DefaultError};
 
 pub async fn create_stripe_checkout_session_operation(
-    stripe_customer: StripeCustomer,
+    stripe_customer: Option<StripeCustomer>,
     plan_id: String,
     success_url: String,
 ) -> Result<String, DefaultError> {
@@ -23,11 +25,8 @@ pub async fn create_stripe_checkout_session_operation(
 
     let mut params = CreateCheckoutSession::new(&success_url);
     params.cancel_url = Some(&cancel_url);
-    params.customer = Some(
-        CustomerId::from_str(&stripe_customer.stripe_id).map_err(|_err| DefaultError {
-            message: "Error creating checkout session, Customer's stripe_id is invalid, try again",
-        })?,
-    );
+    params.customer =
+        stripe_customer.map(|customer| CustomerId::from_str(&customer.stripe_id).unwrap());
     params.mode = Some(CheckoutSessionMode::Subscription);
     params.line_items = Some(vec![CreateCheckoutSessionLineItems {
         price: Some(plan_id),
@@ -71,7 +70,6 @@ pub async fn create_stripe_customer_query(
     email: Option<&str>,
     pool: web::Data<Pool>,
 ) -> Result<StripeCustomer, DefaultError> {
-    use crate::data::schema::stripe_customers::dsl::stripe_customers;
 
     let stripe_client = get_stripe_client()?;
     let new_full_customer = stripe::Customer::create(
@@ -89,10 +87,18 @@ pub async fn create_stripe_customer_query(
     let new_stripe_customer =
         StripeCustomer::from_details(new_full_customer.id.to_string(), new_full_customer.email);
 
+    insert_stripe_customer_query(&new_stripe_customer, &pool)
+}
+
+pub fn insert_stripe_customer_query(
+    customer: &StripeCustomer,
+    pool: &web::Data<Pool>
+) -> Result<StripeCustomer, DefaultError> {
+    use crate::data::schema::stripe_customers::dsl::stripe_customers;
     let mut conn = pool.get().unwrap();
 
     let inserted_stripe_customer = diesel::insert_into(stripe_customers)
-        .values(&new_stripe_customer)
+        .values(customer)
         .get_result(&mut conn)
         .map_err(|_db_error| DefaultError {
             message: "Error inserting new stripe customer, try again",
@@ -116,8 +122,7 @@ pub fn get_user_plan_query(
     };
 
     // get the user's stripe customer id from the stripe_customers table
-    let stripe_customer_id = get_stripe_customer_query(user_email, pool)?
-        .stripe_id;
+    let stripe_customer_id = get_stripe_customer_query(user_email, pool)?.stripe_id;
 
     let mut conn = pool.get().unwrap();
 
@@ -145,8 +150,11 @@ pub fn create_user_plan_query(
     let inserted_user_plan = diesel::insert_into(user_plans)
         .values(&new_user_plan)
         .get_result(&mut conn)
-        .map_err(|_db_error| DefaultError {
-            message: "Error inserting new user plan, try again",
+        .map_err(|_db_error| {
+            log::error!("db_error: {:?}", _db_error);
+            DefaultError {
+                    message: "Error inserting new user plan, try again",
+                }
         })?;
 
     Ok(inserted_user_plan)
@@ -159,10 +167,6 @@ pub fn handle_webhook_query(
 ) -> Result<(), DefaultError> {
     let webhook_secret =
         std::env::var("WEBHOOK_SIGNING_SECRET").expect("WEBHOOK_SIGNING_SECRET must be set");
-    let silver_plan_id =
-        std::env::var("STRIPE_SILVER_PLAN_ID").expect("STRIPE_SILVER_PLAN_ID must be set");
-    let gold_plan_id =
-        std::env::var("STRIPE_GOLD_PLAN_ID").expect("STRIPE_GOLD_PLAN_ID must be set");
 
     let payload_str = std::str::from_utf8(payload.borrow()).unwrap();
 
@@ -170,7 +174,7 @@ pub fn handle_webhook_query(
         match event.type_ {
             EventType::CheckoutSessionCompleted => {
                 if let EventObject::CheckoutSession(session) = event.data.object {
-                    let stripe_customer_id = match session.customer {
+                    let stripe_customer = match &session.customer {
                         Some(customer) => customer,
                         None => {
                             let err = DefaultError {
@@ -180,37 +184,18 @@ pub fn handle_webhook_query(
                             return Err(err);
                         }
                     };
+                    log::info!("Session {:?}", &session);
 
-                    if session.line_items.data.len() != 1 {
-                        let err = DefaultError {
-                            message: "Session line items length is not 1",
-                        };
-                        log::error!("{}", err.message);
-                        return Err(err);
-                    }
+                    log::info!("Total {:?}", &session.amount_total);
 
-                    let plan_price = match session.line_items.data[0].price.clone() {
-                        Some(price) => price,
-                        None => {
-                            let err = DefaultError {
-                                message: "Plan price is none",
-                            };
-                            log::error!("{}", err.message);
-                            return Err(err);
-                        }
-                    };
-
-                    // plan_price can now be used outside the if-else block
-
-                    let plan_id = plan_price.id.to_string();
-                    let _created_plan = match plan_id {
-                        id if id == gold_plan_id => create_user_plan_query(
-                            stripe_customer_id.id().to_string(),
+                    let plan_price = match session.amount_total {
+                        Some(val) if val == 5000 => create_user_plan_query(
+                            stripe_customer.id().to_string(),
                             "gold".to_owned(),
                             pool,
                         ),
-                        id if id == silver_plan_id => create_user_plan_query(
-                            stripe_customer_id.id().to_string(),
+                        Some(val) if val == 1500 => create_user_plan_query(
+                            stripe_customer.id().to_string(),
                             "silver".to_owned(),
                             pool,
                         ),
@@ -221,19 +206,30 @@ pub fn handle_webhook_query(
                             log::error!("{}", err.message);
                             return Err(err);
                         }
-                    }
-                    .map_err(|_db_error| {
-                        log::error!("Error creating user plan, try again");
+                    };
 
-                        DefaultError {
-                            message: "Error creating user plan, try again",
-                        }
-                    })?;
+                    if let Err(err) = plan_price {
+                        log::error!("Plan price result {}", err.message);
+                        return Err(err);
+                    }
                 }
             }
             EventType::CustomerCreated => {
                 if let EventObject::Customer(customer) = event.data.object {
-                    log::info!("Customer created {:?}", customer);
+                    log::info!("New Customer {:?}", &customer);
+                    if let Some(email) = customer.email {
+                        // If they are not in our db now, send invite
+                        log::info!("Customer email {:?}", email);
+                        let arguflow_user = get_user_query(&email, pool).ok();
+                        if arguflow_user.is_none() {
+                            create_invitation(email.clone(), "".to_owned(), pool.to_owned())?;
+                        }
+
+                        let new_stripe_customer =
+                            StripeCustomer::from_details(customer.id.to_string(), Some(email));
+
+                        let _ = insert_stripe_customer_query(&new_stripe_customer, pool)?;
+                    }
                 }
             }
             _ => {

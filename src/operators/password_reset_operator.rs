@@ -28,6 +28,16 @@ pub fn send_password_reset_email(
     user_email: String,
     pool: &web::Data<Pool>,
 ) -> Result<(), DefaultError> {
+    let user = get_user_query(&user_email, pool)?;
+
+    let password_reset = create_password_reset_query(user.email, pool)?;
+
+    send_password_reset(&password_reset)?;
+
+    Ok(())
+}
+
+pub fn get_user_query(user_email: &String, pool: &web::Data<Pool>) -> Result<User, DefaultError> {
     use crate::data::schema::users::dsl::*;
 
     let mut conn = pool.get().unwrap();
@@ -39,11 +49,7 @@ pub fn send_password_reset_email(
             message: "There is no account associated with that email",
         })?;
 
-    let password_reset = create_password_reset_query(user.email, pool)?;
-
-    send_password_reset(&password_reset)?;
-
-    Ok(())
+    Ok(user)
 }
 
 fn create_password_reset_query(
