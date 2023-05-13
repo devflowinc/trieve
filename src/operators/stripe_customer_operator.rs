@@ -2,7 +2,6 @@ use std::borrow::Borrow;
 use std::str::FromStr;
 
 use actix_web::web;
-use futures::TryFutureExt;
 use stripe::{
     CheckoutSession, CheckoutSessionMode, CreateCheckoutSession, CreateCheckoutSessionLineItems,
     CreateCustomer, CustomerId, EventObject, EventType, Webhook,
@@ -17,12 +16,12 @@ use crate::{data::models::StripeCustomer, errors::DefaultError};
 pub async fn create_stripe_checkout_session_operation(
     stripe_customer: Option<StripeCustomer>,
     plan_id: String,
+    success_url: String,
 ) -> Result<String, DefaultError> {
     let stripe_client = get_stripe_client()?;
     let app_url: String =
         std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:3000".into());
-    let success_url = format!("{}/payment/success", app_url);
-    let cancel_url = format!("{}/payment/cancel", app_url);
+    let cancel_url = format!("{}", app_url);
 
     let mut params = CreateCheckoutSession::new(&success_url);
     params.cancel_url = Some(&cancel_url);
