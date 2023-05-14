@@ -145,6 +145,9 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(
                                         web::delete()
                                             .to(handlers::stripe_handler::cancel_subscription),
+                                    ).route(
+                                        web::put()
+                                            .to(handlers::stripe_handler::change_plan),
                                     ),
                             )
                             .service(

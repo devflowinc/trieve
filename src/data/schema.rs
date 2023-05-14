@@ -64,6 +64,7 @@ diesel::table! {
         stripe_customer_id -> Text,
         stripe_subscription_id -> Text,
         plan -> Text,
+        status -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }

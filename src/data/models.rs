@@ -199,20 +199,23 @@ pub struct UserPlan {
     pub stripe_customer_id: String,
     pub stripe_subscription_id: String,
     pub plan: String,
+    pub status: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
 
 impl UserPlan {
-    pub fn from_details<S: Into<String>>(
-        stripe_customer_id: S,
-        plan: S,
+    pub fn from_details(
+        stripe_customer_id: String,
+        plan: String,
         subscription_id: String,
+        status: Option<String>
     ) -> Self {
         UserPlan {
             id: uuid::Uuid::new_v4(),
-            stripe_customer_id: stripe_customer_id.into(),
-            plan: plan.into(),
+            stripe_customer_id,
+            plan,
+            status: status.unwrap_or("active".to_string()),
             stripe_subscription_id: subscription_id,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),

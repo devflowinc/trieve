@@ -5,7 +5,7 @@ use crate::{
     data::models::{Pool, StripeCustomer},
     operators::stripe_customer_operator::{
         cancel_stripe_subscription_operation, create_stripe_checkout_session_operation,
-        get_stripe_customer_query, get_user_plan_query, handle_webhook_query,
+        get_stripe_customer_query, get_user_plan_query, handle_webhook_query, update_plan_status_query, change_stripe_subscription_operation, update_plan_query,
     },
 };
 
@@ -56,17 +56,58 @@ pub async fn cancel_subscription(
     user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let pool_two = pool.clone();
     let plan = web::block(move || get_user_plan_query(user.email, &pool)).await?;
 
     if let Err(e) = plan {
         return Ok(HttpResponse::BadRequest().json(e));
     }
+    let plan = plan.unwrap();
 
-   match cancel_stripe_subscription_operation(plan.unwrap().stripe_subscription_id).await {
-        Ok(_) => Ok(HttpResponse::Ok().finish()),
-        Err(err) => Ok(HttpResponse::BadRequest().json(err))
-   }
+    let stripe_cancel_result = cancel_stripe_subscription_operation(&plan.stripe_subscription_id).await;
+
+    if let Err(err) = stripe_cancel_result {
+        return Ok(HttpResponse::BadRequest().json(err));
+    }
+
+    let query_result = web::block(move || update_plan_status_query(plan, "canceled", &pool_two)).await?;
+
+    match query_result {
+        Ok(_) => Ok(HttpResponse::NoContent().finish()),
+        Err(err) => Ok(HttpResponse::BadRequest().json(err)),
+    }
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ChangePlanData {
+    plan_id: String
+}
+
+pub async fn change_plan(
+    data: web::Json<ChangePlanData>,
+    user: LoggedUser,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let plan_id = data.into_inner().plan_id;
+    let pool_two = pool.clone();
+    let plan = web::block(move || get_user_plan_query(user.email, &pool)).await?;
+
+    if let Err(e) = plan {
+        return Ok(HttpResponse::BadRequest().json(e));
+    }
+    let plan = plan.unwrap();
+
+    let stripe_resposne = change_stripe_subscription_operation(&plan.stripe_subscription_id, plan_id.clone()).await;
+
+    if let Err(err) = stripe_resposne {
+        return Ok(HttpResponse::BadRequest().json(err));
+    }
+
+    let query_result = web::block(move || update_plan_query(plan, plan_id, &pool_two)).await?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
 
 pub async fn get_subscription(
     user: LoggedUser,
