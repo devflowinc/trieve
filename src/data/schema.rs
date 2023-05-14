@@ -62,6 +62,7 @@ diesel::table! {
     user_plans (id) {
         id -> Uuid,
         stripe_customer_id -> Text,
+        stripe_subscription_id -> Text,
         plan -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,

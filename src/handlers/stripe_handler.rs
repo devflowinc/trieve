@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     data::models::{Pool, StripeCustomer},
     operators::stripe_customer_operator::{
-        create_stripe_checkout_session_operation, get_stripe_customer_query, handle_webhook_query,
+        cancel_stripe_subscription_operation, create_stripe_checkout_session_operation,
+        get_stripe_customer_query, get_user_plan_query, handle_webhook_query,
     },
 };
 
@@ -51,6 +52,34 @@ pub async fn create_stripe_checkout_session(
     }))
 }
 
+pub async fn cancel_subscription(
+    user: LoggedUser,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let plan = web::block(move || get_user_plan_query(user.email, &pool)).await?;
+
+    if let Err(e) = plan {
+        return Ok(HttpResponse::BadRequest().json(e));
+    }
+
+   match cancel_stripe_subscription_operation(plan.unwrap().stripe_subscription_id).await {
+        Ok(_) => Ok(HttpResponse::Ok().finish()),
+        Err(err) => Ok(HttpResponse::BadRequest().json(err))
+   }
+}
+
+pub async fn get_subscription(
+    user: LoggedUser,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let plan = web::block(move || get_user_plan_query(user.email, &pool)).await?;
+
+    match plan {
+        Ok(plan) => Ok(HttpResponse::Ok().json(plan)),
+        Err(err) => Ok(HttpResponse::BadRequest().json(err)),
+    }
+}
+
 pub async fn stripe_webhook(
     req: HttpRequest,
     payload: web::Bytes,
@@ -71,8 +100,5 @@ pub async fn stripe_webhook(
 fn get_header_value<'b>(req: &'b HttpRequest, key: &'b str) -> Option<String> {
     let header_val = req.headers().get(key)?.to_str().ok();
 
-    match header_val {
-        Some(val) => Some(val.to_string()),
-        None => None,
-    }
+    header_val.map(|val| val.to_string())
 }

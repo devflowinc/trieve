@@ -138,6 +138,16 @@ pub async fn main() -> std::io::Result<()> {
                     .service(
                         web::scope("/stripe")
                             .service(
+                                web::resource("/plan")
+                                    .route(
+                                        web::get().to(handlers::stripe_handler::get_subscription),
+                                    )
+                                    .route(
+                                        web::delete()
+                                            .to(handlers::stripe_handler::cancel_subscription),
+                                    ),
+                            )
+                            .service(
                                 web::resource("/webhook").route(
                                     web::post().to(handlers::stripe_handler::stripe_webhook),
                                 ),
