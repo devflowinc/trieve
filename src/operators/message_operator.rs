@@ -70,14 +70,14 @@ pub fn is_allowed_to_create_message_query(
             }
         }
         Err(_error) => {
-            maximum_messages_allowed = 20;
+            maximum_messages_allowed = 2;
         }
     }
     let total_messages_for_user = get_total_messages_for_user_query(user_id, pool)?;
 
     if total_messages_for_user >= maximum_messages_allowed {
         return Err(DefaultError {
-            message: "You must be on a paid plan to create more messages",
+            message: "You must upgrade your plan to get more coaching",
         });
     };
 
