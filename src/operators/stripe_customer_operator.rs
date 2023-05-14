@@ -46,7 +46,7 @@ pub async fn create_stripe_checkout_session_operation(
     Ok(checkout_session_url)
 }
 
-pub async fn cancel_stripe_subscription_operation(subscription_id: String) -> Result<(), DefaultError> {
+pub async fn cancel_stripe_subscription_operation(subscription_id: &String) -> Result<(), DefaultError> {
     let stripe_client = get_stripe_client()?;
     let sub_id = SubscriptionId::from_str(&subscription_id).unwrap();
 
@@ -62,6 +62,24 @@ pub async fn cancel_stripe_subscription_operation(subscription_id: String) -> Re
     response.map_err(|_err| DefaultError {
         message: "Error cancelling subscription, try again",
     })?;
+
+    Ok(())
+}
+
+pub fn update_plan_status_query(
+    plan: UserPlan,
+    new_status: &str,
+    pool: &web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::user_plans::dsl::{user_plans, status};
+    
+    let mut conn = pool.get().unwrap();
+
+    diesel::update(user_plans.find(plan.id))
+        .set(status.eq(new_status))
+        .execute(&mut conn).map_err(|_err| DefaultError {
+            message: "Error updating plan status, try again",
+        })?;
 
     Ok(())
 }
