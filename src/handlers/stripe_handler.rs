@@ -5,7 +5,7 @@ use crate::{
     data::models::{Pool, StripeCustomer},
     operators::stripe_customer_operator::{
         cancel_stripe_subscription_operation, create_stripe_checkout_session_operation,
-        get_stripe_customer_query, get_user_plan_query, handle_webhook_query, update_plan_status_query, change_stripe_subscription_operation,
+        get_stripe_customer_query, get_user_plan_query, handle_webhook_query, update_plan_status_query, change_stripe_subscription_operation, update_plan_query,
     },
 };
 
@@ -89,6 +89,7 @@ pub async fn change_plan(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let plan_id = data.into_inner().plan_id;
+    let pool_two = pool.clone();
     let plan = web::block(move || get_user_plan_query(user.email, &pool)).await?;
 
     if let Err(e) = plan {
@@ -96,13 +97,13 @@ pub async fn change_plan(
     }
     let plan = plan.unwrap();
 
-    let stripe_resposne = change_stripe_subscription_operation(&plan.stripe_subscription_id, plan_id).await;
+    let stripe_resposne = change_stripe_subscription_operation(&plan.stripe_subscription_id, plan_id.clone()).await;
 
     if let Err(err) = stripe_resposne {
         return Ok(HttpResponse::BadRequest().json(err));
     }
 
-    // let query_result = web::block(move || update_plan_status_query(plan, "active", &pool)).await?;
+    let query_result = web::block(move || update_plan_query(plan, plan_id, &pool_two)).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }

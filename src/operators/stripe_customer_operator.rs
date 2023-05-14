@@ -99,6 +99,41 @@ pub async fn change_stripe_subscription_operation(subscription_id: &str, plan_id
     Ok(())
 }
 
+
+pub fn update_plan_query(
+    user_plan: UserPlan,
+    new_plan_id: String,
+    pool: &web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::user_plans::dsl::{user_plans, plan, status};
+
+    let silver_plan_id =
+        std::env::var("STRIPE_SILVER_PLAN_ID").expect("STRIPE_SILVER_PLAN_ID must be set");
+
+    let gold_plan_id =
+        std::env::var("STRIPE_GOLD_PLAN_ID").expect("STRIPE_GOLD_PLAN_ID must be set");
+
+    let new_plan = if new_plan_id == silver_plan_id {
+        "silver".to_string()
+    } else if new_plan_id == gold_plan_id {
+        "gold".to_string()
+    } else {
+        return Err(DefaultError {
+            message: "Invalid plan id",
+        });
+    };
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::update(user_plans.find(user_plan.id))
+        .set((plan.eq(new_plan), status.eq("active")))
+        .execute(&mut conn).map_err(|_err| DefaultError {
+            message: "Error updating plan status, try again",
+        })?;
+
+    Ok(())
+}
+
 pub fn update_plan_status_query(
     plan: UserPlan,
     new_status: &str,
