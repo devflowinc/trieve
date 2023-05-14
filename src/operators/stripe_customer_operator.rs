@@ -165,7 +165,7 @@ pub fn create_user_plan_query(
 
     let mut conn = pool.get().unwrap();
 
-    let new_user_plan = UserPlan::from_details(stripe_customer_id, plan_name, subscription_id);
+    let new_user_plan = UserPlan::from_details(stripe_customer_id, plan_name, subscription_id, None);
 
     let inserted_user_plan = diesel::insert_into(user_plans)
         .values(&new_user_plan)
