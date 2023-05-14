@@ -3,9 +3,6 @@
 use diesel::{r2d2::ConnectionManager, PgConnection};
 use openai_dive::v1::resources::chat_completion::{ChatMessage, Role};
 use serde::{Deserialize, Serialize};
-use stripe::EventObject;
-
-use crate::errors::DefaultError;
 
 use super::schema::*;
 
@@ -200,17 +197,23 @@ impl StripeCustomer {
 pub struct UserPlan {
     pub id: uuid::Uuid,
     pub stripe_customer_id: String,
+    pub stripe_subscription_id: String,
     pub plan: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
 
 impl UserPlan {
-    pub fn from_details<S: Into<String>>(stripe_customer_id: S, plan: S) -> Self {
+    pub fn from_details<S: Into<String>>(
+        stripe_customer_id: S,
+        plan: S,
+        subscription_id: String,
+    ) -> Self {
         UserPlan {
             id: uuid::Uuid::new_v4(),
             stripe_customer_id: stripe_customer_id.into(),
             plan: plan.into(),
+            stripe_subscription_id: subscription_id,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
         }

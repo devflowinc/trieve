@@ -4,7 +4,7 @@ use std::str::FromStr;
 use actix_web::web;
 use stripe::{
     CheckoutSession, CheckoutSessionMode, CreateCheckoutSession, CreateCheckoutSessionLineItems,
-    CreateCustomer, CustomerId, EventObject, EventType, Webhook,
+    CreateCustomer, CustomerId, EventObject, EventType, Subscription, SubscriptionId, Webhook, UpdateSubscription,
 };
 
 use crate::data::models::{Pool, UserPlan};
@@ -21,7 +21,7 @@ pub async fn create_stripe_checkout_session_operation(
     let stripe_client = get_stripe_client()?;
     let app_url: String =
         std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:3000".into());
-    let cancel_url = format!("{}", app_url);
+    let cancel_url = app_url.to_string();
 
     let mut params = CreateCheckoutSession::new(&success_url);
     params.cancel_url = Some(&cancel_url);
@@ -44,6 +44,26 @@ pub async fn create_stripe_checkout_session_operation(
     })?;
 
     Ok(checkout_session_url)
+}
+
+pub async fn cancel_stripe_subscription_operation(subscription_id: String) -> Result<(), DefaultError> {
+    let stripe_client = get_stripe_client()?;
+    let sub_id = SubscriptionId::from_str(&subscription_id).unwrap();
+
+    let mut params = UpdateSubscription::new();
+    params.cancel_at_period_end = Some(true);
+
+    let response = Subscription::update(
+        &stripe_client,
+        &sub_id,
+        params
+    ).await;
+
+    response.map_err(|_err| DefaultError {
+        message: "Error cancelling subscription, try again",
+    })?;
+
+    Ok(())
 }
 
 pub fn get_stripe_customer_query(
@@ -70,7 +90,6 @@ pub async fn create_stripe_customer_query(
     email: Option<&str>,
     pool: web::Data<Pool>,
 ) -> Result<StripeCustomer, DefaultError> {
-
     let stripe_client = get_stripe_client()?;
     let new_full_customer = stripe::Customer::create(
         &stripe_client,
@@ -92,7 +111,7 @@ pub async fn create_stripe_customer_query(
 
 pub fn insert_stripe_customer_query(
     customer: &StripeCustomer,
-    pool: &web::Data<Pool>
+    pool: &web::Data<Pool>,
 ) -> Result<StripeCustomer, DefaultError> {
     use crate::data::schema::stripe_customers::dsl::stripe_customers;
     let mut conn = pool.get().unwrap();
@@ -139,13 +158,14 @@ pub fn get_user_plan_query(
 pub fn create_user_plan_query(
     stripe_customer_id: String,
     plan_name: String,
+    subscription_id: String,
     pool: &web::Data<Pool>,
 ) -> Result<UserPlan, DefaultError> {
     use crate::data::schema::user_plans::dsl::user_plans;
 
     let mut conn = pool.get().unwrap();
 
-    let new_user_plan = UserPlan::from_details(stripe_customer_id, plan_name);
+    let new_user_plan = UserPlan::from_details(stripe_customer_id, plan_name, subscription_id);
 
     let inserted_user_plan = diesel::insert_into(user_plans)
         .values(&new_user_plan)
@@ -153,8 +173,8 @@ pub fn create_user_plan_query(
         .map_err(|_db_error| {
             log::error!("db_error: {:?}", _db_error);
             DefaultError {
-                    message: "Error inserting new user plan, try again",
-                }
+                message: "Error inserting new user plan, try again",
+            }
         })?;
 
     Ok(inserted_user_plan)
@@ -187,16 +207,18 @@ pub fn handle_webhook_query(
                     log::info!("Session {:?}", &session);
 
                     log::info!("Total {:?}", &session.amount_total);
-
+                    let subscription = &session.subscription.unwrap();
                     let plan_price = match session.amount_total {
                         Some(val) if val == 5000 => create_user_plan_query(
                             stripe_customer.id().to_string(),
                             "gold".to_owned(),
+                            subscription.id().to_string(),
                             pool,
                         ),
                         Some(val) if val == 1500 => create_user_plan_query(
                             stripe_customer.id().to_string(),
                             "silver".to_owned(),
+                            subscription.id().to_string(),
                             pool,
                         ),
                         _ => {
