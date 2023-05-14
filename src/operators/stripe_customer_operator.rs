@@ -295,13 +295,13 @@ pub fn handle_webhook_query(
                     log::info!("Total {:?}", &session.amount_total);
                     let subscription = &session.subscription.unwrap();
                     let plan_price = match session.amount_total {
-                        Some(val) if val == 5000 => create_user_plan_query(
+                        Some(val) if val == 4999 => create_user_plan_query(
                             stripe_customer.id().to_string(),
                             "gold".to_owned(),
                             subscription.id().to_string(),
                             pool,
                         ),
-                        Some(val) if val == 1500 => create_user_plan_query(
+                        Some(val) if val == 999 => create_user_plan_query(
                             stripe_customer.id().to_string(),
                             "silver".to_owned(),
                             subscription.id().to_string(),

@@ -103,7 +103,7 @@ pub async fn change_plan(
         return Ok(HttpResponse::BadRequest().json(err));
     }
 
-    let query_result = web::block(move || update_plan_query(plan, plan_id, &pool_two)).await?;
+    let _ = web::block(move || update_plan_query(plan, plan_id, &pool_two)).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
