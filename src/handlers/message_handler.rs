@@ -122,8 +122,20 @@ pub async fn regenerate_message_handler(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
+    let user_clone = user.clone();
     let second_pool = pool.clone();
     let third_pool = pool.clone();
+    let fourth_pool = pool.clone();
+
+    let allowed_to_create_message =
+        web::block(move || is_allowed_to_create_message_query(user_clone.id, user_clone.email, &fourth_pool))
+            .await?;
+
+    if allowed_to_create_message.is_err() {
+        return Ok(
+            HttpResponse::BadRequest().json("You must upgrade your plan to get more coaching")
+        );
+    }
 
     let previous_messages_result =
         web::block(move || get_topic_messages(topic_id, &second_pool)).await?;
@@ -191,7 +203,9 @@ pub async fn stream_response(
             .await?;
 
     if allowed_to_create_message.is_err() {
-        return Ok(HttpResponse::BadRequest().json(allowed_to_create_message.unwrap_err()));
+        return Ok(
+            HttpResponse::BadRequest().json("You must upgrade your plan to get more coaching")
+        );
     }
 
     let open_ai_messages: Vec<ChatMessage> = messages
