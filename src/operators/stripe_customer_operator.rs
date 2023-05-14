@@ -33,6 +33,7 @@ pub async fn create_stripe_checkout_session_operation(
         quantity: Some(1),
         ..Default::default()
     }]);
+    params.allow_promotion_codes = Some(true);
 
     let checkout_session = CheckoutSession::create(&stripe_client, params)
         .await
