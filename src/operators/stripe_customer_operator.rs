@@ -4,7 +4,7 @@ use std::str::FromStr;
 use actix_web::web;
 use stripe::{
     CheckoutSession, CheckoutSessionMode, CreateCheckoutSession, CreateCheckoutSessionLineItems,
-    CreateCustomer, CustomerId, EventObject, EventType, Subscription, SubscriptionId, Webhook, UpdateSubscription,
+    CreateCustomer, CustomerId, EventObject, EventType, Subscription, SubscriptionId, Webhook, UpdateSubscription, UpdateSubscriptionItems,
 };
 
 use crate::data::models::{Pool, UserPlan};
@@ -46,9 +46,9 @@ pub async fn create_stripe_checkout_session_operation(
     Ok(checkout_session_url)
 }
 
-pub async fn cancel_stripe_subscription_operation(subscription_id: &String) -> Result<(), DefaultError> {
+pub async fn cancel_stripe_subscription_operation(subscription_id: &str) -> Result<(), DefaultError> {
     let stripe_client = get_stripe_client()?;
-    let sub_id = SubscriptionId::from_str(&subscription_id).unwrap();
+    let sub_id = SubscriptionId::from_str(subscription_id).unwrap();
 
     let mut params = UpdateSubscription::new();
     params.cancel_at_period_end = Some(true);
@@ -61,6 +61,39 @@ pub async fn cancel_stripe_subscription_operation(subscription_id: &String) -> R
 
     response.map_err(|_err| DefaultError {
         message: "Error cancelling subscription, try again",
+    })?;
+
+    Ok(())
+}
+
+pub async fn change_stripe_subscription_operation(subscription_id: &str, plan_id: String) -> Result<(), DefaultError> {
+    let stripe_client = get_stripe_client()?;
+    let sub_id = SubscriptionId::from_str(subscription_id).unwrap();
+
+    let sub = Subscription::retrieve(&stripe_client, &sub_id, &[]).await.map_err(|_err| DefaultError {
+        message: "Error retrieving subscription, try again",
+    })?;
+    
+    let mut params = UpdateSubscription::new();
+    params.items = Some(vec![ UpdateSubscriptionItems {
+        id: Some(sub.items.data[0].id.to_string()),
+        price: Some(plan_id),
+        quantity: Some(1),
+        ..Default::default()
+    }]);
+    params.cancel_at_period_end = Some(false);
+
+    let response = Subscription::update(
+        &stripe_client,
+        &sub_id,
+        params
+    ).await;
+
+    response.map_err(|_err| {
+        log::error!("{:?}", _err);
+        DefaultError {
+            message: "Error changing subscription price, try again",
+        }
     })?;
 
     Ok(())
