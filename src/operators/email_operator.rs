@@ -21,7 +21,7 @@ pub fn send_invitation(invitation: &Invitation) -> Result<(), DefaultError> {
     );
     let sg_email_personalization = Personalization::new(Email::new(invitation.email.as_str()));
     let sg_email = Message::new(Email::new("no-reply@arguflow.com"))
-        .set_subject("You have been invited to join Arguflow Editor")
+        .set_subject("You have been invited to join Arguflow AI Debate Coach")
         .add_content(
             Content::new()
                 .set_content_type("text/html")
@@ -51,7 +51,7 @@ pub fn send_password_reset(password_reset: &PasswordReset) -> Result<(), Default
     );
     let sg_email_personalization = Personalization::new(Email::new(password_reset.email.as_str()));
     let sg_email = Message::new(Email::new("no-reply@arguflow.com"))
-        .set_subject("Reset your Arguflow Editor password")
+        .set_subject("Reset your Arguflow AI Debate Coach password")
         .add_content(
             Content::new()
                 .set_content_type("text/html")
