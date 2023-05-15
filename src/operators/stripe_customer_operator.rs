@@ -291,11 +291,9 @@ pub fn handle_webhook_query(
                             return Err(err);
                         }
                     };
-                    log::info!("Session {:?}", &session);
 
-                    log::info!("Total {:?}", &session.amount_total);
                     let subscription = &session.subscription.unwrap();
-                    let plan_price = match session.amount_total {
+                    let plan_price = match session.amount_subtotal {
                         Some(val) if val == 4999 => create_user_plan_query(
                             stripe_customer.id().to_string(),
                             "gold".to_owned(),
