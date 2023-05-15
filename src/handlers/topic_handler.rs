@@ -31,7 +31,7 @@ pub async fn create_topic(
         }));
     }
 
-    let new_topic = Topic::from_details(resolution, user.id, side);
+    let new_topic = Topic::from_details(resolution, user.id, side, None);
 
     let create_topic_result = web::block(move || create_topic_query(new_topic, &pool)).await?;
 

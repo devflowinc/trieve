@@ -95,6 +95,7 @@ pub struct Topic {
     pub deleted: bool,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub normal_chat: bool
 }
 
 impl Topic {
@@ -102,6 +103,7 @@ impl Topic {
         resolution: S,
         user_id: T,
         side: bool,
+        normal_chat: Option<bool>,
     ) -> Self {
         Topic {
             id: uuid::Uuid::new_v4(),
@@ -111,6 +113,7 @@ impl Topic {
             deleted: false,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
+            normal_chat: normal_chat.unwrap_or(false)
         }
     }
 }
