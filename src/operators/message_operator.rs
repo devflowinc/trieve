@@ -104,10 +104,15 @@ pub fn create_message_query(
 
 pub fn create_generic_system_and_prompt_message(
     messages_topic_id: uuid::Uuid,
+    normal_chat: bool,
     pool: &web::Data<Pool>,
 ) -> Result<Vec<Message>, DefaultError> {
     let topic = crate::operators::topic_operator::get_topic_query(messages_topic_id, pool)?;
-    let system_message_content = "You are Arguflow Debate Coach, a large language model trained by Arguflow to coach students on their debate capabilities.";
+    let system_message_content = if normal_chat {
+        "You are Arguflow Assistant, a large language model trained by Arguflow to talk people or and answer their questions."
+    } else {
+        "You are Arguflow Debate Coach, a large language model trained by Arguflow to coach students on their debate capabilities."
+    };
 
     let system_message = Message::from_details(
         system_message_content,
@@ -118,11 +123,14 @@ pub fn create_generic_system_and_prompt_message(
         Some(0),
     );
 
-    let user_message_content = format!(
-        "We are going to practice debating over the topic \"{}\". You will be {}. We are speaking to a judge. After my messages, you will respond exactly as follows:\n\nfeedback: {{aggressive feedback on how my argument could be improved}}\ncounterargument: {{A simulated counterargument, including evidence, that I can respond to in order to further practice my skills}}",
-        topic.resolution,
-        if topic.side { "affirming the resolution" } else { "negating the resolution" }
-    );
+    let user_message_content = if normal_chat {
+       "Hi".to_string()
+    } else{
+        format!(
+            "We are going to practice debating over the topic \"{}\". You will be {}. We are speaking to a judge. After my messages, you will respond exactly as follows:\n\nfeedback: {{aggressive feedback on how my argument could be improved}}\ncounterargument: {{A simulated counterargument, including evidence, that I can respond to in order to further practice my skills}}",
+            topic.resolution,
+            if topic.side { "affirming the resolution" } else { "negating the resolution" })
+    };
 
     let user_message = Message::from_details(
         user_message_content,
@@ -146,8 +154,10 @@ pub fn create_topic_message_query(
     let mut previous_messages_len = previous_messages.len();
 
     if previous_messages.is_empty() {
+        // Check if this is a normal chat or not
+        let normal_chat = get_topic_query(new_message.topic_id, pool)?.normal_chat;
         let starter_messages =
-            create_generic_system_and_prompt_message(new_message.topic_id, pool)?;
+            create_generic_system_and_prompt_message(new_message.topic_id, normal_chat, pool)?;
         ret_messages.extend(starter_messages.clone());
         for starter_message in starter_messages {
             create_message_query(starter_message, pool)?;
@@ -162,6 +172,7 @@ pub fn create_topic_message_query(
 
     Ok(ret_messages)
 }
+
 pub fn get_messages_for_topic_query(
     message_topic_id: uuid::Uuid,
     pool: &web::Data<Pool>,
