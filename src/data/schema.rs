@@ -74,8 +74,8 @@ diesel::table! {
 diesel::table! {
     users (id) {
         id -> Uuid,
-        email -> Varchar,
-        hash -> Varchar,
+        email -> Text,
+        hash -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
