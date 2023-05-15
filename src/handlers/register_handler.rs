@@ -19,15 +19,18 @@ pub struct SetPasswordData {
 pub static SECRET_KEY: Lazy<String> =
     Lazy::new(|| std::env::var("SECRET_KEY").unwrap_or_else(|_| "0123".repeat(16)));
 
-const SALT: &[u8] = b"supersecuresalt";
+const SALT: Lazy<String> =
+    Lazy::new(|| std::env::var("SALT").unwrap_or_else(|_| "supersecuresalt".to_string()));
 
 pub fn hash_password(password: &str) -> Result<String, DefaultError> {
     let config = Config {
         secret: SECRET_KEY.as_bytes(),
         ..Default::default()
     };
-    argon2::hash_encoded(password.as_bytes(), SALT, &config).map_err(|_err| DefaultError {
-        message: "Error processing password, try again",
+    argon2::hash_encoded(password.as_bytes(), SALT.as_bytes(), &config).map_err(|_err| {
+        DefaultError {
+            message: "Error processing password, try again",
+        }
     })
 }
 
