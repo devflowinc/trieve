@@ -1,6 +1,6 @@
 # AI Editor
 
-The back end of Arguflow AI is written in ['actix-web'](https://actix.rs), a ['Rust'](https://www.rust-lang.org) language framework. 
+The back end of Arguflow AI is written in [actix-web](https://actix.rs), a [Rust](https://www.rust-lang.org) language framework. 
 
 ## How to contribute
 
@@ -16,7 +16,7 @@ The back end of Arguflow AI is written in ['actix-web'](https://actix.rs), a ['R
 
 Create a .env file in the root directory of the project. This .env file will require the following url's and API keys.
 
-'''
+```
 DATABASE_URL=postgresql://postgres:password@localhost:5432/ai_editor
 REDIS_URL=redis://127.0.0.1:6379/
 SENDGRID_API_KEY=SG.XXXXXXXXXXXXXXXXXXxx
@@ -24,4 +24,4 @@ OPENAI_API_KEY=sk-XXXXXXXXXXXXXXXXXXxx
 DOMAIN=localhost
 ALLOWED_ORIGIN=http://localhost:3000
 STRIPE_API_SECRET_KEY=sk_test_XXXXXXXXXXXXXXXXXXxx
-'''
+```
