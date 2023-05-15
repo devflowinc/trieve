@@ -55,6 +55,7 @@ diesel::table! {
         deleted -> Bool,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        normal_chat -> Bool,
     }
 }
 
