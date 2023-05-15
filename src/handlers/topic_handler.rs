@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 pub struct CreateTopicData {
     pub resolution: String,
     pub side: bool,
+    pub normal_chat: Option<bool>,
 }
 
 pub async fn create_topic(
@@ -24,6 +25,7 @@ pub async fn create_topic(
     let data_inner = data.into_inner();
     let resolution = data_inner.resolution;
     let side = data_inner.side;
+    let normal_chat = data_inner.normal_chat;
 
     if resolution.is_empty() {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
@@ -31,7 +33,7 @@ pub async fn create_topic(
         }));
     }
 
-    let new_topic = Topic::from_details(resolution, user.id, side, None);
+    let new_topic = Topic::from_details(resolution, user.id, side, normal_chat);
 
     let create_topic_result = web::block(move || create_topic_query(new_topic, &pool)).await?;
 
