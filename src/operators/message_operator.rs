@@ -109,7 +109,7 @@ pub fn create_generic_system_and_prompt_message(
 ) -> Result<Vec<Message>, DefaultError> {
     let topic = crate::operators::topic_operator::get_topic_query(messages_topic_id, pool)?;
     let system_message_content = if normal_chat {
-        "You are Arguflow Assistant, a large language model trained by Arguflow to talk people or and answer their questions."
+        "You are Arguflow Assistant, a large language model trained by Arguflow to be a helpful assistant."
     } else {
         "You are Arguflow Debate Coach, a large language model trained by Arguflow to coach students on their debate capabilities."
     };
