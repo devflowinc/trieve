@@ -4,7 +4,7 @@ use crate::{
     errors::{DefaultError, ServiceError},
     operators::message_operator::{
         create_message_query, create_topic_message_query, delete_message_query,
-        get_messages_for_topic_query, get_topic_messages, is_allowed_to_create_message_query,
+        get_messages_for_topic_query, get_topic_messages,
         user_owns_topic_query,
     },
 };
@@ -75,8 +75,6 @@ pub async fn create_message_completion_handler(
     };
 
     stream_response(
-        user.id,
-        user.email,
         previous_messages,
         topic_id,
         fourth_pool,
@@ -122,20 +120,8 @@ pub async fn regenerate_message_handler(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
-    let user_clone = user.clone();
     let second_pool = pool.clone();
     let third_pool = pool.clone();
-    let fourth_pool = pool.clone();
-
-    let allowed_to_create_message =
-        web::block(move || is_allowed_to_create_message_query(user_clone.id, user_clone.email, &fourth_pool))
-            .await?;
-
-    if allowed_to_create_message.is_err() {
-        return Ok(
-            HttpResponse::BadRequest().json("You must upgrade your plan to get more coaching")
-        );
-    }
 
     let previous_messages_result =
         web::block(move || get_topic_messages(topic_id, &second_pool)).await?;
@@ -180,8 +166,6 @@ pub async fn regenerate_message_handler(
     let _ = web::block(move || delete_message_query(&user.id, message_id, topic_id, &pool)).await?;
 
     stream_response(
-        user.id,
-        user.email,
         previous_messages_to_regenerate,
         topic_id,
         third_pool,
@@ -190,23 +174,10 @@ pub async fn regenerate_message_handler(
 }
 
 pub async fn stream_response(
-    user_id: uuid::Uuid,
-    user_email: String,
     messages: Vec<models::Message>,
     topic_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool_two = pool.clone();
-
-    let allowed_to_create_message =
-        web::block(move || is_allowed_to_create_message_query(user_id, user_email, &pool_two))
-            .await?;
-
-    if allowed_to_create_message.is_err() {
-        return Ok(
-            HttpResponse::BadRequest().json("You must upgrade your plan to get more coaching")
-        );
-    }
 
     let open_ai_messages: Vec<ChatMessage> = messages
         .iter()
