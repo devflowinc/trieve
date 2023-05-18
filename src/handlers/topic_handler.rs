@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateTopicData {
     pub resolution: String,
-    pub side: bool,
     pub normal_chat: Option<bool>,
 }
 
@@ -24,7 +23,6 @@ pub async fn create_topic(
 ) -> Result<HttpResponse, actix_web::Error> {
     let data_inner = data.into_inner();
     let resolution = data_inner.resolution;
-    let side = data_inner.side;
     let normal_chat = data_inner.normal_chat;
 
     if resolution.is_empty() {
@@ -33,7 +31,7 @@ pub async fn create_topic(
         }));
     }
 
-    let new_topic = Topic::from_details(resolution, user.id, side, normal_chat);
+    let new_topic = Topic::from_details(resolution, user.id, normal_chat);
 
     let create_topic_result = web::block(move || create_topic_query(new_topic, &pool)).await?;
 

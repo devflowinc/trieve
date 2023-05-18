@@ -202,8 +202,8 @@ pub async fn stream_response(
         n: None,
         stop: None,
         max_tokens: None,
-        presence_penalty: None,
-        frequency_penalty: None,
+        presence_penalty: Some(0.8),
+        frequency_penalty: Some(0.8),
         logit_bias: None,
     };
 
