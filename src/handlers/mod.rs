@@ -1,4 +1,5 @@
 pub mod auth_handler;
+pub mod card_handler;
 pub mod invitation_handler;
 pub mod message_handler;
 pub mod password_reset_handler;

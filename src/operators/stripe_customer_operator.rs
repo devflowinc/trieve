@@ -4,7 +4,8 @@ use std::str::FromStr;
 use actix_web::web;
 use stripe::{
     CheckoutSession, CheckoutSessionMode, CreateCheckoutSession, CreateCheckoutSessionLineItems,
-    CreateCustomer, CustomerId, EventObject, EventType, Subscription, SubscriptionId, Webhook, UpdateSubscription, UpdateSubscriptionItems,
+    CreateCustomer, CustomerId, EventObject, EventType, Subscription, SubscriptionId,
+    UpdateSubscription, UpdateSubscriptionItems, Webhook,
 };
 
 use crate::data::models::{Pool, UserPlan};
@@ -47,18 +48,16 @@ pub async fn create_stripe_checkout_session_operation(
     Ok(checkout_session_url)
 }
 
-pub async fn cancel_stripe_subscription_operation(subscription_id: &str) -> Result<(), DefaultError> {
+pub async fn cancel_stripe_subscription_operation(
+    subscription_id: &str,
+) -> Result<(), DefaultError> {
     let stripe_client = get_stripe_client()?;
     let sub_id = SubscriptionId::from_str(subscription_id).unwrap();
 
     let mut params = UpdateSubscription::new();
     params.cancel_at_period_end = Some(true);
 
-    let response = Subscription::update(
-        &stripe_client,
-        &sub_id,
-        params
-    ).await;
+    let response = Subscription::update(&stripe_client, &sub_id, params).await;
 
     response.map_err(|_err| DefaultError {
         message: "Error cancelling subscription, try again",
@@ -67,16 +66,21 @@ pub async fn cancel_stripe_subscription_operation(subscription_id: &str) -> Resu
     Ok(())
 }
 
-pub async fn change_stripe_subscription_operation(subscription_id: &str, plan_id: String) -> Result<(), DefaultError> {
+pub async fn change_stripe_subscription_operation(
+    subscription_id: &str,
+    plan_id: String,
+) -> Result<(), DefaultError> {
     let stripe_client = get_stripe_client()?;
     let sub_id = SubscriptionId::from_str(subscription_id).unwrap();
 
-    let sub = Subscription::retrieve(&stripe_client, &sub_id, &[]).await.map_err(|_err| DefaultError {
-        message: "Error retrieving subscription, try again",
-    })?;
-    
+    let sub = Subscription::retrieve(&stripe_client, &sub_id, &[])
+        .await
+        .map_err(|_err| DefaultError {
+            message: "Error retrieving subscription, try again",
+        })?;
+
     let mut params = UpdateSubscription::new();
-    params.items = Some(vec![ UpdateSubscriptionItems {
+    params.items = Some(vec![UpdateSubscriptionItems {
         id: Some(sub.items.data[0].id.to_string()),
         price: Some(plan_id),
         quantity: Some(1),
@@ -84,11 +88,7 @@ pub async fn change_stripe_subscription_operation(subscription_id: &str, plan_id
     }]);
     params.cancel_at_period_end = Some(false);
 
-    let response = Subscription::update(
-        &stripe_client,
-        &sub_id,
-        params
-    ).await;
+    let response = Subscription::update(&stripe_client, &sub_id, params).await;
 
     response.map_err(|_err| {
         log::error!("{:?}", _err);
@@ -100,13 +100,12 @@ pub async fn change_stripe_subscription_operation(subscription_id: &str, plan_id
     Ok(())
 }
 
-
 pub fn update_plan_query(
     user_plan: UserPlan,
     new_plan_id: String,
     pool: &web::Data<Pool>,
 ) -> Result<(), DefaultError> {
-    use crate::data::schema::user_plans::dsl::{user_plans, plan, status};
+    use crate::data::schema::user_plans::dsl::{plan, status, user_plans};
 
     let silver_plan_id =
         std::env::var("STRIPE_SILVER_PLAN_ID").expect("STRIPE_SILVER_PLAN_ID must be set");
@@ -128,7 +127,8 @@ pub fn update_plan_query(
 
     diesel::update(user_plans.find(user_plan.id))
         .set((plan.eq(new_plan), status.eq("active")))
-        .execute(&mut conn).map_err(|_err| DefaultError {
+        .execute(&mut conn)
+        .map_err(|_err| DefaultError {
             message: "Error updating plan status, try again",
         })?;
 
@@ -140,13 +140,14 @@ pub fn update_plan_status_query(
     new_status: &str,
     pool: &web::Data<Pool>,
 ) -> Result<(), DefaultError> {
-    use crate::data::schema::user_plans::dsl::{user_plans, status};
-    
+    use crate::data::schema::user_plans::dsl::{status, user_plans};
+
     let mut conn = pool.get().unwrap();
 
     diesel::update(user_plans.find(plan.id))
         .set(status.eq(new_status))
-        .execute(&mut conn).map_err(|_err| DefaultError {
+        .execute(&mut conn)
+        .map_err(|_err| DefaultError {
             message: "Error updating plan status, try again",
         })?;
 
@@ -252,7 +253,8 @@ pub fn create_user_plan_query(
 
     let mut conn = pool.get().unwrap();
 
-    let new_user_plan = UserPlan::from_details(stripe_customer_id, plan_name, subscription_id, None);
+    let new_user_plan =
+        UserPlan::from_details(stripe_customer_id, plan_name, subscription_id, None);
 
     let inserted_user_plan = diesel::insert_into(user_plans)
         .values(&new_user_plan)
