@@ -4,9 +4,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     data::models::{Pool, StripeCustomer},
     operators::stripe_customer_operator::{
-        cancel_stripe_subscription_operation, change_stripe_subscription_operation,
-        create_stripe_checkout_session_operation, get_stripe_customer_query, get_user_plan_query,
-        handle_webhook_query, update_plan_query, update_plan_status_query,
+        cancel_stripe_subscription_operation, create_stripe_checkout_session_operation,
+        get_stripe_customer_query, get_user_plan_query, handle_webhook_query, update_plan_status_query, change_stripe_subscription_operation, update_plan_query,
     },
 };
 
@@ -65,15 +64,13 @@ pub async fn cancel_subscription(
     }
     let plan = plan.unwrap();
 
-    let stripe_cancel_result =
-        cancel_stripe_subscription_operation(&plan.stripe_subscription_id).await;
+    let stripe_cancel_result = cancel_stripe_subscription_operation(&plan.stripe_subscription_id).await;
 
     if let Err(err) = stripe_cancel_result {
         return Ok(HttpResponse::BadRequest().json(err));
     }
 
-    let query_result =
-        web::block(move || update_plan_status_query(plan, "canceled", &pool_two)).await?;
+    let query_result = web::block(move || update_plan_status_query(plan, "canceled", &pool_two)).await?;
 
     match query_result {
         Ok(_) => Ok(HttpResponse::NoContent().finish()),
@@ -83,7 +80,7 @@ pub async fn cancel_subscription(
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ChangePlanData {
-    plan_id: String,
+    plan_id: String
 }
 
 pub async fn change_plan(
@@ -100,8 +97,7 @@ pub async fn change_plan(
     }
     let plan = plan.unwrap();
 
-    let stripe_resposne =
-        change_stripe_subscription_operation(&plan.stripe_subscription_id, plan_id.clone()).await;
+    let stripe_resposne = change_stripe_subscription_operation(&plan.stripe_subscription_id, plan_id.clone()).await;
 
     if let Err(err) = stripe_resposne {
         return Ok(HttpResponse::BadRequest().json(err));
@@ -111,6 +107,7 @@ pub async fn change_plan(
 
     Ok(HttpResponse::NoContent().finish())
 }
+
 
 pub async fn get_subscription(
     user: LoggedUser,
