@@ -102,14 +102,13 @@ impl Topic {
     pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(
         resolution: S,
         user_id: T,
-        side: bool,
         normal_chat: Option<bool>,
     ) -> Self {
         Topic {
             id: uuid::Uuid::new_v4(),
             user_id: user_id.into(),
             resolution: resolution.into(),
-            side,
+            side: false,
             deleted: false,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
