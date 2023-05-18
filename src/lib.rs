@@ -168,6 +168,10 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::post().to(handlers::card_handler::create_card)),
                     )
                     .service(
+                        web::resource("/card/search")
+                            .route(web::post().to(handlers::card_handler::search_card)),
+                    )
+                    .service(
                         web::scope("/stripe")
                             .service(
                                 web::resource("/plan")
