@@ -95,7 +95,7 @@ pub struct Topic {
     pub deleted: bool,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub normal_chat: bool
+    pub normal_chat: bool,
 }
 
 impl Topic {
@@ -113,7 +113,7 @@ impl Topic {
             deleted: false,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
-            normal_chat: normal_chat.unwrap_or(false)
+            normal_chat: normal_chat.unwrap_or(false),
         }
     }
 }
@@ -212,7 +212,7 @@ impl UserPlan {
         stripe_customer_id: String,
         plan: String,
         subscription_id: String,
-        status: Option<String>
+        status: Option<String>,
     ) -> Self {
         UserPlan {
             id: uuid::Uuid::new_v4(),

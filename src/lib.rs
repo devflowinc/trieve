@@ -7,6 +7,12 @@ use actix_session::{config::PersistentSession, storage::RedisSessionStore, Sessi
 use actix_web::{cookie::Key, middleware, web, App, HttpServer};
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+use qdrant_client::{
+    prelude::*,
+    qdrant::{VectorParams, VectorsConfig},
+};
+
+use crate::handlers::card_handler::get_qdrant_connection;
 
 mod data;
 mod errors;
@@ -28,10 +34,11 @@ pub async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let qdrant_url = std::env::var("QDRANT_URL").expect("QDRANT_URL must be set");
     let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
     println!(
-        "Connecting to redis at {}, database, {}",
-        redis_url, database_url
+        "Connecting to redis at {}, database, {} qdrant, {}",
+        redis_url, database_url, qdrant_url
     );
 
     // create db connection pool
@@ -41,6 +48,27 @@ pub async fn main() -> std::io::Result<()> {
         .expect("Failed to create pool.");
 
     let redis_store = RedisSessionStore::new(redis_url.as_str()).await.unwrap();
+
+    let qdrant_client = get_qdrant_connection().await.unwrap();
+    let _ = qdrant_client
+        .create_collection(&CreateCollection {
+            collection_name: "debate_cards".into(),
+            vectors_config: Some(VectorsConfig {
+                config: Some(qdrant_client::qdrant::vectors_config::Config::Params(
+                    VectorParams {
+                        size: 1536,
+                        distance: Distance::Cosine.into(),
+                        hnsw_config: None,
+                        quantization_config: None,
+                    },
+                )),
+            }),
+            ..Default::default()
+        })
+        .await
+        .map_err(|err| {
+            println!("Failed to create collection: {:?}", err);
+        });
 
     run_migrations(&mut pool.get().unwrap());
 
@@ -136,6 +164,10 @@ pub async fn main() -> std::io::Result<()> {
                         ),
                     )
                     .service(
+                        web::resource("/card")
+                            .route(web::post().to(handlers::card_handler::create_card)),
+                    )
+                    .service(
                         web::scope("/stripe")
                             .service(
                                 web::resource("/plan")
@@ -145,10 +177,8 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(
                                         web::delete()
                                             .to(handlers::stripe_handler::cancel_subscription),
-                                    ).route(
-                                        web::put()
-                                            .to(handlers::stripe_handler::change_plan),
-                                    ),
+                                    )
+                                    .route(web::put().to(handlers::stripe_handler::change_plan)),
                             )
                             .service(
                                 web::resource("/webhook").route(
