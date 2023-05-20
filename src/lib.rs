@@ -12,7 +12,7 @@ use qdrant_client::{
     qdrant::{VectorParams, VectorsConfig},
 };
 
-use crate::handlers::card_handler::get_qdrant_connection;
+use crate::operators::card_operator::get_qdrant_connection;
 
 mod data;
 mod errors;
@@ -165,7 +165,8 @@ pub async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::resource("/card")
-                            .route(web::post().to(handlers::card_handler::create_card)),
+                            .route(web::post().to(handlers::card_handler::create_card))
+                            .route(web::put().to(handlers::card_handler::vote))
                     )
                     .service(
                         web::resource("/card/search")
