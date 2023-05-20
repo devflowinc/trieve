@@ -25,6 +25,7 @@ pub struct CreateCardData {
     content: String,
     side: String,
     topic: String,
+    link: Option<String>,
 }
 
 pub async fn create_card(
@@ -45,6 +46,7 @@ pub async fn create_card(
             "topic": card.topic.clone(),
             "side": card.side.clone(),
             "user_id": user.id.to_string(),
+            "link": card.link,
             "created_at": chrono::Utc::now().to_rfc3339(),
         }
     )
@@ -72,6 +74,7 @@ pub struct CardDTO {
     side: String,
     topic: String,
     score: f32,
+    link: Option<String>,
 }
 
 pub async fn search_card(
@@ -96,6 +99,7 @@ pub async fn search_card(
                         "side".to_string(),
                         "topic".to_string(),
                         "user_id".to_string(),
+                        "link".to_string(),
                     ],
                 })),
             }),
@@ -120,6 +124,13 @@ pub async fn search_card(
             let side = point.payload.get("side")?;
             let topic = point.payload.get("topic")?;
             let score = point.score;
+            let link = point.payload.get("link").and_then(|link| {
+                if let Some(Kind::StringValue(s)) = &link.kind {
+                    Some(s.clone())
+                } else {
+                    None
+                }
+            });
 
             match (&content.kind, &side.kind, &topic.kind) {
                 (
@@ -132,6 +143,7 @@ pub async fn search_card(
                     side: side.clone(),
                     topic: topic.clone(),
                     score,
+                    link,
                 }),
                 (_, _, _) => None,
             }
