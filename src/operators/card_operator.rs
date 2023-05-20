@@ -1,5 +1,5 @@
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
-use qdrant_client::{prelude::{QdrantClient, QdrantClientConfig}, qdrant::{value::Kind, point_id::PointIdOptions, WithPayloadSelector, with_payload_selector::SelectorOptions, PayloadIncludeSelector, SearchPoints}};
+use qdrant_client::{prelude::{QdrantClient, QdrantClientConfig}, qdrant::{value::Kind, point_id::PointIdOptions, SearchPoints, PointId, RetrievedPoint}};
 use serde::{Serialize, Deserialize};
 
 use crate::errors::DefaultError;
@@ -55,19 +55,15 @@ pub async fn search_card_query(embedding_vector: Vec<f32>) -> Result<Vec<CardDTO
             vector: embedding_vector,
             filter: None,
             limit: 10,
-            with_payload: Some(WithPayloadSelector {
-                selector_options: Some(SelectorOptions::Include(PayloadIncludeSelector {
-                    fields: vec![
-                        "content".to_string(),
-                        "side".to_string(),
-                        "topic".to_string(),
-                        "user_id".to_string(),
-                        "link".to_string(),
-                        "upvotes".to_string(),
-                        "downvotes".to_string(),
-                    ],
-                })),
-            }),
+            with_payload: Some(vec![
+            "content",
+            "side",
+            "topic",
+            "user_id",
+            "link",
+            "upvotes",
+            "downvotes",
+            ].into()),
             with_vectors: None,
             params: None,
             score_threshold: None,
@@ -121,4 +117,27 @@ pub async fn search_card_query(embedding_vector: Vec<f32>) -> Result<Vec<CardDTO
         .collect();
 
     Ok(cards)
+}
+
+pub async fn get_card_by_id_query(card_id: uuid::Uuid) -> Result<Option<RetrievedPoint>, actix_web::Error> {
+
+    let qdrant = get_qdrant_connection()
+        .await
+        .map_err(|err| actix_web::error::ErrorBadRequest(err.message))?;
+
+    let points = [PointId::from(card_id.to_string())];
+
+    let mut points = qdrant.get_points("debate_cards", &points, Some(true), Some(vec![
+            "content",
+            "side",
+            "topic",
+            "user_id",
+            "link",
+            "upvotes",
+            "downvotes",
+        ]), None)
+        .await
+        .map_err(actix_web::error::ErrorBadRequest)?;
+
+    Ok(points.result.pop())
 }
