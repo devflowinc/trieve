@@ -12,7 +12,7 @@ use qdrant_client::{
     qdrant::{VectorParams, VectorsConfig},
 };
 
-use crate::handlers::card_handler::get_qdrant_connection;
+use crate::operators::card_operator::get_qdrant_connection;
 
 mod data;
 mod errors;
