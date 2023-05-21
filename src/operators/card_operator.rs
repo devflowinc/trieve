@@ -44,17 +44,18 @@ pub struct ScoredCardDTO {
     link: Option<String>,
 }
 
-pub async fn search_card_query(embedding_vector: Vec<f32>) -> Result<Vec<ScoredCardDTO>, actix_web::Error> {
+pub async fn search_card_query(embedding_vector: Vec<f32>, page: u64) -> Result<Vec<ScoredCardDTO>, actix_web::Error> {
     let qdrant = get_qdrant_connection()
         .await
         .map_err(|err| actix_web::error::ErrorBadRequest(err.message))?;
 
+    log::info!("Searching for cards with vector: limit {:?}", Some((page-1) * 10));
     let data = qdrant
         .search_points(&SearchPoints {
             collection_name: "debate_cards".to_string(),
             vector: embedding_vector,
-            filter: None,
-            limit: 10,
+            limit: 25,
+            offset: Some((page-1) * 25),
             with_payload: Some(vec![
             "content",
             "side",
@@ -64,10 +65,6 @@ pub async fn search_card_query(embedding_vector: Vec<f32>) -> Result<Vec<ScoredC
             "upvotes",
             "downvotes",
             ].into()),
-            with_vectors: None,
-            params: None,
-            score_threshold: None,
-            offset: None,
             ..Default::default()
         })
         .await
