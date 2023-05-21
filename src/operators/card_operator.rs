@@ -34,7 +34,7 @@ pub async fn create_openai_embedding(message: &str) -> Result<Vec<f32>, actix_we
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct CardDTO {
+pub struct ScoredCardDTO {
     id: String,
     content: String,
     side: String,
@@ -44,7 +44,7 @@ pub struct CardDTO {
     link: Option<String>,
 }
 
-pub async fn search_card_query(embedding_vector: Vec<f32>) -> Result<Vec<CardDTO>, actix_web::Error> {
+pub async fn search_card_query(embedding_vector: Vec<f32>) -> Result<Vec<ScoredCardDTO>, actix_web::Error> {
     let qdrant = get_qdrant_connection()
         .await
         .map_err(|err| actix_web::error::ErrorBadRequest(err.message))?;
@@ -73,7 +73,7 @@ pub async fn search_card_query(embedding_vector: Vec<f32>) -> Result<Vec<CardDTO
         .await
         .map_err(actix_web::error::ErrorBadRequest)?;
 
-    let cards: Vec<CardDTO> = data
+    let cards: Vec<ScoredCardDTO> = data
         .result
         .iter()
         .filter_map(|point| {
@@ -102,7 +102,7 @@ pub async fn search_card_query(embedding_vector: Vec<f32>) -> Result<Vec<CardDTO
                     Some(Kind::StringValue(topic)),
                     Some(Kind::IntegerValue(upvotes)),
                     Some(Kind::IntegerValue(downvotes)),
-                ) => Some(CardDTO {
+                ) => Some(ScoredCardDTO {
                     id,
                     content: content.clone(),
                     side: side.clone(),
@@ -119,7 +119,7 @@ pub async fn search_card_query(embedding_vector: Vec<f32>) -> Result<Vec<CardDTO
     Ok(cards)
 }
 
-pub async fn get_card_by_id_query(card_id: uuid::Uuid) -> Result<Option<RetrievedPoint>, actix_web::Error> {
+pub async fn get_point_by_id_query(card_id: uuid::Uuid) -> Result<Option<RetrievedPoint>, actix_web::Error> {
 
     let qdrant = get_qdrant_connection()
         .await
@@ -140,4 +140,48 @@ pub async fn get_card_by_id_query(card_id: uuid::Uuid) -> Result<Option<Retrieve
         .map_err(actix_web::error::ErrorBadRequest)?;
 
     Ok(points.result.pop())
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct RetrievedCardDTO {
+    pub content: String,
+    pub side: String,
+    pub topic: String,
+    pub votes: i64,
+    pub link: Option<String>,
+}
+
+pub async fn retrieved_point_to_card_dto(
+    point: RetrievedPoint,
+) -> Option<RetrievedCardDTO> {
+
+    let content = point.payload.get("content")?;
+    let side = point.payload.get("side")?;
+    let topic = point.payload.get("topic")?;
+    let upvotes = point.payload.get("upvotes")?;
+    let downvotes = point.payload.get("downvotes")?;
+    let link = point.payload.get("link").and_then(|link| {
+        if let Some(Kind::StringValue(s)) = &link.kind {
+            Some(s.clone())
+        } else {
+            None
+        }
+    });
+
+    match (&content.kind, &side.kind, &topic.kind, &upvotes.kind, &downvotes.kind) {
+        (
+            Some(Kind::StringValue(content)),
+            Some(Kind::StringValue(side)),
+            Some(Kind::StringValue(topic)),
+            Some(Kind::IntegerValue(upvotes)),
+            Some(Kind::IntegerValue(downvotes)),
+        ) => Some(RetrievedCardDTO {
+            content: content.clone(),
+            side: side.clone(),
+            topic: topic.clone(),
+            link,
+            votes: upvotes - downvotes,
+        }),
+        (_, _, _, _, _) => None
+    }
 }

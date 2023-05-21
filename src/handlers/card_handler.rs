@@ -5,7 +5,7 @@ use qdrant_client::qdrant::value::Kind;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::operators::card_operator::{get_qdrant_connection, search_card_query, get_card_by_id_query};
+use crate::operators::card_operator::{get_qdrant_connection, search_card_query, retrieved_point_to_card_dto, get_point_by_id_query};
 use crate::operators::card_operator::create_openai_embedding;
 
 use super::auth_handler::LoggedUser;
@@ -83,19 +83,19 @@ pub async fn vote(
         .await
         .map_err(|err| actix_web::error::ErrorBadRequest(err.message))?;
 
-    let card = match get_card_by_id_query(data.card_id).await? {
-        Some(card) => card,
+    let point = match get_point_by_id_query(data.card_id).await? {
+        Some(point) => point,
         None => return Ok(HttpResponse::NotFound().finish()),
     };
 
-    let upvote_value = card.payload.get("upvotes").unwrap();
-    let downvote_value= card.payload.get("downvotes").unwrap();
+    let upvote_value = point.payload.get("upvotes").unwrap();
+    let downvote_value= point.payload.get("downvotes").unwrap();
     let (upvotes, downvotes) = match (&upvote_value.kind, &downvote_value.kind) {
         (Some(Kind::IntegerValue(upvotes)), Some(Kind::IntegerValue(downvotes))) => (*upvotes, *downvotes),
         (_, _) => (0, 0)
     };
 
-    let mut payload = card.payload.clone();
+    let mut payload = point.payload.clone();
 
     if data.vote {
         payload.insert("upvotes".to_string(), (upvotes + 1).into());
@@ -104,8 +104,8 @@ pub async fn vote(
     }
 
     let point = PointStruct::new(
-        card.id.unwrap(),
-        card.vectors.unwrap(),
+        point.id.unwrap(),
+        point.vectors.unwrap(),
         Payload::new_from_hashmap(payload)
     );
 
@@ -115,4 +115,23 @@ pub async fn vote(
         .map_err(actix_web::error::ErrorBadRequest)?;
 
     Ok(HttpResponse::NoContent().finish())
+}
+
+pub async fn get_card_by_id(
+    card_id: web::Path<String>
+) -> Result<HttpResponse, actix_web::Error> {
+    log::info!("HI");
+    let id = uuid::Uuid::parse_str(&card_id.into_inner()).map_err(|_err|{
+        actix_web::error::ErrorBadRequest("Invalid UUID")
+    })?;
+    let card = match get_point_by_id_query(id).await? {
+        Some(point) => retrieved_point_to_card_dto(point).await,
+        None => return Ok(HttpResponse::BadRequest().finish()),
+    };
+
+    match card {
+        Some(card) => Ok(HttpResponse::Ok().json(card)),
+        None => Ok(HttpResponse::BadRequest().finish())
+    }
+
 }
