@@ -61,10 +61,12 @@ pub struct SearchCardData {
 
 pub async fn search_card(
     data: web::Json<SearchCardData>,
+    page: Option<web::Path<u64>>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_openai_embedding(&data.content).await?;
 
-    let cards = search_card_query(embedding_vector).await?;
+    let cards = search_card_query(embedding_vector, page).await?;
 
 
     Ok(HttpResponse::Ok().json(cards))

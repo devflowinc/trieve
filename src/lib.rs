@@ -174,7 +174,11 @@ pub async fn main() -> std::io::Result<()> {
                         ),
                     )
                     .service(
-                        web::resource("/card/search")
+                        web::resource("/card/search/")
+                            .route(web::post().to(handlers::card_handler::search_card)),
+                    )
+                    .service(
+                        web::resource("/card/search/{page}")
                             .route(web::post().to(handlers::card_handler::search_card)),
                     )
                     .service(
