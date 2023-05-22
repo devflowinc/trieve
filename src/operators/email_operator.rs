@@ -4,9 +4,7 @@ use crate::{
 };
 use sendgrid::v3::{Content, Email, Message, Personalization, Sender};
 
-pub fn send_invitation(invitation: &Invitation) -> Result<(), DefaultError> {
-    let app_url: String =
-        std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:3000".into());
+pub fn send_invitation(app_url: String, invitation: &Invitation) -> Result<(), DefaultError> {
 
     let sg_email_content = format!(
         "Please click on the link below to complete registration. <br/>
@@ -21,7 +19,7 @@ pub fn send_invitation(invitation: &Invitation) -> Result<(), DefaultError> {
     );
     let sg_email_personalization = Personalization::new(Email::new(invitation.email.as_str()));
     let sg_email = Message::new(Email::new("no-reply@arguflow.com"))
-        .set_subject("You have been invited to join Arguflow AI Debate Coach")
+        .set_subject("You have been invited to join Arguflow AI")
         .add_content(
             Content::new()
                 .set_content_type("text/html")
@@ -32,9 +30,7 @@ pub fn send_invitation(invitation: &Invitation) -> Result<(), DefaultError> {
     send_email(sg_email)
 }
 
-pub fn send_password_reset(password_reset: &PasswordReset) -> Result<(), DefaultError> {
-    let app_url: String =
-        std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:3000".into());
+pub fn send_password_reset(app_url: String, password_reset: &PasswordReset) -> Result<(), DefaultError> {
 
     let sg_email_content = format!(
         "Please click on the link below to reset your password. <br/>
@@ -51,7 +47,7 @@ pub fn send_password_reset(password_reset: &PasswordReset) -> Result<(), Default
     );
     let sg_email_personalization = Personalization::new(Email::new(password_reset.email.as_str()));
     let sg_email = Message::new(Email::new("no-reply@arguflow.com"))
-        .set_subject("Reset your Arguflow AI Debate Coach password")
+        .set_subject("Reset your Arguflow AI password")
         .add_content(
             Content::new()
                 .set_content_type("text/html")

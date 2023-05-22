@@ -2,7 +2,7 @@ use crate::data::models::Pool;
 use crate::data::validators::email_regex;
 use crate::errors::DefaultError;
 use crate::operators::password_reset_operator::{reset_user_password, send_password_reset_email};
-use actix_web::{web, HttpResponse};
+use actix_web::{web, HttpResponse, HttpRequest};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -49,6 +49,7 @@ pub async fn reset_user_password_handler(
 }
 
 pub async fn send_password_reset_email_handler(
+    request: HttpRequest,
     password_reset_email_data: web::Path<PasswordResetEmailData>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -59,8 +60,18 @@ pub async fn send_password_reset_email_handler(
         }));
     }
 
+    // get the host from the request
+    let app_url = request
+        .headers()
+        .get("Origin")
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_string();
+
+
     let send_reset_email_result =
-        web::block(move || send_password_reset_email(user_email.to_string(), &pool)).await?;
+        web::block(move || send_password_reset_email(app_url, user_email.to_string(), &pool)).await?;
 
     match send_reset_email_result {
         Ok(()) => Ok(HttpResponse::NoContent().finish()),
