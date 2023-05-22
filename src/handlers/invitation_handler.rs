@@ -1,4 +1,4 @@
-use actix_web::{web, HttpResponse};
+use actix_web::{web, HttpResponse, HttpRequest};
 use diesel::prelude::*;
 use serde::Deserialize;
 use serde_json::to_string;
@@ -19,6 +19,7 @@ pub struct InvitationData {
 }
 
 pub async fn post_invitation(
+    request: HttpRequest,
     invitation_data: web::Json<InvitationData>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -33,9 +34,18 @@ pub async fn post_invitation(
         );
     }
 
+    // get the host from the request
+    let host_name = request
+        .headers()
+        .get("Origin")
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_string();
+
     let stringified_referral_tokens = to_string(&invitation_referral_tokens).unwrap();
     let create_invitation_result =
-        web::block(move || create_invitation(email, stringified_referral_tokens, pool)).await?;
+        web::block(move || create_invitation(host_name, email, stringified_referral_tokens, pool)).await?;
 
     match create_invitation_result {
         Ok(()) => Ok(HttpResponse::Ok().finish()),
@@ -44,12 +54,13 @@ pub async fn post_invitation(
 }
 
 pub fn create_invitation(
+    app_url: String,
     email: String,
     invitation_referral_tokens: String,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     let invitation = create_invitation_query(email, invitation_referral_tokens, pool)?;
-    send_invitation(&invitation)
+    send_invitation(app_url, &invitation)
 }
 
 /// Diesel query

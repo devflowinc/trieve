@@ -25,6 +25,7 @@ pub fn reset_user_password(
 }
 
 pub fn send_password_reset_email(
+    app_url: String,
     user_email: String,
     pool: &web::Data<Pool>,
 ) -> Result<(), DefaultError> {
@@ -32,7 +33,7 @@ pub fn send_password_reset_email(
 
     let password_reset = create_password_reset_query(user.email, pool)?;
 
-    send_password_reset(&password_reset)?;
+    send_password_reset(app_url, &password_reset)?;
 
     Ok(())
 }
