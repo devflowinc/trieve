@@ -1,6 +1,9 @@
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
-use qdrant_client::{prelude::{QdrantClient, QdrantClientConfig}, qdrant::{value::Kind, point_id::PointIdOptions, SearchPoints, PointId, RetrievedPoint}};
-use serde::{Serialize, Deserialize};
+use qdrant_client::{
+    prelude::{QdrantClient, QdrantClientConfig},
+    qdrant::{point_id::PointIdOptions, value::Kind, PointId, RetrievedPoint, SearchPoints},
+};
+use serde::{Deserialize, Serialize};
 
 use crate::errors::DefaultError;
 
@@ -38,29 +41,24 @@ pub struct ScoredCardDTO {
     id: String,
     content: String,
     score: f32,
-    votes: i64,
     link: Option<String>,
 }
 
-pub async fn search_card_query(embedding_vector: Vec<f32>, page: u64) -> Result<Vec<ScoredCardDTO>, actix_web::Error> {
+pub async fn search_card_query(
+    embedding_vector: Vec<f32>,
+    page: u64,
+) -> Result<Vec<ScoredCardDTO>, actix_web::Error> {
     let qdrant = get_qdrant_connection()
         .await
         .map_err(|err| actix_web::error::ErrorBadRequest(err.message))?;
 
-    log::info!("Searching for cards with vector: limit {:?}", Some((page-1) * 10));
     let data = qdrant
         .search_points(&SearchPoints {
             collection_name: "debate_cards".to_string(),
             vector: embedding_vector,
             limit: 25,
-            offset: Some((page-1) * 25),
-            with_payload: Some(vec![
-            "content",
-            "user_id",
-            "link",
-            "upvotes",
-            "downvotes",
-            ].into()),
+            offset: Some((page - 1) * 25),
+            with_payload: Some(vec!["content", "user_id", "link"].into()),
             ..Default::default()
         })
         .await
@@ -75,8 +73,6 @@ pub async fn search_card_query(embedding_vector: Vec<f32>, page: u64) -> Result<
                 PointIdOptions::Uuid(s) => s,
             };
             let content = point.payload.get("content")?;
-            let upvotes = point.payload.get("upvotes")?;
-            let downvotes = point.payload.get("downvotes")?;
             let score = point.score;
             let link = point.payload.get("link").and_then(|link| {
                 if let Some(Kind::StringValue(s)) = &link.kind {
@@ -86,19 +82,14 @@ pub async fn search_card_query(embedding_vector: Vec<f32>, page: u64) -> Result<
                 }
             });
 
-            match (&content.kind, &upvotes.kind, &downvotes.kind) {
-                (
-                    Some(Kind::StringValue(content)),
-                    Some(Kind::IntegerValue(upvotes)),
-                    Some(Kind::IntegerValue(downvotes)),
-                ) => Some(ScoredCardDTO {
+            match &content.kind {
+                Some(Kind::StringValue(content)) => Some(ScoredCardDTO {
                     id,
                     content: content.clone(),
                     score,
                     link,
-                    votes: upvotes - downvotes,
                 }),
-                (_, _, _) => None,
+                _ => None,
             }
         })
         .collect();
@@ -106,21 +97,23 @@ pub async fn search_card_query(embedding_vector: Vec<f32>, page: u64) -> Result<
     Ok(cards)
 }
 
-pub async fn get_point_by_id_query(card_id: uuid::Uuid) -> Result<Option<RetrievedPoint>, actix_web::Error> {
-
+pub async fn get_point_by_id_query(
+    card_id: uuid::Uuid,
+) -> Result<Option<RetrievedPoint>, actix_web::Error> {
     let qdrant = get_qdrant_connection()
         .await
         .map_err(|err| actix_web::error::ErrorBadRequest(err.message))?;
 
     let points = [PointId::from(card_id.to_string())];
 
-    let mut points = qdrant.get_points("debate_cards", &points, Some(true), Some(vec![
-            "content",
-            "user_id",
-            "link",
-            "upvotes",
-            "downvotes",
-        ]), None)
+    let mut points = qdrant
+        .get_points(
+            "debate_cards",
+            &points,
+            Some(true),
+            Some(vec!["content", "user_id", "link", "upvotes", "downvotes"]),
+            None,
+        )
         .await
         .map_err(actix_web::error::ErrorBadRequest)?;
 
@@ -133,10 +126,7 @@ pub struct RetrievedCardDTO {
     pub link: Option<String>,
 }
 
-pub async fn retrieved_point_to_card_dto(
-    point: RetrievedPoint,
-) -> Option<RetrievedCardDTO> {
-
+pub async fn retrieved_point_to_card_dto(point: RetrievedPoint) -> Option<RetrievedCardDTO> {
     let content = point.payload.get("content")?;
     let link = point.payload.get("link").and_then(|link| {
         if let Some(Kind::StringValue(s)) = &link.kind {
@@ -151,6 +141,6 @@ pub async fn retrieved_point_to_card_dto(
             content: content.clone(),
             link,
         }),
-        _ => None
+        _ => None,
     }
 }
