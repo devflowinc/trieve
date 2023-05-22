@@ -5,7 +5,6 @@ use crate::{
 use sendgrid::v3::{Content, Email, Message, Personalization, Sender};
 
 pub fn send_invitation(app_url: String, invitation: &Invitation) -> Result<(), DefaultError> {
-
     let sg_email_content = format!(
         "Please click on the link below to complete registration. <br/>
          <a href=\"{}/auth/register/{}?email={}\">
@@ -30,8 +29,10 @@ pub fn send_invitation(app_url: String, invitation: &Invitation) -> Result<(), D
     send_email(sg_email)
 }
 
-pub fn send_password_reset(app_url: String, password_reset: &PasswordReset) -> Result<(), DefaultError> {
-
+pub fn send_password_reset(
+    app_url: String,
+    password_reset: &PasswordReset,
+) -> Result<(), DefaultError> {
     let sg_email_content = format!(
         "Please click on the link below to reset your password. <br/>
          <a href=\"{}/auth/password/{}?email={}\">

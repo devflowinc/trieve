@@ -331,7 +331,12 @@ pub fn handle_webhook_query(
                         log::info!("Customer email {:?}", email);
                         let arguflow_user = get_user_query(&email, pool).ok();
                         if arguflow_user.is_none() {
-                            create_invitation("https://arguflow.com".to_string(), email.clone(), "".to_owned(), pool.to_owned())?;
+                            create_invitation(
+                                "https://arguflow.com".to_string(),
+                                email.clone(),
+                                "".to_owned(),
+                                pool.to_owned(),
+                            )?;
                         }
 
                         let new_stripe_customer =

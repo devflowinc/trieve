@@ -3,8 +3,10 @@ use qdrant_client::qdrant::PointStruct;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::operators::card_operator::{get_qdrant_connection, search_card_query, retrieved_point_to_card_dto, get_point_by_id_query};
 use crate::operators::card_operator::create_openai_embedding;
+use crate::operators::card_operator::{
+    get_point_by_id_query, get_qdrant_connection, retrieved_point_to_card_dto, search_card_query,
+};
 
 use super::auth_handler::LoggedUser;
 
@@ -64,7 +66,7 @@ pub async fn search_card(
 }
 
 pub async fn get_card_by_id(
-    card_id: web::Path<uuid::Uuid>
+    card_id: web::Path<uuid::Uuid>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let card = match get_point_by_id_query(card_id.into_inner()).await? {
         Some(point) => retrieved_point_to_card_dto(point).await,
@@ -73,6 +75,6 @@ pub async fn get_card_by_id(
 
     match card {
         Some(card) => Ok(HttpResponse::Ok().json(card)),
-        None => Ok(HttpResponse::BadRequest().finish())
+        None => Ok(HttpResponse::BadRequest().finish()),
     }
 }

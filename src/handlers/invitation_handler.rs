@@ -1,4 +1,4 @@
-use actix_web::{web, HttpResponse, HttpRequest};
+use actix_web::{web, HttpRequest, HttpResponse};
 use diesel::prelude::*;
 use serde::Deserialize;
 use serde_json::to_string;
@@ -45,7 +45,8 @@ pub async fn post_invitation(
 
     let stringified_referral_tokens = to_string(&invitation_referral_tokens).unwrap();
     let create_invitation_result =
-        web::block(move || create_invitation(host_name, email, stringified_referral_tokens, pool)).await?;
+        web::block(move || create_invitation(host_name, email, stringified_referral_tokens, pool))
+            .await?;
 
     match create_invitation_result {
         Ok(()) => Ok(HttpResponse::Ok().finish()),
