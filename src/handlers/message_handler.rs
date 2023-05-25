@@ -4,7 +4,8 @@ use crate::{
     errors::{DefaultError, ServiceError},
     operators::message_operator::{
         create_message_query, create_topic_message_query, delete_message_query,
-        get_messages_for_topic_query, get_topic_messages, user_owns_topic_query,
+        get_message_by_sort_for_topic_query, get_messages_for_topic_query, get_topic_messages,
+        user_owns_topic_query,
     },
 };
 use actix::Arbiter;
@@ -63,9 +64,10 @@ pub async fn create_message_completion_handler(
     };
 
     // call create_topic_message_query with the new_message and previous_messages
-    let previous_messages_result =
-        web::block(move || create_topic_message_query(previous_messages, new_message, &third_pool))
-            .await?;
+    let previous_messages_result = web::block(move || {
+        create_topic_message_query(previous_messages, new_message, user.id, &third_pool)
+    })
+    .await?;
     let previous_messages = match previous_messages_result {
         Ok(messages) => messages,
         Err(e) => {
@@ -73,7 +75,7 @@ pub async fn create_message_completion_handler(
         }
     };
 
-    stream_response(previous_messages, topic_id, fourth_pool).await
+    stream_response(previous_messages, user.id, topic_id, fourth_pool).await
 }
 
 // get_all_topic_messages_handler
@@ -108,6 +110,49 @@ pub struct RegenerateMessageData {
     topic_id: uuid::Uuid,
 }
 
+#[derive(Deserialize, Serialize, Debug)]
+pub struct EditMessageData {
+    topic_id: uuid::Uuid,
+    message_sort_order: i32,
+    new_message_content: String,
+}
+
+pub async fn edit_message_handler(
+    data: web::Json<EditMessageData>,
+    user: LoggedUser,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let topic_id = data.topic_id;
+    let message_sort_order = data.message_sort_order;
+    let new_message_content = &data.new_message_content;
+    let second_pool = pool.clone();
+    let third_pool = pool.clone();
+
+    let message_from_sort_order_result = web::block(move || {
+        get_message_by_sort_for_topic_query(topic_id, message_sort_order, &pool)
+    })
+    .await?;
+
+    let message_id = match message_from_sort_order_result {
+        Ok(message) => message.id,
+        Err(e) => {
+            return Ok(HttpResponse::BadRequest().json(e));
+        }
+    };
+
+    let _ = web::block(move || delete_message_query(&user.id, message_id, topic_id, &second_pool)).await?;
+
+    return create_message_completion_handler(
+        actix_web::web::Json(CreateMessageData {
+            new_message_content: new_message_content.to_string(),
+            topic_id,
+        }),
+        user,
+        third_pool,
+    )
+    .await;
+}
+
 pub async fn regenerate_message_handler(
     data: web::Json<RegenerateMessageData>,
     user: LoggedUser,
@@ -130,9 +175,8 @@ pub async fn regenerate_message_handler(
         return Ok(HttpResponse::BadRequest().json(DefaultError {
             message: "Not enough messages to regenerate",
         }));
-    }
-    else if previous_messages.len() == 3 {
-        return stream_response(previous_messages, topic_id, third_pool).await;
+    } else if previous_messages.len() == 3 {
+        return stream_response(previous_messages, user.id, topic_id, third_pool).await;
     }
 
     let mut message_to_regenerate = None;
@@ -162,11 +206,18 @@ pub async fn regenerate_message_handler(
 
     let _ = web::block(move || delete_message_query(&user.id, message_id, topic_id, &pool)).await?;
 
-    stream_response(previous_messages_to_regenerate, topic_id, third_pool).await
+    stream_response(
+        previous_messages_to_regenerate,
+        user.id,
+        topic_id,
+        third_pool,
+    )
+    .await
 }
 
 pub async fn stream_response(
     messages: Vec<models::Message>,
+    user_id: uuid::Uuid,
     topic_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -214,7 +265,7 @@ pub async fn stream_response(
             Some(chunk_v.len().try_into().unwrap()),
         );
 
-        let _ = create_message_query(new_message, &pool);
+        let _ = create_message_query(new_message, user_id, &pool);
     });
 
     Ok(HttpResponse::Ok().streaming(stream.map(

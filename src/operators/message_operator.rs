@@ -86,11 +86,22 @@ pub fn is_allowed_to_create_message_query(
 
 pub fn create_message_query(
     new_message: Message,
+    given_user_id: uuid::Uuid,
     pool: &web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::messages::dsl::messages;
 
     let mut conn = pool.get().unwrap();
+
+    match get_topic_query(new_message.topic_id, pool) {
+        Ok(topic) if topic.user_id != given_user_id => {
+            return Err(DefaultError {
+                message: "Unauthorized",
+            })
+        }
+        Ok(_topic) => {}
+        Err(e) => return Err(e),
+    };
 
     diesel::insert_into(messages)
         .values(&new_message)
@@ -147,6 +158,7 @@ pub fn create_generic_system_and_prompt_message(
 pub fn create_topic_message_query(
     previous_messages: Vec<Message>,
     new_message: Message,
+    given_user_id: uuid::Uuid,
     pool: &web::Data<Pool>,
 ) -> Result<Vec<Message>, DefaultError> {
     let mut ret_messages = previous_messages.clone();
@@ -160,17 +172,36 @@ pub fn create_topic_message_query(
             create_generic_system_and_prompt_message(new_message.topic_id, normal_chat, pool)?;
         ret_messages.extend(starter_messages.clone());
         for starter_message in starter_messages {
-            create_message_query(starter_message, pool)?;
+            create_message_query(starter_message, given_user_id, pool)?;
             previous_messages_len += 1;
         }
     }
 
     new_message_copy.sort_order = (previous_messages_len + 1).try_into().unwrap();
 
-    create_message_query(new_message_copy.clone(), pool)?;
+    create_message_query(new_message_copy.clone(), given_user_id, pool)?;
     ret_messages.push(new_message_copy);
 
     Ok(ret_messages)
+}
+
+pub fn get_message_by_sort_for_topic_query(
+    message_topic_id: uuid::Uuid,
+    message_sort_order: i32,
+    pool: &web::Data<Pool>,
+) -> Result<Message, DefaultError> {
+    use crate::data::schema::messages::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    messages
+        .filter(deleted.eq(false))
+        .filter(topic_id.eq(message_topic_id))
+        .filter(sort_order.eq(message_sort_order))
+        .first::<Message>(&mut conn)
+        .map_err(|_db_error| DefaultError {
+            message: "This message does not exist for the authenticated user",
+        })
 }
 
 pub fn get_messages_for_topic_query(

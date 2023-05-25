@@ -154,6 +154,7 @@ pub async fn main() -> std::io::Result<()> {
                                     handlers::message_handler::create_message_completion_handler,
                                 ),
                             )
+                            .route(web::put().to(handlers::message_handler::edit_message_handler))
                             .route(
                                 web::delete()
                                     .to(handlers::message_handler::regenerate_message_handler),
