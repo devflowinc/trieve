@@ -184,6 +184,7 @@ pub fn get_messages_for_topic_query(
     messages
         .filter(topic_id.eq(message_topic_id))
         .filter(deleted.eq(false))
+        .order_by(sort_order.asc())
         .load::<Message>(&mut conn)
         .map_err(|_db_error| DefaultError {
             message: "This topic does not exist for the authenticated user",
@@ -217,12 +218,16 @@ pub fn delete_message_query(
             message: "Error finding message",
         })?;
 
-    diesel::update(messages.filter(sort_order.ge(target_message.sort_order)))
-        .set(deleted.eq(true))
-        .execute(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Error deleting message",
-        })?;
+    diesel::update(
+        messages
+            .filter(topic_id.eq(given_topic_id))
+            .filter(sort_order.ge(target_message.sort_order)),
+    )
+    .set(deleted.eq(true))
+    .execute(&mut conn)
+    .map_err(|_| DefaultError {
+        message: "Error deleting message",
+    })?;
 
     Ok(())
 }

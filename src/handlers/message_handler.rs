@@ -131,6 +131,9 @@ pub async fn regenerate_message_handler(
             message: "Not enough messages to regenerate",
         }));
     }
+    else if previous_messages.len() == 3 {
+        return stream_response(previous_messages, topic_id, third_pool).await;
+    }
 
     let mut message_to_regenerate = None;
     for message in previous_messages.iter().rev() {
