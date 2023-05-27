@@ -9,7 +9,7 @@ use crate::{
         validators::email_regex,
     },
     errors::DefaultError,
-    operators::email_operator::send_invitation,
+    operators::{email_operator::send_invitation, user_operator::get_user_by_email_query},
 };
 
 #[derive(Deserialize)]
@@ -71,6 +71,13 @@ fn create_invitation_query(
     pool: web::Data<Pool>,
 ) -> Result<Invitation, DefaultError> {
     use crate::data::schema::invitations::dsl::invitations;
+
+    let user_exists = get_user_by_email_query(&email, &pool).is_ok();
+    if user_exists {
+        return Err(DefaultError {
+            message: "An account with this email already exists.",
+        });
+    }
 
     let mut conn = pool.get().unwrap();
 
