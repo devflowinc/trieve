@@ -78,6 +78,8 @@ diesel::table! {
         hash -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        username -> Nullable<Text>,
+        visible_email -> Nullable<Bool>,
     }
 }
 
