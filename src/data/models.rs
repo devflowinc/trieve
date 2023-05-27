@@ -204,6 +204,8 @@ pub struct UserPlan {
     pub status: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub username: Option<String>,
+    pub visible_email: Option<bool>,
 }
 
 impl UserPlan {
@@ -221,7 +223,19 @@ impl UserPlan {
             stripe_subscription_id: subscription_id,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
+            username: None,
+            visible_email: None,
         }
+    }
+
+    pub fn with_username(mut self, username: String) -> Self {
+        self.username = Some(username);
+        self
+    }
+
+    pub fn email_visibility(mut self, visible: bool) -> Self {
+        self.visible_email = Some(visible);
+        self
     }
 }
 
