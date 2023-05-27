@@ -38,16 +38,23 @@ pub async fn create_openai_embedding(message: &str) -> Result<Vec<f32>, actix_we
 
 #[derive(Serialize, Deserialize)]
 pub struct ScoredCardDTO {
-    id: String,
-    content: String,
-    score: f32,
-    link: Option<String>,
+    pub id: String,
+    pub content: String,
+    pub score: f32,
+    pub link: Option<String>,
 }
 
 pub async fn search_card_query(
     embedding_vector: Vec<f32>,
     page: u64,
 ) -> Result<Vec<ScoredCardDTO>, actix_web::Error> {
+
+    let page = if page == 0 {
+        1
+    } else {
+        page
+    };
+
     let qdrant = get_qdrant_connection()
         .await
         .map_err(|err| actix_web::error::ErrorBadRequest(err.message))?;

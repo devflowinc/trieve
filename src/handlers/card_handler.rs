@@ -22,6 +22,24 @@ pub async fn create_card(
 ) -> Result<HttpResponse, actix_web::Error> {
     let embedding_vector = create_openai_embedding(&card.content).await?;
 
+    let cards = search_card_query(embedding_vector.clone(), 1).await?;
+    let first_result = cards.get(0);
+
+
+    if let Some(score_card) = first_result {
+        let mut similarity_threashold = 0.95;
+        if card.content.len() < 200 {
+            similarity_threashold = 0.9;
+        } 
+
+        if score_card.score >= similarity_threashold {
+            return Ok(HttpResponse::BadRequest().json(json!({
+                "message": "Card already exists",
+                "card": score_card,
+            })));
+        }
+    }
+
     let qdrant = get_qdrant_connection()
         .await
         .map_err(|err| actix_web::error::ErrorBadRequest(err.message))?;
