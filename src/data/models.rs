@@ -231,6 +231,62 @@ impl UserPlan {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Clone)]
+#[diesel(table_name = card_metadata)]
+pub struct CardMetadata {
+    pub id: uuid::Uuid,
+    pub content: String,
+    pub author_id: uuid::Uuid,
+    pub qdrant_point_id: uuid::Uuid,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl CardMetadata {
+    pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(
+        content: S,
+        author_id: T,
+        qdrant_point_id: T,
+    ) -> Self {
+        CardMetadata {
+            id: uuid::Uuid::new_v4(),
+            content: content.into(),
+            author_id: author_id.into(),
+            qdrant_point_id: qdrant_point_id.into(),
+            created_at: chrono::Local::now().naive_local(),
+            updated_at: chrono::Local::now().naive_local(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable)]
+#[diesel(table_name = card_upvotes)]
+pub struct CardUpvotes {
+    pub id: uuid::Uuid,
+    pub voted_user_id: uuid::Uuid,
+    pub card_metadata_id: uuid::Uuid,
+    pub vote: bool,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl CardUpvotes {
+    pub fn from_details<T: Into<uuid::Uuid>>(
+        voted_user_id: T,
+        card_metadata_id: T,
+        vote: bool,
+    ) -> Self {
+        CardUpvotes {
+            id: uuid::Uuid::new_v4(),
+            voted_user_id: voted_user_id.into(),
+            card_metadata_id: card_metadata_id.into(),
+            vote,
+            created_at: chrono::Local::now().naive_local(),
+            updated_at: chrono::Local::now().naive_local(),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SlimUser {
     pub id: uuid::Uuid,
