@@ -291,8 +291,8 @@ impl CardVote {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CardMetadataWithVotes {
     pub id: uuid::Uuid,
+    pub author: Option<UserDTO>,
     pub content: String,
-    pub author_id: uuid::Uuid,
     pub qdrant_point_id: uuid::Uuid,
     pub total_upvotes: i64,
     pub total_downvotes: i64,

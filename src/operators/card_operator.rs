@@ -1,8 +1,7 @@
 use crate::data::models::CardMetadataWithVotes;
 use crate::data::models::CardVote;
 use crate::data::models::User;
-use crate::data::schema::card_metadata;
-use crate::data::schema::card_upvotes;
+use crate::data::models::UserDTO;
 use crate::diesel::ExpressionMethods;
 use crate::diesel::QueryDsl;
 use crate::{
@@ -142,7 +141,7 @@ pub fn get_metadata_from_point_ids(
             message: "Failed to load upvotes",
         })?;
 
-    let mut card_metadata_with_upvotes: Vec<CardMetadataWithVotes> = card_metadata
+    let card_metadata_with_upvotes: Vec<CardMetadataWithVotes> = card_metadata
         .into_iter()
         .map(|metadata| {
             let votes = card_votes
@@ -156,10 +155,25 @@ pub fn get_metadata_from_point_ids(
                 .find(|upvote| upvote.voted_user_id == current_user_id)
                 .map(|upvote| upvote.vote);
 
+            let author = card_creators
+                .iter()
+                .find(|user| user.id == metadata.author_id)
+                .map(|user| UserDTO {
+                    id: user.id,
+                    username: user.username.clone(),
+                    email: if user.visible_email {
+                        Some(user.email.clone())
+                    } else {
+                        None
+                    },
+                    website: user.website.clone(),
+                    visible_email: user.visible_email,
+                });
+
             CardMetadataWithVotes {
                 id: metadata.id,
                 content: metadata.content,
-                author_id: metadata.author_id,
+                author,
                 qdrant_point_id: metadata.qdrant_point_id,
                 total_upvotes,
                 total_downvotes,
