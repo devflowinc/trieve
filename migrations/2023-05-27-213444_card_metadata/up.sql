@@ -8,6 +8,9 @@ CREATE TABLE card_metadata (
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+CREATE INDEX idx_card_metadata_author_id ON card_metadata (author_id);
+CREATE INDEX idx_card_metadata_qdrant_point_id ON card_metadata (qdrant_point_id);
+
 CREATE TABLE card_votes (
     id UUID PRIMARY KEY,
     voted_user_id UUID NOT NULL REFERENCES users(id),
@@ -16,3 +19,6 @@ CREATE TABLE card_votes (
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX idx_card_votes_voted_user_id ON card_votes (voted_user_id);
+CREATE INDEX idx_card_votes_card_metadata_id ON card_votes (card_metadata_id);
