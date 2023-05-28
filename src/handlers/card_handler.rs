@@ -3,7 +3,8 @@ use qdrant_client::qdrant::PointStruct;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::operators::card_operator::create_openai_embedding;
+use crate::data::models::{CardMetadata, Pool};
+use crate::operators::card_operator::{create_openai_embedding, insert_card_metadata_query, get_metadata_from_point_ids};
 use crate::operators::card_operator::{
     get_point_by_id_query, get_qdrant_connection, retrieved_point_to_card_dto, search_card_query,
 };
@@ -18,13 +19,13 @@ pub struct CreateCardData {
 
 pub async fn create_card(
     card: web::Json<CreateCardData>,
+    pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let embedding_vector = create_openai_embedding(&card.content).await?;
 
     let cards = search_card_query(embedding_vector.clone(), 1).await?;
     let first_result = cards.get(0);
-
 
     if let Some(score_card) = first_result {
         let mut similarity_threashold = 0.95;
@@ -44,24 +45,23 @@ pub async fn create_card(
         .await
         .map_err(|err| actix_web::error::ErrorBadRequest(err.message))?;
 
-    let id_str = user.id.to_string();
+    let payload: qdrant_client::prelude::Payload = json!({}).try_into().unwrap();
+    
+    let point_id = uuid::Uuid::new_v4();
+    let point = PointStruct::new(point_id.clone().to_string(), embedding_vector, payload);
 
-    let payload: qdrant_client::prelude::Payload = json!(
-        {
-            "content": card.content.clone(),
-            "user_id": id_str,
-            "link": card.link,
-            "created_at": chrono::Utc::now().to_rfc3339(),
-        }
-    )
-    .try_into()
-    .map_err(actix_web::error::ErrorBadRequest)?;
+    web::block(move || {
+        insert_card_metadata_query(
+            CardMetadata::from_details(&card.content, user.id, point_id),
+            &pool
+        )
+    }).await?.map_err(actix_web::error::ErrorBadRequest)?;
 
-    let point = PointStruct::new(uuid::Uuid::new_v4().to_string(), embedding_vector, payload);
     qdrant
         .upsert_points_blocking("debate_cards".to_string(), vec![point], None)
         .await
         .map_err(actix_web::error::ErrorBadRequest)?;
+
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -71,16 +71,43 @@ pub struct SearchCardData {
     content: String,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct ScoreCardDTO {
+    metadata: CardMetadata,
+    score: f32,
+}
+
 pub async fn search_card(
     data: web::Json<SearchCardData>,
     page: Option<web::Path<u64>>,
+    pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_openai_embedding(&data.content).await?;
 
-    let cards = search_card_query(embedding_vector, page).await?;
+    let search_results = search_card_query(embedding_vector, page).await?;
 
-    Ok(HttpResponse::Ok().json(cards))
+    let point_ids = search_results
+        .iter()
+        .map(|point| point.point_id)
+        .collect::<Vec<_>>();
+
+    let metadata_cards = web::block(move || get_metadata_from_point_ids(point_ids, pool))
+        .await?
+        .map_err(actix_web::error::ErrorBadRequest)?;
+
+    let score_cards: Vec<ScoreCardDTO> = metadata_cards
+        .iter()
+        .zip(search_results.iter())
+        .map(|(card, point)| {
+            ScoreCardDTO {
+                metadata: (*card).clone(),
+                score: point.score,
+            }
+        }).collect();
+
+    Ok(HttpResponse::Ok().json(score_cards))
 }
 
 pub async fn get_card_by_id(

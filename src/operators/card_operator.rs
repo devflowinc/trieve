@@ -1,11 +1,17 @@
+use crate::diesel::ExpressionMethods;
+use crate::diesel::QueryDsl;
+use crate::{
+    data::models::{CardMetadata, Pool},
+    diesel::RunQueryDsl,
+    errors::DefaultError,
+};
+use actix_web::web;
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use qdrant_client::{
     prelude::{QdrantClient, QdrantClientConfig},
     qdrant::{point_id::PointIdOptions, value::Kind, PointId, RetrievedPoint, SearchPoints},
 };
 use serde::{Deserialize, Serialize};
-
-use crate::errors::DefaultError;
 
 pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
     let qdrant_url = std::env::var("QDRANT_URL").expect("QDRANT_URL must be set");
@@ -37,23 +43,16 @@ pub async fn create_openai_embedding(message: &str) -> Result<Vec<f32>, actix_we
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct ScoredCardDTO {
-    pub id: String,
-    pub content: String,
+pub struct SearchResult {
     pub score: f32,
-    pub link: Option<String>,
+    pub point_id: uuid::Uuid,
 }
 
 pub async fn search_card_query(
     embedding_vector: Vec<f32>,
     page: u64,
-) -> Result<Vec<ScoredCardDTO>, actix_web::Error> {
-
-    let page = if page == 0 {
-        1
-    } else {
-        page
-    };
+) -> Result<Vec<SearchResult>, actix_web::Error> {
+    let page = if page == 0 { 1 } else { page };
 
     let qdrant = get_qdrant_connection()
         .await
@@ -65,43 +64,47 @@ pub async fn search_card_query(
             vector: embedding_vector,
             limit: 25,
             offset: Some((page - 1) * 25),
-            with_payload: Some(vec!["content", "user_id", "link"].into()),
+            with_payload: None,
             ..Default::default()
         })
         .await
         .map_err(actix_web::error::ErrorBadRequest)?;
 
-    let cards: Vec<ScoredCardDTO> = data
+    let point_ids: Vec<SearchResult> = data
         .result
         .iter()
-        .filter_map(|point| {
-            let id = match point.id.clone()?.point_id_options? {
-                PointIdOptions::Num(n) => n.to_string(),
-                PointIdOptions::Uuid(s) => s,
-            };
-            let content = point.payload.get("content")?;
-            let score = point.score;
-            let link = point.payload.get("link").and_then(|link| {
-                if let Some(Kind::StringValue(s)) = &link.kind {
-                    Some(s.clone())
-                } else {
-                    None
-                }
-            });
-
-            match &content.kind {
-                Some(Kind::StringValue(content)) => Some(ScoredCardDTO {
-                    id,
-                    content: content.clone(),
-                    score,
-                    link,
-                }),
-                _ => None,
-            }
+        .filter_map(|point| match point.clone().id?.point_id_options? {
+            PointIdOptions::Uuid(id) => Some(SearchResult {
+                score: point.score,
+                point_id: uuid::Uuid::parse_str(&id).ok()?,
+            }),
+            PointIdOptions::Num(_) => None,
         })
         .collect();
 
-    Ok(cards)
+    Ok(point_ids)
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ScoredCardDTO {
+    pub metadata: CardMetadata,
+    pub score: f32,
+}
+
+pub fn get_metadata_from_point_ids(
+    point_ids: Vec<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<Vec<CardMetadata>, DefaultError> {
+    use crate::data::schema::card_metadata::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    card_metadata
+        .filter(qdrant_point_id.eq_any(point_ids))
+        .load::<CardMetadata>(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Failed to load metadata",
+        })
 }
 
 pub async fn get_point_by_id_query(
@@ -150,4 +153,22 @@ pub async fn retrieved_point_to_card_dto(point: RetrievedPoint) -> Option<Retrie
         }),
         _ => None,
     }
+}
+
+pub fn insert_card_metadata_query(
+    card_data: CardMetadata,
+    pool: &web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::card_metadata::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::insert_into(card_metadata)
+        .values(&card_data)
+        .execute(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Failed to insert card metadata",
+        })?;
+
+    Ok(())
 }
