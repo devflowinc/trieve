@@ -168,6 +168,7 @@ pub fn get_metadata_from_point_ids(
                     },
                     website: user.website.clone(),
                     visible_email: user.visible_email,
+                    created_at: user.created_at,
                 });
 
             CardMetadataWithVotes {
