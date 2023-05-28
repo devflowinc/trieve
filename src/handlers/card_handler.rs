@@ -54,7 +54,7 @@ pub async fn create_card(
 
     web::block(move || {
         insert_card_metadata_query(
-            CardMetadata::from_details(&card.content, user.id, point_id),
+            CardMetadata::from_details(&card.content, &card.link, user.id, point_id),
             &pool,
         )
     })

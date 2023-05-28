@@ -4,6 +4,7 @@ diesel::table! {
     card_metadata (id) {
         id -> Uuid,
         content -> Text,
+        link -> Nullable<Text>,
         author_id -> Uuid,
         qdrant_point_id -> Uuid,
         created_at -> Timestamp,

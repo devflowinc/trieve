@@ -178,6 +178,7 @@ pub fn get_metadata_from_point_ids(
             CardMetadataWithVotes {
                 id: metadata.id,
                 content: metadata.content,
+                link: metadata.link,
                 author,
                 qdrant_point_id: metadata.qdrant_point_id,
                 total_upvotes,
