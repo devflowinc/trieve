@@ -9,7 +9,7 @@ use actix_web::web;
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use qdrant_client::{
     prelude::{QdrantClient, QdrantClientConfig},
-    qdrant::{point_id::PointIdOptions, value::Kind, PointId, RetrievedPoint, SearchPoints},
+    qdrant::{point_id::PointIdOptions, SearchPoints},
 };
 use serde::{Deserialize, Serialize};
 
@@ -107,52 +107,20 @@ pub fn get_metadata_from_point_ids(
         })
 }
 
-pub async fn get_point_by_id_query(
+pub fn get_metadata_from_id_query(
     card_id: uuid::Uuid,
-) -> Result<Option<RetrievedPoint>, actix_web::Error> {
-    let qdrant = get_qdrant_connection()
-        .await
-        .map_err(|err| actix_web::error::ErrorBadRequest(err.message))?;
+    pool: web::Data<Pool>,
+) -> Result<CardMetadata, DefaultError> {
+    use crate::data::schema::card_metadata::dsl::*;
 
-    let points = [PointId::from(card_id.to_string())];
+    let mut conn = pool.get().unwrap();
 
-    let mut points = qdrant
-        .get_points(
-            "debate_cards",
-            &points,
-            Some(true),
-            Some(vec!["content", "user_id", "link", "upvotes", "downvotes"]),
-            None,
-        )
-        .await
-        .map_err(actix_web::error::ErrorBadRequest)?;
-
-    Ok(points.result.pop())
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct RetrievedCardDTO {
-    pub content: String,
-    pub link: Option<String>,
-}
-
-pub async fn retrieved_point_to_card_dto(point: RetrievedPoint) -> Option<RetrievedCardDTO> {
-    let content = point.payload.get("content")?;
-    let link = point.payload.get("link").and_then(|link| {
-        if let Some(Kind::StringValue(s)) = &link.kind {
-            Some(s.clone())
-        } else {
-            None
-        }
-    });
-
-    match &content.kind {
-        Some(Kind::StringValue(content)) => Some(RetrievedCardDTO {
-            content: content.clone(),
-            link,
-        }),
-        _ => None,
-    }
+    card_metadata
+        .filter(id.eq(card_id))
+        .first::<CardMetadata>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })
 }
 
 pub fn insert_card_metadata_query(
