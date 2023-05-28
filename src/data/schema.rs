@@ -12,7 +12,7 @@ diesel::table! {
 }
 
 diesel::table! {
-    card_upvotes (id) {
+    card_votes (id) {
         id -> Uuid,
         voted_user_id -> Uuid,
         card_metadata_id -> Uuid,
@@ -107,14 +107,14 @@ diesel::table! {
 }
 
 diesel::joinable!(card_metadata -> users (author_id));
-diesel::joinable!(card_upvotes -> card_metadata (card_metadata_id));
-diesel::joinable!(card_upvotes -> users (voted_user_id));
+diesel::joinable!(card_votes -> card_metadata (card_metadata_id));
+diesel::joinable!(card_votes -> users (voted_user_id));
 diesel::joinable!(messages -> topics (topic_id));
 diesel::joinable!(topics -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     card_metadata,
-    card_upvotes,
+    card_votes,
     invitations,
     messages,
     password_resets,

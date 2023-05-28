@@ -3,13 +3,12 @@ use qdrant_client::qdrant::PointStruct;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::data::models::{CardMetadata, Pool};
+use crate::data::models::{CardMetadata, CardMetadataWithVotes, Pool};
 use crate::operators::card_operator::{
     create_openai_embedding, get_metadata_from_point_ids, insert_card_metadata_query,
 };
 use crate::operators::card_operator::{
-    get_metadata_from_id_query, get_qdrant_connection,
-    search_card_query,
+    get_metadata_from_id_query, get_qdrant_connection, search_card_query,
 };
 
 use super::auth_handler::LoggedUser;
@@ -77,13 +76,14 @@ pub struct SearchCardData {
 
 #[derive(Serialize, Deserialize)]
 pub struct ScoreCardDTO {
-    metadata: CardMetadata,
+    metadata: CardMetadataWithVotes,
     score: f32,
 }
 
 pub async fn search_card(
     data: web::Json<SearchCardData>,
     page: Option<web::Path<u64>>,
+    user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
@@ -96,7 +96,7 @@ pub async fn search_card(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
-    let metadata_cards = web::block(move || get_metadata_from_point_ids(point_ids, pool))
+    let metadata_cards = web::block(move || get_metadata_from_point_ids(point_ids, user.id, pool))
         .await?
         .map_err(actix_web::error::ErrorBadRequest)?;
 
