@@ -2,6 +2,7 @@
 CREATE TABLE card_metadata (
     id UUID PRIMARY KEY,
     content TEXT NOT NULL,
+    link TEXT DEFAULT NULL,
     author_id UUID NOT NULL REFERENCES users(id),
     qdrant_point_id UUID NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),

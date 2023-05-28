@@ -236,6 +236,7 @@ impl UserPlan {
 pub struct CardMetadata {
     pub id: uuid::Uuid,
     pub content: String,
+    pub link: Option<String>,
     pub author_id: uuid::Uuid,
     pub qdrant_point_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
@@ -245,12 +246,14 @@ pub struct CardMetadata {
 impl CardMetadata {
     pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(
         content: S,
+        link: &Option<String>,
         author_id: T,
         qdrant_point_id: T,
     ) -> Self {
         CardMetadata {
             id: uuid::Uuid::new_v4(),
             content: content.into(),
+            link: link.clone(),
             author_id: author_id.into(),
             qdrant_point_id: qdrant_point_id.into(),
             created_at: chrono::Local::now().naive_local(),
@@ -293,6 +296,7 @@ pub struct CardMetadataWithVotes {
     pub id: uuid::Uuid,
     pub author: Option<UserDTO>,
     pub content: String,
+    pub link: Option<String>,
     pub qdrant_point_id: uuid::Uuid,
     pub total_upvotes: i64,
     pub total_downvotes: i64,
