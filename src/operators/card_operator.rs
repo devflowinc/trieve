@@ -97,7 +97,7 @@ pub struct ScoredCardDTO {
 
 pub fn get_metadata_from_point_ids(
     point_ids: Vec<uuid::Uuid>,
-    current_user_id: uuid::Uuid,
+    current_user_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<Vec<CardMetadataWithVotes>, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
@@ -150,10 +150,14 @@ pub fn get_metadata_from_point_ids(
                 .collect::<Vec<&CardVote>>();
             let total_upvotes = votes.iter().filter(|upvote| upvote.vote).count() as i64;
             let total_downvotes = votes.iter().filter(|upvote| !upvote.vote).count() as i64;
-            let vote_by_current_user = votes
+            let vote_by_current_user = match current_user_id {
+                Some(user_id) => votes
                 .iter()
-                .find(|upvote| upvote.voted_user_id == current_user_id)
-                .map(|upvote| upvote.vote);
+                .find(|upvote| upvote.voted_user_id == user_id)
+                .map(|upvote| upvote.vote),
+                None => None,
+            };
+
 
             let author = card_creators
                 .iter()

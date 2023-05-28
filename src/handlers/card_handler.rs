@@ -83,7 +83,7 @@ pub struct ScoreCardDTO {
 pub async fn search_card(
     data: web::Json<SearchCardData>,
     page: Option<web::Path<u64>>,
-    user: LoggedUser,
+    user: Option<LoggedUser>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
@@ -96,7 +96,8 @@ pub async fn search_card(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
-    let metadata_cards = web::block(move || get_metadata_from_point_ids(point_ids, user.id, pool))
+    let current_user_id = user.map(|user| user.id);
+    let metadata_cards = web::block(move || get_metadata_from_point_ids(point_ids, current_user_id, pool))
         .await?
         .map_err(actix_web::error::ErrorBadRequest)?;
 
