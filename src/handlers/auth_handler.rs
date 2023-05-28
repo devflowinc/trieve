@@ -5,7 +5,6 @@ use actix_web::{
     dev::Payload, web, Error, FromRequest, HttpMessage as _, HttpRequest, HttpResponse,
 };
 use diesel::prelude::*;
-use log::info;
 use serde::Deserialize;
 
 use crate::{
@@ -33,7 +32,6 @@ impl FromRequest for LoggedUser {
     fn from_request(req: &HttpRequest, pl: &mut Payload) -> Self::Future {
         if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
             if let Ok(user_json) = identity.id() {
-                info!("User json: {}", user_json);
                 if let Ok(user) = serde_json::from_str(&user_json) {
                     return ready(Ok(user));
                 }
