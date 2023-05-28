@@ -80,7 +80,7 @@ diesel::table! {
         updated_at -> Timestamp,
         username -> Nullable<Text>,
         website -> Nullable<Text>,
-        visible_email -> Nullable<Bool>,
+        visible_email -> Bool,
     }
 }
 
