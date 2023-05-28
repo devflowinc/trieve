@@ -17,6 +17,9 @@ pub struct User {
     pub hash: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub username: Option<String>,
+    pub website: Option<String>,
+    pub visible_email: bool,
 }
 
 impl User {
@@ -27,6 +30,9 @@ impl User {
             hash: pwd.into(),
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
+            username: None,
+            website: None,
+            visible_email: true,
         }
     }
 }
@@ -204,8 +210,6 @@ pub struct UserPlan {
     pub status: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub username: Option<String>,
-    pub visible_email: Option<bool>,
 }
 
 impl UserPlan {
@@ -223,19 +227,7 @@ impl UserPlan {
             stripe_subscription_id: subscription_id,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
-            username: None,
-            visible_email: None,
         }
-    }
-
-    pub fn with_username(mut self, username: String) -> Self {
-        self.username = Some(username);
-        self
-    }
-
-    pub fn email_visibility(mut self, visible: bool) -> Self {
-        self.visible_email = Some(visible);
-        self
     }
 }
 
@@ -243,6 +235,9 @@ impl UserPlan {
 pub struct SlimUser {
     pub id: uuid::Uuid,
     pub email: String,
+    pub username: Option<String>,
+    pub website: Option<String>,
+    pub visible_email: bool,
 }
 
 impl From<User> for SlimUser {
@@ -250,6 +245,34 @@ impl From<User> for SlimUser {
         SlimUser {
             id: user.id,
             email: user.email,
+            username: user.username,
+            website: user.website,
+            visible_email: user.visible_email,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct UserDTO {
+    pub id: uuid::Uuid,
+    pub email: Option<String>,
+    pub username: Option<String>,
+    pub website: Option<String>,
+    pub visible_email: bool,
+}
+
+impl From<User> for UserDTO {
+    fn from(user: User) -> Self {
+        UserDTO {
+            id: user.id,
+            email: if user.visible_email {
+                Some(user.email)
+            } else {
+                None
+            },
+            username: user.username,
+            website: user.website,
+            visible_email: user.visible_email,
         }
     }
 }

@@ -5,11 +5,13 @@ use actix_web::{
     dev::Payload, web, Error, FromRequest, HttpMessage as _, HttpRequest, HttpResponse,
 };
 use diesel::prelude::*;
+use log::info;
 use serde::Deserialize;
 
 use crate::{
     data::models::{Pool, SlimUser, User},
     errors::{DefaultError, ServiceError},
+    operators::user_operator::get_user_by_id_query,
 };
 
 use crate::handlers::register_handler;
@@ -31,6 +33,7 @@ impl FromRequest for LoggedUser {
     fn from_request(req: &HttpRequest, pl: &mut Payload) -> Self::Future {
         if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
             if let Ok(user_json) = identity.id() {
+                info!("User json: {}", user_json);
                 if let Ok(user) = serde_json::from_str(&user_json) {
                     return ready(Ok(user));
                 }
@@ -88,8 +91,18 @@ pub async fn login(
     }
 }
 
-pub async fn get_me(logged_user: LoggedUser) -> HttpResponse {
-    HttpResponse::Ok().json(logged_user)
+pub async fn get_me(
+    logged_user: LoggedUser,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let user_query_id: uuid::Uuid = logged_user.id;
+
+    let user_result = web::block(move || get_user_by_id_query(&user_query_id, &pool)).await?;
+
+    match user_result {
+        Ok(user) => Ok(HttpResponse::Ok().json(SlimUser::from(user))),
+        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
+    }
 }
 
 fn find_user_match(auth_data: AuthData, pool: web::Data<Pool>) -> Result<SlimUser, DefaultError> {

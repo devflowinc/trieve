@@ -206,6 +206,14 @@ pub async fn main() -> std::io::Result<()> {
                                     ),
                                 ),
                             ),
+                    )
+                    .service(
+                        web::resource("/user/{user_id}")
+                            .route(web::get().to(handlers::user_handler::get_user_by_id))
+                    )
+                    .service(
+                        web::resource("/user")
+                            .route(web::put().to(handlers::user_handler::update_user))
                     ),
             )
     })
