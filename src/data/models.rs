@@ -260,8 +260,8 @@ impl CardMetadata {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable)]
-#[diesel(table_name = card_upvotes)]
-pub struct CardUpvotes {
+#[diesel(table_name = card_votes)]
+pub struct CardVote {
     pub id: uuid::Uuid,
     pub voted_user_id: uuid::Uuid,
     pub card_metadata_id: uuid::Uuid,
@@ -270,13 +270,13 @@ pub struct CardUpvotes {
     pub updated_at: chrono::NaiveDateTime,
 }
 
-impl CardUpvotes {
+impl CardVote {
     pub fn from_details<T: Into<uuid::Uuid>>(
         voted_user_id: T,
         card_metadata_id: T,
         vote: bool,
     ) -> Self {
-        CardUpvotes {
+        CardVote {
             id: uuid::Uuid::new_v4(),
             voted_user_id: voted_user_id.into(),
             card_metadata_id: card_metadata_id.into(),
@@ -286,6 +286,21 @@ impl CardUpvotes {
         }
     }
 }
+
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CardMetadataWithVotes {
+    pub id: uuid::Uuid,
+    pub content: String,
+    pub author_id: uuid::Uuid,
+    pub qdrant_point_id: uuid::Uuid,
+    pub total_upvotes: i64,
+    pub total_downvotes: i64,
+    pub vote_by_current_user: Option<bool>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SlimUser {

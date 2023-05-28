@@ -4,12 +4,11 @@ CREATE TABLE card_metadata (
     content TEXT NOT NULL,
     author_id UUID NOT NULL REFERENCES users(id),
     qdrant_point_id UUID NOT NULL,
-
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE card_upvotes (
+CREATE TABLE card_votes (
     id UUID PRIMARY KEY,
     voted_user_id UUID NOT NULL REFERENCES users(id),
     card_metadata_id UUID NOT NULL REFERENCES card_metadata(id),

@@ -1,3 +1,8 @@
+use crate::data::models::CardMetadataWithVotes;
+use crate::data::models::CardVote;
+use crate::data::models::User;
+use crate::data::schema::card_metadata;
+use crate::data::schema::card_upvotes;
 use crate::diesel::ExpressionMethods;
 use crate::diesel::QueryDsl;
 use crate::{
@@ -93,18 +98,79 @@ pub struct ScoredCardDTO {
 
 pub fn get_metadata_from_point_ids(
     point_ids: Vec<uuid::Uuid>,
+    current_user_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<CardMetadata>, DefaultError> {
-    use crate::data::schema::card_metadata::dsl::*;
+) -> Result<Vec<CardMetadataWithVotes>, DefaultError> {
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+    use crate::data::schema::card_votes::dsl as card_votes_columns;
+    use crate::data::schema::users::dsl as user_columns;
 
     let mut conn = pool.get().unwrap();
 
-    card_metadata
-        .filter(qdrant_point_id.eq_any(point_ids))
+    let card_metadata: Vec<CardMetadata> = card_metadata_columns::card_metadata
+        .filter(card_metadata_columns::id.eq_any(point_ids))
         .load::<CardMetadata>(&mut conn)
-        .map_err(|_err| DefaultError {
+        .map_err(|_| DefaultError {
             message: "Failed to load metadata",
+        })?;
+
+    let card_creators: Vec<User> = user_columns::users
+        .filter(
+            user_columns::id.eq_any(
+                card_metadata
+                    .iter()
+                    .map(|metadata| metadata.author_id)
+                    .collect::<Vec<uuid::Uuid>>(),
+            ),
+        )
+        .load::<User>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load card creators",
+        })?;
+
+    let card_votes: Vec<CardVote> = card_votes_columns::card_votes
+        .filter(
+            card_votes_columns::card_metadata_id.eq_any(
+                card_metadata
+                    .iter()
+                    .map(|metadata| metadata.id)
+                    .collect::<Vec<uuid::Uuid>>(),
+            ),
+        )
+        .load::<CardVote>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load upvotes",
+        })?;
+
+    let mut card_metadata_with_upvotes: Vec<CardMetadataWithVotes> = card_metadata
+        .into_iter()
+        .map(|metadata| {
+            let votes = card_votes
+                .iter()
+                .filter(|upvote| upvote.card_metadata_id == metadata.id)
+                .collect::<Vec<&CardVote>>();
+            let total_upvotes = votes.iter().filter(|upvote| upvote.vote).count() as i64;
+            let total_downvotes = votes.iter().filter(|upvote| !upvote.vote).count() as i64;
+            let vote_by_current_user = votes
+                .iter()
+                .find(|upvote| upvote.voted_user_id == current_user_id)
+                .map(|upvote| upvote.vote);
+
+            CardMetadataWithVotes {
+                id: metadata.id,
+                content: metadata.content,
+                author_id: metadata.author_id,
+                qdrant_point_id: metadata.qdrant_point_id,
+                total_upvotes,
+                total_downvotes,
+                vote_by_current_user,
+                created_at: metadata.created_at,
+                updated_at: metadata.updated_at,
+            }
         })
+        .collect();
+
+    Ok(card_metadata_with_upvotes)
 }
 
 pub fn get_metadata_from_id_query(
