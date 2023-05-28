@@ -330,6 +330,7 @@ pub struct UserDTO {
     pub username: Option<String>,
     pub website: Option<String>,
     pub visible_email: bool,
+    pub created_at: chrono::NaiveDateTime,
 }
 
 impl From<User> for UserDTO {
@@ -344,6 +345,21 @@ impl From<User> for UserDTO {
             username: user.username,
             website: user.website,
             visible_email: user.visible_email,
+            created_at: user.created_at,
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct UserDTOWithVotesAndCards {
+    pub id: uuid::Uuid,
+    pub email: Option<String>,
+    pub username: Option<String>,
+    pub website: Option<String>,
+    pub visible_email: bool,
+    pub created_at: chrono::NaiveDateTime,
+    pub cards: Vec<CardMetadata>,
+    pub total_upvotes_received: i32,
+    pub total_downvotes_received: i32,
+    pub total_votes_cast: i32,
 }
