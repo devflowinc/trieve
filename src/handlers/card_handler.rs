@@ -97,16 +97,23 @@ pub async fn search_card(
         .collect::<Vec<_>>();
 
     let current_user_id = user.map(|user| user.id);
-    let metadata_cards = web::block(move || get_metadata_from_point_ids(point_ids, current_user_id, pool))
-        .await?
-        .map_err(actix_web::error::ErrorBadRequest)?;
+    let metadata_cards =
+        web::block(move || get_metadata_from_point_ids(point_ids, current_user_id, pool))
+            .await?
+            .map_err(actix_web::error::ErrorBadRequest)?;
 
-    let score_cards: Vec<ScoreCardDTO> = metadata_cards
+    let score_cards: Vec<ScoreCardDTO> = search_results
         .iter()
-        .zip(search_results.iter())
-        .map(|(card, point)| ScoreCardDTO {
-            metadata: (*card).clone(),
-            score: point.score,
+        .map(|search_result| {
+            let card = metadata_cards
+                .iter()
+                .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
+                .unwrap();
+
+            ScoreCardDTO {
+                metadata: (*card).clone(),
+                score: search_result.score,
+            }
         })
         .collect();
 
