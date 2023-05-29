@@ -2,11 +2,9 @@ use crate::data::models::CardMetadataWithVotes;
 use crate::data::models::CardVote;
 use crate::data::models::User;
 use crate::data::models::UserDTO;
-use crate::diesel::ExpressionMethods;
-use crate::diesel::QueryDsl;
+use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::{
     data::models::{CardMetadata, Pool},
-    diesel::RunQueryDsl,
     errors::DefaultError,
 };
 use actix_web::web;
@@ -152,12 +150,11 @@ pub fn get_metadata_from_point_ids(
             let total_downvotes = votes.iter().filter(|upvote| !upvote.vote).count() as i64;
             let vote_by_current_user = match current_user_id {
                 Some(user_id) => votes
-                .iter()
-                .find(|upvote| upvote.voted_user_id == user_id)
-                .map(|upvote| upvote.vote),
+                    .iter()
+                    .find(|upvote| upvote.voted_user_id == user_id)
+                    .map(|upvote| upvote.vote),
                 None => None,
             };
-
 
             let author = card_creators
                 .iter()

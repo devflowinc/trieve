@@ -274,22 +274,21 @@ pub struct CardVote {
 }
 
 impl CardVote {
-    pub fn from_details<T: Into<uuid::Uuid>>(
-        voted_user_id: T,
-        card_metadata_id: T,
-        vote: bool,
+    pub fn from_details(
+        voted_user_id: &uuid::Uuid,
+        card_metadata_id: &uuid::Uuid,
+        vote: &bool,
     ) -> Self {
         CardVote {
             id: uuid::Uuid::new_v4(),
-            voted_user_id: voted_user_id.into(),
-            card_metadata_id: card_metadata_id.into(),
-            vote,
+            voted_user_id: *voted_user_id,
+            card_metadata_id: *card_metadata_id,
+            vote: *vote,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
         }
     }
 }
-
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CardMetadataWithVotes {
@@ -304,7 +303,6 @@ pub struct CardMetadataWithVotes {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
-
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SlimUser {
