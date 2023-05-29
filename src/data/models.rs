@@ -360,7 +360,7 @@ pub struct UserDTOWithVotesAndCards {
     pub website: Option<String>,
     pub visible_email: bool,
     pub created_at: chrono::NaiveDateTime,
-    pub cards: Vec<CardMetadata>,
+    pub cards: Vec<CardMetadataWithVotes>,
     pub total_upvotes_received: i32,
     pub total_downvotes_received: i32,
     pub total_votes_cast: i32,
