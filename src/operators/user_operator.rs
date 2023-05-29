@@ -1,4 +1,4 @@
-use crate::data::models::{SlimUser, UserDTOWithVotesAndCards};
+use crate::data::models::{CardMetadataWithVotes, CardVote, SlimUser, UserDTOWithVotesAndCards};
 use crate::diesel::prelude::*;
 use crate::handlers::user_handler::UpdateUserData;
 use crate::{
@@ -78,6 +78,7 @@ pub fn get_user_by_id_query(
 
 pub fn get_user_with_votes_and_cards_by_id_query(
     user_id: &uuid::Uuid,
+    page: &i64,
     pool: &web::Data<Pool>,
 ) -> Result<UserDTOWithVotesAndCards, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
@@ -102,10 +103,55 @@ pub fn get_user_with_votes_and_cards_by_id_query(
 
     let user_card_metadatas = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::author_id.eq(user.id))
+        .order(card_metadata_columns::updated_at.desc())
+        .limit(25)
+        .offset((page - 1) * 25)
         .load::<crate::data::models::CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Error loading user cards",
         })?;
+
+    let card_votes: Vec<CardVote> = card_votes_columns::card_votes
+        .filter(
+            card_votes_columns::card_metadata_id.eq_any(
+                user_card_metadatas
+                    .iter()
+                    .map(|metadata| metadata.id)
+                    .collect::<Vec<uuid::Uuid>>(),
+            ),
+        )
+        .load::<CardVote>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load upvotes",
+        })?;
+
+    let card_metadata_with_upvotes: Vec<CardMetadataWithVotes> = (&user_card_metadatas)
+        .into_iter()
+        .map(|metadata| {
+            let votes = card_votes
+                .iter()
+                .filter(|upvote| upvote.card_metadata_id == metadata.id)
+                .collect::<Vec<&CardVote>>();
+            let total_upvotes = votes.iter().filter(|upvote| upvote.vote).count() as i64;
+            let total_downvotes = votes.iter().filter(|upvote| !upvote.vote).count() as i64;
+            let vote_by_current_user = None;
+
+            let author = None;
+
+            CardMetadataWithVotes {
+                id: metadata.id,
+                content: metadata.content.clone(),
+                link: metadata.link.clone(),
+                author,
+                qdrant_point_id: metadata.qdrant_point_id,
+                total_upvotes,
+                total_downvotes,
+                vote_by_current_user,
+                created_at: metadata.created_at,
+                updated_at: metadata.updated_at,
+            }
+        })
+        .collect();
 
     let user_card_votes = card_votes_columns::card_votes
         .filter(
@@ -148,7 +194,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
         website: user.website,
         visible_email: user.visible_email,
         created_at: user.created_at,
-        cards: user_card_metadatas,
+        cards: card_metadata_with_upvotes,
         total_upvotes_received,
         total_downvotes_received,
         total_votes_cast,
