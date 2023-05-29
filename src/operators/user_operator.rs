@@ -1,4 +1,7 @@
-use crate::data::models::{CardMetadataWithVotes, CardVote, SlimUser, UserDTOWithVotesAndCards};
+use crate::data::models::{
+    CardMetadataWithVotes, CardVote, SlimUser, UserDTOWithScore, UserDTOWithVotesAndCards,
+    UserScore,
+};
 use crate::diesel::prelude::*;
 use crate::handlers::user_handler::UpdateUserData;
 use crate::{
@@ -6,7 +9,7 @@ use crate::{
     errors::DefaultError,
 };
 use actix_web::web;
-
+use diesel::sql_types::{Text, BigInt};
 pub fn get_user_by_email_query(
     user_email: &String,
     pool: &web::Data<Pool>,
@@ -261,4 +264,75 @@ pub fn update_user_query(
         })?;
 
     Ok(SlimUser::from(user))
+}
+
+pub fn get_top_users_query(
+    page: &i64,
+    pool: &web::Data<Pool>,
+) -> Result<Vec<UserDTOWithScore>, DefaultError> {
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+    use crate::data::schema::card_votes::dsl as card_votes_columns;
+    use crate::data::schema::users::dsl as users_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    let query = card_metadata_columns::card_metadata
+        .inner_join(card_votes_columns::card_votes.on(card_metadata_columns::id.eq(card_votes_columns::card_metadata_id)))
+        .select((
+            card_metadata_columns::author_id,
+            diesel::dsl::sql::<BigInt>("(SUM(case when vote = true then 1 else 0 end) - SUM(case when vote = false then 1 else 0 end)) as score"),
+        ))
+        .group_by((
+            card_metadata_columns::author_id,
+        ))
+        .order(diesel::dsl::sql::<Text>("score desc"))
+        .limit(25)
+        .offset((page - 1) * 25);
+
+    let user_scores: Vec<UserScore> =
+        query
+            .load::<UserScore>(&mut conn)
+            .map_err(|_| DefaultError {
+                message: "Failed to load top users",
+            })?;
+
+    let users_with_scores = users_columns::users
+        .filter(
+            users_columns::id.eq_any(
+                user_scores
+                    .iter()
+                    .map(|user_score| user_score.author_id)
+                    .collect::<Vec<uuid::Uuid>>(),
+            ),
+        )
+        .load::<User>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load top users",
+        })?;
+
+    let user_scores_with_users = user_scores
+        .iter()
+        .map(|user_score| {
+            let user = users_with_scores
+                .iter()
+                .find(|user| user.id == user_score.author_id)
+                .unwrap();
+
+            UserDTOWithScore {
+                id: user_score.author_id,
+                email: if user.visible_email {
+                    Some(user.email.clone())
+                } else {
+                    None
+                },
+                username: user.username.clone(),
+                website: user.website.clone(),
+                visible_email: user.visible_email,
+                created_at: user.created_at,
+                score: user_score.score,
+            }
+        })
+        .collect::<Vec<UserDTOWithScore>>();
+
+    Ok(user_scores_with_users)
 }

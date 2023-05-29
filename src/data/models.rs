@@ -1,6 +1,6 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
-use diesel::{r2d2::ConnectionManager, PgConnection};
+use diesel::{r2d2::ConnectionManager, PgConnection, expression::ValidGrouping};
 use openai_dive::v1::resources::chat_completion::{ChatMessage, Role};
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +9,7 @@ use super::schema::*;
 // type alias to use in multiple places
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
 #[diesel(table_name = users)]
 pub struct User {
     pub id: uuid::Uuid,
@@ -37,7 +37,7 @@ impl User {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
 #[diesel(table_name = invitations)]
 pub struct Invitation {
     pub id: uuid::Uuid,
@@ -65,7 +65,7 @@ where
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
 #[diesel(table_name = password_resets)]
 pub struct PasswordReset {
     pub id: uuid::Uuid,
@@ -91,7 +91,7 @@ where
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
 #[diesel(table_name = topics)]
 pub struct Topic {
     pub id: uuid::Uuid,
@@ -178,7 +178,7 @@ impl Message {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
 #[diesel(table_name = stripe_customers)]
 pub struct StripeCustomer {
     pub id: uuid::Uuid,
@@ -200,7 +200,7 @@ impl StripeCustomer {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
 #[diesel(table_name = user_plans)]
 pub struct UserPlan {
     pub id: uuid::Uuid,
@@ -262,7 +262,7 @@ impl CardMetadata {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
 #[diesel(table_name = card_votes)]
 pub struct CardVote {
     pub id: uuid::Uuid,
@@ -364,4 +364,21 @@ pub struct UserDTOWithVotesAndCards {
     pub total_upvotes_received: i32,
     pub total_downvotes_received: i32,
     pub total_votes_cast: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
+pub struct UserDTOWithScore {
+    pub id: uuid::Uuid,
+    pub email: Option<String>,
+    pub username: Option<String>,
+    pub website: Option<String>,
+    pub visible_email: bool,
+    pub created_at: chrono::NaiveDateTime,
+    pub score: i64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
+pub struct UserScore {
+    pub author_id: uuid::Uuid,
+    pub score: i64,
 }
