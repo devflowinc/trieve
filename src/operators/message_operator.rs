@@ -1,5 +1,5 @@
 use crate::diesel::prelude::*;
-use crate::operators::topic_operator::{get_topic_query};
+use crate::operators::topic_operator::get_topic_query;
 use crate::{
     data::models::{Message, Pool},
     errors::DefaultError,

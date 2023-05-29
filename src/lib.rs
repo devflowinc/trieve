@@ -182,6 +182,14 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::post().to(handlers::card_handler::search_card)),
                     )
                     .service(
+                        web::resource("/vote")
+                            .route(web::post().to(handlers::vote_handler::create_vote)),
+                    )
+                    .service(
+                        web::resource("/vote/{card_metadata_id}")
+                            .route(web::delete().to(handlers::vote_handler::delete_vote)),
+                    )
+                    .service(
                         web::scope("/stripe")
                             .service(
                                 web::resource("/plan")
@@ -207,13 +215,12 @@ pub async fn main() -> std::io::Result<()> {
                                 ),
                             ),
                     )
-                    .service(
-                        web::resource("/user/{user_id}")
-                            .route(web::get().to(handlers::user_handler::get_user_with_votes_and_cards_by_id))
-                    )
+                    .service(web::resource("/user/{user_id}").route(
+                        web::get().to(handlers::user_handler::get_user_with_votes_and_cards_by_id),
+                    ))
                     .service(
                         web::resource("/user")
-                            .route(web::put().to(handlers::user_handler::update_user))
+                            .route(web::put().to(handlers::user_handler::update_user)),
                     ),
             )
     })

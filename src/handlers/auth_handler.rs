@@ -42,6 +42,29 @@ impl FromRequest for LoggedUser {
     }
 }
 
+// pub struct OptionLoggedUser(pub Option<LoggedUser>);
+
+// impl FromRequest for OptionLoggedUser {
+//     type Error = Error;
+//     type Future = Ready<Result<OptionLoggedUser, Error>>;
+
+//     fn from_request(req: &HttpRequest, pl: &mut Payload) -> Self::Future {
+//         let mut slim_user: Option<SlimUser> = None;
+
+//         if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
+//             if let Ok(user_json) = identity.id() {
+//                 log::info!("user_json: {}", user_json);
+//                 if let Ok(user) = serde_json::from_str(&user_json) {
+//                     slim_user = Some(user);
+//                     return ready(Ok(OptionLoggedUser(slim_user)));
+//                 }
+//             }
+//         }
+
+//         ready(Ok(OptionLoggedUser(slim_user)))
+//     }
+// }
+
 pub fn verify(hash: &str, password: &str) -> Result<bool, ServiceError> {
     argon2::verify_encoded_ext(
         hash,
