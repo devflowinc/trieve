@@ -215,6 +215,9 @@ pub async fn main() -> std::io::Result<()> {
                                 ),
                             ),
                     )
+                    .service(web::resource("/top_users/{page}").route(
+                        web::get().to(handlers::user_handler::get_top_users),
+                    ))
                     .service(web::resource("/user/{user_id}/{page}").route(
                         web::get().to(handlers::user_handler::get_user_with_votes_and_cards_by_id),
                     ))
