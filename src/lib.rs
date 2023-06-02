@@ -170,6 +170,11 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::post().to(handlers::card_handler::create_card)),
                     )
                     .service(
+                        web::resource("/card/count")
+                            .route(web::get().to(handlers::card_handler::get_total_card_count),
+                    )
+                    )
+                    .service(
                         web::resource("/card/{card_id}")
                             .route(web::get().to(handlers::card_handler::get_card_by_id)),
                     )

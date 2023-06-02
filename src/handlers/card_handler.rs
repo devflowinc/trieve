@@ -5,7 +5,8 @@ use serde_json::json;
 
 use crate::data::models::{CardMetadata, CardMetadataWithVotes, Pool};
 use crate::operators::card_operator::{
-    create_openai_embedding, get_metadata_from_point_ids, insert_card_metadata_query,
+    create_openai_embedding, get_card_count_query, get_metadata_from_point_ids,
+    insert_card_metadata_query,
 };
 use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
@@ -25,6 +26,13 @@ pub async fn create_card(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let words_in_content = card.content.split(" ").collect::<Vec<&str>>().len();
+    if words_in_content < 70 {
+        return Ok(HttpResponse::BadRequest().json(json!({
+            "message": "Card content must be at least 70 words long",
+        })));
+    }
+
     let embedding_vector = create_openai_embedding(&card.content).await?;
 
     let cards = search_card_query(embedding_vector.clone(), 1).await?;
@@ -136,4 +144,12 @@ pub async fn get_card_by_id(
         .map_err(actix_web::error::ErrorBadRequest)?;
 
     Ok(HttpResponse::Ok().json(card))
+}
+
+pub async fn get_total_card_count(pool: web::Data<Pool>) -> Result<HttpResponse, actix_web::Error> {
+    let total_count = web::block(move || get_card_count_query(&pool))
+        .await?
+        .map_err(actix_web::error::ErrorBadRequest)?;
+
+    Ok(HttpResponse::Ok().json(json!({ "total_count": total_count })))
 }

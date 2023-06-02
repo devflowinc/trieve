@@ -224,3 +224,18 @@ pub fn insert_card_metadata_query(
 
     Ok(())
 }
+
+pub fn get_card_count_query(
+    pool: &web::Data<Pool>,
+) -> Result<i64, DefaultError> {
+    use crate::data::schema::card_metadata::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    card_metadata
+        .count()
+        .get_result::<i64>(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Failed to get card count",
+        })
+}
