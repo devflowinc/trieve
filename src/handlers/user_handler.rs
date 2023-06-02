@@ -4,7 +4,9 @@ use serde::{Deserialize, Serialize};
 use crate::{
     data::models::Pool,
     errors::DefaultError,
-    operators::user_operator::{get_user_with_votes_and_cards_by_id_query, update_user_query, get_top_users_query},
+    operators::user_operator::{
+        get_top_users_query, get_user_with_votes_and_cards_by_id_query, update_user_query,
+    },
 };
 
 use super::auth_handler::LoggedUser;
@@ -69,8 +71,7 @@ pub async fn get_top_users(
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = page.into_inner();
 
-    let users_result = web::block(move || get_top_users_query(&page, &pool))
-        .await?;
+    let users_result = web::block(move || get_top_users_query(&page, &pool)).await?;
 
     match users_result {
         Ok(users) => Ok(HttpResponse::Ok().json(users)),

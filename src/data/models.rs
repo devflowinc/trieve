@@ -1,6 +1,6 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
-use diesel::{r2d2::ConnectionManager, PgConnection, expression::ValidGrouping};
+use diesel::{expression::ValidGrouping, r2d2::ConnectionManager, PgConnection};
 use openai_dive::v1::resources::chat_completion::{ChatMessage, Role};
 use serde::{Deserialize, Serialize};
 
@@ -241,12 +241,14 @@ pub struct CardMetadata {
     pub qdrant_point_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub oc_file_path: Option<String>,
 }
 
 impl CardMetadata {
     pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(
         content: S,
         link: &Option<String>,
+        oc_file_path: &Option<String>,
         author_id: T,
         qdrant_point_id: T,
     ) -> Self {
@@ -258,6 +260,7 @@ impl CardMetadata {
             qdrant_point_id: qdrant_point_id.into(),
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
+            oc_file_path: oc_file_path.clone(),
         }
     }
 }
@@ -302,6 +305,7 @@ pub struct CardMetadataWithVotes {
     pub vote_by_current_user: Option<bool>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub oc_file_path: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

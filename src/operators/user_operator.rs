@@ -9,7 +9,7 @@ use crate::{
     errors::DefaultError,
 };
 use actix_web::web;
-use diesel::sql_types::{Text, BigInt};
+use diesel::sql_types::{BigInt, Text};
 pub fn get_user_by_email_query(
     user_email: &String,
     pool: &web::Data<Pool>,
@@ -152,6 +152,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
                 vote_by_current_user,
                 created_at: metadata.created_at,
                 updated_at: metadata.updated_at,
+                oc_file_path: metadata.oc_file_path.clone(),
             }
         })
         .collect();
