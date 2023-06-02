@@ -104,6 +104,14 @@ pub fn get_user_with_votes_and_cards_by_id_query(
         }),
     }?;
 
+    let total_cards_created_by_user: i64 = card_metadata_columns::card_metadata
+        .filter(card_metadata_columns::author_id.eq(user.id))
+        .count()
+        .get_result(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Error loading user cards",
+        })?;
+
     let user_card_metadatas = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::author_id.eq(user.id))
         .order(card_metadata_columns::updated_at.desc())
@@ -158,15 +166,20 @@ pub fn get_user_with_votes_and_cards_by_id_query(
         .collect();
 
     let user_card_votes = card_votes_columns::card_votes
-        .filter(
-            card_votes_columns::card_metadata_id.eq_any(
-                user_card_metadatas
-                    .iter()
-                    .map(|metadata| metadata.id)
-                    .collect::<Vec<uuid::Uuid>>(),
-            ),
+        .inner_join(
+            card_metadata_columns::card_metadata
+                .on(card_votes_columns::card_metadata_id.eq(card_metadata_columns::id)),
         )
-        .load::<crate::data::models::CardVote>(&mut conn)
+        .select((
+            card_votes_columns::id,
+            card_votes_columns::voted_user_id,
+            card_votes_columns::card_metadata_id,
+            card_votes_columns::vote,
+            card_votes_columns::created_at,
+            card_votes_columns::updated_at,
+        ))
+        .filter(card_metadata_columns::author_id.eq(user.id))
+        .load::<CardVote>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to load upvotes",
         })?;
@@ -174,10 +187,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
         .iter()
         .filter(|card_vote| card_vote.vote)
         .count() as i32;
-    let total_downvotes_received = user_card_votes
-        .iter()
-        .filter(|card_vote| !card_vote.vote)
-        .count() as i32;
+    let total_downvotes_received = user_card_votes.len() as i32 - total_upvotes_received;
 
     let total_votes_cast = card_votes_columns::card_votes
         .filter(card_votes_columns::voted_user_id.eq(user.id))
@@ -198,6 +208,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
         website: user.website,
         visible_email: user.visible_email,
         created_at: user.created_at,
+        total_cards_created: total_cards_created_by_user,
         cards: card_metadata_with_upvotes,
         total_upvotes_received,
         total_downvotes_received,
@@ -278,7 +289,10 @@ pub fn get_top_users_query(
     let mut conn = pool.get().unwrap();
 
     let query = card_metadata_columns::card_metadata
-        .inner_join(card_votes_columns::card_votes.on(card_metadata_columns::id.eq(card_votes_columns::card_metadata_id)))
+        .inner_join(
+            card_votes_columns::card_votes
+                .on(card_metadata_columns::id.eq(card_votes_columns::card_metadata_id))
+        )
         .select((
             card_metadata_columns::author_id,
             diesel::dsl::sql::<BigInt>("(SUM(case when vote = true then 1 else 0 end) - SUM(case when vote = false then 1 else 0 end)) as score"),
