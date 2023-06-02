@@ -176,6 +176,7 @@ pub fn get_metadata_from_point_ids(
                 id: metadata.id,
                 content: metadata.content,
                 link: metadata.link,
+                oc_file_path: metadata.oc_file_path,
                 author,
                 qdrant_point_id: metadata.qdrant_point_id,
                 total_upvotes,

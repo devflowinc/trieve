@@ -17,6 +17,7 @@ use super::auth_handler::LoggedUser;
 pub struct CreateCardData {
     content: String,
     link: Option<String>,
+    oc_file_path: Option<String>,
 }
 
 pub async fn create_card(
@@ -54,7 +55,13 @@ pub async fn create_card(
 
     web::block(move || {
         insert_card_metadata_query(
-            CardMetadata::from_details(&card.content, &card.link, user.id, point_id),
+            CardMetadata::from_details(
+                &card.content,
+                &card.link,
+                &card.oc_file_path,
+                user.id,
+                point_id,
+            ),
             &pool,
         )
     })
