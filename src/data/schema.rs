@@ -1,6 +1,18 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    card_collection (id) {
+        id -> Uuid,
+        author_id -> Uuid,
+        name -> Text,
+        is_public -> Bool,
+        description -> Text,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     card_metadata (id) {
         id -> Uuid,
         content -> Text,
@@ -108,6 +120,7 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(card_collection -> users (author_id));
 diesel::joinable!(card_metadata -> users (author_id));
 diesel::joinable!(card_votes -> card_metadata (card_metadata_id));
 diesel::joinable!(card_votes -> users (voted_user_id));
@@ -115,6 +128,7 @@ diesel::joinable!(messages -> topics (topic_id));
 diesel::joinable!(topics -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    card_collection,
     card_metadata,
     card_votes,
     invitations,
