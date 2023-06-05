@@ -171,8 +171,7 @@ pub async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::resource("/card/count")
-                            .route(web::get().to(handlers::card_handler::get_total_card_count),
-                    )
+                            .route(web::get().to(handlers::card_handler::get_total_card_count)),
                     )
                     .service(
                         web::resource("/card/{card_id}")
@@ -230,7 +229,10 @@ pub async fn main() -> std::io::Result<()> {
                     .service(
                         web::resource("/user")
                             .route(web::put().to(handlers::user_handler::update_user)),
-                    ),
+                    )
+                    .service(web::resource("/card_collection").route(
+                        web::post().to(handlers::collection_handler::create_card_collection),
+                    )),
             )
     })
     .bind(("0.0.0.0", 8090))?
