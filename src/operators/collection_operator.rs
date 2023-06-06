@@ -1,4 +1,4 @@
-use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+use crate::{diesel::{ExpressionMethods, QueryDsl, RunQueryDsl}, data::models::CardCollectionBookmark};
 use actix_web::web;
 
 use crate::{
@@ -100,6 +100,27 @@ pub fn update_card_collection_query(
         .execute(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Error updating collection",
+        })?;
+
+    Ok(())
+}
+
+pub fn create_card_bookmark_query(
+    pool: web::Data<Pool>,
+    bookmark: CardCollectionBookmark
+) -> Result<(), DefaultError> {
+    use crate::data::schema::card_collection_bookmarks::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::insert_into(card_collection_bookmarks)
+        .values(&bookmark)
+        .execute(&mut conn)
+        .map_err(|_err| {
+            log::error!("Error creating bookmark {:}", _err);
+            DefaultError {
+                    message: "Error creating bookmark",
+                }
         })?;
 
     Ok(())

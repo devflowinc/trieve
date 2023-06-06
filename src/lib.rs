@@ -239,7 +239,10 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::get().to(handlers::collection_handler::get_card_collections))
                             .route(web::delete().to(handlers::collection_handler::delete_card_collection))
                             .route(web::put().to(handlers::collection_handler::update_card_collection)) ,
-                    ),
+                    ).service(
+                        web::resource("/card_collection/{card_collection_id}")
+                            .route(web::post().to(handlers::collection_handler::add_bookmark))
+                    )
             )
     })
     .bind(("0.0.0.0", 8090))?
