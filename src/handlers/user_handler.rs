@@ -2,10 +2,11 @@ use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    data::models::Pool,
+    data::models::{Pool, UserDTOWithScore},
     errors::DefaultError,
     operators::user_operator::{
-        get_top_users_query, get_user_with_votes_and_cards_by_id_query, update_user_query,
+        get_top_users_query, get_total_users_query, get_user_with_votes_and_cards_by_id_query,
+        update_user_query,
     },
 };
 
@@ -64,17 +65,29 @@ pub async fn update_user(
         Err(e) => Ok(HttpResponse::BadRequest().json(e)),
     }
 }
+#[derive(Serialize, Deserialize)]
 
+pub struct TopUserData {
+    users: Vec<UserDTOWithScore>,
+    total_user_pages: i64,
+}
 pub async fn get_top_users(
     page: web::Path<i64>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = page.into_inner();
-
+    let pool2 = pool.clone();
     let users_result = web::block(move || get_top_users_query(&page, &pool)).await?;
+    let total_users = web::block(move || get_total_users_query(&pool2))
+        .await?
+        .map_err(actix_web::error::ErrorBadRequest)?;
+    let total_user_pages = (total_users as f64 / 25.0).ceil() as i64;
 
     match users_result {
-        Ok(users) => Ok(HttpResponse::Ok().json(users)),
+        Ok(users) => Ok(HttpResponse::Ok().json(TopUserData {
+            users,
+            total_user_pages,
+        })),
         Err(e) => Ok(HttpResponse::BadRequest().json(e)),
     }
 }

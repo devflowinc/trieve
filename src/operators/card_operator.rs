@@ -225,9 +225,7 @@ pub fn insert_card_metadata_query(
     Ok(())
 }
 
-pub fn get_card_count_query(
-    pool: &web::Data<Pool>,
-) -> Result<i64, DefaultError> {
+pub fn get_card_count_query(pool: &web::Data<Pool>) -> Result<i64, DefaultError> {
     use crate::data::schema::card_metadata::dsl::*;
 
     let mut conn = pool.get().unwrap();

@@ -95,6 +95,11 @@ pub struct ScoreCardDTO {
     score: f32,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct SearchCardQueryResult {
+    score_cards: Vec<ScoreCardDTO>,
+    total_card_pages: i64,
+}
 pub async fn search_card(
     data: web::Json<SearchCardData>,
     page: Option<web::Path<u64>>,
@@ -103,7 +108,7 @@ pub async fn search_card(
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_openai_embedding(&data.content).await?;
-
+    let pool2 = pool.clone();
     let search_results = search_card_query(embedding_vector, page).await?;
 
     let point_ids = search_results
@@ -132,7 +137,15 @@ pub async fn search_card(
         })
         .collect();
 
-    Ok(HttpResponse::Ok().json(score_cards))
+    let card_count: i64 = web::block(move || get_card_count_query(&pool2))
+        .await?
+        .map_err(actix_web::error::ErrorBadRequest)?;
+    let total_card_pages = (card_count as f64 / 25.0).ceil() as i64;
+
+    Ok(HttpResponse::Ok().json(SearchCardQueryResult {
+        score_cards,
+        total_card_pages,
+    }))
 }
 
 pub async fn get_card_by_id(
