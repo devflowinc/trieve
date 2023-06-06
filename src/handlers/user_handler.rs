@@ -81,7 +81,7 @@ pub async fn get_top_users(
     let total_users = web::block(move || get_total_users_query(&pool2))
         .await?
         .map_err(actix_web::error::ErrorBadRequest)?;
-    let total_user_pages = (total_users as f64 / 10.0).ceil() as i64;
+    let total_user_pages = (total_users as f64 / 25.0).ceil() as i64;
 
     match users_result {
         Ok(users) => Ok(HttpResponse::Ok().json(TopUserData {
