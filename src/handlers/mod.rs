@@ -8,3 +8,4 @@ pub mod stripe_handler;
 pub mod topic_handler;
 pub mod user_handler;
 pub mod vote_handler;
+pub mod collection_handler;

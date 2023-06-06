@@ -356,6 +356,38 @@ impl From<User> for UserDTO {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Clone)]
+#[diesel(table_name = card_collection)]
+pub struct CardCollection {
+    pub id: uuid::Uuid,
+    pub author_id: uuid::Uuid,
+    pub name: String,
+    pub is_public: bool,
+    pub description: String,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl CardCollection {
+
+    pub fn from_details(
+            author_id: uuid::Uuid,
+            name: String,
+            is_public: bool,
+            description: String,
+        ) -> Self {
+        CardCollection {
+            id: uuid::Uuid::new_v4(),
+            is_public,
+            author_id,
+            name,
+            description,
+            created_at: chrono::Local::now().naive_local(),
+            updated_at: chrono::Local::now().naive_local(),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UserDTOWithVotesAndCards {
     pub id: uuid::Uuid,
