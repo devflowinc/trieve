@@ -237,7 +237,8 @@ pub async fn main() -> std::io::Result<()> {
                                     .to(handlers::collection_handler::create_card_collection),
                             )
                             .route(web::get().to(handlers::collection_handler::get_card_collections))
-                            .route(web::delete().to(handlers::collection_handler::delete_card_collection)),
+                            .route(web::delete().to(handlers::collection_handler::delete_card_collection))
+                            .route(web::put().to(handlers::collection_handler::update_card_collection)) ,
                     ),
             )
     })

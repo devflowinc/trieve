@@ -79,3 +79,28 @@ pub fn delete_collection_by_id_query(
 
     Ok(())
 }
+
+pub fn update_card_collection_query(
+    collection: CardCollection,
+    new_name: Option<String>,
+    new_description: Option<String>,
+    new_is_public: Option<bool>,
+    pool: web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::card_collection::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::update(card_collection.filter(id.eq(collection.id)))
+        .set((
+            name.eq(new_name.unwrap_or(collection.name)),
+            description.eq(new_description.unwrap_or(collection.description)),
+            is_public.eq(new_is_public.unwrap_or(collection.is_public)),
+        ))
+        .execute(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Error updating collection",
+        })?;
+
+    Ok(())
+}

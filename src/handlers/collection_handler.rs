@@ -5,7 +5,7 @@ use crate::{
     data::models::{CardCollection, Pool},
     operators::collection_operator::{
         create_collection_query, delete_collection_by_id_query, get_collection_by_id_query,
-        get_collections_for_user_query,
+        get_collections_for_user_query, update_card_collection_query,
     },
 };
 
@@ -76,6 +76,45 @@ pub async fn delete_card_collection(
     web::block(move || delete_collection_by_id_query(collection_id, pool))
         .await?
         .map_err(actix_web::error::ErrorBadRequest)?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
+#[derive(Deserialize)]
+pub struct UpdateCardCollectionData {
+    pub collection_id: uuid::Uuid,
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub is_public: Option<bool>,
+}
+
+pub async fn update_card_collection(
+    body: web::Json<UpdateCardCollectionData>,
+    pool: web::Data<Pool>,
+    user: LoggedUser,
+) -> Result<HttpResponse, actix_web::Error> {
+    let name = body.name.clone();
+    let description = body.description.clone();
+    let is_public = body.is_public;
+    let collection_id = body.collection_id;
+
+    let pool_two = pool.clone();
+
+    let collection = web::block(move || get_collection_by_id_query(collection_id, pool_two))
+        .await?
+        .map_err(actix_web::error::ErrorBadRequest)?;
+
+    if collection.author_id != user.id {
+        return Err(actix_web::error::ErrorBadRequest(
+            "You are not the author of this collection",
+        ));
+    }
+
+    web::block(move || {
+        update_card_collection_query(collection, name, description, is_public, pool)
+    })
+    .await?
+    .map_err(actix_web::error::ErrorBadRequest)?;
 
     Ok(HttpResponse::NoContent().finish())
 }
