@@ -388,6 +388,16 @@ impl CardCollection {
     }
 }
 
+#[derive(Debug, Default, Serialize, Deserialize, Queryable, Insertable, Clone)]
+#[diesel(table_name = card_collection_bookmarks)]
+pub struct CardCollectionBookmark {
+    pub id: uuid::Uuid,
+    pub collection_id: uuid::Uuid,
+    pub card_metadata_id: uuid::Uuid,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UserDTOWithVotesAndCards {
     pub id: uuid::Uuid,
