@@ -351,3 +351,18 @@ pub fn get_top_users_query(
 
     Ok(user_scores_with_users)
 }
+
+pub fn get_total_users_query(pool: &web::Data<Pool>) -> Result<i64, DefaultError> {
+    use crate::data::schema::users::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    let total_users = users
+        .count()
+        .get_result::<i64>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load total users",
+        })?;
+
+    Ok(total_users)
+}
