@@ -3,10 +3,7 @@ use serde::Deserialize;
 
 use crate::{
     data::models::{CardCollection, CardCollectionBookmark, Pool},
-    operators::collection_operator::{
-        create_card_bookmark_query, create_collection_query, delete_collection_by_id_query,
-        get_collection_by_id_query, get_collections_for_user_query, update_card_collection_query,
-    },
+    operators::collection_operator::*,
 };
 
 use super::auth_handler::LoggedUser;
@@ -146,6 +143,61 @@ pub async fn add_bookmark(
                 card_metadata_id,
                 ..Default::default()
             },
+        )
+    })
+    .await?
+    .map_err(actix_web::error::ErrorBadRequest)?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
+pub async fn get_all_bookmarks(
+    collection_id: web::Path<uuid::Uuid>,
+    pool: web::Data<Pool>,
+    user: LoggedUser,
+) -> Result<HttpResponse, actix_web::Error> {
+    let collection_id = collection_id.into_inner();
+    let pool_two = pool.clone();
+
+    let collection = web::block(move || get_collection_by_id_query(collection_id, pool_two))
+        .await?
+        .map_err(actix_web::error::ErrorBadRequest)?;
+
+    if !collection.is_public && collection.author_id != user.id {
+        return Err(actix_web::error::ErrorUnauthorized(
+            "You are not authorized to view this collection",
+        ));
+    }
+
+    let bookmarks = web::block(move || {
+        get_bookmarks_for_collection_query(collection_id, pool)
+    }).await?.map_err(actix_web::error::ErrorBadRequest)?;
+
+    Ok(HttpResponse::Ok().json(bookmarks))
+}
+
+#[derive(Deserialize)]
+pub struct RemoveBookmarkData {
+    pub bookmark_id: uuid::Uuid,
+}
+
+pub async fn delete_bookmark(
+    collection_id: web::Path<uuid::Uuid>,
+    body: web::Json<RemoveBookmarkData>,
+    pool: web::Data<Pool>,
+    user: LoggedUser,
+) -> Result<HttpResponse, actix_web::Error> {
+    let collection_id = collection_id.into_inner();
+    let bookmark_id = body.bookmark_id;
+
+    let pool_two = pool.clone();
+
+    user_owns_collection(user.id, collection_id, pool_two).await?;
+
+    web::block(move || {
+        delete_bookmark_query(
+            bookmark_id,
+            pool,
         )
     })
     .await?
