@@ -356,13 +356,13 @@ impl From<User> for UserDTO {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Clone)]
 #[diesel(table_name = card_collection)]
 pub struct CardCollection {
     pub id: uuid::Uuid,
     pub author_id: uuid::Uuid,
-    pub is_public: bool,
     pub name: String,
+    pub is_public: bool,
     pub description: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
