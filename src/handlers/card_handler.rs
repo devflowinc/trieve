@@ -35,8 +35,10 @@ pub async fn create_card(
 
     let embedding_vector = create_openai_embedding(&card.content).await?;
 
-    let cards = search_card_query(embedding_vector.clone(), 1, pool.clone(), None).await?;
-    let first_result = cards.get(0);
+    let cards = search_card_query(embedding_vector.clone(), 1, pool.clone(), None)
+        .await
+        .map_err(|e| actix_web::error::ErrorBadRequest(e.message))?;
+    let first_result = cards.search_results.get(0);
 
     if let Some(score_card) = first_result {
         let mut similarity_threashold = 0.95;
@@ -97,10 +99,11 @@ pub struct ScoreCardDTO {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct SearchCardQueryResult {
+pub struct SearchCardQueryResponseBody {
     score_cards: Vec<ScoreCardDTO>,
     total_card_pages: i64,
 }
+
 pub async fn search_card(
     data: web::Json<SearchCardData>,
     page: Option<web::Path<u64>>,
@@ -111,16 +114,21 @@ pub async fn search_card(
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_openai_embedding(&data.content).await?;
     let pool2 = pool.clone();
-    let pool3 = pool.clone();
-    let search_results = search_card_query(
+    let search_results_result = search_card_query(
         embedding_vector,
         page,
         pool,
         data.filter_oc_file_path.clone(),
     )
-    .await?;
+    .await;
 
-    let point_ids = search_results
+    let search_card_query_results = match search_results_result {
+        Ok(results) => results,
+        Err(err) => return Ok(HttpResponse::BadRequest().json(err)),
+    };
+
+    let point_ids = search_card_query_results
+        .search_results
         .iter()
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
@@ -131,7 +139,8 @@ pub async fn search_card(
             .await?
             .map_err(actix_web::error::ErrorBadRequest)?;
 
-    let score_cards: Vec<ScoreCardDTO> = search_results
+    let score_cards: Vec<ScoreCardDTO> = search_card_query_results
+        .search_results
         .iter()
         .map(|search_result| {
             let card = metadata_cards
@@ -146,14 +155,9 @@ pub async fn search_card(
         })
         .collect();
 
-    let card_count: i64 = web::block(move || get_card_count_query(&pool3))
-        .await?
-        .map_err(actix_web::error::ErrorBadRequest)?;
-    let total_card_pages = (card_count as f64 / 25.0).ceil() as i64;
-
-    Ok(HttpResponse::Ok().json(SearchCardQueryResult {
+    Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
         score_cards,
-        total_card_pages,
+        total_card_pages: search_card_query_results.total_card_pages,
     }))
 }
 
