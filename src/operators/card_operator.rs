@@ -2,16 +2,19 @@ use crate::data::models::CardMetadataWithVotes;
 use crate::data::models::CardVote;
 use crate::data::models::User;
 use crate::data::models::UserDTO;
+use crate::diesel::TextExpressionMethods;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::{
     data::models::{CardMetadata, Pool},
     errors::DefaultError,
 };
 use actix_web::web;
+use diesel::dsl::any;
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
+use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::{
     prelude::{QdrantClient, QdrantClientConfig},
-    qdrant::{point_id::PointIdOptions, SearchPoints},
+    qdrant::{point_id::PointIdOptions, Condition, Filter, HasIdCondition, PointId, SearchPoints},
 };
 use serde::{Deserialize, Serialize};
 
@@ -53,12 +56,44 @@ pub struct SearchResult {
 pub async fn search_card_query(
     embedding_vector: Vec<f32>,
     page: u64,
+    pool: web::Data<Pool>,
+    filter_oc_file_path: Option<&Vec<String>>,
 ) -> Result<Vec<SearchResult>, actix_web::Error> {
     let page = if page == 0 { 1 } else { page };
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+    let mut conn = pool.get().unwrap();
+
+    let filtered_ids: Vec<uuid::Uuid> = card_metadata_columns::card_metadata
+        .select(card_metadata_columns::id)
+        .filter(
+            card_metadata_columns::oc_file_path.like(any(filter_oc_file_path
+                .unwrap()
+                .iter()
+                .map(|value| format!("%{}%", value))
+                .collect::<Vec<String>>()
+                .as_slice())),
+        )
+        .load(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })
+        .unwrap();
 
     let qdrant = get_qdrant_connection()
         .await
         .map_err(|err| actix_web::error::ErrorBadRequest(err.message))?;
+
+    let filtered_point_ids: Vec<PointId> = filtered_ids
+        .iter()
+        .map(|uuid| uuid.to_string().into())
+        .collect::<Vec<PointId>>();
+    //convert into PointID?
+    let mut filter = Filter::default();
+    filter.should.push(Condition {
+        condition_one_of: Some(HasId(HasIdCondition {
+            has_id: (filtered_point_ids),
+        })),
+    });
 
     let data = qdrant
         .search_points(&SearchPoints {
