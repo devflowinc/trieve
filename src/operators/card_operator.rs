@@ -57,7 +57,7 @@ pub async fn search_card_query(
     embedding_vector: Vec<f32>,
     page: u64,
     pool: web::Data<Pool>,
-    filter_oc_file_path: Option<&Vec<String>>,
+    filter_oc_file_path: Option<Vec<String>>,
 ) -> Result<Vec<SearchResult>, actix_web::Error> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
@@ -67,6 +67,7 @@ pub async fn search_card_query(
         .select(card_metadata_columns::id)
         .filter(
             card_metadata_columns::oc_file_path.like(any(filter_oc_file_path
+                .as_ref()
                 .unwrap()
                 .iter()
                 .map(|value| format!("%{}%", value))
@@ -102,6 +103,7 @@ pub async fn search_card_query(
             limit: 25,
             offset: Some((page - 1) * 25),
             with_payload: None,
+            filter: Some(filter),
             ..Default::default()
         })
         .await
