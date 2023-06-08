@@ -39,6 +39,7 @@ diesel::table! {
 diesel::table! {
     invitations (id) {
         id -> Uuid,
+
         email -> Varchar,
         expires_at -> Timestamp,
         created_at -> Timestamp,
@@ -53,6 +54,7 @@ diesel::table! {
         topic_id -> Uuid,
         sort_order -> Int4,
         content -> Text,
+
         role -> Varchar,
         deleted -> Bool,
         prompt_tokens -> Nullable<Int4>,
@@ -65,6 +67,7 @@ diesel::table! {
 diesel::table! {
     password_resets (id) {
         id -> Uuid,
+
         email -> Varchar,
         expires_at -> Timestamp,
         created_at -> Timestamp,
@@ -76,6 +79,7 @@ diesel::table! {
     stripe_customers (id) {
         id -> Uuid,
         stripe_id -> Text,
+
         email -> Nullable<Varchar>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
