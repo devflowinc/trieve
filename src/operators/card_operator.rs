@@ -68,22 +68,15 @@ pub async fn search_card_query(
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     let mut conn = pool.get().unwrap();
-
-    let filtered_ids: Vec<uuid::Uuid> = card_metadata_columns::card_metadata
-        .select(card_metadata_columns::id)
-        .filter(
-            card_metadata_columns::oc_file_path.like(any(filter_oc_file_path
-                .as_ref()
-                .unwrap()
-                .iter()
-                .map(|value| format!("%{}%", value))
-                .collect::<Vec<String>>()
-                .as_slice())),
-        )
-        .load(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to load metadata",
-        })?;
+    let mut query = card_metadata_columns::card_metadata
+        .select(card_metadata_columns::qdrant_point_id)
+        .into_boxed();
+    for pattern in filter_oc_file_path.unwrap() {
+        query = query.or_filter(card_metadata_columns::oc_file_path.like(format!("%{}%", pattern)));
+    }
+    let filtered_ids: Vec<uuid::Uuid> = query.load(&mut conn).map_err(|_| DefaultError {
+        message: "Failed to load metadata",
+    })?;
 
     let qdrant = get_qdrant_connection().await?;
 
@@ -114,6 +107,7 @@ pub async fn search_card_query(
             message: "Failed to search points on Qdrant",
         })?;
 
+    print!("Filtered ids: {:?}", data.result);
     let point_ids: Vec<SearchResult> = data
         .result
         .iter()
