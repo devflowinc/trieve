@@ -112,8 +112,13 @@ pub async fn search_card(
     let embedding_vector = create_openai_embedding(&data.content).await?;
     let pool2 = pool.clone();
     let pool3 = pool.clone();
-    let search_results =
-        search_card_query(embedding_vector, page, pool, data.filter_oc_file_path).await?;
+    let search_results = search_card_query(
+        embedding_vector,
+        page,
+        pool,
+        data.filter_oc_file_path.clone(),
+    )
+    .await?;
 
     let point_ids = search_results
         .iter()
