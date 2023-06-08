@@ -9,7 +9,6 @@ use crate::{
     errors::DefaultError,
 };
 use actix_web::web;
-use diesel::dsl::any;
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::{
