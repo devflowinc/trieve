@@ -35,7 +35,7 @@ pub async fn create_card(
 
     let embedding_vector = create_openai_embedding(&card.content).await?;
 
-    let cards = search_card_query(embedding_vector.clone(), 1).await?;
+    let cards = search_card_query(embedding_vector.clone(), 1, pool.clone(), None).await?;
     let first_result = cards.get(0);
 
     if let Some(score_card) = first_result {
@@ -87,6 +87,7 @@ pub async fn create_card(
 #[derive(Serialize, Deserialize)]
 pub struct SearchCardData {
     content: String,
+    filter_oc_file_path: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -103,13 +104,16 @@ pub struct SearchCardQueryResult {
 pub async fn search_card(
     data: web::Json<SearchCardData>,
     page: Option<web::Path<u64>>,
+
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_openai_embedding(&data.content).await?;
     let pool2 = pool.clone();
-    let search_results = search_card_query(embedding_vector, page).await?;
+    let pool3 = pool.clone();
+    let search_results =
+        search_card_query(embedding_vector, page, pool, data.filter_oc_file_path).await?;
 
     let point_ids = search_results
         .iter()
@@ -118,7 +122,7 @@ pub async fn search_card(
 
     let current_user_id = user.map(|user| user.id);
     let metadata_cards =
-        web::block(move || get_metadata_from_point_ids(point_ids, current_user_id, pool))
+        web::block(move || get_metadata_from_point_ids(point_ids, current_user_id, pool2))
             .await?
             .map_err(actix_web::error::ErrorBadRequest)?;
 
@@ -137,7 +141,7 @@ pub async fn search_card(
         })
         .collect();
 
-    let card_count: i64 = web::block(move || get_card_count_query(&pool2))
+    let card_count: i64 = web::block(move || get_card_count_query(&pool3))
         .await?
         .map_err(actix_web::error::ErrorBadRequest)?;
     let total_card_pages = (card_count as f64 / 25.0).ceil() as i64;
