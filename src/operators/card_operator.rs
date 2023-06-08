@@ -107,7 +107,6 @@ pub async fn search_card_query(
             message: "Failed to search points on Qdrant",
         })?;
 
-    print!("Filtered ids: {:?}", data.result);
     let point_ids: Vec<SearchResult> = data
         .result
         .iter()
