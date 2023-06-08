@@ -71,7 +71,7 @@ pub async fn search_card_query(
     let mut query = card_metadata_columns::card_metadata
         .select(card_metadata_columns::qdrant_point_id)
         .into_boxed();
-    for pattern in filter_oc_file_path.unwrap() {
+    for pattern in filter_oc_file_path.unwrap_or([].to_vec()) {
         query = query.or_filter(card_metadata_columns::oc_file_path.like(format!("%{}%", pattern)));
     }
     let filtered_ids: Vec<uuid::Uuid> = query.load(&mut conn).map_err(|_| DefaultError {
