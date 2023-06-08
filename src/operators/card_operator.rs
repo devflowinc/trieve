@@ -53,12 +53,18 @@ pub struct SearchResult {
     pub point_id: uuid::Uuid,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct SearchCardQueryResult {
+    pub search_results: Vec<SearchResult>,
+    pub total_card_pages: i64,
+}
+
 pub async fn search_card_query(
     embedding_vector: Vec<f32>,
     page: u64,
     pool: web::Data<Pool>,
     filter_oc_file_path: Option<Vec<String>>,
-) -> Result<Vec<SearchResult>, actix_web::Error> {
+) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     let mut conn = pool.get().unwrap();
@@ -77,22 +83,19 @@ pub async fn search_card_query(
         .load(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to load metadata",
-        })
-        .unwrap();
+        })?;
 
-    let qdrant = get_qdrant_connection()
-        .await
-        .map_err(|err| actix_web::error::ErrorBadRequest(err.message))?;
+    let qdrant = get_qdrant_connection().await?;
 
-    let filtered_point_ids: Vec<PointId> = filtered_ids
+    let filtered_point_ids: &Vec<PointId> = &filtered_ids
         .iter()
         .map(|uuid| uuid.to_string().into())
         .collect::<Vec<PointId>>();
-    //convert into PointID?
+
     let mut filter = Filter::default();
     filter.should.push(Condition {
         condition_one_of: Some(HasId(HasIdCondition {
-            has_id: (filtered_point_ids),
+            has_id: (filtered_point_ids).to_vec(),
         })),
     });
 
@@ -107,7 +110,9 @@ pub async fn search_card_query(
             ..Default::default()
         })
         .await
-        .map_err(actix_web::error::ErrorBadRequest)?;
+        .map_err(|_e| DefaultError {
+            message: "Failed to search points on Qdrant",
+        })?;
 
     let point_ids: Vec<SearchResult> = data
         .result
@@ -121,7 +126,10 @@ pub async fn search_card_query(
         })
         .collect();
 
-    Ok(point_ids)
+    Ok(SearchCardQueryResult {
+        search_results: point_ids,
+        total_card_pages: (filtered_point_ids.len() as f64 / 25.0).ceil() as i64,
+    })
 }
 
 #[derive(Serialize, Deserialize)]
