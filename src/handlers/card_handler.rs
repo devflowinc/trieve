@@ -26,7 +26,7 @@ pub async fn create_card(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let words_in_content = card.content.split(" ").collect::<Vec<&str>>().len();
+    let words_in_content = card.content.split(' ').collect::<Vec<&str>>().len();
     if words_in_content < 70 {
         return Ok(HttpResponse::BadRequest().json(json!({
             "message": "Card content must be at least 70 words long",

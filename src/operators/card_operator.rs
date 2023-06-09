@@ -79,7 +79,7 @@ pub async fn search_card_query(
     }
 
     for link_url in filter_link_url.unwrap_or([].to_vec()) {
-        query = query.or_filter(card_metadata_columns::link.like((format!("%{}%", link_url))));
+        query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
     }
 
     let filtered_ids: Vec<uuid::Uuid> = query.load(&mut conn).map_err(|_| DefaultError {
