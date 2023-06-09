@@ -136,8 +136,8 @@ pub fn get_user_with_votes_and_cards_by_id_query(
             message: "Failed to load upvotes",
         })?;
 
-    let card_metadata_with_upvotes: Vec<CardMetadataWithVotes> = (&user_card_metadatas)
-        .into_iter()
+    let card_metadata_with_upvotes: Vec<CardMetadataWithVotes> = (user_card_metadatas)
+        .iter()
         .map(|metadata| {
             let votes = card_votes
                 .iter()
@@ -229,40 +229,19 @@ pub fn update_user_query(
         let user_by_username =
             get_user_by_username_query(&new_user.username.clone().unwrap(), pool);
 
-        match user_by_username {
-            Ok(old_user) => {
-                if !(old_user.username.is_some()
-                    && old_user.username.unwrap() == new_user.username.clone().unwrap())
-                {
-                    return Err(DefaultError {
-                        message: "That username is already taken",
-                    });
-                }
+        if let Ok(old_user) = user_by_username {
+            if !(old_user.username.is_some()
+                && old_user.username.unwrap() == new_user.username.clone().unwrap())
+            {
+                return Err(DefaultError {
+                    message: "That username is already taken",
+                });
             }
-            Err(_) => {}
         }
     }
 
-    let new_user_name: Option<String> = match new_user.username.clone() {
-        Some(user_name) => {
-            if user_name != "" {
-                Some(user_name)
-            } else {
-                None
-            }
-        }
-        None => None,
-    };
-    let new_user_website: Option<String> = match new_user.website.clone() {
-        Some(user_website) => {
-            if user_website != "" {
-                Some(user_website)
-            } else {
-                None
-            }
-        }
-        None => None,
-    };
+    let new_user_name: Option<String> = new_user.username.clone().filter(|user_name| !user_name.is_empty());
+    let new_user_website: Option<String> = new_user.website.clone().filter(|user_website| !user_website.is_empty());
 
     let user: User = diesel::update(users.filter(id.eq(user_id)))
         .set((

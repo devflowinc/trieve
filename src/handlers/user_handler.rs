@@ -30,7 +30,7 @@ pub async fn get_user_with_votes_and_cards_by_id(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_query_id = path_data.user_id;
-    let page = path_data.page.clone();
+    let page = path_data.page;
 
     let user_result =
         web::block(move || get_user_with_votes_and_cards_by_id_query(&user_query_id, &page, &pool))

@@ -143,7 +143,7 @@ pub async fn edit_message_handler(
     let _ = web::block(move || delete_message_query(&user.id, message_id, topic_id, &second_pool))
         .await?;
 
-    return create_message_completion_handler(
+    create_message_completion_handler(
         actix_web::web::Json(CreateMessageData {
             new_message_content: new_message_content.to_string(),
             topic_id,
@@ -151,7 +151,7 @@ pub async fn edit_message_handler(
         user,
         third_pool,
     )
-    .await;
+    .await
 }
 
 pub async fn regenerate_message_handler(
@@ -176,7 +176,8 @@ pub async fn regenerate_message_handler(
         return Ok(HttpResponse::BadRequest().json(DefaultError {
             message: "Not enough messages to regenerate",
         }));
-    } else if previous_messages.len() == 3 {
+    } 
+    if previous_messages.len() == 3 {
         return stream_response(previous_messages, user.id, topic_id, third_pool).await;
     }
 
