@@ -35,7 +35,7 @@ pub async fn create_card(
 
     let embedding_vector = create_openai_embedding(&card.content).await?;
 
-    let cards = search_card_query(embedding_vector.clone(), 1, pool.clone(), None)
+    let cards = search_card_query(embedding_vector.clone(), 1, pool.clone(), None, None)
         .await
         .map_err(|e| actix_web::error::ErrorBadRequest(e.message))?;
     let first_result = cards.search_results.get(0);
@@ -90,6 +90,7 @@ pub async fn create_card(
 pub struct SearchCardData {
     content: String,
     filter_oc_file_path: Option<Vec<String>>,
+    filter_link_url: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -119,6 +120,7 @@ pub async fn search_card(
         page,
         pool,
         data.filter_oc_file_path.clone(),
+        data.filter_link_url.clone(),
     )
     .await;
 

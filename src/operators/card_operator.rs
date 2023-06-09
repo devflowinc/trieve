@@ -9,6 +9,7 @@ use crate::{
     errors::DefaultError,
 };
 use actix_web::web;
+
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::{
@@ -63,6 +64,7 @@ pub async fn search_card_query(
     page: u64,
     pool: web::Data<Pool>,
     filter_oc_file_path: Option<Vec<String>>,
+    filter_link_url: Option<Vec<String>>,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
@@ -70,9 +72,16 @@ pub async fn search_card_query(
     let mut query = card_metadata_columns::card_metadata
         .select(card_metadata_columns::qdrant_point_id)
         .into_boxed();
-    for pattern in filter_oc_file_path.unwrap_or([].to_vec()) {
-        query = query.or_filter(card_metadata_columns::oc_file_path.like(format!("%{}%", pattern)));
+
+    for file_path in filter_oc_file_path.unwrap_or([].to_vec()) {
+        query =
+            query.or_filter(card_metadata_columns::oc_file_path.like(format!("%{}%", file_path)));
     }
+
+    for link_url in filter_link_url.unwrap_or([].to_vec()) {
+        query = query.or_filter(card_metadata_columns::link.like((format!("%{}%", link_url))));
+    }
+
     let filtered_ids: Vec<uuid::Uuid> = query.load(&mut conn).map_err(|_| DefaultError {
         message: "Failed to load metadata",
     })?;
