@@ -17,6 +17,7 @@ use super::auth_handler::LoggedUser;
 #[derive(Serialize, Deserialize)]
 pub struct CreateCardData {
     content: String,
+    card_html: Option<String>,
     link: Option<String>,
     oc_file_path: Option<String>,
 }
@@ -67,6 +68,7 @@ pub async fn create_card(
         insert_card_metadata_query(
             CardMetadata::from_details(
                 &card.content,
+                &card.card_html,
                 &card.link,
                 &card.oc_file_path,
                 user.id,

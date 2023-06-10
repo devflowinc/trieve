@@ -32,6 +32,7 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         oc_file_path -> Nullable<Text>,
+        card_html -> Nullable<Text>,
     }
 }
 
