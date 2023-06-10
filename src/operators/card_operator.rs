@@ -72,13 +72,27 @@ pub async fn search_card_query(
     let mut query = card_metadata_columns::card_metadata
         .select(card_metadata_columns::qdrant_point_id)
         .into_boxed();
+    let filter_oc_file_path = filter_oc_file_path.unwrap_or([].to_vec());
+    let filter_link_url = filter_link_url.unwrap_or([].to_vec());
 
-    for file_path in filter_oc_file_path.unwrap_or([].to_vec()) {
+    if !filter_oc_file_path.is_empty() {
+        query = query.filter(
+            card_metadata_columns::oc_file_path
+                .like(format!("%{}%", filter_oc_file_path.get(0).unwrap())),
+        );
+    }
+
+    for file_path in filter_oc_file_path.iter().skip(1) {
         query =
             query.or_filter(card_metadata_columns::oc_file_path.like(format!("%{}%", file_path)));
     }
 
-    for link_url in filter_link_url.unwrap_or([].to_vec()) {
+    if !filter_link_url.is_empty() {
+        query = query.filter(
+            card_metadata_columns::link.like(format!("%{}%", filter_link_url.get(0).unwrap())),
+        );
+    }
+    for link_url in filter_link_url.iter().skip(1) {
         query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
     }
 
