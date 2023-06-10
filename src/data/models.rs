@@ -242,11 +242,13 @@ pub struct CardMetadata {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub oc_file_path: Option<String>,
+    pub card_html: Option<String>,
 }
 
 impl CardMetadata {
     pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(
         content: S,
+        card_html: &Option<String>,
         link: &Option<String>,
         oc_file_path: &Option<String>,
         author_id: T,
@@ -255,6 +257,7 @@ impl CardMetadata {
         CardMetadata {
             id: uuid::Uuid::new_v4(),
             content: content.into(),
+            card_html: card_html.clone(),
             link: link.clone(),
             author_id: author_id.into(),
             qdrant_point_id: qdrant_point_id.into(),
@@ -369,13 +372,12 @@ pub struct CardCollection {
 }
 
 impl CardCollection {
-
     pub fn from_details(
-            author_id: uuid::Uuid,
-            name: String,
-            is_public: bool,
-            description: String,
-        ) -> Self {
+        author_id: uuid::Uuid,
+        name: String,
+        is_public: bool,
+        description: String,
+    ) -> Self {
         CardCollection {
             id: uuid::Uuid::new_v4(),
             is_public,
