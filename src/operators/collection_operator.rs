@@ -1,5 +1,8 @@
-use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
-use actix_web::web;
+use crate::{
+    data::models::CardCollectionBookmark,
+    diesel::{ExpressionMethods, QueryDsl, RunQueryDsl},
+};
+use actix_web::{web, HttpResponse};
 
 use crate::{
     data::models::{CardCollection, Pool},
@@ -100,6 +103,65 @@ pub fn update_card_collection_query(
         .execute(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Error updating collection",
+        })?;
+
+    Ok(())
+}
+
+pub fn create_card_bookmark_query(
+    pool: web::Data<Pool>,
+    bookmark: CardCollectionBookmark,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::card_collection_bookmarks::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::insert_into(card_collection_bookmarks)
+        .values(&bookmark)
+        .execute(&mut conn)
+        .map_err(|_err| {
+            log::error!("Error creating bookmark {:}", _err);
+            DefaultError {
+                message: "Error creating bookmark",
+            }
+        })?;
+
+    Ok(())
+}
+
+pub fn get_bookmarks_for_collection_query(
+    collection: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Vec<CardCollectionBookmark>, DefaultError> {
+    use crate::data::schema::card_collection_bookmarks::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    let bookmarks = card_collection_bookmarks
+        .filter(collection_id.eq(collection))
+        .load::<CardCollectionBookmark>(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Error getting bookmarks",
+        })?;
+
+    Ok(bookmarks)
+}
+
+pub fn delete_bookmark_query(
+    collection: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::card_collection_bookmarks::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::delete(card_collection_bookmarks.filter(collection_id.eq(collection)))
+        .execute(&mut conn)
+        .map_err(|_err| {
+            log::error!("Error deleting bookmark {:}", _err);
+            DefaultError {
+                message: "Error deleting bookmark",
+            }
         })?;
 
     Ok(())
