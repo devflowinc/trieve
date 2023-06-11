@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     data::models::{Pool, UserDTOWithScore},
-    errors::DefaultError,
+    errors::{DefaultError, ServiceError},
     operators::user_operator::{
         get_top_users_query, get_total_users_query, get_user_with_votes_and_cards_by_id_query,
         update_user_query,
@@ -80,7 +80,7 @@ pub async fn get_top_users(
     let users_result = web::block(move || get_top_users_query(&page, &pool)).await?;
     let total_users = web::block(move || get_total_users_query(&pool2))
         .await?
-        .map_err(actix_web::error::ErrorBadRequest)?;
+        .map_err(|_err| ServiceError::BadRequest("Failed to get Total users".into()))?;
     let total_user_pages = (total_users as f64 / 25.0).ceil() as i64;
 
     match users_result {
