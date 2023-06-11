@@ -226,7 +226,7 @@ pub async fn delete_card(
     qdrant
         .upsert_points_blocking("debate_cards".to_string(), vec![point], None)
         .await
-        .map_err(|err| ServiceError::BadRequest("Failed inserting card to qdrant".into()))?;
+        .map_err(|_err| ServiceError::BadRequest("Failed inserting card to qdrant".into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
