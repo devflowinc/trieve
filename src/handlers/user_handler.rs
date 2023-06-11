@@ -38,7 +38,7 @@ pub async fn get_user_with_votes_and_cards_by_id(
 
     match user_result {
         Ok(user_with_votes_and_cards) => Ok(HttpResponse::Ok().json(user_with_votes_and_cards)),
-        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
+        Err(e) => Err(ServiceError::BadRequest(e.message.into()).into()),
     }
 }
 

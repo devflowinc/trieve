@@ -18,9 +18,9 @@ pub async fn user_owns_collection(
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if collection.author_id != user_id {
-        return Err(actix_web::error::ErrorBadRequest(
-            "You are not the author of this collection",
-        ));
+        return Err(ServiceError::BadRequest(
+            "You are not the author of this collection".into(),
+        ).into());
     }
 
     Ok(collection)

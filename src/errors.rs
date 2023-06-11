@@ -12,6 +12,11 @@ pub struct DefaultError {
     pub message: &'static str,
 }
 
+#[derive(Serialize, Deserialize, Debug, Display)]
+pub struct BadRequestBody {
+    pub message: String,
+}
+
 #[derive(Debug, Display)]
 pub enum ServiceError {
     #[display(fmt = "Internal Server Error")]
@@ -31,7 +36,9 @@ impl ResponseError for ServiceError {
             ServiceError::InternalServerError => {
                 HttpResponse::InternalServerError().json("Internal Server Error, Please try later")
             }
-            ServiceError::BadRequest(ref message) => HttpResponse::BadRequest().json(message),
+            ServiceError::BadRequest(ref message) => HttpResponse::BadRequest().json(BadRequestBody {
+                message: message.to_string(),
+            }),
             ServiceError::Unauthorized => HttpResponse::Unauthorized().json("Unauthorized"),
         }
     }

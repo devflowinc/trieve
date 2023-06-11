@@ -54,14 +54,9 @@ pub async fn create_message_completion_handler(
     }
 
     // get the previous messages
-    let previous_messages_result =
-        web::block(move || get_topic_messages(topic_id, &second_pool)).await?;
-    let previous_messages = match previous_messages_result {
-        Ok(messages) => messages,
-        Err(e) => {
-            return Ok(HttpResponse::BadRequest().json(e));
-        }
-    };
+    let previous_messages =
+        web::block(move || get_topic_messages(topic_id, &second_pool)).await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     // call create_topic_message_query with the new_message and previous_messages
     let previous_messages_result = web::block(move || {

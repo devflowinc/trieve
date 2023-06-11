@@ -48,9 +48,10 @@ pub async fn post_invitation(
         web::block(move || create_invitation(host_name, email, stringified_referral_tokens, pool))
             .await?;
 
+    log::info!("create_invitation_result: {:?}", create_invitation_result);
     match create_invitation_result {
         Ok(()) => Ok(HttpResponse::Ok().finish()),
-        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
+        Err(e) => Err(crate::errors::ServiceError::BadRequest(e.to_string()).into()),
     }
 }
 

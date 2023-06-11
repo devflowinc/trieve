@@ -84,7 +84,7 @@ pub async fn create_card(
     qdrant
         .upsert_points_blocking("debate_cards".to_string(), vec![point], None)
         .await
-        .map_err(|err| ServiceError::BadRequest("Failed inserting card to qdrant".into()))?;
+        .map_err(|_err| ServiceError::BadRequest("Failed inserting card to qdrant".into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -118,19 +118,15 @@ pub async fn search_card(
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_openai_embedding(&data.content).await?;
     let pool2 = pool.clone();
-    let search_results_result = search_card_query(
+    let search_card_query_results = search_card_query(
         embedding_vector,
         page,
         pool,
         data.filter_oc_file_path.clone(),
         data.filter_link_url.clone(),
     )
-    .await;
-
-    let search_card_query_results = match search_results_result {
-        Ok(results) => results,
-        Err(err) => return Ok(HttpResponse::BadRequest().json(err)),
-    };
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let point_ids = search_card_query_results
         .search_results
