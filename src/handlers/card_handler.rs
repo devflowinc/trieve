@@ -101,12 +101,10 @@ pub async fn create_card(
 
     let cards = search_card_query(embedding_vector.clone(), 1, pool_two, None, None)
         .await
-        .map_err(|e| actix_web::error::ErrorBadRequest(e.message))?;
-
-    match cards.search_results.get(0) {
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let first_result = cards.search_results.get(0);
         Some(result_ref) => {
             match check_similarity(result_ref.point_id.clone(), result_ref.score.into(), 0.95) {
-                Ok(_) => {}
                 Err(e) => {
                     return Ok(HttpResponse::BadRequest().json(e));
                 }
@@ -196,19 +194,6 @@ pub async fn delete_card(
     let qdrant = get_qdrant_connection()
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    let deleted_values = PointsSelector {
-        points_selector_one_of: Some(PointsSelectorOneOf::Points(PointsIdsList {
-            ids: vec![card_metadata
-                .qdrant_point_id
-                .clone()
-                .unwrap_or(uuid::Uuid::nil())
-                .to_string()
-                .into()],
-        })),
-    };
-    web::block(move || delete_card_metadata_query(&card.card_uuid, &pool))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     qdrant
         .delete_points_blocking("debate_cards".to_string(), &deleted_values, None)
@@ -237,6 +222,11 @@ pub async fn delete_card(
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    qdrant
+        .upsert_points_blocking("debate_cards".to_string(), vec![point], None)
+        .await
+        .map_err(|err| ServiceError::BadRequest("Failed inserting card to qdrant".into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -360,20 +350,10 @@ pub async fn get_card_by_id(
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let current_user_id = user.map(|user| user.id);
-    let card = web::block(move || {
-        get_metadata_and_votes_from_id_query(card_id.into_inner(), current_user_id, pool)
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    if card.private && current_user_id.is_none() {
-        return Ok(HttpResponse::Unauthorized()
-            .json(json!({"message": "You must be signed in to view this card"})));
-    }
-    if card.private && Some(card.clone().author.unwrap().id) != current_user_id {
-        return Ok(HttpResponse::Forbidden()
-            .json(json!({"message": "You are not authorized to view this card"})));
-    }
+    let card = web::block(|| get_metadata_from_id_query(card_id.into_inner(), pool))
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
     Ok(HttpResponse::Ok().json(card))
 }
 
