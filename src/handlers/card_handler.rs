@@ -6,6 +6,7 @@ use serde_json::json;
 use crate::data::models::{
     CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool,
 };
+use crate::errors::DefaultError;
 use crate::operators::card_operator::{
     create_openai_embedding, get_card_count_query, get_metadata_from_point_ids,
     insert_card_metadata_query, search_full_text_card_query,
@@ -17,7 +18,7 @@ use crate::operators::card_operator::{
 
 use super::auth_handler::LoggedUser;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct CreateCardData {
     pub content: String,
     pub card_html: Option<String>,
@@ -30,37 +31,81 @@ pub async fn create_card(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let words_in_content = card.content.split(' ').collect::<Vec<&str>>().len();
-    if words_in_content < 70 {
+    let content_clone = card.content.clone();
+    let content_clone_two = card.content.clone();
+    let pool_one = pool.clone();
+    let pool_two = pool.clone();
+    let pool_three = pool.clone();
+
+    let words_in_content = card.content.split(' ').collect::<Vec<&str>>();
+    if words_in_content.len() < 70 {
         return Ok(HttpResponse::BadRequest().json(json!({
             "message": "Card content must be at least 70 words long",
         })));
     }
 
-    let embedding_vector = create_openai_embedding(&card.content).await?;
+    let check_similarity = |qdrant_point_id: uuid::Uuid, similarity_score: f64, threshold: f64| {
+        let lambda_card_content_clone = card.content.clone();
+        let card_html_clone = card.card_html.clone();
+        let pool_clone = pool.clone();
 
-    let cards = search_card_query(embedding_vector.clone(), 1, pool.clone(), None, None)
+        let mut similarity_threshold = threshold;
+        if lambda_card_content_clone.len() < 200 {
+            similarity_threshold -= 0.05;
+        }
+
+        if similarity_score >= similarity_threshold {
+            let _ = web::block(move || {
+                update_card_html_by_qdrant_point_id_query(
+                    &qdrant_point_id,
+                    &card_html_clone,
+                    &pool_clone,
+                )
+            });
+
+            return Err(DefaultError {
+                message: "Card already exists",
+            });
+        }
+
+        Ok(())
+    };
+
+    let pg_similiarity_result = web::block(move || {
+        search_full_text_card_query(content_clone, 1, pool_one.clone(), None, None, None)
+    })
+    .await?
+    .map_err(|e| actix_web::error::ErrorBadRequest(e.message))?;
+
+    match pg_similiarity_result.search_results.get(0) {
+        Some(result_ref) => {
+            match check_similarity(
+                result_ref.qdrant_point_id.clone(),
+                result_ref.score.unwrap_or(0.0).into(),
+                0.9,
+            ) {
+                Ok(_) => {}
+                Err(e) => {
+                    return Ok(HttpResponse::BadRequest().json(e));
+                }
+            }
+        }
+        None => {}
+    }
+
+    let embedding_vector = create_openai_embedding(&content_clone_two).await?;
+
+    let cards = search_card_query(embedding_vector.clone(), 1, pool_two, None, None)
         .await
         .map_err(|e| actix_web::error::ErrorBadRequest(e.message))?;
 
     match cards.search_results.get(0) {
         Some(result_ref) => {
-            let mut similarity_threashold = 0.95;
-            if card.content.len() < 200 {
-                similarity_threashold = 0.9;
-            }
-
-            if result_ref.score >= similarity_threashold {
-                let point_id = result_ref.point_id.clone();
-
-                let _ = web::block(move || {
-                    update_card_html_by_qdrant_point_id_query(&point_id, &card.card_html, &pool)
-                })
-                .await;
-
-                return Ok(HttpResponse::BadRequest().json(json!({
-                    "message": "Card already exists"
-                })));
+            match check_similarity(result_ref.point_id.clone(), result_ref.score.into(), 0.95) {
+                Ok(_) => {}
+                Err(e) => {
+                    return Ok(HttpResponse::BadRequest().json(e));
+                }
             }
         }
         None => {}
@@ -74,18 +119,19 @@ pub async fn create_card(
 
     let point_id = uuid::Uuid::new_v4();
     let point = PointStruct::new(point_id.clone().to_string(), embedding_vector, payload);
+    let card_clone = card.clone();
 
     web::block(move || {
         insert_card_metadata_query(
             CardMetadata::from_details(
-                &card.content,
-                &card.card_html,
-                &card.link,
-                &card.oc_file_path,
+                &card_clone.content,
+                &card_clone.card_html,
+                &card_clone.link,
+                &card_clone.oc_file_path,
                 user.id,
                 point_id,
             ),
-            &pool,
+            &pool_three,
         )
     })
     .await?
