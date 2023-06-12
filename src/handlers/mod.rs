@@ -9,3 +9,4 @@ pub mod topic_handler;
 pub mod user_handler;
 pub mod vote_handler;
 pub mod collection_handler;
+pub mod file_handler;

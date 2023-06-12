@@ -9,6 +9,7 @@ use crate::data::models::{
 use crate::operators::card_operator::{
     create_openai_embedding, get_card_count_query, get_metadata_from_point_ids,
     insert_card_metadata_query, search_full_text_card_query,
+    update_card_html_by_qdrant_point_id_query,
 };
 use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
@@ -18,10 +19,10 @@ use super::auth_handler::LoggedUser;
 
 #[derive(Serialize, Deserialize)]
 pub struct CreateCardData {
-    content: String,
-    card_html: Option<String>,
-    link: Option<String>,
-    oc_file_path: Option<String>,
+    pub content: String,
+    pub card_html: Option<String>,
+    pub link: Option<String>,
+    pub(crate) oc_file_path: Option<String>,
 }
 
 pub async fn create_card(
@@ -41,20 +42,28 @@ pub async fn create_card(
     let cards = search_card_query(embedding_vector.clone(), 1, pool.clone(), None, None)
         .await
         .map_err(|e| actix_web::error::ErrorBadRequest(e.message))?;
-    let first_result = cards.search_results.get(0);
 
-    if let Some(score_card) = first_result {
-        let mut similarity_threashold = 0.95;
-        if card.content.len() < 200 {
-            similarity_threashold = 0.9;
-        }
+    match cards.search_results.get(0) {
+        Some(result_ref) => {
+            let mut similarity_threashold = 0.95;
+            if card.content.len() < 200 {
+                similarity_threashold = 0.9;
+            }
 
-        if score_card.score >= similarity_threashold {
-            return Ok(HttpResponse::BadRequest().json(json!({
-                "message": "Card already exists",
-                "card": score_card,
-            })));
+            if result_ref.score >= similarity_threashold {
+                let point_id = result_ref.point_id.clone();
+
+                let _ = web::block(move || {
+                    update_card_html_by_qdrant_point_id_query(&point_id, &card.card_html, &pool)
+                })
+                .await;
+
+                return Ok(HttpResponse::BadRequest().json(json!({
+                    "message": "Card already exists"
+                })));
+            }
         }
+        None => {}
     }
 
     let qdrant = get_qdrant_connection()

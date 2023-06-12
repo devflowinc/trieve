@@ -2,7 +2,7 @@ FROM rust:slim-buster
 
 RUN apt-get update && \
   apt-get -y upgrade && \
-  apt-get -y install libpq-dev libssl-dev pkg-config
+  apt-get -y install libpq-dev libssl-dev pkg-config pandoc
 
 WORKDIR /app
 COPY . /app/

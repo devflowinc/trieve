@@ -401,3 +401,26 @@ pub fn get_card_count_query(pool: &web::Data<Pool>) -> Result<i64, DefaultError>
             message: "Failed to get card count",
         })
 }
+
+pub fn update_card_html_by_qdrant_point_id_query(
+    point_id: &uuid::Uuid,
+    new_card_html: &Option<String>,
+    pool: &web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::card_metadata::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::update(
+        card_metadata
+            .filter(qdrant_point_id.eq(point_id))
+            .filter(card_html.is_null()),
+    )
+    .set(card_html.eq(new_card_html))
+    .execute(&mut conn)
+    .map_err(|_err| DefaultError {
+        message: "Failed to update card html",
+    })?;
+
+    Ok(())
+}
