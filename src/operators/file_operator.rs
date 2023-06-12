@@ -1,5 +1,6 @@
 use actix_web::web;
 use pandoc;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use soup::{NodeExt, QueryBuilderExt, Soup};
 
@@ -8,10 +9,48 @@ use crate::{
     errors::DefaultError,
     handlers::{
         auth_handler::LoggedUser,
-        card_handler::{create_card, CreateCardData},
-        file_handler::UploadFileResult,
+        file_handler::UploadFileResult, card_handler::{CreateCardData, create_card},
     },
 };
+
+pub fn remove_escape_sequences(input: &str) -> String {
+    let mut result = String::new();
+    let mut escape = false;
+
+    for mut ch in input.chars() {
+        if escape {
+            escape = false;
+        } else if ch == '\\' || ch == '\n' {
+            escape = true;
+            continue;
+        } else if ch == '\"' {
+            ch = '\'';
+        }
+
+        result.push(ch);
+    }
+
+    result
+}
+
+pub fn remove_extra_trailing_chars(url: &str) -> String {
+    let pattern = r"([\w+]+://)?([\w\d-]+\.)*[\w-]+[\.:]\w+([/\?=&\#.]?[\w-]+)*/?";
+
+    let regex = match Regex::new(pattern) {
+        Ok(regex) => regex,
+        Err(_) => return url.to_string(),
+    };
+
+    let all_matches = regex.find_iter(url).map(|m| m.as_str()).collect::<Vec<&str>>();
+
+    let cleaned_url = if all_matches.len() > 0 {
+        all_matches[0].to_string()
+    } else {
+        url.to_string()
+    };
+
+    cleaned_url
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CoreCard {
@@ -72,8 +111,8 @@ pub async fn convert_docx_to_html_query(
             "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
                 if is_heading && is_link {
                     cards.push(CoreCard {
-                        content: card_content,
-                        card_html: card_html,
+                        content: remove_escape_sequences(&card_content),
+                        card_html: remove_escape_sequences(&card_html),
                         link: card_link,
                     });
                     card_html = String::new();
@@ -93,7 +132,7 @@ pub async fn convert_docx_to_html_query(
                     card_text.split(" ").for_each(|word| {
                         if word.contains("http") {
                             is_link = true;
-                            card_link = word.to_string();
+                            card_link = remove_extra_trailing_chars(word);
                             return;
                         }
                     });
@@ -121,9 +160,9 @@ pub async fn convert_docx_to_html_query(
 
     for card in cards {
         let create_card_data = CreateCardData {
-            content: card_content.clone(),
-            card_html: Some(card_html.clone()),
-            link: Some(card_link.clone()),
+            content: card.content.clone(),
+            card_html: Some(card.card_html.clone()),
+            link: Some(card.link.clone()),
             oc_file_path: None,
         };
         let web_json_create_card_data = web::Json(create_card_data);
