@@ -3,9 +3,9 @@ use crate::data::models::{
 };
 use crate::errors::ServiceError;
 use crate::operators::card_operator::{
-    create_openai_embedding, delete_card_metadata_query, get_card_count_query,
-    get_metadata_and_votes_from_id_query, get_metadata_from_point_ids, insert_card_metadata_query,
-    insert_duplicate_card_metadata_query, search_full_text_card_query, update_card_metadata_query,
+    create_openai_embedding, get_card_count_query, get_metadata_from_point_ids,
+    insert_card_metadata_query, search_full_text_card_query,
+    update_card_html_by_qdrant_point_id_query,
 };
 use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
@@ -48,20 +48,22 @@ pub async fn create_card(
 
     let cards = search_card_query(embedding_vector.clone(), 1, pool.clone(), None, None)
         .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    let first_result = cards.search_results.get(0);
+        .map_err(|e| actix_web::error::ErrorBadRequest(e.message))?;
 
-    if let Some(score_card) = first_result {
-        let mut similarity_threashold = 0.95;
-        if card.content.len() < 200 {
-            similarity_threashold = 0.9;
-        }
+    match cards.search_results.get(0) {
+        Some(result_ref) => {
+            let mut similarity_threashold = 0.95;
+            if card.content.len() < 200 {
+                similarity_threashold = 0.9;
+            }
 
-        if score_card.score >= similarity_threashold {
-            //Sets collision to collided card id and forces private
-            collision = Some(score_card.point_id);
-            private = true;
+            if score_card.score >= similarity_threashold {
+                //Sets collision to collided card id and forces private
+                collision = Some(score_card.point_id);
+                private = true;
+            }
         }
+        None => {}
     }
 
     //if collision is not nil, insert card with collision
