@@ -179,6 +179,13 @@ pub async fn convert_docx_to_html_query(
         }
     }
 
+    std::fs::remove_file(&temp_docx_file_path).map_err(|_| DefaultError {
+        message: "Could not remove temp docx file",
+    })?;
+    std::fs::remove_file(&temp_html_file_path_buf).map_err(|_| DefaultError {
+        message: "Could not remove temp html file",
+    })?;
+
     Ok(UploadFileResult {
         created_cards,
         rejected_cards,
