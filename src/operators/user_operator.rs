@@ -161,6 +161,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
                 created_at: metadata.created_at,
                 updated_at: metadata.updated_at,
                 oc_file_path: metadata.oc_file_path.clone(),
+                score: None,
             }
         })
         .collect();
@@ -240,8 +241,14 @@ pub fn update_user_query(
         }
     }
 
-    let new_user_name: Option<String> = new_user.username.clone().filter(|user_name| !user_name.is_empty());
-    let new_user_website: Option<String> = new_user.website.clone().filter(|user_website| !user_website.is_empty());
+    let new_user_name: Option<String> = new_user
+        .username
+        .clone()
+        .filter(|user_name| !user_name.is_empty());
+    let new_user_website: Option<String> = new_user
+        .website
+        .clone()
+        .filter(|user_website| !user_website.is_empty());
 
     let user: User = diesel::update(users.filter(id.eq(user_id)))
         .set((

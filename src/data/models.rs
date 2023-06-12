@@ -309,6 +309,21 @@ pub struct CardMetadataWithVotes {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub oc_file_path: Option<String>,
+    pub score: Option<f32>,
+}
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CardMetadataWithVotesWithoutScore {
+    pub id: uuid::Uuid,
+    pub author: Option<UserDTO>,
+    pub content: String,
+    pub link: Option<String>,
+    pub qdrant_point_id: uuid::Uuid,
+    pub total_upvotes: i64,
+    pub total_downvotes: i64,
+    pub vote_by_current_user: Option<bool>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub oc_file_path: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -430,4 +445,53 @@ pub struct UserDTOWithScore {
 pub struct UserScore {
     pub author_id: uuid::Uuid,
     pub score: i64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
+pub struct FullTextSearchResult {
+    pub id: uuid::Uuid,
+    pub content: String,
+    pub link: Option<String>,
+    pub author_id: uuid::Uuid,
+    pub qdrant_point_id: uuid::Uuid,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub oc_file_path: Option<String>,
+    pub card_html: Option<String>,
+    pub score: Option<f32>,
+}
+
+impl From<CardMetadata> for FullTextSearchResult {
+    fn from(cards: CardMetadata) -> Self {
+        FullTextSearchResult {
+            id: cards.id,
+            content: cards.content,
+            link: cards.link,
+            author_id: cards.author_id,
+            qdrant_point_id: cards.qdrant_point_id,
+            created_at: cards.created_at,
+            updated_at: cards.updated_at,
+            oc_file_path: cards.oc_file_path,
+            card_html: cards.card_html,
+            score: None,
+        }
+    }
+}
+
+impl From<CardMetadataWithVotes> for CardMetadataWithVotesWithoutScore {
+    fn from(cards: CardMetadataWithVotes) -> Self {
+        CardMetadataWithVotesWithoutScore {
+            id: cards.id,
+            author: cards.author,
+            content: cards.content,
+            link: cards.link,
+            qdrant_point_id: cards.qdrant_point_id,
+            total_upvotes: cards.total_upvotes,
+            total_downvotes: cards.total_downvotes,
+            vote_by_current_user: cards.vote_by_current_user,
+            created_at: cards.created_at,
+            updated_at: cards.updated_at,
+            oc_file_path: cards.oc_file_path,
+        }
+    }
 }

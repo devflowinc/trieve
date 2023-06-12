@@ -1,5 +1,6 @@
 use crate::data::models::CardMetadataWithVotes;
 use crate::data::models::CardVote;
+use crate::data::models::FullTextSearchResult;
 use crate::data::models::User;
 use crate::data::models::UserDTO;
 use crate::diesel::TextExpressionMethods;
@@ -10,6 +11,11 @@ use crate::{
 };
 use actix_web::web;
 
+use diesel::dsl::sql;
+use diesel::sql_types::Bool;
+use diesel::sql_types::Float;
+use diesel::sql_types::Nullable;
+use diesel::sql_types::Text;
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::{
@@ -147,30 +153,13 @@ pub async fn search_card_query(
     })
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct ScoredCardDTO {
-    pub metadata: CardMetadata,
-    pub score: f32,
-}
-
-pub fn get_metadata_from_point_ids(
-    point_ids: Vec<uuid::Uuid>,
+fn get_metadata(
+    card_metadata: Vec<FullTextSearchResult>,
     current_user_id: Option<uuid::Uuid>,
-    pool: web::Data<Pool>,
+    mut conn: r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::PgConnection>>,
 ) -> Result<Vec<CardMetadataWithVotes>, DefaultError> {
-    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     use crate::data::schema::card_votes::dsl as card_votes_columns;
     use crate::data::schema::users::dsl as user_columns;
-
-    let mut conn = pool.get().unwrap();
-
-    let card_metadata: Vec<CardMetadata> = card_metadata_columns::card_metadata
-        .filter(card_metadata_columns::qdrant_point_id.eq_any(point_ids))
-        .load::<CardMetadata>(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to load metadata",
-        })?;
-
     let card_creators: Vec<User> = user_columns::users
         .filter(
             user_columns::id.eq_any(
@@ -244,10 +233,125 @@ pub fn get_metadata_from_point_ids(
                 vote_by_current_user,
                 created_at: metadata.created_at,
                 updated_at: metadata.updated_at,
+                score: metadata.score,
             }
         })
         .collect();
+    Ok(card_metadata_with_upvotes)
+}
 
+#[derive(Serialize, Deserialize)]
+pub struct FullTextSearchCardQueryResult {
+    pub search_results: Vec<CardMetadataWithVotes>,
+    pub total_card_pages: i64,
+}
+
+pub fn search_full_text_card_query(
+    user_query: String,
+    page: u64,
+    pool: web::Data<Pool>,
+    current_user_id: Option<uuid::Uuid>,
+    filter_oc_file_path: Option<Vec<String>>,
+    filter_link_url: Option<Vec<String>>,
+) -> Result<FullTextSearchCardQueryResult, DefaultError> {
+    let page = if page == 0 { 1 } else { page };
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+    let mut conn = pool.get().unwrap();
+    let mut query = card_metadata_columns::card_metadata
+        .select((
+            card_metadata_columns::id,
+            card_metadata_columns::content,
+            card_metadata_columns::link,
+            card_metadata_columns::author_id,
+            card_metadata_columns::qdrant_point_id,
+            card_metadata_columns::created_at,
+            card_metadata_columns::updated_at,
+            card_metadata_columns::oc_file_path,
+            card_metadata_columns::card_html,
+            sql::<Nullable<Float>>(
+                format!("strict_word_similarity('{}', content) as sml", user_query).as_str(),
+            ),
+        ))
+        .into_boxed();
+
+    query = query.filter(sql::<Bool>(
+        format!("'{}' <<% content", user_query).as_str(),
+    ));
+
+    let filter_oc_file_path = filter_oc_file_path.unwrap_or([].to_vec());
+    let filter_link_url = filter_link_url.unwrap_or([].to_vec());
+
+    if !filter_oc_file_path.is_empty() {
+        query = query.filter(
+            card_metadata_columns::oc_file_path
+                .like(format!("%{}%", filter_oc_file_path.get(0).unwrap())),
+        );
+    }
+
+    for file_path in filter_oc_file_path.iter().skip(1) {
+        query =
+            query.or_filter(card_metadata_columns::oc_file_path.like(format!("%{}%", file_path)));
+    }
+
+    if !filter_link_url.is_empty() {
+        query = query.filter(
+            card_metadata_columns::link.like(format!("%{}%", filter_link_url.get(0).unwrap())),
+        );
+    }
+    for link_url in filter_link_url.iter().skip(1) {
+        query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
+    }
+
+    query = query
+        .order(sql::<Text>("sml DESC"))
+        .limit(25)
+        .offset(((page - 1) * 25).try_into().unwrap());
+
+    let searched_cards: Vec<FullTextSearchResult> =
+        query.load(&mut conn).map_err(|_| DefaultError {
+            message: "Failed to load searched cards",
+        })?;
+
+    let card_metadata_with_upvotes = get_metadata(searched_cards.clone(), current_user_id, conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load searched cards",
+        })?;
+    Ok(FullTextSearchCardQueryResult {
+        search_results: card_metadata_with_upvotes,
+        total_card_pages: (searched_cards.len() as f64 / 25.0).ceil() as i64,
+    })
+}
+#[derive(Serialize, Deserialize)]
+pub struct ScoredCardDTO {
+    pub metadata: CardMetadata,
+    pub score: f32,
+}
+
+pub fn get_metadata_from_point_ids(
+    point_ids: Vec<uuid::Uuid>,
+    current_user_id: Option<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<Vec<CardMetadataWithVotes>, DefaultError> {
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    let card_metadata: Vec<CardMetadata> = card_metadata_columns::card_metadata
+        .filter(card_metadata_columns::qdrant_point_id.eq_any(point_ids))
+        .load::<CardMetadata>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })?;
+
+    let converted_cards: Vec<FullTextSearchResult> = card_metadata
+        .iter()
+        .map(|card| <CardMetadata as Into<FullTextSearchResult>>::into(card.clone()))
+        .collect::<Vec<FullTextSearchResult>>();
+
+    let card_metadata_with_upvotes =
+        get_metadata(converted_cards, current_user_id, conn).map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })?;
     Ok(card_metadata_with_upvotes)
 }
 
