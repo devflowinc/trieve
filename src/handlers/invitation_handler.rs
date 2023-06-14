@@ -8,7 +8,7 @@ use crate::{
         models::{Invitation, Pool},
         validators::email_regex,
     },
-    errors::DefaultError,
+    errors::{DefaultError, ServiceError},
     operators::{email_operator::send_invitation, user_operator::get_user_by_email_query},
 };
 
@@ -44,14 +44,10 @@ pub async fn post_invitation(
         .to_string();
 
     let stringified_referral_tokens = to_string(&invitation_referral_tokens).unwrap();
-    let create_invitation_result =
-        web::block(move || create_invitation(host_name, email, stringified_referral_tokens, pool))
-            .await?;
+    web::block(move || create_invitation(host_name, email, stringified_referral_tokens, pool))
+            .await?.map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
-    match create_invitation_result {
-        Ok(()) => Ok(HttpResponse::Ok().finish()),
-        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
-    }
+    Ok(HttpResponse::Ok().finish())
 }
 
 pub fn create_invitation(

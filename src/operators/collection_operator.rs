@@ -2,7 +2,9 @@ use crate::{
     data::models::CardCollectionBookmark,
     diesel::{ExpressionMethods, QueryDsl, RunQueryDsl},
 };
-use actix_web::{web};
+
+use actix_web::web;
+
 
 use crate::{
     data::models::{CardCollection, Pool},

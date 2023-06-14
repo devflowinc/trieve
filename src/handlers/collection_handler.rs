@@ -3,7 +3,7 @@ use serde::Deserialize;
 
 use crate::{
     data::models::{CardCollection, CardCollectionBookmark, Pool},
-    operators::collection_operator::*,
+    operators::collection_operator::*, errors::ServiceError,
 };
 
 use super::auth_handler::LoggedUser;
@@ -15,12 +15,12 @@ pub async fn user_owns_collection(
 ) -> Result<CardCollection, actix_web::Error> {
     let collection = web::block(move || get_collection_by_id_query(collection_id, pool))
         .await?
-        .map_err(actix_web::error::ErrorBadRequest)?;
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if collection.author_id != user_id {
-        return Err(actix_web::error::ErrorBadRequest(
-            "You are not the author of this collection",
-        ));
+        return Err(ServiceError::BadRequest(
+            "You are not the author of this collection".into(),
+        ).into());
     }
 
     Ok(collection)
@@ -49,7 +49,7 @@ pub async fn create_card_collection(
         )
     })
     .await?
-    .map_err(actix_web::error::ErrorBadRequest)?;
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -60,7 +60,7 @@ pub async fn get_card_collections(
 ) -> Result<HttpResponse, actix_web::Error> {
     let collections = web::block(move || get_collections_for_user_query(user.id, pool))
         .await?
-        .map_err(actix_web::error::ErrorBadRequest)?;
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(collections))
 }
@@ -82,7 +82,7 @@ pub async fn delete_card_collection(
 
     web::block(move || delete_collection_by_id_query(collection_id, pool))
         .await?
-        .map_err(actix_web::error::ErrorBadRequest)?;
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -113,7 +113,7 @@ pub async fn update_card_collection(
         update_card_collection_query(collection, name, description, is_public, pool)
     })
     .await?
-    .map_err(actix_web::error::ErrorBadRequest)?;
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -146,7 +146,7 @@ pub async fn add_bookmark(
         )
     })
     .await?
-    .map_err(actix_web::error::ErrorBadRequest)?;
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -161,7 +161,7 @@ pub async fn get_all_bookmarks(
 
     let collection = web::block(move || get_collection_by_id_query(collection_id, pool_two))
         .await?
-        .map_err(actix_web::error::ErrorBadRequest)?;
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if !collection.is_public && collection.author_id != user.id {
         return Err(actix_web::error::ErrorUnauthorized(
@@ -171,7 +171,7 @@ pub async fn get_all_bookmarks(
 
     let bookmarks = web::block(move || {
         get_bookmarks_for_collection_query(collection_id, pool)
-    }).await?.map_err(actix_web::error::ErrorBadRequest)?;
+    }).await?.map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(bookmarks))
 }
@@ -201,7 +201,7 @@ pub async fn delete_bookmark(
         )
     })
     .await?
-    .map_err(actix_web::error::ErrorBadRequest)?;
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }

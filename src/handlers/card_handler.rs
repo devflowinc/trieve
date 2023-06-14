@@ -3,9 +3,8 @@ use qdrant_client::qdrant::PointStruct;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::data::models::{
-    CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool,
-};
+use crate::data::models::{CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool};
+use crate::errors::ServiceError;
 use crate::operators::card_operator::{
     create_openai_embedding, get_card_count_query, get_metadata_from_point_ids,
     insert_card_metadata_query, search_full_text_card_query,
@@ -40,7 +39,7 @@ pub async fn create_card(
 
     let cards = search_card_query(embedding_vector.clone(), 1, pool.clone(), None, None)
         .await
-        .map_err(|e| actix_web::error::ErrorBadRequest(e.message))?;
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
     let first_result = cards.search_results.get(0);
 
     if let Some(score_card) = first_result {
@@ -59,7 +58,7 @@ pub async fn create_card(
 
     let qdrant = get_qdrant_connection()
         .await
-        .map_err(|err| actix_web::error::ErrorBadRequest(err.message))?;
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let payload: qdrant_client::prelude::Payload = json!({}).try_into().unwrap();
 
@@ -80,12 +79,12 @@ pub async fn create_card(
         )
     })
     .await?
-    .map_err(actix_web::error::ErrorBadRequest)?;
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     qdrant
         .upsert_points_blocking("debate_cards".to_string(), vec![point], None)
         .await
-        .map_err(actix_web::error::ErrorBadRequest)?;
+        .map_err(|_err| ServiceError::BadRequest("Failed inserting card to qdrant".into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -119,19 +118,15 @@ pub async fn search_card(
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_openai_embedding(&data.content).await?;
     let pool2 = pool.clone();
-    let search_results_result = search_card_query(
+    let search_card_query_results = search_card_query(
         embedding_vector,
         page,
         pool,
         data.filter_oc_file_path.clone(),
         data.filter_link_url.clone(),
     )
-    .await;
-
-    let search_card_query_results = match search_results_result {
-        Ok(results) => results,
-        Err(err) => return Ok(HttpResponse::BadRequest().json(err)),
-    };
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let point_ids = search_card_query_results
         .search_results
@@ -143,7 +138,7 @@ pub async fn search_card(
     let metadata_cards =
         web::block(move || get_metadata_from_point_ids(point_ids, current_user_id, pool2))
             .await?
-            .map_err(actix_web::error::ErrorBadRequest)?;
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let score_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
@@ -215,7 +210,7 @@ pub async fn get_card_by_id(
 ) -> Result<HttpResponse, actix_web::Error> {
     let card = web::block(|| get_metadata_from_id_query(card_id.into_inner(), pool))
         .await?
-        .map_err(actix_web::error::ErrorBadRequest)?;
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(card))
 }
@@ -223,7 +218,7 @@ pub async fn get_card_by_id(
 pub async fn get_total_card_count(pool: web::Data<Pool>) -> Result<HttpResponse, actix_web::Error> {
     let total_count = web::block(move || get_card_count_query(&pool))
         .await?
-        .map_err(actix_web::error::ErrorBadRequest)?;
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(json!({ "total_count": total_count })))
 }
