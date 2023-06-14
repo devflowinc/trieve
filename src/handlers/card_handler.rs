@@ -3,11 +3,11 @@ use qdrant_client::qdrant::PointStruct;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::data::models::{CardMetadata, CardMetadataWithVotes, Pool};
+use crate::data::models::{CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool};
 use crate::errors::ServiceError;
 use crate::operators::card_operator::{
     create_openai_embedding, get_card_count_query, get_metadata_from_point_ids,
-    insert_card_metadata_query,
+    insert_card_metadata_query, search_full_text_card_query,
 };
 use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
@@ -98,7 +98,7 @@ pub struct SearchCardData {
 
 #[derive(Serialize, Deserialize)]
 pub struct ScoreCardDTO {
-    metadata: CardMetadataWithVotes,
+    metadata: CardMetadataWithVotesWithoutScore,
     score: f32,
 }
 
@@ -150,7 +150,9 @@ pub async fn search_card(
                 .unwrap();
 
             ScoreCardDTO {
-                metadata: (*card).clone(),
+                metadata: <CardMetadataWithVotes as Into<CardMetadataWithVotesWithoutScore>>::into(
+                    (*card).clone(),
+                ),
                 score: search_result.score,
             }
         })
@@ -158,6 +160,46 @@ pub async fn search_card(
 
     Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
         score_cards,
+        total_card_pages: search_card_query_results.total_card_pages,
+    }))
+}
+
+pub async fn search_full_text_card(
+    data: web::Json<SearchCardData>,
+    page: Option<web::Path<u64>>,
+    user: Option<LoggedUser>,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    //search over the links as well
+    let page = page.map(|page| page.into_inner()).unwrap_or(1);
+    let current_user_id = user.map(|user| user.id);
+    let search_results_result = search_full_text_card_query(
+        data.content.clone(),
+        page,
+        pool,
+        current_user_id,
+        data.filter_oc_file_path.clone(),
+        data.filter_link_url.clone(),
+    );
+
+    let search_card_query_results = match search_results_result {
+        Ok(results) => results,
+        Err(err) => return Ok(HttpResponse::BadRequest().json(err)),
+    };
+
+    let full_text_cards: Vec<ScoreCardDTO> = search_card_query_results
+        .search_results
+        .iter()
+        .map(|search_result| ScoreCardDTO {
+            metadata: <CardMetadataWithVotes as Into<CardMetadataWithVotesWithoutScore>>::into(
+                search_result.clone(),
+            ),
+            score: search_result.score.unwrap_or(0.0),
+        })
+        .collect();
+
+    Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
+        score_cards: full_text_cards,
         total_card_pages: search_card_query_results.total_card_pages,
     }))
 }
