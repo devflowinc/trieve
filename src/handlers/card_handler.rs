@@ -36,7 +36,6 @@ pub async fn create_card(
     let mut private = card.private.unwrap_or(false);
     let mut collision: Option<uuid::Uuid> = None;
 
-
     let words_in_content = card.content.split(' ').collect::<Vec<&str>>().len();
     if words_in_content < 70 {
         return Ok(HttpResponse::BadRequest().json(json!({
