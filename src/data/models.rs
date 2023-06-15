@@ -285,7 +285,6 @@ impl CardCollisions {
             id: uuid::Uuid::new_v4(),
             card_id: card_id.into(),
             collision_qdrant_id: collision_id.into(),
-
         }
     }
 }

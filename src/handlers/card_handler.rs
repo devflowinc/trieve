@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::data::models::{
-    CardCollisions, CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool,
+    CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool,
 };
 use crate::errors::ServiceError;
 use crate::operators::card_operator::{
