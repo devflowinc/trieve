@@ -4,12 +4,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::data::models::{
-    CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool,
+    CardCollisions, CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool,
 };
 use crate::errors::ServiceError;
 use crate::operators::card_operator::{
     create_openai_embedding, get_card_count_query, get_metadata_from_point_ids,
-    insert_card_metadata_query, search_full_text_card_query,
+    insert_card_metadata_query, insert_duplicate_card_metadata_query, search_full_text_card_query,
 };
 use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
@@ -23,6 +23,7 @@ pub struct CreateCardData {
     card_html: Option<String>,
     link: Option<String>,
     oc_file_path: Option<String>,
+    private: Option<bool>,
 }
 
 pub async fn create_card(
@@ -30,6 +31,9 @@ pub async fn create_card(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let mut private = card.private.unwrap_or(false);
+    let mut collision = uuid::Uuid::nil();
+
     let words_in_content = card.content.split(' ').collect::<Vec<&str>>().len();
     if words_in_content < 70 {
         return Ok(HttpResponse::BadRequest().json(json!({
@@ -51,42 +55,68 @@ pub async fn create_card(
         }
 
         if score_card.score >= similarity_threashold {
-            return Ok(HttpResponse::BadRequest().json(json!({
-                "message": "Card already exists",
-                "card": score_card,
-            })));
+            //Sets collusion to collided card id and forces private
+            collision = score_card.point_id;
+            private = true;
         }
     }
 
-    let qdrant = get_qdrant_connection()
-        .await
+    //if collision is not nil, insert card with collision
+    if !collision.is_nil() {
+        web::block(move || {
+            insert_duplicate_card_metadata_query(
+                CardMetadata::from_details(
+                    &card.content,
+                    &card.card_html,
+                    &card.link,
+                    &card.oc_file_path,
+                    user.id,
+                    None,
+                    true,
+                ),
+                collision,
+                &pool,
+            )
+        })
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    } else {
+        let payload: qdrant_client::prelude::Payload;
+        let qdrant = get_qdrant_connection()
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        //if private is true, set payload to private
+        if private {
+            payload = json!({"private": true}).try_into().unwrap();
+        } else {
+            payload = json!({}).try_into().unwrap();
+        }
+
+        let point_id = uuid::Uuid::new_v4();
+        let point = PointStruct::new(point_id.clone().to_string(), embedding_vector, payload);
+
+        web::block(move || {
+            insert_card_metadata_query(
+                CardMetadata::from_details(
+                    &card.content,
+                    &card.card_html,
+                    &card.link,
+                    &card.oc_file_path,
+                    user.id,
+                    Some(point_id),
+                    false,
+                ),
+                &pool,
+            )
+        })
+        .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let payload: qdrant_client::prelude::Payload = json!({}).try_into().unwrap();
-
-    let point_id = uuid::Uuid::new_v4();
-    let point = PointStruct::new(point_id.clone().to_string(), embedding_vector, payload);
-
-    web::block(move || {
-        insert_card_metadata_query(
-            CardMetadata::from_details(
-                &card.content,
-                &card.card_html,
-                &card.link,
-                &card.oc_file_path,
-                user.id,
-                point_id,
-            ),
-            &pool,
-        )
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    qdrant
-        .upsert_points_blocking("debate_cards".to_string(), vec![point], None)
-        .await
-        .map_err(|_err| ServiceError::BadRequest("Failed inserting card to qdrant".into()))?;
+        qdrant
+            .upsert_points_blocking("debate_cards".to_string(), vec![point], None)
+            .await
+            .map_err(|_err| ServiceError::BadRequest("Failed inserting card to qdrant".into()))?;
+    }
 
     Ok(HttpResponse::NoContent().finish())
 }

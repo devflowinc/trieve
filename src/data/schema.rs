@@ -23,6 +23,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    card_collisions (id) {
+        id -> Uuid,
+        card_id -> Uuid,
+        collision_id -> Uuid,
+    }
+}
+
+diesel::table! {
     card_metadata (id) {
         id -> Uuid,
         content -> Text,
@@ -144,6 +152,7 @@ diesel::joinable!(topics -> users (user_id));
 diesel::allow_tables_to_appear_in_same_query!(
     card_collection,
     card_collection_bookmarks,
+    card_collisions,
     card_metadata,
     card_votes,
     invitations,
