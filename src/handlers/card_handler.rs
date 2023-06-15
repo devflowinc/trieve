@@ -3,7 +3,9 @@ use qdrant_client::qdrant::PointStruct;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::data::models::{CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool};
+use crate::data::models::{
+    CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool,
+};
 use crate::errors::ServiceError;
 use crate::operators::card_operator::{
     create_openai_embedding, get_card_count_query, get_metadata_from_point_ids,
@@ -146,7 +148,7 @@ pub async fn search_card(
         .map(|search_result| {
             let card = metadata_cards
                 .iter()
-                .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
+                .find(|metadata_card| metadata_card.qdrant_point_id == Some(search_result.point_id))
                 .unwrap();
 
             ScoreCardDTO {

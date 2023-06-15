@@ -77,6 +77,7 @@ pub async fn search_card_query(
     let mut conn = pool.get().unwrap();
     let mut query = card_metadata_columns::card_metadata
         .select(card_metadata_columns::qdrant_point_id)
+        .filter(card_metadata_columns::private.eq(false))
         .into_boxed();
     let filter_oc_file_path = filter_oc_file_path.unwrap_or([].to_vec());
     let filter_link_url = filter_link_url.unwrap_or([].to_vec());
@@ -102,15 +103,16 @@ pub async fn search_card_query(
         query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
     }
 
-    let filtered_ids: Vec<uuid::Uuid> = query.load(&mut conn).map_err(|_| DefaultError {
-        message: "Failed to load metadata",
-    })?;
+    let filtered_ids: Vec<Option<uuid::Uuid>> =
+        query.load(&mut conn).map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })?;
 
     let qdrant = get_qdrant_connection().await?;
 
     let filtered_point_ids: &Vec<PointId> = &filtered_ids
         .iter()
-        .map(|uuid| uuid.to_string().into())
+        .map(|uuid| uuid.unwrap_or(uuid::Uuid::nil()).to_string().into())
         .collect::<Vec<PointId>>();
 
     let mut filter = Filter::default();
@@ -272,6 +274,7 @@ pub fn search_full_text_card_query(
                 format!("strict_word_similarity('{}', content) as sml", user_query).as_str(),
             ),
         ))
+        .filter(card_metadata_columns::private.eq(false))
         .into_boxed();
 
     query = query.filter(sql::<Bool>(
