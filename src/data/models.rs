@@ -238,11 +238,12 @@ pub struct CardMetadata {
     pub content: String,
     pub link: Option<String>,
     pub author_id: uuid::Uuid,
-    pub qdrant_point_id: uuid::Uuid,
+    pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub oc_file_path: Option<String>,
     pub card_html: Option<String>,
+    pub private: bool,
 }
 
 impl CardMetadata {
@@ -260,10 +261,11 @@ impl CardMetadata {
             card_html: card_html.clone(),
             link: link.clone(),
             author_id: author_id.into(),
-            qdrant_point_id: qdrant_point_id.into(),
+            qdrant_point_id: Some(qdrant_point_id.into()),
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
             oc_file_path: oc_file_path.clone(),
+            private: false,
         }
     }
 }
@@ -302,7 +304,7 @@ pub struct CardMetadataWithVotes {
     pub author: Option<UserDTO>,
     pub content: String,
     pub link: Option<String>,
-    pub qdrant_point_id: uuid::Uuid,
+    pub qdrant_point_id: Option<uuid::Uuid>,
     pub total_upvotes: i64,
     pub total_downvotes: i64,
     pub vote_by_current_user: Option<bool>,
@@ -317,7 +319,7 @@ pub struct CardMetadataWithVotesWithoutScore {
     pub author: Option<UserDTO>,
     pub content: String,
     pub link: Option<String>,
-    pub qdrant_point_id: uuid::Uuid,
+    pub qdrant_point_id: Option<uuid::Uuid>,
     pub total_upvotes: i64,
     pub total_downvotes: i64,
     pub vote_by_current_user: Option<bool>,
@@ -453,7 +455,7 @@ pub struct FullTextSearchResult {
     pub content: String,
     pub link: Option<String>,
     pub author_id: uuid::Uuid,
-    pub qdrant_point_id: uuid::Uuid,
+    pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub oc_file_path: Option<String>,
