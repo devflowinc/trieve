@@ -253,7 +253,8 @@ impl CardMetadata {
         link: &Option<String>,
         oc_file_path: &Option<String>,
         author_id: T,
-        qdrant_point_id: T,
+        qdrant_point_id: Option<uuid::Uuid>,
+        private: bool,
     ) -> Self {
         CardMetadata {
             id: uuid::Uuid::new_v4(),
@@ -261,11 +262,29 @@ impl CardMetadata {
             card_html: card_html.clone(),
             link: link.clone(),
             author_id: author_id.into(),
-            qdrant_point_id: Some(qdrant_point_id.into()),
+            qdrant_point_id: qdrant_point_id.into(),
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
             oc_file_path: oc_file_path.clone(),
-            private: false,
+            private: private.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Clone)]
+#[diesel(table_name = card_collisions)]
+pub struct CardCollisions {
+    pub id: uuid::Uuid,
+    pub card_id: uuid::Uuid,
+    pub collision_id: uuid::Uuid,
+}
+
+impl CardCollisions {
+    pub fn from_details<T: Into<uuid::Uuid>>(card_id: T, collision_id: T) -> Self {
+        CardCollisions {
+            id: uuid::Uuid::new_v4(),
+            card_id: card_id.into(),
+            collision_id: collision_id.into(),
         }
     }
 }

@@ -1,3 +1,4 @@
+use crate::data::models::CardCollisions;
 use crate::data::models::CardMetadataWithVotes;
 use crate::data::models::CardVote;
 use crate::data::models::FullTextSearchResult;
@@ -384,6 +385,34 @@ pub fn insert_card_metadata_query(
 
     diesel::insert_into(card_metadata)
         .values(&card_data)
+        .execute(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Failed to insert card metadata",
+        })?;
+
+    Ok(())
+}
+
+pub fn insert_duplicate_card_metadata_query(
+    card_data: CardMetadata,
+    duplicate_card: uuid::Uuid,
+    pool: &web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::card_collisions::dsl::*;
+    use crate::data::schema::card_metadata::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::insert_into(card_metadata)
+        .values(&card_data)
+        .execute(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Failed to insert card metadata",
+        })?;
+
+    //insert duplicate into card_collisions
+    diesel::insert_into(card_collisions)
+        .values(&CardCollisions::from_details(card_data.id, duplicate_card))
         .execute(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Failed to insert card metadata",
