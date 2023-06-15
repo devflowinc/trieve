@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::data::models::{
-    CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool,
+    CardCollisions, CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool,
 };
 use crate::errors::ServiceError;
 use crate::operators::card_operator::{
@@ -35,6 +35,7 @@ pub async fn create_card(
 ) -> Result<HttpResponse, actix_web::Error> {
     let mut private = card.private.unwrap_or(false);
     let mut collision: Option<uuid::Uuid> = None;
+
 
     let words_in_content = card.content.split(' ').collect::<Vec<&str>>().len();
     if words_in_content < 70 {

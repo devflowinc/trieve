@@ -262,7 +262,7 @@ impl CardMetadata {
             card_html: card_html.clone(),
             link: link.clone(),
             author_id: author_id.into(),
-            qdrant_point_id: Some(qdrant_point_id.into()),
+            qdrant_point_id: qdrant_point_id.into(),
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
             oc_file_path: oc_file_path.clone(),
@@ -285,6 +285,7 @@ impl CardCollisions {
             id: uuid::Uuid::new_v4(),
             card_id: card_id.into(),
             collision_qdrant_id: collision_id.into(),
+
         }
     }
 }

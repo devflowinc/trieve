@@ -27,6 +27,7 @@ diesel::table! {
         id -> Uuid,
         card_id -> Uuid,
         collision_qdrant_id -> Uuid,
+
     }
 }
 
