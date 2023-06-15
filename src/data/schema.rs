@@ -28,11 +28,12 @@ diesel::table! {
         content -> Text,
         link -> Nullable<Text>,
         author_id -> Uuid,
-        qdrant_point_id -> Uuid,
+        qdrant_point_id -> Nullable<Uuid>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
         oc_file_path -> Nullable<Text>,
         card_html -> Nullable<Text>,
+        private -> Bool,
     }
 }
 
