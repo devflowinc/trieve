@@ -415,7 +415,7 @@ pub fn insert_duplicate_card_metadata_query(
         .values(&CardCollisions::from_details(card_data.id, duplicate_card))
         .execute(&mut conn)
         .map_err(|_err| DefaultError {
-            message: "Failed to insert card metadata",
+            message: "Failed to insert card duplicate",
         })?;
 
     Ok(())
