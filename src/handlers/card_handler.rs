@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::data::models::{
-    CardCollisions, CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool,
+    CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool,
 };
 use crate::errors::ServiceError;
 use crate::operators::card_operator::{
@@ -104,7 +104,7 @@ pub async fn create_card(
                     &card.oc_file_path,
                     user.id,
                     Some(point_id),
-                    false,
+                    private,
                 ),
                 &pool,
             )

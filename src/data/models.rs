@@ -276,7 +276,7 @@ impl CardMetadata {
 pub struct CardCollisions {
     pub id: uuid::Uuid,
     pub card_id: uuid::Uuid,
-    pub collision_id: uuid::Uuid,
+    pub collision_qdrant_id: uuid::Uuid,
 }
 
 impl CardCollisions {
@@ -284,7 +284,7 @@ impl CardCollisions {
         CardCollisions {
             id: uuid::Uuid::new_v4(),
             card_id: card_id.into(),
-            collision_id: collision_id.into(),
+            collision_qdrant_id: collision_id.into(),
         }
     }
 }
