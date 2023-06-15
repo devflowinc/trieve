@@ -32,7 +32,7 @@ pub async fn create_card(
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let mut private = card.private.unwrap_or(false);
-    let mut collision = uuid::Uuid::nil();
+    let mut collision: Option<uuid::Uuid> = None;
 
     let words_in_content = card.content.split(' ').collect::<Vec<&str>>().len();
     if words_in_content < 70 {
@@ -56,13 +56,13 @@ pub async fn create_card(
 
         if score_card.score >= similarity_threashold {
             //Sets collusion to collided card id and forces private
-            collision = score_card.point_id;
+            collision = Some(score_card.point_id);
             private = true;
         }
     }
 
     //if collision is not nil, insert card with collision
-    if !collision.is_nil() {
+    if collision.is_some() {
         web::block(move || {
             insert_duplicate_card_metadata_query(
                 CardMetadata::from_details(
@@ -74,7 +74,7 @@ pub async fn create_card(
                     None,
                     true,
                 ),
-                collision,
+                collision.unwrap(),
                 &pool,
             )
         })
