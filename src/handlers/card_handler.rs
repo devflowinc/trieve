@@ -160,9 +160,10 @@ pub async fn delete_card(
             .delete_points_blocking("debate_cards".to_string(), &deleted_values, None)
             .await
             .map_err(|_err| ServiceError::BadRequest("Failed deleting card from qdrant".into()))?;
+        return Ok(HttpResponse::NoContent().finish());
     }
 
-    Ok(HttpResponse::NoContent().finish())
+    Err(ServiceError::Unauthorized.into())
 }
 
 #[derive(Serialize, Deserialize)]
