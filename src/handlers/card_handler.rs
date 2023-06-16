@@ -223,7 +223,7 @@ pub async fn search_card(
         .map(|search_result| {
             let card = metadata_cards
                 .iter()
-                .find(|metadata_card| metadata_card.qdrant_point_id == Some(search_result.point_id))
+                .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
                 .unwrap();
 
             ScoreCardDTO {
