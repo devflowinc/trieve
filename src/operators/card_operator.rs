@@ -417,6 +417,19 @@ pub fn insert_duplicate_card_metadata_query(
         .map_err(|_err| DefaultError {
             message: "Failed to insert card duplicate",
         })?;
+    Ok(())
+}
+pub fn delete_card_metadata_query(
+    card_uuid: &uuid::Uuid,
+    pool: &web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::card_metadata::dsl::*;
+    let mut conn = pool.get().unwrap();
+    diesel::delete(card_metadata.filter(id.eq(card_uuid)))
+        .execute(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Failed to delete card metadata",
+        })?;
 
     Ok(())
 }

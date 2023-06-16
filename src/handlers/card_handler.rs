@@ -1,5 +1,6 @@
 use actix_web::{web, HttpResponse};
-use qdrant_client::qdrant::PointStruct;
+use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
+use qdrant_client::qdrant::{PointStruct, PointsIdsList, PointsSelector};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -8,8 +9,9 @@ use crate::data::models::{
 };
 use crate::errors::ServiceError;
 use crate::operators::card_operator::{
-    create_openai_embedding, get_card_count_query, get_metadata_from_point_ids,
-    insert_card_metadata_query, insert_duplicate_card_metadata_query, search_full_text_card_query,
+    create_openai_embedding, delete_card_metadata_query, get_card_count_query,
+    get_metadata_from_point_ids, insert_card_metadata_query, insert_duplicate_card_metadata_query,
+    search_full_text_card_query,
 };
 use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
@@ -116,6 +118,48 @@ pub async fn create_card(
             .upsert_points_blocking("debate_cards".to_string(), vec![point], None)
             .await
             .map_err(|_err| ServiceError::BadRequest("Failed inserting card to qdrant".into()))?;
+    }
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct DeleteCardData {
+    card_uuid: uuid::Uuid,
+}
+
+pub async fn delete_card(
+    card: web::Json<DeleteCardData>,
+    pool: web::Data<Pool>,
+    user: LoggedUser,
+) -> Result<HttpResponse, actix_web::Error> {
+    let card1 = card.clone();
+    let pool1 = pool.clone();
+    let card_metadata = web::block(move || get_metadata_from_id_query(card1.card_uuid, pool1))
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    if user.id == card_metadata.author_id {
+        let qdrant = get_qdrant_connection()
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        let deleted_values = PointsSelector {
+            points_selector_one_of: Some(PointsSelectorOneOf::Points(PointsIdsList {
+                ids: vec![card_metadata
+                    .qdrant_point_id
+                    .clone()
+                    .unwrap_or(uuid::Uuid::nil())
+                    .to_string()
+                    .into()],
+            })),
+        };
+        web::block(move || delete_card_metadata_query(&card.card_uuid, &pool))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+        qdrant
+            .delete_points_blocking("debate_cards".to_string(), &deleted_values, None)
+            .await
+            .map_err(|_err| ServiceError::BadRequest("Failed deleting card from qdrant".into()))?;
     }
 
     Ok(HttpResponse::NoContent().finish())
