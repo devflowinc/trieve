@@ -55,7 +55,7 @@ pub async fn create_card(
         }
 
         if score_card.score >= similarity_threashold {
-            //Sets collusion to collided card id and forces private
+            //Sets collision to collided card id and forces private
             collision = Some(score_card.point_id);
             private = true;
         }
