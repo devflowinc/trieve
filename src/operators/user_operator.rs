@@ -154,7 +154,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
                 content: metadata.content.clone(),
                 link: metadata.link.clone(),
                 author,
-                qdrant_point_id: metadata.qdrant_point_id,
+                qdrant_point_id: metadata.qdrant_point_id.unwrap_or(uuid::Uuid::nil()),
                 total_upvotes,
                 total_downvotes,
                 vote_by_current_user,

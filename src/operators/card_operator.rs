@@ -230,7 +230,7 @@ fn get_metadata(
                 link: metadata.link,
                 oc_file_path: metadata.oc_file_path,
                 author,
-                qdrant_point_id: metadata.qdrant_point_id,
+                qdrant_point_id: metadata.qdrant_point_id.unwrap_or(uuid::Uuid::nil()),
                 total_upvotes,
                 total_downvotes,
                 vote_by_current_user,
