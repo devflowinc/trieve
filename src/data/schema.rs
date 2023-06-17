@@ -1,5 +1,11 @@
 // @generated automatically by Diesel CLI.
 
+pub mod sql_types {
+    #[derive(diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "tsvector", schema = "pg_catalog"))]
+    pub struct Tsvector;
+}
+
 diesel::table! {
     card_collection (id) {
         id -> Uuid,
@@ -31,6 +37,9 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::Tsvector;
+
     card_metadata (id) {
         id -> Uuid,
         content -> Text,
@@ -42,6 +51,7 @@ diesel::table! {
         oc_file_path -> Nullable<Text>,
         card_html -> Nullable<Text>,
         private -> Bool,
+        card_metadata_tsvector -> Nullable<Tsvector>,
     }
 }
 

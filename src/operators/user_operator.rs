@@ -1,6 +1,6 @@
 use crate::data::models::{
-    CardMetadataWithVotes, CardVote, SlimUser, UserDTOWithScore, UserDTOWithVotesAndCards,
-    UserScore,
+    CardMetadata, CardMetadataWithVotes, CardVote, SlimUser, UserDTOWithScore,
+    UserDTOWithVotesAndCards, UserScore,
 };
 use crate::diesel::prelude::*;
 use crate::handlers::user_handler::UpdateUserData;
@@ -115,9 +115,21 @@ pub fn get_user_with_votes_and_cards_by_id_query(
     let user_card_metadatas = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::author_id.eq(user.id))
         .order(card_metadata_columns::updated_at.desc())
+        .select((
+            card_metadata_columns::id,
+            card_metadata_columns::content,
+            card_metadata_columns::link,
+            card_metadata_columns::author_id,
+            card_metadata_columns::qdrant_point_id,
+            card_metadata_columns::created_at,
+            card_metadata_columns::updated_at,
+            card_metadata_columns::oc_file_path,
+            card_metadata_columns::card_html,
+            card_metadata_columns::private,
+        ))
         .limit(25)
         .offset((page - 1) * 25)
-        .load::<crate::data::models::CardMetadata>(&mut conn)
+        .load::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Error loading user cards",
         })?;
