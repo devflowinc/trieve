@@ -272,15 +272,24 @@ pub fn search_full_text_card_query(
             card_metadata_columns::updated_at,
             card_metadata_columns::oc_file_path,
             card_metadata_columns::card_html,
+
             sql::<Nullable<Float>>(
-                format!("strict_word_similarity('{}', content) as sml", user_query).as_str(),
+                format!(
+                    "(ts_rank(card_metadata_tsvector, to_tsquery('english', '{}') , 32) * 10) AS rank",
+                    user_query
+                )
+                .as_str(),
             ),
         ))
         .filter(card_metadata_columns::private.eq(false))
         .into_boxed();
 
     query = query.filter(sql::<Bool>(
-        format!("'{}' <<% content", user_query).as_str(),
+        format!(
+            "card_metadata_tsvector @@ to_tsquery('english', '{}')",
+            user_query
+        )
+        .as_str(),
     ));
 
     let filter_oc_file_path = filter_oc_file_path.unwrap_or([].to_vec());
@@ -308,7 +317,7 @@ pub fn search_full_text_card_query(
     }
 
     query = query
-        .order(sql::<Text>("sml DESC"))
+        .order(sql::<Text>("rank DESC"))
         .limit(25)
         .offset(((page - 1) * 25).try_into().unwrap());
 
@@ -343,6 +352,18 @@ pub fn get_metadata_from_point_ids(
 
     let card_metadata: Vec<CardMetadata> = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::qdrant_point_id.eq_any(point_ids))
+        .select((
+            card_metadata_columns::id,
+            card_metadata_columns::content,
+            card_metadata_columns::link,
+            card_metadata_columns::author_id,
+            card_metadata_columns::qdrant_point_id,
+            card_metadata_columns::created_at,
+            card_metadata_columns::updated_at,
+            card_metadata_columns::oc_file_path,
+            card_metadata_columns::card_html,
+            card_metadata_columns::private,
+        ))
         .load::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to load metadata",
@@ -364,12 +385,24 @@ pub fn get_metadata_from_id_query(
     card_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<CardMetadata, DefaultError> {
-    use crate::data::schema::card_metadata::dsl::*;
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
     let mut conn = pool.get().unwrap();
 
-    card_metadata
-        .filter(id.eq(card_id))
+    card_metadata_columns::card_metadata
+        .filter(card_metadata_columns::id.eq(card_id))
+        .select((
+            card_metadata_columns::id,
+            card_metadata_columns::content,
+            card_metadata_columns::link,
+            card_metadata_columns::author_id,
+            card_metadata_columns::qdrant_point_id,
+            card_metadata_columns::created_at,
+            card_metadata_columns::updated_at,
+            card_metadata_columns::oc_file_path,
+            card_metadata_columns::card_html,
+            card_metadata_columns::private,
+        ))
         .first::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to load metadata",
