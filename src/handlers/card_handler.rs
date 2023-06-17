@@ -158,6 +158,7 @@ pub async fn delete_card(
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
+
     qdrant
         .delete_points_blocking("debate_cards".to_string(), &deleted_values, None)
         .await
