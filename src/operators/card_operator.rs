@@ -4,6 +4,7 @@ use crate::data::models::CardVote;
 use crate::data::models::FullTextSearchResult;
 use crate::data::models::User;
 use crate::data::models::UserDTO;
+use crate::data::schema::card_collisions;
 use crate::diesel::TextExpressionMethods;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::{
@@ -423,13 +424,24 @@ pub fn delete_card_metadata_query(
     card_uuid: &uuid::Uuid,
     pool: &web::Data<Pool>,
 ) -> Result<(), DefaultError> {
-    use crate::data::schema::card_metadata::dsl::*;
+    use crate::data::schema::card_collisions::dsl as card_collisions_columns;
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     let mut conn = pool.get().unwrap();
-    diesel::delete(card_metadata.filter(id.eq(card_uuid)))
-        .execute(&mut conn)
-        .map_err(|_err| DefaultError {
-            message: "Failed to delete card metadata",
-        })?;
+    diesel::delete(
+        card_metadata_columns::card_metadata.filter(card_metadata_columns::id.eq(card_uuid)),
+    )
+    .execute(&mut conn)
+    .map_err(|_err| DefaultError {
+        message: "Failed to delete card metadata",
+    })?;
+
+    diesel::delete(
+        card_collisions_columns::card_collisions.filter(card_collisions::card_id.eq(card_uuid)),
+    )
+    .execute(&mut conn)
+    .map_err(|_err| DefaultError {
+        message: "Failed to delete card collusion",
+    })?;
 
     Ok(())
 }
