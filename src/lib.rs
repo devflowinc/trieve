@@ -171,7 +171,7 @@ pub async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::resource("/card/delete")
-                            .route(web::post().to(handlers::card_handler::delete_card)),
+                            .route(web::delete().to(handlers::card_handler::delete_card)),
                     )
                     .service(
                         web::resource("/card/count")
