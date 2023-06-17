@@ -138,32 +138,31 @@ pub async fn delete_card(
     let card_metadata = web::block(move || get_metadata_from_id_query(card1.card_uuid, pool1))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    if user.id == card_metadata.author_id {
-        let qdrant = get_qdrant_connection()
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-        let deleted_values = PointsSelector {
-            points_selector_one_of: Some(PointsSelectorOneOf::Points(PointsIdsList {
-                ids: vec![card_metadata
-                    .qdrant_point_id
-                    .clone()
-                    .unwrap_or(uuid::Uuid::nil())
-                    .to_string()
-                    .into()],
-            })),
-        };
-        web::block(move || delete_card_metadata_query(&card.card_uuid, &pool))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-        qdrant
-            .delete_points_blocking("debate_cards".to_string(), &deleted_values, None)
-            .await
-            .map_err(|_err| ServiceError::BadRequest("Failed deleting card from qdrant".into()))?;
-        return Ok(HttpResponse::NoContent().finish());
+    if user.id != card_metadata.author_id {
+        return Err(ServiceError::Unauthorized.into());
     }
+    let qdrant = get_qdrant_connection()
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let deleted_values = PointsSelector {
+        points_selector_one_of: Some(PointsSelectorOneOf::Points(PointsIdsList {
+            ids: vec![card_metadata
+                .qdrant_point_id
+                .clone()
+                .unwrap_or(uuid::Uuid::nil())
+                .to_string()
+                .into()],
+        })),
+    };
+    web::block(move || delete_card_metadata_query(&card.card_uuid, &pool))
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    Err(ServiceError::Unauthorized.into())
+    qdrant
+        .delete_points_blocking("debate_cards".to_string(), &deleted_values, None)
+        .await
+        .map_err(|_err| ServiceError::BadRequest("Failed deleting card from qdrant".into()))?;
+    Ok(HttpResponse::NoContent().finish())
 }
 
 #[derive(Serialize, Deserialize)]
