@@ -427,13 +427,6 @@ pub fn delete_card_metadata_query(
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     let mut conn = pool.get().unwrap();
-    diesel::delete(
-        card_metadata_columns::card_metadata.filter(card_metadata_columns::id.eq(card_uuid)),
-    )
-    .execute(&mut conn)
-    .map_err(|_err| DefaultError {
-        message: "Failed to delete card metadata",
-    })?;
 
     diesel::delete(
         card_collisions_columns::card_collisions.filter(card_collisions::card_id.eq(card_uuid)),
@@ -441,6 +434,14 @@ pub fn delete_card_metadata_query(
     .execute(&mut conn)
     .map_err(|_err| DefaultError {
         message: "Failed to delete card collusion",
+    })?;
+
+    diesel::delete(
+        card_metadata_columns::card_metadata.filter(card_metadata_columns::id.eq(card_uuid)),
+    )
+    .execute(&mut conn)
+    .map_err(|_err| DefaultError {
+        message: "Failed to delete card metadata",
     })?;
 
     Ok(())
