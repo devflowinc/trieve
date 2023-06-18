@@ -12,6 +12,7 @@ services:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+
   redis:
     image: redis
     container_name: my-redis
@@ -20,6 +21,7 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+
   qdrant-database:
     image: qdrant/qdrant
     ports:
@@ -28,7 +30,20 @@ services:
     volumes:
       - qdrant_data:/data
 
+  s3:
+    image: minio/minio
+    ports:
+      - 9000:9000
+      - 42625:42625
+    environment:
+      - MINIO_ROOT_USER=rootuser
+      - MINIO_ROOT_PASSWORD=rootpassword
+    volumes:
+      - s3-data:/data
+    command: server --console-address ":42625" /data
+
 volumes:
   redis-data:
   pgdata:
   qdrant_data:
+  s3-data:
