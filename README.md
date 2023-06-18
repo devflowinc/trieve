@@ -43,3 +43,11 @@ SECRET_KEY=XXXXXXXXXXXXX
 11. Click "Buckets" and then "Create Bucket" 
 12. Create a bucket named `ai-editor` and set `S3_BUCKET` in the env to `ai-editor`
 
+## Preparing for file uploads and conversions 
+
+1. `sudo apt install pandoc`
+2. `mkdir tmp` from inside repository folder
+
+Setup AWS CLI using [this guide from minio](https://min.io/docs/minio/linux/integrations/aws-cli-with-minio.html) with the region set to `""`
+
+- You can install it with `sudo apt install awscli` assuming you are using the apt package manager

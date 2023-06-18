@@ -60,6 +60,7 @@ pub async fn main() -> std::io::Result<()> {
                         distance: Distance::Cosine.into(),
                         hnsw_config: None,
                         quantization_config: None,
+                        on_disk: None,
                     },
                 )),
             }),

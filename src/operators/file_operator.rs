@@ -1,6 +1,7 @@
 use actix_web::web;
 use pandoc;
 use regex::Regex;
+use s3::{creds::Credentials, Bucket, Region};
 use serde::{Deserialize, Serialize};
 use soup::{NodeExt, QueryBuilderExt, Soup};
 
@@ -9,9 +10,39 @@ use crate::{
     errors::DefaultError,
     handlers::{
         auth_handler::LoggedUser,
-        file_handler::UploadFileResult, card_handler::{CreateCardData, create_card},
+        card_handler::{create_card, CreateCardData},
+        file_handler::UploadFileResult,
     },
 };
+
+pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
+    let s3_access_key = std::env::var("S3_ACCESS_KEY").expect("S3_ACCESS_KEY must be set");
+    let s3_secret_key = std::env::var("S3_SECRET_KEY").expect("S3_SECRET_KEY must be set");
+    let s3_endpoint = std::env::var("S3_ENDPOINT").expect("S3_ENDPOINT must be set");
+    let s3_bucket_name = std::env::var("S3_BUCKET").expect("S3_BUCKET must be set");
+
+    let aws_region = Region::Custom {
+        region: "".to_owned(),
+        endpoint: s3_endpoint,
+    };
+
+    let aws_credentials = Credentials {
+        access_key: Some(s3_access_key),
+        secret_key: Some(s3_secret_key),
+        security_token: None,
+        session_token: None,
+        expiration: None,
+    };
+
+    let aws_bucket =
+        Bucket::new(&s3_bucket_name, aws_region.clone(), aws_credentials.clone()).map_err(|_| {
+            DefaultError {
+                message: "Could not create bucket",
+            }
+        })?.with_path_style();
+
+    Ok(aws_bucket)
+}
 
 pub fn remove_escape_sequences(input: &str) -> String {
     let mut result = String::new();
@@ -41,7 +72,10 @@ pub fn remove_extra_trailing_chars(url: &str) -> String {
         Err(_) => return url.to_string(),
     };
 
-    let all_matches = regex.find_iter(url).map(|m| m.as_str()).collect::<Vec<&str>>();
+    let all_matches = regex
+        .find_iter(url)
+        .map(|m| m.as_str())
+        .collect::<Vec<&str>>();
 
     let cleaned_url = if all_matches.len() > 0 {
         all_matches[0].to_string()
@@ -62,11 +96,12 @@ pub struct CoreCard {
 pub async fn convert_docx_to_html_query(
     file_name: String,
     file_data: Vec<u8>,
+    file_mime: String,
     user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<UploadFileResult, DefaultError> {
     let temp_docx_file_path = format!("./tmp/{}", file_name);
-    std::fs::write(&temp_docx_file_path, file_data).map_err(|_| DefaultError {
+    std::fs::write(&temp_docx_file_path, file_data.clone()).map_err(|_| DefaultError {
         message: "Could not write file to disk",
     })?;
 
@@ -98,6 +133,14 @@ pub async fn convert_docx_to_html_query(
             })
         }
     };
+
+    let bucket = get_aws_bucket()?;
+    bucket
+        .put_object_with_content_type(file_name, file_data.as_slice(), &file_mime)
+        .await
+        .map_err(|_| DefaultError {
+            message: "Could not upload file to S3",
+        })?;
 
     let mut cards: Vec<CoreCard> = vec![];
     let mut is_heading = false;
