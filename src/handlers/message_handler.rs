@@ -244,6 +244,7 @@ pub async fn stream_response(
         presence_penalty: Some(0.8),
         frequency_penalty: Some(0.8),
         logit_bias: None,
+        user: None,
     };
 
     let (s, r) = unbounded::<String>();

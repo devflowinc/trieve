@@ -1,8 +1,7 @@
 use crate::data::models::{
     CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool, UserDTO,
 };
-use crate::errors::ServiceError;
-use crate::errors::DefaultError;
+use crate::errors::{DefaultError, ServiceError};
 use crate::operators::card_operator::{
     create_openai_embedding, get_card_count_query, get_metadata_from_point_ids,
     insert_card_metadata_query, search_full_text_card_query,
@@ -102,16 +101,18 @@ pub async fn create_card(
     let cards = search_card_query(embedding_vector.clone(), 1, pool_two, None, None)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    let first_result = cards.search_results.get(0);
+
+    let first_result = match cards.search_results.get(0) {
         Some(result_ref) => {
             match check_similarity(result_ref.point_id.clone(), result_ref.score.into(), 0.95) {
+                Ok(_) => {}
                 Err(e) => {
                     return Ok(HttpResponse::BadRequest().json(e));
                 }
             }
         }
         None => {}
-    }
+    };
 
     //if collision is not nil, insert card with collision
     if collision.is_some() {
