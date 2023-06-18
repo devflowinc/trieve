@@ -102,7 +102,7 @@ pub async fn create_card(
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let first_result = match cards.search_results.get(0) {
+    match cards.search_results.get(0) {
         Some(result_ref) => {
             match check_similarity(result_ref.point_id.clone(), result_ref.score.into(), 0.95) {
                 Ok(_) => {}

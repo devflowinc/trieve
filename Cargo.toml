@@ -44,4 +44,4 @@ difference = "2.0.0"
 actix-multipart = "0.6.0"
 pandoc = "0.8.10"
 soup = "0.5.1"
-rust-s3 = "0.33.0"
+rust-s3 = { version = "0.33.0" }

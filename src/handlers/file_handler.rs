@@ -42,24 +42,26 @@ pub async fn upload_file_handler(
 
     let content_disposition = file_field.content_disposition();
     let file_name = match content_disposition.get_filename() {
-        Some(name) => {
-            match name.rsplit_once('.') {
-                Some((_, extension)) => {
-                    if extension == "docx" {
-                        "docx"
-                    } else {
-                        return Ok(HttpResponse::BadRequest().json(DefaultError {
-                            message: "Must upload a docx file",
-                        }));
-                    }
-                }
-                None => {
-                    return Ok(HttpResponse::BadRequest().json(DefaultError {
-                        message: "Must upload a docx file",
-                    }));
-                }
-            };
-            name.to_owned()
+        Some(name) => name.to_string(),
+        None => {
+            return Ok(HttpResponse::BadRequest().json(DefaultError {
+                message: "Must include a file name",
+            }))
+        }
+    };
+    let file_mime = match file_field.content_type() {
+        Some(mime) => {
+            let mime_type = mime.to_string();
+
+            if mime_type
+                != "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            {
+                return Ok(HttpResponse::BadRequest().json(DefaultError {
+                    message: "Must upload a docx file",
+                }));
+            }
+
+            mime_type
         }
         None => {
             return Ok(HttpResponse::BadRequest().json(DefaultError {
@@ -72,9 +74,10 @@ pub async fn upload_file_handler(
         file_data.extend_from_slice(&chunk);
     }
 
-    let conversion_result = convert_docx_to_html_query(file_name, file_data, user, pool_inner)
-        .await
-        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    let conversion_result =
+        convert_docx_to_html_query(file_name, file_data, file_mime, user, pool_inner)
+            .await
+            .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
     Ok(HttpResponse::Ok().json(conversion_result))
 }
