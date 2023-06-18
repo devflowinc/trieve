@@ -29,7 +29,6 @@ use serde::{Deserialize, Serialize};
 pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
     let qdrant_url = std::env::var("QDRANT_URL").expect("QDRANT_URL must be set");
     QdrantClient::new(Some(QdrantClientConfig::from_url(qdrant_url.as_str())))
-        .await
         .map_err(|_err| DefaultError {
             message: "Failed to connect to Qdrant",
         })
@@ -43,6 +42,7 @@ pub async fn create_openai_embedding(message: &str) -> Result<Vec<f32>, actix_we
     let parameters = EmbeddingParameters {
         model: "text-embedding-ada-002".to_string(),
         input: message.to_string(),
+        user: None,
     };
 
     let embeddings = client
