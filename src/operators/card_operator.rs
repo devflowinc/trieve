@@ -453,6 +453,29 @@ pub fn insert_duplicate_card_metadata_query(
         })?;
     Ok(())
 }
+
+pub fn update_card_metadata_query(
+    card_data: CardMetadata,
+    pool: &web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::card_metadata::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::update(card_metadata.filter(id.eq(card_data.id)))
+        .set((
+            link.eq(card_data.link),
+            card_html.eq(card_data.card_html),
+            private.eq(card_data.private),
+        ))
+        .execute(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Failed to update card metadata",
+        })?;
+
+    Ok(())
+}
+
 pub fn delete_card_metadata_query(
     card_uuid: &uuid::Uuid,
     pool: &web::Data<Pool>,
