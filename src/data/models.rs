@@ -325,6 +325,7 @@ pub struct CardVote {
     pub vote: bool,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub deleted: bool,
 }
 
 impl CardVote {
@@ -340,6 +341,7 @@ impl CardVote {
             vote: *vote,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
+            deleted: false,
         }
     }
 }

@@ -190,6 +190,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
             card_votes_columns::vote,
             card_votes_columns::created_at,
             card_votes_columns::updated_at,
+            card_votes_columns::deleted,
         ))
         .filter(card_metadata_columns::author_id.eq(user.id))
         .load::<CardVote>(&mut conn)
