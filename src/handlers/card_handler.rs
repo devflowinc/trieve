@@ -173,7 +173,11 @@ pub struct UpdateCardData {
     card_html: Option<String>,
     private: Option<bool>,
 }
-
+#[derive(Serialize, Deserialize, Clone)]
+pub struct CardHtmlUpdateError {
+    pub message: String,
+    changed_content: String,
+}
 pub async fn update_card(
     card: web::Json<UpdateCardData>,
     pool: web::Data<Pool>,
@@ -194,7 +198,7 @@ pub async fn update_card(
         .unwrap_or_else(|| card_metadata.link.unwrap_or_default());
 
     let soup = Soup::new(card.card_html.as_ref().unwrap_or(&"".to_string()).as_str());
-    if soup.text() != card_metadata.content {
+    if soup.text() != card_metadata.content && card_metadata.card_html.is_some() {
         let soup_text_ref = soup.text();
         let Changeset { diffs, .. } = Changeset::new(&card_metadata.content, &soup_text_ref, " ");
         let mut ret: String = Default::default();
@@ -211,13 +215,16 @@ pub async fn update_card(
                 }
             }
         }
-        return Err(ServiceError::BadRequest(ret).into());
+
+        return Ok(HttpResponse::BadRequest().json(CardHtmlUpdateError {
+            message: "Card content has changed".to_string(),
+            changed_content: ret,
+        }));
     }
 
-    let card_html = if let Some(card_html) = card.card_html.clone() {
-        Some(card_html)
-    } else {
-        card_metadata.card_html
+    let card_html = match card.card_html.clone() {
+        Some(card_html) => Some(card_html),
+        None => card_metadata.card_html,
     };
 
     if card_metadata.private
