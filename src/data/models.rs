@@ -272,6 +272,32 @@ impl CardMetadata {
     }
 }
 
+impl CardMetadata {
+    pub fn from_details_with_id<S: Into<String>, T: Into<uuid::Uuid>>(
+        id: T,
+        content: S,
+        card_html: &Option<String>,
+        link: &Option<String>,
+        oc_file_path: &Option<String>,
+        author_id: T,
+        qdrant_point_id: Option<uuid::Uuid>,
+        private: bool,
+    ) -> Self {
+        CardMetadata {
+            id: id.into(),
+            content: content.into(),
+            card_html: card_html.clone(),
+            link: link.clone(),
+            author_id: author_id.into(),
+            qdrant_point_id: qdrant_point_id.into(),
+            created_at: chrono::Local::now().naive_local(),
+            updated_at: chrono::Local::now().naive_local(),
+            oc_file_path: oc_file_path.clone(),
+            private: private.clone(),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Clone)]
 #[diesel(table_name = card_collisions)]
 pub struct CardCollisions {
@@ -299,6 +325,7 @@ pub struct CardVote {
     pub vote: bool,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub deleted: bool,
 }
 
 impl CardVote {
@@ -314,6 +341,7 @@ impl CardVote {
             vote: *vote,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
+            deleted: false,
         }
     }
 }

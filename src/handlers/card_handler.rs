@@ -1,9 +1,3 @@
-use actix_web::{web, HttpResponse};
-use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
-use qdrant_client::qdrant::{PointStruct, PointsIdsList, PointsSelector};
-use serde::{Deserialize, Serialize};
-use serde_json::json;
-
 use crate::data::models::{
     CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool,
 };
@@ -11,11 +5,18 @@ use crate::errors::ServiceError;
 use crate::operators::card_operator::{
     create_openai_embedding, delete_card_metadata_query, get_card_count_query,
     get_metadata_from_point_ids, insert_card_metadata_query, insert_duplicate_card_metadata_query,
-    search_full_text_card_query,
+    search_full_text_card_query, update_card_metadata_query,
 };
 use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
 };
+use actix_web::{web, HttpResponse};
+use difference::{Changeset, Difference};
+use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
+use qdrant_client::qdrant::{PointStruct, PointsIdsList, PointsSelector};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use soup::Soup;
 
 use super::auth_handler::LoggedUser;
 
@@ -158,7 +159,6 @@ pub async fn delete_card(
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-
     qdrant
         .delete_points_blocking("debate_cards".to_string(), &deleted_values, None)
         .await
@@ -166,6 +166,95 @@ pub async fn delete_card(
     Ok(HttpResponse::NoContent().finish())
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+pub struct UpdateCardData {
+    card_uuid: uuid::Uuid,
+    link: Option<String>,
+    card_html: Option<String>,
+    private: Option<bool>,
+}
+#[derive(Serialize, Deserialize, Clone)]
+pub struct CardHtmlUpdateError {
+    pub message: String,
+    changed_content: String,
+}
+pub async fn update_card(
+    card: web::Json<UpdateCardData>,
+    pool: web::Data<Pool>,
+    user: LoggedUser,
+) -> Result<HttpResponse, actix_web::Error> {
+    let card1 = card.clone();
+    let pool1 = pool.clone();
+    let card_metadata = web::block(move || get_metadata_from_id_query(card1.card_uuid, pool1))
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    if user.id != card_metadata.author_id {
+        return Err(ServiceError::Unauthorized.into());
+    }
+
+    let link = card
+        .link
+        .clone()
+        .unwrap_or_else(|| card_metadata.link.unwrap_or_default());
+
+    let soup = Soup::new(card.card_html.as_ref().unwrap_or(&"".to_string()).as_str());
+    if soup.text() != card_metadata.content && card_metadata.card_html.is_some() {
+        let soup_text_ref = soup.text();
+        let Changeset { diffs, .. } = Changeset::new(&card_metadata.content, &soup_text_ref, " ");
+        let mut ret: String = Default::default();
+        for i in 0..diffs.len() {
+            match diffs[i] {
+                Difference::Same(ref x) => {
+                    ret += format!(" {}", x).as_str();
+                }
+                Difference::Add(ref x) => {
+                    ret += format!("++++{}", x).as_str();
+                }
+                Difference::Rem(ref x) => {
+                    ret += format!("----{}", x).as_str();
+                }
+            }
+        }
+
+        return Ok(HttpResponse::BadRequest().json(CardHtmlUpdateError {
+            message: "Card content has changed".to_string(),
+            changed_content: ret,
+        }));
+    }
+
+    let card_html = match card.card_html.clone() {
+        Some(card_html) => Some(card_html),
+        None => card_metadata.card_html,
+    };
+
+    if card_metadata.private
+        && !card.private.unwrap_or(true)
+        && card_metadata.qdrant_point_id.is_none()
+    {
+        return Err(ServiceError::BadRequest("Cannot make a duplicate card public".into()).into());
+    }
+    let private = card.private.unwrap_or_else(|| card_metadata.private);
+
+    web::block(move || {
+        update_card_metadata_query(
+            CardMetadata::from_details_with_id(
+                card.card_uuid,
+                &card_metadata.content,
+                &card_html,
+                &Some(link),
+                &card_metadata.oc_file_path,
+                user.id,
+                card_metadata.qdrant_point_id,
+                private,
+            ),
+            &pool,
+        )
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
 #[derive(Serialize, Deserialize)]
 pub struct SearchCardData {
     content: String,

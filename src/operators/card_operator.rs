@@ -276,7 +276,7 @@ pub fn search_full_text_card_query(
             sql::<Nullable<Float>>(
                 format!(
                     "(ts_rank(card_metadata_tsvector, to_tsquery('english', '{}') , 32) * 10) AS rank",
-                    user_query
+                    user_query.split_whitespace().collect::<Vec<&str>>().join(" & ")
                 )
                 .as_str(),
             ),
@@ -288,6 +288,9 @@ pub fn search_full_text_card_query(
         format!(
             "card_metadata_tsvector @@ to_tsquery('english', '{}')",
             user_query
+                .split_whitespace()
+                .collect::<Vec<&str>>()
+                .join(" & ")
         )
         .as_str(),
     ));
@@ -453,6 +456,41 @@ pub fn insert_duplicate_card_metadata_query(
         })?;
     Ok(())
 }
+
+pub fn update_card_metadata_query(
+    card_data: CardMetadata,
+    pool: &web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+    use crate::data::schema::card_votes::dsl as card_votes_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::update(
+        card_metadata_columns::card_metadata.filter(card_metadata_columns::id.eq(card_data.id)),
+    )
+    .set((
+        card_metadata_columns::link.eq(card_data.link),
+        card_metadata_columns::card_html.eq(card_data.card_html),
+        card_metadata_columns::private.eq(card_data.private),
+    ))
+    .execute(&mut conn)
+    .map_err(|_err| DefaultError {
+        message: "Failed to update card metadata",
+    })?;
+    diesel::update(
+        card_votes_columns::card_votes
+            .filter(card_votes_columns::card_metadata_id.eq(card_data.id)),
+    )
+    .set(card_votes_columns::deleted.eq(card_data.private))
+    .execute(&mut conn)
+    .map_err(|_err| DefaultError {
+        message: "Failed to update card votes",
+    })?;
+
+    Ok(())
+}
+
 pub fn delete_card_metadata_query(
     card_uuid: &uuid::Uuid,
     pool: &web::Data<Pool>,
