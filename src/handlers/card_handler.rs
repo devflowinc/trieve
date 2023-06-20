@@ -1,11 +1,11 @@
 use crate::data::models::{
-    CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool,
+    CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool, UserDTO,
 };
 use crate::errors::ServiceError;
 use crate::operators::card_operator::{
     create_openai_embedding, delete_card_metadata_query, get_card_count_query,
-    get_metadata_from_point_ids, insert_card_metadata_query, insert_duplicate_card_metadata_query,
-    search_full_text_card_query, update_card_metadata_query,
+    get_metadata_and_votes_from_id_query, get_metadata_from_point_ids, insert_card_metadata_query,
+    insert_duplicate_card_metadata_query, search_full_text_card_query, update_card_metadata_query,
 };
 use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
@@ -372,12 +372,23 @@ pub async fn search_full_text_card(
 
 pub async fn get_card_by_id(
     card_id: web::Path<uuid::Uuid>,
+    user: Option<LoggedUser>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let card = web::block(|| get_metadata_from_id_query(card_id.into_inner(), pool))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
+    let current_user_id = user.map(|user| user.id);
+    let card = web::block(move || {
+        get_metadata_and_votes_from_id_query(card_id.into_inner(), current_user_id, pool)
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    if card.private && current_user_id.is_none() {
+        return Ok(HttpResponse::Unauthorized()
+            .json(json!({"message": "You must be signed in to view this card"})));
+    }
+    if card.private && Some(card.clone().author.unwrap().id) != current_user_id {
+        return Ok(HttpResponse::Forbidden()
+            .json(json!({"message": "You are not authorized to view this card"})));
+    }
     Ok(HttpResponse::Ok().json(card))
 }
 

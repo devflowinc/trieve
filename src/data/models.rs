@@ -359,6 +359,7 @@ pub struct CardMetadataWithVotes {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub oc_file_path: Option<String>,
+    pub private: bool,
     pub score: Option<f32>,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -508,6 +509,7 @@ pub struct FullTextSearchResult {
     pub updated_at: chrono::NaiveDateTime,
     pub oc_file_path: Option<String>,
     pub card_html: Option<String>,
+    pub private: bool,
     pub score: Option<f32>,
 }
 
@@ -524,6 +526,7 @@ impl From<CardMetadata> for FullTextSearchResult {
             oc_file_path: cards.oc_file_path,
             card_html: cards.card_html,
             score: None,
+            private: cards.private,
         }
     }
 }
