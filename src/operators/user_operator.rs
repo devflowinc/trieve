@@ -173,6 +173,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
                 created_at: metadata.created_at,
                 updated_at: metadata.updated_at,
                 oc_file_path: metadata.oc_file_path.clone(),
+                private: metadata.private,
                 score: None,
             }
         })

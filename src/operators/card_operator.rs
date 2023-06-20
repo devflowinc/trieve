@@ -237,6 +237,7 @@ fn get_metadata(
                 vote_by_current_user,
                 created_at: metadata.created_at,
                 updated_at: metadata.updated_at,
+                private: metadata.private,
                 score: metadata.score,
             }
         })
@@ -272,6 +273,7 @@ pub fn search_full_text_card_query(
             card_metadata_columns::updated_at,
             card_metadata_columns::oc_file_path,
             card_metadata_columns::card_html,
+            card_metadata_columns::private,
 
             sql::<Nullable<Float>>(
                 format!(
@@ -386,6 +388,7 @@ pub fn get_metadata_from_point_ids(
 
 pub fn get_metadata_from_id_query(
     card_id: uuid::Uuid,
+
     pool: web::Data<Pool>,
 ) -> Result<CardMetadata, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
@@ -410,6 +413,43 @@ pub fn get_metadata_from_id_query(
         .map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })
+}
+
+pub fn get_metadata_and_votes_from_id_query(
+    card_id: uuid::Uuid,
+    current_user_id: Option<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<CardMetadataWithVotes, DefaultError> {
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    let card_metadata = card_metadata_columns::card_metadata
+        .filter(card_metadata_columns::id.eq(card_id))
+        .select((
+            card_metadata_columns::id,
+            card_metadata_columns::content,
+            card_metadata_columns::link,
+            card_metadata_columns::author_id,
+            card_metadata_columns::qdrant_point_id,
+            card_metadata_columns::created_at,
+            card_metadata_columns::updated_at,
+            card_metadata_columns::oc_file_path,
+            card_metadata_columns::card_html,
+            card_metadata_columns::private,
+        ))
+        .first::<CardMetadata>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })?;
+    let converted_card: FullTextSearchResult =
+        <CardMetadata as Into<FullTextSearchResult>>::into(card_metadata.clone());
+
+    let card_metadata_with_upvotes = get_metadata(vec![converted_card], current_user_id, conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })?;
+    Ok(card_metadata_with_upvotes.first().unwrap().clone())
 }
 
 pub fn insert_card_metadata_query(
