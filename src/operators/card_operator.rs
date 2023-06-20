@@ -388,7 +388,6 @@ pub fn get_metadata_from_point_ids(
 
 pub fn get_metadata_from_id_query(
     card_id: uuid::Uuid,
-
     pool: web::Data<Pool>,
 ) -> Result<CardMetadata, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;

@@ -381,7 +381,9 @@ pub async fn get_card_by_id(
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
+    if card.private && Some(card.clone().author.unwrap().id) != current_user_id {
+        return Err(ServiceError::Unauthorized.into());
+    }
     Ok(HttpResponse::Ok().json(card))
 }
 
