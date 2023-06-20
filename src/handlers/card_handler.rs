@@ -382,11 +382,12 @@ pub async fn get_card_by_id(
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
     if card.private && current_user_id.is_none() {
-        return Ok(HttpResponse::Forbidden()
+        return Ok(HttpResponse::Unauthorized()
             .json(json!({"message": "You must be signed in to view this card"})));
     }
     if card.private && Some(card.clone().author.unwrap().id) != current_user_id {
-        return Err(ServiceError::Unauthorized.into());
+        return Ok(HttpResponse::Forbidden()
+            .json(json!({"message": "You are not authorized to view this card"})));
     }
     Ok(HttpResponse::Ok().json(card))
 }
