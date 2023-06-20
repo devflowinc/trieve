@@ -381,6 +381,12 @@ pub async fn get_card_by_id(
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    if card.private && current_user_id.is_none() {
+        return Err(ServiceError::BadRequest(
+            "You need to be signed in to view this card".to_string(),
+        )
+        .into());
+    }
     if card.private && Some(card.clone().author.unwrap().id) != current_user_id {
         return Err(ServiceError::Unauthorized.into());
     }
