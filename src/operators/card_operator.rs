@@ -274,28 +274,28 @@ pub fn search_full_text_card_query(
             card_metadata_columns::oc_file_path,
             card_metadata_columns::card_html,
             card_metadata_columns::private,
-
-            sql::<Nullable<Float>>(
-                format!(
-                    "(ts_rank(card_metadata_tsvector, to_tsquery('english', '{}') , 32) * 10) AS rank",
-                    user_query.split_whitespace().collect::<Vec<&str>>().join(" & ")
+            sql::<Nullable<Float>>("(ts_rank(card_metadata_tsvector, to_tsquery('english', ")
+                .bind::<Text, _>(
+                    user_query
+                        .split_whitespace()
+                        .collect::<Vec<&str>>()
+                        .join(" & "),
                 )
-                .as_str(),
-            ),
+                .sql(") , 32) * 10) AS rank"),
         ))
         .filter(card_metadata_columns::private.eq(false))
         .into_boxed();
 
-    query = query.filter(sql::<Bool>(
-        format!(
-            "card_metadata_tsvector @@ to_tsquery('english', '{}')",
-            user_query
-                .split_whitespace()
-                .collect::<Vec<&str>>()
-                .join(" & ")
-        )
-        .as_str(),
-    ));
+    query = query.filter(
+        sql::<Bool>("card_metadata_tsvector @@ to_tsquery('english', ")
+            .bind::<Text, _>(
+                user_query
+                    .split_whitespace()
+                    .collect::<Vec<&str>>()
+                    .join(" & "),
+            )
+            .sql(")"),
+    );
 
     let filter_oc_file_path = filter_oc_file_path.unwrap_or([].to_vec());
     let filter_link_url = filter_link_url.unwrap_or([].to_vec());
