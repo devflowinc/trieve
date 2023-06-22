@@ -1,11 +1,11 @@
 use crate::data::models::{
-    CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool, UserDTO,
+    CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool,
 };
-use crate::errors::{DefaultError, ServiceError};
+use crate::errors::ServiceError;
 use crate::operators::card_operator::{
-    create_openai_embedding, get_card_count_query, get_metadata_from_point_ids,
-    insert_card_metadata_query, search_full_text_card_query,
-    update_card_html_by_qdrant_point_id_query,
+    create_openai_embedding, delete_card_metadata_query, get_card_count_query,
+    get_metadata_and_votes_from_id_query, get_metadata_from_point_ids, insert_card_metadata_query,
+    insert_duplicate_card_metadata_query, search_full_text_card_query, update_card_metadata_query,
 };
 use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
@@ -20,13 +20,13 @@ use soup::Soup;
 
 use super::auth_handler::LoggedUser;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize)]
 pub struct CreateCardData {
-    content: String,
-    card_html: Option<String>,
-    link: Option<String>,
-    oc_file_path: Option<String>,
-    private: Option<bool>,
+    pub content: String,
+    pub card_html: Option<String>,
+    pub link: Option<String>,
+    pub oc_file_path: Option<String>,
+    pub private: Option<bool>,
 }
 
 pub async fn create_card(
@@ -34,85 +34,35 @@ pub async fn create_card(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let content_clone = card.content.clone();
-    let content_clone_two = card.content.clone();
-    let pool_one = pool.clone();
-    let pool_two = pool.clone();
-    let pool_three = pool.clone();
+    let mut private = card.private.unwrap_or(false);
+    let mut collision: Option<uuid::Uuid> = None;
 
-    let words_in_content = card.content.split(' ').collect::<Vec<&str>>();
-    if words_in_content.len() < 70 {
+    let words_in_content = card.content.split(' ').collect::<Vec<&str>>().len();
+    if words_in_content < 70 {
         return Ok(HttpResponse::BadRequest().json(json!({
             "message": "Card content must be at least 70 words long",
         })));
     }
 
-    let check_similarity = |qdrant_point_id: uuid::Uuid, similarity_score: f64, threshold: f64| {
-        let lambda_card_content_clone = card.content.clone();
-        let card_html_clone = card.card_html.clone();
-        let pool_clone = pool.clone();
+    let embedding_vector = create_openai_embedding(&card.content).await?;
 
-        let mut similarity_threshold = threshold;
-        if lambda_card_content_clone.len() < 200 {
-            similarity_threshold -= 0.05;
-        }
-
-        if similarity_score >= similarity_threshold {
-            let _ = web::block(move || {
-                update_card_html_by_qdrant_point_id_query(
-                    &qdrant_point_id,
-                    &card_html_clone,
-                    &pool_clone,
-                )
-            });
-
-            return Err(DefaultError {
-                message: "Card already exists",
-            });
-        }
-
-        Ok(())
-    };
-
-    let pg_similiarity_result = web::block(move || {
-        search_full_text_card_query(content_clone, 1, pool_one.clone(), None, None, None)
-    })
-    .await?
-    .map_err(|e| actix_web::error::ErrorBadRequest(e.message))?;
-
-    match pg_similiarity_result.search_results.get(0) {
-        Some(result_ref) => {
-            match check_similarity(
-                result_ref.qdrant_point_id.clone(),
-                result_ref.score.unwrap_or(0.0).into(),
-                0.9,
-            ) {
-                Ok(_) => {}
-                Err(e) => {
-                    return Ok(HttpResponse::BadRequest().json(e));
-                }
-            }
-        }
-        None => {}
-    }
-
-    let embedding_vector = create_openai_embedding(&content_clone_two).await?;
-
-    let cards = search_card_query(embedding_vector.clone(), 1, pool_two, None, None)
+    let cards = search_card_query(embedding_vector.clone(), 1, pool.clone(), None, None)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let first_result = cards.search_results.get(0);
 
-    match cards.search_results.get(0) {
-        Some(result_ref) => {
-            match check_similarity(result_ref.point_id.clone(), result_ref.score.into(), 0.95) {
-                Ok(_) => {}
-                Err(e) => {
-                    return Ok(HttpResponse::BadRequest().json(e));
-                }
-            }
+    if let Some(score_card) = first_result {
+        let mut similarity_threashold = 0.95;
+        if card.content.len() < 200 {
+            similarity_threashold = 0.9;
         }
-        None => {}
-    };
+
+        if score_card.score >= similarity_threashold {
+            //Sets collision to collided card id and forces private
+            collision = Some(score_card.point_id);
+            private = true;
+        }
+    }
 
     //if collision is not nil, insert card with collision
     if collision.is_some() {
@@ -195,6 +145,19 @@ pub async fn delete_card(
     let qdrant = get_qdrant_connection()
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let deleted_values = PointsSelector {
+        points_selector_one_of: Some(PointsSelectorOneOf::Points(PointsIdsList {
+            ids: vec![card_metadata
+                .qdrant_point_id
+                .clone()
+                .unwrap_or(uuid::Uuid::nil())
+                .to_string()
+                .into()],
+        })),
+    };
+    web::block(move || delete_card_metadata_query(&card.card_uuid, &pool))
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     qdrant
         .delete_points_blocking("debate_cards".to_string(), &deleted_values, None)
@@ -203,31 +166,92 @@ pub async fn delete_card(
     Ok(HttpResponse::NoContent().finish())
 }
 
-    let point_id = uuid::Uuid::new_v4();
-    let point = PointStruct::new(point_id.clone().to_string(), embedding_vector, payload);
-    let card_clone = card.clone();
+#[derive(Serialize, Deserialize, Clone)]
+pub struct UpdateCardData {
+    card_uuid: uuid::Uuid,
+    link: Option<String>,
+    card_html: Option<String>,
+    private: Option<bool>,
+}
+#[derive(Serialize, Deserialize, Clone)]
+pub struct CardHtmlUpdateError {
+    pub message: String,
+    changed_content: String,
+}
+pub async fn update_card(
+    card: web::Json<UpdateCardData>,
+    pool: web::Data<Pool>,
+    user: LoggedUser,
+) -> Result<HttpResponse, actix_web::Error> {
+    let card1 = card.clone();
+    let pool1 = pool.clone();
+    let card_metadata = web::block(move || get_metadata_from_id_query(card1.card_uuid, pool1))
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    if user.id != card_metadata.author_id {
+        return Err(ServiceError::Unauthorized.into());
+    }
+
+    let link = card
+        .link
+        .clone()
+        .unwrap_or_else(|| card_metadata.link.unwrap_or_default());
+
+    let soup = Soup::new(card.card_html.as_ref().unwrap_or(&"".to_string()).as_str());
+    if soup.text() != card_metadata.content && card_metadata.card_html.is_some() {
+        let soup_text_ref = soup.text();
+        let Changeset { diffs, .. } = Changeset::new(&card_metadata.content, &soup_text_ref, " ");
+        let mut ret: String = Default::default();
+        for i in 0..diffs.len() {
+            match diffs[i] {
+                Difference::Same(ref x) => {
+                    ret += format!(" {}", x).as_str();
+                }
+                Difference::Add(ref x) => {
+                    ret += format!("++++{}", x).as_str();
+                }
+                Difference::Rem(ref x) => {
+                    ret += format!("----{}", x).as_str();
+                }
+            }
+        }
+
+        return Ok(HttpResponse::BadRequest().json(CardHtmlUpdateError {
+            message: "Card content has changed".to_string(),
+            changed_content: ret,
+        }));
+    }
+
+    let card_html = match card.card_html.clone() {
+        Some(card_html) => Some(card_html),
+        None => card_metadata.card_html,
+    };
+
+    if card_metadata.private
+        && !card.private.unwrap_or(true)
+        && card_metadata.qdrant_point_id.is_none()
+    {
+        return Err(ServiceError::BadRequest("Cannot make a duplicate card public".into()).into());
+    }
+    let private = card.private.unwrap_or_else(|| card_metadata.private);
 
     web::block(move || {
-        insert_card_metadata_query(
-            CardMetadata::from_details(
-                &card_clone.content,
-                &card_clone.card_html,
-                &card_clone.link,
-                &card_clone.oc_file_path,
+        update_card_metadata_query(
+            CardMetadata::from_details_with_id(
+                card.card_uuid,
+                &card_metadata.content,
+                &card_html,
+                &Some(link),
+                &card_metadata.oc_file_path,
                 user.id,
                 card_metadata.qdrant_point_id,
                 private,
             ),
-            &pool_three,
+            &pool,
         )
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    qdrant
-        .upsert_points_blocking("debate_cards".to_string(), vec![point], None)
-        .await
-        .map_err(|_err| ServiceError::BadRequest("Failed inserting card to qdrant".into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -351,10 +375,20 @@ pub async fn get_card_by_id(
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let card = web::block(|| get_metadata_from_id_query(card_id.into_inner(), pool))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
+    let current_user_id = user.map(|user| user.id);
+    let card = web::block(move || {
+        get_metadata_and_votes_from_id_query(card_id.into_inner(), current_user_id, pool)
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    if card.private && current_user_id.is_none() {
+        return Ok(HttpResponse::Unauthorized()
+            .json(json!({"message": "You must be signed in to view this card"})));
+    }
+    if card.private && Some(card.clone().author.unwrap().id) != current_user_id {
+        return Ok(HttpResponse::Forbidden()
+            .json(json!({"message": "You are not authorized to view this card"})));
+    }
     Ok(HttpResponse::Ok().json(card))
 }
 
