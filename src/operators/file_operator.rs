@@ -35,7 +35,7 @@ pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
     };
 
     let aws_bucket =
-        Bucket::new(&s3_bucket_name, aws_region.clone(), aws_credentials.clone()).map_err(|_| {
+        Bucket::new(&s3_bucket_name, aws_region, aws_credentials).map_err(|_| {
             DefaultError {
                 message: "Could not create bucket",
             }
@@ -77,13 +77,13 @@ pub fn remove_extra_trailing_chars(url: &str) -> String {
         .map(|m| m.as_str())
         .collect::<Vec<&str>>();
 
-    let cleaned_url = if all_matches.len() > 0 {
+    
+
+    if !all_matches.is_empty() {
         all_matches[0].to_string()
     } else {
         url.to_string()
-    };
-
-    cleaned_url
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -172,13 +172,13 @@ pub async fn convert_docx_to_html_query(
             "p" => {
                 if is_heading && !is_link {
                     let card_text = child.text();
-                    card_text.split(" ").for_each(|word| {
+                    for word in card_text.split(' ') {
                         if word.contains("http") {
                             is_link = true;
                             card_link = remove_extra_trailing_chars(word);
-                            return;
+                            break;
                         }
-                    });
+                    }
                     if is_link {
                         // this p tag contains a link so we need to not add it to the card content
                         continue;
@@ -207,6 +207,7 @@ pub async fn convert_docx_to_html_query(
             card_html: Some(card.card_html.clone()),
             link: Some(card.link.clone()),
             oc_file_path: None,
+            private: Some(false),
         };
         let web_json_create_card_data = web::Json(create_card_data);
 
