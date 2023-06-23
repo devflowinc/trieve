@@ -187,7 +187,36 @@ pub fn get_bookmarks_for_collection_query(
     Ok(card_metadata_with_upvotes)
 }
 
+pub fn get_collections_for_bookmark_query(
+    bookmark: uuid::Uuid,
+    current_user_id: Option<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<Vec<CardCollectionBookmark>, DefaultError> {
+    use crate::data::schema::card_collection::dsl as card_collection_columns;
+    use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    let user_collections: Vec<uuid::Uuid> = card_collection_columns::card_collection
+        .filter(card_collection_columns::author_id.eq(current_user_id.unwrap()))
+        .select(card_collection_columns::id)
+        .load::<uuid::Uuid>(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Error getting bookmarks",
+        })?;
+
+    let collections = card_collection_bookmarks_columns::card_collection_bookmarks
+        .filter(card_collection_bookmarks_columns::card_metadata_id.eq(bookmark))
+        .filter(card_collection_bookmarks_columns::collection_id.eq_any(user_collections))
+        .load::<CardCollectionBookmark>(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Error getting bookmarks",
+        })?;
+
+    Ok(collections)
+}
 pub fn delete_bookmark_query(
+    bookmark: uuid::Uuid,
     collection: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
@@ -195,14 +224,18 @@ pub fn delete_bookmark_query(
 
     let mut conn = pool.get().unwrap();
 
-    diesel::delete(card_collection_bookmarks.filter(collection_id.eq(collection)))
-        .execute(&mut conn)
-        .map_err(|_err| {
-            log::error!("Error deleting bookmark {:}", _err);
-            DefaultError {
-                message: "Error deleting bookmark",
-            }
-        })?;
+    diesel::delete(
+        card_collection_bookmarks
+            .filter(card_metadata_id.eq(bookmark))
+            .filter(collection_id.eq(collection)),
+    )
+    .execute(&mut conn)
+    .map_err(|_err| {
+        log::error!("Error deleting bookmark {:}", _err);
+        DefaultError {
+            message: "Error deleting bookmark",
+        }
+    })?;
 
     Ok(())
 }
