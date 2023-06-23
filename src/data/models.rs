@@ -263,16 +263,17 @@ impl CardMetadata {
             card_html: card_html.clone(),
             link: link.clone(),
             author_id: author_id.into(),
-            qdrant_point_id: qdrant_point_id.into(),
+            qdrant_point_id,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
             oc_file_path: oc_file_path.clone(),
-            private: private.clone(),
+            private,
         }
     }
 }
 
 impl CardMetadata {
+    #[allow(clippy::too_many_arguments)]
     pub fn from_details_with_id<S: Into<String>, T: Into<uuid::Uuid>>(
         id: T,
         content: S,
@@ -289,11 +290,11 @@ impl CardMetadata {
             card_html: card_html.clone(),
             link: link.clone(),
             author_id: author_id.into(),
-            qdrant_point_id: qdrant_point_id.into(),
+            qdrant_point_id,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
             oc_file_path: oc_file_path.clone(),
-            private: private.clone(),
+            private,
         }
     }
 }
