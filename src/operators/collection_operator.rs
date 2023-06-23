@@ -1,6 +1,9 @@
 use crate::{
-    data::models::CardCollectionBookmark,
+    data::models::{
+        CardCollectionBookmark, CardMetadata, CardMetadataWithVotes, FullTextSearchResult,
+    },
     diesel::{ExpressionMethods, QueryDsl, RunQueryDsl},
+    operators::card_operator::get_metadata,
 };
 use actix_web::web;
 
@@ -131,20 +134,57 @@ pub fn create_card_bookmark_query(
 
 pub fn get_bookmarks_for_collection_query(
     collection: uuid::Uuid,
+    current_user_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<Vec<CardCollectionBookmark>, DefaultError> {
-    use crate::data::schema::card_collection_bookmarks::dsl::*;
+) -> Result<Vec<CardMetadataWithVotes>, DefaultError> {
+    use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
     let mut conn = pool.get().unwrap();
 
-    let bookmarks = card_collection_bookmarks
-        .filter(collection_id.eq(collection))
+    let bookmarks = card_collection_bookmarks_columns::card_collection_bookmarks
+        .filter(card_collection_bookmarks_columns::collection_id.eq(collection))
         .load::<CardCollectionBookmark>(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Error getting bookmarks",
         })?;
 
-    Ok(bookmarks)
+    let bookmark_metadata = card_metadata_columns::card_metadata
+        .filter(
+            card_metadata_columns::id.eq_any(
+                bookmarks
+                    .iter()
+                    .map(|bookmark| bookmark.card_metadata_id)
+                    .collect::<Vec<uuid::Uuid>>(),
+            ),
+        )
+        .select((
+            card_metadata_columns::id,
+            card_metadata_columns::content,
+            card_metadata_columns::link,
+            card_metadata_columns::author_id,
+            card_metadata_columns::qdrant_point_id,
+            card_metadata_columns::created_at,
+            card_metadata_columns::updated_at,
+            card_metadata_columns::oc_file_path,
+            card_metadata_columns::card_html,
+            card_metadata_columns::private,
+        ))
+        .load::<CardMetadata>(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Error getting bookmarks",
+        })?;
+
+    let converted_cards: Vec<FullTextSearchResult> = bookmark_metadata
+        .iter()
+        .map(|card| <CardMetadata as Into<FullTextSearchResult>>::into(card.clone()))
+        .collect::<Vec<FullTextSearchResult>>();
+
+    let card_metadata_with_upvotes =
+        get_metadata(converted_cards, current_user_id, conn).map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })?;
+    Ok(card_metadata_with_upvotes)
 }
 
 pub fn delete_bookmark_query(
