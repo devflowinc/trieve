@@ -237,7 +237,7 @@ pub async fn convert_docx_to_html_query(
             card_html: Some(card.card_html.clone()),
             link: Some(card.link.clone()),
             oc_file_path: None,
-            private: Some(false),
+            private: Some(private),
         };
         let web_json_create_card_data = web::Json(create_card_data);
 

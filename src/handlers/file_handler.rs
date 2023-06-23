@@ -18,36 +18,27 @@ pub struct UploadFileResult {
 
 pub async fn upload_file_handler(
     mut payload: Multipart,
+    private: web::Path<bool>,
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool_inner = pool.clone();
     let mut file_data = Vec::new();
-    let mut file_field_option: Option<actix_multipart::Field> = None;
-    let mut private_field: bool = false;
+    let private = private.into_inner();
 
-    match payload.try_next().await? {
-        Some(field) => match field.content_disposition().get_name() {
-            Some("docx_file") => file_field_option = Some(field),
-            Some("private") => private_field = true,
-            _ => {
+    let mut file_field: actix_multipart::Field = match payload.try_next().await? {
+        Some(field) => {
+            if field.content_disposition().get_name() == Some("docx_file") {
+                field
+            } else {
                 return Ok(HttpResponse::BadRequest().json(DefaultError {
-                    message: "Must include only docx_file key or private key in form data",
-                }))
+                    message: "Must include only docx_file key in form data",
+                }));
             }
-        },
+        }
         None => {
             return Ok(HttpResponse::BadRequest().json(DefaultError {
                 message: "Must include only docx_file key in form data",
-            }))
-        }
-    };
-
-    let mut file_field = match file_field_option {
-        Some(file_field) => file_field,
-        None => {
-            return Ok(HttpResponse::BadRequest().json(DefaultError {
-                message: "Must include a file",
             }))
         }
     };
@@ -86,16 +77,10 @@ pub async fn upload_file_handler(
         file_data.extend_from_slice(&chunk);
     }
 
-    let conversion_result = convert_docx_to_html_query(
-        file_name,
-        file_data,
-        file_mime,
-        private_field,
-        user,
-        pool_inner,
-    )
-    .await
-    .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    let conversion_result =
+        convert_docx_to_html_query(file_name, file_data, file_mime, private, user, pool_inner)
+            .await
+            .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
     Ok(HttpResponse::Ok().json(conversion_result))
 }
