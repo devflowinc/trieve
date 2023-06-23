@@ -33,6 +33,8 @@ diesel::table! {
         id -> Uuid,
         card_id -> Uuid,
         collision_qdrant_id -> Uuid,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
     }
 }
 
@@ -50,8 +52,8 @@ diesel::table! {
         updated_at -> Timestamp,
         oc_file_path -> Nullable<Text>,
         card_html -> Nullable<Text>,
-        private -> Bool,
         card_metadata_tsvector -> Nullable<Tsvector>,
+        private -> Bool,
     }
 }
 
@@ -68,9 +70,19 @@ diesel::table! {
 }
 
 diesel::table! {
+    files (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        file_name -> Text,
+        private -> Bool,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     invitations (id) {
         id -> Uuid,
-        #[max_length = 100]
         email -> Varchar,
         expires_at -> Timestamp,
         created_at -> Timestamp,
@@ -85,7 +97,6 @@ diesel::table! {
         topic_id -> Uuid,
         sort_order -> Int4,
         content -> Text,
-        #[max_length = 10]
         role -> Varchar,
         deleted -> Bool,
         prompt_tokens -> Nullable<Int4>,
@@ -98,7 +109,6 @@ diesel::table! {
 diesel::table! {
     password_resets (id) {
         id -> Uuid,
-        #[max_length = 100]
         email -> Varchar,
         expires_at -> Timestamp,
         created_at -> Timestamp,
@@ -110,7 +120,6 @@ diesel::table! {
     stripe_customers (id) {
         id -> Uuid,
         stripe_id -> Text,
-        #[max_length = 100]
         email -> Nullable<Varchar>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
@@ -161,6 +170,7 @@ diesel::joinable!(card_collection_bookmarks -> card_metadata (card_metadata_id))
 diesel::joinable!(card_metadata -> users (author_id));
 diesel::joinable!(card_votes -> card_metadata (card_metadata_id));
 diesel::joinable!(card_votes -> users (voted_user_id));
+diesel::joinable!(files -> users (user_id));
 diesel::joinable!(messages -> topics (topic_id));
 diesel::joinable!(topics -> users (user_id));
 
@@ -170,6 +180,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     card_collisions,
     card_metadata,
     card_votes,
+    files,
     invitations,
     messages,
     password_resets,
