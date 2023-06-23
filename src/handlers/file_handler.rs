@@ -1,6 +1,6 @@
 use crate::{
     data::models::Pool,
-    errors::{DefaultError, ServiceError},
+    errors::ServiceError,
     operators::file_operator::{convert_docx_to_html_query, CoreCard},
 };
 use actix_multipart::Multipart;
@@ -31,15 +31,15 @@ pub async fn upload_file_handler(
             if field.content_disposition().get_name() == Some("docx_file") {
                 field
             } else {
-                return Ok(HttpResponse::BadRequest().json(DefaultError {
-                    message: "Must include only docx_file key in form data",
-                }));
+                return Err(ServiceError::BadRequest(
+                    "Must include only docx_file key in form data".to_string(),
+                ))?;
             }
         }
         None => {
-            return Ok(HttpResponse::BadRequest().json(DefaultError {
-                message: "Must include only docx_file key in form data",
-            }))
+            return Err(ServiceError::BadRequest(
+                "Must include only docx_file key in form data".to_string(),
+            ))?;
         }
     };
 
@@ -47,9 +47,9 @@ pub async fn upload_file_handler(
     let file_name = match content_disposition.get_filename() {
         Some(name) => name.to_string(),
         None => {
-            return Ok(HttpResponse::BadRequest().json(DefaultError {
-                message: "Must include a file name",
-            }))
+            return Err(ServiceError::BadRequest(
+                "Must include a file name".to_string(),
+            ))?;
         }
     };
     let file_mime = match file_field.content_type() {
@@ -59,17 +59,17 @@ pub async fn upload_file_handler(
             if mime_type
                 != "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             {
-                return Ok(HttpResponse::BadRequest().json(DefaultError {
-                    message: "Must upload a docx file",
-                }));
+                return Err(ServiceError::BadRequest(
+                    "Must upload a docx file".to_string(),
+                ))?;
             }
 
             mime_type
         }
         None => {
-            return Ok(HttpResponse::BadRequest().json(DefaultError {
-                message: "Must upload a docx file",
-            }));
+            return Err(ServiceError::BadRequest(
+                "Must upload a docx file".to_string(),
+            ))?;
         }
     };
 
