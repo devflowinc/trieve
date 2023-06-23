@@ -1,9 +1,8 @@
 use actix_web::{web, HttpResponse};
-use serde::Deserialize;
-use serde_json::json;
+use serde::{Deserialize, Serialize};
 
 use crate::{
-    data::models::{CardCollection, CardCollectionBookmark, Pool},
+    data::models::{CardCollection, CardCollectionBookmark, CardMetadataWithVotes, Pool},
     errors::ServiceError,
     operators::collection_operator::*,
 };
@@ -152,6 +151,11 @@ pub async fn add_bookmark(
 
     Ok(HttpResponse::NoContent().finish())
 }
+#[derive(Deserialize, Serialize)]
+pub struct BookmarkData {
+    pub bookmarks: Vec<CardMetadataWithVotes>,
+    pub collection: CardCollection,
+}
 
 pub async fn get_all_bookmarks(
     collection_id: web::Path<uuid::Uuid>,
@@ -166,16 +170,10 @@ pub async fn get_all_bookmarks(
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
     if !collection.is_public && current_user_id.is_none() {
-        return Ok(HttpResponse::Unauthorized().json(json! {
-        {
-            "message": "You have to be logged in to view this collection"
-        }}));
+        return Err(ServiceError::Unauthorized.into());
     }
     if !collection.is_public && Some(collection.author_id) != current_user_id {
-        return Ok(HttpResponse::Forbidden().json(json! {
-        {
-            "message": "You are not authorized to view this collection"
-        }}));
+        return Err(ServiceError::Forbidden.into());
     }
 
     let bookmarks = web::block(move || {
@@ -184,7 +182,10 @@ pub async fn get_all_bookmarks(
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    Ok(HttpResponse::Ok().json(json!({"card_metadata": bookmarks, "collection": collection})))
+    Ok(HttpResponse::Ok().json(BookmarkData {
+        bookmarks,
+        collection,
+    }))
 }
 
 #[derive(Deserialize)]
