@@ -305,6 +305,8 @@ pub struct CardCollisions {
     pub id: uuid::Uuid,
     pub card_id: uuid::Uuid,
     pub collision_qdrant_id: uuid::Uuid,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
 }
 
 impl CardCollisions {
@@ -313,6 +315,8 @@ impl CardCollisions {
             id: uuid::Uuid::new_v4(),
             card_id: card_id.into(),
             collision_qdrant_id: collision_id.into(),
+            created_at: chrono::Local::now().naive_local(),
+            updated_at: chrono::Local::now().naive_local(),
         }
     }
 }
@@ -546,6 +550,30 @@ impl From<CardMetadataWithVotes> for CardMetadataWithVotesWithoutScore {
             created_at: cards.created_at,
             updated_at: cards.updated_at,
             oc_file_path: cards.oc_file_path,
+        }
+    }
+}
+
+#[derive(Debug, Default, Serialize, Deserialize, Queryable, Insertable, Clone)]
+#[diesel(table_name = files)]
+pub struct File {
+    pub id: uuid::Uuid,
+    pub user_id: uuid::Uuid,
+    pub file_name: String,
+    pub private: bool,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl File {
+    pub fn from_details(user_id: uuid::Uuid, file_name: String, private: bool) -> Self {
+        File {
+            id: uuid::Uuid::new_v4(),
+            user_id,
+            file_name,
+            private,
+            created_at: chrono::Local::now().naive_local(),
+            updated_at: chrono::Local::now().naive_local(),
         }
     }
 }
