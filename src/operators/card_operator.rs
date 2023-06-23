@@ -157,7 +157,7 @@ pub async fn search_card_query(
     })
 }
 
-fn get_metadata(
+pub fn get_metadata(
     card_metadata: Vec<FullTextSearchResult>,
     current_user_id: Option<uuid::Uuid>,
     mut conn: r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::PgConnection>>,

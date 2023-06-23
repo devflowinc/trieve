@@ -1,9 +1,11 @@
 use actix_web::{web, HttpResponse};
 use serde::Deserialize;
+use serde_json::json;
 
 use crate::{
     data::models::{CardCollection, CardCollectionBookmark, Pool},
-    operators::collection_operator::*, errors::ServiceError,
+    errors::ServiceError,
+    operators::collection_operator::*,
 };
 
 use super::auth_handler::LoggedUser;
@@ -18,9 +20,9 @@ pub async fn user_owns_collection(
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if collection.author_id != user_id {
-        return Err(ServiceError::BadRequest(
-            "You are not the author of this collection".into(),
-        ).into());
+        return Err(
+            ServiceError::BadRequest("You are not the author of this collection".into()).into(),
+        );
     }
 
     Ok(collection)
@@ -154,26 +156,35 @@ pub async fn add_bookmark(
 pub async fn get_all_bookmarks(
     collection_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-    user: LoggedUser,
+    user: Option<LoggedUser>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let collection_id = collection_id.into_inner();
     let pool_two = pool.clone();
+    let current_user_id = user.map(|user| user.id);
 
     let collection = web::block(move || get_collection_by_id_query(collection_id, pool_two))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    if !collection.is_public && collection.author_id != user.id {
-        return Err(actix_web::error::ErrorUnauthorized(
-            "You are not authorized to view this collection",
-        ));
+    if !collection.is_public && current_user_id.is_none() {
+        return Ok(HttpResponse::Unauthorized().json(json! {
+        {
+            "message": "You have to be logged in to view this collection"
+        }}));
+    }
+    if !collection.is_public && Some(collection.author_id) != current_user_id {
+        return Ok(HttpResponse::Forbidden().json(json! {
+        {
+            "message": "You are not authorized to view this collection"
+        }}));
     }
 
     let bookmarks = web::block(move || {
-        get_bookmarks_for_collection_query(collection_id, pool)
-    }).await?.map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        get_bookmarks_for_collection_query(collection_id, current_user_id, pool.clone())
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    Ok(HttpResponse::Ok().json(bookmarks))
+    Ok(HttpResponse::Ok().json(json!({"card_metadata": bookmarks, "collection": collection})))
 }
 
 #[derive(Deserialize)]
@@ -194,14 +205,9 @@ pub async fn delete_bookmark(
 
     user_owns_collection(user.id, collection_id, pool_two).await?;
 
-    web::block(move || {
-        delete_bookmark_query(
-            bookmark_id,
-            pool,
-        )
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    web::block(move || delete_bookmark_query(bookmark_id, pool))
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
