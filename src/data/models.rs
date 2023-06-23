@@ -560,17 +560,24 @@ pub struct File {
     pub id: uuid::Uuid,
     pub user_id: uuid::Uuid,
     pub file_name: String,
+    pub mime_type: String,
     pub private: bool,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
 
 impl File {
-    pub fn from_details(user_id: uuid::Uuid, file_name: String, private: bool) -> Self {
+    pub fn from_details(
+        user_id: uuid::Uuid,
+        file_name: &str,
+        mime_type: &str,
+        private: bool,
+    ) -> Self {
         File {
             id: uuid::Uuid::new_v4(),
             user_id,
-            file_name,
+            file_name: file_name.to_string(),
+            mime_type: mime_type.to_string(),
             private,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),

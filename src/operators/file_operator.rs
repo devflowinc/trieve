@@ -1,4 +1,5 @@
 use actix_web::web;
+use diesel::RunQueryDsl;
 use pandoc;
 use regex::Regex;
 use s3::{creds::Credentials, Bucket, Region};
@@ -6,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use soup::{NodeExt, QueryBuilderExt, Soup};
 
 use crate::{
-    data::models::Pool,
+    data::models::{File, Pool},
     errors::DefaultError,
     handlers::{
         auth_handler::LoggedUser,
@@ -34,12 +35,11 @@ pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
         expiration: None,
     };
 
-    let aws_bucket =
-        Bucket::new(&s3_bucket_name, aws_region, aws_credentials).map_err(|_| {
-            DefaultError {
-                message: "Could not create bucket",
-            }
-        })?.with_path_style();
+    let aws_bucket = Bucket::new(&s3_bucket_name, aws_region, aws_credentials)
+        .map_err(|_| DefaultError {
+            message: "Could not create bucket",
+        })?
+        .with_path_style();
 
     Ok(aws_bucket)
 }
@@ -77,13 +77,36 @@ pub fn remove_extra_trailing_chars(url: &str) -> String {
         .map(|m| m.as_str())
         .collect::<Vec<&str>>();
 
-    
-
     if !all_matches.is_empty() {
         all_matches[0].to_string()
     } else {
         url.to_string()
     }
+}
+
+pub fn create_file_query(
+    user_id: uuid::Uuid,
+    file_name: &str,
+    mime_type: &str,
+    private: bool,
+    pool: web::Data<Pool>,
+) -> Result<File, DefaultError> {
+    use crate::data::schema::files::dsl::files;
+
+    let mut conn = pool.get().map_err(|_| DefaultError {
+        message: "Could not get database connection",
+    })?;
+
+    let new_file = File::from_details(user_id, file_name, mime_type, private);
+
+    let created_file: File = diesel::insert_into(files)
+        .values(&new_file)
+        .get_result(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Could not create file, try again",
+        })?;
+
+    Ok(created_file)
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -97,6 +120,7 @@ pub async fn convert_docx_to_html_query(
     file_name: String,
     file_data: Vec<u8>,
     file_mime: String,
+    private: bool,
     user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<UploadFileResult, DefaultError> {
@@ -134,9 +158,15 @@ pub async fn convert_docx_to_html_query(
         }
     };
 
+    let created_file = create_file_query(user.id, &file_name, &file_mime, private, pool.clone())?;
+
     let bucket = get_aws_bucket()?;
     bucket
-        .put_object_with_content_type(file_name, file_data.as_slice(), &file_mime)
+        .put_object_with_content_type(
+            created_file.id.to_string(),
+            file_data.as_slice(),
+            &file_mime,
+        )
         .await
         .map_err(|_| DefaultError {
             message: "Could not upload file to S3",
