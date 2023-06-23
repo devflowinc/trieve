@@ -34,12 +34,7 @@ pub async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let qdrant_url = std::env::var("QDRANT_URL").expect("QDRANT_URL must be set");
     let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
-    println!(
-        "Connecting to redis at {}, database, {} qdrant, {}",
-        redis_url, database_url, qdrant_url
-    );
 
     // create db connection pool
     let manager = r2d2::ConnectionManager::<PgConnection>::new(database_url);
@@ -267,7 +262,7 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::delete().to(handlers::collection_handler::delete_bookmark)),
                     )
                     .service(
-                        web::resource("/upload_file")
+                        web::resource("/upload_file/{private}")
                             .route(web::post().to(handlers::file_handler::upload_file_handler)),
                     ),
             )
