@@ -8,6 +8,7 @@ use crate::{
 };
 
 use super::auth_handler::LoggedUser;
+//new handler and operator to get collections a card is in
 
 pub async fn user_owns_collection(
     user_id: uuid::Uuid,
@@ -188,9 +189,30 @@ pub async fn get_all_bookmarks(
     }))
 }
 
+pub async fn get_collections_card_is_in(
+    card_id: web::Path<uuid::Uuid>,
+    pool: web::Data<Pool>,
+    user: Option<LoggedUser>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let collection_id = card_id.into_inner();
+    let pool_two = pool.clone();
+    let current_user_id = user.map(|user| user.id);
+    if current_user_id.is_none() {
+        return Err(ServiceError::Unauthorized.into());
+    }
+
+    let collections = web::block(move || {
+        get_collections_for_bookmark_query(collection_id, current_user_id, pool_two)
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    Ok(HttpResponse::Ok().json(collections))
+}
+
 #[derive(Deserialize)]
 pub struct RemoveBookmarkData {
-    pub bookmark_id: uuid::Uuid,
+    pub card_metadata_id: uuid::Uuid,
 }
 
 pub async fn delete_bookmark(
@@ -200,13 +222,13 @@ pub async fn delete_bookmark(
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let collection_id = collection_id.into_inner();
-    let bookmark_id = body.bookmark_id;
+    let bookmark_id = body.card_metadata_id;
 
     let pool_two = pool.clone();
 
     user_owns_collection(user.id, collection_id, pool_two).await?;
 
-    web::block(move || delete_bookmark_query(bookmark_id, pool))
+    web::block(move || delete_bookmark_query(bookmark_id, collection_id, pool))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
