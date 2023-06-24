@@ -178,7 +178,7 @@ pub async fn get_all_bookmarks(
     }
 
     let bookmarks = web::block(move || {
-        get_bookmarks_for_collection_query(collection_id, current_user_id, pool.clone())
+        get_bookmarks_for_collection_query(collection_id, current_user_id, pool)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;

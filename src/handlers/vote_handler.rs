@@ -3,7 +3,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     data::models::Pool,
-    operators::vote_operator::{create_vote_query, delete_vote_query},
+    operators::{
+        card_operator::get_metadata_from_id_query,
+        vote_operator::{create_vote_query, delete_vote_query},
+    },
 };
 
 use super::auth_handler::LoggedUser;
@@ -22,7 +25,16 @@ pub async fn create_vote(
     let data_inner = data.into_inner();
     let card_metadata_id = data_inner.card_metadata_id;
     let vote = data_inner.vote;
-
+    let pool1 = pool.clone();
+    let card_data = web::block(move || get_metadata_from_id_query(card_metadata_id, pool1)).await?;
+    match card_data {
+        Ok(data) => {
+            if data.private {
+                return Ok(HttpResponse::BadRequest().json("Votes cannot be cast on private cards"));
+            }
+        }
+        Err(e) => return Ok(HttpResponse::BadRequest().json(e)),
+    }
     let create_vote_result =
         web::block(move || create_vote_query(&user.id, &card_metadata_id, &vote, &pool)).await?;
 
@@ -39,7 +51,16 @@ pub async fn delete_vote(
 ) -> Result<HttpResponse, actix_web::Error> {
     let card_metadata_id_inner = card_metadata_id.into_inner();
     let pool_inner = pool.clone();
-
+    let card_data =
+        web::block(move || get_metadata_from_id_query(card_metadata_id_inner, pool)).await?;
+    match card_data {
+        Ok(data) => {
+            if data.private {
+                return Ok(HttpResponse::BadRequest().json("Votes cannot be cast on private cards"));
+            }
+        }
+        Err(e) => return Ok(HttpResponse::BadRequest().json(e)),
+    }
     let delete_vote_result =
         web::block(move || delete_vote_query(&user.id, &card_metadata_id_inner, &pool_inner))
             .await?;
