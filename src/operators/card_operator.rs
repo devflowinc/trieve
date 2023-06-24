@@ -455,7 +455,7 @@ pub fn get_metadata_and_votes_from_id_query(
 pub fn insert_card_metadata_query(
     card_data: CardMetadata,
     pool: &web::Data<Pool>,
-) -> Result<(), DefaultError> {
+) -> Result<CardMetadata, DefaultError> {
     use crate::data::schema::card_metadata::dsl::*;
 
     let mut conn = pool.get().unwrap();
@@ -467,14 +467,14 @@ pub fn insert_card_metadata_query(
             message: "Failed to insert card metadata",
         })?;
 
-    Ok(())
+    Ok(card_data)
 }
 
 pub fn insert_duplicate_card_metadata_query(
     card_data: CardMetadata,
     duplicate_card: uuid::Uuid,
     pool: &web::Data<Pool>,
-) -> Result<(), DefaultError> {
+) -> Result<CardMetadata, DefaultError> {
     use crate::data::schema::card_collisions::dsl::*;
     use crate::data::schema::card_metadata::dsl::*;
 
@@ -494,7 +494,7 @@ pub fn insert_duplicate_card_metadata_query(
         .map_err(|_err| DefaultError {
             message: "Failed to insert card duplicate",
         })?;
-    Ok(())
+    Ok(card_data)
 }
 
 pub fn update_card_metadata_query(

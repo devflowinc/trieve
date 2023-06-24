@@ -29,6 +29,12 @@ pub struct CreateCardData {
     pub private: Option<bool>,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct ReturnCreatedCard {
+    pub card_metadata: CardMetadata,
+    pub duplicate: bool,
+}
+
 pub async fn create_card(
     card: web::Json<CreateCardData>,
     pool: web::Data<Pool>,
@@ -64,58 +70,50 @@ pub async fn create_card(
         }
     }
 
+    let mut card_metadata: CardMetadata;
+    let mut duplicate: bool = false;
+
     //if collision is not nil, insert card with collision
     if collision.is_some() {
-        web::block(move || {
-            insert_duplicate_card_metadata_query(
-                CardMetadata::from_details(
-                    &card.content,
-                    &card.card_html,
-                    &card.link,
-                    &card.oc_file_path,
-                    user.id,
-                    None,
-                    true,
-                ),
-                collision.unwrap(),
-                &pool,
-            )
+        card_metadata = CardMetadata::from_details(
+            &card.content,
+            &card.card_html,
+            &card.link,
+            &card.oc_file_path,
+            user.id,
+            None,
+            true,
+        );
+        card_metadata = web::block(move || {
+            insert_duplicate_card_metadata_query(card_metadata, collision.unwrap(), &pool)
         })
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        duplicate = true;
     } else {
         let qdrant = get_qdrant_connection()
             .await
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
         //if private is true, set payload to private
         let payload = match private {
-            true => {
-                json!({"private": true}).try_into().unwrap()
-            }
-            false => {
-                json!({}).try_into().unwrap()
-            }
+            true => json!({"private": true}).try_into().unwrap(),
+            false => json!({}).try_into().unwrap(),
         };
 
         let point_id = uuid::Uuid::new_v4();
         let point = PointStruct::new(point_id.clone().to_string(), embedding_vector, payload);
-
-        web::block(move || {
-            insert_card_metadata_query(
-                CardMetadata::from_details(
-                    &card.content,
-                    &card.card_html,
-                    &card.link,
-                    &card.oc_file_path,
-                    user.id,
-                    Some(point_id),
-                    private,
-                ),
-                &pool,
-            )
-        })
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        card_metadata = CardMetadata::from_details(
+            &card.content,
+            &card.card_html,
+            &card.link,
+            &card.oc_file_path,
+            user.id,
+            Some(point_id),
+            private,
+        );
+        card_metadata = web::block(move || insert_card_metadata_query(card_metadata, &pool))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
         qdrant
             .upsert_points_blocking("debate_cards".to_string(), vec![point], None)
@@ -123,7 +121,10 @@ pub async fn create_card(
             .map_err(|_err| ServiceError::BadRequest("Failed inserting card to qdrant".into()))?;
     }
 
-    Ok(HttpResponse::NoContent().finish())
+    Ok(HttpResponse::Ok().json(ReturnCreatedCard {
+        card_metadata,
+        duplicate,
+    }))
 }
 
 #[derive(Serialize, Deserialize, Clone)]
