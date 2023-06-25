@@ -55,3 +55,12 @@ S3_ENDPOINT=XXXXXXXXXXXXXXXXXXxx
 If you want to test things outside of the minio dashboard and Tokio server, then setup AWS CLI using [this guide from minio](https://min.io/docs/minio/linux/integrations/aws-cli-with-minio.html) with the region set to `""`
 
 - You can install it with `sudo apt install awscli` assuming you are using the apt package manager
+
+## Running the test suite
+
+This section refers to the jest testing suite found in the `jest-tests` folder of this repository
+
+1. Set the variables found in `.env.dist` in the `.env` file of the testing suite
+2. `cd` into the testing suite folder
+3. Run `yarn`
+4. Run `yarn test`
