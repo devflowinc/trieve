@@ -262,7 +262,7 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::delete().to(handlers::collection_handler::delete_bookmark)),
                     )
                     .service(
-                        web::resource("/upload_file/{private}")
+                        web::resource("/upload_file")
                             .route(web::post().to(handlers::file_handler::upload_file_handler)),
                     )
                     .service(web::resource("/card_collection/bookmark/{card_id}").route(
