@@ -564,6 +564,7 @@ pub struct File {
     pub private: bool,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub size: i64,
 }
 
 impl File {
@@ -572,6 +573,7 @@ impl File {
         file_name: &str,
         mime_type: &str,
         private: bool,
+        size: i64,
     ) -> Self {
         File {
             id: uuid::Uuid::new_v4(),
@@ -581,6 +583,7 @@ impl File {
             private,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
+            size,
         }
     }
 }
