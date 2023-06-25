@@ -78,6 +78,7 @@ diesel::table! {
         private -> Bool,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        size -> Int8,
     }
 }
 

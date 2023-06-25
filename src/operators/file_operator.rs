@@ -88,6 +88,7 @@ pub fn create_file_query(
     user_id: uuid::Uuid,
     file_name: &str,
     mime_type: &str,
+    file_size: i64,
     private: bool,
     pool: web::Data<Pool>,
 ) -> Result<File, DefaultError> {
@@ -97,7 +98,7 @@ pub fn create_file_query(
         message: "Could not get database connection",
     })?;
 
-    let new_file = File::from_details(user_id, file_name, mime_type, private);
+    let new_file = File::from_details(user_id, file_name, mime_type, private, file_size);
 
     let created_file: File = diesel::insert_into(files)
         .values(&new_file)
@@ -158,7 +159,23 @@ pub async fn convert_docx_to_html_query(
         }
     };
 
-    let created_file = create_file_query(user.id, &file_name, &file_mime, private, pool.clone())?;
+    let file_size = match file_data.len().try_into() {
+        Ok(file_size) => file_size,
+        Err(_) => {
+            return Err(DefaultError {
+                message: "Could not convert file size to i64",
+            })
+        }
+    };
+
+    let created_file = create_file_query(
+        user.id,
+        &file_name,
+        &file_mime,
+        file_size,
+        private,
+        pool.clone(),
+    )?;
 
     let bucket = get_aws_bucket()?;
     bucket
