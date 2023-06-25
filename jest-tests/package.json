@@ -1,8 +1,9 @@
 {
   "name": "jest-tests",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
-    "test": "jest",
+    "test": "node -r dotenv/config --experimental-vm-modules node_modules/.bin/jest",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -12,11 +13,16 @@
   "license": "MIT",
   "private": true,
   "devDependencies": {
+    "@babel/preset-env": "^7.22.5",
+    "babel-jest": "^29.5.0",
+    "dotenv": "^16.3.1",
     "eslint": "^8.43.0",
     "eslint-plugin-jest": "^27.2.2",
     "jest": "^29.5.0"
   },
   "dependencies": {
+    "mime": "^3.0.0",
+    "node-fetch": "^3.3.1",
     "prettier": "^2.8.8"
   }
 }
