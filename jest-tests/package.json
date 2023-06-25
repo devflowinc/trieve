@@ -1,0 +1,22 @@
+{
+  "name": "jest-tests",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "description": "Testing library for Arguflow's ai-editor actix-web backend",
+  "repository": "https://github.com/arguflow/ai-editor",
+  "author": "Arguflow",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "eslint": "^8.43.0",
+    "eslint-plugin-jest": "^27.2.2",
+    "jest": "^29.5.0"
+  },
+  "dependencies": {
+    "prettier": "^2.8.8"
+  }
+}
