@@ -1,4 +1,5 @@
 use crate::data::models::CardCollisions;
+use crate::data::models::CardFile;
 use crate::data::models::CardMetadataWithVotes;
 use crate::data::models::CardVote;
 use crate::data::models::FullTextSearchResult;
@@ -558,6 +559,23 @@ pub fn delete_card_metadata_query(
     Ok(())
 }
 
+pub fn insert_card_files_map(
+    card_id: uuid::Uuid,
+    file_id: uuid::Uuid,
+    pool: &web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::card_files::dsl as card_files_columns;
+    let mut conn = pool.get().unwrap();
+
+    diesel::insert_into(card_files_columns::card_files)
+        .values(&CardFile::from_details(card_id, file_id))
+        .execute(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Failed to insert card metadata",
+        })?;
+
+    Ok(())
+}
 pub fn get_card_count_query(pool: &web::Data<Pool>) -> Result<i64, DefaultError> {
     use crate::data::schema::card_metadata::dsl::*;
 
