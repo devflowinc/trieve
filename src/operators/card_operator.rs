@@ -455,8 +455,10 @@ pub fn get_metadata_and_votes_from_id_query(
 
 pub fn insert_card_metadata_query(
     card_data: CardMetadata,
+    file_uuid: Option<uuid::Uuid>,
     pool: &web::Data<Pool>,
 ) -> Result<CardMetadata, DefaultError> {
+    use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_metadata::dsl::*;
 
     let mut conn = pool.get().unwrap();
@@ -468,15 +470,26 @@ pub fn insert_card_metadata_query(
             message: "Failed to insert card metadata",
         })?;
 
+    if file_uuid.is_some() {
+        diesel::insert_into(card_files_columns::card_files)
+            .values(&CardFile::from_details(card_data.id, file_uuid.unwrap()))
+            .execute(&mut conn)
+            .map_err(|_err| DefaultError {
+                message: "Failed to insert card metadata",
+            })?;
+    }
+
     Ok(card_data)
 }
 
 pub fn insert_duplicate_card_metadata_query(
     card_data: CardMetadata,
     duplicate_card: uuid::Uuid,
+    file_uuid: Option<uuid::Uuid>,
     pool: &web::Data<Pool>,
 ) -> Result<CardMetadata, DefaultError> {
     use crate::data::schema::card_collisions::dsl::*;
+    use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_metadata::dsl::*;
 
     let mut conn = pool.get().unwrap();
@@ -495,6 +508,14 @@ pub fn insert_duplicate_card_metadata_query(
         .map_err(|_err| DefaultError {
             message: "Failed to insert card duplicate",
         })?;
+    if file_uuid.is_some() {
+        diesel::insert_into(card_files_columns::card_files)
+            .values(&CardFile::from_details(card_data.id, file_uuid.unwrap()))
+            .execute(&mut conn)
+            .map_err(|_err| DefaultError {
+                message: "Failed to insert card metadata",
+            })?;
+    }
     Ok(card_data)
 }
 
@@ -559,23 +580,6 @@ pub fn delete_card_metadata_query(
     Ok(())
 }
 
-pub fn insert_card_files_map(
-    card_id: uuid::Uuid,
-    file_id: uuid::Uuid,
-    pool: &web::Data<Pool>,
-) -> Result<(), DefaultError> {
-    use crate::data::schema::card_files::dsl as card_files_columns;
-    let mut conn = pool.get().unwrap();
-
-    diesel::insert_into(card_files_columns::card_files)
-        .values(&CardFile::from_details(card_id, file_id))
-        .execute(&mut conn)
-        .map_err(|_err| DefaultError {
-            message: "Failed to insert card metadata",
-        })?;
-
-    Ok(())
-}
 pub fn get_card_count_query(pool: &web::Data<Pool>) -> Result<i64, DefaultError> {
     use crate::data::schema::card_metadata::dsl::*;
 
