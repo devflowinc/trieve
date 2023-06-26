@@ -2,7 +2,7 @@ use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    data::models::{CardCollection, CardCollectionBookmark, CardMetadataWithVotes, Pool},
+    data::models::{CardCollection, CardCollectionBookmark, CardMetadataWithVotesAndFiles, Pool},
     errors::ServiceError,
     operators::collection_operator::*,
 };
@@ -154,7 +154,7 @@ pub async fn add_bookmark(
 }
 #[derive(Deserialize, Serialize)]
 pub struct BookmarkData {
-    pub bookmarks: Vec<CardMetadataWithVotes>,
+    pub bookmarks: Vec<CardMetadataWithVotesAndFiles>,
     pub collection: CardCollection,
 }
 

@@ -24,7 +24,7 @@ describe("File Upload Test", () => {
       base64_docx_file: fileContent,
       file_name: docxFile,
       file_mime_type: mimeType,
-      private: true,
+      private: false,
     };
 
     // Make the POST request

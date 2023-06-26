@@ -1,6 +1,7 @@
 use crate::{
     data::models::{
-        CardCollectionBookmark, CardMetadata, CardMetadataWithVotes, FullTextSearchResult,
+        CardCollectionBookmark, CardMetadata, CardMetadataWithVotesAndFiles,
+        FullTextSearchResult,
     },
     diesel::{ExpressionMethods, QueryDsl, RunQueryDsl},
     operators::card_operator::get_metadata,
@@ -136,7 +137,7 @@ pub fn get_bookmarks_for_collection_query(
     collection: uuid::Uuid,
     current_user_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<Vec<CardMetadataWithVotes>, DefaultError> {
+) -> Result<Vec<CardMetadataWithVotesAndFiles>, DefaultError> {
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
@@ -180,11 +181,11 @@ pub fn get_bookmarks_for_collection_query(
         .map(|card| <CardMetadata as Into<FullTextSearchResult>>::into(card.clone()))
         .collect::<Vec<FullTextSearchResult>>();
 
-    let card_metadata_with_upvotes =
+    let card_metadata_with_upvotes_and_file_id =
         get_metadata(converted_cards, current_user_id, conn).map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
-    Ok(card_metadata_with_upvotes)
+    Ok(card_metadata_with_upvotes_and_file_id)
 }
 
 pub fn get_collections_for_bookmark_query(
