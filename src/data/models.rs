@@ -380,6 +380,7 @@ pub struct CardMetadataWithVotesWithoutScore {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub oc_file_path: Option<String>,
+    pub file_id: Option<uuid::Uuid>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -536,8 +537,8 @@ impl From<CardMetadata> for FullTextSearchResult {
     }
 }
 
-impl From<CardMetadataWithVotes> for CardMetadataWithVotesWithoutScore {
-    fn from(cards: CardMetadataWithVotes) -> Self {
+impl From<CardMetadataWithVotesAndFiles> for CardMetadataWithVotesWithoutScore {
+    fn from(cards: CardMetadataWithVotesAndFiles) -> Self {
         CardMetadataWithVotesWithoutScore {
             id: cards.id,
             author: cards.author,
@@ -550,6 +551,7 @@ impl From<CardMetadataWithVotes> for CardMetadataWithVotesWithoutScore {
             created_at: cards.created_at,
             updated_at: cards.updated_at,
             oc_file_path: cards.oc_file_path,
+            file_id: cards.file_id,
         }
     }
 }
@@ -588,8 +590,9 @@ impl File {
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, Queryable, Insertable, Clone)]
+#[derive(Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone)]
 #[diesel(table_name = card_files)]
+
 pub struct CardFile {
     pub id: uuid::Uuid,
     pub card_id: uuid::Uuid,
@@ -606,6 +609,45 @@ impl CardFile {
             file_id,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CardMetadataWithVotesAndFiles {
+    pub id: uuid::Uuid,
+    pub author: Option<UserDTO>,
+    pub content: String,
+    pub link: Option<String>,
+    pub qdrant_point_id: uuid::Uuid,
+    pub total_upvotes: i64,
+    pub total_downvotes: i64,
+    pub vote_by_current_user: Option<bool>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub oc_file_path: Option<String>,
+    pub private: bool,
+    pub score: Option<f32>,
+    pub file_id: Option<uuid::Uuid>,
+}
+
+impl From<CardMetadataWithVotes> for CardMetadataWithVotesAndFiles {
+    fn from(card: CardMetadataWithVotes) -> Self {
+        CardMetadataWithVotesAndFiles {
+            id: card.id,
+            author: card.author,
+            content: card.content,
+            link: card.link,
+            qdrant_point_id: card.qdrant_point_id,
+            total_upvotes: card.total_upvotes,
+            total_downvotes: card.total_downvotes,
+            vote_by_current_user: card.vote_by_current_user,
+            created_at: card.created_at,
+            updated_at: card.updated_at,
+            oc_file_path: card.oc_file_path,
+            private: card.private,
+            score: card.score,
+            file_id: None,
         }
     }
 }

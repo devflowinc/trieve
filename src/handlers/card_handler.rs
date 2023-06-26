@@ -1,5 +1,6 @@
 use crate::data::models::{
-    CardMetadata, CardMetadataWithVotes, CardMetadataWithVotesWithoutScore, Pool,
+    CardMetadata, CardMetadataWithVotesAndFiles,
+    CardMetadataWithVotesWithoutScore, Pool,
 };
 use crate::errors::ServiceError;
 use crate::operators::card_operator::{
@@ -326,9 +327,9 @@ pub async fn search_card(
                 .unwrap();
 
             ScoreCardDTO {
-                metadata: <CardMetadataWithVotes as Into<CardMetadataWithVotesWithoutScore>>::into(
-                    (*card).clone(),
-                ),
+                metadata: <CardMetadataWithVotesAndFiles as Into<
+                    CardMetadataWithVotesWithoutScore,
+                >>::into((*card).clone()),
                 score: search_result.score,
             }
         })
@@ -367,9 +368,10 @@ pub async fn search_full_text_card(
         .search_results
         .iter()
         .map(|search_result| ScoreCardDTO {
-            metadata: <CardMetadataWithVotes as Into<CardMetadataWithVotesWithoutScore>>::into(
-                search_result.clone(),
-            ),
+            metadata:
+                <CardMetadataWithVotesAndFiles as Into<CardMetadataWithVotesWithoutScore>>::into(
+                    search_result.clone(),
+                ),
             score: search_result.score.unwrap_or(0.0),
         })
         .collect();

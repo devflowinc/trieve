@@ -1,11 +1,10 @@
 use crate::data::models::CardCollisions;
 use crate::data::models::CardFile;
-use crate::data::models::CardMetadataWithVotes;
+use crate::data::models::CardMetadataWithVotesAndFiles;
 use crate::data::models::CardVote;
 use crate::data::models::FullTextSearchResult;
 use crate::data::models::User;
 use crate::data::models::UserDTO;
-use crate::data::schema::card_collisions;
 use crate::diesel::TextExpressionMethods;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::{
@@ -19,6 +18,7 @@ use diesel::sql_types::Bool;
 use diesel::sql_types::Float;
 use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;
+use diesel::SelectableHelper;
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::{
@@ -163,9 +163,12 @@ pub fn get_metadata(
     card_metadata: Vec<FullTextSearchResult>,
     current_user_id: Option<uuid::Uuid>,
     mut conn: r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::PgConnection>>,
-) -> Result<Vec<CardMetadataWithVotes>, DefaultError> {
+) -> Result<Vec<CardMetadataWithVotesAndFiles>, DefaultError> {
+    use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_votes::dsl as card_votes_columns;
+    use crate::data::schema::files::dsl as files_columns;
     use crate::data::schema::users::dsl as user_columns;
+
     let card_creators: Vec<User> = user_columns::users
         .filter(
             user_columns::id.eq_any(
@@ -194,7 +197,25 @@ pub fn get_metadata(
             message: "Failed to load upvotes",
         })?;
 
-    let card_metadata_with_upvotes: Vec<CardMetadataWithVotes> = card_metadata
+    let file_ids: Vec<CardFile> = card_files_columns::card_files
+        .filter(
+            card_files_columns::card_id.eq_any(
+                card_metadata
+                    .iter()
+                    .map(|card| card.id)
+                    .collect::<Vec<uuid::Uuid>>()
+                    .as_slice(),
+            ),
+        )
+        .inner_join(files_columns::files)
+        .filter(files_columns::private.eq(false))
+        .select(CardFile::as_select())
+        .load::<CardFile>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })?;
+
+    let card_metadata_with_upvotes_and_file_id: Vec<CardMetadataWithVotesAndFiles> = card_metadata
         .into_iter()
         .map(|metadata| {
             let votes = card_votes
@@ -227,7 +248,12 @@ pub fn get_metadata(
                     created_at: user.created_at,
                 });
 
-            CardMetadataWithVotes {
+            let file_uuid = file_ids
+                .iter()
+                .find(|file| file.card_id == metadata.id)
+                .map(|file| file.file_id);
+
+            CardMetadataWithVotesAndFiles {
                 id: metadata.id,
                 content: metadata.content,
                 link: metadata.link,
@@ -241,15 +267,16 @@ pub fn get_metadata(
                 updated_at: metadata.updated_at,
                 private: metadata.private,
                 score: metadata.score,
+                file_id: file_uuid,
             }
         })
         .collect();
-    Ok(card_metadata_with_upvotes)
+    Ok(card_metadata_with_upvotes_and_file_id)
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct FullTextSearchCardQueryResult {
-    pub search_results: Vec<CardMetadataWithVotes>,
+    pub search_results: Vec<CardMetadataWithVotesAndFiles>,
     pub total_card_pages: i64,
 }
 
@@ -333,12 +360,12 @@ pub fn search_full_text_card_query(
             message: "Failed to load searched cards",
         })?;
 
-    let card_metadata_with_upvotes = get_metadata(searched_cards.clone(), current_user_id, conn)
-        .map_err(|_| DefaultError {
+    let card_metadata_with_upvotes_and_files =
+        get_metadata(searched_cards.clone(), current_user_id, conn).map_err(|_| DefaultError {
             message: "Failed to load searched cards",
         })?;
     Ok(FullTextSearchCardQueryResult {
-        search_results: card_metadata_with_upvotes,
+        search_results: card_metadata_with_upvotes_and_files,
         total_card_pages: (searched_cards.len() as f64 / 25.0).ceil() as i64,
     })
 }
@@ -352,7 +379,7 @@ pub fn get_metadata_from_point_ids(
     point_ids: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<Vec<CardMetadataWithVotes>, DefaultError> {
+) -> Result<Vec<CardMetadataWithVotesAndFiles>, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
     let mut conn = pool.get().unwrap();
@@ -381,11 +408,14 @@ pub fn get_metadata_from_point_ids(
         .map(|card| <CardMetadata as Into<FullTextSearchResult>>::into(card.clone()))
         .collect::<Vec<FullTextSearchResult>>();
 
-    let card_metadata_with_upvotes =
+    let card_metadata_with_upvotes_and_file_id =
         get_metadata(converted_cards, current_user_id, conn).map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
-    Ok(card_metadata_with_upvotes)
+
+    //combine card_metadata_with vote with the file_ids that was loaded
+
+    Ok(card_metadata_with_upvotes_and_file_id)
 }
 
 pub fn get_metadata_from_id_query(
@@ -420,7 +450,7 @@ pub fn get_metadata_and_votes_from_id_query(
     card_id: uuid::Uuid,
     current_user_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<CardMetadataWithVotes, DefaultError> {
+) -> Result<CardMetadataWithVotesAndFiles, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
     let mut conn = pool.get().unwrap();
@@ -446,11 +476,14 @@ pub fn get_metadata_and_votes_from_id_query(
     let converted_card: FullTextSearchResult =
         <CardMetadata as Into<FullTextSearchResult>>::into(card_metadata);
 
-    let card_metadata_with_upvotes = get_metadata(vec![converted_card], current_user_id, conn)
-        .map_err(|_| DefaultError {
+    let card_metadata_with_upvotes_and_file_id =
+        get_metadata(vec![converted_card], current_user_id, conn).map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
-    Ok(card_metadata_with_upvotes.first().unwrap().clone())
+    Ok(card_metadata_with_upvotes_and_file_id
+        .first()
+        .unwrap()
+        .clone())
 }
 
 pub fn insert_card_metadata_query(
@@ -562,7 +595,8 @@ pub fn delete_card_metadata_query(
     let mut conn = pool.get().unwrap();
 
     diesel::delete(
-        card_collisions_columns::card_collisions.filter(card_collisions::card_id.eq(card_uuid)),
+        card_collisions_columns::card_collisions
+            .filter(card_collisions_columns::card_id.eq(card_uuid)),
     )
     .execute(&mut conn)
     .map_err(|_err| DefaultError {
