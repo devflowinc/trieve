@@ -39,6 +39,16 @@ diesel::table! {
 }
 
 diesel::table! {
+    card_files (id) {
+        id -> Uuid,
+        card_id -> Uuid,
+        file_id -> Uuid,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     use diesel::sql_types::*;
     use super::sql_types::Tsvector;
 
@@ -169,6 +179,8 @@ diesel::table! {
 diesel::joinable!(card_collection -> users (author_id));
 diesel::joinable!(card_collection_bookmarks -> card_collection (collection_id));
 diesel::joinable!(card_collection_bookmarks -> card_metadata (card_metadata_id));
+diesel::joinable!(card_files -> card_metadata (card_id));
+diesel::joinable!(card_files -> files (file_id));
 diesel::joinable!(card_metadata -> users (author_id));
 diesel::joinable!(card_votes -> card_metadata (card_metadata_id));
 diesel::joinable!(card_votes -> users (voted_user_id));
@@ -180,6 +192,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     card_collection,
     card_collection_bookmarks,
     card_collisions,
+    card_files,
     card_metadata,
     card_votes,
     files,

@@ -4,8 +4,9 @@ use crate::data::models::{
 use crate::errors::ServiceError;
 use crate::operators::card_operator::{
     create_openai_embedding, delete_card_metadata_query, get_card_count_query,
-    get_metadata_and_votes_from_id_query, get_metadata_from_point_ids, insert_card_metadata_query,
-    insert_duplicate_card_metadata_query, search_full_text_card_query, update_card_metadata_query,
+    get_metadata_and_votes_from_id_query, get_metadata_from_point_ids, insert_card_files_map,
+    insert_card_metadata_query, insert_duplicate_card_metadata_query, search_full_text_card_query,
+    update_card_metadata_query,
 };
 use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
@@ -27,6 +28,7 @@ pub struct CreateCardData {
     pub link: Option<String>,
     pub oc_file_path: Option<String>,
     pub private: Option<bool>,
+    pub file_uuid: Option<uuid::Uuid>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -84,16 +86,25 @@ pub async fn create_card(
             None,
             true,
         );
+        let pool2 = pool.clone();
         card_metadata = web::block(move || {
-            insert_duplicate_card_metadata_query(card_metadata, collision.unwrap(), &pool)
+            insert_duplicate_card_metadata_query(card_metadata, collision.unwrap(), &pool2)
         })
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        if card.file_uuid.is_some() {
+            web::block(move || {
+                insert_card_files_map(card_metadata.id, card.file_uuid.unwrap(), &pool)
+            })
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        }
         duplicate = true;
     } else {
         let qdrant = get_qdrant_connection()
             .await
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        let pool2 = pool.clone();
         //if private is true, set payload to private
         let payload = match private {
             true => json!({"private": true}).try_into().unwrap(),
@@ -111,10 +122,16 @@ pub async fn create_card(
             Some(point_id),
             private,
         );
-        card_metadata = web::block(move || insert_card_metadata_query(card_metadata, &pool))
+        card_metadata = web::block(move || insert_card_metadata_query(card_metadata, &pool2))
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
+        if card.file_uuid.is_some() {
+            web::block(move || {
+                insert_card_files_map(card_metadata.id, card.file_uuid.unwrap(), &pool)
+            })
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        }
         qdrant
             .upsert_points_blocking("debate_cards".to_string(), vec![point], None)
             .await

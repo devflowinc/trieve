@@ -587,3 +587,25 @@ impl File {
         }
     }
 }
+
+#[derive(Debug, Default, Serialize, Deserialize, Queryable, Insertable, Clone)]
+#[diesel(table_name = card_files)]
+pub struct CardFile {
+    pub id: uuid::Uuid,
+    pub card_id: uuid::Uuid,
+    pub file_id: uuid::Uuid,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl CardFile {
+    pub fn from_details(card_id: uuid::Uuid, file_id: uuid::Uuid) -> Self {
+        CardFile {
+            id: uuid::Uuid::new_v4(),
+            card_id,
+            file_id,
+            created_at: chrono::Local::now().naive_local(),
+            updated_at: chrono::Local::now().naive_local(),
+        }
+    }
+}
