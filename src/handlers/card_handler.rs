@@ -1,6 +1,5 @@
 use crate::data::models::{
-    CardMetadata, CardMetadataWithVotesAndFiles,
-    CardMetadataWithVotesWithoutScore, Pool,
+    CardMetadata, CardMetadataWithVotesAndFiles, CardMetadataWithVotesWithoutScore, Pool,
 };
 use crate::errors::ServiceError;
 use crate::operators::card_operator::{
@@ -20,6 +19,22 @@ use serde_json::json;
 use soup::Soup;
 
 use super::auth_handler::LoggedUser;
+
+pub async fn user_owns_card(
+    user_id: uuid::Uuid,
+    card_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<CardMetadata, actix_web::Error> {
+    let cards = web::block(move || get_metadata_from_id_query(card_id, pool))
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    if cards.author_id != user_id {
+        return Err(ServiceError::Forbidden.into());
+    }
+
+    Ok(cards)
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct CreateCardData {
@@ -146,14 +161,8 @@ pub async fn delete_card(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let card1 = card.clone();
     let pool1 = pool.clone();
-    let card_metadata = web::block(move || get_metadata_from_id_query(card1.card_uuid, pool1))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    if user.id != card_metadata.author_id {
-        return Err(ServiceError::Unauthorized.into());
-    }
+    let card_metadata = user_owns_card(user.id, card.card_uuid, pool1).await?;
     let qdrant = get_qdrant_connection()
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -194,14 +203,8 @@ pub async fn update_card(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let card1 = card.clone();
     let pool1 = pool.clone();
-    let card_metadata = web::block(move || get_metadata_from_id_query(card1.card_uuid, pool1))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    if user.id != card_metadata.author_id {
-        return Err(ServiceError::Unauthorized.into());
-    }
+    let card_metadata = user_owns_card(user.id, card.card_uuid, pool1).await?;
 
     let link = card
         .link
