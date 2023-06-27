@@ -2,8 +2,8 @@ use crate::{
     data::models::{File, Pool},
     errors::ServiceError,
     operators::file_operator::{
-        convert_docx_to_html_query, get_file_query, get_user_file_query, get_user_id_of_file_query,
-        update_file_query, CoreCard,
+        convert_docx_to_html_query, delete_file_query, get_file_query, get_user_file_query,
+        get_user_id_of_file_query, update_file_query, CoreCard,
     },
 };
 use actix_web::{web, HttpResponse};
@@ -127,4 +127,14 @@ pub async fn get_user_files_handler(
     let files = get_user_file_query(user_id, accessing_user_id, pool).await?;
 
     Ok(HttpResponse::Ok().json(files))
+}
+
+pub async fn delete_file_handler(
+    file_id: web::Path<uuid::Uuid>,
+    pool: web::Data<Pool>,
+    user: LoggedUser,
+) -> Result<HttpResponse, actix_web::Error> {
+    delete_file_query(file_id.into_inner(), user.id, pool).await?;
+
+    Ok(HttpResponse::NoContent().finish())
 }
