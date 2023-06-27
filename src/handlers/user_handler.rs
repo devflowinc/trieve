@@ -27,14 +27,17 @@ pub struct GetUserWithVotesAndCardsData {
 
 pub async fn get_user_with_votes_and_cards_by_id(
     path_data: web::Path<GetUserWithVotesAndCardsData>,
+    user: Option<LoggedUser>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_query_id = path_data.user_id;
+    let accessing_user_id = user.map(|user| user.id);
     let page = path_data.page;
 
-    let user_result =
-        web::block(move || get_user_with_votes_and_cards_by_id_query(&user_query_id, &page, &pool))
-            .await?;
+    let user_result = web::block(move || {
+        get_user_with_votes_and_cards_by_id_query(user_query_id, accessing_user_id, &page, &pool)
+    })
+    .await?;
 
     match user_result {
         Ok(user_with_votes_and_cards) => Ok(HttpResponse::Ok().json(user_with_votes_and_cards)),

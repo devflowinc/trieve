@@ -58,6 +58,7 @@ pub async fn get_card_collections(
     user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    //TODO: let unsignedin users access public collections
     let collections = web::block(move || get_collections_for_user_query(user.id, pool))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
