@@ -373,6 +373,7 @@ pub async fn get_file_query(
 
 pub async fn get_user_file_query(
     user_uuid: uuid::Uuid,
+    accessing_user_uuid: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<Vec<File>, actix_web::Error> {
     use crate::data::schema::files::dsl as files_columns;
@@ -381,8 +382,20 @@ pub async fn get_user_file_query(
         .get()
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let file_metadata: Vec<File> = files_columns::files
+    let mut boxed_query = files_columns::files
         .filter(files_columns::user_id.eq(user_uuid))
+        .into_boxed();
+
+    match accessing_user_uuid {
+        Some(accessing_user_uuid) => {
+            if user_uuid != accessing_user_uuid {
+                boxed_query = boxed_query.filter(files_columns::private.eq(false));
+            }
+        }
+        None => boxed_query = boxed_query.filter(files_columns::private.eq(false)),
+    }
+
+    let file_metadata: Vec<File> = boxed_query
         .load(&mut conn)
         .map_err(|_| ServiceError::NotFound)?;
 

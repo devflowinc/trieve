@@ -231,6 +231,10 @@ pub async fn main() -> std::io::Result<()> {
                         web::resource("/top_users/{page}")
                             .route(web::get().to(handlers::user_handler::get_top_users)),
                     )
+                    .service(
+                        web::resource("/user/files/{user_id}")
+                            .route(web::get().to(handlers::file_handler::get_user_files_handler)),
+                    )
                     .service(web::resource("/user/{user_id}/{page}").route(
                         web::get().to(handlers::user_handler::get_user_with_votes_and_cards_by_id),
                     ))
@@ -264,8 +268,7 @@ pub async fn main() -> std::io::Result<()> {
                     .service(
                         web::resource("/file")
                             .route(web::put().to(handlers::file_handler::update_file_handler))
-                            .route(web::post().to(handlers::file_handler::upload_file_handler))
-                            .route(web::get().to(handlers::file_handler::get_user_files_handler)),
+                            .route(web::post().to(handlers::file_handler::upload_file_handler)),
                     )
                     .service(
                         web::resource("/file/{file_id}")
