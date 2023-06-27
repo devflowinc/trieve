@@ -1,5 +1,6 @@
 use crate::data::models::CardCollisions;
 use crate::data::models::CardFile;
+use crate::data::models::CardFileWithName;
 use crate::data::models::CardMetadataWithVotesAndFiles;
 use crate::data::models::CardVote;
 use crate::data::models::FullTextSearchResult;
@@ -18,7 +19,6 @@ use diesel::sql_types::Bool;
 use diesel::sql_types::Float;
 use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;
-use diesel::SelectableHelper;
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::{
@@ -197,7 +197,7 @@ pub fn get_metadata(
             message: "Failed to load upvotes",
         })?;
 
-    let file_ids: Vec<CardFile> = card_files_columns::card_files
+    let file_ids: Vec<CardFileWithName> = card_files_columns::card_files
         .filter(
             card_files_columns::card_id.eq_any(
                 card_metadata
@@ -209,8 +209,12 @@ pub fn get_metadata(
         )
         .inner_join(files_columns::files)
         .filter(files_columns::private.eq(false))
-        .select(CardFile::as_select())
-        .load::<CardFile>(&mut conn)
+        .select((
+            card_files_columns::card_id,
+            card_files_columns::file_id,
+            files_columns::file_name,
+        ))
+        .load::<CardFileWithName>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
@@ -248,10 +252,7 @@ pub fn get_metadata(
                     created_at: user.created_at,
                 });
 
-            let file_uuid = file_ids
-                .iter()
-                .find(|file| file.card_id == metadata.id)
-                .map(|file| file.file_id);
+            let card_with_file_name = file_ids.iter().find(|file| file.card_id == metadata.id);
 
             CardMetadataWithVotesAndFiles {
                 id: metadata.id,
@@ -267,7 +268,8 @@ pub fn get_metadata(
                 updated_at: metadata.updated_at,
                 private: metadata.private,
                 score: metadata.score,
-                file_id: file_uuid,
+                file_id: card_with_file_name.map(|file| file.file_id),
+                file_name: card_with_file_name.map(|file| file.file_name.to_string()),
             }
         })
         .collect();
