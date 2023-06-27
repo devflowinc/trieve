@@ -590,9 +590,37 @@ impl File {
     }
 }
 
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct FileDTO {
+    pub id: uuid::Uuid,
+    pub user_id: uuid::Uuid,
+    pub file_name: String,
+    pub mime_type: String,
+    pub private: bool,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub size: i64,
+    pub base64url_content: String,
+}
+
+impl From<File> for FileDTO {
+    fn from(file: File) -> Self {
+        FileDTO {
+            id: file.id,
+            user_id: file.user_id,
+            file_name: file.file_name,
+            mime_type: file.mime_type,
+            private: file.private,
+            created_at: file.created_at,
+            updated_at: file.updated_at,
+            size: file.size,
+            base64url_content: "".to_string(),
+        }
+    }
+}
+
 #[derive(Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone)]
 #[diesel(table_name = card_files)]
-
 pub struct CardFile {
     pub id: uuid::Uuid,
     pub card_id: uuid::Uuid,

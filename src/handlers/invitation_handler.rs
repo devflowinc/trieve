@@ -45,7 +45,8 @@ pub async fn post_invitation(
 
     let stringified_referral_tokens = to_string(&invitation_referral_tokens).unwrap();
     web::block(move || create_invitation(host_name, email, stringified_referral_tokens, pool))
-            .await?.map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+        .await?
+        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
     Ok(HttpResponse::Ok().finish())
 }

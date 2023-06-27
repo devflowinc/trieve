@@ -1,4 +1,9 @@
 use actix_web::web;
+use base64::{
+    alphabet,
+    engine::{self, general_purpose},
+    Engine as _,
+};
 use diesel::RunQueryDsl;
 use pandoc;
 use regex::Regex;
@@ -6,7 +11,10 @@ use s3::{creds::Credentials, Bucket, Region};
 use serde::{Deserialize, Serialize};
 use soup::{NodeExt, QueryBuilderExt, Soup};
 
-use crate::diesel::{ExpressionMethods, QueryDsl};
+use crate::{
+    data::models::FileDTO,
+    diesel::{ExpressionMethods, QueryDsl},
+};
 use crate::{
     data::models::{File, Pool},
     errors::DefaultError,
@@ -317,7 +325,58 @@ pub async fn convert_docx_to_html_query(
     })?;
 
     Ok(UploadFileResult {
+        file_metadata: created_file,
         created_cards,
         rejected_cards,
     })
+}
+
+pub async fn get_file_query(
+    file_uuid: uuid::Uuid,
+    user_uuid: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<FileDTO, DefaultError> {
+    use crate::data::schema::files::dsl as files_columns;
+
+    let mut conn = pool.get().map_err(|_| DefaultError {
+        message: "Could not get database connection",
+    })?;
+
+    let file_metadata: File = files_columns::files
+        .filter(files_columns::id.eq(file_uuid))
+        .get_result(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Could not find file",
+        })?;
+
+    match file_metadata.private {
+        true => {
+            if user_uuid != file_metadata.user_id {
+                return Err(DefaultError {
+                    message: "File is private and you are not the owner",
+                });
+            }
+        }
+        false => {}
+    }
+
+    let bucket = get_aws_bucket()?;
+    let file_data = bucket
+        .get_object(file_metadata.id.to_string())
+        .await
+        .map_err(|_| DefaultError {
+            message: "Could not get file from S3",
+        })?
+        .to_vec();
+
+    let base64_engine = engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
+    let base64_file_data = base64_engine.encode(file_data);
+
+    let file_dto: FileDTO = file_metadata.into();
+    let file_dto = FileDTO {
+        base64url_content: base64_file_data,
+        ..file_dto
+    };
+
+    Ok(file_dto)
 }
