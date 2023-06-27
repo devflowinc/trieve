@@ -110,9 +110,7 @@ pub async fn get_file_handler(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let file = get_file_query(file_id.into_inner(), user.id, pool)
-        .await
-        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    let file = get_file_query(file_id.into_inner(), user.id, pool).await?;
 
     Ok(HttpResponse::Ok().json(file))
 }
