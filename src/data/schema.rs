@@ -80,6 +80,16 @@ diesel::table! {
 }
 
 diesel::table! {
+    collections_from_files (id) {
+        id -> Uuid,
+        collection_id -> Uuid,
+        file_id -> Uuid,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     files (id) {
         id -> Uuid,
         user_id -> Uuid,
@@ -184,6 +194,8 @@ diesel::joinable!(card_files -> files (file_id));
 diesel::joinable!(card_metadata -> users (author_id));
 diesel::joinable!(card_votes -> card_metadata (card_metadata_id));
 diesel::joinable!(card_votes -> users (voted_user_id));
+diesel::joinable!(collections_from_files -> card_collection (collection_id));
+diesel::joinable!(collections_from_files -> card_files (file_id));
 diesel::joinable!(files -> users (user_id));
 diesel::joinable!(messages -> topics (topic_id));
 diesel::joinable!(topics -> users (user_id));
@@ -195,6 +207,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     card_files,
     card_metadata,
     card_votes,
+    collections_from_files,
     files,
     invitations,
     messages,
