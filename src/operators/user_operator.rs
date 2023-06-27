@@ -80,7 +80,8 @@ pub fn get_user_by_id_query(
 }
 
 pub fn get_user_with_votes_and_cards_by_id_query(
-    user_id: &uuid::Uuid,
+    user_id: uuid::Uuid,
+    accessing_user_id: Option<uuid::Uuid>,
     page: &i64,
     pool: &web::Data<Pool>,
 ) -> Result<UserDTOWithVotesAndCards, DefaultError> {
@@ -104,16 +105,40 @@ pub fn get_user_with_votes_and_cards_by_id_query(
         }),
     }?;
 
-    let total_cards_created_by_user: i64 = card_metadata_columns::card_metadata
+    let mut total_cards_created_by_user = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::author_id.eq(user.id))
+        .into_boxed();
+
+    //Ensure only user can see their own private cards on their page
+    let mut user_card_metadatas = card_metadata_columns::card_metadata
+        .filter(card_metadata_columns::author_id.eq(user.id))
+        .into_boxed();
+
+    match accessing_user_id {
+        Some(accessing_user_uuid) => {
+            if user_id != accessing_user_uuid {
+                user_card_metadatas =
+                    user_card_metadatas.filter(card_metadata_columns::private.eq(false));
+                total_cards_created_by_user =
+                    total_cards_created_by_user.filter(card_metadata_columns::private.eq(false));
+            }
+        }
+        None => {
+            user_card_metadatas =
+                user_card_metadatas.filter(card_metadata_columns::private.eq(false));
+            total_cards_created_by_user =
+                total_cards_created_by_user.filter(card_metadata_columns::private.eq(false));
+        }
+    }
+
+    let total_cards_created_by_user = total_cards_created_by_user
         .count()
         .get_result(&mut conn)
         .map_err(|_| DefaultError {
             message: "Error loading user cards",
         })?;
 
-    let user_card_metadatas = card_metadata_columns::card_metadata
-        .filter(card_metadata_columns::author_id.eq(user.id))
+    let user_card_metadatas = user_card_metadatas
         .order(card_metadata_columns::updated_at.desc())
         .select((
             card_metadata_columns::id,
