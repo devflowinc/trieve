@@ -116,10 +116,13 @@ pub async fn get_file_handler(
 }
 
 pub async fn get_user_files_handler(
+    user_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-    user: LoggedUser,
+    user: Option<LoggedUser>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let files = get_user_file_query(user.id, pool).await?;
+    let accessing_user_id = user.map(|u| u.id);
+    let user_id = user_id.into_inner();
+    let files = get_user_file_query(user_id, accessing_user_id, pool).await?;
 
     Ok(HttpResponse::Ok().json(files))
 }
