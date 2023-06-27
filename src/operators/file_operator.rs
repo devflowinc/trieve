@@ -405,3 +405,47 @@ pub async fn get_user_file_query(
 
     Ok(file_metadata)
 }
+
+pub async fn delete_file_query(
+    file_uuid: uuid::Uuid,
+    user_uuid: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), actix_web::Error> {
+    use crate::data::schema::card_files::dsl as card_files_columns;
+    use crate::data::schema::files::dsl as files_columns;
+
+    let mut conn = pool
+        .get()
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let file_metadata: File = files_columns::files
+        .filter(files_columns::id.eq(file_uuid))
+        .get_result(&mut conn)
+        .map_err(|_| ServiceError::NotFound)?;
+
+    if file_metadata.private && user_uuid != file_metadata.user_id {
+        return Err(ServiceError::Forbidden.into());
+    }
+
+    let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    bucket
+        .delete_object(file_metadata.id.to_string())
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not delete file from S3".to_string()))?;
+
+    diesel::delete(files_columns::files.filter(files_columns::id.eq(file_uuid)))
+        .execute(&mut conn)
+        .map_err(|_| {
+            ServiceError::BadRequest("Could not delete file from files table".to_string())
+        })?;
+
+    diesel::delete(
+        card_files_columns::card_files.filter(card_files_columns::file_id.eq(file_uuid)),
+    )
+    .execute(&mut conn)
+    .map_err(|_| {
+        ServiceError::BadRequest("Could not delete relations from card_files table".to_string())
+    })?;
+
+    Ok(())
+}
