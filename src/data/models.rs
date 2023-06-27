@@ -556,7 +556,7 @@ impl From<CardMetadataWithVotesAndFiles> for CardMetadataWithVotesWithoutScore {
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, Queryable, Insertable, Clone)]
+#[derive(Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone)]
 #[diesel(table_name = files)]
 pub struct File {
     pub id: uuid::Uuid,
@@ -641,6 +641,13 @@ impl CardFile {
     }
 }
 
+#[derive(Debug, Default, Serialize, Deserialize, Queryable)]
+pub struct CardFileWithName {
+    pub card_id: uuid::Uuid,
+    pub file_id: uuid::Uuid,
+    pub file_name: String,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CardMetadataWithVotesAndFiles {
     pub id: uuid::Uuid,
@@ -657,6 +664,7 @@ pub struct CardMetadataWithVotesAndFiles {
     pub private: bool,
     pub score: Option<f32>,
     pub file_id: Option<uuid::Uuid>,
+    pub file_name: Option<String>,
 }
 
 impl From<CardMetadataWithVotes> for CardMetadataWithVotesAndFiles {
@@ -676,6 +684,7 @@ impl From<CardMetadataWithVotes> for CardMetadataWithVotesAndFiles {
             private: card.private,
             score: card.score,
             file_id: None,
+            file_name: None,
         }
     }
 }
