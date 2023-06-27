@@ -235,6 +235,13 @@ pub async fn main() -> std::io::Result<()> {
                         web::resource("/user/files/{user_id}")
                             .route(web::get().to(handlers::file_handler::get_user_files_handler)),
                     )
+                    .service(
+                        web::resource("/user/collections/{user_id}").route(
+                            web::get().to(
+                                handlers::collection_handler::get_specific_user_card_collections,
+                            ),
+                        ),
+                    )
                     .service(web::resource("/user/{user_id}/{page}").route(
                         web::get().to(handlers::user_handler::get_user_with_votes_and_cards_by_id),
                     ))
@@ -248,9 +255,9 @@ pub async fn main() -> std::io::Result<()> {
                                 web::post()
                                     .to(handlers::collection_handler::create_card_collection),
                             )
-                            .route(
-                                web::get().to(handlers::collection_handler::get_card_collections),
-                            )
+                            .route(web::get().to(
+                                handlers::collection_handler::get_logged_in_user_card_collections,
+                            ))
                             .route(
                                 web::delete()
                                     .to(handlers::collection_handler::delete_card_collection),

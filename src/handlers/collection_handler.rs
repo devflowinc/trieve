@@ -54,17 +54,34 @@ pub async fn create_card_collection(
     Ok(HttpResponse::NoContent().finish())
 }
 
-pub async fn get_card_collections(
+pub async fn get_specific_user_card_collections(
+    user: Option<LoggedUser>,
+    user_id: web::Path<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let accessing_user_id = user.map(|user| user.id);
+    let user_id = user_id.into_inner();
+    //TODO: let unsignedin users access public collections
+    let collections = web::block(move || {
+        get_collections_for_specifc_user_query(user_id, accessing_user_id, pool)
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    Ok(HttpResponse::Ok().json(collections))
+}
+
+pub async fn get_logged_in_user_card_collections(
     user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    //TODO: let unsignedin users access public collections
-    let collections = web::block(move || get_collections_for_user_query(user.id, pool))
+    let collections = web::block(move || get_collections_for_logged_in_user_query(user.id, pool))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(collections))
 }
+
 
 #[derive(Debug, Deserialize)]
 pub struct DeleteCollectionData {
