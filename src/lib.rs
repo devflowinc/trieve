@@ -265,6 +265,10 @@ pub async fn main() -> std::io::Result<()> {
                         web::resource("/upload_file")
                             .route(web::post().to(handlers::file_handler::upload_file_handler)),
                     )
+                    .service(
+                        web::resource("/file")
+                            .route(web::put().to(handlers::file_handler::update_file_handler)),
+                    )
                     .service(web::resource("/card_collection/bookmark/{card_id}").route(
                         web::get().to(handlers::collection_handler::get_collections_card_is_in),
                     )),

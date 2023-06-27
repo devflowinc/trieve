@@ -6,6 +6,7 @@ use s3::{creds::Credentials, Bucket, Region};
 use serde::{Deserialize, Serialize};
 use soup::{NodeExt, QueryBuilderExt, Soup};
 
+use crate::diesel::{ExpressionMethods, QueryDsl};
 use crate::{
     data::models::{File, Pool},
     errors::DefaultError,
@@ -108,6 +109,43 @@ pub fn create_file_query(
         })?;
 
     Ok(created_file)
+}
+
+pub fn get_user_id_of_file_query(
+    file_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<uuid::Uuid, DefaultError> {
+    use crate::data::schema::files::dsl as files_columns;
+    let mut conn = pool.get().map_err(|_| DefaultError {
+        message: "Could not get database connection",
+    })?;
+    let file: uuid::Uuid = files_columns::files
+        .filter(files_columns::id.eq(file_id))
+        .select(files_columns::user_id)
+        .first(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Could not find file",
+        })?;
+    Ok(file)
+}
+
+pub fn update_file_query(
+    file_id: uuid::Uuid,
+    private: bool,
+    pool: web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::files::dsl as files_columns;
+    let mut conn = pool.get().map_err(|_| DefaultError {
+        message: "Could not get database connection",
+    })?;
+
+    diesel::update(files_columns::files.filter(files_columns::id.eq(file_id)))
+        .set(files_columns::private.eq(private))
+        .execute(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Could not update file, try again",
+        })?;
+    Ok(())
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

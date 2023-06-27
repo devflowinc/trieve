@@ -20,9 +20,7 @@ pub async fn user_owns_collection(
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if collection.author_id != user_id {
-        return Err(
-            ServiceError::BadRequest("You are not the author of this collection".into()).into(),
-        );
+        return Err(ServiceError::Forbidden.into());
     }
 
     Ok(collection)
