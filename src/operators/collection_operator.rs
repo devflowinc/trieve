@@ -33,7 +33,35 @@ pub fn create_collection_query(
     Ok(())
 }
 
-pub fn get_collections_for_user_query(
+pub fn get_collections_for_specifc_user_query(
+    user_id: uuid::Uuid,
+    accessing_user_id: Option<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<Vec<CardCollection>, DefaultError> {
+    use crate::data::schema::card_collection::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+    let mut collections = card_collection.filter(author_id.eq(user_id)).into_boxed();
+
+    match accessing_user_id {
+        Some(accessing_user_uuid) => {
+            if user_id != accessing_user_uuid {
+                collections = collections.filter(is_public.eq(true));
+            }
+        }
+        None => collections = collections.filter(is_public.eq(true)),
+    }
+
+    let collections = collections
+        .load::<CardCollection>(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Error getting collections",
+        })?;
+
+    Ok(collections)
+}
+
+pub fn get_collections_for_logged_in_user_query(
     current_user_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Vec<CardCollection>, DefaultError> {
