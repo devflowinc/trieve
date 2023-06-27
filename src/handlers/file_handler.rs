@@ -1,8 +1,9 @@
 use crate::{
-    data::models::Pool,
+    data::models::{File, Pool},
     errors::ServiceError,
     operators::file_operator::{
-        convert_docx_to_html_query, get_user_id_of_file_query, update_file_query, CoreCard,
+        convert_docx_to_html_query, get_file_query, get_user_id_of_file_query, update_file_query,
+        CoreCard,
     },
 };
 use actix_web::{web, HttpResponse};
@@ -38,6 +39,7 @@ pub struct UploadFileData {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UploadFileResult {
+    pub file_metadata: File,
     pub created_cards: Vec<CoreCard>,
     pub rejected_cards: Vec<CoreCard>,
 }
@@ -101,4 +103,16 @@ pub async fn update_file_handler(
         .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
     Ok(HttpResponse::NoContent().finish())
+}
+
+pub async fn get_file_handler(
+    file_id: web::Path<uuid::Uuid>,
+    pool: web::Data<Pool>,
+    user: LoggedUser,
+) -> Result<HttpResponse, actix_web::Error> {
+    let file = get_file_query(file_id.into_inner(), user.id, pool)
+        .await
+        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+
+    Ok(HttpResponse::Ok().json(file))
 }

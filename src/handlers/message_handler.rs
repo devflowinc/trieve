@@ -54,9 +54,9 @@ pub async fn create_message_completion_handler(
     }
 
     // get the previous messages
-    let previous_messages =
-        web::block(move || get_topic_messages(topic_id, &second_pool)).await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let previous_messages = web::block(move || get_topic_messages(topic_id, &second_pool))
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     // call create_topic_message_query with the new_message and previous_messages
     let previous_messages_result = web::block(move || {
@@ -171,7 +171,7 @@ pub async fn regenerate_message_handler(
         return Ok(HttpResponse::BadRequest().json(DefaultError {
             message: "Not enough messages to regenerate",
         }));
-    } 
+    }
     if previous_messages.len() == 3 {
         return stream_response(previous_messages, user.id, topic_id, third_pool).await;
     }

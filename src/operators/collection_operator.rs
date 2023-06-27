@@ -1,7 +1,6 @@
 use crate::{
     data::models::{
-        CardCollectionBookmark, CardMetadata, CardMetadataWithVotesAndFiles,
-        FullTextSearchResult,
+        CardCollectionBookmark, CardMetadata, CardMetadataWithVotesAndFiles, FullTextSearchResult,
     },
     diesel::{ExpressionMethods, QueryDsl, RunQueryDsl},
     operators::card_operator::get_metadata,
