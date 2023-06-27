@@ -61,7 +61,6 @@ pub async fn get_specific_user_card_collections(
 ) -> Result<HttpResponse, actix_web::Error> {
     let accessing_user_id = user.map(|user| user.id);
     let user_id = user_id.into_inner();
-    //TODO: let unsignedin users access public collections
     let collections = web::block(move || {
         get_collections_for_specifc_user_query(user_id, accessing_user_id, pool)
     })
