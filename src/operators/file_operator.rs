@@ -334,7 +334,7 @@ pub async fn convert_docx_to_html_query(
 
 pub async fn get_file_query(
     file_uuid: uuid::Uuid,
-    user_uuid: uuid::Uuid,
+    user_uuid: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<FileDTO, actix_web::Error> {
     use crate::data::schema::files::dsl as files_columns;
@@ -348,7 +348,11 @@ pub async fn get_file_query(
         .get_result(&mut conn)
         .map_err(|_| ServiceError::NotFound)?;
 
-    if file_metadata.private && user_uuid != file_metadata.user_id {
+    if file_metadata.private && user_uuid.is_none() {
+        return Err(ServiceError::Unauthorized.into());
+    }
+
+    if file_metadata.private && !user_uuid.is_some_and(|user_id| user_id == file_metadata.user_id) {
         return Err(ServiceError::Forbidden.into());
     }
 
