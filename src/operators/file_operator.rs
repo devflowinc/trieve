@@ -348,13 +348,8 @@ pub async fn get_file_query(
         .get_result(&mut conn)
         .map_err(|_| ServiceError::NotFound)?;
 
-    match file_metadata.private {
-        true => {
-            if user_uuid != file_metadata.user_id {
-                return Err(ServiceError::Forbidden.into());
-            }
-        }
-        false => {}
+    if file_metadata.private && user_uuid != file_metadata.user_id {
+        return Err(ServiceError::Forbidden.into());
     }
 
     let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
