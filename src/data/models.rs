@@ -431,7 +431,7 @@ impl From<User> for UserDTO {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Clone)]
+#[derive(Debug, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone)]
 #[diesel(table_name = card_collection)]
 pub struct CardCollection {
     pub id: uuid::Uuid,
@@ -460,6 +460,18 @@ impl CardCollection {
             updated_at: chrono::Local::now().naive_local(),
         }
     }
+}
+
+#[derive(Debug, Default, Serialize, Deserialize, Queryable)]
+pub struct CardCollectionAndFile {
+    pub id: uuid::Uuid,
+    pub author_id: uuid::Uuid,
+    pub name: String,
+    pub is_public: bool,
+    pub description: String,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub file_id: Option<uuid::Uuid>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Queryable, Insertable, Clone)]
