@@ -1,6 +1,7 @@
 use crate::{
     data::models::{
-        CardCollectionBookmark, CardMetadata, CardMetadataWithVotesAndFiles, FullTextSearchResult,
+        CardCollectionBookmark, CardMetadata, CardMetadataWithVotesAndFiles, FileCollection,
+        FullTextSearchResult,
     },
     diesel::{ExpressionMethods, QueryDsl, RunQueryDsl},
     operators::card_operator::get_metadata,
@@ -36,6 +37,7 @@ pub fn create_collection_query(
 pub fn create_collection_and_add_bookmarks_query(
     new_collection: CardCollection,
     bookmarks: Vec<uuid::Uuid>,
+    created_file_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<CardCollection, DefaultError> {
     use crate::data::schema::card_collection::dsl::*;
@@ -51,6 +53,7 @@ pub fn create_collection_and_add_bookmarks_query(
                 message: "Error creating collection",
             }
         })?;
+
     use crate::data::schema::card_collection_bookmarks::dsl::*;
 
     diesel::insert_into(card_collection_bookmarks)
@@ -73,6 +76,22 @@ pub fn create_collection_and_add_bookmarks_query(
             }
         })?;
 
+    use crate::data::schema::collections_from_files::dsl::*;
+
+    diesel::insert_into(collections_from_files)
+        .values(&FileCollection {
+            id: uuid::Uuid::new_v4(),
+            collection_id: new_collection.id,
+            file_id: created_file_id,
+            ..Default::default()
+        })
+        .execute(&mut conn)
+        .map_err(|_err| {
+            log::error!("Error creating bookmark {:}", _err);
+            DefaultError {
+                message: "Error creating bookmark",
+            }
+        })?;
     Ok(new_collection)
 }
 

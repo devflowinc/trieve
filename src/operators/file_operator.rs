@@ -334,6 +334,7 @@ pub async fn convert_docx_to_html_query(
                 "".to_string(),
             ),
             vec![],
+            created_file.id,
             pool1,
         )
     })

@@ -472,6 +472,16 @@ pub struct CardCollectionBookmark {
     pub updated_at: chrono::NaiveDateTime,
 }
 
+#[derive(Debug, Default, Serialize, Deserialize, Queryable, Insertable, Clone)]
+#[diesel(table_name = collections_from_files)]
+pub struct FileCollection {
+    pub id: uuid::Uuid,
+    pub file_id: uuid::Uuid,
+    pub collection_id: uuid::Uuid,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UserDTOWithVotesAndCards {
     pub id: uuid::Uuid,
