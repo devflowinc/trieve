@@ -1,12 +1,13 @@
 use crate::{
     data::models::{
-        CardCollectionBookmark, CardMetadata, CardMetadataWithVotesAndFiles, FileCollection,
-        FullTextSearchResult,
+        CardCollectionAndFile, CardCollectionBookmark, CardMetadata, CardMetadataWithVotesAndFiles,
+        FileCollection, FullTextSearchResult,
     },
     diesel::{ExpressionMethods, QueryDsl, RunQueryDsl},
     operators::card_operator::get_metadata,
 };
 use actix_web::web;
+use diesel::{JoinOnDsl, NullableExpressionMethods};
 
 use crate::{
     data::models::{CardCollection, Pool},
@@ -92,11 +93,28 @@ pub fn get_collections_for_specifc_user_query(
     user_id: uuid::Uuid,
     accessing_user_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<Vec<CardCollection>, DefaultError> {
+) -> Result<Vec<CardCollectionAndFile>, DefaultError> {
     use crate::data::schema::card_collection::dsl::*;
+    use crate::data::schema::collections_from_files::dsl as collections_from_files_columns;
 
     let mut conn = pool.get().unwrap();
-    let mut collections = card_collection.filter(author_id.eq(user_id)).into_boxed();
+    let mut collections = card_collection
+        .left_outer_join(
+            collections_from_files_columns::collections_from_files
+                .on(id.eq(collections_from_files_columns::collection_id)),
+        )
+        .select((
+            id,
+            author_id,
+            name,
+            is_public,
+            description,
+            created_at,
+            updated_at,
+            collections_from_files_columns::file_id.nullable(),
+        ))
+        .filter(author_id.eq(user_id))
+        .into_boxed();
 
     match accessing_user_id {
         Some(accessing_user_uuid) => {
@@ -108,7 +126,7 @@ pub fn get_collections_for_specifc_user_query(
     }
 
     let collections = collections
-        .load::<CardCollection>(&mut conn)
+        .load::<CardCollectionAndFile>(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Error getting collections",
         })?;
@@ -119,14 +137,29 @@ pub fn get_collections_for_specifc_user_query(
 pub fn get_collections_for_logged_in_user_query(
     current_user_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<CardCollection>, DefaultError> {
+) -> Result<Vec<CardCollectionAndFile>, DefaultError> {
     use crate::data::schema::card_collection::dsl::*;
+    use crate::data::schema::collections_from_files::dsl as collections_from_files_columns;
 
     let mut conn = pool.get().unwrap();
 
     let collections = card_collection
+        .left_outer_join(
+            collections_from_files_columns::collections_from_files
+                .on(id.eq(collections_from_files_columns::collection_id)),
+        )
+        .select((
+            id,
+            author_id,
+            name,
+            is_public,
+            description,
+            created_at,
+            updated_at,
+            collections_from_files_columns::file_id.nullable(),
+        ))
         .filter(author_id.eq(current_user_id))
-        .load::<CardCollection>(&mut conn)
+        .load::<CardCollectionAndFile>(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Error getting collections",
         })?;
