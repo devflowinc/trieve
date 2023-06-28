@@ -46,7 +46,7 @@ pub struct CreateCardData {
     pub file_uuid: Option<uuid::Uuid>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ReturnCreatedCard {
     pub card_metadata: CardMetadata,
     pub duplicate: bool,

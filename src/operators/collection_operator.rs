@@ -33,6 +33,49 @@ pub fn create_collection_query(
     Ok(())
 }
 
+pub fn create_collection_and_add_bookmarks_query(
+    new_collection: CardCollection,
+    bookmarks: Vec<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<CardCollection, DefaultError> {
+    use crate::data::schema::card_collection::dsl::*;
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::insert_into(card_collection)
+        .values(&new_collection)
+        .execute(&mut conn)
+        .map_err(|err| {
+            log::error!("Error creating collection {:}", err);
+            DefaultError {
+                message: "Error creating collection",
+            }
+        })?;
+    use crate::data::schema::card_collection_bookmarks::dsl::*;
+
+    diesel::insert_into(card_collection_bookmarks)
+        .values(
+            bookmarks
+                .iter()
+                .map(|bookmark| CardCollectionBookmark {
+                    id: uuid::Uuid::new_v4(),
+                    collection_id: new_collection.id,
+                    card_metadata_id: *bookmark,
+                    ..Default::default()
+                })
+                .collect::<Vec<CardCollectionBookmark>>(),
+        )
+        .execute(&mut conn)
+        .map_err(|_err| {
+            log::error!("Error creating bookmark {:}", _err);
+            DefaultError {
+                message: "Error creating bookmark",
+            }
+        })?;
+
+    Ok(new_collection)
+}
+
 pub fn get_collections_for_specifc_user_query(
     user_id: uuid::Uuid,
     accessing_user_id: Option<uuid::Uuid>,
