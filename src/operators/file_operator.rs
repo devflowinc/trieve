@@ -11,6 +11,7 @@ use s3::{creds::Credentials, Bucket, Region};
 use serde::{Deserialize, Serialize};
 use soup::{NodeExt, QueryBuilderExt, Soup};
 
+use crate::data::models::CardCollection;
 use crate::{
     data::models::FileDTO,
     diesel::{ExpressionMethods, QueryDsl},
@@ -25,6 +26,8 @@ use crate::{
         file_handler::UploadFileResult,
     },
 };
+
+use super::collection_operator::create_collection_and_add_bookmarks_query;
 
 pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
     let s3_access_key = std::env::var("S3_ACCESS_KEY").expect("S3_ACCESS_KEY must be set");
@@ -295,6 +298,8 @@ pub async fn convert_docx_to_html_query(
     let mut created_cards: Vec<CoreCard> = [].to_vec();
     let mut rejected_cards: Vec<CoreCard> = [].to_vec();
 
+    let pool1 = pool.clone();
+
     for card in cards {
         let create_card_data = CreateCardData {
             content: card.content.clone(),
@@ -310,11 +315,38 @@ pub async fn convert_docx_to_html_query(
             Ok(response) => {
                 if response.status().is_success() {
                     created_cards.push(card);
+                    //get created card_ids
                 } else {
                     rejected_cards.push(card);
                 }
             }
             Err(_) => rejected_cards.push(card),
+        }
+    }
+
+    let collection_id: uuid::Uuid;
+    match web::block(move || {
+        create_collection_and_add_bookmarks_query(
+            CardCollection::from_details(
+                user.id,
+                format!("Collection for file {}", file_name),
+                !private,
+                "".to_string(),
+            ),
+            vec![],
+            pool1,
+        )
+    })
+    .await
+    {
+        Ok(response) => match response {
+            Ok(collection) => collection_id = collection.id,
+            Err(err) => return Err(err),
+        },
+        Err(_) => {
+            return Err(DefaultError {
+                message: "Error creating collection",
+            })
         }
     }
 
@@ -327,6 +359,7 @@ pub async fn convert_docx_to_html_query(
 
     Ok(UploadFileResult {
         file_metadata: created_file,
+        collection_id,
         created_cards,
         rejected_cards,
     })

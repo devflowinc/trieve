@@ -40,6 +40,7 @@ pub struct UploadFileData {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UploadFileResult {
     pub file_metadata: File,
+    pub collection_id: uuid::Uuid,
     pub created_cards: Vec<CoreCard>,
     pub rejected_cards: Vec<CoreCard>,
 }
