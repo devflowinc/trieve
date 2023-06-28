@@ -472,6 +472,18 @@ pub struct CardCollectionBookmark {
     pub updated_at: chrono::NaiveDateTime,
 }
 
+impl CardCollectionBookmark {
+    pub fn from_details(collection_id: uuid::Uuid, card_metadata_id: uuid::Uuid) -> Self {
+        CardCollectionBookmark {
+            id: uuid::Uuid::new_v4(),
+            collection_id,
+            card_metadata_id,
+            created_at: chrono::Local::now().naive_local(),
+            updated_at: chrono::Local::now().naive_local(),
+        }
+    }
+}
+
 #[derive(Debug, Default, Serialize, Deserialize, Queryable, Insertable, Clone)]
 #[diesel(table_name = collections_from_files)]
 pub struct FileCollection {
@@ -480,6 +492,18 @@ pub struct FileCollection {
     pub collection_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+}
+
+impl FileCollection {
+    pub fn from_details(file_id: uuid::Uuid, collection_id: uuid::Uuid) -> Self {
+        FileCollection {
+            id: uuid::Uuid::new_v4(),
+            file_id,
+            collection_id,
+            created_at: chrono::Local::now().naive_local(),
+            updated_at: chrono::Local::now().naive_local(),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

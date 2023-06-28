@@ -81,7 +81,6 @@ pub async fn get_logged_in_user_card_collections(
     Ok(HttpResponse::Ok().json(collections))
 }
 
-
 #[derive(Debug, Deserialize)]
 pub struct DeleteCollectionData {
     pub collection_id: uuid::Uuid,
@@ -154,12 +153,7 @@ pub async fn add_bookmark(
     web::block(move || {
         create_card_bookmark_query(
             pool,
-            CardCollectionBookmark {
-                id: uuid::Uuid::new_v4(),
-                collection_id,
-                card_metadata_id,
-                ..Default::default()
-            },
+            CardCollectionBookmark::from_details(collection_id, card_metadata_id),
         )
     })
     .await?
