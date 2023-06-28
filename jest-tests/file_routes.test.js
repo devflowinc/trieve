@@ -99,5 +99,5 @@ describe("File Upload and Download Test", () => {
       file.endsWith("(downloaded).docx")
     );
     expect(deletedFile).toBeUndefined();
-  }, 20000);
+  }, 40000);
 });

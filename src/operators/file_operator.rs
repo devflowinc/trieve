@@ -1,4 +1,4 @@
-use actix_web::web;
+use actix_web::{body::MessageBody, web};
 use base64::{
     alphabet,
     engine::{self, general_purpose},
@@ -11,7 +11,7 @@ use s3::{creds::Credentials, Bucket, Region};
 use serde::{Deserialize, Serialize};
 use soup::{NodeExt, QueryBuilderExt, Soup};
 
-use crate::data::models::CardCollection;
+use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
 use crate::{
     data::models::FileDTO,
     diesel::{ExpressionMethods, QueryDsl},
@@ -297,6 +297,8 @@ pub async fn convert_docx_to_html_query(
 
     let mut created_cards: Vec<CoreCard> = [].to_vec();
     let mut rejected_cards: Vec<CoreCard> = [].to_vec();
+    let mut card_metadata: ReturnCreatedCard;
+    let mut card_ids: Vec<uuid::Uuid> = [].to_vec();
 
     let pool1 = pool.clone();
 
@@ -315,7 +317,13 @@ pub async fn convert_docx_to_html_query(
             Ok(response) => {
                 if response.status().is_success() {
                     created_cards.push(card);
-                    //get created card_ids
+                    card_metadata = serde_json::from_slice(
+                        response.into_body().try_into_bytes().unwrap().as_ref(),
+                    )
+                    .map_err(|_err| DefaultError {
+                        message: "Could not parse card ids",
+                    })?;
+                    card_ids.push(card_metadata.card_metadata.id);
                 } else {
                     rejected_cards.push(card);
                 }
@@ -333,7 +341,7 @@ pub async fn convert_docx_to_html_query(
                 !private,
                 "".to_string(),
             ),
-            vec![],
+            card_ids,
             created_file.id,
             pool1,
         )

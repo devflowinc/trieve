@@ -60,12 +60,7 @@ pub fn create_collection_and_add_bookmarks_query(
         .values(
             bookmarks
                 .iter()
-                .map(|bookmark| CardCollectionBookmark {
-                    id: uuid::Uuid::new_v4(),
-                    collection_id: new_collection.id,
-                    card_metadata_id: *bookmark,
-                    ..Default::default()
-                })
+                .map(|bookmark| CardCollectionBookmark::from_details(new_collection.id, *bookmark))
                 .collect::<Vec<CardCollectionBookmark>>(),
         )
         .execute(&mut conn)
@@ -79,12 +74,10 @@ pub fn create_collection_and_add_bookmarks_query(
     use crate::data::schema::collections_from_files::dsl::*;
 
     diesel::insert_into(collections_from_files)
-        .values(&FileCollection {
-            id: uuid::Uuid::new_v4(),
-            collection_id: new_collection.id,
-            file_id: created_file_id,
-            ..Default::default()
-        })
+        .values(&FileCollection::from_details(
+            created_file_id,
+            new_collection.id,
+        ))
         .execute(&mut conn)
         .map_err(|_err| {
             log::error!("Error creating bookmark {:}", _err);
