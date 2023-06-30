@@ -365,6 +365,7 @@ pub fn get_metadata(
                 updated_at: metadata.updated_at,
                 private: metadata.private,
                 score: metadata.score,
+                card_html: metadata.card_html,
                 file_id: card_with_file_name.map(|file| file.file_id),
                 file_name: card_with_file_name.map(|file| file.file_name.to_string()),
             }
