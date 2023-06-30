@@ -2,14 +2,11 @@ use crate::data::models::{
     CardMetadata, CardMetadataWithVotesAndFiles, CardMetadataWithVotesWithoutScore, Pool,
 };
 use crate::errors::ServiceError;
-use crate::operators::card_operator::{
-    create_openai_embedding, delete_card_metadata_query, get_card_count_query,
-    get_metadata_and_votes_from_id_query, get_metadata_from_point_ids, insert_card_metadata_query,
-    insert_duplicate_card_metadata_query, search_full_text_card_query, update_card_metadata_query,
-};
+use crate::operators::card_operator::*;
 use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
 };
+use crate::operators::collection_operator::get_collection_by_id_query;
 use actix_web::{web, HttpResponse};
 use difference::{Changeset, Difference};
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
@@ -381,6 +378,86 @@ pub async fn search_full_text_card(
 
     Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
         score_cards: full_text_cards,
+        total_card_pages: search_card_query_results.total_card_pages,
+    }))
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SearchCollectionsData {
+    content: String,
+    filter_oc_file_path: Option<Vec<String>>,
+    filter_link_url: Option<Vec<String>>,
+    collection_id: uuid::Uuid,
+}
+
+pub async fn search_collections(
+    data: web::Json<SearchCollectionsData>,
+    page: Option<web::Path<u64>>,
+    user: Option<LoggedUser>,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    //search over the links as well
+    let page = page.map(|page| page.into_inner()).unwrap_or(1);
+    let embedding_vector = create_openai_embedding(&data.content).await?;
+    let collection_id = data.collection_id;
+    let pool2 = pool.clone();
+    let pool3 = pool.clone();
+    let current_user_id = user.map(|user| user.id);
+    let collection = web::block(move || get_collection_by_id_query(collection_id, pool3))
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    if !collection.is_public && current_user_id.is_none() {
+        return Err(ServiceError::Unauthorized.into());
+    }
+
+    if !collection.is_public && Some(collection.author_id) != current_user_id {
+        return Err(ServiceError::Forbidden.into());
+    }
+
+    let search_card_query_results = search_card_collections_query(
+        embedding_vector,
+        page,
+        pool,
+        data.filter_oc_file_path.clone(),
+        data.filter_link_url.clone(),
+        data.collection_id,
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let point_ids = search_card_query_results
+        .search_results
+        .iter()
+        .map(|point| point.point_id)
+        .collect::<Vec<_>>();
+
+    let metadata_cards =
+        web::block(move || get_metadata_from_point_ids(point_ids, current_user_id, pool2))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let score_cards: Vec<ScoreCardDTO> = search_card_query_results
+        .search_results
+        .iter()
+        .map(|search_result| {
+            let card = metadata_cards
+                .iter()
+                .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
+                .unwrap();
+
+            ScoreCardDTO {
+                metadata: <CardMetadataWithVotesAndFiles as Into<
+                    CardMetadataWithVotesWithoutScore,
+                >>::into((*card).clone()),
+                score: search_result.score,
+            }
+        })
+        .collect();
+
+    Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
+        score_cards,
         total_card_pages: search_card_query_results.total_card_pages,
     }))
 }

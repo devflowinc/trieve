@@ -1,11 +1,7 @@
-use crate::data::models::CardCollisions;
-use crate::data::models::CardFile;
-use crate::data::models::CardFileWithName;
-use crate::data::models::CardMetadataWithVotesAndFiles;
-use crate::data::models::CardVote;
-use crate::data::models::FullTextSearchResult;
-use crate::data::models::User;
-use crate::data::models::UserDTO;
+use crate::data::models::{
+    CardCollisions, CardFile, CardFileWithName, CardMetadataWithVotesAndFiles, CardVote,
+    FullTextSearchResult, User, UserDTO,
+};
 use crate::diesel::TextExpressionMethods;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::{
@@ -82,6 +78,107 @@ pub async fn search_card_query(
     let mut query = card_metadata_columns::card_metadata
         .select(card_metadata_columns::qdrant_point_id)
         .filter(card_metadata_columns::private.eq(false))
+        .into_boxed();
+    let filter_oc_file_path = filter_oc_file_path.unwrap_or([].to_vec());
+    let filter_link_url = filter_link_url.unwrap_or([].to_vec());
+
+    if !filter_oc_file_path.is_empty() {
+        query = query.filter(
+            card_metadata_columns::oc_file_path
+                .like(format!("%{}%", filter_oc_file_path.get(0).unwrap())),
+        );
+    }
+
+    for file_path in filter_oc_file_path.iter().skip(1) {
+        query =
+            query.or_filter(card_metadata_columns::oc_file_path.like(format!("%{}%", file_path)));
+    }
+
+    if !filter_link_url.is_empty() {
+        query = query.filter(
+            card_metadata_columns::link.like(format!("%{}%", filter_link_url.get(0).unwrap())),
+        );
+    }
+    for link_url in filter_link_url.iter().skip(1) {
+        query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
+    }
+
+    let filtered_ids: Vec<Option<uuid::Uuid>> =
+        query.load(&mut conn).map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })?;
+
+    let qdrant = get_qdrant_connection().await?;
+
+    let filtered_point_ids: &Vec<PointId> = &filtered_ids
+        .iter()
+        .map(|uuid| uuid.unwrap_or(uuid::Uuid::nil()).to_string().into())
+        .collect::<Vec<PointId>>();
+
+    let mut filter = Filter::default();
+    filter.should.push(Condition {
+        condition_one_of: Some(HasId(HasIdCondition {
+            has_id: (filtered_point_ids).to_vec(),
+        })),
+    });
+
+    let data = qdrant
+        .search_points(&SearchPoints {
+            collection_name: "debate_cards".to_string(),
+            vector: embedding_vector,
+            limit: 25,
+            offset: Some((page - 1) * 25),
+            with_payload: None,
+            filter: Some(filter),
+            ..Default::default()
+        })
+        .await
+        .map_err(|_e| DefaultError {
+            message: "Failed to search points on Qdrant",
+        })?;
+
+    let point_ids: Vec<SearchResult> = data
+        .result
+        .iter()
+        .filter_map(|point| match point.clone().id?.point_id_options? {
+            PointIdOptions::Uuid(id) => Some(SearchResult {
+                score: point.score,
+                point_id: uuid::Uuid::parse_str(&id).ok()?,
+            }),
+            PointIdOptions::Num(_) => None,
+        })
+        .collect();
+
+    Ok(SearchCardQueryResult {
+        search_results: point_ids,
+        total_card_pages: (filtered_point_ids.len() as f64 / 25.0).ceil() as i64,
+    })
+}
+
+pub async fn search_card_collections_query(
+    embedding_vector: Vec<f32>,
+    page: u64,
+    pool: web::Data<Pool>,
+    filter_oc_file_path: Option<Vec<String>>,
+    filter_link_url: Option<Vec<String>>,
+    collection_id: uuid::Uuid,
+) -> Result<SearchCardQueryResult, DefaultError> {
+    let page = if page == 0 { 1 } else { page };
+    use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+    let mut conn = pool.get().unwrap();
+
+    let card_ids: Vec<uuid::Uuid> = card_collection_bookmarks_columns::card_collection_bookmarks
+        .select(card_collection_bookmarks_columns::card_metadata_id)
+        .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id))
+        .load::<uuid::Uuid>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })?;
+
+    let mut query = card_metadata_columns::card_metadata
+        .select(card_metadata_columns::qdrant_point_id)
+        .filter(card_metadata_columns::id.eq_any(card_ids))
         .into_boxed();
     let filter_oc_file_path = filter_oc_file_path.unwrap_or([].to_vec());
     let filter_link_url = filter_link_url.unwrap_or([].to_vec());
