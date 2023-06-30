@@ -194,6 +194,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
                 qdrant_point_id: metadata.qdrant_point_id.unwrap_or(uuid::Uuid::nil()),
                 total_upvotes,
                 total_downvotes,
+                card_html: metadata.card_html.clone(),
                 vote_by_current_user,
                 created_at: metadata.created_at,
                 updated_at: metadata.updated_at,
