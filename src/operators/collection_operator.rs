@@ -3,9 +3,10 @@ use crate::{
         CardCollectionAndFile, CardCollectionBookmark, CardMetadata, CardMetadataWithVotesAndFiles,
         FileCollection, FullTextSearchResult,
     },
-    diesel::{ExpressionMethods, QueryDsl, RunQueryDsl},
+    diesel::{Connection, ExpressionMethods, QueryDsl, RunQueryDsl},
     operators::card_operator::get_metadata,
 };
+
 use actix_web::web;
 use diesel::{JoinOnDsl, NullableExpressionMethods};
 
@@ -45,47 +46,45 @@ pub fn create_collection_and_add_bookmarks_query(
 
     let mut conn = pool.get().unwrap();
 
-    diesel::insert_into(card_collection)
-        .values(&new_collection)
-        .execute(&mut conn)
-        .map_err(|err| {
+    let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
+        diesel::insert_into(card_collection)
+            .values(&new_collection)
+            .execute(conn)?;
+
+        use crate::data::schema::card_collection_bookmarks::dsl::*;
+
+        diesel::insert_into(card_collection_bookmarks)
+            .values(
+                bookmarks
+                    .iter()
+                    .map(|bookmark| {
+                        CardCollectionBookmark::from_details(new_collection.id, *bookmark)
+                    })
+                    .collect::<Vec<CardCollectionBookmark>>(),
+            )
+            .execute(conn)?;
+
+        use crate::data::schema::collections_from_files::dsl::*;
+
+        diesel::insert_into(collections_from_files)
+            .values(&FileCollection::from_details(
+                created_file_id,
+                new_collection.id,
+            ))
+            .execute(conn)?;
+
+        Ok(())
+    });
+
+    match transaction_result {
+        Ok(_) => (),
+        Err(err) => {
             log::error!("Error creating collection {:}", err);
-            DefaultError {
+            return Err(DefaultError {
                 message: "Error creating collection",
-            }
-        })?;
-
-    use crate::data::schema::card_collection_bookmarks::dsl::*;
-
-    diesel::insert_into(card_collection_bookmarks)
-        .values(
-            bookmarks
-                .iter()
-                .map(|bookmark| CardCollectionBookmark::from_details(new_collection.id, *bookmark))
-                .collect::<Vec<CardCollectionBookmark>>(),
-        )
-        .execute(&mut conn)
-        .map_err(|_err| {
-            log::error!("Error creating bookmark {:}", _err);
-            DefaultError {
-                message: "Error creating bookmark",
-            }
-        })?;
-
-    use crate::data::schema::collections_from_files::dsl::*;
-
-    diesel::insert_into(collections_from_files)
-        .values(&FileCollection::from_details(
-            created_file_id,
-            new_collection.id,
-        ))
-        .execute(&mut conn)
-        .map_err(|_err| {
-            log::error!("Error creating bookmark {:}", _err);
-            DefaultError {
-                message: "Error creating bookmark",
-            }
-        })?;
+            });
+        }
+    }
     Ok(new_collection)
 }
 

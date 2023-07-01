@@ -10,12 +10,12 @@ use crate::{
 };
 use actix_web::web;
 
-use diesel::Connection;
 use diesel::dsl::sql;
 use diesel::sql_types::Bool;
 use diesel::sql_types::Float;
 use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;
+use diesel::Connection;
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::{
@@ -597,22 +597,28 @@ pub fn insert_card_metadata_query(
 
     let mut conn = pool.get().unwrap();
 
-    diesel::insert_into(card_metadata)
-        .values(&card_data)
-        .execute(&mut conn)
-        .map_err(|_err| DefaultError {
-            message: "Failed to insert card metadata",
-        })?;
+    let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
+        diesel::insert_into(card_metadata)
+            .values(&card_data)
+            .execute(conn)?;
 
-    if file_uuid.is_some() {
-        diesel::insert_into(card_files_columns::card_files)
-            .values(&CardFile::from_details(card_data.id, file_uuid.unwrap()))
-            .execute(&mut conn)
-            .map_err(|_err| DefaultError {
+        if file_uuid.is_some() {
+            diesel::insert_into(card_files_columns::card_files)
+                .values(&CardFile::from_details(card_data.id, file_uuid.unwrap()))
+                .execute(conn)?;
+        }
+
+        Ok(())
+    });
+
+    match transaction_result {
+        Ok(_) => (),
+        Err(_) => {
+            return Err(DefaultError {
                 message: "Failed to insert card metadata",
-            })?;
-    }
-
+            })
+        }
+    };
     Ok(card_data)
 }
 
@@ -628,28 +634,33 @@ pub fn insert_duplicate_card_metadata_query(
 
     let mut conn = pool.get().unwrap();
 
-    diesel::insert_into(card_metadata)
-        .values(&card_data)
-        .execute(&mut conn)
-        .map_err(|_err| DefaultError {
-            message: "Failed to insert card metadata",
-        })?;
+    let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
+        diesel::insert_into(card_metadata)
+            .values(&card_data)
+            .execute(conn)?;
 
-    //insert duplicate into card_collisions
-    diesel::insert_into(card_collisions)
-        .values(&CardCollisions::from_details(card_data.id, duplicate_card))
-        .execute(&mut conn)
-        .map_err(|_err| DefaultError {
-            message: "Failed to insert card duplicate",
-        })?;
-    if file_uuid.is_some() {
-        diesel::insert_into(card_files_columns::card_files)
-            .values(&CardFile::from_details(card_data.id, file_uuid.unwrap()))
-            .execute(&mut conn)
-            .map_err(|_err| DefaultError {
+        //insert duplicate into card_collisions
+        diesel::insert_into(card_collisions)
+            .values(&CardCollisions::from_details(card_data.id, duplicate_card))
+            .execute(conn)?;
+
+        if file_uuid.is_some() {
+            diesel::insert_into(card_files_columns::card_files)
+                .values(&CardFile::from_details(card_data.id, file_uuid.unwrap()))
+                .execute(conn)?;
+        }
+
+        Ok(())
+    });
+
+    match transaction_result {
+        Ok(_) => (),
+        Err(_) => {
+            return Err(DefaultError {
                 message: "Failed to insert card metadata",
-            })?;
-    }
+            })
+        }
+    };
     Ok(card_data)
 }
 
@@ -662,27 +673,36 @@ pub fn update_card_metadata_query(
 
     let mut conn = pool.get().unwrap();
 
-    diesel::update(
-        card_metadata_columns::card_metadata.filter(card_metadata_columns::id.eq(card_data.id)),
-    )
-    .set((
-        card_metadata_columns::link.eq(card_data.link),
-        card_metadata_columns::card_html.eq(card_data.card_html),
-        card_metadata_columns::private.eq(card_data.private),
-    ))
-    .execute(&mut conn)
-    .map_err(|_err| DefaultError {
-        message: "Failed to update card metadata",
-    })?;
-    diesel::update(
-        card_votes_columns::card_votes
-            .filter(card_votes_columns::card_metadata_id.eq(card_data.id)),
-    )
-    .set(card_votes_columns::deleted.eq(card_data.private))
-    .execute(&mut conn)
-    .map_err(|_err| DefaultError {
-        message: "Failed to update card votes",
-    })?;
+    let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
+        diesel::update(
+            card_metadata_columns::card_metadata.filter(card_metadata_columns::id.eq(card_data.id)),
+        )
+        .set((
+            card_metadata_columns::content.eq(card_data.content),
+            card_metadata_columns::link.eq(card_data.link),
+            card_metadata_columns::card_html.eq(card_data.card_html),
+            card_metadata_columns::private.eq(card_data.private),
+        ))
+        .execute(conn)?;
+
+        diesel::update(
+            card_votes_columns::card_votes
+                .filter(card_votes_columns::card_metadata_id.eq(card_data.id)),
+        )
+        .set(card_votes_columns::deleted.eq(card_data.private))
+        .execute(conn)?;
+
+        Ok(())
+    });
+
+    match transaction_result {
+        Ok(_) => (),
+        Err(_) => {
+            return Err(DefaultError {
+                message: "Failed to update card metadata",
+            })
+        }
+    };
 
     Ok(())
 }
@@ -691,9 +711,9 @@ pub fn delete_card_metadata_query(
     card_uuid: &uuid::Uuid,
     pool: &web::Data<Pool>,
 ) -> Result<(), DefaultError> {
-    use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
+    use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     let mut conn = pool.get().unwrap();
 
@@ -702,30 +722,39 @@ pub fn delete_card_metadata_query(
             card_files_columns::card_files.filter(card_files_columns::card_id.eq(card_uuid)),
         )
         .execute(conn)?;
-    
+
         let deleted_card_collection_bookmarks = diesel::delete(
             card_collection_bookmarks_columns::card_collection_bookmarks
                 .filter(card_collection_bookmarks_columns::card_metadata_id.eq(card_uuid)),
         )
         .execute(conn)?;
-    
+
         let deleted_card_collisions = diesel::delete(
             card_collisions_columns::card_collisions
                 .filter(card_collisions_columns::card_id.eq(card_uuid)),
         )
         .execute(conn)?;
-    
+
         let deleted_card_metadata = diesel::delete(
             card_metadata_columns::card_metadata.filter(card_metadata_columns::id.eq(card_uuid)),
         )
         .execute(conn)?;
-    
-        Ok((deleted_card_files, deleted_card_collection_bookmarks, deleted_card_collisions, deleted_card_metadata))
+
+        Ok((
+            deleted_card_files,
+            deleted_card_collection_bookmarks,
+            deleted_card_collisions,
+            deleted_card_metadata,
+        ))
     });
-    
-     match transaction_result {
+
+    match transaction_result {
         Ok(_) => (),
-        Err(_) => return Err(DefaultError { message: "Failed to delete card data" })
+        Err(_) => {
+            return Err(DefaultError {
+                message: "Failed to delete card data",
+            })
+        }
     };
 
     Ok(())
