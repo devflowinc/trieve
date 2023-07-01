@@ -678,7 +678,6 @@ pub fn update_card_metadata_query(
             card_metadata_columns::card_metadata.filter(card_metadata_columns::id.eq(card_data.id)),
         )
         .set((
-            card_metadata_columns::content.eq(card_data.content),
             card_metadata_columns::link.eq(card_data.link),
             card_metadata_columns::card_html.eq(card_data.card_html),
             card_metadata_columns::private.eq(card_data.private),
