@@ -12,9 +12,9 @@ use actix_web::web;
 
 use diesel::dsl::sql;
 use diesel::sql_types::Bool;
-use diesel::sql_types::Float;
 use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;
+use diesel::sql_types::{Float, Int8};
 use diesel::Connection;
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
@@ -412,6 +412,7 @@ pub fn search_full_text_card_query(
                         .join(" & "),
                 )
                 .sql(") , 32) * 10) AS rank"),
+            sql::<Int8>("count(*) OVER() AS full_count"),
         ))
         .filter(card_metadata_columns::private.eq(false))
         .into_boxed();
@@ -467,7 +468,7 @@ pub fn search_full_text_card_query(
         })?;
     Ok(FullTextSearchCardQueryResult {
         search_results: card_metadata_with_upvotes_and_files,
-        total_card_pages: (searched_cards.len() as f64 / 25.0).ceil() as i64,
+        total_card_pages: (searched_cards.get(0).unwrap().count as f64 / 25.0).ceil() as i64,
     })
 }
 #[derive(Serialize, Deserialize)]

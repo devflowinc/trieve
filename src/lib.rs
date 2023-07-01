@@ -267,11 +267,17 @@ pub async fn main() -> std::io::Result<()> {
                         web::resource("/card_collection/search/{page}")
                             .route(web::post().to(handlers::card_handler::search_collections)),
                     )
+                    .service(web::resource("/card_collection/bookmark/{card_id}").route(
+                        web::get().to(handlers::collection_handler::get_collections_card_is_in),
+                    ))
                     .service(
                         web::resource("/card_collection/{card_collection_id}")
                             .route(web::post().to(handlers::collection_handler::add_bookmark))
-                            .route(web::get().to(handlers::collection_handler::get_all_bookmarks))
                             .route(web::delete().to(handlers::collection_handler::delete_bookmark)),
+                    )
+                    .service(
+                        web::resource("/card_collection/{collection_id}/{page}")
+                            .route(web::get().to(handlers::collection_handler::get_all_bookmarks)),
                     )
                     .service(
                         web::resource("/file")
@@ -282,10 +288,7 @@ pub async fn main() -> std::io::Result<()> {
                         web::resource("/file/{file_id}")
                             .route(web::get().to(handlers::file_handler::get_file_handler))
                             .route(web::delete().to(handlers::file_handler::delete_file_handler)),
-                    )
-                    .service(web::resource("/card_collection/bookmark/{card_id}").route(
-                        web::get().to(handlers::collection_handler::get_collections_card_is_in),
-                    )),
+                    ),
             )
     })
     .bind(("0.0.0.0", 8090))?

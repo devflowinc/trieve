@@ -1,14 +1,14 @@
 use crate::{
     data::models::{
-        CardCollectionAndFile, CardCollectionBookmark, CardMetadata, CardMetadataWithVotesAndFiles,
-        FileCollection, FullTextSearchResult,
+        CardCollectionAndFile, CardCollectionBookmark, CardMetadataWithCount,
+        CardMetadataWithVotesAndFiles, FileCollection, FullTextSearchResult,
     },
     diesel::{Connection, ExpressionMethods, QueryDsl, RunQueryDsl},
     operators::card_operator::get_metadata,
 };
 
 use actix_web::web;
-use diesel::{JoinOnDsl, NullableExpressionMethods};
+use diesel::{dsl::sql, sql_types::Int8, JoinOnDsl, NullableExpressionMethods};
 
 use crate::{
     data::models::{CardCollection, Pool},
@@ -246,14 +246,19 @@ pub fn create_card_bookmark_query(
 
     Ok(())
 }
-
+pub struct CollectionsBookmarkQueryResult {
+    pub metadata: Vec<CardMetadataWithVotesAndFiles>,
+    pub total_pages: i64,
+}
 pub fn get_bookmarks_for_collection_query(
     collection: uuid::Uuid,
+    page: u64,
     current_user_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<Vec<CardMetadataWithVotesAndFiles>, DefaultError> {
+) -> Result<CollectionsBookmarkQueryResult, DefaultError> {
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+    let page = if page == 0 { 1 } else { page };
 
     let mut conn = pool.get().unwrap();
 
@@ -264,7 +269,7 @@ pub fn get_bookmarks_for_collection_query(
             message: "Error getting bookmarks",
         })?;
 
-    let bookmark_metadata = card_metadata_columns::card_metadata
+    let bookmark_metadata: Vec<CardMetadataWithCount> = card_metadata_columns::card_metadata
         .filter(
             card_metadata_columns::id.eq_any(
                 bookmarks
@@ -284,22 +289,28 @@ pub fn get_bookmarks_for_collection_query(
             card_metadata_columns::oc_file_path,
             card_metadata_columns::card_html,
             card_metadata_columns::private,
+            sql::<Int8>("count(*) OVER() AS full_count"),
         ))
-        .load::<CardMetadata>(&mut conn)
+        .limit(25)
+        .offset(((page - 1) * 25).try_into().unwrap())
+        .load::<CardMetadataWithCount>(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Error getting bookmarks",
         })?;
 
     let converted_cards: Vec<FullTextSearchResult> = bookmark_metadata
         .iter()
-        .map(|card| <CardMetadata as Into<FullTextSearchResult>>::into(card.clone()))
+        .map(|card| <CardMetadataWithCount as Into<FullTextSearchResult>>::into(card.clone()))
         .collect::<Vec<FullTextSearchResult>>();
 
     let card_metadata_with_upvotes_and_file_id =
         get_metadata(converted_cards, current_user_id, conn).map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
-    Ok(card_metadata_with_upvotes_and_file_id)
+    Ok(CollectionsBookmarkQueryResult {
+        metadata: card_metadata_with_upvotes_and_file_id,
+        total_pages: (bookmark_metadata.get(0).unwrap().count as f64 / 25.0).ceil() as i64,
+    })
 }
 
 pub fn get_collections_for_bookmark_query(
