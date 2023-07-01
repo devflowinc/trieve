@@ -148,21 +148,20 @@ pub async fn create_card(
     }))
 }
 
-#[derive(Serialize, Deserialize, Clone)]
-pub struct DeleteCardData {
-    card_uuid: uuid::Uuid,
-}
-
 pub async fn delete_card(
-    card: web::Json<DeleteCardData>,
+    card_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let card_id_inner = card_id.into_inner();
     let pool1 = pool.clone();
-    let card_metadata = user_owns_card(user.id, card.card_uuid, pool1).await?;
+
+    let card_metadata = user_owns_card(user.id, card_id_inner, pool1).await?;
+
     let qdrant = get_qdrant_connection()
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
     let deleted_values = PointsSelector {
         points_selector_one_of: Some(PointsSelectorOneOf::Points(PointsIdsList {
             ids: vec![card_metadata
@@ -172,7 +171,8 @@ pub async fn delete_card(
                 .into()],
         })),
     };
-    web::block(move || delete_card_metadata_query(&card.card_uuid, &pool))
+
+    web::block(move || delete_card_metadata_query(&card_id_inner, &pool))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 

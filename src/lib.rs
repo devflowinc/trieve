@@ -166,10 +166,6 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::post().to(handlers::card_handler::create_card)),
                     )
                     .service(
-                        web::resource("/card/delete")
-                            .route(web::delete().to(handlers::card_handler::delete_card)),
-                    )
-                    .service(
                         web::resource("/card/update")
                             .route(web::patch().to(handlers::card_handler::update_card)),
                     )
@@ -179,7 +175,8 @@ pub async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::resource("/card/{card_id}")
-                            .route(web::get().to(handlers::card_handler::get_card_by_id)),
+                            .route(web::get().to(handlers::card_handler::get_card_by_id))
+                            .route(web::delete().to(handlers::card_handler::delete_card)),
                     )
                     .service(
                         web::resource("/card/search/")
