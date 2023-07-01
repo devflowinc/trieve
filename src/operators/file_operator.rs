@@ -1,3 +1,4 @@
+use crate::diesel::Connection;
 use actix_web::{body::MessageBody, web};
 use base64::{
     alphabet,
@@ -475,19 +476,22 @@ pub async fn delete_file_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not delete file from S3".to_string()))?;
 
-    diesel::delete(files_columns::files.filter(files_columns::id.eq(file_uuid)))
-        .execute(&mut conn)
-        .map_err(|_| {
-            ServiceError::BadRequest("Could not delete file from files table".to_string())
-        })?;
+    let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
+        diesel::delete(files_columns::files.filter(files_columns::id.eq(file_uuid)))
+            .execute(conn)?;
 
-    diesel::delete(
-        card_files_columns::card_files.filter(card_files_columns::file_id.eq(file_uuid)),
-    )
-    .execute(&mut conn)
-    .map_err(|_| {
-        ServiceError::BadRequest("Could not delete relations from card_files table".to_string())
-    })?;
+        diesel::delete(
+            card_files_columns::card_files.filter(card_files_columns::file_id.eq(file_uuid)),
+        )
+        .execute(conn)?;
+
+        Ok(())
+    });
+
+    match transaction_result {
+        Ok(_) => (),
+        Err(_) => return Err(ServiceError::BadRequest("Could not delete file".to_string()).into()),
+    }
 
     Ok(())
 }
