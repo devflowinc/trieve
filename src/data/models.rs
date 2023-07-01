@@ -231,6 +231,20 @@ impl UserPlan {
         }
     }
 }
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
+pub struct CardMetadataWithCount {
+    pub id: uuid::Uuid,
+    pub content: String,
+    pub link: Option<String>,
+    pub author_id: uuid::Uuid,
+    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub oc_file_path: Option<String>,
+    pub card_html: Option<String>,
+    pub private: bool,
+    pub count: i64,
+}
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Clone)]
 #[diesel(table_name = card_metadata)]
@@ -565,6 +579,7 @@ pub struct FullTextSearchResult {
     pub card_html: Option<String>,
     pub private: bool,
     pub score: Option<f32>,
+    pub count: i64,
 }
 
 impl From<CardMetadata> for FullTextSearchResult {
@@ -581,6 +596,26 @@ impl From<CardMetadata> for FullTextSearchResult {
             card_html: cards.card_html,
             score: None,
             private: cards.private,
+            count: 0,
+        }
+    }
+}
+
+impl From<CardMetadataWithCount> for FullTextSearchResult {
+    fn from(cards: CardMetadataWithCount) -> Self {
+        FullTextSearchResult {
+            id: cards.id,
+            content: cards.content,
+            link: cards.link,
+            author_id: cards.author_id,
+            qdrant_point_id: cards.qdrant_point_id,
+            created_at: cards.created_at,
+            updated_at: cards.updated_at,
+            oc_file_path: cards.oc_file_path,
+            card_html: cards.card_html,
+            score: None,
+            private: cards.private,
+            count: cards.count,
         }
     }
 }

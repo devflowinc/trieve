@@ -165,14 +165,24 @@ pub async fn add_bookmark(
 pub struct BookmarkData {
     pub bookmarks: Vec<CardMetadataWithVotesAndFiles>,
     pub collection: CardCollection,
+    pub total_pages: i64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+
+pub struct GetAllBookmarksData {
+    pub collection_id: uuid::Uuid,
+    pub page: Option<u64>,
 }
 
 pub async fn get_all_bookmarks(
-    collection_id: web::Path<uuid::Uuid>,
+    path_data: web::Path<GetAllBookmarksData>,
     pool: web::Data<Pool>,
     user: Option<LoggedUser>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let collection_id = collection_id.into_inner();
+    let collection_id = path_data.collection_id;
+    let page = path_data.page.map(|page| page).unwrap_or(1);
+
     let pool_two = pool.clone();
     let current_user_id = user.map(|user| user.id);
 
@@ -187,14 +197,15 @@ pub async fn get_all_bookmarks(
     }
 
     let bookmarks = web::block(move || {
-        get_bookmarks_for_collection_query(collection_id, current_user_id, pool)
+        get_bookmarks_for_collection_query(collection_id, page, current_user_id, pool)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(BookmarkData {
-        bookmarks,
+        bookmarks: bookmarks.metadata,
         collection,
+        total_pages: bookmarks.total_pages,
     }))
 }
 
