@@ -15,7 +15,7 @@ use diesel::sql_types::Bool;
 use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;
 use diesel::sql_types::{Float, Int8};
-use diesel::Connection;
+use diesel::{Connection, JoinOnDsl, SelectableHelper};
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::{
@@ -718,34 +718,86 @@ pub fn delete_card_metadata_query(
     let mut conn = pool.get().unwrap();
 
     let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
-        let deleted_card_files = diesel::delete(
+        diesel::delete(
             card_files_columns::card_files.filter(card_files_columns::card_id.eq(card_uuid)),
         )
         .execute(conn)?;
 
-        let deleted_card_collection_bookmarks = diesel::delete(
+        diesel::delete(
             card_collection_bookmarks_columns::card_collection_bookmarks
                 .filter(card_collection_bookmarks_columns::card_metadata_id.eq(card_uuid)),
         )
         .execute(conn)?;
 
-        let deleted_card_collisions = diesel::delete(
-            card_collisions_columns::card_collisions
-                .filter(card_collisions_columns::card_id.eq(card_uuid)),
-        )
-        .execute(conn)?;
+        let card_collisions: Vec<CardCollisions> = card_collisions_columns::card_collisions
+            .inner_join(
+                card_metadata_columns::card_metadata.on(card_metadata_columns::qdrant_point_id
+                    .eq(card_collisions_columns::collision_qdrant_id)),
+            )
+            .filter(card_metadata_columns::id.eq(card_uuid))
+            .select(CardCollisions::as_select())
+            .order_by(card_collisions_columns::created_at.asc())
+            .load::<CardCollisions>(conn)?;
 
-        let deleted_card_metadata = diesel::delete(
+        if card_collisions.len() > 0 {
+            let latest_collision = card_collisions.first().unwrap();
+            diesel::update(
+                card_collisions_columns::card_collisions.filter(
+                    card_collisions_columns::id.eq_any(
+                        card_collisions
+                            .iter()
+                            .skip(1)
+                            .map(|x| x.id)
+                            .collect::<Vec<uuid::Uuid>>(),
+                    ),
+                ),
+            )
+            .set(card_collisions_columns::collision_qdrant_id.eq::<Option<uuid::Uuid>>(None))
+            .execute(conn)?;
+
+            diesel::delete(
+                card_collisions_columns::card_collisions
+                    .filter(card_collisions_columns::id.eq(latest_collision.id)),
+            )
+            .execute(conn)?;
+
+            diesel::delete(
+                card_metadata_columns::card_metadata
+                    .filter(card_metadata_columns::id.eq(card_uuid)),
+            )
+            .execute(conn)?;
+
+            diesel::update(
+                card_metadata_columns::card_metadata
+                    .filter(card_metadata_columns::id.eq(latest_collision.card_id)),
+            )
+            .set((
+                card_metadata_columns::private.eq(false),
+                card_metadata_columns::qdrant_point_id.eq(latest_collision.collision_qdrant_id),
+            ))
+            .execute(conn)?;
+            diesel::update(
+                card_collisions_columns::card_collisions.filter(
+                    card_collisions_columns::id.eq_any(
+                        card_collisions
+                            .iter()
+                            .skip(1)
+                            .map(|x| x.id)
+                            .collect::<Vec<uuid::Uuid>>(),
+                    ),
+                ),
+            )
+            .set((card_collisions_columns::collision_qdrant_id
+                .eq(latest_collision.collision_qdrant_id),))
+            .execute(conn)?;
+        }
+
+        diesel::delete(
             card_metadata_columns::card_metadata.filter(card_metadata_columns::id.eq(card_uuid)),
         )
         .execute(conn)?;
 
-        Ok((
-            deleted_card_files,
-            deleted_card_collection_bookmarks,
-            deleted_card_collisions,
-            deleted_card_metadata,
-        ))
+        Ok(())
     });
 
     match transaction_result {
