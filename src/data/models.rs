@@ -246,7 +246,7 @@ pub struct CardMetadataWithCount {
     pub count: i64,
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Clone)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone)]
 #[diesel(table_name = card_metadata)]
 pub struct CardMetadata {
     pub id: uuid::Uuid,
@@ -313,12 +313,12 @@ impl CardMetadata {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Clone)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Selectable, Insertable, Clone)]
 #[diesel(table_name = card_collisions)]
 pub struct CardCollisions {
     pub id: uuid::Uuid,
     pub card_id: uuid::Uuid,
-    pub collision_qdrant_id: uuid::Uuid,
+    pub collision_qdrant_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
@@ -328,7 +328,7 @@ impl CardCollisions {
         CardCollisions {
             id: uuid::Uuid::new_v4(),
             card_id: card_id.into(),
-            collision_qdrant_id: collision_id.into(),
+            collision_qdrant_id: Some(collision_id.into()),
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
         }
