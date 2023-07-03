@@ -367,7 +367,6 @@ dependencies = [
  "once_cell",
  "openai_dive",
  "openssl",
- "pandoc",
  "qdrant-client",
  "r2d2",
  "regex",
@@ -1600,15 +1599,6 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f56a2d0bc861f9165be4eb3442afd3c236d8a98afd426f65d92324ae1091a484"
-dependencies = [
- "either",
-]
-
-[[package]]
-name = "itertools"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
@@ -1968,15 +1958,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandoc"
-version = "0.8.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2eb8469d27ed9fd7925629076a3675fea964c3f44c49662bdf549a8b7ddf0820"
-dependencies = [
- "itertools 0.8.2",
-]
-
-[[package]]
 name = "parking"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2161,7 +2142,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5d2d8d10f3c6ded6da8b05b5fb3b8a5082514344d56c9f871412d29b4e075b4"
 dependencies = [
  "anyhow",
- "itertools 0.10.5",
+ "itertools",
  "proc-macro2 1.0.60",
  "quote 1.0.28",
  "syn 1.0.109",
