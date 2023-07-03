@@ -13,6 +13,7 @@
   "license": "MIT",
   "private": true,
   "devDependencies": {
+    "@babel/core": "^7.22.5",
     "@babel/preset-env": "^7.22.5",
     "babel-jest": "^29.5.0",
     "dotenv": "^16.3.1",
