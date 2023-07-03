@@ -9,7 +9,6 @@ use diesel::RunQueryDsl;
 use regex::Regex;
 use s3::{creds::Credentials, Bucket, Region};
 use serde::{Deserialize, Serialize};
-use soup::{NodeExt, QueryBuilderExt, Soup};
 use std::process::Command;
 
 use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
@@ -201,18 +200,29 @@ pub async fn convert_docx_to_html_query(
         });
     }
 
-    let html_string =
-        std::fs::read_to_string(&temp_html_file_path_buf).map_err(|_| DefaultError {
-            message: "Could not read html file",
-        })?;
-    let soup = Soup::new(&html_string);
-    let body_tag = match soup.tag("body").find() {
-        Some(body_tag) => body_tag,
-        None => {
+    // python extract_cards.py temp_html_file_path
+    let extraction_command_output = Command::new("python")
+        .arg("src/extract_cards.py")
+        .arg(&temp_html_file_path_buf)
+        .output();
+
+    let cards: Vec<CoreCard> = match extraction_command_output {
+        Ok(extraction_command_output) => {
+            let extraction_command_output_string =
+                String::from_utf8_lossy(&extraction_command_output.stdout);
+            let extraction_err_string =
+                String::from_utf8_lossy(&extraction_command_output.stderr);
+            log::info!("extraction_command_output_string: {}", extraction_err_string);
+            serde_json::from_str(&extraction_command_output_string).map_err(|_| DefaultError {
+                message: "Could not parse extracted cards",
+            })?
+        }
+        Err(_) => {
             return Err(DefaultError {
-                message: "Could not find body tag in html file",
+                message: "Could not extract cards",
             })
         }
+        
     };
 
     let file_size = match file_data.len().try_into() {
@@ -245,62 +255,6 @@ pub async fn convert_docx_to_html_query(
             message: "Could not upload file to S3",
         })?;
 
-    let mut cards: Vec<CoreCard> = vec![];
-    let mut is_heading = false;
-    let mut is_link = false;
-    let mut card_html = String::new();
-    let mut card_content = String::new();
-    let mut card_link = String::new();
-
-    for child in body_tag.children() {
-        match child.name() {
-            "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
-                if is_heading && is_link {
-                    cards.push(CoreCard {
-                        content: remove_escape_sequences(&card_content),
-                        card_html: remove_escape_sequences(&card_html),
-                        link: card_link,
-                    });
-                    card_html = String::new();
-                    card_content = String::new();
-                    card_link = String::new();
-                }
-                is_heading = true;
-                is_link = false;
-            }
-            "a" => {
-                is_link = true;
-                card_link = child.get("href").unwrap_or_default().to_string();
-            }
-            "p" => {
-                if is_heading && !is_link {
-                    let card_text = child.text();
-                    for word in card_text.split(' ') {
-                        if word.contains("http") {
-                            is_link = true;
-                            card_link = remove_extra_trailing_chars(word);
-                            break;
-                        }
-                    }
-                    if is_link {
-                        // this p tag contains a link so we need to not add it to the card content
-                        continue;
-                    }
-                }
-                if is_heading && is_link {
-                    card_html.push_str(&child.display());
-                    card_content.push_str(&child.text());
-                }
-            }
-            _ => {
-                if is_heading && is_link {
-                    card_html.push_str(&child.display());
-                    card_content.push_str(&child.text());
-                }
-            }
-        }
-    }
-
     let mut created_cards: Vec<CoreCard> = [].to_vec();
     let mut rejected_cards: Vec<CoreCard> = [].to_vec();
     let mut card_metadata: ReturnCreatedCard;
@@ -313,11 +267,12 @@ pub async fn convert_docx_to_html_query(
             .card_html
             .replace("<em", "<u><b")
             .replace("</em>", "</b></u>");
+        let cleaned_card_link = remove_extra_trailing_chars(&card.link);
 
         let create_card_data = CreateCardData {
             content: card.content.clone(),
             card_html: Some(replaced_card_html.clone()),
-            link: Some(card.link.clone()),
+            link: Some(cleaned_card_link.clone()),
             oc_file_path: None,
             private: Some(private),
             file_uuid: Some(created_file.id),
