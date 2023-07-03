@@ -181,7 +181,7 @@ pub async fn get_all_bookmarks(
     user: Option<LoggedUser>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let collection_id = path_data.collection_id;
-    let page = path_data.page.map(|page| page).unwrap_or(1);
+    let page = path_data.page.unwrap_or(1);
 
     let pool_two = pool.clone();
     let current_user_id = user.map(|user| user.id);
