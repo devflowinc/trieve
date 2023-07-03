@@ -58,26 +58,6 @@ pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
     Ok(aws_bucket)
 }
 
-pub fn remove_escape_sequences(input: &str) -> String {
-    let mut result = String::new();
-    let mut escape = false;
-
-    for mut ch in input.chars() {
-        if escape {
-            escape = false;
-        } else if ch == '\\' || ch == '\n' {
-            escape = true;
-            continue;
-        } else if ch == '\"' {
-            ch = '\'';
-        }
-
-        result.push(ch);
-    }
-
-    result
-}
-
 pub fn remove_extra_trailing_chars(url: &str) -> String {
     let pattern = r"([\w+]+://)?([\w\d-]+\.)*[\w-]+[\.:]\w+([/\?=&\#.]?[\w-]+)*/?";
 
@@ -257,8 +237,8 @@ pub async fn convert_docx_to_html_query(
             "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
                 if is_heading && is_link {
                     cards.push(CoreCard {
-                        content: remove_escape_sequences(&card_content),
-                        card_html: remove_escape_sequences(&card_html),
+                        content: card_content,
+                        card_html,
                         link: card_link,
                     });
                     card_html = String::new();
