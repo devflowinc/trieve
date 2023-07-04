@@ -275,7 +275,7 @@ pub struct SearchCardData {
 
 #[derive(Serialize, Deserialize)]
 pub struct ScoreCardDTO {
-    metadata: CardMetadataWithVotesWithoutScore,
+    metadata: Vec<CardMetadataWithVotesWithoutScore>,
     score: f32,
 }
 
@@ -295,6 +295,8 @@ pub async fn search_card(
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_openai_embedding(&data.content).await?;
     let pool2 = pool.clone();
+    let pool3 = pool.clone();
+
     let search_card_query_results = search_card_query(
         embedding_vector,
         page,
@@ -310,6 +312,7 @@ pub async fn search_card(
         .iter()
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
+    let point_ids_1 = point_ids.clone();
 
     let current_user_id = user.map(|user| user.id);
     let metadata_cards =
@@ -317,19 +320,35 @@ pub async fn search_card(
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
+    let collided_cards =
+        web::block(move || get_collided_cards_query(point_ids_1, current_user_id, pool3))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
     let score_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
         .iter()
         .map(|search_result| {
-            let card = metadata_cards
+            let card: CardMetadataWithVotesWithoutScore = <CardMetadataWithVotesAndFiles as Into<
+                CardMetadataWithVotesWithoutScore,
+            >>::into(
+                metadata_cards
+                    .iter()
+                    .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
+                    .unwrap()
+                    .clone(),
+            );
+
+            let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
                 .iter()
-                .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
-                .unwrap();
+                .filter(|card| card.1 == search_result.point_id)
+                .map(|card| card.0.clone().into())
+                .collect();
+
+            collided_cards.insert(0, card);
 
             ScoreCardDTO {
-                metadata: <CardMetadataWithVotesAndFiles as Into<
-                    CardMetadataWithVotesWithoutScore,
-                >>::into((*card).clone()),
+                metadata: collided_cards,
                 score: search_result.score,
             }
         })
@@ -350,6 +369,7 @@ pub async fn search_full_text_card(
     //search over the links as well
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let current_user_id = user.map(|user| user.id);
+    let pool2 = pool.clone();
     let search_results_result = search_full_text_card_query(
         data.content.clone(),
         page,
@@ -364,15 +384,33 @@ pub async fn search_full_text_card(
         Err(err) => return Ok(HttpResponse::BadRequest().json(err)),
     };
 
+    let point_ids = search_card_query_results
+        .search_results
+        .iter()
+        .map(|point| point.qdrant_point_id)
+        .collect::<Vec<uuid::Uuid>>();
+
+    let collided_cards =
+        web::block(move || get_collided_cards_query(point_ids, current_user_id, pool2))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
     let full_text_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
         .iter()
-        .map(|search_result| ScoreCardDTO {
-            metadata:
-                <CardMetadataWithVotesAndFiles as Into<CardMetadataWithVotesWithoutScore>>::into(
-                    search_result.clone(),
-                ),
-            score: search_result.score.unwrap_or(0.0),
+        .map(|search_result| {
+            let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
+                .iter()
+                .filter(|card| card.1 == search_result.qdrant_point_id)
+                .map(|card| card.0.clone().into())
+                .collect();
+
+            collided_cards.insert(0, search_result.clone().into());
+
+            ScoreCardDTO {
+                metadata: collided_cards,
+                score: search_result.score.unwrap_or(0.0),
+            }
         })
         .collect();
 
@@ -402,6 +440,7 @@ pub async fn search_collections(
     let collection_id = data.collection_id;
     let pool2 = pool.clone();
     let pool3 = pool.clone();
+    let pool4 = pool.clone();
     let current_user_id = user.map(|user| user.id);
     let collection = web::block(move || get_collection_by_id_query(collection_id, pool3))
         .await
@@ -433,8 +472,15 @@ pub async fn search_collections(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
+    let point_ids_1 = point_ids.clone();
+
     let metadata_cards =
         web::block(move || get_metadata_from_point_ids(point_ids, current_user_id, pool2))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let collided_cards =
+        web::block(move || get_collided_cards_query(point_ids_1, current_user_id, pool4))
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -442,15 +488,26 @@ pub async fn search_collections(
         .search_results
         .iter()
         .map(|search_result| {
-            let card = metadata_cards
+            let card: CardMetadataWithVotesWithoutScore = <CardMetadataWithVotesAndFiles as Into<
+                CardMetadataWithVotesWithoutScore,
+            >>::into(
+                metadata_cards
+                    .iter()
+                    .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
+                    .unwrap()
+                    .clone(),
+            );
+
+            let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
                 .iter()
-                .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
-                .unwrap();
+                .filter(|card| card.1 == search_result.point_id)
+                .map(|card| card.0.clone().into())
+                .collect();
+
+            collided_cards.insert(0, card);
 
             ScoreCardDTO {
-                metadata: <CardMetadataWithVotesAndFiles as Into<
-                    CardMetadataWithVotesWithoutScore,
-                >>::into((*card).clone()),
+                metadata: collided_cards,
                 score: search_result.score,
             }
         })
