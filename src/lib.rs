@@ -280,6 +280,10 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::get().to(handlers::collection_handler::get_all_bookmarks)),
                     )
                     .service(
+                        web::resource("/verification")
+                            .route(web::post().to(handlers::verification_handler::verify_card_content)),
+                    )
+                    .service(
                         web::resource("/file")
                             .route(web::put().to(handlers::file_handler::update_file_handler))
                             .route(web::post().to(handlers::file_handler::upload_file_handler)),
