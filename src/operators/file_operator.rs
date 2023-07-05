@@ -166,7 +166,7 @@ pub async fn convert_docx_to_html_query(
     ));
 
     let conversion_command_output =
-        Command::new("/Applications/LibreOffice.app/Contents/MacOS/soffice")
+        Command::new(std::env::var("LIBREOFFICE_PATH").expect("LIBREOFFICE_PATH must be set"))
             .arg("--headless")
             .arg("--convert-to")
             .arg("html")
