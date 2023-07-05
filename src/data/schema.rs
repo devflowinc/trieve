@@ -32,7 +32,7 @@ diesel::table! {
     card_collisions (id) {
         id -> Uuid,
         card_id -> Uuid,
-        collision_qdrant_id -> Nullable<Uuid>,
+        collision_qdrant_id -> Uuid,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
@@ -62,8 +62,8 @@ diesel::table! {
         updated_at -> Timestamp,
         oc_file_path -> Nullable<Text>,
         card_html -> Nullable<Text>,
-        private -> Bool,
         card_metadata_tsvector -> Nullable<Tsvector>,
+        private -> Bool,
     }
 }
 
