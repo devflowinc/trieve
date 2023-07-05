@@ -397,6 +397,7 @@ pub struct CardMetadataWithVotesWithoutScore {
     pub updated_at: chrono::NaiveDateTime,
     pub oc_file_path: Option<String>,
     pub file_id: Option<uuid::Uuid>,
+    pub file_name: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -636,6 +637,7 @@ impl From<CardMetadataWithVotesAndFiles> for CardMetadataWithVotesWithoutScore {
             card_html: cards.card_html,
             oc_file_path: cards.oc_file_path,
             file_id: cards.file_id,
+            file_name: cards.file_name,
         }
     }
 }

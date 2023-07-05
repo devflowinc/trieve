@@ -6,11 +6,11 @@ use base64::{
     Engine as _,
 };
 use diesel::RunQueryDsl;
-use pandoc;
 use regex::Regex;
 use s3::{creds::Credentials, Bucket, Region};
 use serde::{Deserialize, Serialize};
 use soup::{NodeExt, QueryBuilderExt, Soup};
+use std::process::Command;
 
 use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
 use crate::{
@@ -56,26 +56,6 @@ pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
         .with_path_style();
 
     Ok(aws_bucket)
-}
-
-pub fn remove_escape_sequences(input: &str) -> String {
-    let mut result = String::new();
-    let mut escape = false;
-
-    for mut ch in input.chars() {
-        if escape {
-            escape = false;
-        } else if ch == '\\' || ch == '\n' {
-            escape = true;
-            continue;
-        } else if ch == '\"' {
-            ch = '\'';
-        }
-
-        result.push(ch);
-    }
-
-    result
 }
 
 pub fn remove_extra_trailing_chars(url: &str) -> String {
@@ -186,15 +166,20 @@ pub async fn convert_docx_to_html_query(
         file_name.split_once('.').unwrap_or_default().0
     ));
 
-    let mut pandoc = pandoc::new();
-    pandoc.add_input(&temp_docx_file_path);
-    pandoc.set_output(pandoc::OutputKind::File(temp_html_file_path_buf.clone()));
-    pandoc.set_output_format(pandoc::OutputFormat::Html, [].to_vec());
-    pandoc.add_option(pandoc::PandocOption::Standalone);
+    let conversion_command_output = Command::new("libreoffice")
+        .arg("--headless")
+        .arg("--convert-to")
+        .arg("html")
+        .arg("--outdir")
+        .arg("./tmp")
+        .arg(&temp_docx_file_path)
+        .output();
 
-    let _ = pandoc.execute().map_err(|_| DefaultError {
-        message: "Could not convert file to html",
-    })?;
+    if conversion_command_output.is_err() {
+        return Err(DefaultError {
+            message: "Could not convert file",
+        });
+    }
 
     let html_string =
         std::fs::read_to_string(&temp_html_file_path_buf).map_err(|_| DefaultError {
@@ -252,8 +237,8 @@ pub async fn convert_docx_to_html_query(
             "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
                 if is_heading && is_link {
                     cards.push(CoreCard {
-                        content: remove_escape_sequences(&card_content),
-                        card_html: remove_escape_sequences(&card_html),
+                        content: card_content,
+                        card_html,
                         link: card_link,
                     });
                     card_html = String::new();
@@ -304,9 +289,14 @@ pub async fn convert_docx_to_html_query(
     let pool1 = pool.clone();
 
     for card in cards {
+        let replaced_card_html = card
+            .card_html
+            .replace("<em", "<u><b")
+            .replace("</em>", "</b></u>");
+
         let create_card_data = CreateCardData {
             content: card.content.clone(),
-            card_html: Some(card.card_html.clone()),
+            card_html: Some(replaced_card_html.clone()),
             link: Some(card.link.clone()),
             oc_file_path: None,
             private: Some(private),

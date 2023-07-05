@@ -54,8 +54,11 @@ pub async fn create_card(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let mut private = card.private.unwrap_or(false);
+    let private = card.private.unwrap_or(false);
     let mut collision: Option<uuid::Uuid> = None;
+    let mut embedding_vector: Option<Vec<f32>> = None;
+
+    let pool1 = pool.clone();
 
     let words_in_content = card.content.split(' ').collect::<Vec<&str>>().len();
     if words_in_content < 70 {
@@ -64,23 +67,48 @@ pub async fn create_card(
         })));
     }
 
-    let embedding_vector = create_openai_embedding(&card.content).await?;
+    // text based similarity check to avoid paying for openai api call if not necessary
+    let card_content_1 = card.content.clone();
+    let text_based_similarity_results = web::block(move || {
+        search_full_text_card_query(card_content_1, 1, pool.clone(), Some(user.id), None, None)
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let first_text_result = text_based_similarity_results.search_results.get(0);
 
-    let cards = search_card_query(embedding_vector.clone(), 1, pool.clone(), None, None)
+    if let Some(score_card) = first_text_result {
+        if score_card.score >= Some(0.95) {
+            //Sets collision to collided card id
+            collision = Some(score_card.qdrant_point_id);
+        }
+    }
+
+    // only check for embedding similarity if no text based collision was found
+    if collision.is_none() {
+        let openai_embedding_vector = create_openai_embedding(&card.content).await?;
+        embedding_vector = Some(openai_embedding_vector.clone());
+
+        let cards = search_card_query(
+            openai_embedding_vector.clone(),
+            1,
+            pool1.clone(),
+            None,
+            None,
+        )
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    let first_result = cards.search_results.get(0);
+        let first_result = cards.search_results.get(0);
 
-    if let Some(score_card) = first_result {
-        let mut similarity_threashold = 0.95;
-        if card.content.len() < 200 {
-            similarity_threashold = 0.9;
-        }
+        if let Some(score_card) = first_result {
+            let mut similarity_threashold = 0.95;
+            if card.content.len() < 200 {
+                similarity_threashold = 0.92;
+            }
 
-        if score_card.score >= similarity_threashold {
-            //Sets collision to collided card id and forces private
-            collision = Some(score_card.point_id);
-            private = true;
+            if score_card.score >= similarity_threashold {
+                //Sets collision to collided card id
+                collision = Some(score_card.point_id);
+            }
         }
     }
 
@@ -96,21 +124,33 @@ pub async fn create_card(
             &card.oc_file_path,
             user.id,
             None,
-            true,
+            private,
         );
         card_metadata = web::block(move || {
             insert_duplicate_card_metadata_query(
                 card_metadata,
                 collision.unwrap(),
                 card.file_uuid,
-                &pool,
+                &pool1,
             )
         })
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
         duplicate = true;
-    } else {
+    }
+    //if collision is nil and embedding vector is some, insert card with no collision
+    else {
+        // if this statement is reached, the embedding vector must be some
+        let ensured_embedding_vector = match embedding_vector {
+            Some(embedding_vector) => embedding_vector,
+            None => {
+                return Ok(HttpResponse::BadRequest().json(json!({
+                    "message": "Could not create embedding vector",
+                })))
+            }
+        };
+
         let qdrant = get_qdrant_connection()
             .await
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -121,7 +161,11 @@ pub async fn create_card(
         };
 
         let point_id = uuid::Uuid::new_v4();
-        let point = PointStruct::new(point_id.clone().to_string(), embedding_vector, payload);
+        let point = PointStruct::new(
+            point_id.clone().to_string(),
+            ensured_embedding_vector,
+            payload,
+        );
         card_metadata = CardMetadata::from_details(
             &card.content,
             &card.card_html,
@@ -132,7 +176,7 @@ pub async fn create_card(
             private,
         );
         card_metadata =
-            web::block(move || insert_card_metadata_query(card_metadata, card.file_uuid, &pool))
+            web::block(move || insert_card_metadata_query(card_metadata, card.file_uuid, &pool1))
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -275,7 +319,7 @@ pub struct SearchCardData {
 
 #[derive(Serialize, Deserialize)]
 pub struct ScoreCardDTO {
-    metadata: CardMetadataWithVotesWithoutScore,
+    metadata: Vec<CardMetadataWithVotesWithoutScore>,
     score: f32,
 }
 
@@ -295,6 +339,8 @@ pub async fn search_card(
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_openai_embedding(&data.content).await?;
     let pool2 = pool.clone();
+    let pool3 = pool.clone();
+
     let search_card_query_results = search_card_query(
         embedding_vector,
         page,
@@ -310,6 +356,7 @@ pub async fn search_card(
         .iter()
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
+    let point_ids_1 = point_ids.clone();
 
     let current_user_id = user.map(|user| user.id);
     let metadata_cards =
@@ -317,19 +364,35 @@ pub async fn search_card(
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
+    let collided_cards =
+        web::block(move || get_collided_cards_query(point_ids_1, current_user_id, pool3))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
     let score_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
         .iter()
         .map(|search_result| {
-            let card = metadata_cards
+            let card: CardMetadataWithVotesWithoutScore = <CardMetadataWithVotesAndFiles as Into<
+                CardMetadataWithVotesWithoutScore,
+            >>::into(
+                metadata_cards
+                    .iter()
+                    .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
+                    .unwrap()
+                    .clone(),
+            );
+
+            let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
                 .iter()
-                .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
-                .unwrap();
+                .filter(|card| card.1 == search_result.point_id)
+                .map(|card| card.0.clone().into())
+                .collect();
+
+            collided_cards.insert(0, card);
 
             ScoreCardDTO {
-                metadata: <CardMetadataWithVotesAndFiles as Into<
-                    CardMetadataWithVotesWithoutScore,
-                >>::into((*card).clone()),
+                metadata: collided_cards,
                 score: search_result.score,
             }
         })
@@ -350,6 +413,7 @@ pub async fn search_full_text_card(
     //search over the links as well
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let current_user_id = user.map(|user| user.id);
+    let pool2 = pool.clone();
     let search_results_result = search_full_text_card_query(
         data.content.clone(),
         page,
@@ -364,15 +428,33 @@ pub async fn search_full_text_card(
         Err(err) => return Ok(HttpResponse::BadRequest().json(err)),
     };
 
+    let point_ids = search_card_query_results
+        .search_results
+        .iter()
+        .map(|point| point.qdrant_point_id)
+        .collect::<Vec<uuid::Uuid>>();
+
+    let collided_cards =
+        web::block(move || get_collided_cards_query(point_ids, current_user_id, pool2))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
     let full_text_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
         .iter()
-        .map(|search_result| ScoreCardDTO {
-            metadata:
-                <CardMetadataWithVotesAndFiles as Into<CardMetadataWithVotesWithoutScore>>::into(
-                    search_result.clone(),
-                ),
-            score: search_result.score.unwrap_or(0.0),
+        .map(|search_result| {
+            let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
+                .iter()
+                .filter(|card| card.1 == search_result.qdrant_point_id)
+                .map(|card| card.0.clone().into())
+                .collect();
+
+            collided_cards.insert(0, search_result.clone().into());
+
+            ScoreCardDTO {
+                metadata: collided_cards,
+                score: search_result.score.unwrap_or(0.0),
+            }
         })
         .collect();
 
@@ -402,6 +484,7 @@ pub async fn search_collections(
     let collection_id = data.collection_id;
     let pool2 = pool.clone();
     let pool3 = pool.clone();
+    let pool4 = pool.clone();
     let current_user_id = user.map(|user| user.id);
     let collection = web::block(move || get_collection_by_id_query(collection_id, pool3))
         .await
@@ -433,8 +516,15 @@ pub async fn search_collections(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
+    let point_ids_1 = point_ids.clone();
+
     let metadata_cards =
         web::block(move || get_metadata_from_point_ids(point_ids, current_user_id, pool2))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let collided_cards =
+        web::block(move || get_collided_cards_query(point_ids_1, current_user_id, pool4))
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -442,15 +532,26 @@ pub async fn search_collections(
         .search_results
         .iter()
         .map(|search_result| {
-            let card = metadata_cards
+            let card: CardMetadataWithVotesWithoutScore = <CardMetadataWithVotesAndFiles as Into<
+                CardMetadataWithVotesWithoutScore,
+            >>::into(
+                metadata_cards
+                    .iter()
+                    .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
+                    .unwrap()
+                    .clone(),
+            );
+
+            let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
                 .iter()
-                .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
-                .unwrap();
+                .filter(|card| card.1 == search_result.point_id)
+                .map(|card| card.0.clone().into())
+                .collect();
+
+            collided_cards.insert(0, card);
 
             ScoreCardDTO {
-                metadata: <CardMetadataWithVotesAndFiles as Into<
-                    CardMetadataWithVotesWithoutScore,
-                >>::into((*card).clone()),
+                metadata: collided_cards,
                 score: search_result.score,
             }
         })
