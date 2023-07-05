@@ -15,7 +15,7 @@ use diesel::sql_types::Bool;
 use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;
 use diesel::sql_types::{Float, Int8};
-use diesel::{Connection, JoinOnDsl, SelectableHelper};
+use diesel::{Connection, JoinOnDsl, NullableExpressionMethods, SelectableHelper};
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::{
@@ -549,7 +549,7 @@ pub fn get_collided_cards_query(
                 card_metadata_columns::card_html,
                 card_metadata_columns::private,
             ),
-            (card_collisions_columns::collision_qdrant_id),
+            (card_collisions_columns::collision_qdrant_id.assume_not_null()),
         ))
         .load::<(CardMetadata, uuid::Uuid)>(&mut conn)
         .map_err(|_| DefaultError {
