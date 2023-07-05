@@ -28,9 +28,3 @@ pub async fn get_webpage_text_fetch(url: &String) -> Result<String, DefaultError
 
     Ok(clean_text)
 }
-
-pub async fn get_webpage_text_browser(url: &String) -> Result<String, DefaultError> {
-    Err(DefaultError {
-        message: ""
-    })
-}

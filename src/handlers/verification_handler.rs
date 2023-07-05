@@ -1,4 +1,6 @@
 use crate::{errors::ServiceError, operators::verification_operator as op};
+use fuzzy_matcher::FuzzyMatcher;
+use fuzzy_matcher::skim::SkimMatcherV2;
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
@@ -9,20 +11,23 @@ pub struct VerifyContentData {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct TempContent {
-    pub content: String,
+pub struct VerificationStatus {
+    pub verified: bool,
+    pub score: i64
 }
 
 pub async fn verify_card_content(
     data: web::Json<VerifyContentData>,
 ) -> Result<HttpResponse, actix_web::Error> {
     // Try naive html get first then use the headless browser approach
-    let content = match op::get_webpage_text_fetch(&data.url_source).await {
-        Ok(content) => Ok(content),
-        Err(fetch_err) => op::get_webpage_text_browser(&data.url_source)
-            .await
-            .map_err(|_| ServiceError::BadRequest(format!("Could not fetch: {}", fetch_err))),
-    }?;
+    let webpage_content = op::get_webpage_text_fetch(&data.url_source).await
+        .map_err(|err| ServiceError::BadRequest(format!("Could not fetch: {}", err)))?;
 
-    Ok(HttpResponse::Ok().json(TempContent { content }))
+    let matcher = SkimMatcherV2::default();
+    let (score, _) = matcher.fuzzy_indices(&webpage_content, &data.content).unwrap();
+
+    Ok(HttpResponse::Ok().json(VerificationStatus {
+        score,
+        verified: score > 3000,
+    }))
 }
