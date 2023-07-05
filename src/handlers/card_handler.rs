@@ -253,7 +253,8 @@ pub async fn update_card(
         .unwrap_or_else(|| card_metadata.link.unwrap_or_default());
 
     let soup = Soup::new(card.card_html.as_ref().unwrap_or(&"".to_string()).as_str());
-    if soup.text() != card_metadata.content && card_metadata.card_html.is_some() {
+    let new_content = soup.text().lines().collect::<Vec<&str>>().join("");
+    if new_content != card_metadata.content && card_metadata.card_html.is_some() {
         let soup_text_ref = soup.text();
         let Changeset { diffs, .. } = Changeset::new(&card_metadata.content, &soup_text_ref, " ");
         let mut ret: String = Default::default();
