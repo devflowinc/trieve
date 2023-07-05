@@ -43,3 +43,4 @@ text-diff = "0.4.0"
 difference = "2.0.0"
 rust-s3 = { version = "0.33.0" }
 base64 = "0.21.2"
+fuzzy-matcher = "0.3.7"
