@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use crate::{
     data::models::{File, Pool},
     errors::ServiceError,
@@ -18,9 +20,9 @@ use super::auth_handler::LoggedUser;
 pub async fn user_owns_file(
     user_id: uuid::Uuid,
     file_id: uuid::Uuid,
-    pool: web::Data<Pool>,
+    pool: Arc<Mutex<web::Data<r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::PgConnection>>>>>,
 ) -> Result<(), actix_web::Error> {
-    let author_id = web::block(move || get_user_id_of_file_query(file_id, pool))
+    let author_id = web::block(move || get_user_id_of_file_query(file_id, pool.lock().unwrap()))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -51,7 +53,7 @@ pub async fn upload_file_handler(
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let upload_file_data = data.into_inner();
-    let pool_inner = pool.clone();
+    let thread_safe_pool = Arc::new(Mutex::new(pool));
 
     let base64_engine = engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
 
@@ -77,7 +79,7 @@ pub async fn upload_file_handler(
         file_mime,
         private,
         user,
-        pool_inner,
+        thread_safe_pool,
     )
     .await
     .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
@@ -96,10 +98,12 @@ pub async fn update_file_handler(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool_inner = pool.clone();
-    user_owns_file(user.id, data.file_id, pool_inner).await?;
+    let thread_safe_pool = Arc::new(Mutex::new(pool));
 
-    web::block(move || update_file_query(data.file_id, data.private, pool))
+    let pool_inner = thread_safe_pool.clone();
+    user_owns_file(user.id, data.file_id, thread_safe_pool).await?;
+
+    web::block(move || update_file_query(data.file_id, data.private, pool_inner.lock().unwrap()))
         .await?
         .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
@@ -125,6 +129,7 @@ pub async fn get_user_files_handler(
 ) -> Result<HttpResponse, actix_web::Error> {
     let accessing_user_id = user.map(|u| u.id);
     let user_id = user_id.into_inner();
+
     let files = get_user_file_query(user_id, accessing_user_id, pool).await?;
 
     Ok(HttpResponse::Ok().json(files))

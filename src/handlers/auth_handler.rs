@@ -95,7 +95,7 @@ pub async fn get_me(
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_query_id: uuid::Uuid = logged_user.id;
 
-    let user_result = web::block(move || get_user_by_id_query(&user_query_id, &pool)).await?;
+    let user_result = web::block(move || get_user_by_id_query(&user_query_id, pool)).await?;
 
     match user_result {
         Ok(user) => Ok(HttpResponse::Ok().json(SlimUser::from(user))),

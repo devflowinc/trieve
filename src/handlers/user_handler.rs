@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
@@ -35,7 +37,7 @@ pub async fn get_user_with_votes_and_cards_by_id(
     let page = path_data.page;
 
     let user_result = web::block(move || {
-        get_user_with_votes_and_cards_by_id_query(user_query_id, accessing_user_id, &page, &pool)
+        get_user_with_votes_and_cards_by_id_query(user_query_id, accessing_user_id, &page, pool)
     })
     .await?;
 
@@ -61,7 +63,7 @@ pub async fn update_user(
     }
 
     let user_result =
-        web::block(move || update_user_query(&user.id, &update_user_data, &pool)).await?;
+        web::block(move || update_user_query(&user.id, &update_user_data, pool)).await?;
 
     match user_result {
         Ok(slim_user) => Ok(HttpResponse::Ok().json(slim_user)),
@@ -79,9 +81,12 @@ pub async fn get_top_users(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = page.into_inner();
-    let pool2 = pool.clone();
-    let users_result = web::block(move || get_top_users_query(&page, &pool)).await?;
-    let total_users = web::block(move || get_total_users_query(&pool2))
+    let thread_safe_pool = Arc::new(Mutex::new(pool));
+
+    let pool2 = thread_safe_pool.clone();
+    let users_result =
+        web::block(move || get_top_users_query(&page, thread_safe_pool.lock().unwrap())).await?;
+    let total_users = web::block(move || get_total_users_query(pool2.lock().unwrap()))
         .await?
         .map_err(|_err| ServiceError::BadRequest("Failed to get Total users".into()))?;
     let total_user_pages = (total_users as f64 / 25.0).ceil() as i64;

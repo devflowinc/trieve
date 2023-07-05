@@ -10,7 +10,10 @@ use regex::Regex;
 use s3::{creds::Credentials, Bucket, Region};
 use serde::{Deserialize, Serialize};
 use soup::{NodeExt, QueryBuilderExt, Soup};
-use std::process::Command;
+use std::{
+    process::Command,
+    sync::{Arc, Mutex, MutexGuard},
+};
 
 use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
 use crate::{
@@ -84,7 +87,7 @@ pub fn create_file_query(
     mime_type: &str,
     file_size: i64,
     private: bool,
-    pool: web::Data<Pool>,
+    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<File, DefaultError> {
     use crate::data::schema::files::dsl::files;
 
@@ -106,7 +109,7 @@ pub fn create_file_query(
 
 pub fn get_user_id_of_file_query(
     file_id: uuid::Uuid,
-    pool: web::Data<Pool>,
+    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<uuid::Uuid, DefaultError> {
     use crate::data::schema::files::dsl as files_columns;
     let mut conn = pool.get().map_err(|_| DefaultError {
@@ -125,7 +128,7 @@ pub fn get_user_id_of_file_query(
 pub fn update_file_query(
     file_id: uuid::Uuid,
     private: bool,
-    pool: web::Data<Pool>,
+    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::files::dsl as files_columns;
     let mut conn = pool.get().map_err(|_| DefaultError {
@@ -153,7 +156,7 @@ pub async fn convert_docx_to_html_query(
     file_mime: String,
     private: bool,
     user: LoggedUser,
-    pool: web::Data<Pool>,
+    pool: Arc<Mutex<web::Data<r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::PgConnection>>>>>,
 ) -> Result<UploadFileResult, DefaultError> {
     let temp_docx_file_path = format!("./tmp/{}", file_name);
     std::fs::write(&temp_docx_file_path, file_data.clone()).map_err(|_| DefaultError {
@@ -210,7 +213,7 @@ pub async fn convert_docx_to_html_query(
         &file_mime,
         file_size,
         private,
-        pool.clone(),
+        pool.lock().unwrap(),
     )?;
 
     let bucket = get_aws_bucket()?;
@@ -281,7 +284,6 @@ pub async fn convert_docx_to_html_query(
     let mut card_metadata: ReturnCreatedCard;
     let mut card_ids: Vec<uuid::Uuid> = [].to_vec();
 
-    let pool1 = pool.clone();
 
     for card in cards {
         let replaced_card_html = card
@@ -298,7 +300,13 @@ pub async fn convert_docx_to_html_query(
         };
         let web_json_create_card_data = web::Json(create_card_data);
 
-        match create_card(web_json_create_card_data, pool.clone(), user.clone()).await {
+        match create_card(
+            web_json_create_card_data,
+            pool.lock().unwrap().to_owned(),
+            user.clone(),
+        )
+        .await
+        {
             Ok(response) => {
                 if response.status().is_success() {
                     created_cards.push(card);
@@ -328,7 +336,7 @@ pub async fn convert_docx_to_html_query(
             ),
             card_ids,
             created_file.id,
-            pool1,
+            pool.lock().unwrap(),
         )
     })
     .await

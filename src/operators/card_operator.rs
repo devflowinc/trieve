@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex, MutexGuard};
+
 use crate::data::models::{
     CardCollisions, CardFile, CardFileWithName, CardMetadataWithVotesAndFiles, CardVote,
     FullTextSearchResult, User, UserDTO,
@@ -9,7 +11,6 @@ use crate::{
     errors::DefaultError,
 };
 use actix_web::web;
-
 use diesel::dsl::sql;
 use diesel::sql_types::Int8;
 use diesel::sql_types::Nullable;
@@ -69,13 +70,13 @@ pub struct SearchCardQueryResult {
 pub async fn search_card_query(
     embedding_vector: Vec<f32>,
     page: u64,
-    pool: web::Data<Pool>,
+    pool: Arc<Mutex<web::Data<r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::PgConnection>>>>>,
     filter_oc_file_path: Option<Vec<String>>,
     filter_link_url: Option<Vec<String>>,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.lock().unwrap().get().unwrap();
     let mut query = card_metadata_columns::card_metadata
         .select(card_metadata_columns::qdrant_point_id)
         .filter(card_metadata_columns::private.eq(false))
@@ -150,6 +151,7 @@ pub async fn search_card_query(
         })
         .collect();
 
+    drop(pool);
     Ok(SearchCardQueryResult {
         search_results: point_ids,
         total_card_pages: (filtered_point_ids.len() as f64 / 25.0).ceil() as i64,
@@ -159,7 +161,7 @@ pub async fn search_card_query(
 pub async fn search_card_collections_query(
     embedding_vector: Vec<f32>,
     page: u64,
-    pool: web::Data<Pool>,
+    pool: Arc<Mutex<web::Data<r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::PgConnection>>>>>,
     filter_oc_file_path: Option<Vec<String>>,
     filter_link_url: Option<Vec<String>>,
     collection_id: uuid::Uuid,
@@ -167,7 +169,7 @@ pub async fn search_card_collections_query(
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.lock().unwrap().get().unwrap();
 
     let card_ids: Vec<uuid::Uuid> = card_collection_bookmarks_columns::card_collection_bookmarks
         .select(card_collection_bookmarks_columns::card_metadata_id)
@@ -384,7 +386,7 @@ pub struct FullTextSearchCardQueryResult {
 pub fn search_full_text_card_query(
     user_query: String,
     page: u64,
-    pool: web::Data<Pool>,
+    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
     current_user_id: Option<uuid::Uuid>,
     filter_oc_file_path: Option<Vec<String>>,
     filter_link_url: Option<Vec<String>>,
@@ -492,7 +494,7 @@ pub struct ScoredCardDTO {
 pub fn get_metadata_from_point_ids(
     point_ids: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
-    pool: web::Data<Pool>,
+    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<Vec<CardMetadataWithVotesAndFiles>, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
@@ -535,7 +537,7 @@ pub fn get_metadata_from_point_ids(
 pub fn get_collided_cards_query(
     point_ids: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
-    pool: web::Data<Pool>,
+    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<Vec<(CardMetadataWithVotesAndFiles, uuid::Uuid)>, DefaultError> {
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
@@ -570,7 +572,7 @@ pub fn get_collided_cards_query(
 
     let collided_qdrant_ids = card_metadata
         .iter()
-        .map(|(_, qdrant_id)| qdrant_id.clone())
+        .map(|(_, qdrant_id)| *qdrant_id)
         .collect::<Vec<uuid::Uuid>>();
 
     let converted_cards: Vec<FullTextSearchResult> = card_metadata
@@ -586,7 +588,7 @@ pub fn get_collided_cards_query(
     let card_metadatas_with_collided_qdrant_ids = card_metadata_with_upvotes_and_file_id
         .iter()
         .zip(collided_qdrant_ids.iter())
-        .map(|(card, qdrant_id)| (card.clone(), qdrant_id.clone()))
+        .map(|(card, qdrant_id)| (card.clone(), *qdrant_id))
         .collect::<Vec<(CardMetadataWithVotesAndFiles, uuid::Uuid)>>();
 
     //combine card_metadata_with vote with the file_ids that was loaded
@@ -595,7 +597,7 @@ pub fn get_collided_cards_query(
 }
 pub fn get_metadata_from_id_query(
     card_id: uuid::Uuid,
-    pool: web::Data<Pool>,
+    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<CardMetadata, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
@@ -664,7 +666,7 @@ pub fn get_metadata_and_votes_from_id_query(
 pub fn insert_card_metadata_query(
     card_data: CardMetadata,
     file_uuid: Option<uuid::Uuid>,
-    pool: &web::Data<Pool>,
+    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<CardMetadata, DefaultError> {
     use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_metadata::dsl::*;
@@ -700,7 +702,7 @@ pub fn insert_duplicate_card_metadata_query(
     card_data: CardMetadata,
     duplicate_card: uuid::Uuid,
     file_uuid: Option<uuid::Uuid>,
-    pool: &web::Data<Pool>,
+    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<CardMetadata, DefaultError> {
     use crate::data::schema::card_collisions::dsl::*;
     use crate::data::schema::card_files::dsl as card_files_columns;
@@ -740,7 +742,7 @@ pub fn insert_duplicate_card_metadata_query(
 
 pub fn update_card_metadata_query(
     card_data: CardMetadata,
-    pool: &web::Data<Pool>,
+    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     use crate::data::schema::card_votes::dsl as card_votes_columns;
@@ -782,7 +784,7 @@ pub fn update_card_metadata_query(
 
 pub fn delete_card_metadata_query(
     card_uuid: &uuid::Uuid,
-    pool: &web::Data<Pool>,
+    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
@@ -812,7 +814,7 @@ pub fn delete_card_metadata_query(
             .order_by(card_collisions_columns::created_at.asc())
             .load::<CardCollisions>(conn)?;
 
-        if card_collisions.len() > 0 {
+        if !card_collisions.is_empty() {
             let latest_collision = card_collisions.first().unwrap();
             diesel::update(
                 card_collisions_columns::card_collisions.filter(
@@ -885,7 +887,7 @@ pub fn delete_card_metadata_query(
     Ok(())
 }
 
-pub fn get_card_count_query(pool: &web::Data<Pool>) -> Result<i64, DefaultError> {
+pub fn get_card_count_query(pool: web::Data<Pool>) -> Result<i64, DefaultError> {
     use crate::data::schema::card_metadata::dsl::*;
 
     let mut conn = pool.get().unwrap();
