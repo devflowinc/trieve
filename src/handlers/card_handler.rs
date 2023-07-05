@@ -253,7 +253,7 @@ pub async fn update_card(
         .unwrap_or_else(|| card_metadata.link.unwrap_or_default());
 
     let soup = Soup::new(card.card_html.as_ref().unwrap_or(&"".to_string()).as_str());
-    let new_content = soup.text().lines().collect::<Vec<&str>>().join("");
+    let new_content = soup.text().lines().collect::<Vec<&str>>().join(" ");
     if new_content != card_metadata.content && card_metadata.card_html.is_some() {
         let soup_text_ref = soup.text();
         let Changeset { diffs, .. } = Changeset::new(&card_metadata.content, &soup_text_ref, " ");
@@ -321,7 +321,7 @@ pub struct SearchCardData {
 #[derive(Serialize, Deserialize)]
 pub struct ScoreCardDTO {
     metadata: Vec<CardMetadataWithVotesWithoutScore>,
-    score: f32,
+    score: f64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -394,7 +394,7 @@ pub async fn search_card(
 
             ScoreCardDTO {
                 metadata: collided_cards,
-                score: search_result.score,
+                score: search_result.score.into(),
             }
         })
         .collect();
@@ -553,7 +553,7 @@ pub async fn search_collections(
 
             ScoreCardDTO {
                 metadata: collided_cards,
-                score: search_result.score,
+                score: search_result.score.into(),
             }
         })
         .collect();

@@ -229,7 +229,6 @@ pub async fn convert_docx_to_html_query(
     let mut is_heading = false;
     let mut is_link = false;
     let mut card_html = String::new();
-    let mut card_content = String::new();
     let mut card_link = String::new();
 
     for child in body_tag.children() {
@@ -237,12 +236,15 @@ pub async fn convert_docx_to_html_query(
             "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
                 if is_heading && is_link {
                     cards.push(CoreCard {
-                        content: card_content,
+                        content: Soup::new(card_html.as_str())
+                            .text()
+                            .lines()
+                            .collect::<Vec<&str>>()
+                            .join(" "),
                         card_html,
                         link: card_link,
                     });
                     card_html = String::new();
-                    card_content = String::new();
                     card_link = String::new();
                 }
                 is_heading = true;
@@ -269,13 +271,11 @@ pub async fn convert_docx_to_html_query(
                 }
                 if is_heading && is_link {
                     card_html.push_str(&child.display());
-                    card_content.push_str(&child.text());
                 }
             }
             _ => {
                 if is_heading && is_link {
                     card_html.push_str(&child.display());
-                    card_content.push_str(&child.text());
                 }
             }
         }

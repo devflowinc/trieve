@@ -11,10 +11,10 @@ use crate::{
 use actix_web::web;
 
 use diesel::dsl::sql;
-use diesel::sql_types::Bool;
+use diesel::sql_types::Int8;
 use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;
-use diesel::sql_types::{Float, Int8};
+use diesel::sql_types::{Bool, Double};
 use diesel::{Connection, JoinOnDsl, NullableExpressionMethods, SelectableHelper};
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
@@ -405,7 +405,7 @@ pub fn search_full_text_card_query(
             card_metadata_columns::oc_file_path,
             card_metadata_columns::card_html,
             card_metadata_columns::private,
-            sql::<Nullable<Float>>("(ts_rank(card_metadata_tsvector, to_tsquery('english', ")
+            sql::<Nullable<Double>>("(ts_rank(card_metadata_tsvector, to_tsquery('english', ")
                 .bind::<Text, _>(
                     user_query
                         .split_whitespace()
@@ -471,9 +471,16 @@ pub fn search_full_text_card_query(
         get_metadata(searched_cards.clone(), current_user_id, conn).map_err(|_| DefaultError {
             message: "Failed to load searched cards",
         })?;
+
+    let total_count = if searched_cards.is_empty() {
+        0
+    } else {
+        (searched_cards.get(0).unwrap().count as f64 / 25.0).ceil() as i64
+    };
+
     Ok(FullTextSearchCardQueryResult {
         search_results: card_metadata_with_upvotes_and_files,
-        total_card_pages: (searched_cards.get(0).unwrap().count as f64 / 25.0).ceil() as i64,
+        total_card_pages: total_count,
     })
 }
 #[derive(Serialize, Deserialize)]

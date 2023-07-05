@@ -380,7 +380,7 @@ pub struct CardMetadataWithVotes {
     pub updated_at: chrono::NaiveDateTime,
     pub oc_file_path: Option<String>,
     pub private: bool,
-    pub score: Option<f32>,
+    pub score: Option<f64>,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CardMetadataWithVotesWithoutScore {
@@ -567,7 +567,7 @@ pub struct UserScore {
     pub score: i64,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable, Default)]
 pub struct FullTextSearchResult {
     pub id: uuid::Uuid,
     pub content: String,
@@ -579,7 +579,7 @@ pub struct FullTextSearchResult {
     pub oc_file_path: Option<String>,
     pub card_html: Option<String>,
     pub private: bool,
-    pub score: Option<f32>,
+    pub score: Option<f64>,
     pub count: i64,
 }
 
@@ -749,7 +749,7 @@ pub struct CardMetadataWithVotesAndFiles {
     pub updated_at: chrono::NaiveDateTime,
     pub oc_file_path: Option<String>,
     pub private: bool,
-    pub score: Option<f32>,
+    pub score: Option<f64>,
     pub file_id: Option<uuid::Uuid>,
     pub file_name: Option<String>,
 }
