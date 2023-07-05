@@ -35,7 +35,6 @@ pub async fn user_owns_card(
 
 #[derive(Serialize, Deserialize)]
 pub struct CreateCardData {
-    pub content: String,
     pub card_html: Option<String>,
     pub link: Option<String>,
     pub oc_file_path: Option<String>,
@@ -60,7 +59,15 @@ pub async fn create_card(
 
     let pool1 = pool.clone();
 
-    let words_in_content = card.content.split(' ').collect::<Vec<&str>>().len();
+    let content = Soup::new(card.card_html.as_ref().unwrap_or(&"".to_string()).as_str())
+        .text()
+        .lines()
+        .collect::<Vec<&str>>()
+        .join(" ")
+        .trim_end()
+        .to_string();
+
+    let words_in_content = content.split(' ').collect::<Vec<&str>>().len();
     if words_in_content < 70 {
         return Ok(HttpResponse::BadRequest().json(json!({
             "message": "Card content must be at least 70 words long",
@@ -68,7 +75,7 @@ pub async fn create_card(
     }
 
     // text based similarity check to avoid paying for openai api call if not necessary
-    let card_content_1 = card.content.clone();
+    let card_content_1 = content.clone();
     let text_based_similarity_results = web::block(move || {
         search_full_text_card_query(card_content_1, 1, pool.clone(), Some(user.id), None, None)
     })
@@ -85,7 +92,7 @@ pub async fn create_card(
 
     // only check for embedding similarity if no text based collision was found
     if collision.is_none() {
-        let openai_embedding_vector = create_openai_embedding(&card.content).await?;
+        let openai_embedding_vector = create_openai_embedding(&content).await?;
         embedding_vector = Some(openai_embedding_vector.clone());
 
         let cards = search_card_query(
@@ -101,7 +108,7 @@ pub async fn create_card(
 
         if let Some(score_card) = first_result {
             let mut similarity_threashold = 0.95;
-            if card.content.len() < 200 {
+            if content.len() < 200 {
                 similarity_threashold = 0.92;
             }
 
@@ -118,7 +125,7 @@ pub async fn create_card(
     //if collision is not nil, insert card with collision
     if collision.is_some() {
         card_metadata = CardMetadata::from_details(
-            &card.content,
+            &content,
             &card.card_html,
             &card.link,
             &card.oc_file_path,
@@ -167,7 +174,7 @@ pub async fn create_card(
             payload,
         );
         card_metadata = CardMetadata::from_details(
-            &card.content,
+            &content,
             &card.card_html,
             &card.link,
             &card.oc_file_path,
@@ -253,7 +260,13 @@ pub async fn update_card(
         .unwrap_or_else(|| card_metadata.link.unwrap_or_default());
 
     let soup = Soup::new(card.card_html.as_ref().unwrap_or(&"".to_string()).as_str());
-    let new_content = soup.text().lines().collect::<Vec<&str>>().join(" ");
+    let new_content = soup
+        .text()
+        .lines()
+        .collect::<Vec<&str>>()
+        .join(" ")
+        .trim_end()
+        .to_string();
     if new_content != card_metadata.content && card_metadata.card_html.is_some() {
         let soup_text_ref = soup.text();
         let Changeset { diffs, .. } = Changeset::new(&card_metadata.content, &soup_text_ref, " ");
