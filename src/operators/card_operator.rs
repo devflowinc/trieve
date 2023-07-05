@@ -390,6 +390,7 @@ pub fn search_full_text_card_query(
     filter_link_url: Option<Vec<String>>,
 ) -> Result<FullTextSearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
+    use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     let mut conn = pool.get().unwrap();
     let mut query = card_metadata_columns::card_metadata
@@ -414,7 +415,11 @@ pub fn search_full_text_card_query(
                 .sql(") , 32) * 10) AS rank"),
             sql::<Int8>("count(*) OVER() AS full_count"),
         ))
-        .filter(card_metadata_columns::private.eq(false))
+        .left_join(
+            card_collisions_columns::card_collisions
+                .on(card_collisions_columns::card_id.eq(card_metadata_columns::id)),
+        )
+        .filter(card_collisions_columns::card_id.is_null())
         .into_boxed();
 
     query = query.filter(
