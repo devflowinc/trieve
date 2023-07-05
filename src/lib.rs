@@ -167,7 +167,7 @@ pub async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::resource("/card/update")
-                            .route(web::patch().to(handlers::card_handler::update_card)),
+                            .route(web::put().to(handlers::card_handler::update_card)),
                     )
                     .service(
                         web::resource("/card/count")
