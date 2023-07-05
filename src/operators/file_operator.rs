@@ -143,7 +143,6 @@ pub fn update_file_query(
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CoreCard {
-    pub content: String,
     pub card_html: String,
     pub link: String,
 }
@@ -166,14 +165,15 @@ pub async fn convert_docx_to_html_query(
         file_name.split_once('.').unwrap_or_default().0
     ));
 
-    let conversion_command_output = Command::new("libreoffice")
-        .arg("--headless")
-        .arg("--convert-to")
-        .arg("html")
-        .arg("--outdir")
-        .arg("./tmp")
-        .arg(&temp_docx_file_path)
-        .output();
+    let conversion_command_output =
+        Command::new("/Applications/LibreOffice.app/Contents/MacOS/soffice")
+            .arg("--headless")
+            .arg("--convert-to")
+            .arg("html")
+            .arg("--outdir")
+            .arg("./tmp")
+            .arg(&temp_docx_file_path)
+            .output();
 
     if conversion_command_output.is_err() {
         return Err(DefaultError {
@@ -236,11 +236,6 @@ pub async fn convert_docx_to_html_query(
             "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
                 if is_heading && is_link {
                     cards.push(CoreCard {
-                        content: Soup::new(card_html.as_str())
-                            .text()
-                            .lines()
-                            .collect::<Vec<&str>>()
-                            .join(" "),
                         card_html,
                         link: card_link,
                     });
@@ -295,7 +290,6 @@ pub async fn convert_docx_to_html_query(
             .replace("</em>", "</b></u>");
 
         let create_card_data = CreateCardData {
-            content: card.content.clone(),
             card_html: Some(replaced_card_html.clone()),
             link: Some(card.link.clone()),
             oc_file_path: None,
