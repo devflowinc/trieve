@@ -151,7 +151,6 @@ pub async fn search_card_query(
         })
         .collect();
 
-    drop(pool);
     Ok(SearchCardQueryResult {
         search_results: point_ids,
         total_card_pages: (filtered_point_ids.len() as f64 / 25.0).ceil() as i64,
