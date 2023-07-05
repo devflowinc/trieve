@@ -1,3 +1,5 @@
+use std::sync::MutexGuard;
+
 use crate::data::models::{
     CardMetadata, CardMetadataWithVotes, CardVote, SlimUser, UserDTOWithScore,
     UserDTOWithVotesAndCards, UserScore,
@@ -35,7 +37,7 @@ pub fn get_user_by_email_query(
 
 pub fn get_user_by_username_query(
     user_name: &String,
-    pool: &web::Data<Pool>,
+    pool: web::Data<Pool>,
 ) -> Result<User, DefaultError> {
     use crate::data::schema::users::dsl::*;
 
@@ -58,7 +60,7 @@ pub fn get_user_by_username_query(
 
 pub fn get_user_by_id_query(
     user_id: &uuid::Uuid,
-    pool: &web::Data<Pool>,
+    pool: web::Data<Pool>,
 ) -> Result<User, DefaultError> {
     use crate::data::schema::users::dsl::*;
 
@@ -83,7 +85,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
     user_id: uuid::Uuid,
     accessing_user_id: Option<uuid::Uuid>,
     page: &i64,
-    pool: &web::Data<Pool>,
+    pool: web::Data<Pool>,
 ) -> Result<UserDTOWithVotesAndCards, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     use crate::data::schema::card_votes::dsl as card_votes_columns;
@@ -260,7 +262,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
 pub fn update_user_query(
     user_id: &uuid::Uuid,
     new_user: &UpdateUserData,
-    pool: &web::Data<Pool>,
+    pool: web::Data<Pool>,
 ) -> Result<SlimUser, DefaultError> {
     use crate::data::schema::users::dsl::*;
 
@@ -306,7 +308,7 @@ pub fn update_user_query(
 
 pub fn get_top_users_query(
     page: &i64,
-    pool: &web::Data<Pool>,
+    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<Vec<UserDTOWithScore>, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     use crate::data::schema::card_votes::dsl as card_votes_columns;
@@ -378,7 +380,9 @@ pub fn get_top_users_query(
     Ok(user_scores_with_users)
 }
 
-pub fn get_total_users_query(pool: &web::Data<Pool>) -> Result<i64, DefaultError> {
+pub fn get_total_users_query(
+    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+) -> Result<i64, DefaultError> {
     use crate::data::schema::users::dsl::*;
 
     let mut conn = pool.get().unwrap();

@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
@@ -13,11 +15,12 @@ use super::auth_handler::LoggedUser;
 pub async fn user_owns_collection(
     user_id: uuid::Uuid,
     collection_id: uuid::Uuid,
-    pool: web::Data<Pool>,
+    pool: Arc<Mutex<web::Data<r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::PgConnection>>>>>,
 ) -> Result<CardCollection, actix_web::Error> {
-    let collection = web::block(move || get_collection_by_id_query(collection_id, pool))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let collection =
+        web::block(move || get_collection_by_id_query(collection_id, pool.lock().unwrap()))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if collection.author_id != user_id {
         return Err(ServiceError::Forbidden.into());
@@ -91,12 +94,13 @@ pub async fn delete_card_collection(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool_two = pool.clone();
+    let thread_safe_pool = Arc::new(Mutex::new(pool));
+    let pool_two = thread_safe_pool.clone();
     let collection_id = data.collection_id;
 
-    user_owns_collection(user.id, collection_id, pool_two).await?;
+    user_owns_collection(user.id, collection_id, thread_safe_pool).await?;
 
-    web::block(move || delete_collection_by_id_query(collection_id, pool))
+    web::block(move || delete_collection_by_id_query(collection_id, pool_two.lock().unwrap()))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -120,13 +124,20 @@ pub async fn update_card_collection(
     let description = body.description.clone();
     let is_public = body.is_public;
     let collection_id = body.collection_id;
+    let thread_safe_pool = Arc::new(Mutex::new(pool));
 
-    let pool_two = pool.clone();
+    let pool_two = thread_safe_pool.clone();
 
-    let collection = user_owns_collection(user.id, collection_id, pool_two).await?;
+    let collection = user_owns_collection(user.id, collection_id, thread_safe_pool).await?;
 
     web::block(move || {
-        update_card_collection_query(collection, name, description, is_public, pool)
+        update_card_collection_query(
+            collection,
+            name,
+            description,
+            is_public,
+            pool_two.lock().unwrap(),
+        )
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -145,14 +156,16 @@ pub async fn add_bookmark(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let thread_safe_pool = Arc::new(Mutex::new(pool));
+    let pool2 = thread_safe_pool.clone();
     let card_metadata_id = body.card_metadata_id;
     let collection_id = collection_id.into_inner();
 
-    user_owns_collection(user.id, collection_id, pool.clone()).await?;
+    user_owns_collection(user.id, collection_id, thread_safe_pool).await?;
 
     web::block(move || {
         create_card_bookmark_query(
-            pool,
+            pool2.lock().unwrap(),
             CardCollectionBookmark::from_details(collection_id, card_metadata_id),
         )
     })
@@ -182,13 +195,15 @@ pub async fn get_all_bookmarks(
 ) -> Result<HttpResponse, actix_web::Error> {
     let collection_id = path_data.collection_id;
     let page = path_data.page.unwrap_or(1);
-
-    let pool_two = pool.clone();
+    let thread_safe_pool = Arc::new(Mutex::new(pool));
+    let pool_two = thread_safe_pool.clone();
     let current_user_id = user.map(|user| user.id);
 
-    let collection = web::block(move || get_collection_by_id_query(collection_id, pool_two))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let collection = web::block(move || {
+        get_collection_by_id_query(collection_id, thread_safe_pool.lock().unwrap())
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
     if !collection.is_public && current_user_id.is_none() {
         return Err(ServiceError::Unauthorized.into());
     }
@@ -197,7 +212,12 @@ pub async fn get_all_bookmarks(
     }
 
     let bookmarks = web::block(move || {
-        get_bookmarks_for_collection_query(collection_id, page, current_user_id, pool)
+        get_bookmarks_for_collection_query(
+            collection_id,
+            page,
+            current_user_id,
+            pool_two.lock().unwrap(),
+        )
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -215,14 +235,13 @@ pub async fn get_collections_card_is_in(
     user: Option<LoggedUser>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let collection_id = card_id.into_inner();
-    let pool_two = pool.clone();
     let current_user_id = user.map(|user| user.id);
     if current_user_id.is_none() {
         return Err(ServiceError::Unauthorized.into());
     }
 
     let collections = web::block(move || {
-        get_collections_for_bookmark_query(collection_id, current_user_id, pool_two)
+        get_collections_for_bookmark_query(collection_id, current_user_id, pool)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -243,12 +262,13 @@ pub async fn delete_bookmark(
 ) -> Result<HttpResponse, actix_web::Error> {
     let collection_id = collection_id.into_inner();
     let bookmark_id = body.card_metadata_id;
+    let thread_safe_pool = Arc::new(Mutex::new(pool));
 
-    let pool_two = pool.clone();
+    let pool_two = thread_safe_pool.clone();
 
-    user_owns_collection(user.id, collection_id, pool_two).await?;
+    user_owns_collection(user.id, collection_id, thread_safe_pool).await?;
 
-    web::block(move || delete_bookmark_query(bookmark_id, collection_id, pool))
+    web::block(move || delete_bookmark_query(bookmark_id, collection_id, pool_two.lock().unwrap()))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
