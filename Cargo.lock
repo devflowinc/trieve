@@ -2421,10 +2421,12 @@ dependencies = [
  "futures",
  "futures-util",
  "itoa",
+ "native-tls",
  "percent-encoding",
  "pin-project-lite",
  "ryu",
  "tokio",
+ "tokio-native-tls",
  "tokio-util",
  "url",
 ]

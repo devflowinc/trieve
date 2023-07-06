@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 actix-identity = { version = "0.5" }
-actix-session = { version = "0.7", features = ["redis-rs-session"] }
+actix-session = { version = "0.7", features = ["redis-rs-session", "redis-rs-tls-session"] }
 actix-web = { version = "4.3" }
 actix-cors = { version = "0.6" }
 
