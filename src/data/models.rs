@@ -398,6 +398,7 @@ pub struct CardMetadataWithVotesWithoutScore {
     pub oc_file_path: Option<String>,
     pub file_id: Option<uuid::Uuid>,
     pub file_name: Option<String>,
+    pub private: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -638,6 +639,7 @@ impl From<CardMetadataWithVotesAndFiles> for CardMetadataWithVotesWithoutScore {
             oc_file_path: cards.oc_file_path,
             file_id: cards.file_id,
             file_name: cards.file_name,
+            private: cards.private,
         }
     }
 }
