@@ -544,7 +544,7 @@ pub struct UserDTOWithVotesAndCards {
     pub visible_email: bool,
     pub created_at: chrono::NaiveDateTime,
     pub total_cards_created: i64,
-    pub cards: Vec<CardMetadataWithVotes>,
+    pub cards: Vec<CardMetadataWithVotesAndFiles>,
     pub total_upvotes_received: i32,
     pub total_downvotes_received: i32,
     pub total_votes_cast: i32,

@@ -229,8 +229,9 @@ pub async fn delete_card(
         })),
     };
 
-    web::block(move || delete_card_metadata_query(&card_id_inner, pool1.lock().unwrap()))
+    web::block(move || delete_card_metadata_query(card_id_inner, pool1))
         .await?
+        .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     qdrant
@@ -274,7 +275,7 @@ pub async fn update_card(
         .join(" ")
         .trim_end()
         .to_string();
-    if new_content != card_metadata.content && card_metadata.card_html.is_some() {
+    if new_content != card_metadata.content {
         let soup_text_ref = soup.text();
         let Changeset { diffs, .. } = Changeset::new(&card_metadata.content, &soup_text_ref, " ");
         let mut ret: String = Default::default();

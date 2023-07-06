@@ -564,6 +564,7 @@ pub fn get_collided_cards_query(
             ),
             (card_collisions_columns::collision_qdrant_id.assume_not_null()),
         ))
+        .filter(card_metadata_columns::private.eq(false))
         .load::<(CardMetadata, uuid::Uuid)>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to load metadata",
@@ -781,114 +782,141 @@ pub fn update_card_metadata_query(
     Ok(())
 }
 
-pub fn delete_card_metadata_query(
-    card_uuid: &uuid::Uuid,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+enum TransactionResult {
+    CardCollisionDetected,
+    CardCollisionNotDetected,
+}
+
+pub async fn delete_card_metadata_query(
+    card_uuid: uuid::Uuid,
+    pool: Arc<Mutex<web::Data<r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::PgConnection>>>>>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.lock().unwrap().get().unwrap();
 
     let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
-        diesel::delete(
-            card_files_columns::card_files.filter(card_files_columns::card_id.eq(card_uuid)),
-        )
-        .execute(conn)?;
-
-        diesel::delete(
-            card_collection_bookmarks_columns::card_collection_bookmarks
-                .filter(card_collection_bookmarks_columns::card_metadata_id.eq(card_uuid)),
-        )
-        .execute(conn)?;
-
-        let card_collisions: Vec<(CardCollisions, bool)> = card_collisions_columns::card_collisions
-            .inner_join(
-                card_metadata_columns::card_metadata.on(card_metadata_columns::qdrant_point_id
-                    .eq(card_collisions_columns::collision_qdrant_id)),
-            )
-            .filter(card_metadata_columns::id.eq(card_uuid))
-            .select((CardCollisions::as_select(), card_metadata_columns::private))
-            .order_by(card_collisions_columns::created_at.asc())
-            .load::<(CardCollisions, bool)>(conn)?;
-
-        if !card_collisions.is_empty() {
-            // get the first collision that is public or the first collision if all are private
-            let latest_collision = match card_collisions.iter().find(|x| !x.1) {
-                Some(x) => x.0.clone(),
-                None => card_collisions[0].0.clone(),
-            };
-
-            // update all collisions except latest_collision to point to a qdrant_id of None
-            diesel::update(
-                card_collisions_columns::card_collisions.filter(
-                    card_collisions_columns::id.eq_any(
-                        card_collisions
-                            .iter()
-                            .filter(|x| x.0.id != latest_collision.id)
-                            .map(|x| x.0.id)
-                            .collect::<Vec<uuid::Uuid>>(),
-                    ),
-                ),
-            )
-            .set(card_collisions_columns::collision_qdrant_id.eq::<Option<uuid::Uuid>>(None))
-            .execute(conn)?;
-
-            // delete latest_collision from card_collisions
+        {
             diesel::delete(
-                card_collisions_columns::card_collisions
-                    .filter(card_collisions_columns::id.eq(latest_collision.id)),
+                card_files_columns::card_files.filter(card_files_columns::card_id.eq(card_uuid)),
             )
             .execute(conn)?;
 
-            // delete the original card_metadata
+            diesel::delete(
+                card_collection_bookmarks_columns::card_collection_bookmarks
+                    .filter(card_collection_bookmarks_columns::card_metadata_id.eq(card_uuid)),
+            )
+            .execute(conn)?;
+
+            let card_collisions: Vec<(CardCollisions, bool)> =
+                card_collisions_columns::card_collisions
+                    .inner_join(
+                        card_metadata_columns::card_metadata
+                            .on(card_metadata_columns::qdrant_point_id
+                                .eq(card_collisions_columns::collision_qdrant_id)),
+                    )
+                    .filter(card_metadata_columns::id.eq(card_uuid))
+                    .select((CardCollisions::as_select(), card_metadata_columns::private))
+                    .order_by(card_collisions_columns::created_at.asc())
+                    .load::<(CardCollisions, bool)>(conn)?;
+
+            if !card_collisions.is_empty() {
+                // get the first collision that is public or the first collision if all are private
+                let latest_collision = match card_collisions.iter().find(|x| !x.1) {
+                    Some(x) => x.0.clone(),
+                    None => card_collisions[0].0.clone(),
+                };
+
+                // update all collisions except latest_collision to point to a qdrant_id of None
+                diesel::update(
+                    card_collisions_columns::card_collisions.filter(
+                        card_collisions_columns::id.eq_any(
+                            card_collisions
+                                .iter()
+                                .filter(|x| x.0.id != latest_collision.id)
+                                .map(|x| x.0.id)
+                                .collect::<Vec<uuid::Uuid>>(),
+                        ),
+                    ),
+                )
+                .set(card_collisions_columns::collision_qdrant_id.eq::<Option<uuid::Uuid>>(None))
+                .execute(conn)?;
+
+                // delete latest_collision from card_collisions
+                diesel::delete(
+                    card_collisions_columns::card_collisions
+                        .filter(card_collisions_columns::id.eq(latest_collision.id)),
+                )
+                .execute(conn)?;
+
+                // delete the original card_metadata
+                diesel::delete(
+                    card_metadata_columns::card_metadata
+                        .filter(card_metadata_columns::id.eq(card_uuid)),
+                )
+                .execute(conn)?;
+
+                // set the card_metadata of latest_collision to have the qdrant_point_id of the original card_metadata
+                diesel::update(
+                    card_metadata_columns::card_metadata
+                        .filter(card_metadata_columns::id.eq(latest_collision.card_id)),
+                )
+                .set((
+                    card_metadata_columns::qdrant_point_id.eq(latest_collision.collision_qdrant_id),
+                ))
+                .execute(conn)?;
+
+                // set the collision_qdrant_id of all other collisions to be the same as they were to begin with
+                diesel::update(
+                    card_collisions_columns::card_collisions.filter(
+                        card_collisions_columns::id.eq_any(
+                            card_collisions
+                                .iter()
+                                .skip(1)
+                                .map(|x| x.0.id)
+                                .collect::<Vec<uuid::Uuid>>(),
+                        ),
+                    ),
+                )
+                .set((card_collisions_columns::collision_qdrant_id
+                    .eq(latest_collision.collision_qdrant_id),))
+                .execute(conn)?;
+
+                return Ok(TransactionResult::CardCollisionDetected);
+            }
+
+            // if there were no collisions, just delete the card_metadata without issue
             diesel::delete(
                 card_metadata_columns::card_metadata
                     .filter(card_metadata_columns::id.eq(card_uuid)),
             )
             .execute(conn)?;
 
-            // set the card_metadata of latest_collision to have the qdrant_point_id of the original card_metadata
-            diesel::update(
-                card_metadata_columns::card_metadata
-                    .filter(card_metadata_columns::id.eq(latest_collision.card_id)),
-            )
-            .set((
-                card_metadata_columns::qdrant_point_id.eq(latest_collision.collision_qdrant_id),
-            ))
-            .execute(conn)?;
-
-            // set the collision_qdrant_id of all other collisions to be the same as they were to begin with
-            diesel::update(
-                card_collisions_columns::card_collisions.filter(
-                    card_collisions_columns::id.eq_any(
-                        card_collisions
-                            .iter()
-                            .skip(1)
-                            .map(|x| x.0.id)
-                            .collect::<Vec<uuid::Uuid>>(),
-                    ),
-                ),
-            )
-            .set((card_collisions_columns::collision_qdrant_id
-                .eq(latest_collision.collision_qdrant_id),))
-            .execute(conn)?;
-
-            return Ok(())
+            Ok(TransactionResult::CardCollisionNotDetected)
         }
-
-        // if there were no collisions, just delete the card_metadata without issue
-        diesel::delete(
-            card_metadata_columns::card_metadata.filter(card_metadata_columns::id.eq(card_uuid)),
-        )
-        .execute(conn)?;
-
-        Ok(())
     });
 
     match transaction_result {
-        Ok(_) => (),
+        Ok(result) => {
+            if let TransactionResult::CardCollisionNotDetected = result {
+                let qdrant = get_qdrant_connection().await?;
+                let _ = qdrant
+                    .delete_points(
+                        "debate_cards",
+                        &vec![<String as Into<PointId>>::into(card_uuid.to_string())].into(),
+                        None,
+                    )
+                    .await
+                    .map_err(|_e| {
+                        Err::<(), DefaultError>(DefaultError {
+                            message: "Failed to delete card from qdrant",
+                        })
+                    });
+            }
+        }
+
         Err(_) => {
             return Err(DefaultError {
                 message: "Failed to delete card data",
