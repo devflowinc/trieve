@@ -1,8 +1,8 @@
 use std::sync::MutexGuard;
 
 use crate::data::models::{
-    CardMetadata, CardMetadataWithVotes, CardVote, SlimUser, UserDTOWithScore,
-    UserDTOWithVotesAndCards, UserScore,
+    CardFileWithName, CardMetadata, CardMetadataWithVotesAndFiles, CardVote, SlimUser,
+    UserDTOWithScore, UserDTOWithVotesAndCards, UserScore,
 };
 use crate::diesel::prelude::*;
 use crate::handlers::user_handler::UpdateUserData;
@@ -87,8 +87,10 @@ pub fn get_user_with_votes_and_cards_by_id_query(
     page: &i64,
     pool: web::Data<Pool>,
 ) -> Result<UserDTOWithVotesAndCards, DefaultError> {
+    use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     use crate::data::schema::card_votes::dsl as card_votes_columns;
+    use crate::data::schema::files::dsl as files_columns;
     use crate::data::schema::users::dsl as user_columns;
 
     let mut conn = pool.get().unwrap();
@@ -175,7 +177,29 @@ pub fn get_user_with_votes_and_cards_by_id_query(
             message: "Failed to load upvotes",
         })?;
 
-    let card_metadata_with_upvotes: Vec<CardMetadataWithVotes> = (user_card_metadatas)
+    let file_ids: Vec<CardFileWithName> = card_files_columns::card_files
+        .filter(
+            card_files_columns::card_id.eq_any(
+                user_card_metadatas
+                    .iter()
+                    .map(|card| card.id)
+                    .collect::<Vec<uuid::Uuid>>()
+                    .as_slice(),
+            ),
+        )
+        .inner_join(files_columns::files)
+        .filter(files_columns::private.eq(false))
+        .select((
+            card_files_columns::card_id,
+            card_files_columns::file_id,
+            files_columns::file_name,
+        ))
+        .load::<CardFileWithName>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })?;
+
+    let card_metadata_with_upvotes: Vec<CardMetadataWithVotesAndFiles> = (user_card_metadatas)
         .iter()
         .map(|metadata| {
             let votes = card_votes
@@ -187,8 +211,9 @@ pub fn get_user_with_votes_and_cards_by_id_query(
             let vote_by_current_user = None;
 
             let author = None;
+            let card_with_file_name = file_ids.iter().find(|file| file.card_id == metadata.id);
 
-            CardMetadataWithVotes {
+            CardMetadataWithVotesAndFiles {
                 id: metadata.id,
                 content: metadata.content.clone(),
                 link: metadata.link.clone(),
@@ -203,6 +228,8 @@ pub fn get_user_with_votes_and_cards_by_id_query(
                 oc_file_path: metadata.oc_file_path.clone(),
                 private: metadata.private,
                 score: None,
+                file_name: card_with_file_name.map(|file| file.file_name.clone()),
+                file_id: card_with_file_name.map(|file| file.file_id),
             }
         })
         .collect();
