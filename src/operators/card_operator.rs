@@ -803,25 +803,31 @@ pub fn delete_card_metadata_query(
         )
         .execute(conn)?;
 
-        let card_collisions: Vec<CardCollisions> = card_collisions_columns::card_collisions
+        let card_collisions: Vec<(CardCollisions, bool)> = card_collisions_columns::card_collisions
             .inner_join(
                 card_metadata_columns::card_metadata.on(card_metadata_columns::qdrant_point_id
                     .eq(card_collisions_columns::collision_qdrant_id)),
             )
             .filter(card_metadata_columns::id.eq(card_uuid))
-            .select(CardCollisions::as_select())
+            .select((CardCollisions::as_select(), card_metadata_columns::private))
             .order_by(card_collisions_columns::created_at.asc())
-            .load::<CardCollisions>(conn)?;
+            .load::<(CardCollisions, bool)>(conn)?;
 
         if !card_collisions.is_empty() {
-            let latest_collision = card_collisions.first().unwrap();
+            // get the first collision that is public or the first collision if all are private
+            let latest_collision = match card_collisions.iter().find(|x| !x.1) {
+                Some(x) => x.0.clone(),
+                None => card_collisions[0].0.clone(),
+            };
+
+            // update all collisions except latest_collision to point to a qdrant_id of None
             diesel::update(
                 card_collisions_columns::card_collisions.filter(
                     card_collisions_columns::id.eq_any(
                         card_collisions
                             .iter()
-                            .skip(1)
-                            .map(|x| x.id)
+                            .filter(|x| x.0.id != latest_collision.id)
+                            .map(|x| x.0.id)
                             .collect::<Vec<uuid::Uuid>>(),
                     ),
                 ),
@@ -829,34 +835,38 @@ pub fn delete_card_metadata_query(
             .set(card_collisions_columns::collision_qdrant_id.eq::<Option<uuid::Uuid>>(None))
             .execute(conn)?;
 
+            // delete latest_collision from card_collisions
             diesel::delete(
                 card_collisions_columns::card_collisions
                     .filter(card_collisions_columns::id.eq(latest_collision.id)),
             )
             .execute(conn)?;
 
+            // delete the original card_metadata
             diesel::delete(
                 card_metadata_columns::card_metadata
                     .filter(card_metadata_columns::id.eq(card_uuid)),
             )
             .execute(conn)?;
 
+            // set the card_metadata of latest_collision to have the qdrant_point_id of the original card_metadata
             diesel::update(
                 card_metadata_columns::card_metadata
                     .filter(card_metadata_columns::id.eq(latest_collision.card_id)),
             )
             .set((
-                card_metadata_columns::private.eq(false),
                 card_metadata_columns::qdrant_point_id.eq(latest_collision.collision_qdrant_id),
             ))
             .execute(conn)?;
+
+            // set the collision_qdrant_id of all other collisions to be the same as they were to begin with
             diesel::update(
                 card_collisions_columns::card_collisions.filter(
                     card_collisions_columns::id.eq_any(
                         card_collisions
                             .iter()
                             .skip(1)
-                            .map(|x| x.id)
+                            .map(|x| x.0.id)
                             .collect::<Vec<uuid::Uuid>>(),
                     ),
                 ),
@@ -864,8 +874,11 @@ pub fn delete_card_metadata_query(
             .set((card_collisions_columns::collision_qdrant_id
                 .eq(latest_collision.collision_qdrant_id),))
             .execute(conn)?;
+
+            return Ok(())
         }
 
+        // if there were no collisions, just delete the card_metadata without issue
         diesel::delete(
             card_metadata_columns::card_metadata.filter(card_metadata_columns::id.eq(card_uuid)),
         )

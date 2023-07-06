@@ -284,7 +284,6 @@ pub async fn convert_docx_to_html_query(
     let mut card_metadata: ReturnCreatedCard;
     let mut card_ids: Vec<uuid::Uuid> = [].to_vec();
 
-
     for card in cards {
         let replaced_card_html = card
             .card_html
