@@ -203,7 +203,9 @@ pub async fn search_card_collections_query(
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
+    use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+
     let mut conn = pool.lock().unwrap().get().unwrap();
 
     let card_ids: Vec<uuid::Uuid> = card_collection_bookmarks_columns::card_collection_bookmarks
@@ -215,9 +217,24 @@ pub async fn search_card_collections_query(
         })?;
 
     let mut query = card_metadata_columns::card_metadata
-        .select(card_metadata_columns::qdrant_point_id)
+        .left_outer_join(
+            card_collisions_columns::card_collisions
+                .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
+        )
+        .select((
+            card_metadata_columns::qdrant_point_id,
+            card_collisions_columns::collision_qdrant_id.nullable(),
+        ))
+        .filter(card_metadata_columns::private.eq(false))
+        .or_filter(
+            card_metadata_columns::private
+                .eq(false)
+                .and(card_metadata_columns::qdrant_point_id.is_null()),
+        )
+        .distinct()
         .filter(card_metadata_columns::id.eq_any(card_ids))
         .into_boxed();
+
     let filter_oc_file_path = filter_oc_file_path.unwrap_or([].to_vec());
     let filter_link_url = filter_link_url.unwrap_or([].to_vec());
 
@@ -241,17 +258,24 @@ pub async fn search_card_collections_query(
     for link_url in filter_link_url.iter().skip(1) {
         query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
     }
-
-    let filtered_ids: Vec<Option<uuid::Uuid>> =
+    let filtered_option_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
 
     let qdrant = get_qdrant_connection().await?;
 
-    let filtered_point_ids: &Vec<PointId> = &filtered_ids
+    let filtered_point_ids: &Vec<PointId> = &filtered_option_ids
         .iter()
-        .map(|uuid| uuid.unwrap_or(uuid::Uuid::nil()).to_string().into())
+        .map(|uuid| {
+            uuid.0
+                .unwrap_or(uuid.1.unwrap_or(uuid::Uuid::nil()))
+                .to_string()
+        })
+        // remove duplicates
+        .collect::<HashSet<String>>()
+        .iter()
+        .map(|uuid| (*uuid).clone().into())
         .collect::<Vec<PointId>>();
 
     let mut filter = Filter::default();
@@ -431,32 +455,41 @@ pub fn search_full_text_card_query(
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     let mut conn = pool.get().unwrap();
     let mut query = card_metadata_columns::card_metadata
-        .select((
-            card_metadata_columns::id,
-            card_metadata_columns::content,
-            card_metadata_columns::link,
-            card_metadata_columns::author_id,
-            card_metadata_columns::qdrant_point_id,
-            card_metadata_columns::created_at,
-            card_metadata_columns::updated_at,
-            card_metadata_columns::oc_file_path,
-            card_metadata_columns::card_html,
-            card_metadata_columns::private,
-            sql::<Nullable<Double>>("(ts_rank(card_metadata_tsvector, to_tsquery('english', ")
-                .bind::<Text, _>(
-                    user_query
-                        .split_whitespace()
-                        .collect::<Vec<&str>>()
-                        .join(" & "),
-                )
-                .sql(") , 32) * 10) AS rank"),
-            sql::<Int8>("count(*) OVER() AS full_count"),
-        ))
-        .left_join(
+        .left_outer_join(
             card_collisions_columns::card_collisions
-                .on(card_collisions_columns::card_id.eq(card_metadata_columns::id)),
+                .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
         )
-        .filter(card_collisions_columns::card_id.is_null())
+        .filter(card_metadata_columns::private.eq(false))
+        .or_filter(
+            card_metadata_columns::private
+                .eq(false)
+                .and(card_metadata_columns::qdrant_point_id.is_null()),
+        )
+        .select((
+            (
+                card_metadata_columns::id,
+                card_metadata_columns::content,
+                card_metadata_columns::link,
+                card_metadata_columns::author_id,
+                card_metadata_columns::qdrant_point_id,
+                card_metadata_columns::created_at,
+                card_metadata_columns::updated_at,
+                card_metadata_columns::oc_file_path,
+                card_metadata_columns::card_html,
+                card_metadata_columns::private,
+                sql::<Nullable<Double>>("(ts_rank(card_metadata_tsvector, to_tsquery('english', ")
+                    .bind::<Text, _>(
+                        user_query
+                            .split_whitespace()
+                            .collect::<Vec<&str>>()
+                            .join(" & "),
+                    )
+                    .sql(") , 32) * 10) AS rank"),
+                sql::<Int8>("count(*) OVER() AS full_count"),
+            ),
+            card_collisions_columns::collision_qdrant_id.nullable(),
+        ))
+        .distinct()
         .into_boxed();
 
     query = query.filter(
@@ -499,20 +532,27 @@ pub fn search_full_text_card_query(
         .limit(25)
         .offset(((page - 1) * 25).try_into().unwrap());
 
-    let searched_cards: Vec<FullTextSearchResult> =
+    let searched_cards: Vec<(FullTextSearchResult, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
             message: "Failed to load searched cards",
         })?;
 
-    let card_metadata_with_upvotes_and_files =
-        get_metadata(searched_cards.clone(), current_user_id, conn).map_err(|_| DefaultError {
-            message: "Failed to load searched cards",
-        })?;
+    let card_metadata_with_upvotes_and_files = get_metadata(
+        searched_cards
+            .iter()
+            .map(|card| card.0.clone())
+            .collect::<Vec<FullTextSearchResult>>(),
+        current_user_id,
+        conn,
+    )
+    .map_err(|_| DefaultError {
+        message: "Failed to load searched cards",
+    })?;
 
     let total_count = if searched_cards.is_empty() {
         0
     } else {
-        (searched_cards.get(0).unwrap().count as f64 / 25.0).ceil() as i64
+        (searched_cards.get(0).unwrap().0.count as f64 / 25.0).ceil() as i64
     };
 
     Ok(FullTextSearchCardQueryResult {
