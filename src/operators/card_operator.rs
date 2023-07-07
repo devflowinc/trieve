@@ -106,8 +106,7 @@ pub async fn search_card_query(
                 .eq(false)
                 .and(card_metadata_columns::qdrant_point_id.is_null()),
         )
-        .distinct_on(card_metadata_columns::qdrant_point_id)
-        .distinct_on(card_collisions_columns::collision_qdrant_id.nullable())
+        .distinct()
         .into_boxed();
 
     if !filter_oc_file_path.is_empty() {
