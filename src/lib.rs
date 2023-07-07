@@ -303,7 +303,10 @@ pub async fn main() -> std::io::Result<()> {
                             .route(
                                 web::put()
                                     .to(handlers::notification_handler::mark_notification_as_read),
-                            ),
+                            )
+                            .route(web::put().to(
+                                handlers::notification_handler::mark_all_notifications_as_read,
+                            )),
                     ),
             )
     })
