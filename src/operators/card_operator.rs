@@ -88,6 +88,10 @@ pub async fn search_card_query(
     // left outer JOIN card_collisions ON card_metadata.id = card_collisions.card_id
     // WHERE card_metadata.private = false OR (card_metadata.private = false and card_metadata.qdrant_point_id is null);
 
+    //SELECT DISTINCT "card\_metadata"."qdrant\_point\_id", "card\_collisions"."collision\_qdrant\_id"
+    //FROM ("card\_metadata"
+    //LEFT OUTER JOIN "card\_collisions" ON ("card\_metadata"."id" = "card\_collisions"."card\_id"))
+    //WHERE (("card\_metadata"."private" = $1) OR (("card\_metadata"."private" = $2) AND ("card\_metadata"."qdrant\_point\_id" IS NULL))) -- binds: \[false, false\]
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
@@ -134,6 +138,16 @@ pub async fn search_card_query(
         query.load(&mut conn).map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
+
+    let point_ids = filtered_option_ids
+        .iter()
+        .map(|uuid| {
+            uuid.0
+                .unwrap_or(uuid.1.unwrap_or(uuid::Uuid::nil()))
+                .to_string()
+        })
+        // remove duplicates
+        .collect::<HashSet<String>>();
 
     let qdrant = get_qdrant_connection().await?;
 
@@ -546,7 +560,6 @@ pub fn get_metadata_from_point_ids(
             card_metadata_columns::card_html,
             card_metadata_columns::private,
         ))
-        .filter(card_metadata_columns::private.eq(false))
         .or_filter(
             card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
         )
