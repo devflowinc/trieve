@@ -786,3 +786,31 @@ pub struct CardVerifications {
     card_id: uuid::Uuid,
     similarity_score: i64,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable)]
+#[diesel(table_name = verification_notifications)]
+pub struct VerificationNotification {
+    id: uuid::Uuid,
+    user_uuid: uuid::Uuid,
+    card_uuid: uuid::Uuid,
+    verification_uuid: uuid::Uuid,
+    created_at: chrono::NaiveDateTime,
+    updated_at: chrono::NaiveDateTime,
+}
+
+impl VerificationNotification {
+    pub fn from_details(
+        card_uuid: uuid::Uuid,
+        user_uuid: uuid::Uuid,
+        verification_uuid: uuid::Uuid,
+    ) -> Self {
+        VerificationNotification {
+            id: uuid::Uuid::new_v4(),
+            card_uuid,
+            user_uuid,
+            verification_uuid,
+            created_at: chrono::Local::now().naive_local(),
+            updated_at: chrono::Local::now().naive_local(),
+        }
+    }
+}
