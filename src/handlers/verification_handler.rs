@@ -16,7 +16,7 @@ pub enum VerifyData {
 
 pub async fn get_webpage_score(
     url_source: &String,
-    content: &String,
+    content: &str,
 ) -> Result<i64, actix_web::Error> {
     let webpage_content = op::get_webpage_text_fetch(url_source)
         .await

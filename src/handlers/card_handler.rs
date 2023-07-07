@@ -150,34 +150,53 @@ pub async fn create_card(
         if first_semantic_result.score >= similarity_threshold {
             //Sets collision to collided card id
             collision = Some(first_semantic_result.point_id);
-            let score_card = web::block(move || {
+
+            let score_card_result = web::block(move || {
                 get_metadata_from_point_ids(
                     vec![first_semantic_result.point_id],
                     Some(user.id),
                     pool2.lock().unwrap(),
                 )
             })
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+            .await?;
 
-            if score_card
-                .get(0)
-                .unwrap_or(&CardMetadataWithVotesAndFiles::default())
-                .card_html
-                .is_none()
-            {
-                let score_card_1 = score_card.clone();
+            let top_score_card = match score_card_result {
+                Ok(card_results) => {
+                    if card_results.is_empty() {
+                        return Err(ServiceError::BadRequest(
+                            "Could not find card with matching point id".into(),
+                        )
+                        .into());
+                    }
+                    card_results.get(0).unwrap().clone()
+                }
+                Err(err) => {
+                    return Err(ServiceError::BadRequest(err.message.into()).into());
+                }
+            };
+
+            let top_score_card_author_id = match top_score_card.author.clone() {
+                Some(author) => author.id,
+                None => {
+                    return Err(ServiceError::BadRequest(
+                        "Could not find card with matching point id".into(),
+                    )
+                    .into())
+                }
+            };
+
+            if top_score_card.card_html.is_none() {
                 web::block(move || {
                     update_card_metadata_query(
                         CardMetadata::from_details_with_id(
-                            score_card_1.get(0).unwrap().id,
+                            top_score_card.id,
                             &content,
                             &card.card_html,
                             &card.link,
                             &card.oc_file_path,
-                            score_card_1.get(0).unwrap().author.clone().unwrap().id,
-                            Some(score_card_1.get(0).unwrap().qdrant_point_id),
-                            card.private.unwrap_or(score_card_1.get(0).unwrap().private),
+                            top_score_card_author_id,
+                            Some(top_score_card.qdrant_point_id),
+                            top_score_card.private,
                         ),
                         pool3.lock().unwrap(),
                     )
