@@ -23,7 +23,9 @@ pub async fn get_webpage_score(
         .map_err(|err| ServiceError::BadRequest(format!("Could not fetch: {}", err)))?;
 
     let matcher = SkimMatcherV2::default();
-    let (score, _) = matcher.fuzzy_indices(&webpage_content, content).unwrap_or((0, vec![]));
+    let (score, _) = matcher
+        .fuzzy_indices(&webpage_content, content)
+        .unwrap_or((0, vec![]));
 
     Ok(score)
 }
@@ -64,10 +66,10 @@ pub async fn verify_card_content(
     if let VerifyData::CardVerification { card_uuid } = data {
         // This is a vault call, so we need to update the card with the score
         let _ = web::block(move || {
-            op::upsert_card_verification_query(thread_safe_pool, card_uuid, score).map_err(|err| {
-                ServiceError::BadRequest(format!("Could not upsert card score: {}", err))
-            })
-        });
+            op::upsert_card_verification_query(thread_safe_pool, card_uuid, score)
+        })
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.to_string()))?;
     }
 
     Ok(HttpResponse::Ok().json(VerificationStatus { score }))

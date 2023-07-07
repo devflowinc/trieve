@@ -1,6 +1,6 @@
+use diesel::prelude::*;
 use regex::Regex;
 use soup::prelude::*;
-use diesel::prelude::*;
 use std::sync::{Arc, Mutex};
 
 use actix_web::web;
@@ -42,8 +42,14 @@ pub fn upsert_card_verification_query(
 
     let mut conn = pool.lock().unwrap().get().unwrap();
 
+    let new_id = uuid::Uuid::new_v4();
+
     diesel::insert_into(card_verification)
-        .values((card_id.eq(card_uuid), similarity_score.eq(new_score)))
+        .values((
+            id.eq(new_id),
+            card_id.eq(card_uuid),
+            similarity_score.eq(new_score),
+        ))
         .on_conflict(card_id)
         .do_update()
         .set(similarity_score.eq(new_score))
