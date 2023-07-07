@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::data::models::{
@@ -143,8 +144,11 @@ pub async fn search_card_query(
             uuid.0
                 .unwrap_or(uuid.1.unwrap_or(uuid::Uuid::nil()))
                 .to_string()
-                .into()
         })
+        // remove duplicates
+        .collect::<HashSet<String>>()
+        .iter()
+        .map(|uuid| (*uuid).clone().into())
         .collect::<Vec<PointId>>();
 
     let mut filter = Filter::default();
