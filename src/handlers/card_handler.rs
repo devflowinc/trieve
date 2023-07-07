@@ -417,7 +417,9 @@ pub async fn search_card(
                 .map(|card| card.0.clone().into())
                 .collect();
 
-            collided_cards.insert(0, card);
+            if !card.private {
+                collided_cards.insert(0, card);
+            }
 
             ScoreCardDTO {
                 metadata: collided_cards,

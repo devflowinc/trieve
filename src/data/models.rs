@@ -736,7 +736,7 @@ pub struct CardFileWithName {
     pub file_name: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct CardMetadataWithVotesAndFiles {
     pub id: uuid::Uuid,
     pub author: Option<UserDTO>,
