@@ -630,7 +630,7 @@ pub fn get_metadata_from_point_ids(
     let mut conn = pool.get().unwrap();
 
     let card_metadata: Vec<CardMetadata> = card_metadata_columns::card_metadata
-        .filter(card_metadata_columns::qdrant_point_id.eq_any(point_ids))
+        .filter(card_metadata_columns::qdrant_point_id.eq_any(&point_ids))
         .select((
             card_metadata_columns::id,
             card_metadata_columns::content,
@@ -643,9 +643,6 @@ pub fn get_metadata_from_point_ids(
             card_metadata_columns::card_html,
             card_metadata_columns::private,
         ))
-        .or_filter(
-            card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
-        )
         .load::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to load metadata",
