@@ -60,7 +60,6 @@ pub async fn create_card(
     let mut embedding_vector: Option<Vec<f32>> = None;
     let thread_safe_pool = Arc::new(Mutex::new(pool));
     let pool1 = thread_safe_pool.clone();
-    let pool2 = thread_safe_pool.clone();
 
     let content = Soup::new(card.card_html.as_ref().unwrap_or(&"".to_string()).as_str())
         .text()
@@ -105,21 +104,24 @@ pub async fn create_card(
         let openai_embedding_vector = create_openai_embedding(&content).await?;
         embedding_vector = Some(openai_embedding_vector.clone());
 
-        let cards = search_card_query(openai_embedding_vector.clone(), 1, pool2, None, None)
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-        let first_result = cards.search_results.get(0);
+        let first_semantic_result =
+            global_unfiltered_top_match_query(openai_embedding_vector.clone())
+                .await
+                .map_err(|err| {
+                    ServiceError::BadRequest(format!(
+                        "Could not get semantic similarity for collision check: {}",
+                        err.message
+                    ))
+                })?;
 
-        if let Some(score_card) = first_result {
-            let mut similarity_threashold = 0.95;
-            if content.len() < 200 {
-                similarity_threashold = 0.92;
-            }
+        let mut similarity_threshold = 0.95;
+        if content.len() < 200 {
+            similarity_threshold = 0.92;
+        }
 
-            if score_card.score >= similarity_threashold {
-                //Sets collision to collided card id
-                collision = Some(score_card.point_id);
-            }
+        if first_semantic_result.score >= similarity_threshold {
+            //Sets collision to collided card id
+            collision = Some(first_semantic_result.point_id);
         }
     }
 
@@ -357,7 +359,7 @@ pub async fn search_card(
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    //search over the links as well
+    let current_user_id = user.map(|user| user.id);
     let thread_safe_pool = Arc::new(Mutex::new(pool));
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_openai_embedding(&data.content).await?;
@@ -370,6 +372,7 @@ pub async fn search_card(
         thread_safe_pool,
         data.filter_oc_file_path.clone(),
         data.filter_link_url.clone(),
+        current_user_id,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -380,8 +383,6 @@ pub async fn search_card(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
     let point_ids_1 = point_ids.clone();
-
-    let current_user_id = user.map(|user| user.id);
 
     let metadata_cards = web::block(move || {
         let pool = pool2.lock().unwrap(); // Access the locked pool
