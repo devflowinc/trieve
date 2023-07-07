@@ -295,11 +295,13 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::delete().to(handlers::file_handler::delete_file_handler)),
                     )
                     .service(
-                        web::resource("/notifications").route(
-                            web::post().to(
+                        web::resource("/notifications")
+                            .route(web::post().to(
                                 handlers::notification_handler::create_verificiation_notification,
+                            ))
+                            .route(
+                                web::get().to(handlers::notification_handler::get_notifications),
                             ),
-                        ),
                     ),
             )
     })
