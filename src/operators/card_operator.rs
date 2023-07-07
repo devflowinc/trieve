@@ -519,6 +519,9 @@ pub fn search_full_text_card_query(
         )
         .filter(card_metadata_columns::private.eq(false))
         .or_filter(
+            card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
+        )
+        .or_filter(
             card_metadata_columns::private
                 .eq(false)
                 .and(card_metadata_columns::qdrant_point_id.is_null()),
