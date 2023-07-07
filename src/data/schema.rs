@@ -200,6 +200,7 @@ diesel::table! {
         user_uuid -> Uuid,
         card_uuid -> Uuid,
         verification_uuid -> Uuid,
+        user_read -> Bool,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }

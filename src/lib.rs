@@ -299,8 +299,10 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::post().to(
                                 handlers::notification_handler::create_verificiation_notification,
                             ))
+                            .route(web::get().to(handlers::notification_handler::get_notifications))
                             .route(
-                                web::get().to(handlers::notification_handler::get_notifications),
+                                web::put()
+                                    .to(handlers::notification_handler::mark_notification_as_read),
                             ),
                     ),
             )

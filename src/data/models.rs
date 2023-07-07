@@ -794,6 +794,7 @@ pub struct VerificationNotification {
     user_uuid: uuid::Uuid,
     card_uuid: uuid::Uuid,
     verification_uuid: uuid::Uuid,
+    user_read: bool,
     created_at: chrono::NaiveDateTime,
     updated_at: chrono::NaiveDateTime,
 }
@@ -809,6 +810,7 @@ impl VerificationNotification {
             card_uuid,
             user_uuid,
             verification_uuid,
+            user_read: false,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
         }

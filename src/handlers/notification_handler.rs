@@ -5,6 +5,7 @@ use crate::{
     errors::ServiceError,
     operators::notification_operator::{
         add_verificiation_notification_query, get_notifications_query,
+        mark_notification_as_read_query,
     },
 };
 use actix_web::{web, HttpResponse};
@@ -60,4 +61,25 @@ pub async fn get_notifications(
             .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
 
     Ok(HttpResponse::Ok().json(notifications))
+}
+
+pub async fn mark_notification_as_read(
+    user: LoggedUser,
+    notification_id: web::Json<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let user_id = user.id;
+    let thread_safe_pool = Arc::new(Mutex::new(pool));
+
+    web::block(move || {
+        mark_notification_as_read_query(
+            user_id,
+            notification_id.into_inner(),
+            thread_safe_pool.lock().unwrap(),
+        )
+    })
+    .await?
+    .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+
+    Ok(HttpResponse::NoContent().into())
 }
