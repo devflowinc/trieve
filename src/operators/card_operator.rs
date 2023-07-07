@@ -16,7 +16,9 @@ use diesel::sql_types::Int8;
 use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;
 use diesel::sql_types::{Bool, Double};
-use diesel::{Connection, JoinOnDsl, NullableExpressionMethods, SelectableHelper};
+use diesel::{Connection, JoinOnDsl, NullableExpressionMethods,
+    SelectableHelper,
+};
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::{
@@ -75,8 +77,15 @@ pub async fn search_card_query(
     filter_link_url: Option<Vec<String>>,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
-    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     let mut conn = pool.lock().unwrap().get().unwrap();
+
+    // SELECT distinct card_metadata.qdrant_point_id, card_collisions.collision_qdrant_id
+    // FROM card_metadata
+    // left outer JOIN card_collisions ON card_metadata.id = card_collisions.card_id
+    // WHERE card_metadata.private = false OR (card_metadata.private = false and card_metadata.qdrant_point_id is null);
+
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+
     let mut query = card_metadata_columns::card_metadata
         .select(card_metadata_columns::qdrant_point_id)
         .filter(card_metadata_columns::private.eq(false))
@@ -105,14 +114,14 @@ pub async fn search_card_query(
         query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
     }
 
-    let filtered_ids: Vec<Option<uuid::Uuid>> =
+    let filtered_option_ids: Vec<Option<uuid::Uuid>> =
         query.load(&mut conn).map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
 
     let qdrant = get_qdrant_connection().await?;
 
-    let filtered_point_ids: &Vec<PointId> = &filtered_ids
+    let filtered_point_ids: &Vec<PointId> = &filtered_option_ids
         .iter()
         .map(|uuid| uuid.unwrap_or(uuid::Uuid::nil()).to_string().into())
         .collect::<Vec<PointId>>();

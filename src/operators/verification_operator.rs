@@ -1,5 +1,5 @@
-use soup::prelude::*;
 use regex::Regex;
+use soup::prelude::*;
 
 use crate::errors::DefaultError;
 
@@ -20,7 +20,7 @@ pub async fn get_webpage_text_fetch(url: &String) -> Result<String, DefaultError
     let body = soup.tag("body").find().ok_or(DefaultError {
         message: "Could not find body tag",
     })?;
-    
+
     // Replace multiple whitesapces chars with a single space
     let text = body.text();
     let re = Regex::new(r"\s+").unwrap();
