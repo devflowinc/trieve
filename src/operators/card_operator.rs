@@ -590,7 +590,7 @@ pub fn search_full_text_card_query(
         .limit(25)
         .offset(((page - 1) * 25).try_into().unwrap());
 
-    let searched_cards: Vec<(FullTextSearchResult)> =
+    let searched_cards: Vec<FullTextSearchResult> =
         query.load(&mut conn).map_err(|_| DefaultError {
             message: "Failed to load searched cards",
         })?;
