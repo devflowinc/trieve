@@ -548,6 +548,9 @@ pub fn search_full_text_card_query(
             sql::<Int8>("count(*) OVER() AS full_count"),
         ))
         .distinct()
+        .or_filter(
+            card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
+        )
         .into_boxed();
 
     query = query.filter(
