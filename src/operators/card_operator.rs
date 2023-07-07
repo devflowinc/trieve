@@ -12,7 +12,7 @@ use crate::{
     errors::DefaultError,
 };
 use actix_web::web;
-use diesel::dsl::sql;
+use diesel::dsl::{not, sql};
 use diesel::sql_types::Int8;
 use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;
@@ -527,25 +527,28 @@ pub fn search_full_text_card_query(
                 .and(card_metadata_columns::qdrant_point_id.is_null()),
         )
         .select((
-            card_metadata_columns::id,
-            card_metadata_columns::content,
-            card_metadata_columns::link,
-            card_metadata_columns::author_id,
-            card_metadata_columns::qdrant_point_id,
-            card_metadata_columns::created_at,
-            card_metadata_columns::updated_at,
-            card_metadata_columns::oc_file_path,
-            card_metadata_columns::card_html,
-            card_metadata_columns::private,
-            sql::<Nullable<Double>>("(ts_rank(card_metadata_tsvector, to_tsquery('english', ")
-                .bind::<Text, _>(
-                    user_query
-                        .split_whitespace()
-                        .collect::<Vec<&str>>()
-                        .join(" & "),
-                )
-                .sql(") , 32) * 10) AS rank"),
-            sql::<Int8>("count(*) OVER() AS full_count"),
+            (
+                card_metadata_columns::id,
+                card_metadata_columns::content,
+                card_metadata_columns::link,
+                card_metadata_columns::author_id,
+                card_metadata_columns::qdrant_point_id,
+                card_metadata_columns::created_at,
+                card_metadata_columns::updated_at,
+                card_metadata_columns::oc_file_path,
+                card_metadata_columns::card_html,
+                card_metadata_columns::private,
+                sql::<Nullable<Double>>("(ts_rank(card_metadata_tsvector, to_tsquery('english', ")
+                    .bind::<Text, _>(
+                        user_query
+                            .split_whitespace()
+                            .collect::<Vec<&str>>()
+                            .join(" & "),
+                    )
+                    .sql(") , 32) * 10) AS rank"),
+                sql::<Int8>("count(*) OVER() AS full_count"),
+            ),
+            card_collisions_columns::collision_qdrant_id.nullable(),
         ))
         .distinct()
         .into_boxed();
@@ -590,20 +593,42 @@ pub fn search_full_text_card_query(
         .limit(25)
         .offset(((page - 1) * 25).try_into().unwrap());
 
-    let searched_cards: Vec<FullTextSearchResult> =
+    let searched_cards: Vec<(FullTextSearchResult, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
             message: "Failed to load searched cards",
         })?;
 
-    let card_metadata_with_upvotes_and_files =
-        get_metadata(searched_cards.clone(), current_user_id, conn).map_err(|_| DefaultError {
-            message: "Failed to load searched cards",
-        })?;
+    //filter searched_cards so that it only contains cards where the collisions_point_id is not in the qdrant_point_id of another card
+    let searched_cards = searched_cards
+        .clone()
+        .into_iter()
+        .filter(|(_, collision)| {
+            if let Some(collision_qdrant_id) = collision {
+                !searched_cards
+                    .iter()
+                    .any(|(card, _)| card.qdrant_point_id == Some(*collision_qdrant_id))
+            } else {
+                true
+            }
+        })
+        .collect::<Vec<(FullTextSearchResult, Option<uuid::Uuid>)>>();
+
+    let card_metadata_with_upvotes_and_files = get_metadata(
+        searched_cards
+            .iter()
+            .map(|card| card.0.clone())
+            .collect::<Vec<FullTextSearchResult>>(),
+        current_user_id,
+        conn,
+    )
+    .map_err(|_| DefaultError {
+        message: "Failed to load searched cards",
+    })?;
 
     let total_count = if searched_cards.is_empty() {
         0
     } else {
-        (searched_cards.get(0).unwrap().count as f64 / 25.0).ceil() as i64
+        (searched_cards.get(0).unwrap().0.count as f64 / 25.0).ceil() as i64
     };
 
     Ok(FullTextSearchCardQueryResult {
