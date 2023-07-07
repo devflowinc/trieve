@@ -138,17 +138,6 @@ pub async fn search_card_query(
         query.load(&mut conn).map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
-
-    let point_ids = filtered_option_ids
-        .iter()
-        .map(|uuid| {
-            uuid.0
-                .unwrap_or(uuid.1.unwrap_or(uuid::Uuid::nil()))
-                .to_string()
-        })
-        // remove duplicates
-        .collect::<HashSet<String>>();
-
     let qdrant = get_qdrant_connection().await?;
 
     let filtered_point_ids: &Vec<PointId> = &filtered_option_ids
