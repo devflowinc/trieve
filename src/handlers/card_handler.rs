@@ -59,6 +59,7 @@ pub async fn create_card(
     let mut collision: Option<uuid::Uuid> = None;
     let mut embedding_vector: Option<Vec<f32>> = None;
     let thread_safe_pool = Arc::new(Mutex::new(pool));
+
     let pool1 = thread_safe_pool.clone();
     let pool2 = thread_safe_pool.clone();
     let pool3 = thread_safe_pool.clone();
@@ -95,7 +96,7 @@ pub async fn create_card(
     let first_text_result = text_based_similarity_results.search_results.get(0);
 
     if let Some(score_card) = first_text_result {
-        if score_card.score >= Some(0.90) {
+        if score_card.score >= Some(0.85) {
             //Sets collision to collided card id
             collision = Some(score_card.qdrant_point_id);
 
@@ -149,6 +150,45 @@ pub async fn create_card(
         if first_semantic_result.score >= similarity_threshold {
             //Sets collision to collided card id
             collision = Some(first_semantic_result.point_id);
+            let score_card = web::block(move || {
+                get_metadata_from_point_ids(
+                    vec![first_semantic_result.point_id],
+                    Some(user.id),
+                    pool2.lock().unwrap(),
+                )
+            })
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+            if score_card
+                .get(0)
+                .unwrap_or(&CardMetadataWithVotesAndFiles::default())
+                .card_html
+                .is_none()
+            {
+                let score_card_1 = score_card.clone();
+                web::block(move || {
+                    update_card_metadata_query(
+                        CardMetadata::from_details_with_id(
+                            score_card_1.get(0).unwrap().id,
+                            &content,
+                            &card.card_html,
+                            &card.link,
+                            &card.oc_file_path,
+                            score_card_1.get(0).unwrap().author.clone().unwrap().id,
+                            Some(score_card_1.get(0).unwrap().qdrant_point_id),
+                            card.private.unwrap_or(score_card_1.get(0).unwrap().private),
+                        ),
+                        pool3.lock().unwrap(),
+                    )
+                })
+                .await?
+                .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+                return Ok(HttpResponse::Ok().json(json!({
+                    "message": "Card updated",
+                })));
+            }
         }
     }
 
