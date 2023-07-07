@@ -551,6 +551,9 @@ pub fn search_full_text_card_query(
             card_collisions_columns::collision_qdrant_id.nullable(),
         ))
         .distinct()
+        .or_filter(
+            card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
+        )
         .into_boxed();
 
     query = query.filter(
