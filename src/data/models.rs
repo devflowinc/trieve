@@ -382,6 +382,7 @@ pub struct CardMetadataWithVotes {
     pub private: bool,
     pub score: Option<f64>,
 }
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CardMetadataWithVotesWithoutScore {
     pub id: uuid::Uuid,

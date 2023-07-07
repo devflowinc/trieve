@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(untagged)]
 pub enum VerifyData {
-    ConentVerification { content: String, url_source: String },
+    ContentVerification { content: String, url_source: String },
     CardVerification { card_uuid: uuid::Uuid },
 }
 
@@ -45,10 +45,11 @@ pub async fn verify_card_content(
     let data = data.into_inner();
 
     let score = match data.clone() {
-        VerifyData::ConentVerification {
+        VerifyData::ContentVerification {
             content,
             url_source,
         } => get_webpage_score(&url_source, &content).await?,
+
         VerifyData::CardVerification { card_uuid } => {
             let card = web::block(move || {
                 card_op::get_metadata_from_id_query(card_uuid, pool1.lock().unwrap())
@@ -65,11 +66,9 @@ pub async fn verify_card_content(
 
     if let VerifyData::CardVerification { card_uuid } = data {
         // This is a vault call, so we need to update the card with the score
-        let _ = web::block(move || {
-            op::upsert_card_verification_query(thread_safe_pool, card_uuid, score)
-        })
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.to_string()))?;
+        web::block(move || op::upsert_card_verification_query(thread_safe_pool, card_uuid, score))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.to_string()))?;
     }
 
     Ok(HttpResponse::Ok().json(VerificationStatus { score }))
