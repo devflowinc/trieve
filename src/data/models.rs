@@ -778,3 +778,11 @@ impl From<CardMetadataWithVotes> for CardMetadataWithVotesAndFiles {
         }
     }
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable)]
+#[diesel(table_name = card_verification)]
+pub struct CardVerifications {
+    id: uuid::Uuid,
+    card_id: uuid::Uuid,
+    similarity_score: i64,
+}
