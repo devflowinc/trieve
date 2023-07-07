@@ -76,6 +76,7 @@ pub async fn search_card_query(
     pool: Arc<Mutex<web::Data<r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::PgConnection>>>>>,
     filter_oc_file_path: Option<Vec<String>>,
     filter_link_url: Option<Vec<String>>,
+    current_user_id: Option<uuid::Uuid>,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     let filter_oc_file_path = filter_oc_file_path.unwrap_or([].to_vec());
@@ -194,6 +195,60 @@ pub async fn search_card_query(
         search_results: point_ids,
         total_card_pages: (filtered_point_ids.len() as f64 / 25.0).ceil() as i64,
     })
+}
+
+pub async fn global_unfiltered_top_match_query(
+    embedding_vector: Vec<f32>,
+) -> Result<SearchResult, DefaultError> {
+    let qdrant = get_qdrant_connection().await?;
+
+    let data = qdrant
+        .search_points(&SearchPoints {
+            collection_name: "debate_cards".to_string(),
+            vector: embedding_vector,
+            limit: 1,
+            with_payload: None,
+            ..Default::default()
+        })
+        .await
+        .map_err(|_e| DefaultError {
+            message: "Failed to search points on Qdrant",
+        })?;
+
+    let top_search_result: SearchResult = match data.result.get(0) {
+        Some(point) => match point.clone().id {
+            Some(point_id) => match point_id.point_id_options {
+                Some(PointIdOptions::Uuid(id)) => SearchResult {
+                    score: point.score,
+                    point_id: uuid::Uuid::parse_str(&id).map_err(|_| DefaultError {
+                        message: "Failed to parse uuid",
+                    })?,
+                },
+                Some(PointIdOptions::Num(_)) => {
+                    return Err(DefaultError {
+                        message: "Failed to parse uuid",
+                    })
+                }
+                None => {
+                    return Err(DefaultError {
+                        message: "Failed to parse uuid",
+                    })
+                }
+            },
+            None => {
+                return Err(DefaultError {
+                    message: "Failed to parse uuid",
+                })
+            }
+        },
+        None => {
+            return Err(DefaultError {
+                message: "Failed to get point id",
+            })
+        }
+    };
+
+    Ok(top_search_result)
 }
 
 pub async fn search_card_collections_query(
