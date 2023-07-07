@@ -16,8 +16,8 @@ use diesel::sql_types::Int8;
 use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;
 use diesel::sql_types::{Bool, Double};
-use diesel::{Connection, JoinOnDsl, NullableExpressionMethods,
-    SelectableHelper,
+use diesel::{
+    BoolExpressionMethods, Connection, JoinOnDsl, NullableExpressionMethods, SelectableHelper,
 };
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
@@ -77,6 +77,9 @@ pub async fn search_card_query(
     filter_link_url: Option<Vec<String>>,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
+    let filter_oc_file_path = filter_oc_file_path.unwrap_or([].to_vec());
+    let filter_link_url = filter_link_url.unwrap_or([].to_vec());
+
     let mut conn = pool.lock().unwrap().get().unwrap();
 
     // SELECT distinct card_metadata.qdrant_point_id, card_collisions.collision_qdrant_id
@@ -84,14 +87,27 @@ pub async fn search_card_query(
     // left outer JOIN card_collisions ON card_metadata.id = card_collisions.card_id
     // WHERE card_metadata.private = false OR (card_metadata.private = false and card_metadata.qdrant_point_id is null);
 
+    use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
     let mut query = card_metadata_columns::card_metadata
-        .select(card_metadata_columns::qdrant_point_id)
+        .left_outer_join(
+            card_collisions_columns::card_collisions
+                .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
+        )
+        .select((
+            card_metadata_columns::qdrant_point_id,
+            card_collisions_columns::collision_qdrant_id.nullable(),
+        ))
         .filter(card_metadata_columns::private.eq(false))
+        .or_filter(
+            card_metadata_columns::private
+                .eq(false)
+                .and(card_metadata_columns::qdrant_point_id.is_null()),
+        )
+        .distinct_on(card_metadata_columns::qdrant_point_id)
+        .distinct_on(card_collisions_columns::collision_qdrant_id.nullable())
         .into_boxed();
-    let filter_oc_file_path = filter_oc_file_path.unwrap_or([].to_vec());
-    let filter_link_url = filter_link_url.unwrap_or([].to_vec());
 
     if !filter_oc_file_path.is_empty() {
         query = query.filter(
@@ -114,7 +130,7 @@ pub async fn search_card_query(
         query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
     }
 
-    let filtered_option_ids: Vec<Option<uuid::Uuid>> =
+    let filtered_option_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
@@ -123,7 +139,12 @@ pub async fn search_card_query(
 
     let filtered_point_ids: &Vec<PointId> = &filtered_option_ids
         .iter()
-        .map(|uuid| uuid.unwrap_or(uuid::Uuid::nil()).to_string().into())
+        .map(|uuid| {
+            uuid.0
+                .unwrap_or(uuid.1.unwrap_or(uuid::Uuid::nil()))
+                .to_string()
+                .into()
+        })
         .collect::<Vec<PointId>>();
 
     let mut filter = Filter::default();
