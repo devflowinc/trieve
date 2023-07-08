@@ -779,7 +779,7 @@ impl From<CardMetadataWithVotes> for CardMetadataWithVotesAndFiles {
             score: card.score,
             file_id: None,
             file_name: None,
-            verification_score: None
+            verification_score: None,
         }
     }
 }
