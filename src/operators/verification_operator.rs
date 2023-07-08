@@ -1,6 +1,7 @@
 use diesel::prelude::*;
 use headless_chrome::Browser;
 use regex::Regex;
+use soup::{QueryBuilderExt, NodeExt};
 use std::sync::{Arc, Mutex};
 
 use actix_web::web;
@@ -10,7 +11,7 @@ use crate::{
     errors::DefaultError,
 };
 
-pub async fn get_webpage_text_fetch(url: &str) -> Result<String, DefaultError> {
+pub async fn get_webpage_text_headless(url: &str) -> Result<String, DefaultError> {
     let browser = Browser::default().map_err(|_e| DefaultError {
         message: "Could not create browser",
     })?;
@@ -46,6 +47,32 @@ pub async fn get_webpage_text_fetch(url: &str) -> Result<String, DefaultError> {
 
     let re = Regex::new(r"\s+").unwrap();
     let clean_text = re.replace_all(&body_tag_inner_html, " ").to_string();
+
+    Ok(clean_text)
+}
+
+pub async fn get_webpage_text_fetch(url: &str) -> Result<String, DefaultError> {
+    let html = reqwest::get(url)
+        .await
+        .map_err(|_| DefaultError {
+            message: "Could not fetch page",
+        })?
+        .text()
+        .await
+        .map_err(|_| DefaultError {
+            message: "Could not parse text",
+        })?;
+
+    let soup = soup::Soup::new(&html);
+
+    let body = soup.tag("body").find().ok_or(DefaultError {
+        message: "Could not find body tag",
+    })?;
+
+    // Replace multiple whitesapces chars with a single space
+    let text = body.text();
+    let re = Regex::new(r"\s+").unwrap();
+    let clean_text = re.replace_all(&text, " ").to_string();
 
     Ok(clean_text)
 }
