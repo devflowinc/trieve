@@ -526,6 +526,7 @@ pub fn search_full_text_card_query(
     user_query: String,
     page: u64,
     pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    collision_check: bool,
     current_user_id: Option<uuid::Uuid>,
     filter_oc_file_path: Option<Vec<String>>,
     filter_link_url: Option<Vec<String>>,
@@ -603,10 +604,15 @@ pub fn search_full_text_card_query(
         query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
     }
 
-    query = query
-        .order(sql::<Text>("rank DESC"))
-        .limit(25)
-        .offset(((page - 1) * 25).try_into().unwrap());
+    query = query.order(sql::<Text>("rank DESC"));
+
+    if collision_check {
+        query = query.limit(1)
+    } else {
+        query = query
+            .limit(25)
+            .offset(((page - 1) * 25).try_into().unwrap());
+    }
 
     let searched_cards: Vec<(FullTextSearchResult, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
@@ -627,6 +633,14 @@ pub fn search_full_text_card_query(
             }
         })
         .collect::<Vec<(FullTextSearchResult, Option<uuid::Uuid>)>>();
+
+    if collision_check {
+        let searched_cards = searched_cards
+            .clone()
+            .into_iter()
+            .filter(|(card, _)| card.qdrant_point_id.is_some())
+            .collect::<Vec<(FullTextSearchResult, Option<uuid::Uuid>)>>();
+    }
 
     let card_metadata_with_upvotes_and_files = get_metadata(
         searched_cards

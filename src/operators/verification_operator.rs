@@ -1,7 +1,7 @@
 use diesel::prelude::*;
 use headless_chrome::Browser;
 use regex::Regex;
-use soup::{QueryBuilderExt, NodeExt};
+use soup::{NodeExt, QueryBuilderExt};
 use std::sync::{Arc, Mutex};
 
 use actix_web::web;

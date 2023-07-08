@@ -65,9 +65,13 @@ pub async fn get_notifications(
     Ok(HttpResponse::Ok().json(notifications))
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct NotificationId {
+    pub notification_id: uuid::Uuid,
+}
 pub async fn mark_notification_as_read(
     user: LoggedUser,
-    notification_id: web::Json<uuid::Uuid>,
+    notification_id: web::Json<NotificationId>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_id = user.id;
@@ -76,7 +80,7 @@ pub async fn mark_notification_as_read(
     web::block(move || {
         mark_notification_as_read_query(
             user_id,
-            notification_id.into_inner(),
+            notification_id.into_inner().notification_id,
             thread_safe_pool.lock().unwrap(),
         )
     })
