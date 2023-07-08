@@ -22,7 +22,6 @@ serde_json = { version = "1" }
 serde = { version = "1" }
 time = {version = "0.3"}
 uuid = { version = "1", features = ["v4", "serde"] }
-reqwest = "0.11"
 openssl = { version = "0.10" }
 sendgrid = { version = "0.19" }
 diesel_migrations = { version = "2.0" }
@@ -44,3 +43,4 @@ difference = "2.0.0"
 rust-s3 = { version = "0.33.0" }
 base64 = "0.21.2"
 fuzzy-matcher = "0.3.7"
+headless_chrome = "1.0.5"
