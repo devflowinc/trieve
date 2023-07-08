@@ -53,7 +53,7 @@ pub async fn upload_file_handler(
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let upload_file_data = data.into_inner();
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
+    let pool_inner = pool.clone();
 
     let base64_engine = engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
 
@@ -79,7 +79,7 @@ pub async fn upload_file_handler(
         file_mime,
         private,
         user,
-        thread_safe_pool,
+        pool_inner,
     )
     .await
     .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;

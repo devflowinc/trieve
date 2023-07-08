@@ -42,7 +42,7 @@ pub fn create_collection_and_add_bookmarks_query(
     new_collection: CardCollection,
     bookmarks: Vec<uuid::Uuid>,
     created_file_id: uuid::Uuid,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<CardCollection, DefaultError> {
     use crate::data::schema::card_collection::dsl::*;
 
