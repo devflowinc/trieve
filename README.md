@@ -32,6 +32,11 @@ S3_BUCKET=XXXXXXXXXXXXXXXXXXxx
 S3_ENDPOINT=XXXXXXXXXXXXXXXXXXxx
 ```
 
+## APT packages needed 
+
+`chromium-browser`
+`openssl`
+
 ## Setting Up Local S3
 
 1. `sudo docker compose up s3`
