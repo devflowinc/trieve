@@ -5,8 +5,7 @@ use crate::operators::card_operator as card_op;
 use crate::operators::notification_operator::add_verificiation_notification_query;
 use crate::{data::models::Pool, errors::ServiceError, operators::verification_operator as op};
 use actix_web::{web, HttpResponse};
-use fuzzy_matcher::skim::SkimMatcherV2;
-use fuzzy_matcher::FuzzyMatcher;
+use fuzzywuzzy::fuzz;
 use serde::{Deserialize, Serialize};
 
 use super::auth_handler::LoggedUser;
@@ -18,20 +17,13 @@ pub enum VerifyData {
     CardVerification { card_uuid: uuid::Uuid },
 }
 
-pub async fn get_webpage_score(
-    url_source: &str,
-    content: &str,
-) -> Result<i64, actix_web::Error> {
+pub async fn get_webpage_score(url_source: &str, content: &str) -> Result<i64, actix_web::Error> {
     let webpage_content = op::get_webpage_text_fetch(url_source)
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Could not fetch: {}", err)))?;
 
-    let matcher = SkimMatcherV2::default();
-    let (score, _) = matcher
-        .fuzzy_indices(&webpage_content, content)
-        .unwrap_or((0, vec![]));
-
-    Ok(score)
+    let score = fuzz::partial_ratio(content, &webpage_content);
+    Ok(score as i64)
 }
 
 #[derive(Debug, Deserialize, Serialize)]
