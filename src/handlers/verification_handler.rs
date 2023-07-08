@@ -1,11 +1,15 @@
 use std::sync::{Arc, Mutex};
 
+use crate::data::models::VerificationNotification;
 use crate::operators::card_operator as card_op;
+use crate::operators::notification_operator::add_verificiation_notification_query;
 use crate::{data::models::Pool, errors::ServiceError, operators::verification_operator as op};
 use actix_web::{web, HttpResponse};
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 use serde::{Deserialize, Serialize};
+
+use super::auth_handler::LoggedUser;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(untagged)]
@@ -37,11 +41,13 @@ pub struct VerificationStatus {
 
 pub async fn verify_card_content(
     data: web::Json<VerifyData>,
+    user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     // Try naive html get first then use the headless browser approach
     let thread_safe_pool = Arc::new(Mutex::new(pool));
     let pool1 = thread_safe_pool.clone();
+    let pool2 = thread_safe_pool.clone();
     let data = data.into_inner();
 
     let score = match data.clone() {
@@ -69,6 +75,15 @@ pub async fn verify_card_content(
         web::block(move || op::upsert_card_verification_query(thread_safe_pool, card_uuid, score))
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.to_string()))?;
+
+        web::block(move || {
+            add_verificiation_notification_query(
+                &VerificationNotification::from_details(card_uuid, user.id, uuid::Uuid::new_v4()),
+                pool2.lock().unwrap(),
+            )
+        })
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.to_string()))?;
     }
 
     Ok(HttpResponse::Ok().json(VerificationStatus { score }))
