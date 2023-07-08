@@ -293,6 +293,23 @@ pub async fn main() -> std::io::Result<()> {
                         web::resource("/file/{file_id}")
                             .route(web::get().to(handlers::file_handler::get_file_handler))
                             .route(web::delete().to(handlers::file_handler::delete_file_handler)),
+                    )
+                    .service(
+                        web::resource("/notifications")
+                            .route(web::post().to(
+                                handlers::notification_handler::create_verificiation_notification,
+                            ))
+                            .route(web::get().to(handlers::notification_handler::get_notifications))
+                            .route(
+                                web::put()
+                                    .to(handlers::notification_handler::mark_notification_as_read),
+                            ),
+                    )
+                    .service(
+                        web::resource("/notifications/all")
+                            .route(web::put().to(
+                                handlers::notification_handler::mark_all_notifications_as_read,
+                            )),
                     ),
             )
     })

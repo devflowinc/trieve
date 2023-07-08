@@ -12,7 +12,7 @@ use crate::{
     errors::DefaultError,
 };
 use actix_web::web;
-use diesel::dsl::{not, sql};
+use diesel::dsl::sql;
 use diesel::sql_types::Int8;
 use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;

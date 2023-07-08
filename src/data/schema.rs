@@ -62,8 +62,8 @@ diesel::table! {
         updated_at -> Timestamp,
         oc_file_path -> Nullable<Text>,
         card_html -> Nullable<Text>,
-        card_metadata_tsvector -> Nullable<Tsvector>,
         private -> Bool,
+        card_metadata_tsvector -> Nullable<Tsvector>,
     }
 }
 
@@ -194,6 +194,18 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    verification_notifications (id) {
+        id -> Uuid,
+        user_uuid -> Uuid,
+        card_uuid -> Uuid,
+        verification_uuid -> Uuid,
+        user_read -> Bool,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
 diesel::joinable!(card_collection -> users (author_id));
 diesel::joinable!(card_collection_bookmarks -> card_collection (collection_id));
 diesel::joinable!(card_collection_bookmarks -> card_metadata (card_metadata_id));
@@ -208,6 +220,9 @@ diesel::joinable!(collections_from_files -> files (file_id));
 diesel::joinable!(files -> users (user_id));
 diesel::joinable!(messages -> topics (topic_id));
 diesel::joinable!(topics -> users (user_id));
+diesel::joinable!(verification_notifications -> card_metadata (card_uuid));
+diesel::joinable!(verification_notifications -> card_verification (verification_uuid));
+diesel::joinable!(verification_notifications -> users (user_uuid));
 
 diesel::allow_tables_to_appear_in_same_query!(
     card_collection,
@@ -226,4 +241,5 @@ diesel::allow_tables_to_appear_in_same_query!(
     topics,
     user_plans,
     users,
+    verification_notifications,
 );
