@@ -511,6 +511,7 @@ pub fn search_full_text_card_query(
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+
     let mut conn = pool.get().unwrap();
     let mut query = card_metadata_columns::card_metadata
         .left_outer_join(
@@ -518,9 +519,6 @@ pub fn search_full_text_card_query(
                 .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
         )
         .filter(card_metadata_columns::private.eq(false))
-        .or_filter(
-            card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
-        )
         .or_filter(
             card_metadata_columns::private
                 .eq(false)
@@ -538,14 +536,11 @@ pub fn search_full_text_card_query(
                 card_metadata_columns::oc_file_path,
                 card_metadata_columns::card_html,
                 card_metadata_columns::private,
-                sql::<Nullable<Double>>("(ts_rank(card_metadata_tsvector, to_tsquery('english', ")
-                    .bind::<Text, _>(
-                        user_query
-                            .split_whitespace()
-                            .collect::<Vec<&str>>()
-                            .join(" & "),
-                    )
-                    .sql(") , 32) * 10) AS rank"),
+                sql::<Nullable<Double>>(
+                    "(ts_rank(card_metadata_tsvector, plainto_tsquery('english', ",
+                )
+                .bind::<Text, _>(user_query.clone())
+                .sql(") , 32) * 10) AS rank"),
                 sql::<Int8>("count(*) OVER() AS full_count"),
             ),
             card_collisions_columns::collision_qdrant_id.nullable(),
@@ -557,13 +552,8 @@ pub fn search_full_text_card_query(
         .into_boxed();
 
     query = query.filter(
-        sql::<Bool>("card_metadata_tsvector @@ to_tsquery('english', ")
-            .bind::<Text, _>(
-                user_query
-                    .split_whitespace()
-                    .collect::<Vec<&str>>()
-                    .join(" & "),
-            )
+        sql::<Bool>("card_metadata_tsvector @@ plainto_tsquery('english', ")
+            .bind::<Text, _>(user_query)
             .sql(")"),
     );
 
@@ -598,7 +588,7 @@ pub fn search_full_text_card_query(
 
     let searched_cards: Vec<(FullTextSearchResult, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
-            message: "Failed to load searched cards",
+            message: "Failed to load trigram searched cards",
         })?;
 
     //filter searched_cards so that it only contains cards where the collisions_point_id is not in the qdrant_point_id of another card
