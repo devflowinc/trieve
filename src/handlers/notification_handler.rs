@@ -18,6 +18,7 @@ pub struct VerificationNotificationData {
     pub card_uuid: uuid::Uuid,
     pub user_uuid: uuid::Uuid,
     pub verification_uuid: uuid::Uuid,
+    pub score: i64,
 }
 
 pub async fn create_verificiation_notification(
@@ -33,6 +34,7 @@ pub async fn create_verificiation_notification(
                 data.card_uuid,
                 data.user_uuid,
                 data.verification_uuid,
+                data.score,
             ),
             thread_safe_pool.lock().unwrap(),
         )
