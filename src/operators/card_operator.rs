@@ -614,13 +614,13 @@ pub fn search_full_text_card_query(
             .offset(((page - 1) * 25).try_into().unwrap());
     }
 
-    let searched_cards: Vec<(FullTextSearchResult, Option<uuid::Uuid>)> =
+    let mut searched_cards: Vec<(FullTextSearchResult, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
             message: "Failed to load trigram searched cards",
         })?;
 
     //filter searched_cards so that it only contains cards where the collisions_point_id is not in the qdrant_point_id of another card
-    let searched_cards = searched_cards
+    searched_cards = searched_cards
         .clone()
         .into_iter()
         .filter(|(_, collision)| {
@@ -635,7 +635,7 @@ pub fn search_full_text_card_query(
         .collect::<Vec<(FullTextSearchResult, Option<uuid::Uuid>)>>();
 
     if collision_check {
-        let searched_cards = searched_cards
+        searched_cards = searched_cards
             .clone()
             .into_iter()
             .filter(|(card, _)| card.qdrant_point_id.is_some())
