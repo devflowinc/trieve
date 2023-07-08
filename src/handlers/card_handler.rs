@@ -103,27 +103,27 @@ pub async fn create_card(
 
             if score_card.card_html.is_none() {
                 let score_card_1 = score_card.clone();
+                let card_metadata = CardMetadata::from_details_with_id(
+                    score_card_1.id,
+                    &content,
+                    &card.card_html,
+                    &card.link,
+                    &card.oc_file_path,
+                    score_card_1.author.clone().unwrap().id,
+                    Some(score_card_1.qdrant_point_id),
+                    card.private.unwrap_or(score_card_1.private),
+                );
+                let metadata_1 = card_metadata.clone();
                 web::block(move || {
-                    update_card_metadata_query(
-                        CardMetadata::from_details_with_id(
-                            score_card_1.id,
-                            &content,
-                            &card.card_html,
-                            &card.link,
-                            &card.oc_file_path,
-                            score_card_1.author.clone().unwrap().id,
-                            Some(score_card_1.qdrant_point_id),
-                            card.private.unwrap_or(score_card_1.private),
-                        ),
-                        pool3.lock().unwrap(),
-                    )
+                    update_card_metadata_query(card_metadata, pool3.lock().unwrap())
                 })
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-                return Ok(HttpResponse::Ok().json(json!({
-                    "message": "Card updated",
-                })));
+                return Ok(HttpResponse::Ok().json(ReturnCreatedCard {
+                    card_metadata: metadata_1,
+                    duplicate: true,
+                }));
             }
         }
     }
@@ -187,27 +187,28 @@ pub async fn create_card(
             };
 
             if top_score_card.card_html.is_none() {
+                let card_metadata = CardMetadata::from_details_with_id(
+                    top_score_card.id,
+                    &content,
+                    &card.card_html,
+                    &card.link,
+                    &card.oc_file_path,
+                    top_score_card_author_id,
+                    Some(top_score_card.qdrant_point_id),
+                    top_score_card.private,
+                );
+                let metadata_1 = card_metadata.clone();
+
                 web::block(move || {
-                    update_card_metadata_query(
-                        CardMetadata::from_details_with_id(
-                            top_score_card.id,
-                            &content,
-                            &card.card_html,
-                            &card.link,
-                            &card.oc_file_path,
-                            top_score_card_author_id,
-                            Some(top_score_card.qdrant_point_id),
-                            top_score_card.private,
-                        ),
-                        pool3.lock().unwrap(),
-                    )
+                    update_card_metadata_query(card_metadata, pool3.lock().unwrap())
                 })
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-                return Ok(HttpResponse::Ok().json(json!({
-                    "message": "Card updated",
-                })));
+                return Ok(HttpResponse::Ok().json(ReturnCreatedCard {
+                    card_metadata: metadata_1,
+                    duplicate: true,
+                }));
             }
         }
     }
