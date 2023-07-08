@@ -5,7 +5,6 @@ const api_endpoint = process.env.API_ENDPOINT || "http://localhost:8090/api";
 
 describe("Card Verification Tests", () => {
   let authCookie = null;
-
   test("Verification with exact match", async () => {
     authCookie = await getAuthCookie();
 
@@ -15,10 +14,12 @@ describe("Card Verification Tests", () => {
         "Content-Type": "application/json",
         Cookie: authCookie,
       },
+      credentials: "include",
       body: JSON.stringify({
-        url_source: "https://www.example.com",
         content:
           "Example Domain This domain is for use in illustrative examples in documents. You may use this domain in literature without prior coordination or asking for permission.",
+        url_source: "https://www.example.com",
+       
       }),
     });
     const json = await response.json();
@@ -27,6 +28,8 @@ describe("Card Verification Tests", () => {
   });
 
   test("Verification with exact match and slight changes", async () => {
+    authCookie = await getAuthCookie();
+
     let content =
       "Example Domain This domain is for use in illustrative examples in documents. You may use this domain in literature without prior coordination or asking for permission.";
     content += "L";
@@ -36,9 +39,30 @@ describe("Card Verification Tests", () => {
         "Content-Type": "application/json",
         Cookie: authCookie,
       },
+      credentials: "include",
       body: JSON.stringify({
         url_source: "https://blog.arguflow.com/posts/streaming-chatgpt-messages-with-openai-api-and-actix-web",
         content,
+      }),
+    });
+    const json = await response.json();
+    expect(json).toHaveProperty("score");
+    console.log("Score: ", json.score);
+  });
+
+  test("Verification for card", async () => {
+    authCookie = await getAuthCookie();
+
+    let card_uuid = "8b53cac3-3f04-42e7-a5c6-0b0d2655db46";
+    const response = await fetch(`${api_endpoint}/verification`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: authCookie,
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        card_uuid,
       }),
     });
     const json = await response.json();
