@@ -2,8 +2,8 @@ use std::collections::HashSet;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::data::models::{
-    CardCollisions, CardFile, CardFileWithName, CardMetadataWithVotesAndFiles, CardVote,
-    FullTextSearchResult, User, UserDTO,
+    CardCollisions, CardFile, CardFileWithName, CardMetadataWithVotesAndFiles, CardVerifications,
+    CardVote, FullTextSearchResult, User, UserDTO,
 };
 use crate::diesel::TextExpressionMethods;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
@@ -382,6 +382,7 @@ pub fn get_metadata(
     mut conn: r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::PgConnection>>,
 ) -> Result<Vec<CardMetadataWithVotesAndFiles>, DefaultError> {
     use crate::data::schema::card_files::dsl as card_files_columns;
+    use crate::data::schema::card_verification::dsl as card_verification_columns;
     use crate::data::schema::card_votes::dsl as card_votes_columns;
     use crate::data::schema::files::dsl as files_columns;
     use crate::data::schema::users::dsl as user_columns;
@@ -436,6 +437,21 @@ pub fn get_metadata(
             message: "Failed to load metadata",
         })?;
 
+    let card_verifications: Vec<CardVerifications> = card_verification_columns::card_verification
+        .filter(
+            card_verification_columns::card_id.eq_any(
+                card_metadata
+                    .iter()
+                    .map(|card| card.id)
+                    .collect::<Vec<uuid::Uuid>>()
+                    .as_slice(),
+            ),
+        )
+        .load::<CardVerifications>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load verification metadata",
+        })?;
+
     let card_metadata_with_upvotes_and_file_id: Vec<CardMetadataWithVotesAndFiles> = card_metadata
         .into_iter()
         .map(|metadata| {
@@ -469,6 +485,11 @@ pub fn get_metadata(
                     created_at: user.created_at,
                 });
 
+            let verification_score = card_verifications
+                .iter()
+                .find(|verification| verification.card_id == metadata.id)
+                .map(|verification| verification.similarity_score);
+
             let card_with_file_name = file_ids.iter().find(|file| file.card_id == metadata.id);
 
             CardMetadataWithVotesAndFiles {
@@ -488,6 +509,7 @@ pub fn get_metadata(
                 card_html: metadata.card_html,
                 file_id: card_with_file_name.map(|file| file.file_id),
                 file_name: card_with_file_name.map(|file| file.file_name.to_string()),
+                verification_score,
             }
         })
         .collect();
