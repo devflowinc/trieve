@@ -24,7 +24,7 @@ describe("Card Verification Tests", () => {
     });
     const json = await response.json();
     expect(json).toHaveProperty("score");
-    console.log("Score: ", json.score);
+    expect(json.score).toBe(1);
   });
 
   test("Verification with exact match and slight changes", async () => {
@@ -47,7 +47,7 @@ describe("Card Verification Tests", () => {
     });
     const json = await response.json();
     expect(json).toHaveProperty("score");
-    console.log("Score: ", json.score);
+    expect(json.score).toBe(1);
   });
 
   test("Verification for card", async () => {
@@ -88,7 +88,7 @@ describe("Card Verification Tests", () => {
     });
     const json = await response.json();
     expect(json).toHaveProperty("score");
-    console.log("Score: ", json.score);
+    expect(json.score).toBe(1);
   });
 
   test("2 exact match", async () => {
@@ -108,7 +108,7 @@ describe("Card Verification Tests", () => {
     });
     const json = await response.json();
     expect(json).toHaveProperty("score");
-    console.log("Score: ", json.score);
+    expect(json.score).toBe(1);
   });
 
   test("exact match symbols", async () => {
@@ -128,7 +128,7 @@ describe("Card Verification Tests", () => {
     });
     const json = await response.json();
     expect(json).toHaveProperty("score");
-    console.log("Score: ", json.score);
+    expect(json.score).toBe(1);
   });
 
   test("Not in there at all", async () => {
@@ -147,7 +147,7 @@ describe("Card Verification Tests", () => {
     });
     const json = await response.json();
     expect(json).toHaveProperty("score");
-    console.log("Score: ", json.score);
+    expect(json.score).toBe(1);
   });
 
   test("example.com exact match", async () => {
@@ -166,7 +166,7 @@ describe("Card Verification Tests", () => {
     });
     const json = await response.json();
     expect(json).toHaveProperty("score");
-    console.log("Score: ", json.score);
+    expect(json.score).toBe(1);
   });
 
   test("example.com a little bit added", async () => {
@@ -186,7 +186,7 @@ describe("Card Verification Tests", () => {
     });
     const json = await response.json();
     expect(json).toHaveProperty("score");
-    console.log("Score: ", json.score);
+    expect(json.score).toBe(1);
   });
 
   test("1 exact then junk", async () => {
@@ -206,8 +206,26 @@ describe("Card Verification Tests", () => {
     });
     const json = await response.json();
     expect(json).toHaveProperty("score");
-    console.log("Score: ", json.score);
+    expect(json.score).toBe(1);
   });
 
+  test("Random stuff", async () => {
+    let content = "()_()_s()_s()_s()s_()_s()_s()_s(xz[]zx[]_s()"
+
+    const response = await fetch(`${api_endpoint}/verification`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: authCookie,
+      },
+      body: JSON.stringify({
+        url_source: "https://blog.arguflow.com/posts/streaming-chatgpt-messages-with-openai-api-and-actix-web",
+        content,
+      }),
+    });
+    const json = await response.json();
+    expect(json).toHaveProperty("score");
+    expect(json.score).toBe(1);
+  });
 
 });
