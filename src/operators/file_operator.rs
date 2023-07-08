@@ -306,8 +306,12 @@ pub async fn convert_docx_to_html_query(
                     card_metadata = serde_json::from_slice(
                         response.into_body().try_into_bytes().unwrap().as_ref(),
                     )
-                    .map_err(|_err| DefaultError {
-                        message: "Could not parse card ids",
+                    .map_err(|err| {
+                        info!("Error creating card metadata: {:?}", err.to_string());
+
+                        DefaultError {
+                            message: "Error creating card metadata's for file",
+                        }
                     })?;
                     card_ids.push(card_metadata.card_metadata.id);
                 } else {
