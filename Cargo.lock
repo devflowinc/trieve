@@ -372,6 +372,7 @@ dependencies = [
  "qdrant-client",
  "r2d2",
  "regex",
+ "reqwest",
  "rust-argon2",
  "rust-s3",
  "sendgrid",

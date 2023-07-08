@@ -44,3 +44,4 @@ rust-s3 = { version = "0.33.0" }
 base64 = "0.21.2"
 headless_chrome = "1.0.5"
 fuzzywuzzy = "0.0.2"
+reqwest = "0.11.18"

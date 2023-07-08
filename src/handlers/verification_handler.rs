@@ -22,7 +22,16 @@ pub async fn get_webpage_score(url_source: &str, content: &str) -> Result<i64, a
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Could not fetch: {}", err)))?;
 
-    let score = fuzz::partial_ratio(content, &webpage_content);
+    let mut score = fuzz::partial_ratio(content, &webpage_content);
+
+    if score < 50 {
+        let webpage_content = op::get_webpage_text_headless(url_source)
+            .await
+            .map_err(|err| ServiceError::BadRequest(format!("Could not fetch: {}", err)))?;
+
+        score = fuzz::partial_ratio(content, &webpage_content);
+    }
+
     Ok(score as i64)
 }
 
