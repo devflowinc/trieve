@@ -18,10 +18,7 @@ pub enum VerifyData {
     CardVerification { card_uuid: uuid::Uuid },
 }
 
-pub async fn get_webpage_score(
-    url_source: &str,
-    content: &str,
-) -> Result<i64, actix_web::Error> {
+pub async fn get_webpage_score(url_source: &str, content: &str) -> Result<i64, actix_web::Error> {
     let webpage_content = op::get_webpage_text_fetch(url_source)
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Could not fetch: {}", err)))?;
