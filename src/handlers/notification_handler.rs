@@ -30,7 +30,7 @@ pub async fn create_verificiation_notification(
 
     web::block(move || {
         add_verificiation_notification_query(
-            &VerificationNotification::from_details(
+            VerificationNotification::from_details(
                 data.card_uuid,
                 data.user_uuid,
                 data.verification_uuid,

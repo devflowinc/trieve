@@ -5,7 +5,10 @@ use std::sync::{Arc, Mutex};
 
 use actix_web::web;
 
-use crate::{data::models::Pool, errors::DefaultError};
+use crate::{
+    data::models::{CardVerifications, Pool},
+    errors::DefaultError,
+};
 
 pub async fn get_webpage_text_fetch(url: &str) -> Result<String, DefaultError> {
     let browser = Browser::default().map_err(|_e| DefaultError {
@@ -51,14 +54,14 @@ pub fn upsert_card_verification_query(
     pool: Arc<Mutex<web::Data<Pool>>>,
     card_uuid: uuid::Uuid,
     new_score: i64,
-) -> Result<(), DefaultError> {
+) -> Result<CardVerifications, DefaultError> {
     use crate::data::schema::card_verification::dsl::*;
 
     let mut conn = pool.lock().unwrap().get().unwrap();
 
     let new_id = uuid::Uuid::new_v4();
 
-    diesel::insert_into(card_verification)
+    let created_verification = diesel::insert_into(card_verification)
         .values((
             id.eq(new_id),
             card_id.eq(card_uuid),
@@ -67,10 +70,10 @@ pub fn upsert_card_verification_query(
         .on_conflict(card_id)
         .do_update()
         .set(similarity_score.eq(new_score))
-        .execute(&mut conn)
+        .get_result(&mut conn)
         .map_err(|_| DefaultError {
             message: "Could not upsert card verification",
         })?;
 
-    Ok(())
+    Ok(created_verification)
 }

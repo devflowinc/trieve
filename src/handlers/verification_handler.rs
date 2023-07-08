@@ -18,10 +18,7 @@ pub enum VerifyData {
     CardVerification { card_uuid: uuid::Uuid },
 }
 
-pub async fn get_webpage_score(
-    url_source: &str,
-    content: &str,
-) -> Result<i64, actix_web::Error> {
+pub async fn get_webpage_score(url_source: &str, content: &str) -> Result<i64, actix_web::Error> {
     let webpage_content = op::get_webpage_text_fetch(url_source)
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Could not fetch: {}", err)))?;
@@ -72,18 +69,15 @@ pub async fn verify_card_content(
 
     if let VerifyData::CardVerification { card_uuid } = data {
         // This is a vault call, so we need to update the card with the score
-        web::block(move || op::upsert_card_verification_query(thread_safe_pool, card_uuid, score))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.to_string()))?;
+        let verification = web::block(move || {
+            op::upsert_card_verification_query(thread_safe_pool, card_uuid, score)
+        })
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.to_string()))?;
 
         web::block(move || {
             add_verificiation_notification_query(
-                &VerificationNotification::from_details(
-                    card_uuid,
-                    user.id,
-                    uuid::Uuid::new_v4(),
-                    score,
-                ),
+                VerificationNotification::from_details(card_uuid, user.id, verification.id, score),
                 pool2.lock().unwrap(),
             )
         })

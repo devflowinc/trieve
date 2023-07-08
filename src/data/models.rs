@@ -783,22 +783,22 @@ impl From<CardMetadataWithVotes> for CardMetadataWithVotesAndFiles {
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable)]
 #[diesel(table_name = card_verification)]
 pub struct CardVerifications {
-    id: uuid::Uuid,
-    card_id: uuid::Uuid,
-    similarity_score: i64,
+    pub id: uuid::Uuid,
+    pub card_id: uuid::Uuid,
+    pub similarity_score: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable)]
 #[diesel(table_name = verification_notifications)]
 pub struct VerificationNotification {
-    id: uuid::Uuid,
-    user_uuid: uuid::Uuid,
-    card_uuid: uuid::Uuid,
-    verification_uuid: uuid::Uuid,
-    similarity_score: i64,
-    user_read: bool,
-    created_at: chrono::NaiveDateTime,
-    updated_at: chrono::NaiveDateTime,
+    pub id: uuid::Uuid,
+    pub user_uuid: uuid::Uuid,
+    pub card_uuid: uuid::Uuid,
+    pub verification_uuid: uuid::Uuid,
+    pub similarity_score: i64,
+    pub user_read: bool,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
 }
 
 impl VerificationNotification {
