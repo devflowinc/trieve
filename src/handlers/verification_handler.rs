@@ -78,7 +78,12 @@ pub async fn verify_card_content(
 
         web::block(move || {
             add_verificiation_notification_query(
-                &VerificationNotification::from_details(card_uuid, user.id, uuid::Uuid::new_v4()),
+                &VerificationNotification::from_details(
+                    card_uuid,
+                    user.id,
+                    uuid::Uuid::new_v4(),
+                    score,
+                ),
                 pool2.lock().unwrap(),
             )
         })
