@@ -62,8 +62,8 @@ diesel::table! {
         updated_at -> Timestamp,
         oc_file_path -> Nullable<Text>,
         card_html -> Nullable<Text>,
-        private -> Bool,
         card_metadata_tsvector -> Nullable<Tsvector>,
+        private -> Bool,
     }
 }
 

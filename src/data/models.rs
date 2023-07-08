@@ -400,6 +400,7 @@ pub struct CardMetadataWithVotesWithoutScore {
     pub file_id: Option<uuid::Uuid>,
     pub file_name: Option<String>,
     pub private: bool,
+    pub verification_score: Option<i64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -641,6 +642,7 @@ impl From<CardMetadataWithVotesAndFiles> for CardMetadataWithVotesWithoutScore {
             file_id: cards.file_id,
             file_name: cards.file_name,
             private: cards.private,
+            verification_score: cards.verification_score,
         }
     }
 }
@@ -755,6 +757,7 @@ pub struct CardMetadataWithVotesAndFiles {
     pub score: Option<f64>,
     pub file_id: Option<uuid::Uuid>,
     pub file_name: Option<String>,
+    pub verification_score: Option<i64>,
 }
 
 impl From<CardMetadataWithVotes> for CardMetadataWithVotesAndFiles {
@@ -776,6 +779,7 @@ impl From<CardMetadataWithVotes> for CardMetadataWithVotesAndFiles {
             score: card.score,
             file_id: None,
             file_name: None,
+            verification_score: None
         }
     }
 }
