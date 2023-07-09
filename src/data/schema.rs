@@ -62,8 +62,8 @@ diesel::table! {
         updated_at -> Timestamp,
         oc_file_path -> Nullable<Text>,
         card_html -> Nullable<Text>,
-        card_metadata_tsvector -> Nullable<Tsvector>,
         private -> Bool,
+        card_metadata_tsvector -> Nullable<Tsvector>,
     }
 }
 
@@ -72,6 +72,8 @@ diesel::table! {
         id -> Uuid,
         card_id -> Uuid,
         similarity_score -> Int8,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
     }
 }
 
