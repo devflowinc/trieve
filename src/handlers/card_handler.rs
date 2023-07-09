@@ -115,7 +115,7 @@ pub async fn create_card(
                 );
                 let metadata_1 = card_metadata.clone();
                 web::block(move || {
-                    update_card_metadata_query(card_metadata, pool3.lock().unwrap())
+                    update_card_metadata_query(card_metadata, card.file_uuid, pool3.lock().unwrap())
                 })
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -200,7 +200,7 @@ pub async fn create_card(
                 let metadata_1 = card_metadata.clone();
 
                 web::block(move || {
-                    update_card_metadata_query(card_metadata, pool3.lock().unwrap())
+                    update_card_metadata_query(card_metadata, card.file_uuid, pool3.lock().unwrap())
                 })
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -414,6 +414,7 @@ pub async fn update_card(
                 card_metadata.qdrant_point_id,
                 private,
             ),
+            None,
             pool1.lock().unwrap(),
         )
     })
