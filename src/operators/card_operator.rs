@@ -926,8 +926,10 @@ pub fn insert_duplicate_card_metadata_query(
 
 pub fn update_card_metadata_query(
     card_data: CardMetadata,
+    file_uuid: Option<uuid::Uuid>,
     pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<(), DefaultError> {
+    use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     use crate::data::schema::card_votes::dsl as card_votes_columns;
 
@@ -951,6 +953,11 @@ pub fn update_card_metadata_query(
         .set(card_votes_columns::deleted.eq(card_data.private))
         .execute(conn)?;
 
+        if file_uuid.is_some() {
+            diesel::insert_into(card_files_columns::card_files)
+                .values(&CardFile::from_details(card_data.id, file_uuid.unwrap()))
+                .execute(conn)?;
+        }
         Ok(())
     });
 
