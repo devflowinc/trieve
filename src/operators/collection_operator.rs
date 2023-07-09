@@ -317,7 +317,7 @@ pub fn get_bookmarks_for_collection_query(
             sql::<Int8>("count(*) OVER() AS full_count"),
         ))
         .limit(25)
-        .offset(((page - 1) * 25).try_into().unwrap())
+        .offset(((page - 1) * 25).try_into().unwrap_or(0))
         .load::<CardMetadataWithCount>(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Error getting bookmarks",
@@ -332,9 +332,15 @@ pub fn get_bookmarks_for_collection_query(
         get_metadata(converted_cards, current_user_id, conn).map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
+
+    let total_pages = match bookmark_metadata.get(0) {
+        Some(metadata) => (metadata.count as f64 / 25.0).ceil() as i64,
+        None => 0,
+    };
+
     Ok(CollectionsBookmarkQueryResult {
         metadata: card_metadata_with_upvotes_and_file_id,
-        total_pages: (bookmark_metadata.get(0).unwrap().count as f64 / 25.0).ceil() as i64,
+        total_pages,
     })
 }
 
@@ -349,7 +355,7 @@ pub fn get_collections_for_bookmark_query(
     let mut conn = pool.get().unwrap();
 
     let user_collections: Vec<uuid::Uuid> = card_collection_columns::card_collection
-        .filter(card_collection_columns::author_id.eq(current_user_id.unwrap()))
+        .filter(card_collection_columns::author_id.eq(current_user_id.unwrap_or_default()))
         .select(card_collection_columns::id)
         .load::<uuid::Uuid>(&mut conn)
         .map_err(|_err| DefaultError {
