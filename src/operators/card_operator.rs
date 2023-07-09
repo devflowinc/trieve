@@ -994,6 +994,23 @@ pub async fn delete_card_metadata_query(
             )
             .execute(conn)?;
 
+            let deleted_card_collision_count = diesel::delete(
+                card_collisions_columns::card_collisions
+                    .filter(card_collisions_columns::card_id.eq(card_uuid)),
+            )
+            .execute(conn)?;
+
+            if deleted_card_collision_count > 0 {
+                // there cannot be collisions for a collision, just delete the card_metadata without issue
+                diesel::delete(
+                    card_metadata_columns::card_metadata
+                        .filter(card_metadata_columns::id.eq(card_uuid)),
+                )
+                .execute(conn)?;
+
+                return Ok(TransactionResult::CardCollisionNotDetected);
+            }
+
             let card_collisions: Vec<(CardCollisions, bool)> =
                 card_collisions_columns::card_collisions
                     .inner_join(
