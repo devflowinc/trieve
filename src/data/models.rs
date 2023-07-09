@@ -790,6 +790,8 @@ pub struct CardVerifications {
     pub id: uuid::Uuid,
     pub card_id: uuid::Uuid,
     pub similarity_score: i64,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable)]
