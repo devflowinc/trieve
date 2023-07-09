@@ -69,3 +69,10 @@ This section refers to the jest testing suite found in the `jest-tests` folder o
 2. `cd` into the testing suite folder
 3. Run `yarn`
 4. Run `yarn test`
+
+## Resetting the db's
+
+1. `sudo docker compose stop qdrant-database`
+2. `sudo docker compose rm -f qdrant-database`
+3. `sudo docker volume rm ai-editor_qdrant_data`
+4. `sudo diesel db reset`
