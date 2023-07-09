@@ -241,11 +241,11 @@ pub async fn global_unfiltered_top_match_query(
                 })
             }
         },
-        None => {
-            return Err(DefaultError {
-                message: "Failed to get point id",
-            })
-        }
+        // This only happens when there are no cards in the database
+        None => SearchResult {
+            score: 0.0,
+            point_id: uuid::Uuid::nil(),
+        },
     };
 
     Ok(top_search_result)
