@@ -76,3 +76,7 @@ This section refers to the jest testing suite found in the `jest-tests` folder o
 2. `sudo docker compose rm -f qdrant-database`
 3. `sudo docker volume rm ai-editor_qdrant_data`
 4. `sudo diesel db reset`
+
+## How to debug diesel by getting the exact generated SQL
+
+diesel::debug_query::<diesel::pg::Pg, _>(&query);
