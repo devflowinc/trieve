@@ -5,6 +5,7 @@ use crate::data::models::{
     CardCollisions, CardFile, CardFileWithName, CardMetadataWithVotesAndFiles, CardVerifications,
     CardVote, FullTextSearchResult, User, UserDTO,
 };
+use crate::data::schema;
 use crate::diesel::TextExpressionMethods;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::{
@@ -18,7 +19,8 @@ use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;
 use diesel::sql_types::{Bool, Double};
 use diesel::{
-    BoolExpressionMethods, Connection, JoinOnDsl, NullableExpressionMethods, SelectableHelper,
+    BoolExpressionMethods, Connection, JoinOnDsl, NullableExpressionMethods,
+    SelectableHelper,
 };
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
@@ -96,10 +98,14 @@ pub async fn search_card_query(
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
+    // We only want collisions for which the root CardMetadata is public
+    // Punting on or the current user is the author
+
     let mut query = card_metadata_columns::card_metadata
         .left_outer_join(
-            card_collisions_columns::card_collisions
-                .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
+            card_collisions_columns::card_collisions.on(card_metadata_columns::id
+                .eq(card_collisions_columns::card_id)
+                .and(card_metadata_columns::private.eq(false))),
         )
         .select((
             card_metadata_columns::qdrant_point_id,
@@ -108,11 +114,6 @@ pub async fn search_card_query(
         .filter(card_metadata_columns::private.eq(false))
         .or_filter(
             card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
-        )
-        .or_filter(
-            card_metadata_columns::private
-                .eq(false)
-                .and(card_metadata_columns::qdrant_point_id.is_null()),
         )
         .distinct()
         .into_boxed();
@@ -150,11 +151,8 @@ pub async fn search_card_query(
             uuid.0
                 .unwrap_or(uuid.1.unwrap_or(uuid::Uuid::nil()))
                 .to_string()
+                .into()
         })
-        // remove duplicates
-        .collect::<HashSet<String>>()
-        .iter()
-        .map(|uuid| (*uuid).clone().into())
         .collect::<Vec<PointId>>();
 
     let mut filter = Filter::default();
@@ -526,7 +524,6 @@ pub fn search_full_text_card_query(
     user_query: String,
     page: u64,
     pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
-    collision_check: bool,
     current_user_id: Option<uuid::Uuid>,
     filter_oc_file_path: Option<Vec<String>>,
     filter_link_url: Option<Vec<String>>,
@@ -535,17 +532,44 @@ pub fn search_full_text_card_query(
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
+    let second_join = diesel::alias!(schema::card_metadata as second_join);
+
     let mut conn = pool.get().unwrap();
+    // SELECT
+    //     card_metadata.qdrant_point_id,
+    //     second_join.qdrant_point_id
+    // FROM
+    //     card_metadata
+    // LEFT OUTER JOIN card_collisions ON
+    //     card_metadata.id = card_collisions.card_id
+    //     AND card_metadata.private = false
+    // LEFT OUTER JOIN card_metadata AS second_join ON
+    //     second_join.qdrant_point_id = card_collisions.collision_qdrant_id
+    //     AND second_join.private = true
+    // WHERE
+    //     card_metadata.private = false
+    //     and (second_join.qdrant_point_id notnull or card_metadata.qdrant_point_id notnull);
     let mut query = card_metadata_columns::card_metadata
         .left_outer_join(
-            card_collisions_columns::card_collisions
-                .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
+            card_collisions_columns::card_collisions.on(card_metadata_columns::id
+                .eq(card_collisions_columns::card_id)
+                .and(card_metadata_columns::private.eq(true))),
         )
-        .filter(card_metadata_columns::private.eq(false))
+        .left_outer_join(
+            second_join.on(card_metadata_columns::qdrant_point_id
+                .eq(card_collisions_columns::collision_qdrant_id)
+                .and(card_metadata_columns::private.eq(true))),
+        )
+        .filter(
+            card_metadata_columns::private.eq(false).and(
+                second_join
+                    .field(schema::card_metadata::qdrant_point_id)
+                    .is_not_null()
+                    .or(card_metadata_columns::qdrant_point_id.is_not_null()),
+            ),
+        )
         .or_filter(
-            card_metadata_columns::private
-                .eq(false)
-                .and(card_metadata_columns::qdrant_point_id.is_null()),
+            card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
         )
         .select((
             (
@@ -566,12 +590,9 @@ pub fn search_full_text_card_query(
                 .sql(") , 32) * 10) AS rank"),
                 sql::<Int8>("count(*) OVER() AS full_count"),
             ),
-            card_collisions_columns::collision_qdrant_id.nullable(),
+            second_join.field(schema::card_metadata::qdrant_point_id).nullable(),
         ))
         .distinct()
-        .or_filter(
-            card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
-        )
         .into_boxed();
 
     query = query.filter(
@@ -606,41 +627,14 @@ pub fn search_full_text_card_query(
 
     query = query.order(sql::<Text>("rank DESC"));
 
-    if collision_check {
-        query = query.limit(1)
-    } else {
-        query = query
-            .limit(25)
-            .offset(((page - 1) * 25).try_into().unwrap());
-    }
+    query = query
+        .limit(25)
+        .offset(((page - 1) * 25).try_into().unwrap());
 
-    let mut searched_cards: Vec<(FullTextSearchResult, Option<uuid::Uuid>)> =
+    let searched_cards: Vec<(FullTextSearchResult, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
             message: "Failed to load trigram searched cards",
         })?;
-
-    //filter searched_cards so that it only contains cards where the collisions_point_id is not in the qdrant_point_id of another card
-    searched_cards = searched_cards
-        .clone()
-        .into_iter()
-        .filter(|(_, collision)| {
-            if let Some(collision_qdrant_id) = collision {
-                !searched_cards
-                    .iter()
-                    .any(|(card, _)| card.qdrant_point_id == Some(*collision_qdrant_id))
-            } else {
-                true
-            }
-        })
-        .collect::<Vec<(FullTextSearchResult, Option<uuid::Uuid>)>>();
-
-    if collision_check {
-        searched_cards = searched_cards
-            .clone()
-            .into_iter()
-            .filter(|(card, _)| card.qdrant_point_id.is_some())
-            .collect::<Vec<(FullTextSearchResult, Option<uuid::Uuid>)>>();
-    }
 
     let card_metadata_with_upvotes_and_files = get_metadata(
         searched_cards
@@ -665,6 +659,7 @@ pub fn search_full_text_card_query(
         total_card_pages: total_count,
     })
 }
+
 #[derive(Serialize, Deserialize)]
 pub struct ScoredCardDTO {
     pub metadata: CardMetadata,
