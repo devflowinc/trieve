@@ -384,6 +384,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tonic",
+ "unicode-normalization",
  "uuid",
 ]
 
