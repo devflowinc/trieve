@@ -19,8 +19,7 @@ use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;
 use diesel::sql_types::{Bool, Double};
 use diesel::{
-    BoolExpressionMethods, Connection, JoinOnDsl, NullableExpressionMethods,
-    SelectableHelper,
+    BoolExpressionMethods, Connection, JoinOnDsl, NullableExpressionMethods, SelectableHelper,
 };
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
@@ -553,12 +552,13 @@ pub fn search_full_text_card_query(
         .left_outer_join(
             card_collisions_columns::card_collisions.on(card_metadata_columns::id
                 .eq(card_collisions_columns::card_id)
-                .and(card_metadata_columns::private.eq(true))),
+                .and(card_metadata_columns::private.eq(false))),
         )
         .left_outer_join(
-            second_join.on(card_metadata_columns::qdrant_point_id
+            second_join.on(second_join
+                .field(schema::card_metadata::qdrant_point_id)
                 .eq(card_collisions_columns::collision_qdrant_id)
-                .and(card_metadata_columns::private.eq(true))),
+                .and(second_join.field(schema::card_metadata::private).eq(true))),
         )
         .filter(
             card_metadata_columns::private.eq(false).and(
@@ -584,19 +584,26 @@ pub fn search_full_text_card_query(
                 card_metadata_columns::card_html,
                 card_metadata_columns::private,
                 sql::<Nullable<Double>>(
-                    "(ts_rank(card_metadata_tsvector, plainto_tsquery('english', ",
+                    "(ts_rank(card_metadata.card_metadata_tsvector, plainto_tsquery('english', ",
                 )
                 .bind::<Text, _>(user_query.clone())
                 .sql(") , 32) * 10) AS rank"),
                 sql::<Int8>("count(*) OVER() AS full_count"),
             ),
-            second_join.field(schema::card_metadata::qdrant_point_id).nullable(),
+            second_join
+                .field(schema::card_metadata::qdrant_point_id)
+                .nullable(),
         ))
-        .distinct()
+        .distinct_on((
+            card_metadata_columns::qdrant_point_id,
+            second_join
+                .field(schema::card_metadata::qdrant_point_id)
+                .nullable(),
+        ))
         .into_boxed();
 
     query = query.filter(
-        sql::<Bool>("card_metadata_tsvector @@ plainto_tsquery('english', ")
+        sql::<Bool>("card_metadata.card_metadata_tsvector @@ plainto_tsquery('english', ")
             .bind::<Text, _>(user_query)
             .sql(")"),
     );
@@ -625,7 +632,11 @@ pub fn search_full_text_card_query(
         query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
     }
 
-    query = query.order(sql::<Text>("rank DESC"));
+    query = query.order((
+        card_metadata_columns::qdrant_point_id,
+        second_join.field(schema::card_metadata::qdrant_point_id),
+        sql::<Text>("rank DESC"),
+    ));
 
     query = query
         .limit(25)
