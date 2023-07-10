@@ -671,6 +671,60 @@ pub fn search_full_text_card_query(
     })
 }
 
+pub fn global_top_full_text_card_query(
+    user_query: String,
+    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+) -> Result<Option<CardMetadataWithVotesAndFiles>, DefaultError> {
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    let mut query = card_metadata_columns::card_metadata
+        .filter(card_metadata_columns::private.eq(false))
+        .or_filter(
+            card_metadata_columns::private
+                .eq(false)
+                .and(card_metadata_columns::qdrant_point_id.is_null()),
+        )
+        .select((
+            card_metadata_columns::id,
+            card_metadata_columns::content,
+            card_metadata_columns::link,
+            card_metadata_columns::author_id,
+            card_metadata_columns::qdrant_point_id,
+            card_metadata_columns::created_at,
+            card_metadata_columns::updated_at,
+            card_metadata_columns::oc_file_path,
+            card_metadata_columns::card_html,
+            card_metadata_columns::private,
+            sql::<Nullable<Double>>("(ts_rank(card_metadata_tsvector, plainto_tsquery('english', ")
+                .bind::<Text, _>(user_query.clone())
+                .sql(") , 32) * 10) AS rank"),
+            sql::<Int8>("count(*) OVER() AS full_count"),
+        ))
+        .distinct()
+        .into_boxed();
+
+    query = query.filter(
+        sql::<Bool>("card_metadata.card_metadata_tsvector @@ plainto_tsquery('english', ")
+            .bind::<Text, _>(user_query)
+            .sql(")"),
+    );
+
+    query = query.order((sql::<Text>("rank DESC"),));
+
+    let searched_card: FullTextSearchResult = query.first(&mut conn).map_err(|_| DefaultError {
+        message: "Failed to load top trigram searched card",
+    })?;
+
+    let card_metadata_with_upvotes_and_files =
+        get_metadata(vec![searched_card.clone()], None, conn).map_err(|_| DefaultError {
+            message: "Failed to load metadata for top trigram searched card",
+        })?;
+
+    Ok(card_metadata_with_upvotes_and_files.get(0).cloned())
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct ScoredCardDTO {
     pub metadata: CardMetadata,
