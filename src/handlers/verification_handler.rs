@@ -8,21 +8,6 @@ use crate::operators::notification_operator::add_verificiation_notification_quer
 use crate::{data::models::Pool, errors::ServiceError, operators::verification_operator as op};
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
-use unicode_normalization::UnicodeNormalization;
-
-fn remove_unusual_chars(input: &str) -> String {
-    let result: String = input
-        .chars()
-        .filter(|c| {
-            c.is_ascii()
-                || c.is_ascii_control()
-                || c.is_ascii_punctuation()
-                || c.is_ascii_whitespace()
-        })
-        .collect();
-
-    result.nfkd().collect::<String>()
-}
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(untagged)]
@@ -35,7 +20,6 @@ pub async fn get_webpage_score(url_source: &str, content: &str) -> Result<i64, a
     let webpage_content = &op::get_webpage_text_fetch(url_source)
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Could not fetch: {}", err)))?;
-
 
     let fuzzy_script_result = Command::new("python3")
         .arg("./validator-scripts/fuzzy-text-match.py")
@@ -54,13 +38,12 @@ pub async fn get_webpage_score(url_source: &str, content: &str) -> Result<i64, a
                     ServiceError::BadRequest(format!("Could not parse score: {}", err))
                 })?;
         }
-        Err(err) => {
+        Err(_) => {
             return Err(
                 ServiceError::BadRequest("Could not run fuzzy-text-match.py".into()).into(),
             );
         }
     }
-
 
     if score < 80 {
         let webpage_content = &op::get_webpage_text_headless(url_source)
@@ -82,7 +65,7 @@ pub async fn get_webpage_score(url_source: &str, content: &str) -> Result<i64, a
                         ServiceError::BadRequest(format!("Could not parse score: {}", err))
                     })?
             }
-            Err(err) => {
+            Err(_) => {
                 return Err(
                     ServiceError::BadRequest("Could not run fuzzy-text-match.py".into()).into(),
                 );
