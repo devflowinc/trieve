@@ -32,7 +32,7 @@ S3_BUCKET=XXXXXXXXXXXXXXXXXXxx
 S3_ENDPOINT=XXXXXXXXXXXXXXXXXXxx
 ```
 
-## APT packages needed 
+## APT packages needed
 
 `chromium-browser`
 `openssl`
@@ -79,4 +79,10 @@ This section refers to the jest testing suite found in the `jest-tests` folder o
 
 ## How to debug diesel by getting the exact generated SQL
 
-diesel::debug_query::<diesel::pg::Pg, _>(&query);
+diesel::debug*query::<diesel::pg::Pg, *>(&query);
+
+## How to set up the python verification script
+
+1. `virtualenv venv`
+2. `source venv/bin/activate`
+3. `pip install -r ./validator-scripts/requirements.txt`
