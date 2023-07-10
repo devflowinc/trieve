@@ -79,53 +79,53 @@ pub async fn create_card(
         })));
     }
 
-    // text based similarity check to avoid paying for openai api call if not necessary
-    let card_content_1 = content.clone();
-    let text_based_similarity_results = web::block(move || {
-        search_full_text_card_query(
-            card_content_1,
-            1,
-            thread_safe_pool.lock().unwrap(),
-            Some(user.id),
-            None,
-            None,
-        )
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    let first_text_result = text_based_similarity_results.search_results.get(0);
+    // // text based similarity check to avoid paying for openai api call if not necessary
+    // let card_content_1 = content.clone();
+    // let text_based_similarity_results = web::block(move || {
+    //     search_full_text_card_query(
+    //         card_content_1,
+    //         1,
+    //         thread_safe_pool.lock().unwrap(),
+    //         Some(user.id),
+    //         None,
+    //         None,
+    //     )
+    // })
+    // .await?
+    // .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    // let first_text_result = text_based_similarity_results.search_results.get(0);
 
-    if let Some(score_card) = first_text_result {
-        if score_card.score >= Some(0.85) {
-            //Sets collision to collided card id
-            collision = Some(score_card.qdrant_point_id);
+    // if let Some(score_card) = first_text_result {
+    //     if score_card.score >= Some(0.85) {
+    //         //Sets collision to collided card id
+    //         collision = Some(score_card.qdrant_point_id);
 
-            if score_card.card_html.is_none() {
-                let score_card_1 = score_card.clone();
-                let card_metadata = CardMetadata::from_details_with_id(
-                    score_card_1.id,
-                    &content,
-                    &card.card_html,
-                    &card.link,
-                    &card.oc_file_path,
-                    score_card_1.author.clone().unwrap().id,
-                    Some(score_card_1.qdrant_point_id),
-                    card.private.unwrap_or(score_card_1.private),
-                );
-                let metadata_1 = card_metadata.clone();
-                web::block(move || {
-                    update_card_metadata_query(card_metadata, card.file_uuid, pool3.lock().unwrap())
-                })
-                .await?
-                .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    //         if score_card.card_html.is_none() {
+    //             let score_card_1 = score_card.clone();
+    //             let card_metadata = CardMetadata::from_details_with_id(
+    //                 score_card_1.id,
+    //                 &content,
+    //                 &card.card_html,
+    //                 &card.link,
+    //                 &card.oc_file_path,
+    //                 score_card_1.author.clone().unwrap().id,
+    //                 Some(score_card_1.qdrant_point_id),
+    //                 card.private.unwrap_or(score_card_1.private),
+    //             );
+    //             let metadata_1 = card_metadata.clone();
+    //             web::block(move || {
+    //                 update_card_metadata_query(card_metadata, card.file_uuid, pool3.lock().unwrap())
+    //             })
+    //             .await?
+    //             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-                return Ok(HttpResponse::Ok().json(ReturnCreatedCard {
-                    card_metadata: metadata_1,
-                    duplicate: true,
-                }));
-            }
-        }
-    }
+    //             return Ok(HttpResponse::Ok().json(ReturnCreatedCard {
+    //                 card_metadata: metadata_1,
+    //                 duplicate: true,
+    //             }));
+    //         }
+    //     }
+    // }
 
     // only check for embedding similarity if no text based collision was found
     if collision.is_none() {
