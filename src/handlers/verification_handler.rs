@@ -1,3 +1,4 @@
+use std::process::Command;
 use std::sync::{Arc, Mutex};
 
 use super::auth_handler::LoggedUser;
@@ -6,24 +7,21 @@ use crate::operators::card_operator as card_op;
 use crate::operators::notification_operator::add_verificiation_notification_query;
 use crate::{data::models::Pool, errors::ServiceError, operators::verification_operator as op};
 use actix_web::{web, HttpResponse};
-use fuzzywuzzy::fuzz;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use unicode_normalization::UnicodeNormalization;
 
 fn remove_unusual_chars(input: &str) -> String {
-    // Remove diacritics from the input string
-    let normalized = input.nfd().collect::<String>();
+    let result: String = input
+        .chars()
+        .filter(|c| {
+            c.is_ascii()
+                || c.is_ascii_control()
+                || c.is_ascii_punctuation()
+                || c.is_ascii_whitespace()
+        })
+        .collect();
 
-    // Define a regular expression to match unusual characters
-    //get only unicode chars
-    let regex = Regex::new(r"[^\p{L}\p{N}\p{P}\p{Z}]").unwrap();
-
-    // Replace unusual characters with a space
-    let replaced = regex.replace_all(&normalized, " ");
-
-    // Return the modified string
-    replaced.into_owned()
+    result.nfkd().collect::<String>()
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -34,22 +32,62 @@ pub enum VerifyData {
 }
 
 pub async fn get_webpage_score(url_source: &str, content: &str) -> Result<i64, actix_web::Error> {
-    let webpage_content = remove_unusual_chars(
-        &op::get_webpage_text_fetch(url_source)
-            .await
-            .map_err(|err| ServiceError::BadRequest(format!("Could not fetch: {}", err)))?,
-    );
+    let webpage_content = &op::get_webpage_text_fetch(url_source)
+        .await
+        .map_err(|err| ServiceError::BadRequest(format!("Could not fetch: {}", err)))?;
 
-    let mut score = fuzz::partial_ratio(&remove_unusual_chars(content), &webpage_content);
+
+    let fuzzy_script_result = Command::new("python3")
+        .arg("./validator-scripts/fuzzy-text-match.py")
+        .arg(content)
+        .arg(webpage_content)
+        .output();
+
+    let mut score;
+    match fuzzy_script_result {
+        Ok(result) => {
+            score = String::from_utf8(result.stdout)
+                .unwrap()
+                .trim_end_matches('\n')
+                .parse::<u8>()
+                .map_err(|err| {
+                    ServiceError::BadRequest(format!("Could not parse score: {}", err))
+                })?;
+        }
+        Err(err) => {
+            return Err(
+                ServiceError::BadRequest("Could not run fuzzy-text-match.py".into()).into(),
+            );
+        }
+    }
+
 
     if score < 80 {
-        let webpage_content = remove_unusual_chars(
-            &op::get_webpage_text_headless(url_source)
-                .await
-                .map_err(|err| ServiceError::BadRequest(format!("Could not fetch: {}", err)))?,
-        );
+        let webpage_content = &op::get_webpage_text_headless(url_source)
+            .await
+            .map_err(|err| ServiceError::BadRequest(format!("Could not fetch: {}", err)))?;
 
-        score = fuzz::partial_ratio(&remove_unusual_chars(content), &webpage_content);
+        let fuzzy_script_result = Command::new("python3")
+            .arg("./validator-scripts/fuzzy-text-match.py")
+            .arg(content)
+            .arg(webpage_content)
+            .output();
+        match fuzzy_script_result {
+            Ok(result) => {
+                score = String::from_utf8(result.stdout)
+                    .unwrap()
+                    .trim_end_matches('\n')
+                    .parse::<u8>()
+                    .map_err(|err| {
+                        ServiceError::BadRequest(format!("Could not parse score: {}", err))
+                    })?
+            }
+            Err(err) => {
+                return Err(
+                    ServiceError::BadRequest("Could not run fuzzy-text-match.py".into()).into(),
+                );
+            }
+        }
     }
 
     Ok(score as i64)

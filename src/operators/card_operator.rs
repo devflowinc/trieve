@@ -717,8 +717,8 @@ pub fn global_top_full_text_card_query(
         message: "Failed to load top trigram searched card",
     })?;
 
-    let card_metadata_with_upvotes_and_files =
-        get_metadata(vec![searched_card.clone()], None, conn).map_err(|_| DefaultError {
+    let card_metadata_with_upvotes_and_files = get_metadata(vec![searched_card], None, conn)
+        .map_err(|_| DefaultError {
             message: "Failed to load metadata for top trigram searched card",
         })?;
 
