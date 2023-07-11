@@ -4,9 +4,11 @@ use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    data::models::{CardCollection, CardCollectionBookmark, CardMetadataWithVotesAndFiles, Pool},
+    data::models::{
+        CardCollection, CardCollectionBookmark, CardMetadataWithVotesWithoutScore, Pool,
+    },
     errors::ServiceError,
-    operators::collection_operator::*,
+    operators::{card_operator::get_collided_cards_query, collection_operator::*},
 };
 
 use super::auth_handler::LoggedUser;
@@ -176,7 +178,7 @@ pub async fn add_bookmark(
 }
 #[derive(Deserialize, Serialize)]
 pub struct BookmarkData {
-    pub bookmarks: Vec<CardMetadataWithVotesAndFiles>,
+    pub bookmarks: Vec<BookmarkCards>,
     pub collection: CardCollection,
     pub total_pages: i64,
 }
@@ -186,6 +188,10 @@ pub struct BookmarkData {
 pub struct GetAllBookmarksData {
     pub collection_id: uuid::Uuid,
     pub page: Option<u64>,
+}
+#[derive(Deserialize, Serialize)]
+pub struct BookmarkCards {
+    pub metadata: Vec<CardMetadataWithVotesWithoutScore>,
 }
 
 pub async fn get_all_bookmarks(
@@ -197,6 +203,7 @@ pub async fn get_all_bookmarks(
     let page = path_data.page.unwrap_or(1);
     let thread_safe_pool = Arc::new(Mutex::new(pool));
     let pool_two = thread_safe_pool.clone();
+    let pool_three = thread_safe_pool.clone();
     let current_user_id = user.map(|user| user.id);
 
     let collection = web::block(move || {
@@ -222,8 +229,38 @@ pub async fn get_all_bookmarks(
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
+    let point_ids = bookmarks
+        .metadata
+        .iter()
+        .map(|point| point.qdrant_point_id)
+        .collect::<Vec<uuid::Uuid>>();
+
+    let collided_cards = web::block(move || {
+        get_collided_cards_query(point_ids, current_user_id, pool_three.lock().unwrap())
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let collection_cards = bookmarks
+        .metadata
+        .iter()
+        .map(|search_result| {
+            let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
+                .iter()
+                .filter(|card| card.1 == search_result.qdrant_point_id)
+                .map(|card| card.0.clone().into())
+                .collect();
+
+            collided_cards.insert(0, search_result.clone().into());
+
+            BookmarkCards {
+                metadata: collided_cards,
+            }
+        })
+        .collect();
+
     Ok(HttpResponse::Ok().json(BookmarkData {
-        bookmarks: bookmarks.metadata,
+        bookmarks: collection_cards,
         collection,
         total_pages: bookmarks.total_pages,
     }))
