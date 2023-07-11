@@ -230,18 +230,22 @@ pub async fn get_all_bookmarks(
 }
 
 pub async fn get_collections_card_is_in(
-    card_id: web::Path<uuid::Uuid>,
+    card_id: web::Path<String>,
     pool: web::Data<Pool>,
     user: Option<LoggedUser>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let collection_id = card_id.into_inner();
+    let collection_ids = card_id
+        .into_inner()
+        .split(',')
+        .filter_map(|s| uuid::Uuid::parse_str(s.trim()).ok())
+        .collect();
     let current_user_id = user.map(|user| user.id);
     if current_user_id.is_none() {
         return Err(ServiceError::Unauthorized.into());
     }
 
     let collections = web::block(move || {
-        get_collections_for_bookmark_query(collection_id, current_user_id, pool)
+        get_collections_for_bookmark_query(collection_ids, current_user_id, pool)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;

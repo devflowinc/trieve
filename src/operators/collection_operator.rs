@@ -11,6 +11,7 @@ use crate::{
 
 use actix_web::web;
 use diesel::{dsl::sql, sql_types::Int8, JoinOnDsl, NullableExpressionMethods};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     data::models::{CardCollection, Pool},
@@ -343,12 +344,16 @@ pub fn get_bookmarks_for_collection_query(
         total_pages,
     })
 }
-
+#[derive(Serialize, Deserialize, Debug)]
+pub struct BookmarkCollectionResult {
+    pub card_uuid: uuid::Uuid,
+    pub collection_ids: Vec<uuid::Uuid>,
+}
 pub fn get_collections_for_bookmark_query(
-    bookmark: uuid::Uuid,
+    bookmark: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<Vec<CardCollectionBookmark>, DefaultError> {
+) -> Result<Vec<BookmarkCollectionResult>, DefaultError> {
     use crate::data::schema::card_collection::dsl as card_collection_columns;
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
 
@@ -363,14 +368,30 @@ pub fn get_collections_for_bookmark_query(
         })?;
 
     let collections = card_collection_bookmarks_columns::card_collection_bookmarks
-        .filter(card_collection_bookmarks_columns::card_metadata_id.eq(bookmark))
+        .filter(card_collection_bookmarks_columns::card_metadata_id.eq_any(bookmark))
         .filter(card_collection_bookmarks_columns::collection_id.eq_any(user_collections))
         .load::<CardCollectionBookmark>(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Error getting bookmarks",
         })?;
 
-    Ok(collections)
+    let bookmark_collections: Vec<BookmarkCollectionResult> =
+        collections.into_iter().fold(Vec::new(), |mut acc, item| {
+            if let Some(output_item) = acc
+                .iter_mut()
+                .find(|x| x.card_uuid == item.card_metadata_id)
+            {
+                output_item.collection_ids.push(item.collection_id);
+            } else {
+                acc.push(BookmarkCollectionResult {
+                    card_uuid: item.card_metadata_id,
+                    collection_ids: vec![item.collection_id],
+                });
+            }
+            acc
+        });
+
+    Ok(bookmark_collections)
 }
 pub fn delete_bookmark_query(
     bookmark: uuid::Uuid,
