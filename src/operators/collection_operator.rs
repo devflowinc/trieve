@@ -350,7 +350,7 @@ pub struct BookmarkCollectionResult {
     pub collection_ids: Vec<uuid::Uuid>,
 }
 pub fn get_collections_for_bookmark_query(
-    bookmark: Vec<uuid::Uuid>,
+    bookmarks: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<Vec<BookmarkCollectionResult>, DefaultError> {
@@ -368,7 +368,7 @@ pub fn get_collections_for_bookmark_query(
         })?;
 
     let collections = card_collection_bookmarks_columns::card_collection_bookmarks
-        .filter(card_collection_bookmarks_columns::card_metadata_id.eq_any(bookmark))
+        .filter(card_collection_bookmarks_columns::card_metadata_id.eq_any(bookmarks))
         .filter(card_collection_bookmarks_columns::collection_id.eq_any(user_collections))
         .load::<CardCollectionBookmark>(&mut conn)
         .map_err(|_err| DefaultError {
@@ -377,12 +377,15 @@ pub fn get_collections_for_bookmark_query(
 
     let bookmark_collections: Vec<BookmarkCollectionResult> =
         collections.into_iter().fold(Vec::new(), |mut acc, item| {
+            //check if card in output already
             if let Some(output_item) = acc
                 .iter_mut()
                 .find(|x| x.card_uuid == item.card_metadata_id)
             {
+                //if it is, add collection to it
                 output_item.collection_ids.push(item.collection_id);
             } else {
+                //if not make new output item
                 acc.push(BookmarkCollectionResult {
                     card_uuid: item.card_metadata_id,
                     collection_ids: vec![item.collection_id],
