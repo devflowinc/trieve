@@ -283,6 +283,7 @@ pub fn get_bookmarks_for_collection_query(
     pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<CollectionsBookmarkQueryResult, DefaultError> {
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
+    use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     let page = if page == 0 { 1 } else { page };
 
@@ -295,38 +296,53 @@ pub fn get_bookmarks_for_collection_query(
             message: "Error getting bookmarks",
         })?;
 
-    let bookmark_metadata: Vec<CardMetadataWithCount> = card_metadata_columns::card_metadata
-        .filter(
-            card_metadata_columns::id.eq_any(
-                bookmarks
-                    .iter()
-                    .map(|bookmark| bookmark.card_metadata_id)
-                    .collect::<Vec<uuid::Uuid>>(),
-            ),
-        )
-        .select((
-            card_metadata_columns::id,
-            card_metadata_columns::content,
-            card_metadata_columns::link,
-            card_metadata_columns::author_id,
-            card_metadata_columns::qdrant_point_id,
-            card_metadata_columns::created_at,
-            card_metadata_columns::updated_at,
-            card_metadata_columns::oc_file_path,
-            card_metadata_columns::card_html,
-            card_metadata_columns::private,
-            sql::<Int8>("count(*) OVER() AS full_count"),
-        ))
-        .limit(25)
-        .offset(((page - 1) * 25).try_into().unwrap_or(0))
-        .load::<CardMetadataWithCount>(&mut conn)
-        .map_err(|_err| DefaultError {
-            message: "Error getting bookmarks",
-        })?;
+    let bookmark_metadata: Vec<(CardMetadataWithCount, Option<uuid::Uuid>)> =
+        card_metadata_columns::card_metadata
+            .filter(
+                card_metadata_columns::id.eq_any(
+                    bookmarks
+                        .iter()
+                        .map(|bookmark| bookmark.card_metadata_id)
+                        .collect::<Vec<uuid::Uuid>>(),
+                ),
+            )
+            .left_join(
+                card_collisions_columns::card_collisions
+                    .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
+            )
+            .select((
+                (
+                    card_metadata_columns::id,
+                    card_metadata_columns::content,
+                    card_metadata_columns::link,
+                    card_metadata_columns::author_id,
+                    card_metadata_columns::qdrant_point_id,
+                    card_metadata_columns::created_at,
+                    card_metadata_columns::updated_at,
+                    card_metadata_columns::oc_file_path,
+                    card_metadata_columns::card_html,
+                    card_metadata_columns::private,
+                    sql::<Int8>("count(*) OVER() AS full_count"),
+                ),
+                card_collisions_columns::collision_qdrant_id.nullable(),
+            ))
+            .limit(25)
+            .offset(((page - 1) * 25).try_into().unwrap_or(0))
+            .load::<(CardMetadataWithCount, Option<uuid::Uuid>)>(&mut conn)
+            .map_err(|_err| DefaultError {
+                message: "Error getting bookmarks",
+            })?;
 
     let converted_cards: Vec<FullTextSearchResult> = bookmark_metadata
         .iter()
-        .map(|card| <CardMetadataWithCount as Into<FullTextSearchResult>>::into(card.clone()))
+        .map(|(card, collided_id)| match collided_id {
+            Some(id) => {
+                let mut card = card.clone();
+                card.qdrant_point_id = Some(*id);
+                <CardMetadataWithCount as Into<FullTextSearchResult>>::into(card)
+            }
+            None => <CardMetadataWithCount as Into<FullTextSearchResult>>::into(card.clone()),
+        })
         .collect::<Vec<FullTextSearchResult>>();
 
     let card_metadata_with_upvotes_and_file_id =
@@ -335,7 +351,7 @@ pub fn get_bookmarks_for_collection_query(
         })?;
 
     let total_pages = match bookmark_metadata.get(0) {
-        Some(metadata) => (metadata.count as f64 / 25.0).ceil() as i64,
+        Some(metadata) => (metadata.0.count as f64 / 25.0).ceil() as i64,
         None => 0,
     };
 

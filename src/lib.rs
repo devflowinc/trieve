@@ -267,8 +267,8 @@ pub async fn main() -> std::io::Result<()> {
                         web::resource("/card_collection/search/{page}")
                             .route(web::post().to(handlers::card_handler::search_collections)),
                     )
-                    .service(web::resource("/card_collection/bookmark/{card_id}").route(
-                        web::get().to(handlers::collection_handler::get_collections_card_is_in),
+                    .service(web::resource("/card_collection/bookmark").route(
+                        web::post().to(handlers::collection_handler::get_collections_card_is_in),
                     ))
                     .service(
                         web::resource("/card_collection/{card_collection_id}")
