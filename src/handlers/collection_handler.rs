@@ -253,6 +253,16 @@ pub async fn get_all_bookmarks(
 
             collided_cards.insert(0, search_result.clone().into());
 
+            // Move the card that was searched for to the front of the list
+            let (matching, others): (Vec<_>, Vec<_>) = collided_cards
+                .clone()
+                .into_iter()
+                .partition(|item| item.id == search_result.id);
+
+            collided_cards.clear();
+            collided_cards.extend(matching);
+            collided_cards.extend(others);
+
             BookmarkCards {
                 metadata: collided_cards,
             }
@@ -266,16 +276,22 @@ pub async fn get_all_bookmarks(
     }))
 }
 
+#[derive(Deserialize, Serialize)]
+pub struct GetCollectionBookmarkData {
+    pub collection_ids: String,
+}
+
 pub async fn get_collections_card_is_in(
-    card_id: web::Path<String>,
+    card_id: web::Json<GetCollectionBookmarkData>,
     pool: web::Data<Pool>,
     user: Option<LoggedUser>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let collection_ids = card_id
-        .into_inner()
+        .collection_ids
         .split(',')
         .filter_map(|s| uuid::Uuid::parse_str(s.trim()).ok())
         .collect();
+
     let current_user_id = user.map(|user| user.id);
     if current_user_id.is_none() {
         return Err(ServiceError::Unauthorized.into());
