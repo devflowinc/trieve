@@ -14,6 +14,7 @@ use crate::{
 };
 use actix_web::web;
 use diesel::dsl::sql;
+use diesel::result::Error::NotFound;
 use diesel::sql_types::Int8;
 use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;
@@ -713,9 +714,17 @@ pub fn global_top_full_text_card_query(
 
     query = query.order((sql::<Text>("rank DESC"),));
 
-    let searched_card: FullTextSearchResult = query.first(&mut conn).map_err(|_| DefaultError {
-        message: "Failed to load top trigram searched card",
-    })?;
+    let searched_card: FullTextSearchResult = match query.first(&mut conn) {
+        Ok(card) => Ok(card),
+        Err(e) => match e {
+            NotFound => {
+                return Ok(None);
+            },
+            _ => Err(DefaultError {
+                message: "Failed to load top trigram searched card",
+            })
+        }
+    }?;
 
     let card_metadata_with_upvotes_and_files = get_metadata(vec![searched_card], None, conn)
         .map_err(|_| DefaultError {
