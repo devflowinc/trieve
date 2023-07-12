@@ -82,10 +82,7 @@ pub async fn create_card(
     // // text based similarity check to avoid paying for openai api call if not necessary
     let card_content_1 = content.clone();
     let first_text_result = web::block(move || {
-        global_top_full_text_card_query(
-            card_content_1,
-            thread_safe_pool.lock().unwrap(),
-        )
+        global_top_full_text_card_query(card_content_1, thread_safe_pool.lock().unwrap())
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -501,7 +498,12 @@ pub async fn search_card(
                 .map(|card| card.0.clone().into())
                 .collect();
 
-            if !card.private || card.clone().author.is_some_and(|author| Some(author.id) == current_user_id)  {
+            if !card.private
+                || card
+                    .clone()
+                    .author
+                    .is_some_and(|author| Some(author.id) == current_user_id)
+            {
                 collided_cards.insert(0, card);
             }
 
