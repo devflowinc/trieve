@@ -9,8 +9,10 @@ use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
 };
 use crate::operators::collection_operator::get_collection_by_id_query;
+use actix::Arbiter;
 use actix_web::{web, HttpResponse};
 use difference::{Changeset, Difference};
+use futures_util::FutureExt;
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
 use qdrant_client::qdrant::{PointStruct, PointsIdsList, PointsSelector};
 use serde::{Deserialize, Serialize};
@@ -18,6 +20,7 @@ use serde_json::json;
 use soup::Soup;
 
 use super::auth_handler::LoggedUser;
+use super::verification_handler::{verify_card_content, VerifyData};
 
 pub async fn user_owns_card(
     user_id: uuid::Uuid,
@@ -63,6 +66,7 @@ pub async fn create_card(
     let pool1 = thread_safe_pool.clone();
     let pool2 = thread_safe_pool.clone();
     let pool3 = thread_safe_pool.clone();
+    let pool4 = thread_safe_pool.clone();
 
     let content = Soup::new(card.card_html.as_ref().unwrap_or(&"".to_string()).as_str())
         .text()
@@ -278,6 +282,19 @@ pub async fn create_card(
             .await
             .map_err(|_err| ServiceError::BadRequest("Failed inserting card to qdrant".into()))?;
     }
+
+    let verify_card_data = VerifyData::CardVerification {
+        card_uuid: card_metadata.id,
+    };
+
+    Arbiter::new().spawn(
+        verify_card_content(
+            actix_web::web::Json(verify_card_data),
+            user,
+            pool4.lock().unwrap().clone().into_inner().into(),
+        )
+        .map(|_| ()),
+    );
 
     Ok(HttpResponse::Ok().json(ReturnCreatedCard {
         card_metadata,
