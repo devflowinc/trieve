@@ -501,7 +501,7 @@ pub async fn search_card(
                 .map(|card| card.0.clone().into())
                 .collect();
 
-            if !card.private {
+            if !card.private || card.clone().author.is_some_and(|author| Some(author.id) == current_user_id)  {
                 collided_cards.insert(0, card);
             }
 
