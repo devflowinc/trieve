@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use headless_chrome::Browser;
+use headless_chrome::{Browser, LaunchOptionsBuilder};
 use regex::Regex;
 use soup::{NodeExt, QueryBuilderExt};
 use std::sync::{Arc, Mutex};
@@ -12,7 +12,13 @@ use crate::{
 };
 
 pub async fn get_webpage_text_headless(url: &str) -> Result<String, DefaultError> {
-    let browser = Browser::default().map_err(|_e| DefaultError {
+    let options = LaunchOptionsBuilder::default()
+        .headless(true)
+        .sandbox(false)
+        .build()
+        .unwrap();
+
+    let browser = Browser::new(options).map_err(|_e| DefaultError {
         message: "Could not create browser",
     })?;
 
