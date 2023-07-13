@@ -14,7 +14,6 @@ use crate::{
 pub async fn get_webpage_text_headless(url: &str) -> Result<String, DefaultError> {
     let options = LaunchOptionsBuilder::default()
         .headless(true)
-        .sandbox(false)
         .build()
         .unwrap();
 
