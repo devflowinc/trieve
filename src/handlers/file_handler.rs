@@ -37,6 +37,7 @@ pub struct UploadFileData {
     pub file_name: String,
     pub file_mime_type: String,
     pub private: bool,
+    pub oc_file_path: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -77,6 +78,7 @@ pub async fn upload_file_handler(
         upload_file_data.file_name,
         decoded_file_data,
         file_mime,
+        upload_file_data.oc_file_path,
         private,
         user,
         pool_inner,

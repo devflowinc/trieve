@@ -85,17 +85,25 @@ pub fn create_file_query(
     mime_type: &str,
     file_size: i64,
     private: bool,
+    oc_file_path: Option<String>,
     pool: web::Data<Pool>,
 ) -> Result<File, DefaultError> {
-    use crate::data::schema::files::dsl::files;
+    use crate::data::schema::files::dsl as files_columns;
 
     let mut conn = pool.get().map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
-    let new_file = File::from_details(user_id, file_name, mime_type, private, file_size);
+    let new_file = File::from_details(
+        user_id,
+        file_name,
+        mime_type,
+        private,
+        file_size,
+        oc_file_path,
+    );
 
-    let created_file: File = diesel::insert_into(files)
+    let created_file: File = diesel::insert_into(files_columns::files)
         .values(&new_file)
         .get_result(&mut conn)
         .map_err(|_| DefaultError {
@@ -152,6 +160,7 @@ pub async fn convert_docx_to_html_query(
     file_name: String,
     file_data: Vec<u8>,
     file_mime: String,
+    oc_file_path: Option<String>,
     private: bool,
     user: LoggedUser,
     pool: web::Data<Pool>,
@@ -211,6 +220,7 @@ pub async fn convert_docx_to_html_query(
         &file_mime,
         file_size,
         private,
+        oc_file_path.clone(),
         pool.clone(),
     )?;
 
@@ -293,7 +303,7 @@ pub async fn convert_docx_to_html_query(
         let create_card_data = CreateCardData {
             card_html: Some(replaced_card_html.clone()),
             link: Some(card.link.clone()),
-            oc_file_path: None,
+            oc_file_path: oc_file_path.clone(),
             private: Some(private),
             file_uuid: Some(created_file.id),
         };
