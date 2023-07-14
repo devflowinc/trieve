@@ -719,11 +719,11 @@ pub fn global_top_full_text_card_query(
         Err(e) => match e {
             NotFound => {
                 return Ok(None);
-            },
+            }
             _ => Err(DefaultError {
                 message: "Failed to load top trigram searched card",
-            })
-        }
+            }),
+        },
     }?;
 
     let card_metadata_with_upvotes_and_files = get_metadata(vec![searched_card], None, conn)
