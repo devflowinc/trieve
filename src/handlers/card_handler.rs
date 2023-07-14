@@ -1,7 +1,8 @@
 use std::sync::{Arc, Mutex};
 
 use crate::data::models::{
-    CardMetadata, CardMetadataWithVotesAndFiles, CardMetadataWithVotesWithoutScore, Pool,
+    CardCollection, CardMetadata, CardMetadataWithVotesAndFiles, CardMetadataWithVotesWithoutScore,
+    Pool,
 };
 use crate::errors::ServiceError;
 use crate::operators::card_operator::*;
@@ -645,7 +646,12 @@ pub struct SearchCollectionsData {
     filter_link_url: Option<Vec<String>>,
     collection_id: uuid::Uuid,
 }
-
+#[derive(Serialize, Deserialize)]
+pub struct SearchCollectionsResult {
+    pub bookmarks: Vec<ScoreCardDTO>,
+    pub collection: CardCollection,
+    pub total_pages: i64,
+}
 pub async fn search_collections(
     data: web::Json<SearchCollectionsData>,
     page: Option<web::Path<u64>>,
@@ -737,9 +743,10 @@ pub async fn search_collections(
         })
         .collect();
 
-    Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
-        score_cards,
-        total_card_pages: search_card_query_results.total_card_pages,
+    Ok(HttpResponse::Ok().json(SearchCollectionsResult {
+        bookmarks: score_cards,
+        collection,
+        total_pages: search_card_query_results.total_card_pages,
     }))
 }
 
