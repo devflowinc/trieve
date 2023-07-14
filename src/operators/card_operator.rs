@@ -370,7 +370,7 @@ pub async fn search_card_collections_query(
 
     Ok(SearchCardQueryResult {
         search_results: point_ids,
-        total_card_pages: (filtered_point_ids.len() as f64 / 25.0).ceil() as i64,
+        total_card_pages: (data.result.len() as f64 / 25.0).ceil() as i64,
     })
 }
 
