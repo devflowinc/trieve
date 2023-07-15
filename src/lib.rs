@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate diesel;
 
+use std::sync::Mutex;
+
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
@@ -28,6 +30,10 @@ fn run_migrations(conn: &mut impl MigrationHarness<diesel::pg::Pg>) {
     conn.run_pending_migrations(MIGRATIONS).unwrap();
 }
 
+pub struct AppMutexStore {
+    pub libreoffice: Mutex<()>, // <- Mutex is necessary to mutate safely across threads
+}
+
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
@@ -41,6 +47,10 @@ pub async fn main() -> std::io::Result<()> {
     let pool: data::models::Pool = r2d2::Pool::builder()
         .build(manager)
         .expect("Failed to create pool.");
+
+    let app_mutex_store = web::Data::new(AppMutexStore {
+        libreoffice: Mutex::new(()),
+    });
 
     let redis_store = RedisSessionStore::new(redis_url.as_str()).await.unwrap();
 
@@ -85,6 +95,7 @@ pub async fn main() -> std::io::Result<()> {
 
         App::new()
             .app_data(web::Data::new(pool.clone()))
+            .app_data(web::Data::new(app_mutex_store.clone()))
             .wrap(
                 IdentityMiddleware::builder()
                     .login_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
