@@ -22,7 +22,7 @@ pub async fn get_webpage_score(
     content: &str,
     mutex_store: web::Data<AppMutexStore>,
 ) -> Result<i64, actix_web::Error> {
-    let webpage_content = &op::get_webpage_text_fetch(url_source, mutex_store)
+    let webpage_content = &op::get_webpage_text_fetch(url_source, mutex_store.clone())
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Could not fetch: {}", err)))?;
 
@@ -58,7 +58,7 @@ pub async fn get_webpage_score(
     }
 
     if score < 80 {
-        let webpage_content = &op::get_webpage_text_headless(url_source)
+        let webpage_content = &op::get_webpage_text_headless(url_source, mutex_store)
             .await
             .map_err(|err| ServiceError::BadRequest(format!("Could not fetch: {}", err)))?;
 
