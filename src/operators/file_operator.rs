@@ -322,7 +322,14 @@ pub async fn convert_docx_to_html_query(
         };
         let web_json_create_card_data = web::Json(create_card_data);
 
-        match create_card(web_json_create_card_data, pool.clone(), user.clone()).await {
+        match create_card(
+            web_json_create_card_data,
+            pool.clone(),
+            user.clone(),
+            mutex_store.clone(),
+        )
+        .await
+        {
             Ok(response) => {
                 if response.status().is_success() {
                     created_cards.push(card);
