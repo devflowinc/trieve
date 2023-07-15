@@ -16,7 +16,19 @@ use crate::{
     AppMutexStore,
 };
 
-pub async fn get_webpage_text_headless(url: &str) -> Result<String, DefaultError> {
+pub async fn get_webpage_text_headless(
+    url: &str,
+    mutex_store: web::Data<AppMutexStore>,
+) -> Result<String, DefaultError> {
+    let browser_semaphore_permit = match mutex_store.headless_chrome.acquire().await {
+        Ok(browser) => browser,
+        Err(_) => {
+            return Err(DefaultError {
+                message: "Could not lock browser mutex",
+            })
+        }
+    };
+
     let options = LaunchOptionsBuilder::default()
         .headless(true)
         .build()
@@ -50,6 +62,9 @@ pub async fn get_webpage_text_headless(url: &str) -> Result<String, DefaultError
     let body_tag = tab.wait_for_element("body").map_err(|_e| DefaultError {
         message: "Could not wait for body",
     })?;
+
+    drop(browser);
+    drop(browser_semaphore_permit);
 
     let body_tag_inner_html = body_tag.get_inner_text().map_err(|_e| DefaultError {
         message: "Could not get inner html",
