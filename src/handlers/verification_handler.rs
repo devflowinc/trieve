@@ -5,6 +5,7 @@ use super::auth_handler::LoggedUser;
 use crate::data::models::VerificationNotification;
 use crate::operators::card_operator as card_op;
 use crate::operators::notification_operator::add_verificiation_notification_query;
+use crate::AppMutexStore;
 use crate::{data::models::Pool, errors::ServiceError, operators::verification_operator as op};
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -16,8 +17,12 @@ pub enum VerifyData {
     CardVerification { card_uuid: uuid::Uuid },
 }
 
-pub async fn get_webpage_score(url_source: &str, content: &str) -> Result<i64, actix_web::Error> {
-    let webpage_content = &op::get_webpage_text_fetch(url_source)
+pub async fn get_webpage_score(
+    url_source: &str,
+    content: &str,
+    mutex_store: web::Data<AppMutexStore>,
+) -> Result<i64, actix_web::Error> {
+    let webpage_content = &op::get_webpage_text_fetch(url_source, mutex_store)
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Could not fetch: {}", err)))?;
 
@@ -92,6 +97,7 @@ pub async fn verify_card_content(
     data: web::Json<VerifyData>,
     user: LoggedUser,
     pool: web::Data<Pool>,
+    mutex_store: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     // Try naive html get first then use the headless browser approach
     let thread_safe_pool = Arc::new(Mutex::new(pool));
@@ -103,7 +109,7 @@ pub async fn verify_card_content(
         VerifyData::ContentVerification {
             content,
             url_source,
-        } => get_webpage_score(&url_source, &content).await?,
+        } => get_webpage_score(&url_source, &content, mutex_store).await?,
 
         VerifyData::CardVerification { card_uuid } => {
             let card = web::block(move || {
@@ -115,7 +121,7 @@ pub async fn verify_card_content(
                 .link
                 .ok_or_else(|| ServiceError::BadRequest("No link on this card to verify".into()))?;
 
-            get_webpage_score(&link, &card.content).await?
+            get_webpage_score(&link, &card.content, mutex_store).await?
         }
     };
 

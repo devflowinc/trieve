@@ -1,4 +1,4 @@
-use crate::diesel::Connection;
+use crate::{diesel::Connection, AppMutexStore};
 use actix_web::{body::MessageBody, web};
 use base64::{
     alphabet,
@@ -164,6 +164,7 @@ pub async fn convert_docx_to_html_query(
     private: bool,
     user: LoggedUser,
     pool: web::Data<Pool>,
+    mutex_store: web::Data<AppMutexStore>,
 ) -> Result<UploadFileResult, DefaultError> {
     let temp_docx_file_path = format!("./tmp/{}", file_name);
     std::fs::write(&temp_docx_file_path, file_data.clone()).map_err(|_| DefaultError {
@@ -175,6 +176,15 @@ pub async fn convert_docx_to_html_query(
         file_name.split_once('.').unwrap_or_default().0
     ));
 
+    let libreoffice_lock = match mutex_store.libreoffice.lock() {
+        Ok(libreoffice_lock) => libreoffice_lock,
+        Err(_) => {
+            return Err(DefaultError {
+                message: "Could not lock libreoffice mutex",
+            })
+        }
+    };
+
     let conversion_command_output =
         Command::new(std::env::var("LIBREOFFICE_PATH").expect("LIBREOFFICE_PATH must be set"))
             .arg("--headless")
@@ -184,6 +194,8 @@ pub async fn convert_docx_to_html_query(
             .arg("./tmp")
             .arg(&temp_docx_file_path)
             .output();
+
+    drop(libreoffice_lock);
 
     if conversion_command_output.is_err() {
         return Err(DefaultError {

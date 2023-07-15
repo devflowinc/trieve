@@ -13,6 +13,7 @@ use actix_web::web;
 use crate::{
     data::models::{CardVerifications, Pool},
     errors::DefaultError,
+    AppMutexStore,
 };
 
 pub async fn get_webpage_text_headless(url: &str) -> Result<String, DefaultError> {
@@ -60,7 +61,10 @@ pub async fn get_webpage_text_headless(url: &str) -> Result<String, DefaultError
     Ok(clean_text)
 }
 
-pub async fn get_webpage_text_fetch(url: &str) -> Result<String, DefaultError> {
+pub async fn get_webpage_text_fetch(
+    url: &str,
+    mutex_store: web::Data<AppMutexStore>,
+) -> Result<String, DefaultError> {
     let response = reqwest::get(url).await.map_err(|_| DefaultError {
         message: "Could not fetch page",
     })?;
@@ -69,6 +73,7 @@ pub async fn get_webpage_text_fetch(url: &str) -> Result<String, DefaultError> {
         message: "Could not get content type",
     })?;
     let html;
+
     if headers.to_str().unwrap_or("").contains("text/html") {
         html = response.text().await.map_err(|_| DefaultError {
             message: "Could not parse text",
@@ -85,6 +90,15 @@ pub async fn get_webpage_text_fetch(url: &str) -> Result<String, DefaultError> {
             message: "Could not write file to disk",
         })?;
 
+        let libreoffice_lock = match mutex_store.libreoffice.lock() {
+            Ok(libreoffice_lock) => libreoffice_lock,
+            Err(_) => {
+                return Err(DefaultError {
+                    message: "Could not lock libreoffice mutex",
+                })
+            }
+        };
+
         let conversion_command_output =
             Command::new(std::env::var("LIBREOFFICE_PATH").expect("LIBREOFFICE_PATH must be set"))
                 .arg("--headless")
@@ -94,6 +108,8 @@ pub async fn get_webpage_text_fetch(url: &str) -> Result<String, DefaultError> {
                 .arg("./tmp")
                 .arg(&pdf_file_path)
                 .output();
+
+        drop(libreoffice_lock);
 
         if conversion_command_output.is_err() {
             return Err(DefaultError {
@@ -116,6 +132,7 @@ pub async fn get_webpage_text_fetch(url: &str) -> Result<String, DefaultError> {
             message: "Could not parse content type",
         });
     }
+
     let soup = soup::Soup::new(&html);
 
     let body = soup.tag("body").find().ok_or(DefaultError {

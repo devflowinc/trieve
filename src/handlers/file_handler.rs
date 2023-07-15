@@ -7,6 +7,7 @@ use crate::{
         convert_docx_to_html_query, delete_file_query, get_file_query, get_user_file_query,
         get_user_id_of_file_query, update_file_query, CoreCard,
     },
+    AppMutexStore,
 };
 use actix_web::{web, HttpResponse};
 use base64::{
@@ -51,6 +52,7 @@ pub struct UploadFileResult {
 pub async fn upload_file_handler(
     data: web::Json<UploadFileData>,
     pool: web::Data<Pool>,
+    mutex_store: web::Data<AppMutexStore>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let upload_file_data = data.into_inner();
@@ -82,6 +84,7 @@ pub async fn upload_file_handler(
         private,
         user,
         pool_inner,
+        mutex_store,
     )
     .await
     .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
