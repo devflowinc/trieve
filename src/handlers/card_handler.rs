@@ -9,6 +9,7 @@ use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
 };
 use crate::operators::collection_operator::get_collection_by_id_query;
+use crate::AppMutexStore;
 use actix::Arbiter;
 use actix_web::{web, HttpResponse};
 use difference::{Changeset, Difference};
@@ -57,6 +58,7 @@ pub async fn create_card(
     card: web::Json<CreateCardData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
+    mutex_store: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let private = card.private.unwrap_or(false);
     let mut collision: Option<uuid::Uuid> = None;
@@ -123,6 +125,7 @@ pub async fn create_card(
                         actix_web::web::Json(verify_card_data),
                         user,
                         pool4.lock().unwrap().clone().into_inner().into(),
+                        mutex_store,
                     )
                     .map(|_| ()),
                 );
@@ -219,6 +222,7 @@ pub async fn create_card(
                         actix_web::web::Json(verify_card_data),
                         user,
                         pool4.lock().unwrap().clone().into_inner().into(),
+                        mutex_store,
                     )
                     .map(|_| ()),
                 );
@@ -315,6 +319,7 @@ pub async fn create_card(
             actix_web::web::Json(verify_card_data),
             user,
             pool4.lock().unwrap().clone().into_inner().into(),
+            mutex_store,
         )
         .map(|_| ()),
     );
