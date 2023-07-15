@@ -166,14 +166,15 @@ pub async fn convert_docx_to_html_query(
     pool: web::Data<Pool>,
     mutex_store: web::Data<AppMutexStore>,
 ) -> Result<UploadFileResult, DefaultError> {
-    let temp_docx_file_path = format!("./tmp/{}", file_name);
+    let uuid_file_name = format!("{}-{}", uuid::Uuid::new_v4().to_string(), file_name);
+    let temp_docx_file_path = format!("./tmp/{}", uuid_file_name);
     std::fs::write(&temp_docx_file_path, file_data.clone()).map_err(|_| DefaultError {
         message: "Could not write file to disk",
     })?;
 
     let temp_html_file_path_buf = std::path::PathBuf::from(&format!(
         "./tmp/{}.html",
-        file_name.split_once('.').unwrap_or_default().0
+        uuid_file_name.split_once('.').unwrap_or_default().0
     ));
 
     let libreoffice_lock = match mutex_store.libreoffice.lock() {
