@@ -1,9 +1,10 @@
 use std::sync::MutexGuard;
 
+use actix_web::web;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 
 use crate::{
-    data::models::{Pool, VerificationNotification},
+    data::models::{Pool, VerificationNotification, CollectionCreatedNotification},
     errors::DefaultError,
     handlers::notification_handler::Notification,
 };
@@ -26,23 +27,51 @@ pub fn add_verificiation_notification_query(
     Ok(())
 }
 
+pub fn add_collection_created_notification_query(
+	collection: CollectionCreatedNotification,
+	pool: web::Data<Pool>,
+) -> Result<(), DefaultError> {
+	use crate::data::schema::collection_created_notifications::dsl as collection_created_notifications_columns;
+
+	let mut conn = pool.get().unwrap();
+
+	diesel::insert_into(collection_created_notifications_columns::collection_created_notifications)
+		.values(&collection)
+		.execute(&mut conn)
+		.map_err(|_| DefaultError {
+			message: "Failed to create notification",
+		})?;
+
+	Ok(())
+}
+
 pub fn get_notifications_query(
     user_id: uuid::Uuid,
     pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<Vec<Notification>, DefaultError> {
     use crate::data::schema::verification_notifications::dsl as verification_notifications_columns;
+	use crate::data::schema::collection_created_notifications::dsl as collection_created_notifications_columns;
 
     let mut conn = pool.get().unwrap();
 
-    let notifications = verification_notifications_columns::verification_notifications
+    let verifications = verification_notifications_columns::verification_notifications
         .filter(verification_notifications_columns::user_uuid.eq(user_id))
         .load::<VerificationNotification>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to get notifications",
-        })?
-        .iter()
-        .map(|n| Notification::Verification(n.clone()))
-        .collect::<Vec<Notification>>();
+        })?;
+
+    let collection_created = collection_created_notifications_columns::collection_created_notifications
+        .filter(collection_created_notifications_columns::user_uuid.eq(user_id))
+        .load::<CollectionCreatedNotification>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to get notifications",
+        })?;
+
+	let mut notifications = verifications.iter().map(|v| Notification::Verification(v.clone())).collect::<Vec<Notification>>();	
+	notifications.extend(
+		collection_created.iter().map(|c| Notification::CollectionCreated(c.clone())).collect::<Vec<Notification>>()
+	);
 
     Ok(notifications)
 }

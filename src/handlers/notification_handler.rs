@@ -1,11 +1,11 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    data::models::{Pool, VerificationNotification},
+    data::models::{Pool, VerificationNotification, CollectionCreatedNotification},
     errors::ServiceError,
     operators::notification_operator::{
         add_verificiation_notification_query, get_notifications_query,
-        mark_all_notifications_as_read_query, mark_notification_as_read_query,
+        mark_all_notifications_as_read_query, mark_notification_as_read_query, add_collection_created_notification_query,
     },
 };
 use actix_web::{web, HttpResponse};
@@ -44,10 +44,39 @@ pub async fn create_verificiation_notification(
 
     Ok(HttpResponse::NoContent().into())
 }
+
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CollectionCreatedNotificationData {
+    pub user_uuid: uuid::Uuid,
+    pub collection_uuid: uuid::Uuid,
+}
+
+pub async fn create_collection_created_notification(
+    data: web::Json<CollectionCreatedNotificationData>,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+
+    web::block(move || {
+        add_collection_created_notification_query(
+            CollectionCreatedNotification::from_details(
+                data.user_uuid,
+                data.collection_uuid,
+            ),
+            pool,
+        )
+    })
+    .await?
+    .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+
+    Ok(HttpResponse::NoContent().into())
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(untagged)]
 pub enum Notification {
     Verification(VerificationNotification),
+    CollectionCreated(CollectionCreatedNotification),
 }
 
 pub async fn get_notifications(
