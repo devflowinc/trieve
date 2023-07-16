@@ -90,6 +90,17 @@ diesel::table! {
 }
 
 diesel::table! {
+    collection_created_notifications (id) {
+        id -> Uuid,
+        user_uuid -> Uuid,
+        collection_uuid -> Uuid,
+        user_read -> Bool,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     collections_from_files (id) {
         id -> Uuid,
         collection_id -> Uuid,
@@ -240,6 +251,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     card_metadata,
     card_verification,
     card_votes,
+    collection_created_notifications,
     collections_from_files,
     files,
     invitations,

@@ -829,3 +829,30 @@ impl VerificationNotification {
         }
     }
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable)]
+#[diesel(table_name = collection_created_notifications)]
+pub struct CollectionCreatedNotification {
+    pub id: uuid::Uuid,
+    pub user_uuid: uuid::Uuid,
+    pub collection_uuid: uuid::Uuid,
+    pub user_read: bool,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl CollectionCreatedNotification {
+    pub fn from_details(
+        user_uuid: uuid::Uuid,
+        collection_uuid: uuid::Uuid,
+    ) -> Self {
+        CollectionCreatedNotification {
+            id: uuid::Uuid::new_v4(),
+            user_uuid,
+            collection_uuid,
+            user_read: false,
+            created_at: chrono::Local::now().naive_local(),
+            updated_at: chrono::Local::now().naive_local(),
+        }
+    }
+}
