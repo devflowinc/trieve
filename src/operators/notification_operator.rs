@@ -82,21 +82,33 @@ pub fn mark_notification_as_read_query(
     pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::verification_notifications::dsl as verification_notifications_columns;
+	use crate::data::schema::collection_created_notifications::dsl as collection_created_notifications_columns;
 
     let mut conn = pool.get().unwrap();
 
-    diesel::update(
+	// We have to do both, just in case there is a weird collision between both tables
+    let verification_result = diesel::update(
         verification_notifications_columns::verification_notifications
             .filter(verification_notifications_columns::user_uuid.eq(user_id))
             .filter(verification_notifications_columns::id.eq(notification_id)),
     )
     .set(verification_notifications_columns::user_read.eq(true))
-    .execute(&mut conn)
-    .map_err(|_| DefaultError {
-        message: "Failed to mark notification as read",
-    })?;
+    .execute(&mut conn);
 
-    Ok(())
+    let collection_created_result = diesel::update(
+        collection_created_notifications_columns::collection_created_notifications
+            .filter(collection_created_notifications_columns::user_uuid.eq(user_id))
+            .filter(collection_created_notifications_columns::id.eq(notification_id)),
+    )
+    .set(collection_created_notifications_columns::user_read.eq(true))
+    .execute(&mut conn);
+
+	match verification_result.or(collection_created_result) {
+		Ok(_) => Ok(()),
+		Err(_) => Err(DefaultError {
+			message: "Failed to mark notification as read",
+		})
+	}
 }
 
 pub fn mark_all_notifications_as_read_query(
@@ -104,18 +116,28 @@ pub fn mark_all_notifications_as_read_query(
     pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::verification_notifications::dsl as verification_notifications_columns;
+	use crate::data::schema::collection_created_notifications::dsl as collection_created_notifications_columns;
 
     let mut conn = pool.get().unwrap();
 
-    diesel::update(
+    let verification_result = diesel::update(
         verification_notifications_columns::verification_notifications
             .filter(verification_notifications_columns::user_uuid.eq(user_id)),
     )
     .set(verification_notifications_columns::user_read.eq(true))
-    .execute(&mut conn)
-    .map_err(|_| DefaultError {
-        message: "Failed to mark all notifications as read",
-    })?;
+    .execute(&mut conn);
 
-    Ok(())
+    let collection_created_result = diesel::update(
+        collection_created_notifications_columns::collection_created_notifications
+            .filter(collection_created_notifications_columns::user_uuid.eq(user_id)),
+    )
+    .set(collection_created_notifications_columns::user_read.eq(true))
+    .execute(&mut conn);
+
+	match verification_result.or(collection_created_result) {
+		Ok(_) => Ok(()),
+		Err(_) => Err(DefaultError {
+			message: "Failed to mark all notifications as read",
+		})
+	}
 }
