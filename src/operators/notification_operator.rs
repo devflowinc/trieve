@@ -5,7 +5,7 @@ use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::{
     data::models::{Pool, VerificationNotification},
     errors::DefaultError,
-    handlers::notification_handler::NotificationTypes,
+    handlers::notification_handler::Notification,
 };
 
 pub fn add_verificiation_notification_query(
@@ -29,7 +29,7 @@ pub fn add_verificiation_notification_query(
 pub fn get_notifications_query(
     user_id: uuid::Uuid,
     pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
-) -> Result<NotificationTypes, DefaultError> {
+) -> Result<Vec<Notification>, DefaultError> {
     use crate::data::schema::verification_notifications::dsl as verification_notifications_columns;
 
     let mut conn = pool.get().unwrap();
@@ -39,9 +39,12 @@ pub fn get_notifications_query(
         .load::<VerificationNotification>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to get notifications",
-        })?;
+        })?
+        .iter()
+        .map(|n| Notification::Verification(n.clone()))
+        .collect::<Vec<Notification>>();
 
-    Ok(NotificationTypes::Verification(notifications))
+    Ok(notifications)
 }
 
 pub fn mark_notification_as_read_query(
