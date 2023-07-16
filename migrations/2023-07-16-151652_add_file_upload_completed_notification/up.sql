@@ -1,5 +1,5 @@
 -- Your SQL goes here
-CREATE TABLE collection_created_notifications (
+CREATE TABLE file_upload_completed_notifications (
     id UUID PRIMARY KEY,
     user_uuid UUID NOT NULL,
     collection_uuid UUID NOT NULL,

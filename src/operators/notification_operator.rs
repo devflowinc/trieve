@@ -4,7 +4,7 @@ use actix_web::web;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 
 use crate::{
-    data::models::{CollectionCreatedNotification, Pool, VerificationNotification},
+    data::models::{FileUploadCompledNotification, Pool, VerificationNotification},
     errors::DefaultError,
     handlers::notification_handler::Notification,
 };
@@ -29,14 +29,14 @@ pub fn add_verificiation_notification_query(
 
 #[allow(dead_code)]
 pub fn add_collection_created_notification_query(
-    collection: CollectionCreatedNotification,
+    collection: FileUploadCompledNotification,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
-    use crate::data::schema::collection_created_notifications::dsl as collection_created_notifications_columns;
+    use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
 
     let mut conn = pool.get().unwrap();
 
-    diesel::insert_into(collection_created_notifications_columns::collection_created_notifications)
+    diesel::insert_into(file_upload_completed_notifications_columns::file_upload_completed_notifications)
         .values(&collection)
         .execute(&mut conn)
         .map_err(|_| DefaultError {
@@ -50,7 +50,7 @@ pub fn get_notifications_query(
     user_id: uuid::Uuid,
     pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<Vec<Notification>, DefaultError> {
-    use crate::data::schema::collection_created_notifications::dsl as collection_created_notifications_columns;
+    use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
     use crate::data::schema::verification_notifications::dsl as verification_notifications_columns;
 
     let mut conn = pool.get().unwrap();
@@ -62,10 +62,10 @@ pub fn get_notifications_query(
             message: "Failed to get notifications",
         })?;
 
-    let collection_created =
-        collection_created_notifications_columns::collection_created_notifications
-            .filter(collection_created_notifications_columns::user_uuid.eq(user_id))
-            .load::<CollectionCreatedNotification>(&mut conn)
+    let file_upload_completed =
+        file_upload_completed_notifications_columns::file_upload_completed_notifications
+            .filter(file_upload_completed_notifications_columns::user_uuid.eq(user_id))
+            .load::<FileUploadCompledNotification>(&mut conn)
             .map_err(|_| DefaultError {
                 message: "Failed to get notifications",
             })?;
@@ -75,9 +75,9 @@ pub fn get_notifications_query(
         .map(|v| Notification::Verification(v.clone()))
         .collect::<Vec<Notification>>();
     notifications.extend(
-        collection_created
+        file_upload_completed
             .iter()
-            .map(|c| Notification::CollectionCreated(c.clone()))
+            .map(|c| Notification::FileUploadComplete(c.clone()))
             .collect::<Vec<Notification>>(),
     );
 
@@ -89,7 +89,7 @@ pub fn mark_notification_as_read_query(
     notification_id: uuid::Uuid,
     pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<(), DefaultError> {
-    use crate::data::schema::collection_created_notifications::dsl as collection_created_notifications_columns;
+    use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
     use crate::data::schema::verification_notifications::dsl as verification_notifications_columns;
 
     let mut conn = pool.get().unwrap();
@@ -103,15 +103,15 @@ pub fn mark_notification_as_read_query(
     .set(verification_notifications_columns::user_read.eq(true))
     .execute(&mut conn);
 
-    let collection_created_result = diesel::update(
-        collection_created_notifications_columns::collection_created_notifications
-            .filter(collection_created_notifications_columns::user_uuid.eq(user_id))
-            .filter(collection_created_notifications_columns::id.eq(notification_id)),
+    let file_upload_completed_result = diesel::update(
+        file_upload_completed_notifications_columns::file_upload_completed_notifications
+            .filter(file_upload_completed_notifications_columns::user_uuid.eq(user_id))
+            .filter(file_upload_completed_notifications_columns::id.eq(notification_id)),
     )
-    .set(collection_created_notifications_columns::user_read.eq(true))
+    .set(file_upload_completed_notifications_columns::user_read.eq(true))
     .execute(&mut conn);
 
-    match verification_result.or(collection_created_result) {
+    match verification_result.or(file_upload_completed_result) {
         Ok(_) => Ok(()),
         Err(_) => Err(DefaultError {
             message: "Failed to mark notification as read",
@@ -123,7 +123,7 @@ pub fn mark_all_notifications_as_read_query(
     user_id: uuid::Uuid,
     pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<(), DefaultError> {
-    use crate::data::schema::collection_created_notifications::dsl as collection_created_notifications_columns;
+    use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
     use crate::data::schema::verification_notifications::dsl as verification_notifications_columns;
 
     let mut conn = pool.get().unwrap();
@@ -135,14 +135,14 @@ pub fn mark_all_notifications_as_read_query(
     .set(verification_notifications_columns::user_read.eq(true))
     .execute(&mut conn);
 
-    let collection_created_result = diesel::update(
-        collection_created_notifications_columns::collection_created_notifications
-            .filter(collection_created_notifications_columns::user_uuid.eq(user_id)),
+    let file_upload_completed_result = diesel::update(
+        file_upload_completed_notifications_columns::file_upload_completed_notifications
+            .filter(file_upload_completed_notifications_columns::user_uuid.eq(user_id)),
     )
-    .set(collection_created_notifications_columns::user_read.eq(true))
+    .set(file_upload_completed_notifications_columns::user_read.eq(true))
     .execute(&mut conn);
 
-    match verification_result.or(collection_created_result) {
+    match verification_result.or(file_upload_completed_result) {
         Ok(_) => Ok(()),
         Err(_) => Err(DefaultError {
             message: "Failed to mark all notifications as read",

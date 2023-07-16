@@ -831,8 +831,8 @@ impl VerificationNotification {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable)]
-#[diesel(table_name = collection_created_notifications)]
-pub struct CollectionCreatedNotification {
+#[diesel(table_name = file_upload_completed_notifications)]
+pub struct FileUploadCompledNotification {
     pub id: uuid::Uuid,
     pub user_uuid: uuid::Uuid,
     pub collection_uuid: uuid::Uuid,
@@ -841,9 +841,9 @@ pub struct CollectionCreatedNotification {
     pub updated_at: chrono::NaiveDateTime,
 }
 
-impl CollectionCreatedNotification {
+impl FileUploadCompledNotification {
     pub fn from_details(user_uuid: uuid::Uuid, collection_uuid: uuid::Uuid) -> Self {
-        CollectionCreatedNotification {
+        FileUploadCompledNotification {
             id: uuid::Uuid::new_v4(),
             user_uuid,
             collection_uuid,
