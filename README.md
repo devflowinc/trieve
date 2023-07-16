@@ -86,3 +86,8 @@ diesel::debug*query::<diesel::pg::Pg, *>(&query);
 1. `virtualenv venv`
 2. `source venv/bin/activate`
 3. `pip install -r ./validator-scripts/requirements.txt`
+
+
+## How to get Rust debug level logs 
+
+Run `export RUST_LOG=debug`
