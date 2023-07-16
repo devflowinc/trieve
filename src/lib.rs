@@ -98,7 +98,7 @@ pub async fn main() -> std::io::Result<()> {
 
         App::new()
             .app_data(web::Data::new(pool.clone()))
-            .app_data(web::Data::new(app_mutex_store.clone()))
+            .app_data(app_mutex_store.clone())
             .wrap(
                 IdentityMiddleware::builder()
                     .login_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
