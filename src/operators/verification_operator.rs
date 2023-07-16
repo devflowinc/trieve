@@ -94,8 +94,16 @@ pub async fn get_webpage_text_fetch(
             message: "Could not parse text",
         })?;
     } else if headers == "application/pdf" {
-        let pdf_file_path = format!("./tmp/{}.pdf", response.url().to_string().replace('/', ""));
-        let html_file_path = format!("./tmp/{}.html", response.url().to_string().replace('/', ""));
+        let pdf_file_path = format!(
+            "./tmp/{}-{}.pdf",
+            uuid::Uuid::new_v4(),
+            response.url().to_string().replace('/', "")
+        );
+        let html_file_path = format!(
+            "./tmp/{}-{}.html",
+            uuid::Uuid::new_v4(),
+            response.url().to_string().replace('/', "")
+        );
 
         let pdf = response.bytes().await.map_err(|_| DefaultError {
             message: "Could not parse pdf",
