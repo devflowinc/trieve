@@ -46,8 +46,8 @@ pub async fn create_verificiation_notification(
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(untagged)]
-pub enum NotificationTypes {
-    Verification(Vec<VerificationNotification>),
+pub enum Notification {
+    Verification(VerificationNotification),
 }
 
 pub async fn get_notifications(
