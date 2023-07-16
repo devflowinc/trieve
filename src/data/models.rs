@@ -842,10 +842,7 @@ pub struct CollectionCreatedNotification {
 }
 
 impl CollectionCreatedNotification {
-    pub fn from_details(
-        user_uuid: uuid::Uuid,
-        collection_uuid: uuid::Uuid,
-    ) -> Self {
+    pub fn from_details(user_uuid: uuid::Uuid, collection_uuid: uuid::Uuid) -> Self {
         CollectionCreatedNotification {
             id: uuid::Uuid::new_v4(),
             user_uuid,

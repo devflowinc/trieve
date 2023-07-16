@@ -310,9 +310,6 @@ pub async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::resource("/notifications")
-                            .route(web::post().to(
-                                handlers::notification_handler::create_collection_created_notification,
-                            ))
                             .route(web::get().to(handlers::notification_handler::get_notifications))
                             .route(
                                 web::put()
