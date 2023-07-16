@@ -1,11 +1,11 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    data::models::{Pool, VerificationNotification, CollectionCreatedNotification},
+    data::models::{CollectionCreatedNotification, Pool, VerificationNotification},
     errors::ServiceError,
     operators::notification_operator::{
-        add_verificiation_notification_query, get_notifications_query,
-        mark_all_notifications_as_read_query, mark_notification_as_read_query, add_collection_created_notification_query,
+        get_notifications_query, mark_all_notifications_as_read_query,
+        mark_notification_as_read_query,
     },
 };
 use actix_web::{web, HttpResponse};
@@ -19,57 +19,6 @@ pub struct VerificationNotificationData {
     pub user_uuid: uuid::Uuid,
     pub verification_uuid: uuid::Uuid,
     pub score: i64,
-}
-
-pub async fn create_verificiation_notification(
-    data: web::Json<VerificationNotificationData>,
-    pool: web::Data<Pool>,
-) -> Result<HttpResponse, actix_web::Error> {
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
-    let data = data.into_inner();
-
-    web::block(move || {
-        add_verificiation_notification_query(
-            VerificationNotification::from_details(
-                data.card_uuid,
-                data.user_uuid,
-                data.verification_uuid,
-                data.score,
-            ),
-            thread_safe_pool.lock().unwrap(),
-        )
-    })
-    .await?
-    .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
-
-    Ok(HttpResponse::NoContent().into())
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct CollectionCreatedNotificationData {
-    pub user_uuid: uuid::Uuid,
-    pub collection_uuid: uuid::Uuid,
-}
-
-pub async fn create_collection_created_notification(
-    data: web::Json<CollectionCreatedNotificationData>,
-    pool: web::Data<Pool>,
-) -> Result<HttpResponse, actix_web::Error> {
-
-    web::block(move || {
-        add_collection_created_notification_query(
-            CollectionCreatedNotification::from_details(
-                data.user_uuid,
-                data.collection_uuid,
-            ),
-            pool,
-        )
-    })
-    .await?
-    .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
-
-    Ok(HttpResponse::NoContent().into())
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
