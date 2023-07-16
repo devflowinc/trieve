@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    data::models::{CollectionCreatedNotification, Pool, VerificationNotification},
+    data::models::{FileUploadCompledNotification, Pool, VerificationNotification},
     errors::ServiceError,
     operators::notification_operator::{
         get_notifications_query, mark_all_notifications_as_read_query,
@@ -25,7 +25,7 @@ pub struct VerificationNotificationData {
 #[serde(untagged)]
 pub enum Notification {
     Verification(VerificationNotification),
-    CollectionCreated(CollectionCreatedNotification),
+    FileUploadComplete(FileUploadCompledNotification),
 }
 
 pub async fn get_notifications(
