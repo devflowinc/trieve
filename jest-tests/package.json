@@ -5,6 +5,7 @@
   "scripts": {
     "test": "node -r dotenv/config --experimental-vm-modules node_modules/.bin/jest",
     "lint": "eslint .",
+    "bulk-upload": "node -r dotenv/config --experimental-vm-modules ./scripts/traverse_and_upload.js",
     "format": "prettier --write ."
   },
   "description": "Testing library for Arguflow's ai-editor actix-web backend",
@@ -22,6 +23,11 @@
     "jest": "^29.5.0"
   },
   "dependencies": {
+    "@keyv/redis": "^2.7.0",
+    "@keyv/sqlite": "^3.6.5",
+    "file-type": "^18.5.0",
+    "keyv": "^4.5.3",
+    "keyv-file": "^0.2.0",
     "mime": "^3.0.0",
     "node-fetch": "^3.3.1",
     "prettier": "^2.8.8"

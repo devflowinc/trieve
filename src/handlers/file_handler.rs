@@ -65,16 +65,7 @@ pub async fn upload_file_handler(
         .map_err(|_e| ServiceError::BadRequest("Could not decode base64 file".to_string()))?;
     let private = upload_file_data.private;
 
-    let file_mime = match upload_file_data.file_mime_type.as_str() {
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => {
-            upload_file_data.file_mime_type
-        }
-        _ => {
-            return Err(ServiceError::BadRequest(
-                "Must upload a docx file".to_string(),
-            ))?;
-        }
-    };
+    let file_mime = upload_file_data.file_mime_type;
 
     let conversion_result = convert_docx_to_html_query(
         upload_file_data.file_name,
