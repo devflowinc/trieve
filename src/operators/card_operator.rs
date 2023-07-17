@@ -676,32 +676,37 @@ pub fn global_top_full_text_card_query(
     user_query: String,
     pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<Option<CardMetadataWithVotesAndFiles>, DefaultError> {
+    use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
     let mut conn = pool.get().unwrap();
 
     let mut query = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::private.eq(false))
-        .or_filter(
-            card_metadata_columns::private
-                .eq(false)
-                .and(card_metadata_columns::qdrant_point_id.is_null()),
+        .inner_join(
+            card_collisions_columns::card_collisions
+                .on(card_collisions_columns::card_id.eq(card_metadata_columns::id)),
         )
         .select((
-            card_metadata_columns::id,
-            card_metadata_columns::content,
-            card_metadata_columns::link,
-            card_metadata_columns::author_id,
-            card_metadata_columns::qdrant_point_id,
-            card_metadata_columns::created_at,
-            card_metadata_columns::updated_at,
-            card_metadata_columns::oc_file_path,
-            card_metadata_columns::card_html,
-            card_metadata_columns::private,
-            sql::<Nullable<Double>>("(ts_rank(card_metadata_tsvector, plainto_tsquery('english', ")
+            (
+                card_metadata_columns::id,
+                card_metadata_columns::content,
+                card_metadata_columns::link,
+                card_metadata_columns::author_id,
+                card_metadata_columns::qdrant_point_id,
+                card_metadata_columns::created_at,
+                card_metadata_columns::updated_at,
+                card_metadata_columns::oc_file_path,
+                card_metadata_columns::card_html,
+                card_metadata_columns::private,
+                sql::<Nullable<Double>>(
+                    "(ts_rank(card_metadata_tsvector, plainto_tsquery('english', ",
+                )
                 .bind::<Text, _>(user_query.clone())
                 .sql(") , 32) * 10) AS rank"),
-            sql::<Int8>("count(*) OVER() AS full_count"),
+                sql::<Int8>("count(*) OVER() AS full_count"),
+            ),
+            (card_collisions_columns::collision_qdrant_id.assume_not_null()),
         ))
         .distinct()
         .into_boxed();
@@ -714,7 +719,7 @@ pub fn global_top_full_text_card_query(
 
     query = query.order((sql::<Text>("rank DESC"),));
 
-    let searched_card: FullTextSearchResult = match query.first(&mut conn) {
+    let searched_card: (FullTextSearchResult, uuid::Uuid) = match query.first(&mut conn) {
         Ok(card) => Ok(card),
         Err(e) => match e {
             NotFound => {
@@ -726,12 +731,24 @@ pub fn global_top_full_text_card_query(
         },
     }?;
 
-    let card_metadata_with_upvotes_and_files = get_metadata(vec![searched_card], None, conn)
+    let card_metadata_with_upvotes_and_files = get_metadata(vec![searched_card.0], None, conn)
         .map_err(|_| DefaultError {
             message: "Failed to load metadata for top trigram searched card",
         })?;
 
-    Ok(card_metadata_with_upvotes_and_files.get(0).cloned())
+    // This is a hack to replace qdrant_point_id with collision_qdrant_point_id if it is not set
+    let mut top_card = match card_metadata_with_upvotes_and_files.get(0) {
+        Some(card) => card.clone(),
+        None => {
+            return Ok(None);
+        }
+    };
+
+    if top_card.qdrant_point_id == uuid::Uuid::default() {
+        top_card.qdrant_point_id = searched_card.1;
+    }
+
+    Ok(Some(top_card.clone()))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -794,7 +811,6 @@ pub fn get_collided_cards_query(
     let mut conn = pool.get().unwrap();
 
     let card_metadata: Vec<(CardMetadata, uuid::Uuid)> = card_collisions_columns::card_collisions
-        .filter(card_collisions_columns::collision_qdrant_id.eq_any(point_ids))
         .inner_join(
             card_metadata_columns::card_metadata
                 .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
@@ -814,6 +830,7 @@ pub fn get_collided_cards_query(
             ),
             (card_collisions_columns::collision_qdrant_id.assume_not_null()),
         ))
+        .filter(card_collisions_columns::collision_qdrant_id.eq_any(point_ids))
         .filter(card_metadata_columns::private.eq(false))
         .or_filter(
             card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
@@ -848,6 +865,7 @@ pub fn get_collided_cards_query(
 
     Ok(card_metadatas_with_collided_qdrant_ids)
 }
+
 pub fn get_metadata_from_id_query(
     card_id: uuid::Uuid,
     pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
