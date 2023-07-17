@@ -2,27 +2,22 @@ import sys
 from bs4 import BeautifulSoup
 import json
 import re
+import codecs
 
 
 class CoreCard:
-    def __init__(self, content, card_html, link):
-        self.content = content
+    def __init__(self, card_html, link):
         self.card_html = card_html
         self.link = link
 
 def remove_extra_trailing_chars(url):
-    pattern = r"([\w+]+://)?([\w\d-]+\.)*[\w-]+[\.:]\w+([/\?=&\#.]?[\w-]+)*/?"
-
-    # This is the regex object
-    regex = re.compile(pattern)
-
-    # This is a list of all the matches
-    all_matches = regex.findall(url)
-
-    if len(all_matches) == 0:
+    regex_pattern = r"([\w+]+://)?([\w\d-]+\.)*[\w-]+[\.:]\w+([/\?=&\#.]?[\w-]+)*/?"
+    match = re.search(regex_pattern, url)
+    if match:
+        first_match = match.group()
+        return first_match
+    else:
         return url
-
-    return all_matches[0]
 
 
 def extract_cards_from_html(html_string):
@@ -36,15 +31,13 @@ def extract_cards_from_html(html_string):
     is_heading = False
     is_link = False
     card_html = ""
-    card_content = ""
     card_link = ""
 
     for child in body_tag.children:
         if child.name in ["h1", "h2", "h3", "h4", "h5", "h6"]:
             if is_heading and is_link:
-                cards.append(CoreCard(card_content, card_html, card_link))
+                cards.append(CoreCard(card_html, card_link))
                 card_html = ""
-                card_content = ""
                 card_link = ""
             is_heading = True
             is_link = False
@@ -77,7 +70,7 @@ def main():
 
     input_file = sys.argv[1]
 
-    with open(input_file) as file:
+    with codecs.open(input_file, "r", encoding='utf-8') as file:
         html_string = file.read()
 
     cards = extract_cards_from_html(html_string)
