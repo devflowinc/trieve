@@ -36,12 +36,14 @@ pub fn add_collection_created_notification_query(
 
     let mut conn = pool.get().unwrap();
 
-    diesel::insert_into(file_upload_completed_notifications_columns::file_upload_completed_notifications)
-        .values(&collection)
-        .execute(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to create notification",
-        })?;
+    diesel::insert_into(
+        file_upload_completed_notifications_columns::file_upload_completed_notifications,
+    )
+    .values(&collection)
+    .execute(&mut conn)
+    .map_err(|_| DefaultError {
+        message: "Failed to create notification",
+    })?;
 
     Ok(())
 }
