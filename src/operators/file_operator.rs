@@ -7,11 +7,10 @@ use base64::{
 };
 use diesel::RunQueryDsl;
 use log::info;
-use regex::Regex;
 use s3::{creds::Credentials, Bucket, Region};
 use serde::{Deserialize, Serialize};
-use soup::{NodeExt, QueryBuilderExt, Soup};
-use std::{process::Command, sync::MutexGuard};
+use soup::{QueryBuilderExt, Soup};
+use std::{path::PathBuf, process::Command, sync::MutexGuard};
 
 use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
 use crate::{
@@ -57,26 +56,6 @@ pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
         .with_path_style();
 
     Ok(aws_bucket)
-}
-
-pub fn remove_extra_trailing_chars(url: &str) -> String {
-    let pattern = r"([\w+]+://)?([\w\d-]+\.)*[\w-]+[\.:]\w+([/\?=&\#.]?[\w-]+)*/?";
-
-    let regex = match Regex::new(pattern) {
-        Ok(regex) => regex,
-        Err(_) => return url.to_string(),
-    };
-
-    let all_matches = regex
-        .find_iter(url)
-        .map(|m| m.as_str())
-        .collect::<Vec<&str>>();
-
-    if !all_matches.is_empty() {
-        all_matches[0].to_string()
-    } else {
-        url.to_string()
-    }
 }
 
 pub fn create_file_query(
@@ -209,7 +188,7 @@ pub async fn convert_docx_to_html_query(
             message: "Could not read html file",
         })?;
     let soup = Soup::new(&html_string);
-    let body_tag = match soup.tag("body").find() {
+    let _body_tag = match soup.tag("body").find() {
         Some(body_tag) => body_tag,
         None => {
             return Err(DefaultError {
@@ -249,60 +228,73 @@ pub async fn convert_docx_to_html_query(
             message: "Could not upload file to S3",
         })?;
 
-    let mut cards: Vec<CoreCard> = vec![];
-    let mut is_heading = false;
-    let mut is_link = false;
-    let mut card_html = String::new();
-    let mut card_link = String::new();
+    std::fs::remove_file(&temp_docx_file_path).map_err(|_| DefaultError {
+        message: "Could not remove temp docx file",
+    })?;
 
-    for child in body_tag.children() {
-        match child.name() {
-            "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
-                if is_heading && is_link {
-                    cards.push(CoreCard {
-                        card_html,
-                        link: card_link,
-                    });
-                    card_html = String::new();
-                    card_link = String::new();
-                }
-                is_heading = true;
-                is_link = false;
-            }
-            "a" => {
-                is_link = true;
-                card_link = child.get("href").unwrap_or_default().to_string();
-            }
-            "p" => {
-                if is_heading && !is_link {
-                    let card_text = child.text();
-                    for word in card_text.split(' ') {
-                        if word.contains("http") {
-                            is_link = true;
-                            card_link = remove_extra_trailing_chars(word);
-                            break;
-                        }
-                    }
-                    if is_link {
-                        // this p tag contains a link so we need to not add it to the card content
-                        continue;
-                    }
-                }
-                if is_heading && is_link {
-                    card_html.push_str(&child.display());
-                }
-            }
-            _ => {
-                if is_heading && is_link {
-                    card_html.push_str(&child.display());
-                }
-            }
+    tokio::spawn(async move {
+        create_cards_with_handler(
+            oc_file_path,
+            private,
+            file_name,
+            created_file.id,
+            user,
+            mutex_store,
+            temp_html_file_path_buf,
+            pool,
+        )
+    });
+
+    Ok(UploadFileResult {
+        file_metadata: created_file,
+    })
+}
+
+pub async fn create_cards_with_handler(
+    oc_file_path: Option<String>,
+    private: bool,
+    file_name: String,
+    created_file_id: uuid::Uuid,
+    user: LoggedUser,
+    mutex_store: web::Data<AppMutexStore>,
+    temp_html_file_path_buf: PathBuf,
+    pool: web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    let file_path_str = match temp_html_file_path_buf.to_str() {
+        Some(file_path_str) => file_path_str,
+        None => {
+            return Err(DefaultError {
+                message: "Could not convert file path to string",
+            })
         }
-    }
+    };
+    let parsed_cards_command_output = Command::new("python")
+        .arg("./python-scripts/card_parser.py")
+        .arg(file_path_str)
+        .output();
 
-    let mut created_cards: Vec<CoreCard> = [].to_vec();
-    let mut rejected_cards: Vec<CoreCard> = [].to_vec();
-    let mut card_metadata: ReturnCreatedCard;
+    std::fs::remove_file(&temp_html_file_path_buf).map_err(|_| DefaultError {
+        message: "Could not remove temp html file",
+    })?;
+
+    let raw_parsed_cards = match parsed_cards_command_output {
+        Ok(parsed_cards_command_output) => parsed_cards_command_output.stdout,
+        Err(_) => {
+            return Err(DefaultError {
+                message: "Could not parse cards",
+            })
+        }
+    };
+
+    let cards: Vec<CoreCard> = match serde_json::from_slice(&raw_parsed_cards) {
+        Ok(cards) => cards,
+        Err(_) => {
+            return Err(DefaultError {
+                message: "Could not parse cards",
+            })
+        }
+    };
+
     let mut card_ids: Vec<uuid::Uuid> = [].to_vec();
 
     let pool1 = pool.clone();
@@ -318,7 +310,7 @@ pub async fn convert_docx_to_html_query(
             link: Some(card.link.clone()),
             oc_file_path: oc_file_path.clone(),
             private: Some(private),
-            file_uuid: Some(created_file.id),
+            file_uuid: Some(created_file_id),
         };
         let web_json_create_card_data = web::Json(create_card_data);
 
@@ -332,31 +324,21 @@ pub async fn convert_docx_to_html_query(
         {
             Ok(response) => {
                 if response.status().is_success() {
-                    created_cards.push(card);
-                    card_metadata = serde_json::from_slice(
+                    let card_metadata: ReturnCreatedCard = serde_json::from_slice(
                         response.into_body().try_into_bytes().unwrap().as_ref(),
                     )
-                    .map_err(|err| {
-                        info!("Error creating card metadata: {:?}", err.to_string());
-
-                        DefaultError {
-                            message: "Error creating card metadata's for file",
-                        }
+                    .map_err(|_err| DefaultError {
+                        message: "Error creating card metadata's for file",
                     })?;
                     card_ids.push(card_metadata.card_metadata.id);
-                } else {
-                    rejected_cards.push(card);
                 }
             }
             Err(error) => {
                 info!("Error creating card: {:?}", error.to_string());
-                // info!("Card html: {:?}", replaced_card_html);
-                rejected_cards.push(card)
             }
         }
     }
 
-    let collection_id: uuid::Uuid;
     match web::block(move || {
         create_collection_and_add_bookmarks_query(
             CardCollection::from_details(
@@ -366,14 +348,14 @@ pub async fn convert_docx_to_html_query(
                 "".to_string(),
             ),
             card_ids,
-            created_file.id,
+            created_file_id,
             pool1,
         )
     })
     .await
     {
         Ok(response) => match response {
-            Ok(collection) => collection_id = collection.id,
+            Ok(_) => (),
             Err(err) => return Err(err),
         },
         Err(_) => {
@@ -383,19 +365,7 @@ pub async fn convert_docx_to_html_query(
         }
     }
 
-    std::fs::remove_file(&temp_docx_file_path).map_err(|_| DefaultError {
-        message: "Could not remove temp docx file",
-    })?;
-    std::fs::remove_file(&temp_html_file_path_buf).map_err(|_| DefaultError {
-        message: "Could not remove temp html file",
-    })?;
-
-    Ok(UploadFileResult {
-        file_metadata: created_file,
-        collection_id,
-        created_cards,
-        rejected_cards,
-    })
+    Ok(())
 }
 
 pub async fn get_file_query(
