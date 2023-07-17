@@ -70,12 +70,18 @@ This section refers to the jest testing suite found in the `jest-tests` folder o
 3. Run `yarn`
 4. Run `yarn test`
 
-## Resetting the db's
+## Resetting the application data db's
 
 1. `sudo docker compose stop qdrant-database`
 2. `sudo docker compose rm -f qdrant-database`
 3. `sudo docker volume rm ai-editor_qdrant_data`
 4. `sudo diesel db reset`
+
+## Resetting the script db
+
+1. `sudo docker compose stop script-redis`
+2. `sudo docker compose rm -f script-redis`
+3. `sudo docker volume rm ai-editor_script-redis-data`
 
 ## How to debug diesel by getting the exact generated SQL
 
@@ -87,7 +93,6 @@ diesel::debug*query::<diesel::pg::Pg, *>(&query);
 2. `source venv/bin/activate`
 3. `pip install -r ./validator-scripts/requirements.txt`
 
-
-## How to get Rust debug level logs 
+## How to get Rust debug level logs
 
 Run `export RUST_LOG=debug`

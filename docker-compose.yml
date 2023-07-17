@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 services:
   db:
@@ -22,6 +22,15 @@ services:
     volumes:
       - redis-data:/data
 
+  script-redis:
+    image: redis
+    container_name: my-script-redis
+    restart: always
+    ports:
+      - "6380:6379"
+    volumes:
+      - script-redis-data:/data
+
   qdrant-database:
     image: qdrant/qdrant
     ports:
@@ -44,6 +53,7 @@ services:
 
 volumes:
   redis-data:
+  script-redis-data:
   pgdata:
   qdrant_data:
   s3-data:
