@@ -233,7 +233,8 @@ pub async fn convert_docx_to_html_query(
     })?;
 
     tokio::spawn(async move {
-        create_cards_with_handler(
+        log::info!("Creating cards for file {}", file_name);
+        let _ = create_cards_with_handler(
             oc_file_path,
             private,
             file_name,
@@ -243,6 +244,7 @@ pub async fn convert_docx_to_html_query(
             temp_html_file_path_buf,
             pool,
         )
+        .await;
     });
 
     Ok(UploadFileResult {
@@ -263,9 +265,10 @@ pub async fn create_cards_with_handler(
     let file_path_str = match temp_html_file_path_buf.to_str() {
         Some(file_path_str) => file_path_str,
         None => {
+            log::error!("HANDLER Could not convert file path to string");
             return Err(DefaultError {
                 message: "Could not convert file path to string",
-            })
+            });
         }
     };
     let parsed_cards_command_output = Command::new("python")
@@ -273,25 +276,30 @@ pub async fn create_cards_with_handler(
         .arg(file_path_str)
         .output();
 
-    std::fs::remove_file(&temp_html_file_path_buf).map_err(|_| DefaultError {
-        message: "Could not remove temp html file",
+    std::fs::remove_file(&temp_html_file_path_buf).map_err(|_| {
+        log::error!("HANDLER Could not remove temp html file");
+        DefaultError {
+            message: "Could not remove temp html file",
+        }
     })?;
 
     let raw_parsed_cards = match parsed_cards_command_output {
         Ok(parsed_cards_command_output) => parsed_cards_command_output.stdout,
         Err(_) => {
+            log::error!("HANDLER Could not parse cards");
             return Err(DefaultError {
                 message: "Could not parse cards",
-            })
+            });
         }
     };
 
     let cards: Vec<CoreCard> = match serde_json::from_slice(&raw_parsed_cards) {
         Ok(cards) => cards,
         Err(_) => {
+            log::error!("HANDLER Could not deserialize cards");
             return Err(DefaultError {
-                message: "Could not parse cards",
-            })
+                message: "Could not deserialize cards",
+            });
         }
     };
 
