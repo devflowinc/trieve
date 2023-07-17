@@ -75,7 +75,7 @@ This section refers to the jest testing suite found in the `jest-tests` folder o
 1. `sudo docker compose stop qdrant-database`
 2. `sudo docker compose rm -f qdrant-database`
 3. `sudo docker volume rm ai-editor_qdrant_data`
-4. `sudo diesel db reset`
+4. `diesel db reset`
 
 ## How to debug diesel by getting the exact generated SQL
 
@@ -85,7 +85,7 @@ diesel::debug*query::<diesel::pg::Pg, *>(&query);
 
 1. `virtualenv venv`
 2. `source venv/bin/activate`
-3. `pip install -r ./validator-scripts/requirements.txt`
+3. `pip install -r ./python-scripts/requirements.txt`
 
 
 ## How to get Rust debug level logs 

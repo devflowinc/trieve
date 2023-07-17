@@ -5,7 +5,7 @@ use crate::{
     errors::ServiceError,
     operators::file_operator::{
         convert_docx_to_html_query, delete_file_query, get_file_query, get_user_file_query,
-        get_user_id_of_file_query, update_file_query, CoreCard,
+        get_user_id_of_file_query, update_file_query,
     },
     AppMutexStore,
 };
@@ -44,9 +44,6 @@ pub struct UploadFileData {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UploadFileResult {
     pub file_metadata: File,
-    pub collection_id: uuid::Uuid,
-    pub created_cards: Vec<CoreCard>,
-    pub rejected_cards: Vec<CoreCard>,
 }
 
 pub async fn upload_file_handler(
