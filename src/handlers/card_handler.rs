@@ -252,7 +252,7 @@ pub async fn create_card(
         card_metadata = web::block(move || {
             insert_duplicate_card_metadata_query(
                 card_metadata,
-                collision.unwrap(),
+                collision.expect("Collision should not be none"),
                 card.file_uuid,
                 pool1.lock().unwrap(),
             )
