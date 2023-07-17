@@ -6,6 +6,7 @@ reset_qdrant_database() {
     sudo docker-compose stop qdrant-database
     sudo docker-compose rm -f qdrant-database
     sudo docker volume rm ai-editor_qdrant_data
+    sudo docker compose up -d qdrant-database
     diesel db reset
 }
 
@@ -20,9 +21,10 @@ setup_python_environment() {
 # Function to reset the script database
 reset_script_redis() {
     echo "Resetting the script Redis database..."
-    sudo docker-compose stop script-redis
-    sudo docker-compose rm -f script-redis
+    sudo docker compose stop script-redis
+    sudo docker compose rm -f script-redis
     sudo docker volume rm ai-editor_script-redis-data
+    sudo docker compose up -d script-redis
 }
 
 # Main script logic
