@@ -1,22 +1,24 @@
 use diesel::prelude::*;
-use headless_chrome::{Browser, LaunchOptionsBuilder};
 
+use actix_web::web;
 use regex::Regex;
+use serde_json::json;
 use soup::{NodeExt, QueryBuilderExt};
 use std::{
     process::Command,
     sync::{Arc, Mutex},
-    time::Duration,
 };
-use tokio::time::sleep;
-
-use actix_web::web;
 
 use crate::{
     data::models::{CardVerifications, Pool},
     errors::DefaultError,
     AppMutexStore,
 };
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+struct HeadlessData {
+    pub content: String,
+}
 
 pub async fn get_webpage_text_headless(
     url: &str,
@@ -31,59 +33,28 @@ pub async fn get_webpage_text_headless(
         }
     };
 
-    let options = LaunchOptionsBuilder::default()
-        .headless(false)
-        .window_size(Some((1920, 1080)))
-        .build()
-        .map_err(|_e| DefaultError {
-            message: "Could not create launch options",
+    let webpage_url = std::env::var("VERIFY_URL").expect("VERIFY_URL must be set");
+    let client = reqwest::Client::new();
+    let response = client
+        .post(webpage_url)
+        .header("Content-Type", "application/json")
+        .body(json!({ "url": url }).to_string())
+        .send()
+        .await
+        .map_err(|_| DefaultError {
+            message: "Failed to get html body",
         })?;
 
-    let browser = Browser::new(options).map_err(|_e| DefaultError {
-        message: "Could not create browser",
-    })?;
-
-    let tab = browser.new_tab().map_err(|_e| DefaultError {
-        message: "Could not create tab",
-    })?;
-
-    tab.set_user_agent(
-            // first param is "user_agent", second is "accept_language", third is "platform"
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-            Some("en-US,en;q=0.7"),
-            Some("Windows NT 10.0; Win64; x64"),
-        ).map_err(|_e| DefaultError {
-            message: "Could not set user agent",
+    let json = response
+        .json::<HeadlessData>()
+        .await
+        .map_err(|_| DefaultError {
+            message: "Failed to parse cleaned text",
         })?;
 
-    tab.enable_stealth_mode().map_err(|_e| DefaultError {
-        message: "Could not enable stealth mode",
-    })?;
+    let clean_text = json.content;
 
-    tab.navigate_to(url).map_err(|_e| DefaultError {
-        message: "Could not navigate to url",
-    })?;
-
-    tab.wait_until_navigated().map_err(|_e| DefaultError {
-        message: "Could not wait until navigated",
-    })?;
-
-    sleep(Duration::from_secs(1)).await;
-
-    let body_tag = tab.wait_for_element("body").map_err(|_e| DefaultError {
-        message: "Could not wait for body",
-    })?;
-
-    drop(browser);
     drop(browser_semaphore_permit);
-
-    let body_tag_inner_html = body_tag.get_inner_text().map_err(|_e| DefaultError {
-        message: "Could not get inner html",
-    })?;
-
-    let re = Regex::new(r"\s+").unwrap();
-    let clean_text = re.replace_all(&body_tag_inner_html, " ").to_string();
-
     Ok(clean_text)
 }
 
