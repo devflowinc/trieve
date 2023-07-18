@@ -9,7 +9,6 @@ use diesel::RunQueryDsl;
 use log::info;
 use s3::{creds::Credentials, Bucket, Region};
 use serde::{Deserialize, Serialize};
-use soup::{QueryBuilderExt, Soup};
 use std::{path::PathBuf, process::Command, sync::MutexGuard};
 
 use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
@@ -135,6 +134,7 @@ pub struct CoreCard {
     pub link: String,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn convert_docx_to_html_query(
     file_name: String,
     file_data: Vec<u8>,
@@ -156,14 +156,13 @@ pub async fn convert_docx_to_html_query(
         uuid_file_name.split_once('.').unwrap_or_default().0
     ));
 
-    let libreoffice_lock = match mutex_store.libreoffice.lock() {
-        Ok(libreoffice_lock) => libreoffice_lock,
-        Err(_) => {
-            return Err(DefaultError {
-                message: "Could not lock libreoffice mutex",
-            })
-        }
-    };
+    let libreoffice_lock_result = mutex_store.libreoffice.lock();
+
+    if libreoffice_lock_result.is_err() {
+        return Err(DefaultError {
+            message: "Could not lock libreoffice",
+        });
+    }
 
     let conversion_command_output =
         Command::new(std::env::var("LIBREOFFICE_PATH").expect("LIBREOFFICE_PATH must be set"))
@@ -175,27 +174,17 @@ pub async fn convert_docx_to_html_query(
             .arg(&temp_docx_file_path)
             .output();
 
-    drop(libreoffice_lock);
+    drop(libreoffice_lock_result);
+
+    std::fs::remove_file(&temp_docx_file_path).map_err(|_| DefaultError {
+        message: "Could not remove temp docx file",
+    })?;
 
     if conversion_command_output.is_err() {
         return Err(DefaultError {
             message: "Could not convert file",
         });
     }
-
-    let html_string =
-        std::fs::read_to_string(&temp_html_file_path_buf).map_err(|_| DefaultError {
-            message: "Could not read html file",
-        })?;
-    let soup = Soup::new(&html_string);
-    let _body_tag = match soup.tag("body").find() {
-        Some(body_tag) => body_tag,
-        None => {
-            return Err(DefaultError {
-                message: "Could not find body tag in html file",
-            })
-        }
-    };
 
     let file_size = match file_data.len().try_into() {
         Ok(file_size) => file_size,
@@ -228,10 +217,6 @@ pub async fn convert_docx_to_html_query(
             message: "Could not upload file to S3",
         })?;
 
-    std::fs::remove_file(&temp_docx_file_path).map_err(|_| DefaultError {
-        message: "Could not remove temp docx file",
-    })?;
-
     tokio::spawn(async move {
         log::info!("Creating cards for file {}", file_name);
         let _ = create_cards_with_handler(
@@ -252,6 +237,7 @@ pub async fn convert_docx_to_html_query(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn create_cards_with_handler(
     oc_file_path: Option<String>,
     private: bool,
