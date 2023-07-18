@@ -7,7 +7,8 @@ import { getAuthCookie } from "../auth.js";
 
 const api_endpoint = process.env.API_ENDPOINT || "http://localhost:8090/api";
 let authCookie = null;
-getAuthCookie().then((cookie) => (authCookie = cookie));
+const MAX_CONCURRENT_REQUESTS = 5;
+let activeRequests = 0;
 
 const convertAndUpload = async (filePath) => {
   const dirFileBuf = readFileSync(filePath);
@@ -51,6 +52,12 @@ const convertAndUpload = async (filePath) => {
     private: false,
   };
 
+  // Acquire a slot in the semaphore
+  while (activeRequests >= MAX_CONCURRENT_REQUESTS) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  activeRequests++;
+
   await fetch(`${api_endpoint}/file`, {
     method: "POST",
     headers: {
@@ -59,15 +66,19 @@ const convertAndUpload = async (filePath) => {
     },
     credentials: "include",
     body: JSON.stringify(requestBody),
-  }).then((response) => {
-    if (!response.ok) {
-      console.error(
-        `Error: ${response.status} ${response.statusText} for ${filePath}`
-      );
-      return;
-    }
-    console.log(`Uploaded ${filePath}`);
-  });
+  })
+    .then((response) => {
+      if (!response.ok) {
+        console.error(
+          `Error: ${response.status} ${response.statusText} for ${filePath}`
+        );
+        return;
+      }
+      console.log(`Uploaded ${filePath}`);
+    })
+    .finally(() => {
+      activeRequests--;
+    });
 };
 
 const traverseDirectory = async (directoryPath) => {
@@ -120,19 +131,15 @@ if (!directoryPath) {
   process.exit(1);
 }
 
-const pollAuthCookie = () => {
-  if (authCookie === null) {
-    setTimeout(pollAuthCookie, 500);
-  }
-};
-pollAuthCookie();
-
-traverseDirectory(directoryPath)
-  .then(() => {
-    console.log("Traversal complete.");
-    process.exit(0);
-  })
-  .catch((err) => {
-    console.error("Traversal failed: ", err);
-    process.exit(1);
-  });
+getAuthCookie().then((cookie) => {
+  authCookie = cookie;
+  traverseDirectory(directoryPath)
+    .then(() => {
+      console.log("Traversal complete.");
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error("Traversal failed: ", err);
+      process.exit(1);
+    });
+});
