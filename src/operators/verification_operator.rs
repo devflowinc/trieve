@@ -6,7 +6,9 @@ use soup::{NodeExt, QueryBuilderExt};
 use std::{
     process::Command,
     sync::{Arc, Mutex},
+    time::Duration,
 };
+use tokio::time::sleep;
 
 use actix_web::web;
 
@@ -30,9 +32,12 @@ pub async fn get_webpage_text_headless(
     };
 
     let options = LaunchOptionsBuilder::default()
-        .headless(true)
+        .headless(false)
+        .window_size(Some((1920, 1080)))
         .build()
-        .unwrap();
+        .map_err(|_e| DefaultError {
+            message: "Could not create launch options",
+        })?;
 
     let browser = Browser::new(options).map_err(|_e| DefaultError {
         message: "Could not create browser",
@@ -58,6 +63,12 @@ pub async fn get_webpage_text_headless(
     tab.navigate_to(url).map_err(|_e| DefaultError {
         message: "Could not navigate to url",
     })?;
+
+    tab.wait_until_navigated().map_err(|_e| DefaultError {
+        message: "Could not wait until navigated",
+    })?;
+
+    sleep(Duration::from_secs(1)).await;
 
     let body_tag = tab.wait_for_element("body").map_err(|_e| DefaultError {
         message: "Could not wait for body",
