@@ -62,6 +62,19 @@ pub async fn upload_file_handler(
         .map_err(|_e| ServiceError::BadRequest("Could not decode base64 file".to_string()))?;
     let private = upload_file_data.private;
 
+    let valid_file_suffixes = vec!["docx", "doc", "odt", "pdf"];
+    let file_suffix = upload_file_data
+        .file_name
+        .split('.')
+        .last()
+        .ok_or_else(|| ServiceError::BadRequest("Could not get file suffix".to_string()))?;
+    if !valid_file_suffixes.contains(&file_suffix) {
+        return Err(ServiceError::BadRequest(
+            "Invalid file suffix. You may only upload docx, doc, odt, or pdf files.".to_string(),
+        )
+        .into());
+    }
+
     let file_mime = upload_file_data.file_mime_type;
 
     let conversion_result = convert_docx_to_html_query(
