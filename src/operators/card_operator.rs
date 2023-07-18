@@ -748,7 +748,7 @@ pub fn global_top_full_text_card_query(
         top_card.qdrant_point_id = searched_card.1;
     }
 
-    Ok(Some(top_card.clone()))
+    Ok(Some(top_card))
 }
 
 #[derive(Serialize, Deserialize)]
