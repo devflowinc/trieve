@@ -92,8 +92,11 @@ pub async fn get_webpage_text_fetch(
             message: "Could not parse pdf",
         })?;
 
-        std::fs::write(&pdf_file_path, &pdf).map_err(|_| DefaultError {
-            message: "Could not write file to disk",
+        std::fs::write(&pdf_file_path, &pdf).map_err(|err| {
+            log::error!("Could not write file to disk: {}", err);
+            DefaultError {
+                message: "Could not write file to disk",
+            }
         })?;
 
         let libreoffice_lock = match mutex_store.libreoffice.lock() {

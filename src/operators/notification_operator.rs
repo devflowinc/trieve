@@ -27,7 +27,6 @@ pub fn add_verificiation_notification_query(
     Ok(())
 }
 
-#[allow(dead_code)]
 pub fn add_collection_created_notification_query(
     collection: FileUploadCompledNotification,
     pool: web::Data<Pool>,

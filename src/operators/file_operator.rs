@@ -1,4 +1,4 @@
-use crate::{diesel::Connection, AppMutexStore};
+use crate::{data::models::FileUploadCompledNotification, diesel::Connection, AppMutexStore};
 use actix_web::{body::MessageBody, web};
 use base64::{
     alphabet,
@@ -28,6 +28,7 @@ use crate::{
 };
 
 use super::collection_operator::create_collection_and_add_bookmarks_query;
+use super::notification_operator::add_collection_created_notification_query;
 
 pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
     let s3_access_key = std::env::var("S3_ACCESS_KEY").expect("S3_ACCESS_KEY must be set");
@@ -147,8 +148,11 @@ pub async fn convert_docx_to_html_query(
 ) -> Result<UploadFileResult, DefaultError> {
     let uuid_file_name = format!("{}-{}", uuid::Uuid::new_v4().to_string(), file_name);
     let temp_docx_file_path = format!("./tmp/{}", uuid_file_name);
-    std::fs::write(&temp_docx_file_path, file_data.clone()).map_err(|_| DefaultError {
-        message: "Could not write file to disk",
+    std::fs::write(&temp_docx_file_path, file_data.clone()).map_err(|err| {
+        log::error!("Could not write file to disk {:?}", err);
+        DefaultError {
+            message: "Could not write file to disk",
+        }
     })?;
 
     let temp_html_file_path_buf = std::path::PathBuf::from(&format!(
@@ -357,7 +361,18 @@ pub async fn create_cards_with_handler(
                 message: "Error creating collection",
             })
         }
-    }
+    };
+
+    web::block(move || {
+        add_collection_created_notification_query(
+            FileUploadCompledNotification::from_details(user.id, created_file_id),
+            pool,
+        )
+    })
+    .await
+    .map_err(|_| DefaultError {
+        message: "Thread error creating notification",
+    })??;
 
     Ok(())
 }
