@@ -264,31 +264,25 @@ pub async fn search_card_collections_query(
 
     let mut conn = pool.lock().unwrap().get().unwrap();
 
-    let card_ids: Vec<uuid::Uuid> = card_collection_bookmarks_columns::card_collection_bookmarks
-        .select(card_collection_bookmarks_columns::card_metadata_id)
-        .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id))
-        .load::<uuid::Uuid>(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to load metadata",
-        })?;
-
     let mut query = card_metadata_columns::card_metadata
         .left_outer_join(
             card_collisions_columns::card_collisions
                 .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
+        )
+        .left_outer_join(
+            card_collection_bookmarks_columns::card_collection_bookmarks.on(
+                card_metadata_columns::id
+                    .eq(card_collection_bookmarks_columns::card_metadata_id)
+                    .and(card_collection_bookmarks_columns::collection_id.eq(collection_id)),
+            ),
         )
         .select((
             card_metadata_columns::qdrant_point_id,
             card_collisions_columns::collision_qdrant_id.nullable(),
         ))
         .filter(card_metadata_columns::private.eq(false))
-        .or_filter(
-            card_metadata_columns::private
-                .eq(false)
-                .and(card_metadata_columns::qdrant_point_id.is_null()),
-        )
+        .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id))
         .distinct()
-        .filter(card_metadata_columns::id.eq_any(card_ids))
         .into_boxed();
 
     let filter_oc_file_path = filter_oc_file_path.unwrap_or([].to_vec());
@@ -572,6 +566,165 @@ pub fn search_full_text_card_query(
         .or_filter(
             card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
         )
+        .select((
+            (
+                card_metadata_columns::id,
+                card_metadata_columns::content,
+                card_metadata_columns::link,
+                card_metadata_columns::author_id,
+                card_metadata_columns::qdrant_point_id,
+                card_metadata_columns::created_at,
+                card_metadata_columns::updated_at,
+                card_metadata_columns::oc_file_path,
+                card_metadata_columns::card_html,
+                card_metadata_columns::private,
+                sql::<Nullable<Double>>(
+                    "(ts_rank(card_metadata.card_metadata_tsvector, plainto_tsquery('english', ",
+                )
+                .bind::<Text, _>(user_query.clone())
+                .sql(") , 32) * 10) AS rank"),
+                sql::<Int8>("count(*) OVER() AS full_count"),
+            ),
+            second_join
+                .field(schema::card_metadata::qdrant_point_id)
+                .nullable(),
+        ))
+        .distinct_on((
+            card_metadata_columns::qdrant_point_id,
+            second_join
+                .field(schema::card_metadata::qdrant_point_id)
+                .nullable(),
+        ))
+        .into_boxed();
+
+    query = query.filter(
+        sql::<Bool>("card_metadata.card_metadata_tsvector @@ plainto_tsquery('english', ")
+            .bind::<Text, _>(user_query)
+            .sql(")"),
+    );
+
+    let filter_oc_file_path = filter_oc_file_path.unwrap_or([].to_vec());
+    let filter_link_url = filter_link_url.unwrap_or([].to_vec());
+
+    if !filter_oc_file_path.is_empty() {
+        query = query.filter(
+            card_metadata_columns::oc_file_path
+                .like(format!("%{}%", filter_oc_file_path.get(0).unwrap())),
+        );
+    }
+
+    for file_path in filter_oc_file_path.iter().skip(1) {
+        query =
+            query.or_filter(card_metadata_columns::oc_file_path.like(format!("%{}%", file_path)));
+    }
+
+    if !filter_link_url.is_empty() {
+        query = query.filter(
+            card_metadata_columns::link.like(format!("%{}%", filter_link_url.get(0).unwrap())),
+        );
+    }
+    for link_url in filter_link_url.iter().skip(1) {
+        query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
+    }
+
+    query = query.order((
+        card_metadata_columns::qdrant_point_id,
+        second_join.field(schema::card_metadata::qdrant_point_id),
+        sql::<Text>("rank DESC"),
+    ));
+
+    query = query
+        .limit(25)
+        .offset(((page - 1) * 25).try_into().unwrap());
+
+    let searched_cards: Vec<(FullTextSearchResult, Option<uuid::Uuid>)> =
+        query.load(&mut conn).map_err(|_| DefaultError {
+            message: "Failed to load trigram searched cards",
+        })?;
+
+    let card_metadata_with_upvotes_and_files = get_metadata(
+        searched_cards
+            .iter()
+            .map(|card| card.0.clone())
+            .collect::<Vec<FullTextSearchResult>>(),
+        current_user_id,
+        conn,
+    )
+    .map_err(|_| DefaultError {
+        message: "Failed to load searched cards",
+    })?;
+
+    let total_count = if searched_cards.is_empty() {
+        0
+    } else {
+        (searched_cards.get(0).unwrap().0.count as f64 / 25.0).ceil() as i64
+    };
+
+    Ok(FullTextSearchCardQueryResult {
+        search_results: card_metadata_with_upvotes_and_files,
+        total_card_pages: total_count,
+    })
+}
+
+pub fn search_full_text_collection_query(
+    user_query: String,
+    page: u64,
+    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    current_user_id: Option<uuid::Uuid>,
+    filter_oc_file_path: Option<Vec<String>>,
+    filter_link_url: Option<Vec<String>>,
+    collection_id: uuid::Uuid,
+) -> Result<FullTextSearchCardQueryResult, DefaultError> {
+    let page = if page == 0 { 1 } else { page };
+    use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
+    use crate::data::schema::card_collisions::dsl as card_collisions_columns;
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+
+    let second_join = diesel::alias!(schema::card_metadata as second_join);
+
+    let mut conn = pool.get().unwrap();
+    // SELECT
+    //     card_metadata.qdrant_point_id,
+    //     second_join.qdrant_point_id
+    // FROM
+    //     card_metadata
+    // LEFT OUTER JOIN card_collisions ON
+    //     card_metadata.id = card_collisions.card_id
+    //     AND card_metadata.private = false
+    // LEFT OUTER JOIN card_metadata AS second_join ON
+    //     second_join.qdrant_point_id = card_collisions.collision_qdrant_id
+    //     AND second_join.private = true
+    // WHERE
+    //     card_metadata.private = false
+    //     and (second_join.qdrant_point_id notnull or card_metadata.qdrant_point_id notnull);
+    let mut query = card_metadata_columns::card_metadata
+        .left_outer_join(
+            card_collisions_columns::card_collisions.on(card_metadata_columns::id
+                .eq(card_collisions_columns::card_id)
+                .and(card_metadata_columns::private.eq(false))),
+        )
+        .left_outer_join(
+            second_join.on(second_join
+                .field(schema::card_metadata::qdrant_point_id)
+                .eq(card_collisions_columns::collision_qdrant_id)
+                .and(second_join.field(schema::card_metadata::private).eq(true))),
+        )
+        .left_outer_join(
+            card_collection_bookmarks_columns::card_collection_bookmarks.on(
+                card_metadata_columns::id
+                    .eq(card_collection_bookmarks_columns::card_metadata_id)
+                    .and(card_collection_bookmarks_columns::collection_id.eq(collection_id)),
+            ),
+        )
+        .filter(
+            card_metadata_columns::private.eq(false).and(
+                second_join
+                    .field(schema::card_metadata::qdrant_point_id)
+                    .is_not_null()
+                    .or(card_metadata_columns::qdrant_point_id.is_not_null()),
+            ),
+        )
+        .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id))
         .select((
             (
                 card_metadata_columns::id,

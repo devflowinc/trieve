@@ -750,6 +750,87 @@ pub async fn search_collections(
     }))
 }
 
+pub async fn search_full_text_collections(
+    data: web::Json<SearchCollectionsData>,
+    page: Option<web::Path<u64>>,
+    user: Option<LoggedUser>,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    //search over the links as well
+    let thread_safe_pool = Arc::new(Mutex::new(pool));
+    let page = page.map(|page| page.into_inner()).unwrap_or(1);
+    let collection_id = data.collection_id;
+    let pool2 = thread_safe_pool.clone();
+    let pool3 = thread_safe_pool.clone();
+    let current_user_id = user.map(|user| user.id);
+
+    let collection = web::block(move || {
+        get_collection_by_id_query(collection_id, thread_safe_pool.lock().unwrap())
+    })
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.to_string()))?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    if !collection.is_public && current_user_id.is_none() {
+        return Err(ServiceError::Unauthorized.into());
+    }
+
+    if !collection.is_public && Some(collection.author_id) != current_user_id {
+        return Err(ServiceError::Forbidden.into());
+    }
+
+    let search_card_query_results = web::block(move || {
+        search_full_text_collection_query(
+            data.content.clone(),
+            page,
+            pool3.lock().unwrap(),
+            current_user_id,
+            data.filter_oc_file_path.clone(),
+            data.filter_link_url.clone(),
+            data.collection_id,
+        )
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let point_ids = search_card_query_results
+        .search_results
+        .iter()
+        .map(|point| point.qdrant_point_id)
+        .collect::<Vec<uuid::Uuid>>();
+
+    let collided_cards = web::block(move || {
+        get_collided_cards_query(point_ids, current_user_id, pool2.lock().unwrap())
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let full_text_cards: Vec<ScoreCardDTO> = search_card_query_results
+        .search_results
+        .iter()
+        .map(|search_result| {
+            let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
+                .iter()
+                .filter(|card| card.1 == search_result.qdrant_point_id)
+                .map(|card| card.0.clone().into())
+                .collect();
+
+            collided_cards.insert(0, search_result.clone().into());
+
+            ScoreCardDTO {
+                metadata: collided_cards,
+                score: search_result.score.unwrap_or(0.0),
+            }
+        })
+        .collect();
+
+    Ok(HttpResponse::Ok().json(SearchCollectionsResult {
+        bookmarks: full_text_cards,
+        collection,
+        total_pages: search_card_query_results.total_card_pages,
+    }))
+}
+
 pub async fn get_card_by_id(
     card_id: web::Path<uuid::Uuid>,
     user: Option<LoggedUser>,
