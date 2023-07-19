@@ -14,24 +14,26 @@ puppeteer.launch({ headless: true }).then(br => {
 async function fetchPageContents(url) {
   const page = await browser.newPage();
 
-  await page.goto(url);
+  try {
+    await page.goto(url);
 
-  let body = await page.waitForSelector("body", { timeout: 5000 });
-  const pageContent = await page.evaluate(() => {
-    const elements = document.querySelectorAll('body');
-    let text = '';
-    for (const element of elements) {
-      if (element.innerText) {
-        text += element.innerText + '\n';
+    let body = await page.waitForSelector("body", { timeout: 5000 });
+    const pageContent = await page.evaluate(() => {
+      const elements = document.querySelectorAll('body');
+      let text = '';
+      for (const element of elements) {
+        if (element.innerText) {
+          text += element.innerText + '\n';
+        }
       }
-    }
-    return text;
-  }, body);
+      return text;
+    }, body);
 
-  const cleanedContent = pageContent.replace(/(\r\n|\n|\r)/gm, " ").replace(/\s+/g, " ").trim();
-  await page.close();
-
-  return cleanedContent;
+    const cleanedContent = pageContent.replace(/(\r\n|\n|\r)/gm, " ").replace(/\s+/g, " ").trim();
+    return cleanedContent;
+  } finally {
+    await page.close();
+  }
 }
 
 // Create the server
