@@ -10,14 +10,17 @@ class CoreCard:
         self.card_html = card_html
         self.link = link
 
+
 def remove_extra_trailing_chars(url):
-    regex_pattern = r"([\w+]+://)?([\w\d-]+\.)*[\w-]+[\.:]\w+([/\?=&\#.]?[\w-]+)*/?"
+    regex_pattern=r"((http|ftp|https)\:\/\/)?([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?"
+
+
     match = re.search(regex_pattern, url)
     if match:
         first_match = match.group()
         return first_match
     else:
-        return url
+        return None
 
 
 def extract_cards_from_html(html_string):
@@ -36,7 +39,9 @@ def extract_cards_from_html(html_string):
     for child in body_tag.children:
         if child.name in ["h1", "h2", "h3", "h4", "h5", "h6"]:
             if is_heading and is_link:
-                cards.append(CoreCard(card_html, card_link))
+                if card_link is not None:
+                    # Only append if card link is valid, else just reset
+                    cards.append(CoreCard(card_html, card_link))
                 card_html = ""
                 card_link = ""
             is_heading = True
