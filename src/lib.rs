@@ -281,6 +281,11 @@ pub async fn main() -> std::io::Result<()> {
                         web::resource("/card_collection/search/{page}")
                             .route(web::post().to(handlers::card_handler::search_collections)),
                     )
+                    .service(
+                        web::resource("/card_collection/fulltextsearch/{page}").route(
+                            web::post().to(handlers::card_handler::search_full_text_collections),
+                        ),
+                    )
                     .service(web::resource("/card_collection/bookmark").route(
                         web::post().to(handlers::collection_handler::get_collections_card_is_in),
                     ))
