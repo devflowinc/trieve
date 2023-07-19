@@ -33,7 +33,8 @@ pub async fn get_webpage_text_headless(
         }
     };
 
-    let webpage_url = std::env::var("VERIFY_URL").expect("VERIFY_URL must be set");
+    let webpage_url =
+        std::env::var("VERIFICATION_SERVER_URL").expect("VERIFICATION_SERVER_URL must be set");
     let client = reqwest::Client::new();
     let response = client
         .post(webpage_url)
