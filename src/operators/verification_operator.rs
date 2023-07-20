@@ -79,17 +79,9 @@ pub async fn get_webpage_text_fetch(
     } else if headers == "application/pdf" {
         // make a string that contains the file_name without the .type extension
         let url_without_extension = url.split('.').collect::<Vec<&str>>()[0].replace('/', "");
-
-        let pdf_file_path = format!(
-            "./tmp/{}-{}.pdf",
-            uuid::Uuid::new_v4(),
-            url_without_extension
-        );
-        let html_file_path = format!(
-            "./tmp/{}-{}.html",
-            uuid::Uuid::new_v4(),
-            url_without_extension
-        );
+        let uuid = uuid::Uuid::new_v4();
+        let pdf_file_path = format!("./tmp/{}-{}.pdf", uuid, url_without_extension);
+        let html_file_path = format!("./tmp/{}-{}.html", uuid, url_without_extension);
 
         let pdf = response.bytes().await.map_err(|_| DefaultError {
             message: "Could not parse pdf",
