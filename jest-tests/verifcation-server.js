@@ -13,6 +13,7 @@ puppeteer.launch({ headless: true }).then(br => {
 
 async function fetchPageContents(url) {
   const page = await browser.newPage();
+  page.setDefaultTimeout(5000);
 
   try {
     await page.goto(url);
