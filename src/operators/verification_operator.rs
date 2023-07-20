@@ -5,7 +5,6 @@ use regex::Regex;
 use serde_json::json;
 use soup::{NodeExt, QueryBuilderExt};
 use std::{
-    path::Path,
     process::Command,
     sync::{Arc, Mutex},
 };
@@ -92,16 +91,14 @@ pub async fn get_webpage_text_fetch(
             let glob_string = format!("./tmp/{}*", uuid);
             let files = glob::glob(glob_string.as_str()).expect("Failed to read glob pattern");
             log::info!("Files {:?}", glob_string);
-            for file in files {
-                if let Ok(file_path) = file {
-                    log::info!("Deleting temp file {:?}", file_path.clone());
-                    std::fs::remove_file(file_path).map_err(|err| {
-                        log::error!("Could not delete temp file {:?}", err);
-                        DefaultError {
-                            message: "Could not delete temp file",
-                        }
-                    })?;
-                }
+            for file_path in files.flatten() {
+                log::info!("Deleting temp file {:?}", file_path.clone());
+                std::fs::remove_file(file_path).map_err(|err| {
+                    log::error!("Could not delete temp file {:?}", err);
+                    DefaultError {
+                        message: "Could not delete temp file",
+                    }
+                })?;
             }
             Ok(())
         };
@@ -116,7 +113,6 @@ pub async fn get_webpage_text_fetch(
         let libreoffice_lock = match mutex_store.libreoffice.lock() {
             Ok(libreoffice_lock) => libreoffice_lock,
             Err(_) => {
-                let _ : Result<(), DefaultError> = delete_files();
                 return Err(DefaultError {
                     message: "Could not lock libreoffice mutex",
                 });
@@ -136,7 +132,7 @@ pub async fn get_webpage_text_fetch(
         drop(libreoffice_lock);
 
         if conversion_command_output.is_err() {
-            let _ : Result<(), DefaultError> = delete_files();
+            let _: Result<(), DefaultError> = delete_files();
             return Err(DefaultError {
                 message: "Could not convert file",
             });
