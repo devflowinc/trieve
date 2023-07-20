@@ -55,13 +55,6 @@ pub async fn upload_file_handler(
     let upload_file_data = data.into_inner();
     let pool_inner = pool.clone();
 
-    let base64_engine = engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
-
-    let decoded_file_data = base64_engine
-        .decode(upload_file_data.base64_docx_file)
-        .map_err(|_e| ServiceError::BadRequest("Could not decode base64 file".to_string()))?;
-    let private = upload_file_data.private;
-
     let valid_file_suffixes = vec!["docx", "doc", "odt", "pdf"];
     let file_suffix = upload_file_data
         .file_name
@@ -74,6 +67,13 @@ pub async fn upload_file_handler(
         )
         .into());
     }
+
+    let base64_engine = engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
+
+    let decoded_file_data = base64_engine
+        .decode(upload_file_data.base64_docx_file)
+        .map_err(|_e| ServiceError::BadRequest("Could not decode base64 file".to_string()))?;
+    let private = upload_file_data.private;
 
     let file_mime = upload_file_data.file_mime_type;
 

@@ -92,6 +92,15 @@ pub async fn get_webpage_text_fetch(
             message: "Could not parse pdf",
         })?;
 
+        let delete_files = || {
+            let _ = std::fs::remove_file(&pdf_file_path).map_err(|_| DefaultError {
+                message: "Could not remove temp docx file",
+            });
+            let _ = std::fs::remove_file(&html_file_path).map_err(|_| DefaultError {
+                message: "Could not remove temp html file",
+            });
+        };
+
         std::fs::write(&pdf_file_path, &pdf).map_err(|err| {
             log::error!("Could not write file to disk: {}", err);
             DefaultError {
@@ -102,6 +111,7 @@ pub async fn get_webpage_text_fetch(
         let libreoffice_lock = match mutex_store.libreoffice.lock() {
             Ok(libreoffice_lock) => libreoffice_lock,
             Err(_) => {
+                delete_files();
                 return Err(DefaultError {
                     message: "Could not lock libreoffice mutex",
                 })
@@ -121,6 +131,7 @@ pub async fn get_webpage_text_fetch(
         drop(libreoffice_lock);
 
         if conversion_command_output.is_err() {
+            delete_files();
             return Err(DefaultError {
                 message: "Could not convert file",
             });
@@ -130,12 +141,7 @@ pub async fn get_webpage_text_fetch(
             message: "Could not read text file",
         })?;
 
-        std::fs::remove_file(&pdf_file_path).map_err(|_| DefaultError {
-            message: "Could not remove temp docx file",
-        })?;
-        std::fs::remove_file(&html_file_path).map_err(|_| DefaultError {
-            message: "Could not remove temp html file",
-        })?;
+        delete_files();
     } else {
         return Err(DefaultError {
             message: "Could not parse content type",

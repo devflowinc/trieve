@@ -41,9 +41,9 @@ const convertAndUpload = async (filePath, ocFilePath) => {
     }
   } catch (_err) {
     console.error(`Error: ${filePath} had no file type data`);
-    return;
+    throw _err;
   }
-  const fileName = filePath.split("/").pop().split(".")[0] + ".docx";
+  const fileName = filePath.split("/").pop();
 
   const requestBody = {
     base64_docx_file: base64FileBuf,
@@ -73,7 +73,7 @@ const convertAndUpload = async (filePath, ocFilePath) => {
         console.error(
           `Error: ${response.status} ${response.statusText} for ${filePath}`
         );
-        return;
+        throw new Error("Bad response");
       }
       console.log(`Uploaded ${filePath}`);
     })
@@ -105,7 +105,7 @@ const traverseDirectory = async (directoryPath) => {
             if (stats.isDirectory()) {
               traverseDirectory(filePath).then(resolve).catch(reject);
             } else {
-              const truncatedFilePath = filePath.removePrefix(directoryPath);
+              const truncatedFilePath = filePath.replace(staticDirectoryPath, "");
 
               // If file has already been uploaded, skip it
               const keyvRecord = await keyvDb.get(truncatedFilePath);
@@ -117,7 +117,11 @@ const traverseDirectory = async (directoryPath) => {
               await keyvDb.set(truncatedFilePath, true);
               convertAndUpload(filePath, truncatedFilePath)
                 .then(resolve)
-                .catch(reject);
+                .catch(() => {
+                  // If the upload failed, delete the keyv record
+                  keyvDb.delete(truncatedFilePath);
+                  resolve();
+                });
             }
           });
         });
@@ -131,6 +135,7 @@ const traverseDirectory = async (directoryPath) => {
 // Usage: node script.js /path/to/directory
 
 const directoryPath = process.argv[2];
+const staticDirectoryPath = directoryPath;
 if (!directoryPath) {
   console.error("Please provide a directory path.");
   process.exit(1);

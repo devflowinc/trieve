@@ -177,7 +177,7 @@ pub async fn convert_docx_to_html_query(
             .arg("./tmp")
             .arg(&temp_docx_file_path)
             .output();
-
+    
     drop(libreoffice_lock_result);
 
     std::fs::remove_file(&temp_docx_file_path).map_err(|_| DefaultError {
@@ -217,8 +217,11 @@ pub async fn convert_docx_to_html_query(
             &file_mime,
         )
         .await
-        .map_err(|_| DefaultError {
-            message: "Could not upload file to S3",
+        .map_err(|e| {
+            log::info!("Could not upload file to S3 {:?}", e);
+            DefaultError {
+                message: "Could not upload file to S3",
+            }
         })?;
 
     tokio::spawn(async move {
