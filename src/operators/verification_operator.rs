@@ -5,6 +5,7 @@ use regex::Regex;
 use serde_json::json;
 use soup::{NodeExt, QueryBuilderExt};
 use std::{
+    path::Path,
     process::Command,
     sync::{Arc, Mutex},
 };
@@ -88,28 +89,21 @@ pub async fn get_webpage_text_fetch(
         })?;
 
         let delete_files = || {
-            let pdf_file_path_dot_star = format!(
-                "'{}'.*",
-                pdf_file_path.split_once(".pdf").unwrap_or_default().0
-            );
-            let html_file_path_dot_star = format!(
-                "'{}'.*",
-                html_file_path.split_once(".html").unwrap_or_default().0
-            );
-
-            let remove_pdf_command_output = Command::new("rm")
-                .arg("-f")
-                .arg(&pdf_file_path_dot_star)
-                .output();
-
-            let remove_html_command_output = Command::new("rm")
-                .arg("-f")
-                .arg(&html_file_path_dot_star)
-                .output();
-
-            if remove_pdf_command_output.is_err() || remove_html_command_output.is_err() {
-                log::error!("Could not delete files during verification cleanup");
+            let glob_string = format!("./tmp/{}*", uuid);
+            let files = glob::glob(glob_string.as_str()).expect("Failed to read glob pattern");
+            log::info!("Files {:?}", glob_string);
+            for file in files {
+                if let Ok(file_path) = file {
+                    log::info!("Deleting temp file {:?}", file_path.clone());
+                    std::fs::remove_file(file_path).map_err(|err| {
+                        log::error!("Could not delete temp file {:?}", err);
+                        DefaultError {
+                            message: "Could not delete temp file",
+                        }
+                    })?;
+                }
             }
+            Ok(())
         };
 
         std::fs::write(&pdf_file_path, &pdf).map_err(|err| {
@@ -122,7 +116,7 @@ pub async fn get_webpage_text_fetch(
         let libreoffice_lock = match mutex_store.libreoffice.lock() {
             Ok(libreoffice_lock) => libreoffice_lock,
             Err(_) => {
-                delete_files();
+                let _ : Result<(), DefaultError> = delete_files();
                 return Err(DefaultError {
                     message: "Could not lock libreoffice mutex",
                 });
@@ -142,7 +136,7 @@ pub async fn get_webpage_text_fetch(
         drop(libreoffice_lock);
 
         if conversion_command_output.is_err() {
-            delete_files();
+            let _ : Result<(), DefaultError> = delete_files();
             return Err(DefaultError {
                 message: "Could not convert file",
             });
@@ -152,7 +146,7 @@ pub async fn get_webpage_text_fetch(
             message: "Could not read text file",
         })?;
 
-        delete_files();
+        delete_files()?;
     } else {
         return Err(DefaultError {
             message: "Could not parse content type",
