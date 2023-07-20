@@ -10,6 +10,14 @@ reset_qdrant_database() {
     diesel db reset
 }
 
+reset_s3_service() {
+    echo "Resetting the S3 service..."
+    sudo docker-compose stop s3
+    sudo docker-compose rm -f s3
+    sudo docker volume rm ai-editor_s3-data
+    sudo docker compose up -d s3
+}
+
 # Function to set up the Python environment
 setup_python_environment() {
     echo "Setting up the Python environment..."
@@ -28,13 +36,16 @@ reset_script_redis() {
 }
 
 # Main script logic
-while getopts ":qps" opt; do
+while getopts ":qps3" opt; do
     case $opt in
         q)
             reset_qdrant_database
             ;;
         p)
             setup_python_environment
+            ;;
+        3)
+            reset_s3_service
             ;;
         s)
             reset_script_redis
