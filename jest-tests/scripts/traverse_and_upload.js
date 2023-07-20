@@ -10,7 +10,7 @@ let authCookie = null;
 const MAX_CONCURRENT_REQUESTS = 5;
 let activeRequests = 0;
 
-const convertAndUpload = async (filePath) => {
+const convertAndUpload = async (filePath, ocFilePath) => {
   const dirFileBuf = readFileSync(filePath);
   // Check if the file read resulted in a buffer of length 0
   if (!dirFileBuf || dirFileBuf.length === 0) {
@@ -49,6 +49,7 @@ const convertAndUpload = async (filePath) => {
     base64_docx_file: base64FileBuf,
     file_name: fileName,
     file_mime_type: fileMimeType,
+    oc_file_path: ocFilePath,
     private: false,
   };
 
@@ -104,15 +105,19 @@ const traverseDirectory = async (directoryPath) => {
             if (stats.isDirectory()) {
               traverseDirectory(filePath).then(resolve).catch(reject);
             } else {
+              const truncatedFilePath = filePath.removePrefix(directoryPath);
+
               // If file has already been uploaded, skip it
-              const keyvRecord = await keyvDb.get(filePath);
+              const keyvRecord = await keyvDb.get(truncatedFilePath);
               if (keyvRecord) {
-                console.log(`Skipped ${filePath}, already uploaded`);
+                console.log(`Skipped ${truncatedFilePath}, already uploaded`);
                 resolve();
                 return;
               }
-              await keyvDb.set(filePath, true);
-              convertAndUpload(filePath).then(resolve).catch(reject);
+              await keyvDb.set(truncatedFilePath, true);
+              convertAndUpload(filePath, truncatedFilePath)
+                .then(resolve)
+                .catch(reject);
             }
           });
         });
