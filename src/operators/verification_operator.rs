@@ -77,15 +77,18 @@ pub async fn get_webpage_text_fetch(
             message: "Could not parse text",
         })?;
     } else if headers == "application/pdf" {
+        // make a string that contains the file_name without the .type extension
+        let url_without_extension = url.split('.').collect::<Vec<&str>>()[0].replace('/', "");
+
         let pdf_file_path = format!(
             "./tmp/{}-{}.pdf",
             uuid::Uuid::new_v4(),
-            response.url().to_string().replace('/', "")
+            url_without_extension
         );
         let html_file_path = format!(
             "./tmp/{}-{}.html",
             uuid::Uuid::new_v4(),
-            response.url().to_string().replace('/', "")
+            url_without_extension
         );
 
         let pdf = response.bytes().await.map_err(|_| DefaultError {
@@ -93,12 +96,28 @@ pub async fn get_webpage_text_fetch(
         })?;
 
         let delete_files = || {
-            let _ = std::fs::remove_file(&pdf_file_path).map_err(|_| DefaultError {
-                message: "Could not remove temp docx file",
-            });
-            let _ = std::fs::remove_file(&html_file_path).map_err(|_| DefaultError {
-                message: "Could not remove temp html file",
-            });
+            let pdf_file_path_dot_star = format!(
+                "'{}'.*",
+                pdf_file_path.split_once(".pdf").unwrap_or_default().0
+            );
+            let html_file_path_dot_star = format!(
+                "'{}'.*",
+                html_file_path.split_once(".html").unwrap_or_default().0
+            );
+
+            let remove_pdf_command_output = Command::new("rm")
+                .arg("-f")
+                .arg(&pdf_file_path_dot_star)
+                .output();
+
+            let remove_html_command_output = Command::new("rm")
+                .arg("-f")
+                .arg(&html_file_path_dot_star)
+                .output();
+
+            if remove_pdf_command_output.is_err() || remove_html_command_output.is_err() {
+                log::error!("Could not delete files during verification cleanup");
+            }
         };
 
         std::fs::write(&pdf_file_path, &pdf).map_err(|err| {
@@ -114,7 +133,7 @@ pub async fn get_webpage_text_fetch(
                 delete_files();
                 return Err(DefaultError {
                     message: "Could not lock libreoffice mutex",
-                })
+                });
             }
         };
 
