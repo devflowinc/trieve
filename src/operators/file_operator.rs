@@ -155,6 +155,29 @@ pub async fn convert_docx_to_html_query(
         }
     })?;
 
+    let delete_docx_file = || {
+        let docx_file_path_no_extension = format!(
+            "'{}'.*",
+            temp_docx_file_path.split_once('.').unwrap_or_default().0
+        );
+
+        // Delete all files with the same name but different extensions
+        let command_result = Command::new("rm")
+            .arg("-f")
+            .arg(docx_file_path_no_extension)
+            .output();
+
+        if command_result.is_err() {
+            log::error!("Could not delete temp docx file");
+
+            return Err(DefaultError {
+                message: "Could not delete temp docx file",
+            });
+        }
+
+        Ok(())
+    };
+
     let temp_html_file_path_buf = std::path::PathBuf::from(&format!(
         "./tmp/{}.html",
         uuid_file_name.split_once('.').unwrap_or_default().0
@@ -163,6 +186,7 @@ pub async fn convert_docx_to_html_query(
     let libreoffice_lock_result = mutex_store.libreoffice.lock();
 
     if libreoffice_lock_result.is_err() {
+        delete_docx_file()?;
         return Err(DefaultError {
             message: "Could not lock libreoffice",
         });
@@ -177,12 +201,10 @@ pub async fn convert_docx_to_html_query(
             .arg("./tmp")
             .arg(&temp_docx_file_path)
             .output();
-    
+
     drop(libreoffice_lock_result);
 
-    std::fs::remove_file(&temp_docx_file_path).map_err(|_| DefaultError {
-        message: "Could not remove temp docx file",
-    })?;
+    delete_docx_file()?;
 
     if conversion_command_output.is_err() {
         return Err(DefaultError {
@@ -255,9 +277,37 @@ pub async fn create_cards_with_handler(
     temp_html_file_path_buf: PathBuf,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
+    let delete_html_file = || {
+        let html_file_path_no_extension = format!(
+            "'{}'.*",
+            temp_html_file_path_buf
+                .to_str()
+                .unwrap_or_default()
+                .split_once('.')
+                .unwrap_or_default()
+                .0
+        );
+
+        let command_result = Command::new("rm")
+            .arg("-f")
+            .arg(html_file_path_no_extension)
+            .output();
+
+        if command_result.is_err() {
+            log::error!("Could not delete temp html file");
+
+            return Err(DefaultError {
+                message: "Could not delete temp html file",
+            });
+        }
+
+        Ok(())
+    };
+
     let file_path_str = match temp_html_file_path_buf.to_str() {
         Some(file_path_str) => file_path_str,
         None => {
+            delete_html_file()?;
             log::error!("HANDLER Could not convert file path to string");
             return Err(DefaultError {
                 message: "Could not convert file path to string",
@@ -269,12 +319,7 @@ pub async fn create_cards_with_handler(
         .arg(file_path_str)
         .output();
 
-    std::fs::remove_file(&temp_html_file_path_buf).map_err(|_| {
-        log::error!("HANDLER Could not remove temp html file");
-        DefaultError {
-            message: "Could not remove temp html file",
-        }
-    })?;
+    delete_html_file()?;
 
     let raw_parsed_cards = match parsed_cards_command_output {
         Ok(parsed_cards_command_output) => parsed_cards_command_output.stdout,
