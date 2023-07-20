@@ -11,7 +11,6 @@ use crate::operators::card_operator::{
 };
 use crate::operators::collection_operator::get_collection_by_id_query;
 use crate::AppMutexStore;
-use actix::Arbiter;
 use actix_web::{web, HttpResponse};
 use difference::{Changeset, Difference};
 use futures_util::FutureExt;
@@ -133,7 +132,7 @@ pub async fn create_card(
                 let verify_card_data = VerifyData::CardVerification {
                     card_uuid: metadata_1.id,
                 };
-                Arbiter::new().spawn(
+                tokio::spawn(
                     verify_card_content(
                         actix_web::web::Json(verify_card_data),
                         user,
@@ -230,7 +229,7 @@ pub async fn create_card(
                 let verify_card_data = VerifyData::CardVerification {
                     card_uuid: metadata_1.id,
                 };
-                Arbiter::new().spawn(
+                tokio::spawn(
                     verify_card_content(
                         actix_web::web::Json(verify_card_data),
                         user,
@@ -327,7 +326,7 @@ pub async fn create_card(
         card_uuid: card_metadata.id,
     };
 
-    Arbiter::new().spawn(
+    tokio::spawn(
         verify_card_content(
             actix_web::web::Json(verify_card_data),
             user,
