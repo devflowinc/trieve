@@ -9,11 +9,7 @@ use diesel::RunQueryDsl;
 use log::info;
 use s3::{creds::Credentials, Bucket, Region};
 use serde::{Deserialize, Serialize};
-use std::{
-    path::{Path, PathBuf},
-    process::Command,
-    sync::MutexGuard,
-};
+use std::{path::PathBuf, process::Command, sync::MutexGuard};
 
 use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
 use crate::{
@@ -151,7 +147,7 @@ pub async fn convert_docx_to_html_query(
     mutex_store: web::Data<AppMutexStore>,
 ) -> Result<UploadFileResult, DefaultError> {
     let new_id = uuid::Uuid::new_v4();
-    let uuid_file_name = format!("{}-{}", new_id.to_string(), file_name);
+    let uuid_file_name = format!("{}-{}", new_id.to_string(), file_name.replace('/', ""));
     let temp_docx_file_path = format!("./tmp/{}", uuid_file_name);
     let glob_string = format!("./tmp/{}*", new_id);
     std::fs::write(&temp_docx_file_path, file_data.clone()).map_err(|err| {
@@ -162,30 +158,21 @@ pub async fn convert_docx_to_html_query(
     })?;
 
     let delete_docx_file = || {
-        let docx_file_path_no_extension = format!(
-            "{}.docx",
-            temp_docx_file_path
-                .rsplitn(2, '.')
-                .nth(1)
-                .unwrap_or_default() // Path::new(temp_docx_file_path.as_str()).file_stem().unwrap_or_default().to_str().unwrap_or_default()
-        );
-
-        std::fs::remove_file(docx_file_path_no_extension).map_err(|err| {
+        std::fs::remove_file(temp_docx_file_path.clone()).map_err(|err| {
             log::error!("Could not delete temp docx file {:?}", err);
             DefaultError {
                 message: "Could not delete temp docx file",
             }
-        })?;
-
-        Ok(())
+        })
     };
 
     let temp_html_file_path_buf = std::path::PathBuf::from(&format!(
         "./tmp/{}.html",
-        uuid_file_name.rsplitn(2, '.').nth(1).unwrap_or_default()
+        uuid_file_name
+            .rsplit_once('.')
+            .map(|x| x.0)
+            .unwrap_or_default()
     ));
-
-    log::info!("temp file name {:?}", temp_html_file_path_buf);
 
     let libreoffice_lock_result = mutex_store.libreoffice.lock();
 
@@ -283,19 +270,15 @@ pub async fn create_cards_with_handler(
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     let delete_html_file = || {
-
         let files = glob::glob(glob_string.as_str()).expect("Failed to read glob pattern");
         log::info!("Files {:?}", glob_string);
-        for file in files {
-            if let Ok(file_path) = file {
-                log::info!("Deleting temp file {:?}", file_path.clone());
-                std::fs::remove_file(file_path).map_err(|err| {
-                    log::error!("Could not delete temp file {:?}", err);
-                    DefaultError {
-                        message: "Could not delete temp file",
-                    }
-                })?;
-            }
+        for file in files.flatten() {
+            std::fs::remove_file(file).map_err(|err| {
+                log::error!("Could not delete temp file {:?}", err);
+                DefaultError {
+                    message: "Could not delete temp file",
+                }
+            })?;
         }
 
         Ok(())
