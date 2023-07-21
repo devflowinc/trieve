@@ -4,10 +4,7 @@ use actix_web::web;
 use regex::Regex;
 use serde_json::json;
 use soup::{NodeExt, QueryBuilderExt};
-use std::{
-    process::Command,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 use crate::{
     data::models::{CardVerifications, Pool},
@@ -59,10 +56,7 @@ pub async fn get_webpage_text_headless(
     Ok(clean_text)
 }
 
-pub async fn get_webpage_text_fetch(
-    url: &str,
-    mutex_store: web::Data<AppMutexStore>,
-) -> Result<String, DefaultError> {
+pub async fn get_webpage_text_fetch(url: &str) -> Result<String, DefaultError> {
     let response = reqwest::get(url).await.map_err(|_| DefaultError {
         message: "Could not fetch page",
     })?;
@@ -70,88 +64,16 @@ pub async fn get_webpage_text_fetch(
     let headers = response.headers().get("content-type").ok_or(DefaultError {
         message: "Could not get content type",
     })?;
-    let html;
 
-    if headers.to_str().unwrap_or("").contains("text/html") {
-        html = response.text().await.map_err(|_| DefaultError {
-            message: "Could not parse text",
-        })?;
-    } else if headers == "application/pdf" {
-        // make a string that contains the file_name without the .type extension
-        let url_without_extension = url
-            .rsplit_once('.')
-            .map(|x| x.0)
-            .unwrap_or_default()
-            .replace('/', "");
-        let uuid = uuid::Uuid::new_v4();
-        let pdf_file_path = format!("./tmp/{}-{}.pdf", uuid, url_without_extension);
-        let html_file_path = format!("./tmp/{}-{}.html", uuid, url_without_extension);
-
-        let pdf = response.bytes().await.map_err(|_| DefaultError {
-            message: "Could not parse pdf",
-        })?;
-
-        let delete_files = || {
-            let glob_string = format!("./tmp/{}*", uuid);
-            let files = glob::glob(glob_string.as_str()).expect("Failed to read glob pattern");
-            log::info!("Files {:?}", glob_string);
-            for file in files.flatten() {
-                std::fs::remove_file(file).map_err(|err| {
-                    log::error!("Could not delete temp file {:?}", err);
-                    DefaultError {
-                        message: "Could not delete temp file",
-                    }
-                })?;
-            }
-            Ok(())
-        };
-
-        std::fs::write(&pdf_file_path, &pdf).map_err(|err| {
-            log::error!("Could not write file {} to disk: {}", pdf_file_path, err);
-            DefaultError {
-                message: "Could not write file to disk",
-            }
-        })?;
-
-        let libreoffice_lock = match mutex_store.libreoffice.lock() {
-            Ok(libreoffice_lock) => libreoffice_lock,
-            Err(_) => {
-                let _: Result<(), DefaultError> = delete_files();
-                return Err(DefaultError {
-                    message: "Could not lock libreoffice mutex",
-                });
-            }
-        };
-
-        let conversion_command_output =
-            Command::new(std::env::var("LIBREOFFICE_PATH").expect("LIBREOFFICE_PATH must be set"))
-                .arg("--headless")
-                .arg("--convert-to")
-                .arg("html")
-                .arg("--outdir")
-                .arg("./tmp")
-                .arg(&pdf_file_path)
-                .output();
-
-        drop(libreoffice_lock);
-
-        if conversion_command_output.is_err() {
-            let _: Result<(), DefaultError> = delete_files();
-            return Err(DefaultError {
-                message: "Could not convert file",
-            });
-        }
-
-        html = std::fs::read_to_string(&html_file_path).map_err(|_| DefaultError {
-            message: "Could not read text file",
-        })?;
-
-        delete_files()?;
-    } else {
+    if !headers.to_str().unwrap_or("").contains("text/html") {
         return Err(DefaultError {
-            message: "Could not parse content type",
+            message: "Can not verify source formats other than html",
         });
     }
+
+    let html = response.text().await.map_err(|_| DefaultError {
+        message: "Could not parse text",
+    })?;
 
     let soup = soup::Soup::new(&html);
 

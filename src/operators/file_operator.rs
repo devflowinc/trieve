@@ -271,7 +271,7 @@ pub async fn create_cards_with_handler(
 ) -> Result<(), DefaultError> {
     let delete_html_file = || {
         let files = glob::glob(glob_string.as_str()).expect("Failed to read glob pattern");
-        log::info!("Files {:?}", glob_string);
+
         for file in files.flatten() {
             std::fs::remove_file(file).map_err(|err| {
                 log::error!("Could not delete temp file {:?}", err);
