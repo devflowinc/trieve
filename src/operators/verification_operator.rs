@@ -5,7 +5,6 @@ use regex::Regex;
 use serde_json::json;
 use soup::{NodeExt, QueryBuilderExt};
 use std::{
-    path::Path,
     process::Command,
     sync::{Arc, Mutex},
 };
@@ -79,7 +78,11 @@ pub async fn get_webpage_text_fetch(
         })?;
     } else if headers == "application/pdf" {
         // make a string that contains the file_name without the .type extension
-        let url_without_extension = url.split('.').collect::<Vec<&str>>()[0].replace('/', "");
+        let url_without_extension = url
+            .rsplit_once('.')
+            .map(|x| x.0)
+            .unwrap_or_default()
+            .replace('/', "");
         let uuid = uuid::Uuid::new_v4();
         let pdf_file_path = format!("./tmp/{}-{}.pdf", uuid, url_without_extension);
         let html_file_path = format!("./tmp/{}-{}.html", uuid, url_without_extension);
@@ -92,22 +95,19 @@ pub async fn get_webpage_text_fetch(
             let glob_string = format!("./tmp/{}*", uuid);
             let files = glob::glob(glob_string.as_str()).expect("Failed to read glob pattern");
             log::info!("Files {:?}", glob_string);
-            for file in files {
-                if let Ok(file_path) = file {
-                    log::info!("Deleting temp file {:?}", file_path.clone());
-                    std::fs::remove_file(file_path).map_err(|err| {
-                        log::error!("Could not delete temp file {:?}", err);
-                        DefaultError {
-                            message: "Could not delete temp file",
-                        }
-                    })?;
-                }
+            for file in files.flatten() {
+                std::fs::remove_file(file).map_err(|err| {
+                    log::error!("Could not delete temp file {:?}", err);
+                    DefaultError {
+                        message: "Could not delete temp file",
+                    }
+                })?;
             }
             Ok(())
         };
 
         std::fs::write(&pdf_file_path, &pdf).map_err(|err| {
-            log::error!("Could not write file to disk: {}", err);
+            log::error!("Could not write file {} to disk: {}", pdf_file_path, err);
             DefaultError {
                 message: "Could not write file to disk",
             }
@@ -116,7 +116,7 @@ pub async fn get_webpage_text_fetch(
         let libreoffice_lock = match mutex_store.libreoffice.lock() {
             Ok(libreoffice_lock) => libreoffice_lock,
             Err(_) => {
-                let _ : Result<(), DefaultError> = delete_files();
+                let _: Result<(), DefaultError> = delete_files();
                 return Err(DefaultError {
                     message: "Could not lock libreoffice mutex",
                 });
@@ -136,7 +136,7 @@ pub async fn get_webpage_text_fetch(
         drop(libreoffice_lock);
 
         if conversion_command_output.is_err() {
-            let _ : Result<(), DefaultError> = delete_files();
+            let _: Result<(), DefaultError> = delete_files();
             return Err(DefaultError {
                 message: "Could not convert file",
             });
