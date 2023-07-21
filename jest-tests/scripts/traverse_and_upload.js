@@ -8,7 +8,7 @@ import { getAuthCookie } from "../auth.js";
 const keyvDb = new Keyv(process.env.REDIS_URL || "redis://localhost:6380");
 const api_endpoint = process.env.API_ENDPOINT || "http://localhost:8090/api";
 let authCookie = null;
-const MAX_CONCURRENT_REQUESTS = 5;
+const MAX_CONCURRENT_REQUESTS = process.env.MAX_CONCURRENT_REQUESTS || 1;
 let activeRequests = 0;
 
 const convertAndUpload = async (filePath, ocFilePath) => {
