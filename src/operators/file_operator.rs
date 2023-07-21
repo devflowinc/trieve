@@ -244,7 +244,6 @@ pub async fn convert_docx_to_html_query(
             file_name,
             created_file.id,
             user,
-            mutex_store,
             temp_html_file_path_buf,
             glob_string,
             pool,
@@ -264,7 +263,6 @@ pub async fn create_cards_with_handler(
     file_name: String,
     created_file_id: uuid::Uuid,
     user: LoggedUser,
-    mutex_store: web::Data<AppMutexStore>,
     temp_html_file_path_buf: PathBuf,
     glob_string: String,
     pool: web::Data<Pool>,
@@ -344,7 +342,6 @@ pub async fn create_cards_with_handler(
             web_json_create_card_data,
             pool.clone(),
             user.clone(),
-            mutex_store.clone(),
         )
         .await
         {
