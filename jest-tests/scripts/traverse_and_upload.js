@@ -5,6 +5,7 @@ import fetch from "node-fetch";
 import Keyv from "keyv";
 import { getAuthCookie } from "../auth.js";
 
+const keyvDb = new Keyv(process.env.REDIS_URL || "redis://localhost:6380");
 const api_endpoint = process.env.API_ENDPOINT || "http://localhost:8090/api";
 let authCookie = null;
 const MAX_CONCURRENT_REQUESTS = 5;
@@ -58,6 +59,16 @@ const convertAndUpload = async (filePath, ocFilePath) => {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   activeRequests++;
+  // If file has already been uploaded, skip it
+  const keyvRecord = await keyvDb.get(ocFilePath);
+  if (keyvRecord) {
+    console.log(
+      `Skipped ${ocFilePath}, already uploaded because of keyv ${keyvRecord}`
+    );
+    activeRequests--;
+    return;
+  }
+  await keyvDb.set(ocFilePath, true);
 
   await fetch(`${api_endpoint}/file`, {
     method: "POST",
@@ -67,24 +78,19 @@ const convertAndUpload = async (filePath, ocFilePath) => {
     },
     credentials: "include",
     body: JSON.stringify(requestBody),
-  })
-    .then((response) => {
-      if (!response.ok) {
-        console.error(
-          `Error: ${response.status} ${response.statusText} for ${filePath}`
-        );
-        throw new Error("Bad response");
-      }
-      console.log(`Uploaded ${filePath}`);
-    })
-    .finally(() => {
-      activeRequests--;
-    });
+  }).then((response) => {
+    if (!response.ok) {
+      console.error(
+        `Error: ${response.status} ${response.statusText} for ${filePath}`
+      );
+      return;
+    }
+    console.log(`Uploaded ${filePath}`);
+    activeRequests--;
+  });
 };
 
 const traverseDirectory = async (directoryPath) => {
-  const keyvDb = new Keyv("redis://localhost:6380");
-
   return new Promise((resolve, reject) => {
     readdir(directoryPath, (err, files) => {
       if (err) {
@@ -105,21 +111,14 @@ const traverseDirectory = async (directoryPath) => {
             if (stats.isDirectory()) {
               traverseDirectory(filePath).then(resolve).catch(reject);
             } else {
-              const truncatedFilePath = filePath.replace(staticDirectoryPath, "");
+              const truncatedFilePath = filePath.replace(
+                staticDirectoryPath,
+                ""
+              );
 
-              // If file has already been uploaded, skip it
-              const keyvRecord = await keyvDb.get(truncatedFilePath);
-              if (keyvRecord) {
-                console.log(`Skipped ${truncatedFilePath}, already uploaded`);
-                resolve();
-                return;
-              }
-              await keyvDb.set(truncatedFilePath, true);
               convertAndUpload(filePath, truncatedFilePath)
                 .then(resolve)
                 .catch(() => {
-                  // If the upload failed, delete the keyv record
-                  keyvDb.delete(truncatedFilePath);
                   resolve();
                 });
             }
