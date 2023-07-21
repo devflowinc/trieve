@@ -81,13 +81,13 @@ const convertAndUpload = async (filePath, ocFilePath) => {
   }).then(async (response) => {
     if (!response.ok) {
       console.error(
-        `Error: ${response.status} ${response.statusText} for ${filePath}`
+        `Error: ${response.status} ${response.statusText} for ${ocFilePath}`
       );
       await keyvDb.set(`${ocFilePath}_errored`, true);
       activeRequests--;
       return;
     }
-    console.log(`Uploaded ${filePath}`);
+    console.log(`Uploaded ${ocFilePath}`);
     activeRequests--;
   });
 };
