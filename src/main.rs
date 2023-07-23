@@ -1,3 +1,3 @@
 fn main() -> std::io::Result<()> {
-    ai_editor_server::main()
+    vault_server::main()
 }

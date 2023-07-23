@@ -4,15 +4,15 @@
       {
           "type": "lldb",
           "request": "launch",
-          "name": "Debug executable 'ai-editor-server'",
+          "name": "Debug executable 'vault-server'",
           "cargo": {
               "args": [
                   "build",
-                  "--bin=ai-editor-server",
-                  "--package=ai-editor-server"
+                  "--bin=vault-server",
+                  "--package=vault-server"
               ],
               "filter": {
-                  "name": "ai-editor-server",
+                  "name": "vault-server",
                   "kind": "bin"
               }
           },
@@ -22,16 +22,16 @@
       {
           "type": "lldb",
           "request": "launch",
-          "name": "Debug unit tests in executable 'ai-editor-server'",
+          "name": "Debug unit tests in executable 'vault-server'",
           "cargo": {
               "args": [
                   "test",
                   "--no-run",
-                  "--bin=ai-editor-server",
-                  "--package=ai-editor-server"
+                  "--bin=vault-server",
+                  "--package=vault-server"
               ],
               "filter": {
-                  "name": "ai-editor-server",
+                  "name": "vault-server",
                   "kind": "bin"
               }
           },

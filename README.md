@@ -19,7 +19,7 @@ This repository utilizes [actix-web](https://actix.rs), a [Rust](https://www.rus
 Create a .env file in the root directory of the project. This .env file will require the following url's and API keys
 
 ```
-DATABASE_URL=postgresql://postgres:password@localhost:5432/ai_editor
+DATABASE_URL=postgresql://postgres:password@localhost:5432/vault
 REDIS_URL=redis://127.0.0.1:6379/
 SENDGRID_API_KEY=SG.XXXXXXXXXXXXXXXXXXxx
 OPENAI_API_KEY=sk-XXXXXXXXXXXXXXXXXXxx
@@ -52,7 +52,7 @@ S3_ENDPOINT=XXXXXXXXXXXXXXXXXXxx
 9. Click the user and navigate to "Service Accounts"
 10. Click "Create Access Key" and save the created keys to your .env under `S3_ACCESS_KEY` and `S3_SECRET_KEY` respectively
 11. Click "Buckets" and then "Create Bucket"
-12. Create a bucket named `ai-editor` and set `S3_BUCKET` in the env to `ai-editor`
+12. Create a bucket named `vault` and set `S3_BUCKET` in the env to `vault`
 
 ## Preparing for file uploads and conversions
 
@@ -65,7 +65,7 @@ If you want to test things outside of the minio dashboard and Tokio server, then
 
 ## Running the test suite
 
-This section refers to the jest testing suite found in the `jest-tests` folder of this repository
+This section refers to the jest testing suite found in the `vault-nodejs` folder of this repository
 
 1. Set the variables found in `.env.dist` in the `.env` file of the testing suite
 2. `cd` into the testing suite folder
@@ -76,14 +76,14 @@ This section refers to the jest testing suite found in the `jest-tests` folder o
 
 1. `sudo docker compose stop qdrant-database`
 2. `sudo docker compose rm -f qdrant-database`
-3. `sudo docker volume rm ai-editor_qdrant_data`
+3. `sudo docker volume rm vault_qdrant_data`
 4. `diesel db reset`
 
 ## Resetting the script db
 
 1. `sudo docker compose stop script-redis`
 2. `sudo docker compose rm -f script-redis`
-3. `sudo docker volume rm ai-editor_script-redis-data`
+3. `sudo docker volume rm vault_script-redis-data`
 
 ## How to debug diesel by getting the exact generated SQL
 
@@ -93,7 +93,7 @@ diesel::debug*query::<diesel::pg::Pg, *>(&query);
 
 1. `virtualenv venv`
 2. `source venv/bin/activate`
-3. `pip install -r ./python-scripts/requirements.txt`
+3. `pip install -r ./vault-python/requirements.txt`
 
 ## How to get Rust debug level logs
 

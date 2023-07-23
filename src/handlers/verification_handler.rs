@@ -27,7 +27,7 @@ pub async fn get_webpage_score(
         .map_err(|err| ServiceError::BadRequest(format!("Could not fetch: {}", err)))?;
 
     let fuzzy_script_result = Command::new("python3")
-        .arg("./python-scripts/fuzzy-text-match.py")
+        .arg("./vault-python/fuzzy-text-match.py")
         .arg(content)
         .arg(webpage_content)
         .output();
@@ -63,7 +63,7 @@ pub async fn get_webpage_score(
             .map_err(|err| ServiceError::BadRequest(format!("Could not fetch: {}", err)))?;
 
         let fuzzy_script_result = Command::new("python3")
-            .arg("./python-scripts/fuzzy-text-match.py")
+            .arg("./vault-python/fuzzy-text-match.py")
             .arg(content)
             .arg(webpage_content)
             .output();

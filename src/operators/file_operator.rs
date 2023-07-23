@@ -293,7 +293,7 @@ pub async fn create_cards_with_handler(
         }
     };
     let parsed_cards_command_output = Command::new("python")
-        .arg("./python-scripts/card_parser.py")
+        .arg("./vault-python/card_parser.py")
         .arg(file_path_str)
         .output();
 

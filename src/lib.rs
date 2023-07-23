@@ -114,7 +114,7 @@ pub async fn main() -> std::io::Result<()> {
                 .session_lifecycle(
                     PersistentSession::default().session_ttl(time::Duration::days(1)),
                 )
-                .cookie_name("ai-editor".to_owned())
+                .cookie_name("vault".to_owned())
                 .cookie_secure(false)
                 .cookie_domain(Some(domain.clone()))
                 .cookie_path("/".to_owned())
