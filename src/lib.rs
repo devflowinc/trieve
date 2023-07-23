@@ -6,7 +6,7 @@ use std::sync::Mutex;
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
-use actix_web::{cookie::Key, middleware, web, App, HttpServer};
+use actix_web::{cookie::Key, middleware, web::{self, PayloadConfig}, App, HttpServer};
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use qdrant_client::{
@@ -91,12 +91,14 @@ pub async fn main() -> std::io::Result<()> {
         let cors = Cors::default()
             .allowed_origin(&allowed_origin)
             .allowed_origin("https://vault.arguflow.com")
+            .allowed_origin("https://coach.arguflow.com")
             .allowed_methods(vec!["GET", "POST", "DELETE", "OPTIONS", "PUT"])
             .allow_any_header()
             .supports_credentials()
             .max_age(3600);
 
         App::new()
+            .app_data(PayloadConfig::new(250000000))
             .app_data(web::Data::new(pool.clone()))
             .app_data(app_mutex_store.clone())
             .wrap(
