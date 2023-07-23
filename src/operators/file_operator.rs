@@ -338,13 +338,7 @@ pub async fn create_cards_with_handler(
         };
         let web_json_create_card_data = web::Json(create_card_data);
 
-        match create_card(
-            web_json_create_card_data,
-            pool.clone(),
-            user.clone(),
-        )
-        .await
-        {
+        match create_card(web_json_create_card_data, pool.clone(), user.clone()).await {
             Ok(response) => {
                 if response.status().is_success() {
                     let card_metadata: ReturnCreatedCard = serde_json::from_slice(
@@ -362,6 +356,7 @@ pub async fn create_cards_with_handler(
         }
     }
 
+    let collection_id;
     match web::block(move || {
         create_collection_and_add_bookmarks_query(
             CardCollection::from_details(
@@ -378,7 +373,7 @@ pub async fn create_cards_with_handler(
     .await
     {
         Ok(response) => match response {
-            Ok(_) => (),
+            Ok(collection) => (collection_id = collection.id,),
             Err(err) => return Err(err),
         },
         Err(_) => {
@@ -390,7 +385,7 @@ pub async fn create_cards_with_handler(
 
     web::block(move || {
         add_collection_created_notification_query(
-            FileUploadCompledNotification::from_details(user.id, created_file_id),
+            FileUploadCompledNotification::from_details(user.id, collection_id),
             pool,
         )
     })
