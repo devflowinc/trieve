@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: ai_editor
+      POSTGRES_DB: vault
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:

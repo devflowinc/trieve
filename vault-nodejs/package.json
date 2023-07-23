@@ -1,5 +1,5 @@
 {
-  "name": "jest-tests",
+  "name": "vault-nodejs",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -8,8 +8,8 @@
     "bulk-upload": "node -r dotenv/config --experimental-vm-modules ./scripts/traverse_and_upload.js",
     "format": "prettier --write ."
   },
-  "description": "Testing library for Arguflow's ai-editor actix-web backend",
-  "repository": "https://github.com/arguflow/ai-editor",
+  "description": "NodeJS scripts, services, and testing library for Arguflow's vault actix-web backend",
+  "repository": "https://github.com/arguflow/vault-server",
   "author": "Arguflow",
   "license": "MIT",
   "private": true,
