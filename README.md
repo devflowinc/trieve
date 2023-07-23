@@ -1,6 +1,6 @@
-# AI Editor
+# Vault Server
 
-The back end of Arguflow AI Coach and Arguflow vault
+The back end of Arguflow Debate Coach and Vault
 
 This repository utilizes [actix-web](https://actix.rs), a [Rust](https://www.rust-lang.org) language framework
 
