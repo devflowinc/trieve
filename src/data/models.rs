@@ -494,6 +494,35 @@ pub struct CardCollectionAndFile {
     pub file_id: Option<uuid::Uuid>,
 }
 
+#[derive(Debug, Default, Serialize, Deserialize, Queryable)]
+pub struct CardCollectionAndFileWithCount {
+    pub id: uuid::Uuid,
+    pub author_id: uuid::Uuid,
+    pub name: String,
+    pub is_public: bool,
+    pub description: String,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub file_id: Option<uuid::Uuid>,
+    pub count: i64,
+}
+
+impl From<CardCollectionAndFileWithCount> for CardCollectionAndFile {
+
+    fn from(collection: CardCollectionAndFileWithCount) -> Self {
+        CardCollectionAndFile {
+            id: collection.id,
+            author_id: collection.author_id,
+            name: collection.name,
+            is_public: collection.is_public,
+            description: collection.description,
+            created_at: collection.created_at,
+            updated_at: collection.updated_at,
+            file_id: collection.file_id,
+        }
+    }
+}
+
 #[derive(Debug, Default, Serialize, Deserialize, Queryable, Insertable, Clone)]
 #[diesel(table_name = card_collection_bookmarks)]
 pub struct CardCollectionBookmark {

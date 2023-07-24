@@ -3,7 +3,7 @@ use std::sync::MutexGuard;
 use crate::{
     data::models::{
         CardCollectionAndFile, CardCollectionBookmark, CardMetadataWithCount,
-        CardMetadataWithVotesAndFiles, FileCollection, FullTextSearchResult,
+        CardMetadataWithVotesAndFiles, FileCollection, FullTextSearchResult, CardCollectionAndFileWithCount,
     },
     diesel::{Connection, ExpressionMethods, QueryDsl, RunQueryDsl},
     operators::card_operator::get_metadata,
@@ -94,11 +94,12 @@ pub fn create_collection_and_add_bookmarks_query(
 pub fn get_collections_for_specifc_user_query(
     user_id: uuid::Uuid,
     accessing_user_id: Option<uuid::Uuid>,
+    page: u64,
     pool: web::Data<Pool>,
-) -> Result<Vec<CardCollectionAndFile>, DefaultError> {
+) -> Result<Vec<CardCollectionAndFileWithCount>, DefaultError> {
     use crate::data::schema::card_collection::dsl::*;
     use crate::data::schema::collections_from_files::dsl as collections_from_files_columns;
-
+    let page = if page == 0 { 1 } else { page };
     let mut conn = pool.get().unwrap();
     let mut collections = card_collection
         .left_outer_join(
@@ -114,6 +115,7 @@ pub fn get_collections_for_specifc_user_query(
             created_at,
             updated_at,
             collections_from_files_columns::file_id.nullable(),
+            sql::<Int8>("count(*) OVER() AS full_count"),
         ))
         .filter(author_id.eq(user_id))
         .into_boxed();
@@ -128,7 +130,9 @@ pub fn get_collections_for_specifc_user_query(
     }
 
     let collections = collections
-        .load::<CardCollectionAndFile>(&mut conn)
+        .limit(10)
+        .offset(((page - 1) * 10).try_into().unwrap_or(0))
+        .load::<CardCollectionAndFileWithCount>(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Error getting collections",
         })?;
