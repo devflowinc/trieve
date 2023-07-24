@@ -2,8 +2,8 @@ use std::sync::MutexGuard;
 
 use crate::{
     data::models::{
-        CardCollectionAndFile, CardCollectionBookmark, CardMetadataWithCount,
-        CardMetadataWithVotesAndFiles, FileCollection, FullTextSearchResult, CardCollectionAndFileWithCount,
+        CardCollectionAndFile, CardCollectionAndFileWithCount, CardCollectionBookmark,
+        CardMetadataWithCount, CardMetadataWithVotesAndFiles, FileCollection, FullTextSearchResult,
     },
     diesel::{Connection, ExpressionMethods, QueryDsl, RunQueryDsl},
     operators::card_operator::get_metadata,
