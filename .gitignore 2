@@ -1,6 +1,0 @@
-/target
-*.env
-.env.docker
-tmp
-node_modules
-*.log
