@@ -322,7 +322,7 @@ pub async fn main() -> std::io::Result<()> {
                         ),
                     )
                     .service(
-                        web::resource("/notifications/all")
+                        web::resource("/notifications_readall")
                             .route(web::put().to(
                                 handlers::notification_handler::mark_all_notifications_as_read,
                             )),
