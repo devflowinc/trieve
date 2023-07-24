@@ -62,7 +62,6 @@ pub async fn create_card_collection(
 #[derive(Serialize, Deserialize)]
 pub struct CollectionData {
     pub collections: Vec<CardCollectionAndFile>,
-    pub page: u64,
     pub total_pages: i64,
 }
 
@@ -96,7 +95,6 @@ pub async fn get_specific_user_card_collections(
             updated_at: collection.updated_at,
             file_id: collection.file_id,
         }).collect(),
-        page,
         total_pages: collections.get(0).map(|collection| collection.count / 10).unwrap_or(0),
     }))
 }
