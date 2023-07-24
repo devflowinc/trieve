@@ -64,6 +64,11 @@ def extract_cards_from_html(html_string):
         else:
             if is_heading and is_link:
                 card_html += str(child)
+    
+    if is_heading and is_link:
+        if card_link is not None:
+            # Only append if card link is valid, else just reset
+            cards.append(CoreCard(card_html, card_link))
 
     return cards
 
