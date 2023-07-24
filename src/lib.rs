@@ -90,7 +90,7 @@ pub async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         let cors = Cors::default()
-            .send_wildcard()
+            .allow_any_origin()
             .allowed_methods(vec!["GET", "POST", "DELETE", "OPTIONS", "PUT"])
             .allow_any_header()
             .supports_credentials()
@@ -313,13 +313,13 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::get().to(handlers::file_handler::get_file_handler))
                             .route(web::delete().to(handlers::file_handler::delete_file_handler)),
                     )
+                    .service(web::resource("/notifications").route(
+                        web::put().to(handlers::notification_handler::mark_notification_as_read),
+                    ))
                     .service(
-                        web::resource("/notifications")
-                            .route(web::get().to(handlers::notification_handler::get_notifications))
-                            .route(
-                                web::put()
-                                    .to(handlers::notification_handler::mark_notification_as_read),
-                            ),
+                        web::resource("/notifications/{page}").route(
+                            web::get().to(handlers::notification_handler::get_notifications),
+                        ),
                     )
                     .service(
                         web::resource("/notifications/all")
