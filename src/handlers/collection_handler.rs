@@ -102,7 +102,7 @@ pub async fn get_specific_user_card_collections(
         total_pages: collections
             .get(0)
             .map(|collection| collection.count / 10)
-            .unwrap_or(0),
+            .unwrap_or(1),
     }))
 }
 
