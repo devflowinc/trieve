@@ -6,7 +6,12 @@ use std::sync::Mutex;
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
-use actix_web::{cookie::Key, middleware, web::{self, PayloadConfig}, App, HttpServer};
+use actix_web::{
+    cookie::Key,
+    middleware,
+    web::{self, PayloadConfig},
+    App, HttpServer,
+};
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use qdrant_client::{
@@ -81,17 +86,11 @@ pub async fn main() -> std::io::Result<()> {
 
     run_migrations(&mut pool.get().unwrap());
 
-    let domain: String = std::env::var("DOMAIN").unwrap_or_else(|_| "localhost".to_string());
-    let allowed_origin: String =
-        std::env::var("ALLOWED_ORIGIN").unwrap_or_else(|_| "http://localhost:3000".to_string());
-
     log::info!("starting HTTP server at http://localhost:8090");
 
     HttpServer::new(move || {
         let cors = Cors::default()
-            .allowed_origin(&allowed_origin)
-            .allowed_origin("https://vault.arguflow.com")
-            .allowed_origin("https://coach.arguflow.com")
+            .send_wildcard()
             .allowed_methods(vec!["GET", "POST", "DELETE", "OPTIONS", "PUT"])
             .allow_any_header()
             .supports_credentials()
@@ -118,7 +117,6 @@ pub async fn main() -> std::io::Result<()> {
                 )
                 .cookie_name("vault".to_owned())
                 .cookie_secure(false)
-                .cookie_domain(Some(domain.clone()))
                 .cookie_path("/".to_owned())
                 .build(),
             )
