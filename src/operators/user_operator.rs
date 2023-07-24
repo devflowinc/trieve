@@ -157,8 +157,8 @@ pub fn get_user_with_votes_and_cards_by_id_query(
             card_metadata_columns::card_html,
             card_metadata_columns::private,
         ))
-        .limit(25)
-        .offset((page - 1) * 25)
+        .limit(10)
+        .offset((page - 1) * 10)
         .load::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Error loading user cards",
@@ -378,8 +378,8 @@ pub fn get_top_users_query(
             card_metadata_columns::author_id,
         ))
         .order(diesel::dsl::sql::<Text>("score desc"))
-        .limit(25)
-        .offset((page - 1) * 25);
+        .limit(10)
+        .offset((page - 1) * 10);
 
     let user_scores: Vec<UserScore> =
         query

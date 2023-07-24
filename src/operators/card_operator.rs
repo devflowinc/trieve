@@ -166,8 +166,8 @@ pub async fn search_card_query(
         .search_points(&SearchPoints {
             collection_name: "debate_cards".to_string(),
             vector: embedding_vector,
-            limit: 25,
-            offset: Some((page - 1) * 25),
+            limit: 10,
+            offset: Some((page - 1) * 10),
             with_payload: None,
             filter: Some(filter),
             ..Default::default()
@@ -191,7 +191,7 @@ pub async fn search_card_query(
 
     Ok(SearchCardQueryResult {
         search_results: point_ids,
-        total_card_pages: (filtered_point_ids.len() as f64 / 25.0).ceil() as i64,
+        total_card_pages: (filtered_point_ids.len() as f64 / 10.0).ceil() as i64,
     })
 }
 
@@ -339,8 +339,8 @@ pub async fn search_card_collections_query(
         .search_points(&SearchPoints {
             collection_name: "debate_cards".to_string(),
             vector: embedding_vector,
-            limit: 25,
-            offset: Some((page - 1) * 25),
+            limit: 10,
+            offset: Some((page - 1) * 10),
             with_payload: None,
             filter: Some(filter),
             ..Default::default()
@@ -364,7 +364,7 @@ pub async fn search_card_collections_query(
 
     Ok(SearchCardQueryResult {
         search_results: point_ids,
-        total_card_pages: (data.result.len() as f64 / 25.0).ceil() as i64,
+        total_card_pages: (data.result.len() as f64 / 10.0).ceil() as i64,
     })
 }
 
@@ -634,8 +634,8 @@ pub fn search_full_text_card_query(
     ));
 
     query = query
-        .limit(25)
-        .offset(((page - 1) * 25).try_into().unwrap());
+        .limit(10)
+        .offset(((page - 1) * 10).try_into().unwrap());
 
     let searched_cards: Vec<(FullTextSearchResult, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
@@ -657,7 +657,7 @@ pub fn search_full_text_card_query(
     let total_count = if searched_cards.is_empty() {
         0
     } else {
-        (searched_cards.get(0).unwrap().0.count as f64 / 25.0).ceil() as i64
+        (searched_cards.get(0).unwrap().0.count as f64 / 10.0).ceil() as i64
     };
 
     Ok(FullTextSearchCardQueryResult {
@@ -793,8 +793,8 @@ pub fn search_full_text_collection_query(
     ));
 
     query = query
-        .limit(25)
-        .offset(((page - 1) * 25).try_into().unwrap());
+        .limit(10)
+        .offset(((page - 1) * 10).try_into().unwrap());
 
     let searched_cards: Vec<(FullTextSearchResult, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
@@ -816,7 +816,7 @@ pub fn search_full_text_collection_query(
     let total_count = if searched_cards.is_empty() {
         0
     } else {
-        (searched_cards.get(0).unwrap().0.count as f64 / 25.0).ceil() as i64
+        (searched_cards.get(0).unwrap().0.count as f64 / 10.0).ceil() as i64
     };
 
     Ok(FullTextSearchCardQueryResult {

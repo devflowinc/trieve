@@ -326,8 +326,8 @@ pub fn get_bookmarks_for_collection_query(
                 ),
                 card_collisions_columns::collision_qdrant_id.nullable(),
             ))
-            .limit(25)
-            .offset(((page - 1) * 25).try_into().unwrap_or(0))
+            .limit(10)
+            .offset(((page - 1) * 10).try_into().unwrap_or(0))
             .load::<(CardMetadataWithCount, Option<uuid::Uuid>)>(&mut conn)
             .map_err(|_err| DefaultError {
                 message: "Error getting bookmarks",
@@ -351,7 +351,7 @@ pub fn get_bookmarks_for_collection_query(
         })?;
 
     let total_pages = match bookmark_metadata.get(0) {
-        Some(metadata) => (metadata.0.count as f64 / 25.0).ceil() as i64,
+        Some(metadata) => (metadata.0.count as f64 / 10.0).ceil() as i64,
         None => 0,
     };
 
