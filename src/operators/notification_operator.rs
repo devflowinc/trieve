@@ -1,7 +1,10 @@
 use std::sync::MutexGuard;
 
 use actix_web::web;
-use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+use diesel::{
+    dsl::sql, sql_types::Int8, ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper,
+};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     data::models::{FileUploadCompledNotification, Pool, VerificationNotification},
@@ -46,11 +49,17 @@ pub fn add_collection_created_notification_query(
 
     Ok(())
 }
-
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct NotificationReturn {
+    pub notifications: Vec<Notification>,
+    pub full_count: i64,
+    pub total_pages: i64,
+}
 pub fn get_notifications_query(
     user_id: uuid::Uuid,
+    page: i64,
     pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
-) -> Result<Vec<Notification>, DefaultError> {
+) -> Result<NotificationReturn, DefaultError> {
     use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
     use crate::data::schema::verification_notifications::dsl as verification_notifications_columns;
 
@@ -58,7 +67,15 @@ pub fn get_notifications_query(
 
     let verifications = verification_notifications_columns::verification_notifications
         .filter(verification_notifications_columns::user_uuid.eq(user_id))
-        .load::<VerificationNotification>(&mut conn)
+        .filter(verification_notifications_columns::user_read.eq(false))
+        .select((
+            VerificationNotification::as_select(),
+            sql::<Int8>("count(*) OVER() AS full_count"),
+        ))
+        .limit(10)
+        .offset((page - 1) * 10)
+        .order(verification_notifications_columns::created_at.desc())
+        .load::<(VerificationNotification, i64)>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to get notifications",
         })?;
@@ -66,23 +83,46 @@ pub fn get_notifications_query(
     let file_upload_completed =
         file_upload_completed_notifications_columns::file_upload_completed_notifications
             .filter(file_upload_completed_notifications_columns::user_uuid.eq(user_id))
-            .load::<FileUploadCompledNotification>(&mut conn)
+            .filter(file_upload_completed_notifications_columns::user_read.eq(false))
+            .select((
+                FileUploadCompledNotification::as_select(),
+                sql::<Int8>("count(*) OVER() AS full_count"),
+            ))
+            .order(file_upload_completed_notifications_columns::created_at.desc())
+            .limit(10)
+            .offset((page - 1) * 10)
+            .load::<(FileUploadCompledNotification, i64)>(&mut conn)
             .map_err(|_| DefaultError {
                 message: "Failed to get notifications",
             })?;
 
-    let mut notifications = verifications
-        .iter()
-        .map(|v| Notification::Verification(v.clone()))
-        .collect::<Vec<Notification>>();
-    notifications.extend(
-        file_upload_completed
-            .iter()
-            .map(|c| Notification::FileUploadComplete(c.clone()))
-            .collect::<Vec<Notification>>(),
-    );
+    let combined_count =
+        verifications.get(0).map_or(0, |v| v.1) + file_upload_completed.get(0).map_or(0, |c| c.1);
 
-    Ok(notifications)
+    // Combine file_upload_completed and verifications in order of their created_at date property
+    let mut combined_notifications: Vec<Notification> = file_upload_completed
+        .iter()
+        .map(|c| Notification::FileUploadComplete(c.0.clone()))
+        .chain(
+            verifications
+                .iter()
+                .map(|v| Notification::Verification(v.0.clone())),
+        )
+        .collect();
+
+    // Sort the combined_notifications by their created_at date property
+    combined_notifications.sort_by(|a, b| match (a, b) {
+        (Notification::FileUploadComplete(a_data), Notification::Verification(b_data)) => {
+            a_data.created_at.cmp(&b_data.created_at)
+        }
+        _ => std::cmp::Ordering::Equal,
+    });
+
+    Ok(NotificationReturn {
+        notifications: combined_notifications,
+        full_count: combined_count,
+        total_pages: ((combined_count) as f64 / 10.0).ceil() as i64,
+    })
 }
 
 pub fn mark_notification_as_read_query(

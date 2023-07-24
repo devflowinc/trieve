@@ -508,7 +508,6 @@ pub struct CardCollectionAndFileWithCount {
 }
 
 impl From<CardCollectionAndFileWithCount> for CardCollectionAndFile {
-
     fn from(collection: CardCollectionAndFileWithCount) -> Self {
         CardCollectionAndFile {
             id: collection.id,
@@ -826,7 +825,7 @@ pub struct CardVerifications {
     pub updated_at: chrono::NaiveDateTime,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable)]
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable, Selectable)]
 #[diesel(table_name = verification_notifications)]
 pub struct VerificationNotification {
     pub id: uuid::Uuid,
@@ -859,7 +858,7 @@ impl VerificationNotification {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable)]
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable, Selectable)]
 #[diesel(table_name = file_upload_completed_notifications)]
 pub struct FileUploadCompledNotification {
     pub id: uuid::Uuid,

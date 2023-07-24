@@ -30,15 +30,17 @@ pub enum Notification {
 
 pub async fn get_notifications(
     user: LoggedUser,
+    page: web::Path<i64>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_id = user.id;
     let thread_safe_pool = Arc::new(Mutex::new(pool));
 
-    let notifications =
-        web::block(move || get_notifications_query(user_id, thread_safe_pool.lock().unwrap()))
-            .await?
-            .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+    let notifications = web::block(move || {
+        get_notifications_query(user_id, page.into_inner(), thread_safe_pool.lock().unwrap())
+    })
+    .await?
+    .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
 
     Ok(HttpResponse::Ok().json(notifications))
 }
