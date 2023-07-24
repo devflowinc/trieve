@@ -147,7 +147,7 @@ pub async fn convert_docx_to_html_query(
     mutex_store: web::Data<AppMutexStore>,
 ) -> Result<UploadFileResult, DefaultError> {
     let new_id = uuid::Uuid::new_v4();
-    let uuid_file_name = format!("{}-{}", new_id.to_string(), file_name.replace('/', ""));
+    let uuid_file_name = format!("{}-{}", new_id, file_name.replace('/', ""));
     let temp_docx_file_path = format!("./tmp/{}", uuid_file_name);
     let glob_string = format!("./tmp/{}*", new_id);
     std::fs::write(&temp_docx_file_path, file_data.clone()).map_err(|err| {
