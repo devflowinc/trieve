@@ -261,42 +261,59 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::put().to(handlers::user_handler::update_user)),
                     )
                     .service(
-                        web::resource("/card_collection")
-                            .route(
-                                web::post()
-                                    .to(handlers::collection_handler::create_card_collection),
+                        web::scope("/card_collection")
+                            .service(
+                                web::resource("/")
+                                    .route(
+                                        web::post().to(
+                                            handlers::collection_handler::create_card_collection,
+                                        ),
+                                    )
+                                    .route(
+                                        web::delete().to(
+                                            handlers::collection_handler::delete_card_collection,
+                                        ),
+                                    )
+                                    .route(
+                                        web::put().to(
+                                            handlers::collection_handler::update_card_collection,
+                                        ),
+                                    ),
                             )
-                            .route(web::get().to(
-                                handlers::collection_handler::get_logged_in_user_card_collections,
+                            .service(
+                                web::resource("/bookmark").route(
+                                    web::post().to(
+                                        handlers::collection_handler::get_collections_card_is_in,
+                                    ),
+                                ),
+                            )
+                            .service(
+                                web::resource("/{page_or_card_collection_id}")
+                                    .route(
+                                        web::post().to(handlers::collection_handler::add_bookmark),
+                                    )
+                                    .route(
+                                        web::delete()
+                                            .to(handlers::collection_handler::delete_bookmark),
+                                    ).route(
+                                        web::get()
+                                            .to(handlers::collection_handler::get_logged_in_user_card_collections)),
+
+                            )
+                            .service(web::resource("/{collection_id}/{page}").route(
+                                web::get().to(handlers::collection_handler::get_all_bookmarks),
                             ))
-                            .route(
-                                web::delete()
-                                    .to(handlers::collection_handler::delete_card_collection),
+                            .service(
+                                web::resource("/search/{page}").route(
+                                    web::post().to(handlers::card_handler::search_collections),
+                                ),
                             )
-                            .route(
-                                web::put().to(handlers::collection_handler::update_card_collection),
+                            .service(
+                                web::resource("/fulltextsearch/{page}").route(
+                                    web::post()
+                                        .to(handlers::card_handler::search_full_text_collections),
+                                ),
                             ),
-                    )
-                    .service(
-                        web::resource("/card_collection/search/{page}")
-                            .route(web::post().to(handlers::card_handler::search_collections)),
-                    )
-                    .service(
-                        web::resource("/card_collection/fulltextsearch/{page}").route(
-                            web::post().to(handlers::card_handler::search_full_text_collections),
-                        ),
-                    )
-                    .service(web::resource("/card_collection/bookmark").route(
-                        web::post().to(handlers::collection_handler::get_collections_card_is_in),
-                    ))
-                    .service(
-                        web::resource("/card_collection/{card_collection_id}")
-                            .route(web::post().to(handlers::collection_handler::add_bookmark))
-                            .route(web::delete().to(handlers::collection_handler::delete_bookmark)),
-                    )
-                    .service(
-                        web::resource("/card_collection/{collection_id}/{page}")
-                            .route(web::get().to(handlers::collection_handler::get_all_bookmarks)),
                     )
                     .service(
                         web::resource("/verification").route(

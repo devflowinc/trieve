@@ -78,9 +78,13 @@ pub async fn get_specific_user_card_collections(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let accessing_user_id = user.map(|user| user.id);
-    let page = user_and_page.page;
     let collections = web::block(move || {
-        get_collections_for_specifc_user_query(user_and_page.user_id, accessing_user_id, page, pool)
+        get_collections_for_specifc_user_query(
+            user_and_page.user_id,
+            accessing_user_id,
+            user_and_page.page,
+            pool,
+        )
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -108,13 +112,34 @@ pub async fn get_specific_user_card_collections(
 
 pub async fn get_logged_in_user_card_collections(
     user: LoggedUser,
+    page: web::Path<u64>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let collections = web::block(move || get_collections_for_logged_in_user_query(user.id, pool))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let collections = web::block(move || {
+        get_collections_for_logged_in_user_query(user.id, page.into_inner(), pool)
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    Ok(HttpResponse::Ok().json(collections))
+    Ok(HttpResponse::Ok().json(CollectionData {
+        collections: collections
+            .iter()
+            .map(|collection| CardCollectionAndFile {
+                id: collection.id,
+                author_id: collection.author_id,
+                name: collection.name.clone(),
+                is_public: collection.is_public,
+                description: collection.description.clone(),
+                created_at: collection.created_at,
+                updated_at: collection.updated_at,
+                file_id: collection.file_id,
+            })
+            .collect(),
+        total_pages: collections
+            .get(0)
+            .map(|collection| collection.count / 10)
+            .unwrap_or(0),
+    }))
 }
 
 #[derive(Debug, Deserialize)]

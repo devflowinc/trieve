@@ -142,10 +142,17 @@ pub fn get_collections_for_specifc_user_query(
 
 pub fn get_collections_for_logged_in_user_query(
     current_user_id: uuid::Uuid,
+    page: u64,
     pool: web::Data<Pool>,
-) -> Result<Vec<CardCollectionAndFile>, DefaultError> {
+) -> Result<Vec<CardCollectionAndFileWithCount>, DefaultError> {
     use crate::data::schema::card_collection::dsl::*;
     use crate::data::schema::collections_from_files::dsl as collections_from_files_columns;
+    
+    let page = if page == 0 {
+        1
+    } else {
+        page
+    };
 
     let mut conn = pool.get().unwrap();
 
@@ -163,9 +170,12 @@ pub fn get_collections_for_logged_in_user_query(
             created_at,
             updated_at,
             collections_from_files_columns::file_id.nullable(),
+            sql::<Int8>("count(*) OVER() AS full_count"),
         ))
         .filter(author_id.eq(current_user_id))
-        .load::<CardCollectionAndFile>(&mut conn)
+        .limit(5)
+        .offset(((page - 1) * 5).try_into().unwrap_or(0))
+        .load::<CardCollectionAndFileWithCount>(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Error getting collections",
         })?;
