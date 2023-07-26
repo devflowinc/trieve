@@ -147,8 +147,6 @@ pub async fn search_card_query(
         }
     }
 
-    // WORK ABOVE THIS LINE ---------------------------------------------
-
     let filtered_option_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
         web::block(move || query.load(&mut conn))
             .await
@@ -983,7 +981,7 @@ pub struct CardMetadataWithQdrantId {
     pub qdrant_id: uuid::Uuid,
 }
 
-pub fn get_metadata_and_collieded_cards_from_point_ids_query(
+pub fn get_metadata_and_collided_cards_from_point_ids_query(
     point_ids: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
     pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
@@ -1078,23 +1076,24 @@ pub fn get_metadata_and_collieded_cards_from_point_ids_query(
         let all_cards = card_search_result
             .iter()
             .chain(collided_search_result.iter())
-            .map(|card| card.clone())
+            .cloned()
             .collect::<Vec<FullTextSearchResult>>();
-        
-        let all_metadata = get_metadata(all_cards, current_user_id, conn).map_err(|_| DefaultError {
-            message: "Failed to load metadata",
-        })?;
+
+        let all_metadata =
+            get_metadata(all_cards, current_user_id, conn).map_err(|_| DefaultError {
+                message: "Failed to load metadata",
+            })?;
 
         let meta_cards = all_metadata
             .iter()
             .take(split_index)
-            .map(|card| card.clone())
+            .cloned()
             .collect::<Vec<CardMetadataWithVotesAndFiles>>();
 
         let meta_collided = all_metadata
             .iter()
             .skip(split_index)
-            .map(|card| card.clone())
+            .cloned()
             .collect::<Vec<CardMetadataWithVotesAndFiles>>();
 
         (meta_cards, meta_collided)
