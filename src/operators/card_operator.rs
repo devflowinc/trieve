@@ -32,7 +32,10 @@ use serde::{Deserialize, Serialize};
 
 pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
     let qdrant_url = std::env::var("QDRANT_URL").expect("QDRANT_URL must be set");
-    QdrantClient::new(Some(QdrantClientConfig::from_url(qdrant_url.as_str()))).map_err(|_err| {
+    let qdrant_api_key = std::env::var("QDRANT_API_KEY").expect("QDRANT_API_KEY must be set");
+    let mut config = QdrantClientConfig::from_url(qdrant_url.as_str());
+    config.api_key = Some(qdrant_api_key);
+    QdrantClient::new(Some(config)).map_err(|_err| {
         DefaultError {
             message: "Failed to connect to Qdrant",
         }
