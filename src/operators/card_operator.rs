@@ -97,52 +97,63 @@ pub async fn search_card_query(
     //WHERE (("card\_metadata"."private" = $1) OR (("card\_metadata"."private" = $2) AND ("card\_metadata"."qdrant\_point\_id" IS NULL))) -- binds: \[false, false\]
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
-
-    // We only want collisions for which the root CardMetadata is public
-    // Punting on or the current user is the author
+    let mut include_query_ids = false;
 
     let mut query = card_metadata_columns::card_metadata
         .left_outer_join(
-            card_collisions_columns::card_collisions.on(card_metadata_columns::id
-                .eq(card_collisions_columns::card_id)
-                .and(card_metadata_columns::private.eq(false))),
+            card_collisions_columns::card_collisions
+                .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
         )
         .select((
             card_metadata_columns::qdrant_point_id,
             card_collisions_columns::collision_qdrant_id.nullable(),
         ))
-        .filter(card_metadata_columns::private.eq(false))
-        .or_filter(
-            card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
-        )
-        .distinct()
         .into_boxed();
 
-    if !filter_oc_file_path.is_empty() {
-        query = query.filter(
-            card_metadata_columns::oc_file_path
-                .like(format!("%{}%", filter_oc_file_path.get(0).unwrap())),
-        );
+    if filter_link_url.is_empty() && filter_oc_file_path.is_empty() {
+        query = query
+            .filter(card_metadata_columns::private.eq(true).and(
+                card_metadata_columns::author_id.ne(current_user_id.unwrap_or(uuid::Uuid::nil())),
+            ))
+            .distinct();
+    } else {
+        include_query_ids = true;
+        query = query
+            .filter(card_metadata_columns::private.eq(false))
+            .or_filter(
+                card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
+            )
+            .distinct();
+
+        if !filter_oc_file_path.is_empty() {
+            query = query.filter(
+                card_metadata_columns::oc_file_path
+                    .like(format!("%{}%", filter_oc_file_path.get(0).unwrap())),
+            );
+        }
+
+        for file_path in filter_oc_file_path.iter().skip(1) {
+            query = query
+                .or_filter(card_metadata_columns::oc_file_path.like(format!("%{}%", file_path)));
+        }
+
+        if !filter_link_url.is_empty() {
+            query = query.filter(
+                card_metadata_columns::link.like(format!("%{}%", filter_link_url.get(0).unwrap())),
+            );
+        }
+        for link_url in filter_link_url.iter().skip(1) {
+            query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
+        }
     }
 
-    for file_path in filter_oc_file_path.iter().skip(1) {
-        query =
-            query.or_filter(card_metadata_columns::oc_file_path.like(format!("%{}%", file_path)));
-    }
-
-    if !filter_link_url.is_empty() {
-        query = query.filter(
-            card_metadata_columns::link.like(format!("%{}%", filter_link_url.get(0).unwrap())),
-        );
-    }
-    for link_url in filter_link_url.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
-    }
+    // WORK ABOVE THIS LINE ---------------------------------------------
 
     let filtered_option_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
+
     let qdrant = get_qdrant_connection().await?;
 
     let filtered_point_ids: &Vec<PointId> = &filtered_option_ids
@@ -156,11 +167,20 @@ pub async fn search_card_query(
         .collect::<Vec<PointId>>();
 
     let mut filter = Filter::default();
-    filter.should.push(Condition {
-        condition_one_of: Some(HasId(HasIdCondition {
-            has_id: (filtered_point_ids).to_vec(),
-        })),
-    });
+
+    if !include_query_ids {
+        filter.must_not.push(Condition {
+            condition_one_of: Some(HasId(HasIdCondition {
+                has_id: (filtered_point_ids).to_vec(),
+            })),
+        });
+    } else {
+        filter.should.push(Condition {
+            condition_one_of: Some(HasId(HasIdCondition {
+                has_id: (filtered_point_ids).to_vec(),
+            })),
+        });
+    }
 
     let data = qdrant
         .search_points(&SearchPoints {
