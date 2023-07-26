@@ -1024,7 +1024,7 @@ pub fn get_metadata_and_collieded_cards_from_point_ids_query(
             .collect::<Vec<FullTextSearchResult>>()
     };
 
-    let (collided_converted_cards, collided_qdrant_ids) = {
+    let (collided_search_result, collided_qdrant_ids) = {
         let mut conn = pool.get().unwrap();
         let card_metadata: Vec<(CardMetadata, uuid::Uuid)> =
             card_collisions_columns::card_collisions
@@ -1073,16 +1073,30 @@ pub fn get_metadata_and_collieded_cards_from_point_ids_query(
 
     let (card_metadata_with_upvotes_and_file_id, collided_card_metadata_with_upvotes_and_file_id) = {
         let conn = pool.get().unwrap();
-        let meta_cards = get_metadata(card_search_result, current_user_id, conn).map_err(|_| DefaultError {
-                message: "Failed to load metadata",
-            })?;
+        // Assuming that get_metadata will maintain the order of the Vec<> returned
+        let split_index = card_search_result.len();
+        let all_cards = card_search_result
+            .iter()
+            .chain(collided_search_result.iter())
+            .map(|card| card.clone())
+            .collect::<Vec<FullTextSearchResult>>();
+        
+        let all_metadata = get_metadata(all_cards, current_user_id, conn).map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })?;
 
-        let conn2 = pool.get().unwrap();
-        let meta_collided = get_metadata(collided_converted_cards, current_user_id, conn2).map_err(|_| {
-                DefaultError {
-                    message: "Failed to load metadata",
-                }
-            })?;
+        let meta_cards = all_metadata
+            .iter()
+            .take(split_index)
+            .map(|card| card.clone())
+            .collect::<Vec<CardMetadataWithVotesAndFiles>>();
+
+        let meta_collided = all_metadata
+            .iter()
+            .skip(split_index)
+            .map(|card| card.clone())
+            .collect::<Vec<CardMetadataWithVotesAndFiles>>();
+
         (meta_cards, meta_collided)
     };
 
