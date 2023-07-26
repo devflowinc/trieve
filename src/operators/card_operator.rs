@@ -978,6 +978,118 @@ pub fn get_metadata_from_point_ids(
     Ok(card_metadata_with_upvotes_and_file_id)
 }
 
+pub struct CardMetadataWithQdrantId {
+    pub metadata: CardMetadataWithVotesAndFiles,
+    pub qdrant_id: uuid::Uuid,
+}
+
+pub fn get_metadata_and_collieded_cards_from_point_ids_query(
+    point_ids: Vec<uuid::Uuid>,
+    current_user_id: Option<uuid::Uuid>,
+    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+) -> Result<(Vec<CardMetadataWithVotesAndFiles>, Vec<CardMetadataWithQdrantId>), DefaultError> {
+    use crate::data::schema::card_collisions::dsl as card_collisions_columns;
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+
+
+    let card_metadata_with_upvotes_and_file_id = {
+        let mut conn = pool.get().unwrap();
+        let card_metadata: Vec<CardMetadata> = card_metadata_columns::card_metadata
+            .filter(card_metadata_columns::qdrant_point_id.eq_any(&point_ids))
+            .select((
+                card_metadata_columns::id,
+                card_metadata_columns::content,
+                card_metadata_columns::link,
+                card_metadata_columns::author_id,
+                card_metadata_columns::qdrant_point_id,
+                card_metadata_columns::created_at,
+                card_metadata_columns::updated_at,
+                card_metadata_columns::oc_file_path,
+                card_metadata_columns::card_html,
+                card_metadata_columns::private,
+            ))
+            .load::<CardMetadata>(&mut conn)
+            .map_err(|_| DefaultError {
+                message: "Failed to load metadata",
+            })?;
+
+        let converted_cards: Vec<FullTextSearchResult> = card_metadata
+            .iter()
+            .map(|card| <CardMetadata as Into<FullTextSearchResult>>::into(card.clone()))
+            .collect::<Vec<FullTextSearchResult>>();
+
+        get_metadata(converted_cards, current_user_id, conn).map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })?
+    };
+
+    let card_metadatas_with_collided_qdrant_ids = {
+        let mut conn = pool.get().unwrap();
+        let card_metadata: Vec<(CardMetadata, uuid::Uuid)> =
+            card_collisions_columns::card_collisions
+                .inner_join(
+                    card_metadata_columns::card_metadata
+                        .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
+                )
+                .select((
+                    (
+                        card_metadata_columns::id,
+                        card_metadata_columns::content,
+                        card_metadata_columns::link,
+                        card_metadata_columns::author_id,
+                        card_metadata_columns::qdrant_point_id,
+                        card_metadata_columns::created_at,
+                        card_metadata_columns::updated_at,
+                        card_metadata_columns::oc_file_path,
+                        card_metadata_columns::card_html,
+                        card_metadata_columns::private,
+                    ),
+                    (card_collisions_columns::collision_qdrant_id.assume_not_null()),
+                ))
+                .filter(card_collisions_columns::collision_qdrant_id.eq_any(point_ids))
+                .filter(card_metadata_columns::private.eq(false))
+                .or_filter(
+                    card_metadata_columns::author_id
+                        .eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
+                )
+                .load::<(CardMetadata, uuid::Uuid)>(&mut conn)
+                .map_err(|_| DefaultError {
+                    message: "Failed to load metadata",
+                })?;
+
+        let collided_qdrant_ids = card_metadata
+            .iter()
+            .map(|(_, qdrant_id)| *qdrant_id)
+            .collect::<Vec<uuid::Uuid>>();
+
+        let converted_cards: Vec<FullTextSearchResult> = card_metadata
+            .iter()
+            .map(|card| <CardMetadata as Into<FullTextSearchResult>>::into(card.0.clone()))
+            .collect::<Vec<FullTextSearchResult>>();
+
+        let card_metadata_with_upvotes_and_file_id =
+            get_metadata(converted_cards, current_user_id, conn).map_err(|_| DefaultError {
+                message: "Failed to load metadata",
+            })?;
+
+        card_metadata_with_upvotes_and_file_id
+            .iter()
+            .zip(collided_qdrant_ids.iter())
+            .map(|(card, qdrant_id)| CardMetadataWithQdrantId {
+                metadata: card.clone(),
+                qdrant_id: *qdrant_id,
+            })
+            .collect::<Vec<CardMetadataWithQdrantId>>()
+    };
+
+    //combine card_metadata_with vote with the file_ids that was loaded
+
+    Ok((
+        card_metadata_with_upvotes_and_file_id,
+        card_metadatas_with_collided_qdrant_ids,
+    ))
+}
+
 pub fn get_collided_cards_query(
     point_ids: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,

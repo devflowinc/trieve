@@ -516,19 +516,27 @@ pub async fn search_card(
         .collect::<Vec<_>>();
     let point_ids_1 = point_ids.clone();
 
-    let metadata_cards = web::block(move || {
+    let (metadata_cards, collided_cards) = web::block(move || {
         let pool = pool2.lock().unwrap(); // Access the locked pool
-        get_metadata_from_point_ids(point_ids, current_user_id, pool)
+        get_metadata_and_collieded_cards_from_point_ids_query(point_ids, current_user_id, pool)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let collided_cards = web::block(move || {
-        let pool = pool3.lock().unwrap(); // Access the locked pool
-        get_collided_cards_query(point_ids_1, current_user_id, pool)
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    // let metadata_cards = web::block(move || {
+    //     let pool = pool2.lock().unwrap(); // Access the locked pool
+    //     //get_metadata_and_collieded_cards_from_point_ids_query
+    //     get_metadata_from_point_ids(point_ids, current_user_id, pool)
+    // })
+    // .await?
+    // .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    //
+    // let collided_cards = web::block(move || {
+    //     let pool = pool3.lock().unwrap(); // Access the locked pool
+    //     get_collided_cards_query(point_ids_1, current_user_id, pool)
+    // })
+    // .await?
+    // .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let score_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
@@ -546,8 +554,8 @@ pub async fn search_card(
 
             let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
                 .iter()
-                .filter(|card| card.1 == search_result.point_id)
-                .map(|card| card.0.clone().into())
+                .filter(|card| card.qdrant_id == search_result.point_id)
+                .map(|card| card.metadata.clone().into())
                 .collect();
 
             if !card.private
