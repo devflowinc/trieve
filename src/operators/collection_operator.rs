@@ -2,8 +2,8 @@ use std::sync::MutexGuard;
 
 use crate::{
     data::models::{
-        CardCollectionAndFile, CardCollectionAndFileWithCount, CardCollectionBookmark,
-        CardMetadataWithCount, CardMetadataWithVotesAndFiles, FileCollection, FullTextSearchResult,
+        CardCollectionAndFileWithCount, CardCollectionBookmark, CardMetadataWithCount,
+        CardMetadataWithVotesAndFiles, FileCollection, FullTextSearchResult,
     },
     diesel::{Connection, ExpressionMethods, QueryDsl, RunQueryDsl},
     operators::card_operator::get_metadata,
@@ -147,12 +147,8 @@ pub fn get_collections_for_logged_in_user_query(
 ) -> Result<Vec<CardCollectionAndFileWithCount>, DefaultError> {
     use crate::data::schema::card_collection::dsl::*;
     use crate::data::schema::collections_from_files::dsl as collections_from_files_columns;
-    
-    let page = if page == 0 {
-        1
-    } else {
-        page
-    };
+
+    let page = if page == 0 { 1 } else { page };
 
     let mut conn = pool.get().unwrap();
 
