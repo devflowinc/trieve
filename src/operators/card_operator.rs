@@ -397,26 +397,13 @@ pub fn get_metadata(
     mut conn: r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::PgConnection>>,
 ) -> Result<Vec<CardMetadataWithVotesAndFiles>, DefaultError> {
     use crate::data::schema::card_files::dsl as card_files_columns;
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     use crate::data::schema::card_verification::dsl as card_verification_columns;
     use crate::data::schema::card_votes::dsl as card_votes_columns;
     use crate::data::schema::files::dsl as files_columns;
     use crate::data::schema::users::dsl as user_columns;
 
-    let card_creators: Vec<User> = user_columns::users
-        .filter(
-            user_columns::id.eq_any(
-                card_metadata
-                    .iter()
-                    .map(|metadata| metadata.author_id)
-                    .collect::<Vec<uuid::Uuid>>(),
-            ),
-        )
-        .load::<User>(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to load card creators",
-        })?;
-
-    let all_datas: Vec<(CardFileWithName, CardVerifications, CardVote)> =
+    let all_datas =
         card_files_columns::card_files
             .filter(
                 card_files_columns::card_id.eq_any(
@@ -436,6 +423,13 @@ pub fn get_metadata(
             .inner_join(
                 card_votes_columns::card_votes
                     .on(card_files_columns::card_id.eq(card_votes_columns::card_metadata_id)),
+            )
+            .inner_join(
+                card_metadata_columns::card_metadata
+                    .on(card_files_columns::card_id.eq(card_metadata_columns::id)),
+            )
+            .inner_join(
+                user_columns::users.on(card_metadata_columns::author_id.eq(user_columns::id)),
             )
             .select((
                 (
@@ -459,14 +453,28 @@ pub fn get_metadata(
                     card_votes_columns::updated_at,
                     card_votes_columns::deleted,
                 ),
+                (
+                    user_columns::id,
+                    user_columns::email,
+                    user_columns::hash,
+                    user_columns::created_at,
+                    user_columns::updated_at,
+                    user_columns::username,
+                    user_columns::website,
+                    user_columns::visible_email,
+                ),
             ))
-            .load::<(CardFileWithName, CardVerifications, CardVote)>(&mut conn)
+            .load::<(CardFileWithName, CardVerifications, CardVote, User)>(&mut conn)
             .map_err(|_| DefaultError {
                 message: "Failed to load metadata",
             })?;
 
-    let (file_ids, card_verifications, card_votes): (Vec<CardFileWithName>, Vec<CardVerifications>, Vec<CardVote>) =
-        itertools::multiunzip(all_datas);
+    let (file_ids, card_verifications, card_votes, card_creators): (
+        Vec<CardFileWithName>,
+        Vec<CardVerifications>,
+        Vec<CardVote>,
+        Vec<User>
+    ) = itertools::multiunzip(all_datas);
 
     let card_metadata_with_upvotes_and_file_id: Vec<CardMetadataWithVotesAndFiles> = card_metadata
         .into_iter()
