@@ -150,9 +150,14 @@ pub async fn search_card_query(
     // WORK ABOVE THIS LINE ---------------------------------------------
 
     let filtered_option_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
-        query.load(&mut conn).map_err(|_| DefaultError {
-            message: "Failed to load metadata",
-        })?;
+        web::block(move || query.load(&mut conn))
+            .await
+            .map_err(|_| DefaultError {
+                message: "Threadpool error",
+            })?
+            .map_err(|_| DefaultError {
+                message: "Failed to load metadata",
+            })?;
 
     let qdrant = get_qdrant_connection().await?;
 
