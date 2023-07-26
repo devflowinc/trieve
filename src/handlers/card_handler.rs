@@ -496,7 +496,6 @@ pub async fn search_card(
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_openai_embedding(&data.content).await?;
     let pool2 = thread_safe_pool.clone();
-    let pool3 = thread_safe_pool.clone();
 
     let search_card_query_results = search_card_query(
         embedding_vector,
@@ -514,7 +513,6 @@ pub async fn search_card(
         .iter()
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
-    let point_ids_1 = point_ids.clone();
 
     let (metadata_cards, collided_cards) = web::block(move || {
         let pool = pool2.lock().unwrap(); // Access the locked pool
@@ -522,21 +520,6 @@ pub async fn search_card(
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    // let metadata_cards = web::block(move || {
-    //     let pool = pool2.lock().unwrap(); // Access the locked pool
-    //     //get_metadata_and_collieded_cards_from_point_ids_query
-    //     get_metadata_from_point_ids(point_ids, current_user_id, pool)
-    // })
-    // .await?
-    // .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    //
-    // let collided_cards = web::block(move || {
-    //     let pool = pool3.lock().unwrap(); // Access the locked pool
-    //     get_collided_cards_query(point_ids_1, current_user_id, pool)
-    // })
-    // .await?
-    // .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let score_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
