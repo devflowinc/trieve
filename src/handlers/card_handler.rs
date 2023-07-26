@@ -516,7 +516,7 @@ pub async fn search_card(
 
     let (metadata_cards, collided_cards) = web::block(move || {
         let pool = pool2.lock().unwrap(); // Access the locked pool
-        get_metadata_and_collieded_cards_from_point_ids_query(point_ids, current_user_id, pool)
+        get_metadata_and_collided_cards_from_point_ids_query(point_ids, current_user_id, pool)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
