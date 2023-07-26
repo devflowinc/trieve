@@ -430,42 +430,43 @@ pub fn get_metadata(
             message: "Failed to load upvotes",
         })?;
 
-    let file_ids: Vec<CardFileWithName> = card_files_columns::card_files
-        .filter(
-            card_files_columns::card_id.eq_any(
-                card_metadata
-                    .iter()
-                    .map(|card| card.id)
-                    .collect::<Vec<uuid::Uuid>>()
-                    .as_slice(),
-            ),
-        )
-        .inner_join(files_columns::files)
-        .filter(files_columns::private.eq(false))
-        .select((
-            card_files_columns::card_id,
-            card_files_columns::file_id,
-            files_columns::file_name,
-        ))
-        .load::<CardFileWithName>(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to load metadata",
-        })?;
-
-    let card_verifications: Vec<CardVerifications> = card_verification_columns::card_verification
-        .filter(
-            card_verification_columns::card_id.eq_any(
-                card_metadata
-                    .iter()
-                    .map(|card| card.id)
-                    .collect::<Vec<uuid::Uuid>>()
-                    .as_slice(),
-            ),
-        )
-        .load::<CardVerifications>(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to load verification metadata",
-        })?;
+    let (file_ids, card_verifications): (Vec<CardFileWithName>, Vec<CardVerifications>) =
+        card_files_columns::card_files
+            .filter(
+                card_files_columns::card_id.eq_any(
+                    card_metadata
+                        .iter()
+                        .map(|card| card.id)
+                        .collect::<Vec<uuid::Uuid>>()
+                        .as_slice(),
+                ),
+            )
+            .inner_join(files_columns::files)
+            .filter(files_columns::private.eq(false))
+            .inner_join(
+                card_verification_columns::card_verification
+                    .on(card_files_columns::card_id.eq(card_verification_columns::card_id)),
+            )
+            .select((
+                (
+                    card_files_columns::card_id,
+                    card_files_columns::file_id,
+                    files_columns::file_name,
+                ),
+                (
+                    card_verification_columns::id,
+                    card_verification_columns::card_id,
+                    card_verification_columns::similarity_score,
+                    card_verification_columns::created_at,
+                    card_verification_columns::updated_at,
+                ),
+            ))
+            .load::<(CardFileWithName, CardVerifications)>(&mut conn)
+            .map_err(|_| DefaultError {
+                message: "Failed to load metadata",
+            })?
+            .into_iter()
+            .unzip();
 
     let card_metadata_with_upvotes_and_file_id: Vec<CardMetadataWithVotesAndFiles> = card_metadata
         .into_iter()
