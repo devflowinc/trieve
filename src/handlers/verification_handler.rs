@@ -1,14 +1,9 @@
-use std::process::Command;
-use std::sync::{Arc, Mutex};
-
-use super::auth_handler::LoggedUser;
-use crate::data::models::VerificationNotification;
-use crate::operators::card_operator as card_op;
-use crate::operators::notification_operator::add_verificiation_notification_query;
 use crate::AppMutexStore;
-use crate::{data::models::Pool, errors::ServiceError, operators::verification_operator as op};
+use crate::{errors::ServiceError, operators::verification_operator as op};
 use actix_web::{web, HttpResponse};
+use redis::Commands;
 use serde::{Deserialize, Serialize};
+use std::process::Command;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(untagged)]
@@ -95,53 +90,31 @@ pub struct VerificationStatus {
 
 pub async fn verify_card_content(
     data: web::Json<VerifyData>,
-    user: LoggedUser,
-    pool: web::Data<Pool>,
     mutex_store: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     // Try naive html get first then use the headless browser approach
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
-    let pool1 = thread_safe_pool.clone();
-    let pool2 = thread_safe_pool.clone();
     let data = data.into_inner();
-
-    let score = match data.clone() {
-        VerifyData::ContentVerification {
-            content,
-            url_source,
-        } => get_webpage_score(&url_source, &content, mutex_store).await?,
-
-        VerifyData::CardVerification { card_uuid } => {
-            let card = web::block(move || {
-                card_op::get_metadata_from_id_query(card_uuid, pool1.lock().unwrap())
-            })
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-            let link = card
-                .link
-                .ok_or_else(|| ServiceError::BadRequest("No link on this card to verify".into()))?;
-
-            get_webpage_score(&link, &card.content, mutex_store).await?
-        }
-    };
+    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
+    let client = redis::Client::open(redis_url)
+        .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
+    let mut con = client
+        .get_connection()
+        .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
 
     if let VerifyData::CardVerification { card_uuid } = data {
-        // This is a vault call, so we need to update the card with the score
-        let verification = web::block(move || {
-            op::upsert_card_verification_query(thread_safe_pool, card_uuid, score)
-        })
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.to_string()))?;
+        con.set(format!("Verify: {}", card_uuid), true)
+            .map_err(|err| ServiceError::BadRequest(format!("Could not set redis key: {}", err)))?;
+    };
 
-        web::block(move || {
-            add_verificiation_notification_query(
-                VerificationNotification::from_details(card_uuid, user.id, verification.id, score),
-                pool2.lock().unwrap(),
-            )
-        })
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.to_string()))?;
+    if let VerifyData::ContentVerification {
+        content,
+        url_source,
+    } = data
+    {
+        return Ok(HttpResponse::Ok().json(VerificationStatus {
+            score: get_webpage_score(&url_source, &content, mutex_store).await?,
+        }));
     }
 
-    Ok(HttpResponse::Ok().json(VerificationStatus { score }))
+    Ok(HttpResponse::NoContent().finish())
 }
