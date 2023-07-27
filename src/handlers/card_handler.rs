@@ -1,3 +1,4 @@
+use std::process::Command;
 use std::sync::{Arc, Mutex};
 
 use crate::data::models::{
@@ -16,7 +17,6 @@ use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
 use qdrant_client::qdrant::{PointStruct, PointsIdsList, PointsSelector};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use soup::Soup;
 
 use super::auth_handler::LoggedUser;
 
@@ -65,14 +65,47 @@ pub async fn create_card(
     let pool2 = thread_safe_pool.clone();
     let pool3 = thread_safe_pool.clone();
 
-    let content = Soup::new(card.card_html.as_ref().unwrap_or(&"".to_string()).as_str())
-        .text()
-        .lines()
-        .collect::<Vec<&str>>()
-        .join(" ")
-        .trim_end()
-        .to_string();
+    let html_parse_result = Command::new("node")
+        .arg("./vault-nodejs/scripts/html-converter.js")
+        .arg("-html")
+        .arg(card.card_html.as_ref().unwrap_or(&"".to_string()))
+        .output();
 
+    let content = match html_parse_result {
+        Ok(result) => {
+            if result.status.success() {
+                Some(
+                    String::from_utf8(result.stdout)
+                        .unwrap()
+                        .lines()
+                        .collect::<Vec<&str>>()
+                        .join(" ")
+                        .trim_end()
+                        .to_string(),
+                )
+            } else {
+                return Err(ServiceError::BadRequest(format!(
+                    "Could not run html-converter.js: {:?}",
+                    String::from_utf8(result.stderr).unwrap()
+                ))
+                .into());
+            }
+        }
+        Err(_) => {
+            return Ok(HttpResponse::BadRequest().json(json!({
+                "message": "Could not parse html",
+            })))
+        }
+    };
+
+    let content = match content {
+        Some(content) => content,
+        None => {
+            return Ok(HttpResponse::BadRequest().json(json!({
+                "message": "Could not parse html",
+            })))
+        }
+    };
     // Card content can be at most 29000 characters long
     if content.len() > 29000 {
         return Ok(HttpResponse::BadRequest().json(json!({
@@ -400,17 +433,50 @@ pub async fn update_card(
         .clone()
         .unwrap_or_else(|| card_metadata.link.unwrap_or_default());
 
-    let soup = Soup::new(card.card_html.as_ref().unwrap_or(&"".to_string()).as_str());
-    let new_content = soup
-        .text()
-        .lines()
-        .collect::<Vec<&str>>()
-        .join(" ")
-        .trim_end()
-        .to_string();
+    let html_parse_result = Command::new("node")
+        .arg("./vault-nodejs/scripts/html-converter.js")
+        .arg("-html")
+        .arg(card.card_html.as_ref().unwrap_or(&"".to_string()))
+        .output();
+
+    let content = match html_parse_result {
+        Ok(result) => {
+            if result.status.success() {
+                Some(
+                    String::from_utf8(result.stdout)
+                        .unwrap()
+                        .lines()
+                        .collect::<Vec<&str>>()
+                        .join(" ")
+                        .trim_end()
+                        .to_string(),
+                )
+            } else {
+                return Err(ServiceError::BadRequest(format!(
+                    "Could not run html-converter.js: {:?}",
+                    String::from_utf8(result.stderr).unwrap()
+                ))
+                .into());
+            }
+        }
+        Err(_) => {
+            return Ok(HttpResponse::BadRequest().json(json!({
+                "message": "Could not parse html",
+            })))
+        }
+    };
+
+    let new_content = match content {
+        Some(content) => content,
+        None => {
+            return Ok(HttpResponse::BadRequest().json(json!({
+                "message": "Could not parse html",
+            })))
+        }
+    };
+
     if new_content != card_metadata.content {
-        let soup_text_ref = soup.text();
-        let Changeset { diffs, .. } = Changeset::new(&card_metadata.content, &soup_text_ref, " ");
+        let Changeset { diffs, .. } = Changeset::new(&card_metadata.content, &new_content, " ");
         let mut ret: String = Default::default();
         for diff in diffs {
             match diff {

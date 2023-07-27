@@ -6,7 +6,8 @@
     "test": "node -r dotenv/config --experimental-vm-modules node_modules/.bin/jest",
     "lint": "eslint .",
     "bulk-upload": "node -r dotenv/config --experimental-vm-modules ./scripts/traverse_and_upload.js",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "convert": "node -r dotenv/config --experimental-vm-modules ./scripts/html-converter.js"
   },
   "description": "NodeJS scripts, services, and testing library for Arguflow's vault actix-web backend",
   "repository": "https://github.com/arguflow/vault-server",
@@ -26,15 +27,18 @@
     "@keyv/redis": "^2.7.0",
     "@keyv/sqlite": "^3.6.5",
     "file-type": "^18.5.0",
+    "html-to-text": "^9.0.5",
     "http": "^0.0.1-security",
     "keyv": "^4.5.3",
     "keyv-file": "^0.2.0",
     "mime": "^3.0.0",
     "node-fetch": "^3.3.1",
+    "node-html-parser": "^6.1.5",
     "prettier": "^2.8.8",
     "puppeteer": "^20.8.3",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "winston": "^3.10.0"
+    "winston": "^3.10.0",
+    "yargs": "^17.7.2"
   }
 }

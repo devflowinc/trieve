@@ -3,8 +3,10 @@ use diesel::prelude::*;
 use actix_web::web;
 use regex::Regex;
 use serde_json::json;
-use soup::{NodeExt, QueryBuilderExt};
-use std::sync::{Arc, Mutex};
+use std::{
+    process::Command,
+    sync::{Arc, Mutex},
+};
 
 use crate::{
     data::models::{CardVerifications, Pool},
@@ -75,14 +77,37 @@ pub async fn get_webpage_text_fetch(url: &str) -> Result<String, DefaultError> {
         message: "Could not parse text",
     })?;
 
-    let soup = soup::Soup::new(&html);
+    let html_parse_result = Command::new("node")
+        .arg("./vault-nodejs/scripts/html-converter.js")
+        .arg("-get-inner-html")
+        .arg(html)
+        .output();
 
-    let body = soup.tag("body").find().ok_or(DefaultError {
-        message: "Could not find body tag",
-    })?;
+    let text = match html_parse_result {
+        Ok(result) => {
+            if result.status.success() {
+                Some(String::from_utf8(result.stdout).unwrap())
+            } else {
+                return Err(DefaultError {
+                    message: "Could not run html-converter.js",
+                });
+            }
+        }
+        Err(_) => {
+            return Err(DefaultError {
+                message: "Could not parse html",
+            })
+        }
+    };
 
-    // Replace multiple whitesapces chars with a single space
-    let text = body.text();
+    let text = match text {
+        Some(content) => content,
+        None => {
+            return Err(DefaultError {
+                message: "Could not parse html",
+            })
+        }
+    };
 
     let re = Regex::new(r"\s+").unwrap();
     let clean_text = re.replace_all(&text, " ").to_string();
