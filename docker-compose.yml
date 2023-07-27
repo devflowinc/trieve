@@ -32,14 +32,14 @@ services:
       - script-redis-data:/data
 
   qdrant-database:
-    image: qdrant/qdrant
+    image: qdrant/qdrant:v1.3.2
     environment:
       - QDRANT__SERVICE__API_KEY=qdrant_pass
     ports:
       - 6333:6333
       - 6334:6334
     volumes:
-      - qdrant_data:/data
+      - qdrant_data:/qdrant/storage
 
   s3:
     image: minio/minio
