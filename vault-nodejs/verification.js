@@ -40,7 +40,12 @@ async function get_webpage_text_fetch(link) {
         pipeline(response.body, createWriteStream(fileName));
         let html = await pdf2html.html(fileName);
         html = getInnerHtml(html);
-        unlink(fileName);
+        unlink(fileName, (err) => {
+          console.error(err, (err) => {
+            if (err) throw err; //handle your error the way you want to;
+            console.log(`${fileName} was deleted`); //or else the file will be deleted
+          });
+        });
         return html.replaceAll("/s+/", "");
       } else if (!response.headers.get("content-type").includes("text/html")) {
         console.error("Not a webpage");
@@ -59,7 +64,7 @@ async function get_webpage_text_fetch(link) {
 
     return content;
   } catch (error) {
-    console.error(error);
+    console.error("error fetching webpage" + error.stack.split("\n")[0]);
     return "";
   }
 }
@@ -81,7 +86,7 @@ async function get_webpage_score(link, content) {
     try {
       pageContent = await fetchPageContents(link);
     } catch (error) {
-      console.error("failed to fetch webpage");
+      console.error("failed to fetch webpage " + error.stack.split("\n")[0]);
     }
     const { stdout } = spawnSync("python", [
       "../vault-python/fuzzy-text-match.py",
@@ -126,7 +131,7 @@ async function verifyCard() {
       );
 
       await pg.query(
-        `INSERT INTO verification_notifications (id, user_uuid, card_uuid, verification_uuid, similarity_score, user_read) 
+        `INSERT INTO verification_notifications (id, user_uuid, card_uuid, verification_uuid, similarity_score, user_read)
         VALUES ($1, $2, $3, $4, $5, $6)`,
         [
           uuidv4(),
