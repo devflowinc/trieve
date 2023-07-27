@@ -15,7 +15,6 @@ use actix_web::{web, HttpResponse};
 use difference::{Changeset, Difference};
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
 use qdrant_client::qdrant::{PointStruct, PointsIdsList, PointsSelector};
-use redis::Commands;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -65,13 +64,6 @@ pub async fn create_card(
     let pool1 = thread_safe_pool.clone();
     let pool2 = thread_safe_pool.clone();
     let pool3 = thread_safe_pool.clone();
-
-    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
-    let client = redis::Client::open(redis_url)
-        .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
-    let mut con = client
-        .get_connection()
-        .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
 
     let html_parse_result = Command::new("node")
         .arg("./vault-nodejs/scripts/html-converter.js")
@@ -165,10 +157,6 @@ pub async fn create_card(
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-                con.set(format!("Verify: {}", metadata_1.id), true)
-                    .map_err(|err| {
-                        ServiceError::BadRequest(format!("Could not set redis key: {}", err))
-                    })?;
                 // let verify_card_data = VerifyData::CardVerification {
                 //     card_uuid: metadata_1.id,
                 // };
@@ -267,11 +255,6 @@ pub async fn create_card(
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-                con.set(format!("Verify: {}", metadata_1.id), true)
-                    .map_err(|err| {
-                        ServiceError::BadRequest(format!("Could not set redis key: {}", err))
-                    })?;
-
                 // let verify_card_data = VerifyData::CardVerification {
                 //     card_uuid: metadata_1.id,
                 // };
@@ -367,9 +350,6 @@ pub async fn create_card(
             .await
             .map_err(|_err| ServiceError::BadRequest("Failed inserting card to qdrant".into()))?;
     }
-
-    con.set(format!("Verify: {}", card_metadata.id), true)
-        .map_err(|err| ServiceError::BadRequest(format!("Could not set redis key: {}", err)))?;
 
     // let verify_card_data = VerifyData::CardVerification {
     //     card_uuid: card_metadata.id,
