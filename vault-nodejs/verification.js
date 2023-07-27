@@ -10,18 +10,18 @@ import { createWriteStream, unlink } from "fs";
 import { pipeline } from "stream/promises";
 import { convert } from "html-to-text";
 import { parse } from "node-html-parser";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const keyvDb = new redis.createClient({
   url: process.env.REDIS_URL || "redis://127.0.0.1:6379",
   legacyMode: true,
 });
-const pg = new Client({
-  user: "postgres",
-  host: "localhost",
-  database: "ai_editor",
-  password: "password",
-  port: 5432,
-});
+const pg = new Client(
+  process.env.DATABASE_URL ||
+    "postgresql://postgres:password@localhost:5432/ai_editor"
+);
 
 const scanner = new redisScan(keyvDb);
 function getInnerHtml(html) {
