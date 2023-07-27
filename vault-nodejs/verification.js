@@ -20,7 +20,7 @@ const keyvDb = new redis.createClient({
 });
 const pg = new Client(
   process.env.DATABASE_URL ||
-    "postgresql://postgres:password@localhost:5432/ai_editor"
+  "postgresql://postgres:password@localhost:5432/ai_editor"
 );
 
 const scanner = new redisScan(keyvDb);
@@ -79,7 +79,11 @@ async function get_webpage_score(link, content) {
       content,
       webpage_text.replace("\n", ""),
     ]);
-    score = stdout.toString();
+    try {
+      score = stdout.toString();
+    } catch {
+      score = 0
+    }
   }
   if (score < 80) {
     let pageContent = "";
@@ -117,6 +121,12 @@ async function verifyCard() {
         [card]
       );
 
+      if (card_metadata.rows.length === 0) {
+        console.error("Card not found");
+        await keyvDb.del(`Verify: ${card}`);
+        continue;
+      }
+
       let score = await get_webpage_score(
         card_metadata.rows[0].link,
         card_metadata.rows[0].content
@@ -152,4 +162,5 @@ async function verifyCard() {
   });
 }
 
-verifyCard();
+// Call verifyCard every 2 mniutes
+setInterval(verifyCard, 120000);
