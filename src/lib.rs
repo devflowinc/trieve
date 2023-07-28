@@ -298,11 +298,7 @@ pub async fn main() -> std::io::Result<()> {
                                     ).route(
                                         web::get()
                                             .to(handlers::collection_handler::get_logged_in_user_card_collections)),
-
                             )
-                            .service(web::resource("/{collection_id}/{page}").route(
-                                web::get().to(handlers::collection_handler::get_all_bookmarks),
-                            ))
                             .service(
                                 web::resource("/search/{page}").route(
                                     web::post().to(handlers::card_handler::search_collections),
@@ -313,7 +309,10 @@ pub async fn main() -> std::io::Result<()> {
                                     web::post()
                                         .to(handlers::card_handler::search_full_text_collections),
                                 ),
-                            ),
+                            )
+                            .service(web::resource("/{collection_id}/{page}").route(
+                                web::get().to(handlers::collection_handler::get_all_bookmarks),
+                            )),
                     )
                     .service(
                         web::resource("/verification").route(
