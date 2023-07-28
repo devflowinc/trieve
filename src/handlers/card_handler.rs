@@ -11,10 +11,13 @@ use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
 };
 use crate::operators::collection_operator::get_collection_by_id_query;
+use crate::operators::qdrant_operator::{
+    create_new_qdrant_point_query, update_qdrant_point_private_query,
+};
 use actix_web::{web, HttpResponse};
 use difference::{Changeset, Difference};
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
-use qdrant_client::qdrant::{PointStruct, PointsIdsList, PointsSelector};
+use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -281,6 +284,13 @@ pub async fn create_card(
 
     //if collision is not nil, insert card with collision
     if collision.is_some() {
+        update_qdrant_point_private_query(
+            collision.expect("Collision must be some"),
+            private,
+            Some(user.id),
+        )
+        .await?;
+
         card_metadata = CardMetadata::from_details(
             &content,
             &card.card_html,
@@ -293,7 +303,7 @@ pub async fn create_card(
         card_metadata = web::block(move || {
             insert_duplicate_card_metadata_query(
                 card_metadata,
-                collision.expect("Collision should not be none"),
+                collision.expect("Collision should must be some"),
                 card.file_uuid,
                 pool1.lock().unwrap(),
             )
@@ -315,28 +325,14 @@ pub async fn create_card(
             }
         };
 
-        let qdrant = get_qdrant_connection()
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-        //if private is true, set payload to private
-        let payload = match private {
-            true => json!({"private": true}).try_into().unwrap(),
-            false => json!({}).try_into().unwrap(),
-        };
-
-        let point_id = uuid::Uuid::new_v4();
-        let point = PointStruct::new(
-            point_id.clone().to_string(),
-            ensured_embedding_vector,
-            payload,
-        );
+        let qdrant_point_id = uuid::Uuid::new_v4();
         card_metadata = CardMetadata::from_details(
             &content,
             &card.card_html,
             &card.link,
             &card.oc_file_path,
             user.id,
-            Some(point_id),
+            Some(qdrant_point_id),
             private,
         );
         card_metadata = web::block(move || {
@@ -345,24 +341,14 @@ pub async fn create_card(
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-        qdrant
-            .upsert_points_blocking("debate_cards".to_string(), vec![point], None)
-            .await
-            .map_err(|_err| ServiceError::BadRequest("Failed inserting card to qdrant".into()))?;
+        create_new_qdrant_point_query(
+            qdrant_point_id,
+            ensured_embedding_vector,
+            private,
+            Some(user.id),
+        )
+        .await?;
     }
-
-    // let verify_card_data = VerifyData::CardVerification {
-    //     card_uuid: card_metadata.id,
-    // };
-    // tokio::spawn(
-    //     verify_card_content(
-    //         actix_web::web::Json(verify_card_data),
-    //         user,
-    //         pool4.lock().unwrap().clone().into_inner().into(),
-    //         mutex_store,
-    //     )
-    //     .map(|_| ()),
-    // );
 
     Ok(HttpResponse::Ok().json(ReturnCreatedCard {
         card_metadata,
@@ -426,6 +412,7 @@ pub async fn update_card(
 ) -> Result<HttpResponse, actix_web::Error> {
     let thread_safe_pool = Arc::new(Mutex::new(pool));
     let pool1 = thread_safe_pool.clone();
+    let pool2 = thread_safe_pool.clone();
     let card_metadata = user_owns_card(user.id, card.card_uuid, thread_safe_pool).await?;
 
     let link = card
@@ -503,13 +490,15 @@ pub async fn update_card(
         None => card_metadata.card_html,
     };
 
-    if card_metadata.private
-        && !card.private.unwrap_or(true)
-        && card_metadata.qdrant_point_id.is_none()
-    {
-        return Err(ServiceError::BadRequest("Cannot make a duplicate card public".into()).into());
-    }
     let private = card.private.unwrap_or(card_metadata.private);
+    let card_id1 = card.card_uuid.clone();
+    let qdrant_point_id = web::block(move || {
+        get_qdrant_id_from_card_id_query(card_id1, pool1.lock().unwrap().clone())
+    })
+    .await?
+    .map_err(|_| ServiceError::BadRequest("Card not found".into()))?;
+
+    update_qdrant_point_private_query(qdrant_point_id, private, Some(user.id)).await?;
 
     web::block(move || {
         update_card_metadata_query(
@@ -524,7 +513,7 @@ pub async fn update_card(
                 private,
             ),
             None,
-            pool1.lock().unwrap(),
+            pool2.lock().unwrap(),
         )
     })
     .await?

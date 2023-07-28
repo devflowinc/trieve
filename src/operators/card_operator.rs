@@ -1562,3 +1562,48 @@ pub fn get_card_count_query(pool: web::Data<Pool>) -> Result<i64, DefaultError> 
             message: "Failed to get card count",
         })
 }
+
+pub fn get_qdrant_id_from_card_id_query(
+    card_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<uuid::Uuid, DefaultError> {
+    use crate::data::schema::card_collisions::dsl as card_collisions_columns;
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    let qdrant_point_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
+        card_metadata_columns::card_metadata
+            .left_outer_join(
+                card_collisions_columns::card_collisions
+                    .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
+            )
+            .select((
+                card_metadata_columns::qdrant_point_id,
+                card_collisions_columns::collision_qdrant_id.nullable(),
+            ))
+            .filter(card_metadata_columns::id.eq(card_id))
+            .load(&mut conn)
+            .map_err(|_err| DefaultError {
+                message: "Failed to get qdrant_point_id and collision_qdrant_id",
+            })?;
+
+    match qdrant_point_ids.first() {
+        Some(x) => match x.0 {
+            Some(y) => Ok(y),
+            None => match x.1 {
+                Some(y) => Ok(y),
+                None => {
+                    return Err(DefaultError {
+                        message: "Failed to get qdrant_point_id",
+                    })
+                }
+            },
+        },
+        None => {
+            return Err(DefaultError {
+                message: "Failed to get qdrant_point_id",
+            })
+        }
+    }
+}
