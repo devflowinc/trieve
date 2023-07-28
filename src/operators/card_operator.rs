@@ -98,7 +98,6 @@ pub async fn search_card_query(
     //WHERE (("card\_metadata"."private" = $1) OR (("card\_metadata"."private" = $2) AND ("card\_metadata"."qdrant\_point\_id" IS NULL))) -- binds: \[false, false\]
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
-    let mut include_query_ids = false;
 
     let mut query = card_metadata_columns::card_metadata
         .left_outer_join(
@@ -111,41 +110,32 @@ pub async fn search_card_query(
         ))
         .into_boxed();
 
-    if filter_link_url.is_empty() && filter_oc_file_path.is_empty() {
-        query = query
-            .filter(card_metadata_columns::private.eq(true).and(
-                card_metadata_columns::author_id.ne(current_user_id.unwrap_or(uuid::Uuid::nil())),
-            ))
-            .distinct();
-    } else {
-        include_query_ids = true;
-        query = query
-            .filter(card_metadata_columns::private.eq(false))
-            .or_filter(
-                card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
-            )
-            .distinct();
+    query = query
+        .filter(card_metadata_columns::private.eq(false))
+        .or_filter(
+            card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
+        )
+        .distinct();
 
-        if !filter_oc_file_path.is_empty() {
-            query = query.filter(
-                card_metadata_columns::oc_file_path
-                    .like(format!("%{}%", filter_oc_file_path.get(0).unwrap())),
-            );
-        }
+    if !filter_oc_file_path.is_empty() {
+        query = query.filter(
+            card_metadata_columns::oc_file_path
+                .like(format!("%{}%", filter_oc_file_path.get(0).unwrap())),
+        );
+    }
 
-        for file_path in filter_oc_file_path.iter().skip(1) {
-            query = query
-                .or_filter(card_metadata_columns::oc_file_path.like(format!("%{}%", file_path)));
-        }
+    for file_path in filter_oc_file_path.iter().skip(1) {
+        query =
+            query.or_filter(card_metadata_columns::oc_file_path.like(format!("%{}%", file_path)));
+    }
 
-        if !filter_link_url.is_empty() {
-            query = query.filter(
-                card_metadata_columns::link.like(format!("%{}%", filter_link_url.get(0).unwrap())),
-            );
-        }
-        for link_url in filter_link_url.iter().skip(1) {
-            query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
-        }
+    if !filter_link_url.is_empty() {
+        query = query.filter(
+            card_metadata_columns::link.like(format!("%{}%", filter_link_url.get(0).unwrap())),
+        );
+    }
+    for link_url in filter_link_url.iter().skip(1) {
+        query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
     }
 
     let filtered_option_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
@@ -172,19 +162,11 @@ pub async fn search_card_query(
 
     let mut filter = Filter::default();
 
-    if !include_query_ids {
-        filter.must_not.push(Condition {
-            condition_one_of: Some(HasId(HasIdCondition {
-                has_id: (filtered_point_ids).to_vec(),
-            })),
-        });
-    } else {
-        filter.should.push(Condition {
-            condition_one_of: Some(HasId(HasIdCondition {
-                has_id: (filtered_point_ids).to_vec(),
-            })),
-        });
-    }
+    filter.should.push(Condition {
+        condition_one_of: Some(HasId(HasIdCondition {
+            has_id: (filtered_point_ids).to_vec(),
+        })),
+    });
 
     let data = qdrant
         .search_points(&SearchPoints {
@@ -408,7 +390,6 @@ pub fn get_metadata(
         .filter(
             card_metadata_columns::id.eq_any(
                 card_metadata
-                    .clone()
                     .iter()
                     .map(|card| card.id)
                     .collect::<Vec<uuid::Uuid>>()
@@ -478,6 +459,7 @@ pub fn get_metadata(
             message: "Failed to load metadata",
         })?;
 
+    #[allow(clippy::type_complexity)]
     let (file_ids, card_verifications, card_votes, card_creators): (
         Vec<Option<CardFileWithName>>,
         Vec<Option<CardVerifications>>,
