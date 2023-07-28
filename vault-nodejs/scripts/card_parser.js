@@ -33,7 +33,19 @@ const removeExtraTrailingChars = (url) => {
 
   if (match) {
     let firstMatch = match[0];
-    if (firstMatch.endsWith(")") || firstMatch.endsWith("]")) {
+    if (
+      firstMatch.endsWith(")") ||
+      firstMatch.endsWith("]") ||
+      firstMatch.endsWith("}") ||
+      firstMatch.endsWith(";") ||
+      firstMatch.endsWith(":") ||
+      firstMatch.endsWith(",") ||
+      firstMatch.endsWith(".") ||
+      firstMatch.endsWith("|") ||
+      firstMatch.endsWith(">") ||
+      firstMatch.endsWith("<") ||
+      firstMatch.endsWith("-")
+    ) {
       firstMatch = firstMatch.slice(0, -1);
     }
     return firstMatch;
