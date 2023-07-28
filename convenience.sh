@@ -5,7 +5,7 @@ reset_qdrant_database() {
     echo "Resetting the Qdrant database..."
     sudo docker-compose stop qdrant-database
     sudo docker-compose rm -f qdrant-database
-    sudo docker volume rm vault_qdrant_data
+    sudo docker volume rm vault-server_qdrant_data
     sudo docker compose up -d qdrant-database
     diesel db reset
 }

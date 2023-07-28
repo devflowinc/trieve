@@ -263,7 +263,7 @@ pub async fn main() -> std::io::Result<()> {
                     .service(
                         web::scope("/card_collection")
                             .service(
-                                web::resource("/")
+                                web::resource("")
                                     .route(
                                         web::post().to(
                                             handlers::collection_handler::create_card_collection,
