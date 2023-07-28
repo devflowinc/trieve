@@ -262,6 +262,7 @@ pub async fn search_card_collections_query(
     filter_oc_file_path: Option<Vec<String>>,
     filter_link_url: Option<Vec<String>>,
     collection_id: uuid::Uuid,
+    user_id: Option<uuid::Uuid>,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
@@ -286,7 +287,11 @@ pub async fn search_card_collections_query(
             card_metadata_columns::qdrant_point_id,
             card_collisions_columns::collision_qdrant_id.nullable(),
         ))
-        .filter(card_metadata_columns::private.eq(false))
+        .filter(
+            card_metadata_columns::private
+                .eq(false)
+                .or(card_metadata_columns::author_id.eq(user_id.unwrap_or(uuid::Uuid::nil()))),
+        )
         .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id))
         .distinct()
         .into_boxed();

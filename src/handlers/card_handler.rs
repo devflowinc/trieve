@@ -741,6 +741,7 @@ pub async fn search_collections(
         data.filter_oc_file_path.clone(),
         data.filter_link_url.clone(),
         data.collection_id,
+        current_user_id,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
