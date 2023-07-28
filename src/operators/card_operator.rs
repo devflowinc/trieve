@@ -35,10 +35,8 @@ pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
     let qdrant_api_key = std::env::var("QDRANT_API_KEY").expect("QDRANT_API_KEY must be set");
     let mut config = QdrantClientConfig::from_url(qdrant_url.as_str());
     config.api_key = Some(qdrant_api_key);
-    QdrantClient::new(Some(config)).map_err(|_err| {
-        DefaultError {
-            message: "Failed to connect to Qdrant",
-        }
+    QdrantClient::new(Some(config)).map_err(|_err| DefaultError {
+        message: "Failed to connect to Qdrant",
     })
 }
 
@@ -63,7 +61,7 @@ pub async fn create_openai_embedding(message: &str) -> Result<Vec<f32>, actix_we
     Ok(vector.iter().map(|&x| x as f32).collect())
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SearchResult {
     pub score: f32,
     pub point_id: uuid::Uuid,
@@ -406,77 +404,85 @@ pub fn get_metadata(
     use crate::data::schema::files::dsl as files_columns;
     use crate::data::schema::users::dsl as user_columns;
 
-    let all_datas =
-        card_files_columns::card_files
-            .filter(
-                card_files_columns::card_id.eq_any(
-                    card_metadata
-                        .iter()
-                        .map(|card| card.id)
-                        .collect::<Vec<uuid::Uuid>>()
-                        .as_slice(),
-                ),
+    let all_datas = card_metadata_columns::card_metadata
+        .filter(
+            card_metadata_columns::id.eq_any(
+                card_metadata
+                    .clone()
+                    .iter()
+                    .map(|card| card.id)
+                    .collect::<Vec<uuid::Uuid>>()
+                    .as_slice(),
+            ),
+        )
+        .left_outer_join(
+            user_columns::users.on(card_metadata_columns::author_id.eq(user_columns::id)),
+        )
+        .left_outer_join(
+            card_verification_columns::card_verification
+                .on(card_metadata_columns::id.eq(card_verification_columns::card_id)),
+        )
+        .left_outer_join(
+            card_votes_columns::card_votes
+                .on(card_metadata_columns::id.eq(card_votes_columns::card_metadata_id)),
+        )
+        .left_outer_join(
+            card_files_columns::card_files
+                .on(card_metadata_columns::id.eq(card_files_columns::card_id)),
+        )
+        .left_outer_join(files_columns::files.on(card_files_columns::file_id.eq(files_columns::id)))
+        .select((
+            (
+                card_files_columns::card_id,
+                card_files_columns::file_id,
+                files_columns::file_name,
             )
-            .inner_join(files_columns::files)
-            .filter(files_columns::private.eq(false))
-            .inner_join(
-                card_verification_columns::card_verification
-                    .on(card_files_columns::card_id.eq(card_verification_columns::card_id)),
+                .nullable(),
+            (
+                card_verification_columns::id,
+                card_verification_columns::card_id,
+                card_verification_columns::similarity_score,
+                card_verification_columns::created_at,
+                card_verification_columns::updated_at,
             )
-            .inner_join(
-                card_votes_columns::card_votes
-                    .on(card_files_columns::card_id.eq(card_votes_columns::card_metadata_id)),
+                .nullable(),
+            (
+                card_votes_columns::id,
+                card_votes_columns::voted_user_id,
+                card_votes_columns::card_metadata_id,
+                card_votes_columns::vote,
+                card_votes_columns::created_at,
+                card_votes_columns::updated_at,
+                card_votes_columns::deleted,
             )
-            .inner_join(
-                card_metadata_columns::card_metadata
-                    .on(card_files_columns::card_id.eq(card_metadata_columns::id)),
+                .nullable(),
+            (
+                user_columns::id,
+                user_columns::email,
+                user_columns::hash,
+                user_columns::created_at,
+                user_columns::updated_at,
+                user_columns::username,
+                user_columns::website,
+                user_columns::visible_email,
             )
-            .inner_join(
-                user_columns::users.on(card_metadata_columns::author_id.eq(user_columns::id)),
-            )
-            .select((
-                (
-                    card_files_columns::card_id,
-                    card_files_columns::file_id,
-                    files_columns::file_name,
-                ),
-                (
-                    card_verification_columns::id,
-                    card_verification_columns::card_id,
-                    card_verification_columns::similarity_score,
-                    card_verification_columns::created_at,
-                    card_verification_columns::updated_at,
-                ),
-                (
-                    card_votes_columns::id,
-                    card_votes_columns::voted_user_id,
-                    card_votes_columns::card_metadata_id,
-                    card_votes_columns::vote,
-                    card_votes_columns::created_at,
-                    card_votes_columns::updated_at,
-                    card_votes_columns::deleted,
-                ),
-                (
-                    user_columns::id,
-                    user_columns::email,
-                    user_columns::hash,
-                    user_columns::created_at,
-                    user_columns::updated_at,
-                    user_columns::username,
-                    user_columns::website,
-                    user_columns::visible_email,
-                ),
-            ))
-            .load::<(CardFileWithName, CardVerifications, CardVote, User)>(&mut conn)
-            .map_err(|_| DefaultError {
-                message: "Failed to load metadata",
-            })?;
+                .nullable(),
+        ))
+        .load::<(
+            Option<CardFileWithName>,
+            Option<CardVerifications>,
+            Option<CardVote>,
+            Option<User>,
+        )>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })?;
 
     let (file_ids, card_verifications, card_votes, card_creators): (
-        Vec<CardFileWithName>,
-        Vec<CardVerifications>,
-        Vec<CardVote>,
-        Vec<User>
+        Vec<Option<CardFileWithName>>,
+        Vec<Option<CardVerifications>>,
+        Vec<Option<CardVote>>,
+        Vec<Option<User>>,
     ) = itertools::multiunzip(all_datas);
 
     let card_metadata_with_upvotes_and_file_id: Vec<CardMetadataWithVotesAndFiles> = card_metadata
@@ -484,6 +490,7 @@ pub fn get_metadata(
         .map(|metadata| {
             let votes = card_votes
                 .iter()
+                .flatten()
                 .filter(|upvote| upvote.card_metadata_id == metadata.id)
                 .collect::<Vec<&CardVote>>();
             let total_upvotes = votes.iter().filter(|upvote| upvote.vote).count() as i64;
@@ -498,6 +505,7 @@ pub fn get_metadata(
 
             let author = card_creators
                 .iter()
+                .flatten()
                 .find(|user| user.id == metadata.author_id)
                 .map(|user| UserDTO {
                     id: user.id,
@@ -514,10 +522,14 @@ pub fn get_metadata(
 
             let verification_score = card_verifications
                 .iter()
+                .flatten()
                 .find(|verification| verification.card_id == metadata.id)
                 .map(|verification| verification.similarity_score);
 
-            let card_with_file_name = file_ids.iter().find(|file| file.card_id == metadata.id);
+            let card_with_file_name = file_ids
+                .iter()
+                .flatten()
+                .find(|file| file.card_id == metadata.id);
 
             CardMetadataWithVotesAndFiles {
                 id: metadata.id,
