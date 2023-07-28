@@ -134,7 +134,7 @@ pub async fn create_card(
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if let Some(score_card) = first_text_result {
-        if score_card.score >= Some(0.85) {
+        if score_card.score >= Some(4.99) {
             //Sets collision to collided card id
             collision = Some(score_card.qdrant_point_id);
 
