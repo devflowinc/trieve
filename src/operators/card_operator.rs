@@ -758,6 +758,9 @@ pub fn search_full_text_collection_query(
                     .or(card_metadata_columns::qdrant_point_id.is_not_null()),
             ),
         )
+        .or_filter(
+            card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
+        )
         .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id))
         .select((
             (
