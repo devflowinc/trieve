@@ -292,8 +292,8 @@ pub async fn create_cards_with_handler(
             });
         }
     };
-    let parsed_cards_command_output = Command::new("python")
-        .arg("./vault-python/card_parser.py")
+    let parsed_cards_command_output = Command::new("node")
+        .arg("./vault-nodejs/scripts/card_parser.js")
         .arg(file_path_str)
         .output();
 

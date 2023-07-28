@@ -26,6 +26,7 @@
   "dependencies": {
     "@keyv/redis": "^2.7.0",
     "@keyv/sqlite": "^3.6.5",
+    "cheerio": "^1.0.0-rc.12",
     "file-type": "^18.5.0",
     "html-to-text": "^9.0.5",
     "http": "^0.0.1-security",
@@ -38,6 +39,8 @@
     "puppeteer": "^20.8.3",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "re2": "^1.19.1",
+    "url-regex-safe": "^3.0.0",
     "winston": "^3.10.0",
     "yargs": "^17.7.2"
   }
