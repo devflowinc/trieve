@@ -185,7 +185,7 @@ const extractCardsFromHtml = (htmlString) => {
           for (const urlTagChild of urlTagChildren) {
             if (foundHttp) {
               const cardText = $(urlTagChild).text();
-              if (cardText.length < 3) {
+              if (cardText.split(" ").length < 4) {
                 continue;
               }
 
@@ -226,7 +226,7 @@ const extractCardsFromHtml = (htmlString) => {
             for (const urlTagChild of urlTagChildren) {
               if (foundHttp) {
                 const cardText = $(urlTagChild).text();
-                if (cardText.length < 3) {
+                if (cardText.split(" ").length < 4) {
                   continue;
                 }
 
