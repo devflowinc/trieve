@@ -8,6 +8,7 @@ use crate::data::models::{
 use crate::data::schema;
 use crate::diesel::TextExpressionMethods;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+use crate::operators::qdrant_operator::search_qdrant_query;
 use crate::{
     data::models::{CardMetadata, Pool},
     errors::DefaultError,
@@ -85,6 +86,24 @@ pub async fn search_card_query(
     let filter_oc_file_path = filter_oc_file_path.unwrap_or([].to_vec());
     let filter_link_url = filter_link_url.unwrap_or([].to_vec());
 
+    if filter_oc_file_path.is_empty() && filter_link_url.is_empty() {
+        let mut filter = Filter::default();
+        filter.should.push(Condition::is_empty("private"));
+        filter.should.push(Condition::is_null("private"));
+        filter.should.push(Condition::matches("private", false));
+        filter.should.push(Condition::matches(
+            "authors",
+            current_user_id.unwrap_or_default().to_string(),
+        ));
+
+        let point_ids = search_qdrant_query(page, filter, embedding_vector.clone()).await?;
+
+        return Ok(SearchCardQueryResult {
+            search_results: point_ids,
+            total_card_pages: 100,
+        });
+    }
+
     let mut conn = pool.lock().unwrap().get().unwrap();
 
     // SELECT distinct card_metadata.qdrant_point_id, card_collisions.collision_qdrant_id
@@ -148,8 +167,6 @@ pub async fn search_card_query(
                 message: "Failed to load metadata",
             })?;
 
-    let qdrant = get_qdrant_connection().await?;
-
     let filtered_point_ids: &Vec<PointId> = &filtered_option_ids
         .iter()
         .map(|uuid| {
@@ -168,32 +185,7 @@ pub async fn search_card_query(
         })),
     });
 
-    let data = qdrant
-        .search_points(&SearchPoints {
-            collection_name: "debate_cards".to_string(),
-            vector: embedding_vector,
-            limit: 10,
-            offset: Some((page - 1) * 10),
-            with_payload: None,
-            filter: Some(filter),
-            ..Default::default()
-        })
-        .await
-        .map_err(|_e| DefaultError {
-            message: "Failed to search points on Qdrant",
-        })?;
-
-    let point_ids: Vec<SearchResult> = data
-        .result
-        .iter()
-        .filter_map(|point| match point.clone().id?.point_id_options? {
-            PointIdOptions::Uuid(id) => Some(SearchResult {
-                score: point.score,
-                point_id: uuid::Uuid::parse_str(&id).ok()?,
-            }),
-            PointIdOptions::Num(_) => None,
-        })
-        .collect();
+    let point_ids = search_qdrant_query(page, filter, embedding_vector).await?;
 
     Ok(SearchCardQueryResult {
         search_results: point_ids,
@@ -324,8 +316,6 @@ pub async fn search_card_collections_query(
             message: "Failed to load metadata",
         })?;
 
-    let qdrant = get_qdrant_connection().await?;
-
     let filtered_point_ids: &Vec<PointId> = &filtered_option_ids
         .iter()
         .map(|uuid| {
@@ -346,36 +336,11 @@ pub async fn search_card_collections_query(
         })),
     });
 
-    let data = qdrant
-        .search_points(&SearchPoints {
-            collection_name: "debate_cards".to_string(),
-            vector: embedding_vector,
-            limit: 10,
-            offset: Some((page - 1) * 10),
-            with_payload: None,
-            filter: Some(filter),
-            ..Default::default()
-        })
-        .await
-        .map_err(|_e| DefaultError {
-            message: "Failed to search points on Qdrant",
-        })?;
-
-    let point_ids: Vec<SearchResult> = data
-        .result
-        .iter()
-        .filter_map(|point| match point.clone().id?.point_id_options? {
-            PointIdOptions::Uuid(id) => Some(SearchResult {
-                score: point.score,
-                point_id: uuid::Uuid::parse_str(&id).ok()?,
-            }),
-            PointIdOptions::Num(_) => None,
-        })
-        .collect();
+    let point_ids: Vec<SearchResult> = search_qdrant_query(page, filter, embedding_vector).await?;
 
     Ok(SearchCardQueryResult {
         search_results: point_ids,
-        total_card_pages: (data.result.len() as f64 / 10.0).ceil() as i64,
+        total_card_pages: (filtered_option_ids.len() as f64 / 10.0).ceil() as i64,
     })
 }
 
