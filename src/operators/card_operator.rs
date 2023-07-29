@@ -384,6 +384,7 @@ pub fn get_metadata(
     current_user_id: Option<uuid::Uuid>,
     mut conn: r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::PgConnection>>,
 ) -> Result<Vec<CardMetadataWithVotesAndFiles>, DefaultError> {
+    use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     use crate::data::schema::card_verification::dsl as card_verification_columns;
@@ -417,6 +418,10 @@ pub fn get_metadata(
                 .on(card_metadata_columns::id.eq(card_files_columns::card_id)),
         )
         .left_outer_join(files_columns::files.on(card_files_columns::file_id.eq(files_columns::id)))
+        .left_outer_join(
+            card_collisions_columns::card_collisions
+                .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
+        )
         .select((
             (
                 card_files_columns::card_id,
@@ -453,23 +458,29 @@ pub fn get_metadata(
                 user_columns::visible_email,
             )
                 .nullable(),
+            (
+                card_metadata_columns::id,
+                card_collisions_columns::collision_qdrant_id.nullable(),
+            ),
         ))
         .load::<(
             Option<CardFileWithName>,
             Option<CardVerifications>,
             Option<CardVote>,
             Option<User>,
+            (uuid::Uuid, Option<uuid::Uuid>),
         )>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
 
     #[allow(clippy::type_complexity)]
-    let (file_ids, card_verifications, card_votes, card_creators): (
+    let (file_ids, card_verifications, card_votes, card_creators, card_collisions): (
         Vec<Option<CardFileWithName>>,
         Vec<Option<CardVerifications>>,
         Vec<Option<CardVote>>,
         Vec<Option<User>>,
+        Vec<(uuid::Uuid, Option<uuid::Uuid>)>,
     ) = itertools::multiunzip(all_datas);
 
     let card_metadata_with_upvotes_and_file_id: Vec<CardMetadataWithVotesAndFiles> = card_metadata
@@ -518,13 +529,25 @@ pub fn get_metadata(
                 .flatten()
                 .find(|file| file.card_id == metadata.id);
 
+            let qdrant_point_id = match metadata.qdrant_point_id {
+                Some(id) => id,
+                None => {
+                    card_collisions
+                                    .iter()
+                                    .find(|collision| collision.0 == metadata.id) // Match card id
+                                    .expect("Qdrant point id does not exist for root card or collision")
+                                    .1
+                                    .expect("Collision Qdrant point id must exist if there is no root qdrant point id")
+                },
+            };
+
             CardMetadataWithVotesAndFiles {
                 id: metadata.id,
                 content: metadata.content,
                 link: metadata.link,
                 oc_file_path: metadata.oc_file_path,
                 author,
-                qdrant_point_id: metadata.qdrant_point_id.unwrap_or(uuid::Uuid::nil()),
+                qdrant_point_id,
                 total_upvotes,
                 total_downvotes,
                 vote_by_current_user,
@@ -1138,44 +1161,40 @@ pub fn get_collided_cards_query(
 
     let mut conn = pool.get().unwrap();
 
-    let card_metadata: Vec<(CardMetadata, uuid::Uuid)> = card_collisions_columns::card_collisions
-        .inner_join(
-            card_metadata_columns::card_metadata
+    let card_metadata: Vec<CardMetadata> = card_metadata_columns::card_metadata
+        .left_outer_join(
+            card_collisions_columns::card_collisions
                 .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
         )
         .select((
-            (
-                card_metadata_columns::id,
-                card_metadata_columns::content,
-                card_metadata_columns::link,
-                card_metadata_columns::author_id,
-                card_metadata_columns::qdrant_point_id,
-                card_metadata_columns::created_at,
-                card_metadata_columns::updated_at,
-                card_metadata_columns::oc_file_path,
-                card_metadata_columns::card_html,
-                card_metadata_columns::private,
-            ),
-            (card_collisions_columns::collision_qdrant_id.assume_not_null()),
+            card_metadata_columns::id,
+            card_metadata_columns::content,
+            card_metadata_columns::link,
+            card_metadata_columns::author_id,
+            card_metadata_columns::qdrant_point_id,
+            card_metadata_columns::created_at,
+            card_metadata_columns::updated_at,
+            card_metadata_columns::oc_file_path,
+            card_metadata_columns::card_html,
+            card_metadata_columns::private,
         ))
-        .filter(card_collisions_columns::collision_qdrant_id.eq_any(point_ids))
+        .filter(
+            card_collisions_columns::collision_qdrant_id
+                .eq_any(point_ids.clone())
+                .or(card_metadata_columns::qdrant_point_id.eq_any(point_ids)),
+        )
         .filter(card_metadata_columns::private.eq(false))
         .or_filter(
             card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
         )
-        .load::<(CardMetadata, uuid::Uuid)>(&mut conn)
+        .load::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
 
-    let collided_qdrant_ids = card_metadata
-        .iter()
-        .map(|(_, qdrant_id)| *qdrant_id)
-        .collect::<Vec<uuid::Uuid>>();
-
     let converted_cards: Vec<FullTextSearchResult> = card_metadata
         .iter()
-        .map(|card| <CardMetadata as Into<FullTextSearchResult>>::into(card.0.clone()))
+        .map(|card| <CardMetadata as Into<FullTextSearchResult>>::into(card.clone()))
         .collect::<Vec<FullTextSearchResult>>();
 
     let card_metadata_with_upvotes_and_file_id =
@@ -1185,8 +1204,7 @@ pub fn get_collided_cards_query(
 
     let card_metadatas_with_collided_qdrant_ids = card_metadata_with_upvotes_and_file_id
         .iter()
-        .zip(collided_qdrant_ids.iter())
-        .map(|(card, qdrant_id)| (card.clone(), *qdrant_id))
+        .map(|card| (card.clone(), card.qdrant_point_id))
         .collect::<Vec<(CardMetadataWithVotesAndFiles, uuid::Uuid)>>();
 
     //combine card_metadata_with vote with the file_ids that was loaded
