@@ -160,19 +160,6 @@ pub async fn create_card(
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-                // let verify_card_data = VerifyData::CardVerification {
-                //     card_uuid: metadata_1.id,
-                // };
-                // tokio::spawn(
-                //     verify_card_content(
-                //         actix_web::web::Json(verify_card_data),
-                //         user,
-                //         pool4.lock().unwrap().clone().into_inner().into(),
-                //         mutex_store,
-                //     )
-                //     .map(|_| ()),
-                // );
-
                 return Ok(HttpResponse::Ok().json(ReturnCreatedCard {
                     card_metadata: metadata_1,
                     duplicate: true,
@@ -257,19 +244,6 @@ pub async fn create_card(
                 })
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-                // let verify_card_data = VerifyData::CardVerification {
-                //     card_uuid: metadata_1.id,
-                // };
-                // tokio::spawn(
-                //     verify_card_content(
-                //         actix_web::web::Json(verify_card_data),
-                //         user,
-                //         pool4.lock().unwrap().clone().into_inner().into(),
-                //         mutex_store,
-                //     )
-                //     .map(|_| ()),
-                // );
 
                 return Ok(HttpResponse::Ok().json(ReturnCreatedCard {
                     card_metadata: metadata_1,

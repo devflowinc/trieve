@@ -1,11 +1,11 @@
 use qdrant_client::qdrant::{
-    points_selector::PointsSelectorOneOf, PointId, PointStruct, PointsIdsList, PointsSelector,
-    WithPayloadSelector, WithVectorsSelector,
+    point_id::PointIdOptions, points_selector::PointsSelectorOneOf, Filter, PointId, PointStruct,
+    PointsIdsList, PointsSelector, SearchPoints, WithPayloadSelector, WithVectorsSelector,
 };
 use serde_json::json;
 
-use super::card_operator::get_qdrant_connection;
-use crate::errors::ServiceError;
+use super::card_operator::{get_qdrant_connection, SearchResult};
+use crate::errors::{DefaultError, ServiceError};
 
 pub async fn create_new_qdrant_point_query(
     point_id: uuid::Uuid,
@@ -18,10 +18,12 @@ pub async fn create_new_qdrant_point_query(
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let payload = match private {
-        true => json!({"private": true, "authors": vec![author_id]})
-            .try_into()
-            .expect("A json! Value must always be a valid Payload"),
-        false => json!({}).try_into().unwrap(),
+        true => {
+            json!({"private": true, "authors": vec![author_id.unwrap_or_default().to_string()]})
+                .try_into()
+                .expect("A json! Value must always be a valid Payload")
+        }
+        false => json!({}).try_into().expect("A json! Value must always be a valid Payload"),
     };
 
     let point = PointStruct::new(point_id.clone().to_string(), embedding_vector, payload);
@@ -107,8 +109,8 @@ pub async fn update_qdrant_point_private_query(
                 }
             };
 
-            if !current_author_ids.contains(&author_id.unwrap().to_string()) {
-                current_author_ids.push(author_id.unwrap().to_string());
+            if !current_author_ids.contains(&author_id.unwrap_or_default().to_string()) {
+                current_author_ids.push(author_id.unwrap_or_default().to_string());
             }
 
             json!({"private": true, "authors": current_author_ids})
@@ -137,4 +139,41 @@ pub async fn update_qdrant_point_private_query(
         })?;
 
     Ok(())
+}
+
+pub async fn search_qdrant_query(
+    page: u64,
+    filter: Filter,
+    embedding_vector: Vec<f32>,
+) -> Result<Vec<SearchResult>, DefaultError> {
+    let qdrant = get_qdrant_connection().await?;
+
+    let data = qdrant
+        .search_points(&SearchPoints {
+            collection_name: "debate_cards".to_string(),
+            vector: embedding_vector,
+            limit: 10,
+            offset: Some((page - 1) * 10),
+            with_payload: None,
+            filter: Some(filter),
+            ..Default::default()
+        })
+        .await
+        .map_err(|_e| DefaultError {
+            message: "Failed to search points on Qdrant",
+        })?;
+
+    let point_ids: Vec<SearchResult> = data
+        .result
+        .iter()
+        .filter_map(|point| match point.clone().id?.point_id_options? {
+            PointIdOptions::Uuid(id) => Some(SearchResult {
+                score: point.score,
+                point_id: uuid::Uuid::parse_str(&id).ok()?,
+            }),
+            PointIdOptions::Num(_) => None,
+        })
+        .collect();
+
+    Ok(point_ids)
 }
