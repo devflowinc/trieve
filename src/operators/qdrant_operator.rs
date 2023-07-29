@@ -1,7 +1,4 @@
-use qdrant_client::qdrant::{
-    point_id::PointIdOptions, points_selector::PointsSelectorOneOf, Filter, PointId, PointStruct,
-    PointsIdsList, PointsSelector, SearchPoints, WithPayloadSelector, WithVectorsSelector,
-};
+use qdrant_client::qdrant::{point_id::PointIdOptions, Filter, PointId, PointStruct, SearchPoints};
 use serde_json::json;
 
 use super::card_operator::{get_qdrant_connection, SearchResult};
@@ -23,7 +20,9 @@ pub async fn create_new_qdrant_point_query(
                 .try_into()
                 .expect("A json! Value must always be a valid Payload")
         }
-        false => json!({}).try_into().expect("A json! Value must always be a valid Payload"),
+        false => json!({})
+            .try_into()
+            .expect("A json! Value must always be a valid Payload"),
     };
 
     let point = PointStruct::new(point_id.clone().to_string(), embedding_vector, payload);
@@ -55,22 +54,21 @@ pub async fn update_qdrant_point_private_query(
         .get_points(
             "debate_cards",
             &qdrant_point_id,
-            Some(WithVectorsSelector {
-                selector_options: None,
-            }),
-            Some(WithPayloadSelector {
-                selector_options: None,
-            }),
+            false.into(),
+            true.into(),
             None,
         )
         .await
-        .map_err(|_err| ServiceError::BadRequest("Failed getting card from qdrant".into()))?
+        .map_err(|_err| ServiceError::BadRequest("Failed to search_points from qdrant".into()))?
         .result;
 
     let current_point = match current_point_vec.first() {
         Some(point) => point,
         None => {
-            return Err(ServiceError::BadRequest("Failed getting card from qdrant".into()).into())
+            return Err(ServiceError::BadRequest(
+                "Failed getting vec.first card from qdrant".into(),
+            )
+            .into())
         }
     };
 
@@ -79,9 +77,7 @@ pub async fn update_qdrant_point_private_query(
             Some(private) => private,
             None => false,
         },
-        None => {
-            return Err(ServiceError::BadRequest("Failed getting card from qdrant".into()).into())
-        }
+        None => false,
     };
 
     if !current_private {
@@ -118,15 +114,11 @@ pub async fn update_qdrant_point_private_query(
         false => json!({}),
     };
 
-    let points_selector = PointsSelector {
-        points_selector_one_of: Some(PointsSelectorOneOf::Points(PointsIdsList {
-            ids: qdrant_point_id,
-        })),
-    };
+    let points_selector = qdrant_point_id.into();
 
     qdrant
-        .set_payload(
-            "debate-cards",
+        .overwrite_payload(
+            "debate_cards",
             &points_selector,
             payload
                 .try_into()
