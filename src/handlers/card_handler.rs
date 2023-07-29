@@ -634,7 +634,7 @@ pub async fn search_full_text_card(
         .map(|search_result| {
             let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
                 .iter()
-                .filter(|card| card.1 == search_result.qdrant_point_id)
+                .filter(|card| card.1 == search_result.qdrant_point_id && card.0.id != search_result.id)
                 .map(|card| card.0.clone().into())
                 .collect();
 
@@ -750,6 +750,17 @@ pub async fn search_collections(
                 .collect();
 
             collided_cards.insert(0, card);
+            // remove duplicates from collided cards
+            for i in 0..collided_cards.len() {
+                let mut j = i + 1;
+                for _ in j..collided_cards.len() {
+                    if collided_cards[i].id == collided_cards[j].id {
+                        collided_cards.remove(j);
+                    } else {
+                        j += 1;
+                    }
+                }
+            }
 
             ScoreCardDTO {
                 metadata: collided_cards,
@@ -826,7 +837,7 @@ pub async fn search_full_text_collections(
         .map(|search_result| {
             let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
                 .iter()
-                .filter(|card| card.1 == search_result.qdrant_point_id)
+                .filter(|card| card.1 == search_result.qdrant_point_id && card.0.id != search_result.id)
                 .map(|card| card.0.clone().into())
                 .collect();
 

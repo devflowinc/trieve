@@ -303,7 +303,7 @@ pub async fn get_all_bookmarks(
         .map(|search_result| {
             let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
                 .iter()
-                .filter(|card| card.1 == search_result.qdrant_point_id)
+                .filter(|card| card.1 == search_result.qdrant_point_id && card.0.id != search_result.id)
                 .map(|card| card.0.clone().into())
                 .collect();
 
