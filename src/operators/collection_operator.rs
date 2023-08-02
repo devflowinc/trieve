@@ -6,7 +6,7 @@ use crate::{
         CardMetadataWithVotesAndFiles, FileCollection, FullTextSearchResult,
     },
     diesel::{Connection, ExpressionMethods, QueryDsl, RunQueryDsl},
-    operators::card_operator::get_metadata,
+    operators::card_operator::get_metadata_query,
 };
 
 use actix_web::web;
@@ -358,7 +358,7 @@ pub fn get_bookmarks_for_collection_query(
         .collect::<Vec<FullTextSearchResult>>();
 
     let card_metadata_with_upvotes_and_file_id =
-        get_metadata(converted_cards, current_user_id, conn).map_err(|_| DefaultError {
+        get_metadata_query(converted_cards, current_user_id, conn).map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
 

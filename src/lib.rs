@@ -243,6 +243,10 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::get().to(handlers::user_handler::get_top_users)),
                     )
                     .service(
+                        web::resource("/recent_cards/{page}")
+                            .route(web::get().to(handlers::card_handler::get_most_recent_cards)),
+                    )
+                    .service(
                         web::resource("/user/files/{user_id}")
                             .route(web::get().to(handlers::file_handler::get_user_files_handler)),
                     )

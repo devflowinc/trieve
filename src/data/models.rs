@@ -615,39 +615,39 @@ pub struct FullTextSearchResult {
 }
 
 impl From<CardMetadata> for FullTextSearchResult {
-    fn from(cards: CardMetadata) -> Self {
+    fn from(card: CardMetadata) -> Self {
         FullTextSearchResult {
-            id: cards.id,
-            content: cards.content,
-            link: cards.link,
-            author_id: cards.author_id,
-            qdrant_point_id: cards.qdrant_point_id,
-            created_at: cards.created_at,
-            updated_at: cards.updated_at,
-            oc_file_path: cards.oc_file_path,
-            card_html: cards.card_html,
+            id: card.id,
+            content: card.content,
+            link: card.link,
+            author_id: card.author_id,
+            qdrant_point_id: card.qdrant_point_id,
+            created_at: card.created_at,
+            updated_at: card.updated_at,
+            oc_file_path: card.oc_file_path,
+            card_html: card.card_html,
             score: None,
-            private: cards.private,
+            private: card.private,
             count: 0,
         }
     }
 }
 
 impl From<CardMetadataWithCount> for FullTextSearchResult {
-    fn from(cards: CardMetadataWithCount) -> Self {
+    fn from(card: CardMetadataWithCount) -> Self {
         FullTextSearchResult {
-            id: cards.id,
-            content: cards.content,
-            link: cards.link,
-            author_id: cards.author_id,
-            qdrant_point_id: cards.qdrant_point_id,
-            created_at: cards.created_at,
-            updated_at: cards.updated_at,
-            oc_file_path: cards.oc_file_path,
-            card_html: cards.card_html,
+            id: card.id,
+            content: card.content,
+            link: card.link,
+            author_id: card.author_id,
+            qdrant_point_id: card.qdrant_point_id,
+            created_at: card.created_at,
+            updated_at: card.updated_at,
+            oc_file_path: card.oc_file_path,
+            card_html: card.card_html,
             score: None,
-            private: cards.private,
-            count: cards.count,
+            private: card.private,
+            count: card.count,
         }
     }
 }
