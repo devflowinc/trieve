@@ -860,7 +860,7 @@ impl VerificationNotification {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable, Selectable)]
 #[diesel(table_name = file_upload_completed_notifications)]
-pub struct FileUploadCompledNotification {
+pub struct FileUploadCompletedNotification {
     pub id: uuid::Uuid,
     pub user_uuid: uuid::Uuid,
     pub collection_uuid: uuid::Uuid,
@@ -869,15 +869,43 @@ pub struct FileUploadCompledNotification {
     pub updated_at: chrono::NaiveDateTime,
 }
 
-impl FileUploadCompledNotification {
+impl FileUploadCompletedNotification {
     pub fn from_details(user_uuid: uuid::Uuid, collection_uuid: uuid::Uuid) -> Self {
-        FileUploadCompledNotification {
+        FileUploadCompletedNotification {
             id: uuid::Uuid::new_v4(),
             user_uuid,
             collection_uuid,
             user_read: false,
             created_at: chrono::Local::now().naive_local(),
             updated_at: chrono::Local::now().naive_local(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FileUploadCompletedNotificationWithName {
+    pub id: uuid::Uuid,
+    pub user_uuid: uuid::Uuid,
+    pub collection_uuid: uuid::Uuid,
+    pub collection_name: String,
+    pub user_read: bool,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl FileUploadCompletedNotificationWithName {
+    pub fn from_file_upload_notification(
+        notification: FileUploadCompletedNotification,
+        collection_name: String,
+    ) -> Self {
+        FileUploadCompletedNotificationWithName {
+            id: notification.id,
+            user_uuid: notification.user_uuid,
+            collection_uuid: notification.collection_uuid,
+            collection_name,
+            user_read: notification.user_read,
+            created_at: notification.created_at,
+            updated_at: notification.updated_at,
         }
     }
 }

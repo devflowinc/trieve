@@ -2,12 +2,16 @@ use std::sync::MutexGuard;
 
 use actix_web::web;
 use diesel::{
-    dsl::sql, sql_types::Int8, ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper,
+    dsl::sql, sql_types::Int8, ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl,
+    RunQueryDsl, SelectableHelper,
 };
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    data::models::{FileUploadCompledNotification, Pool, VerificationNotification},
+    data::models::{
+        FileUploadCompletedNotification, FileUploadCompletedNotificationWithName, Pool,
+        VerificationNotification,
+    },
     errors::DefaultError,
     handlers::notification_handler::Notification,
 };
@@ -31,7 +35,7 @@ pub fn add_verificiation_notification_query(
 }
 
 pub fn add_collection_created_notification_query(
-    collection: FileUploadCompledNotification,
+    collection: FileUploadCompletedNotification,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
@@ -60,6 +64,7 @@ pub fn get_notifications_query(
     page: i64,
     pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
 ) -> Result<NotificationReturn, DefaultError> {
+    use crate::data::schema::card_collection::dsl as card_collection_columns;
     use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
     use crate::data::schema::verification_notifications::dsl as verification_notifications_columns;
 
@@ -67,7 +72,6 @@ pub fn get_notifications_query(
 
     let verifications = verification_notifications_columns::verification_notifications
         .filter(verification_notifications_columns::user_uuid.eq(user_id))
-        .filter(verification_notifications_columns::user_read.eq(false))
         .select((
             VerificationNotification::as_select(),
             sql::<Int8>("count(*) OVER() AS full_count"),
@@ -82,16 +86,21 @@ pub fn get_notifications_query(
 
     let file_upload_completed =
         file_upload_completed_notifications_columns::file_upload_completed_notifications
+            .left_outer_join(
+                card_collection_columns::card_collection
+                    .on(file_upload_completed_notifications_columns::collection_uuid
+                        .eq(card_collection_columns::id)),
+            )
             .filter(file_upload_completed_notifications_columns::user_uuid.eq(user_id))
-            .filter(file_upload_completed_notifications_columns::user_read.eq(false))
             .select((
-                FileUploadCompledNotification::as_select(),
+                FileUploadCompletedNotification::as_select(),
                 sql::<Int8>("count(*) OVER() AS full_count"),
+                card_collection_columns::name.nullable(),
             ))
             .order(file_upload_completed_notifications_columns::created_at.desc())
             .limit(10)
             .offset((page - 1) * 10)
-            .load::<(FileUploadCompledNotification, i64)>(&mut conn)
+            .load::<(FileUploadCompletedNotification, i64, Option<String>)>(&mut conn)
             .map_err(|_| DefaultError {
                 message: "Failed to get notifications",
             })?;
@@ -102,7 +111,14 @@ pub fn get_notifications_query(
     // Combine file_upload_completed and verifications in order of their created_at date property
     let mut combined_notifications: Vec<Notification> = file_upload_completed
         .iter()
-        .map(|c| Notification::FileUploadComplete(c.0.clone()))
+        .map(|c| {
+            Notification::FileUploadComplete(
+                FileUploadCompletedNotificationWithName::from_file_upload_notification(
+                    c.0.clone(),
+                    c.2.clone().unwrap_or("".to_string()),
+                ),
+            )
+        })
         .chain(
             verifications
                 .iter()
