@@ -105,7 +105,7 @@ pub async fn get_specific_user_card_collections(
             .collect(),
         total_pages: collections
             .get(0)
-            .map(|collection| collection.count / 10)
+            .map(|collection| (collection.count as f64 / 10.0).ceil() as i64)
             .unwrap_or(1),
     }))
 }
@@ -137,7 +137,7 @@ pub async fn get_logged_in_user_card_collections(
             .collect(),
         total_pages: collections
             .get(0)
-            .map(|collection| collection.count / 10)
+            .map(|collection| (collection.count as f64 / 5.0).ceil() as i64)
             .unwrap_or(0),
     }))
 }
@@ -303,7 +303,9 @@ pub async fn get_all_bookmarks(
         .map(|search_result| {
             let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
                 .iter()
-                .filter(|card| card.1 == search_result.qdrant_point_id && card.0.id != search_result.id)
+                .filter(|card| {
+                    card.1 == search_result.qdrant_point_id && card.0.id != search_result.id
+                })
                 .map(|card| card.0.clone().into())
                 .collect();
 

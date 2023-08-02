@@ -117,6 +117,7 @@ pub fn get_collections_for_specifc_user_query(
             collections_from_files_columns::file_id.nullable(),
             sql::<Int8>("count(*) OVER() AS full_count"),
         ))
+        .order_by(updated_at.desc())
         .filter(author_id.eq(user_id))
         .into_boxed();
 
@@ -169,6 +170,7 @@ pub fn get_collections_for_logged_in_user_query(
             sql::<Int8>("count(*) OVER() AS full_count"),
         ))
         .filter(author_id.eq(current_user_id))
+        .order(updated_at.desc())
         .limit(5)
         .offset(((page - 1) * 5).try_into().unwrap_or(0))
         .load::<CardCollectionAndFileWithCount>(&mut conn)

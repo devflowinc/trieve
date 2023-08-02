@@ -1,4 +1,4 @@
-use crate::{data::models::FileUploadCompledNotification, diesel::Connection, AppMutexStore};
+use crate::{data::models::FileUploadCompletedNotification, diesel::Connection, AppMutexStore};
 use actix_web::{body::MessageBody, web};
 use base64::{
     alphabet,
@@ -385,7 +385,7 @@ pub async fn create_cards_with_handler(
 
     web::block(move || {
         add_collection_created_notification_query(
-            FileUploadCompledNotification::from_details(user.id, collection_id),
+            FileUploadCompletedNotification::from_details(user.id, collection_id),
             pool,
         )
     })
