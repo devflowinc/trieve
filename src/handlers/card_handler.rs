@@ -2,7 +2,7 @@ use std::process::Command;
 use std::sync::{Arc, Mutex};
 
 use crate::data::models::{
-    CardCollection, CardMetadata, CardMetadataWithVotesAndFiles, CardMetadataWithVotesWithoutScore,
+    CardCollection, CardMetadata, CardMetadataWithVotesAndFiles, CardMetadataWithVotesWithScore,
     Pool,
 };
 use crate::errors::ServiceError;
@@ -512,7 +512,7 @@ pub struct SearchCardData {
 
 #[derive(Serialize, Deserialize)]
 pub struct ScoreCardDTO {
-    metadata: Vec<CardMetadataWithVotesWithoutScore>,
+    metadata: Vec<CardMetadataWithVotesWithScore>,
     score: f64,
 }
 
@@ -562,8 +562,8 @@ pub async fn search_card(
         .search_results
         .iter()
         .map(|search_result| {
-            let card: CardMetadataWithVotesWithoutScore = <CardMetadataWithVotesAndFiles as Into<
-                CardMetadataWithVotesWithoutScore,
+            let card: CardMetadataWithVotesWithScore = <CardMetadataWithVotesAndFiles as Into<
+                CardMetadataWithVotesWithScore,
             >>::into(
                 metadata_cards
                     .iter()
@@ -572,7 +572,7 @@ pub async fn search_card(
                     .clone(),
             );
 
-            let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
+            let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
                 .iter()
                 .filter(|card| card.qdrant_id == search_result.point_id)
                 .map(|card| card.metadata.clone().into())
@@ -640,7 +640,7 @@ pub async fn search_full_text_card(
         .search_results
         .iter()
         .map(|search_result| {
-            let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
+            let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
                 .iter()
                 .filter(|card| {
                     card.1 == search_result.qdrant_point_id && card.0.id != search_result.id
@@ -743,8 +743,8 @@ pub async fn search_collections(
         .search_results
         .iter()
         .map(|search_result| {
-            let card: CardMetadataWithVotesWithoutScore = <CardMetadataWithVotesAndFiles as Into<
-                CardMetadataWithVotesWithoutScore,
+            let card: CardMetadataWithVotesWithScore = <CardMetadataWithVotesAndFiles as Into<
+                CardMetadataWithVotesWithScore,
             >>::into(
                 metadata_cards
                     .iter()
@@ -753,7 +753,7 @@ pub async fn search_collections(
                     .clone(),
             );
 
-            let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
+            let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
                 .iter()
                 .filter(|card| card.1 == search_result.point_id)
                 .map(|card| card.0.clone().into())
@@ -845,7 +845,7 @@ pub async fn search_full_text_collections(
         .search_results
         .iter()
         .map(|search_result| {
-            let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
+            let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
                 .iter()
                 .filter(|card| {
                     card.1 == search_result.qdrant_point_id && card.0.id != search_result.id

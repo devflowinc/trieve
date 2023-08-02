@@ -384,7 +384,7 @@ pub struct CardMetadataWithVotes {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct CardMetadataWithVotesWithoutScore {
+pub struct CardMetadataWithVotesWithScore {
     pub id: uuid::Uuid,
     pub author: Option<UserDTO>,
     pub content: String,
@@ -401,6 +401,7 @@ pub struct CardMetadataWithVotesWithoutScore {
     pub file_name: Option<String>,
     pub private: bool,
     pub verification_score: Option<i64>,
+    pub score: Option<f64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -652,9 +653,9 @@ impl From<CardMetadataWithCount> for FullTextSearchResult {
     }
 }
 
-impl From<CardMetadataWithVotesAndFiles> for CardMetadataWithVotesWithoutScore {
+impl From<CardMetadataWithVotesAndFiles> for CardMetadataWithVotesWithScore {
     fn from(cards: CardMetadataWithVotesAndFiles) -> Self {
-        CardMetadataWithVotesWithoutScore {
+        CardMetadataWithVotesWithScore {
             id: cards.id,
             author: cards.author,
             content: cards.content,
@@ -671,6 +672,7 @@ impl From<CardMetadataWithVotesAndFiles> for CardMetadataWithVotesWithoutScore {
             file_name: cards.file_name,
             private: cards.private,
             verification_score: cards.verification_score,
+            score: cards.score,
         }
     }
 }
