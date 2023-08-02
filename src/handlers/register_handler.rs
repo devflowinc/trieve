@@ -100,7 +100,7 @@ fn insert_user_from_invitation(
                 }
             };
 
-            if invitation.expires_at <= chrono::Local::now().naive_local() {
+            if invitation.expires_at <= chrono::Utc::now().naive_local() {
                 return Err(DefaultError {
                     message: "Invitation Expired",
                 });
