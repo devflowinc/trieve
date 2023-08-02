@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     data::models::{
         CardCollection, CardCollectionAndFile, CardCollectionBookmark,
-        CardMetadataWithVotesWithoutScore, Pool,
+        CardMetadataWithVotesWithScore, Pool,
     },
     errors::ServiceError,
     operators::{card_operator::get_collided_cards_query, collection_operator::*},
@@ -247,7 +247,7 @@ pub struct GetAllBookmarksData {
 }
 #[derive(Deserialize, Serialize)]
 pub struct BookmarkCards {
-    pub metadata: Vec<CardMetadataWithVotesWithoutScore>,
+    pub metadata: Vec<CardMetadataWithVotesWithScore>,
 }
 
 pub async fn get_all_bookmarks(
@@ -301,7 +301,7 @@ pub async fn get_all_bookmarks(
         .metadata
         .iter()
         .map(|search_result| {
-            let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
+            let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
                 .iter()
                 .filter(|card| {
                     card.1 == search_result.qdrant_point_id && card.0.id != search_result.id
