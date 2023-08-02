@@ -29,8 +29,8 @@ impl User {
             id: uuid::Uuid::new_v4(),
             email: email.into(),
             hash: pwd.into(),
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
             username: None,
             website: None,
             visible_email: true,
@@ -58,9 +58,9 @@ where
         Invitation {
             id: uuid::Uuid::new_v4(),
             email: email.into(),
-            expires_at: chrono::Local::now().naive_local() + chrono::Duration::minutes(5),
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            expires_at: chrono::Utc::now().naive_local() + chrono::Duration::minutes(5),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
             referral_tokens: None,
         }
     }
@@ -85,9 +85,9 @@ where
         PasswordReset {
             id: uuid::Uuid::new_v4(),
             email: email.into(),
-            expires_at: chrono::Local::now().naive_local() + chrono::Duration::minutes(5),
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            expires_at: chrono::Utc::now().naive_local() + chrono::Duration::minutes(5),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
         }
     }
 }
@@ -117,8 +117,8 @@ impl Topic {
             resolution: resolution.into(),
             side: false,
             deleted: false,
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
             normal_chat: normal_chat.unwrap_or(false),
         }
     }
@@ -173,8 +173,8 @@ impl Message {
             deleted: false,
             prompt_tokens,
             completion_tokens,
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
         }
     }
 }
@@ -195,8 +195,8 @@ impl StripeCustomer {
             id: uuid::Uuid::new_v4(),
             stripe_id: stripe_id.into(),
             email: email.map(|e| e.into()),
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
         }
     }
 }
@@ -226,8 +226,8 @@ impl UserPlan {
             plan,
             status: status.unwrap_or("active".to_string()),
             stripe_subscription_id: subscription_id,
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
         }
     }
 }
@@ -278,8 +278,8 @@ impl CardMetadata {
             link: link.clone(),
             author_id: author_id.into(),
             qdrant_point_id,
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
             oc_file_path: oc_file_path.clone(),
             private,
         }
@@ -305,8 +305,8 @@ impl CardMetadata {
             link: link.clone(),
             author_id: author_id.into(),
             qdrant_point_id,
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
             oc_file_path: oc_file_path.clone(),
             private,
         }
@@ -329,8 +329,8 @@ impl CardCollisions {
             id: uuid::Uuid::new_v4(),
             card_id: card_id.into(),
             collision_qdrant_id: Some(collision_id.into()),
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
         }
     }
 }
@@ -358,8 +358,8 @@ impl CardVote {
             voted_user_id: *voted_user_id,
             card_metadata_id: *card_metadata_id,
             vote: *vote,
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
             deleted: false,
         }
     }
@@ -476,8 +476,8 @@ impl CardCollection {
             author_id,
             name,
             description,
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
         }
     }
 }
@@ -538,8 +538,8 @@ impl CardCollectionBookmark {
             id: uuid::Uuid::new_v4(),
             collection_id,
             card_metadata_id,
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
         }
     }
 }
@@ -560,8 +560,8 @@ impl FileCollection {
             id: uuid::Uuid::new_v4(),
             file_id,
             collection_id,
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
         }
     }
 }
@@ -704,8 +704,8 @@ impl File {
             file_name: file_name.to_string(),
             mime_type: mime_type.to_string(),
             private,
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
             size,
             oc_file_path,
         }
@@ -757,8 +757,8 @@ impl CardFile {
             id: uuid::Uuid::new_v4(),
             card_id,
             file_id,
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
         }
     }
 }
@@ -852,8 +852,8 @@ impl VerificationNotification {
             verification_uuid,
             similarity_score,
             user_read: false,
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
         }
     }
 }
@@ -876,8 +876,8 @@ impl FileUploadCompletedNotification {
             user_uuid,
             collection_uuid,
             user_read: false,
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
         }
     }
 }

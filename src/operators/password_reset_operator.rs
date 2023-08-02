@@ -13,7 +13,7 @@ pub fn reset_user_password(
     let password_reset = get_password_reset_query(password_reset_id, pool)?;
 
     // check if password reset is expired
-    if password_reset.expires_at < chrono::Local::now().naive_local() {
+    if password_reset.expires_at < chrono::Utc::now().naive_local() {
         return Err(DefaultError {
             message: "Password reset request expired",
         });
