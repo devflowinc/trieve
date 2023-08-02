@@ -12,7 +12,7 @@ use crate::operators::card_operator::{
 };
 use crate::operators::collection_operator::get_collection_by_id_query;
 use crate::operators::qdrant_operator::{
-    create_new_qdrant_point_query, update_qdrant_point_private_query,
+    create_new_qdrant_point_query, delete_qdrant_point_id_query, update_qdrant_point_private_query,
 };
 use actix_web::{web, HttpResponse};
 use difference::{Changeset, Difference};
@@ -204,8 +204,16 @@ pub async fn create_card(
             let top_score_card = match score_card_result {
                 Ok(card_results) => {
                     if card_results.is_empty() {
+                        delete_qdrant_point_id_query(first_semantic_result.point_id)
+                            .await
+                            .map_err(|_| {
+                                ServiceError::BadRequest(
+                                    "Could not delete qdrant point id. Please try again.".into(),
+                                )
+                            })?;
+
                         return Err(ServiceError::BadRequest(
-                            "Could not find card with matching point id".into(),
+                            "There was a data inconsistency issue. Please try again.".into(),
                         )
                         .into());
                     }

@@ -169,3 +169,19 @@ pub async fn search_qdrant_query(
 
     Ok(point_ids)
 }
+
+pub async fn delete_qdrant_point_id_query(point_id: uuid::Uuid) -> Result<(), DefaultError> {
+    let qdrant = get_qdrant_connection().await?;
+
+    let qdrant_point_id: Vec<PointId> = vec![point_id.to_string().into()];
+    let points_selector = qdrant_point_id.into();
+
+    qdrant
+        .delete_points("debate_cards".to_string(), &points_selector, None)
+        .await
+        .map_err(|_err| DefaultError {
+            message: "Failed to delete point from qdrant".into(),
+        })?;
+
+    Ok(())
+}
