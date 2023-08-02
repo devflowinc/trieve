@@ -344,7 +344,7 @@ pub async fn search_card_collections_query(
     })
 }
 
-pub fn get_metadata(
+pub fn get_metadata_query(
     card_metadata: Vec<FullTextSearchResult>,
     current_user_id: Option<uuid::Uuid>,
     mut conn: r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::PgConnection>>,
@@ -664,7 +664,7 @@ pub fn search_full_text_card_query(
             message: "Failed to load trigram searched cards",
         })?;
 
-    let card_metadata_with_upvotes_and_files = get_metadata(
+    let card_metadata_with_upvotes_and_files = get_metadata_query(
         searched_cards
             .iter()
             .map(|card| card.0.clone())
@@ -826,7 +826,7 @@ pub fn search_full_text_collection_query(
             message: "Failed to load trigram searched cards",
         })?;
 
-    let card_metadata_with_upvotes_and_files = get_metadata(
+    let card_metadata_with_upvotes_and_files = get_metadata_query(
         searched_cards
             .iter()
             .map(|card| card.0.clone())
@@ -909,7 +909,7 @@ pub fn global_top_full_text_card_query(
         },
     }?;
 
-    let card_metadata_with_upvotes_and_files = get_metadata(vec![searched_card.0], None, conn)
+    let card_metadata_with_upvotes_and_files = get_metadata_query(vec![searched_card.0], None, conn)
         .map_err(|_| DefaultError {
             message: "Failed to load metadata for top trigram searched card",
         })?;
@@ -969,7 +969,7 @@ pub fn get_metadata_from_point_ids(
         .collect::<Vec<FullTextSearchResult>>();
 
     let card_metadata_with_upvotes_and_file_id =
-        get_metadata(converted_cards, current_user_id, conn).map_err(|_| DefaultError {
+        get_metadata_query(converted_cards, current_user_id, conn).map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
 
@@ -1082,7 +1082,7 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
             .collect::<Vec<FullTextSearchResult>>();
 
         let all_metadata =
-            get_metadata(all_cards, current_user_id, conn).map_err(|_| DefaultError {
+            get_metadata_query(all_cards, current_user_id, conn).map_err(|_| DefaultError {
                 message: "Failed to load metadata",
             })?;
 
@@ -1163,7 +1163,7 @@ pub fn get_collided_cards_query(
         .collect::<Vec<FullTextSearchResult>>();
 
     let card_metadata_with_upvotes_and_file_id =
-        get_metadata(converted_cards, current_user_id, conn).map_err(|_| DefaultError {
+        get_metadata_query(converted_cards, current_user_id, conn).map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
 
@@ -1236,7 +1236,7 @@ pub fn get_metadata_and_votes_from_id_query(
         <CardMetadata as Into<FullTextSearchResult>>::into(card_metadata);
 
     let card_metadata_with_upvotes_and_file_id =
-        get_metadata(vec![converted_card], current_user_id, conn).map_err(|_| DefaultError {
+        get_metadata_query(vec![converted_card], current_user_id, conn).map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
     Ok(card_metadata_with_upvotes_and_file_id
@@ -1589,4 +1589,37 @@ pub fn get_qdrant_id_from_card_id_query(
             })
         }
     }
+}
+
+pub fn get_recently_created_cards_query(
+    page: u64,
+    pool: web::Data<Pool>,
+) -> Result<Vec<CardMetadataWithVotesAndFiles>, DefaultError> {
+    let page = if page == 0 { 1 } else { page };
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    let recent_ten_cards = card_metadata_columns::card_metadata
+        .select(CardMetadata::as_select())
+        .order(card_metadata_columns::created_at.desc())
+        .limit(5)
+        .offset(
+            ((page - 1) * 5)
+                .try_into()
+                .expect("Failed to convert u64 to i64"),
+        )
+        .load::<CardMetadata>(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Failed to get recently created cards",
+        })?;
+
+    let recent_ten_full_text_results: Vec<FullTextSearchResult> = recent_ten_cards
+        .iter()
+        .map(|x| FullTextSearchResult::from(x.clone()))
+        .collect();
+
+    let result = get_metadata_query(recent_ten_full_text_results, None, conn)?;
+
+    Ok(result)
 }

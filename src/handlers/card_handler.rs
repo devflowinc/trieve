@@ -634,7 +634,9 @@ pub async fn search_full_text_card(
         .map(|search_result| {
             let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
                 .iter()
-                .filter(|card| card.1 == search_result.qdrant_point_id && card.0.id != search_result.id)
+                .filter(|card| {
+                    card.1 == search_result.qdrant_point_id && card.0.id != search_result.id
+                })
                 .map(|card| card.0.clone().into())
                 .collect();
 
@@ -837,7 +839,9 @@ pub async fn search_full_text_collections(
         .map(|search_result| {
             let mut collided_cards: Vec<CardMetadataWithVotesWithoutScore> = collided_cards
                 .iter()
-                .filter(|card| card.1 == search_result.qdrant_point_id && card.0.id != search_result.id)
+                .filter(|card| {
+                    card.1 == search_result.qdrant_point_id && card.0.id != search_result.id
+                })
                 .map(|card| card.0.clone().into())
                 .collect();
 
@@ -855,6 +859,19 @@ pub async fn search_full_text_collections(
         collection,
         total_pages: search_card_query_results.total_card_pages,
     }))
+}
+
+pub async fn get_most_recent_cards(
+    page: Option<web::Path<u64>>,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let page = page.map(|page| page.into_inner()).unwrap_or(1);
+
+    let recent_cards = web::block(move || get_recently_created_cards_query(page, pool))
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    Ok(HttpResponse::Ok().json(recent_cards))
 }
 
 pub async fn get_card_by_id(
