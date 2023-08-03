@@ -12,6 +12,7 @@ import { parse } from "node-html-parser";
 import dotenv from "dotenv";
 
 dotenv.config();
+process.setMaxListeners(50);
 
 const keyvDb = new redis.createClient({
   url: process.env.REDIS_URL || "redis://127.0.0.1:6379",
@@ -38,8 +39,50 @@ import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 puppeteer.use(StealthPlugin());
 let browser;
+let cardUrlTries = 0;
+async function getCardUrl(content) {
+  try {
+    cardUrlTries++;
+    let response = await fetch(
+      `https://www.startpage.com/sp/search?q=${content.substring(0, 100)}`,
+      {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0",
+        },
+        method: "GET",
+        keepalive: false,
+        setMaxListeners: 5,
+      }
+    );
+    let html = await response.text();
+    let card_url;
+    parse(html)
+      .querySelectorAll("a")
+      .every((link) => {
+        let url = link.getAttribute("href");
+        if (
+          url &&
+          url.startsWith("http") &&
+          !url.includes("startpage.com") &&
+          !url.includes("startmail.com")
+        ) {
+          card_url = link.getAttribute("href");
+          return false;
+        }
+        return true;
+      });
+    cardUrlTries = 0;
+    return card_url;
+  } catch (error) {
+    if (cardUrlTries < 2) {
+      return await getCardUrl(content);
+    }
+    console.error("failed to get card url " + error.stack.split("\n")[0]);
+  }
+}
 
-async function fetchPageContents(url) {
+async function fetchPageContents(url, content) {
   const page = await browser.newPage();
   page.setDefaultTimeout(5000);
 
@@ -63,17 +106,29 @@ async function fetchPageContents(url) {
       .replace(/\s+/g, " ")
       .trim();
     return cleanedContent;
+  } catch (error) {
+    if (
+      error.message.includes("Cannot navigate to invalid URL") ||
+      error.message.includes("net::ERR_NAME_NOT_RESOLVED") ||
+      error.message.includes("net::ERR_CONNECTION_REFUSED")
+    ) {
+      url = await getCardUrl(content);
+      console.log("trying again with " + url);
+      return await fetchPageContents(url, content);
+    }
+    console.error("failed to fetch webpage " + error.stack.split("\n")[0]);
+    return "";
   } finally {
     await page.close();
   }
 }
-async function get_webpage_text_fetch(link) {
+async function get_webpage_text_fetch(link, content) {
   try {
     let content = await fetch(link).then(async (response) => {
       if (response.headers.get("content-type").includes("application/pdf")) {
         let fileName = `../tmp/${uuidv4()}.pdf`;
         pipeline(response.body, createWriteStream(fileName));
-        let html = await pdf2html.html(fileName);
+        let html = await pdf2html.html(fileName, { maxBuffer: 1024 * 10000 });
         html = getInnerHtml(html);
         unlink(fileName, (err) => {
           console.error(err, (err) => {
@@ -100,13 +155,21 @@ async function get_webpage_text_fetch(link) {
 
     return content;
   } catch (error) {
-    console.error("error fetching webpage" + error.stack.split("\n")[0]);
+    if (error.message.includes("Failed to parse URL")) {
+      link = await getCardUrl(content);
+      console.log("trying again with " + link);
+      return await get_webpage_text_fetch(link, content);
+    }
+    console.error("failed to fetch webpage " + error.stack.split("\n")[0]);
     return "";
   }
 }
 
 async function get_webpage_score(link, content) {
-  let webpage_text = await get_webpage_text_fetch(link);
+  let webpage_text = "";
+  if (content) {
+    webpage_text = await get_webpage_text_fetch(link, content);
+  }
   let score = 0;
   if (webpage_text !== "") {
     const { stdout } = spawnSync("python", [
@@ -118,11 +181,10 @@ async function get_webpage_score(link, content) {
   }
   if (score < 80) {
     let pageContent = "";
-    try {
-      pageContent = await fetchPageContents(link);
-    } catch (error) {
-      console.error("failed to fetch webpage " + error.stack.split("\n")[0]);
+    if (content) {
+      pageContent = await fetchPageContents(link, content);
     }
+
     const { stdout } = spawnSync("python", [
       "../vault-python/fuzzy-text-match.py",
       content,
@@ -195,6 +257,7 @@ async function getKeys(matchingKeys) {
 
     await keyvDb.del(`Verify: ${card}`);
   }
+  await browser.close();
 }
 
 async function verifyCard() {
