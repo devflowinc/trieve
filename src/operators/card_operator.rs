@@ -539,7 +539,7 @@ pub struct FullTextSearchCardQueryResult {
 pub fn search_full_text_card_query(
     user_query: String,
     page: u64,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
     current_user_id: Option<uuid::Uuid>,
     filter_oc_file_path: Option<Vec<String>>,
     filter_link_url: Option<Vec<String>>,
@@ -1119,7 +1119,7 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
 pub fn get_collided_cards_query(
     point_ids: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<Vec<(CardMetadataWithVotesAndFiles, uuid::Uuid)>, DefaultError> {
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
