@@ -9,5 +9,4 @@ pub mod qdrant_operator;
 pub mod stripe_customer_operator;
 pub mod topic_operator;
 pub mod user_operator;
-pub mod verification_operator;
 pub mod vote_operator;
