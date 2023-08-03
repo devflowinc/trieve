@@ -3194,7 +3194,6 @@ dependencies = [
  "r2d2",
  "redis 0.23.1",
  "regex",
- "reqwest",
  "rust-argon2",
  "rust-s3",
  "sendgrid",
@@ -3203,8 +3202,6 @@ dependencies = [
  "time 0.3.20",
  "tokio",
  "tokio-stream",
- "tonic",
- "unicode-normalization",
  "uuid",
 ]
 
