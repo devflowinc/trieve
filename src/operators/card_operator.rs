@@ -77,7 +77,7 @@ pub struct SearchCardQueryResult {
 pub async fn search_card_query(
     embedding_vector: Vec<f32>,
     page: u64,
-    pool: Arc<Mutex<web::Data<r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::PgConnection>>>>>,
+    pool: web::Data<Pool>,
     filter_oc_file_path: Option<Vec<String>>,
     filter_link_url: Option<Vec<String>>,
     current_user_id: Option<uuid::Uuid>,
@@ -104,7 +104,7 @@ pub async fn search_card_query(
         });
     }
 
-    let mut conn = pool.lock().unwrap().get().unwrap();
+    let mut conn = pool.get().unwrap();
 
     // SELECT distinct card_metadata.qdrant_point_id, card_collisions.collision_qdrant_id
     // FROM card_metadata
@@ -909,8 +909,8 @@ pub fn global_top_full_text_card_query(
         },
     }?;
 
-    let card_metadata_with_upvotes_and_files = get_metadata_query(vec![searched_card.0], None, conn)
-        .map_err(|_| DefaultError {
+    let card_metadata_with_upvotes_and_files =
+        get_metadata_query(vec![searched_card.0], None, conn).map_err(|_| DefaultError {
             message: "Failed to load metadata for top trigram searched card",
         })?;
 
@@ -986,7 +986,7 @@ pub struct CardMetadataWithQdrantId {
 pub fn get_metadata_and_collided_cards_from_point_ids_query(
     point_ids: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<
     (
         Vec<CardMetadataWithVotesAndFiles>,
@@ -1236,8 +1236,10 @@ pub fn get_metadata_and_votes_from_id_query(
         <CardMetadata as Into<FullTextSearchResult>>::into(card_metadata);
 
     let card_metadata_with_upvotes_and_file_id =
-        get_metadata_query(vec![converted_card], current_user_id, conn).map_err(|_| DefaultError {
-            message: "Failed to load metadata",
+        get_metadata_query(vec![converted_card], current_user_id, conn).map_err(|_| {
+            DefaultError {
+                message: "Failed to load metadata",
+            }
         })?;
     Ok(card_metadata_with_upvotes_and_file_id
         .first()

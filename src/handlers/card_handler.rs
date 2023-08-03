@@ -529,15 +529,14 @@ pub async fn search_card(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_user_id = user.map(|user| user.id);
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_openai_embedding(&data.content).await?;
-    let pool2 = thread_safe_pool.clone();
+    let pool1 = pool.clone();
 
     let search_card_query_results = search_card_query(
         embedding_vector,
         page,
-        thread_safe_pool,
+        pool1,
         data.filter_oc_file_path.clone(),
         data.filter_link_url.clone(),
         current_user_id,
@@ -552,7 +551,6 @@ pub async fn search_card(
         .collect::<Vec<_>>();
 
     let (metadata_cards, collided_cards) = web::block(move || {
-        let pool = pool2.lock().unwrap(); // Access the locked pool
         get_metadata_and_collided_cards_from_point_ids_query(point_ids, current_user_id, pool)
     })
     .await?
