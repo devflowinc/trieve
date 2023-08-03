@@ -129,10 +129,7 @@ pub async fn search_card_query(
         .into_boxed();
 
     query = query
-        .filter(card_metadata_columns::private.eq(false))
-        .or_filter(
-            card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
-        )
+        .filter(card_metadata_columns::private.eq(false).or(card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil()))))
         .distinct();
 
     if !filter_oc_file_path.is_empty() {
@@ -1146,10 +1143,10 @@ pub fn get_collided_cards_query(
                 .eq_any(point_ids.clone())
                 .or(card_metadata_columns::qdrant_point_id.eq_any(point_ids)),
         )
-        .filter(card_metadata_columns::private.eq(false))
-        .or_filter(
-            card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
-        )
+        .filter(card_metadata_columns::private.eq(false).or(
+            card_metadata_columns::author_id
+                .eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
+        ))
         .load::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to load metadata",
