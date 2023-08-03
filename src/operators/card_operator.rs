@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::data::models::{
     CardCollisions, CardFile, CardFileWithName, CardMetadataWithVotesAndFiles, CardVerifications,
@@ -250,7 +249,7 @@ pub async fn global_unfiltered_top_match_query(
 pub async fn search_card_collections_query(
     embedding_vector: Vec<f32>,
     page: u64,
-    pool: Arc<Mutex<web::Data<r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::PgConnection>>>>>,
+    pool: web::Data<Pool>,
     filter_oc_file_path: Option<Vec<String>>,
     filter_link_url: Option<Vec<String>>,
     collection_id: uuid::Uuid,
@@ -261,7 +260,7 @@ pub async fn search_card_collections_query(
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
-    let mut conn = pool.lock().unwrap().get().unwrap();
+    let mut conn = pool.get().unwrap();
 
     let mut query = card_metadata_columns::card_metadata
         .left_outer_join(
@@ -691,7 +690,7 @@ pub fn search_full_text_card_query(
 pub fn search_full_text_collection_query(
     user_query: String,
     page: u64,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
     current_user_id: Option<uuid::Uuid>,
     filter_oc_file_path: Option<Vec<String>>,
     filter_link_url: Option<Vec<String>>,
@@ -852,7 +851,7 @@ pub fn search_full_text_collection_query(
 
 pub fn global_top_full_text_card_query(
     user_query: String,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<Option<CardMetadataWithVotesAndFiles>, DefaultError> {
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
@@ -938,7 +937,7 @@ pub struct ScoredCardDTO {
 pub fn get_metadata_from_point_ids(
     point_ids: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<Vec<CardMetadataWithVotesAndFiles>, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
@@ -1179,7 +1178,7 @@ pub fn get_collided_cards_query(
 
 pub fn get_metadata_from_id_query(
     card_id: uuid::Uuid,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<CardMetadata, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
@@ -1250,7 +1249,7 @@ pub fn get_metadata_and_votes_from_id_query(
 pub fn insert_card_metadata_query(
     card_data: CardMetadata,
     file_uuid: Option<uuid::Uuid>,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<CardMetadata, DefaultError> {
     use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_metadata::dsl::*;
@@ -1286,7 +1285,7 @@ pub fn insert_duplicate_card_metadata_query(
     card_data: CardMetadata,
     duplicate_card: uuid::Uuid,
     file_uuid: Option<uuid::Uuid>,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<CardMetadata, DefaultError> {
     use crate::data::schema::card_collisions::dsl::*;
     use crate::data::schema::card_files::dsl as card_files_columns;
@@ -1327,7 +1326,7 @@ pub fn insert_duplicate_card_metadata_query(
 pub fn update_card_metadata_query(
     card_data: CardMetadata,
     file_uuid: Option<uuid::Uuid>,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
@@ -1380,13 +1379,13 @@ enum TransactionResult {
 
 pub async fn delete_card_metadata_query(
     card_uuid: uuid::Uuid,
-    pool: Arc<Mutex<web::Data<r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::PgConnection>>>>>,
+    pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
-    let mut conn = pool.lock().unwrap().get().unwrap();
+    let mut conn = pool.get().unwrap();
 
     let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
         {

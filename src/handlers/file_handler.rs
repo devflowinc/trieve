@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use crate::{
     data::models::{File, Pool},
     errors::ServiceError,
@@ -21,9 +19,9 @@ use super::auth_handler::LoggedUser;
 pub async fn user_owns_file(
     user_id: uuid::Uuid,
     file_id: uuid::Uuid,
-    pool: Arc<Mutex<web::Data<r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::PgConnection>>>>>,
+    pool: web::Data<Pool>,
 ) -> Result<(), actix_web::Error> {
-    let author_id = web::block(move || get_user_id_of_file_query(file_id, pool.lock().unwrap()))
+    let author_id = web::block(move || get_user_id_of_file_query(file_id, pool))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -104,12 +102,11 @@ pub async fn update_file_handler(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
+    let pool1 = pool.clone();
 
-    let pool_inner = thread_safe_pool.clone();
-    user_owns_file(user.id, data.file_id, thread_safe_pool).await?;
+    user_owns_file(user.id, data.file_id, pool).await?;
 
-    web::block(move || update_file_query(data.file_id, data.private, pool_inner.lock().unwrap()))
+    web::block(move || update_file_query(data.file_id, data.private, pool1))
         .await?
         .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 

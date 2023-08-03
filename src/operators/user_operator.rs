@@ -1,5 +1,3 @@
-use std::sync::MutexGuard;
-
 use crate::data::models::{
     CardFileWithName, CardMetadata, CardMetadataWithVotesAndFiles, CardVerifications, CardVote,
     SlimUser, UserDTOWithScore, UserDTOWithVotesAndCards, UserScore,
@@ -357,7 +355,7 @@ pub fn update_user_query(
 
 pub fn get_top_users_query(
     page: &i64,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<Vec<UserDTOWithScore>, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     use crate::data::schema::card_votes::dsl as card_votes_columns;
@@ -429,9 +427,7 @@ pub fn get_top_users_query(
     Ok(user_scores_with_users)
 }
 
-pub fn get_total_users_query(
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
-) -> Result<i64, DefaultError> {
+pub fn get_total_users_query(pool: web::Data<Pool>) -> Result<i64, DefaultError> {
     use crate::data::schema::users::dsl::*;
 
     let mut conn = pool.get().unwrap();

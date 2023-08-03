@@ -1,5 +1,4 @@
 use std::process::Command;
-use std::sync::{Arc, Mutex};
 
 use super::auth_handler::LoggedUser;
 use crate::data::models::VerificationNotification;
@@ -100,9 +99,8 @@ pub async fn verify_card_content(
     mutex_store: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     // Try naive html get first then use the headless browser approach
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
-    let pool1 = thread_safe_pool.clone();
-    let pool2 = thread_safe_pool.clone();
+    let pool1 = pool.clone();
+    let pool2 = pool.clone();
     let data = data.into_inner();
 
     let score = match data.clone() {
@@ -112,11 +110,9 @@ pub async fn verify_card_content(
         } => get_webpage_score(&url_source, &content, mutex_store).await?,
 
         VerifyData::CardVerification { card_uuid } => {
-            let card = web::block(move || {
-                card_op::get_metadata_from_id_query(card_uuid, pool1.lock().unwrap())
-            })
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+            let card = web::block(move || card_op::get_metadata_from_id_query(card_uuid, pool1))
+                .await?
+                .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
             let link = card
                 .link
                 .ok_or_else(|| ServiceError::BadRequest("No link on this card to verify".into()))?;
@@ -127,16 +123,15 @@ pub async fn verify_card_content(
 
     if let VerifyData::CardVerification { card_uuid } = data {
         // This is a vault call, so we need to update the card with the score
-        let verification = web::block(move || {
-            op::upsert_card_verification_query(thread_safe_pool, card_uuid, score)
-        })
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.to_string()))?;
+        let verification =
+            web::block(move || op::upsert_card_verification_query(pool, card_uuid, score))
+                .await?
+                .map_err(|err| ServiceError::BadRequest(err.message.to_string()))?;
 
         web::block(move || {
             add_verificiation_notification_query(
                 VerificationNotification::from_details(card_uuid, user.id, verification.id, score),
-                pool2.lock().unwrap(),
+                pool2,
             )
         })
         .await?

@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
@@ -24,16 +22,11 @@ pub async fn create_vote(
     user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
-
     let data_inner = data.into_inner();
     let card_metadata_id = data_inner.card_metadata_id;
     let vote = data_inner.vote;
-    let pool1 = thread_safe_pool.clone();
-    let card_data = web::block(move || {
-        get_metadata_from_id_query(card_metadata_id, thread_safe_pool.lock().unwrap())
-    })
-    .await?;
+    let pool1 = pool.clone();
+    let card_data = web::block(move || get_metadata_from_id_query(card_metadata_id, pool)).await?;
     match card_data {
         Ok(data) => {
             if data.private {
@@ -42,10 +35,8 @@ pub async fn create_vote(
         }
         Err(e) => return Ok(HttpResponse::BadRequest().json(e)),
     }
-    let create_vote_result = web::block(move || {
-        create_vote_query(&user.id, &card_metadata_id, &vote, pool1.lock().unwrap())
-    })
-    .await?;
+    let create_vote_result =
+        web::block(move || create_vote_query(&user.id, &card_metadata_id, &vote, pool1)).await?;
 
     match create_vote_result {
         Ok(created_vote) => Ok(HttpResponse::Ok().json(created_vote)),
@@ -58,14 +49,11 @@ pub async fn delete_vote(
     user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
-
     let card_metadata_id_inner = card_metadata_id.into_inner();
-    let pool_inner = thread_safe_pool.clone();
-    let card_data = web::block(move || {
-        get_metadata_from_id_query(card_metadata_id_inner, thread_safe_pool.lock().unwrap())
-    })
-    .await?;
+    let pool1 = pool.clone();
+
+    let card_data =
+        web::block(move || get_metadata_from_id_query(card_metadata_id_inner, pool)).await?;
     match card_data {
         Ok(data) => {
             if data.private {
@@ -74,14 +62,8 @@ pub async fn delete_vote(
         }
         Err(e) => return Ok(HttpResponse::BadRequest().json(e)),
     }
-    let delete_vote_result = web::block(move || {
-        delete_vote_query(
-            &user.id,
-            &card_metadata_id_inner,
-            &pool_inner.lock().unwrap(),
-        )
-    })
-    .await?;
+    let delete_vote_result =
+        web::block(move || delete_vote_query(&user.id, &card_metadata_id_inner, pool1)).await?;
 
     match delete_vote_result {
         Ok(()) => Ok(HttpResponse::NoContent().finish()),

@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
@@ -81,12 +79,10 @@ pub async fn get_top_users(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = page.into_inner();
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
 
-    let pool2 = thread_safe_pool.clone();
-    let users_result =
-        web::block(move || get_top_users_query(&page, thread_safe_pool.lock().unwrap())).await?;
-    let total_users = web::block(move || get_total_users_query(pool2.lock().unwrap()))
+    let pool2 = pool.clone();
+    let users_result = web::block(move || get_top_users_query(&page, pool)).await?;
+    let total_users = web::block(move || get_total_users_query(pool2))
         .await?
         .map_err(|_err| ServiceError::BadRequest("Failed to get Total users".into()))?;
     let total_user_pages = (total_users as f64 / 10.0).ceil() as i64;

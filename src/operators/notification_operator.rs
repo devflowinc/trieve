@@ -1,5 +1,3 @@
-use std::sync::MutexGuard;
-
 use actix_web::web;
 use diesel::{
     dsl::sql, sql_types::Int8, ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl,
@@ -18,7 +16,7 @@ use crate::{
 
 pub fn add_verificiation_notification_query(
     notification: VerificationNotification,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::verification_notifications::dsl as verification_notifications_columns;
 
@@ -62,7 +60,7 @@ pub struct NotificationReturn {
 pub fn get_notifications_query(
     user_id: uuid::Uuid,
     page: i64,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<NotificationReturn, DefaultError> {
     use crate::data::schema::card_collection::dsl as card_collection_columns;
     use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
@@ -144,7 +142,7 @@ pub fn get_notifications_query(
 pub fn mark_notification_as_read_query(
     user_id: uuid::Uuid,
     notification_id: uuid::Uuid,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
     use crate::data::schema::verification_notifications::dsl as verification_notifications_columns;
@@ -178,7 +176,7 @@ pub fn mark_notification_as_read_query(
 
 pub fn mark_all_notifications_as_read_query(
     user_id: uuid::Uuid,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
     use crate::data::schema::verification_notifications::dsl as verification_notifications_columns;

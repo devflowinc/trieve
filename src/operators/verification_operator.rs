@@ -3,10 +3,7 @@ use diesel::prelude::*;
 use actix_web::web;
 use regex::Regex;
 use serde_json::json;
-use std::{
-    process::Command,
-    sync::{Arc, Mutex},
-};
+use std::process::Command;
 
 use crate::{
     data::models::{CardVerifications, Pool},
@@ -116,13 +113,13 @@ pub async fn get_webpage_text_fetch(url: &str) -> Result<String, DefaultError> {
 }
 
 pub fn upsert_card_verification_query(
-    pool: Arc<Mutex<web::Data<Pool>>>,
+    pool: web::Data<Pool>,
     card_uuid: uuid::Uuid,
     new_score: i64,
 ) -> Result<CardVerifications, DefaultError> {
     use crate::data::schema::card_verification::dsl::*;
 
-    let mut conn = pool.lock().unwrap().get().unwrap();
+    let mut conn = pool.get().unwrap();
 
     let new_id = uuid::Uuid::new_v4();
 
