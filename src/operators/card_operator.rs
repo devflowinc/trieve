@@ -1602,6 +1602,7 @@ pub fn get_recently_created_cards_query(
 
     let recent_ten_cards = card_metadata_columns::card_metadata
         .select(CardMetadata::as_select())
+        .filter(card_metadata_columns::private.eq(false))
         .order(card_metadata_columns::created_at.desc())
         .limit(5)
         .offset(
