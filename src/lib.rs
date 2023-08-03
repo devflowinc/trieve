@@ -18,7 +18,6 @@ use qdrant_client::{
     prelude::*,
     qdrant::{VectorParams, VectorsConfig},
 };
-use tokio::sync::Semaphore;
 
 use crate::operators::card_operator::get_qdrant_connection;
 
@@ -38,7 +37,6 @@ fn run_migrations(conn: &mut impl MigrationHarness<diesel::pg::Pg>) {
 
 pub struct AppMutexStore {
     pub libreoffice: Mutex<()>,
-    pub headless_chrome: Semaphore,
 }
 
 #[actix_web::main]
@@ -57,7 +55,6 @@ pub async fn main() -> std::io::Result<()> {
 
     let app_mutex_store = web::Data::new(AppMutexStore {
         libreoffice: Mutex::new(()),
-        headless_chrome: Semaphore::new(5),
     });
 
     let redis_store = RedisSessionStore::new(redis_url.as_str()).await.unwrap();
