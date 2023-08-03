@@ -1577,18 +1577,14 @@ pub fn get_qdrant_id_from_card_id_query(
             Some(y) => Ok(y),
             None => match x.1 {
                 Some(y) => Ok(y),
-                None => {
-                    return Err(DefaultError {
-                        message: "Both qdrant_point_id and collision_qdrant_id are None",
-                    })
-                }
+                None => Err(DefaultError {
+                    message: "Both qdrant_point_id and collision_qdrant_id are None",
+                }),
             },
         },
-        None => {
-            return Err(DefaultError {
-                message: "Failed to get qdrant_point_id for card_id",
-            })
-        }
+        None => Err(DefaultError {
+            message: "Failed to get qdrant_point_id for card_id",
+        }),
     }
 }
 

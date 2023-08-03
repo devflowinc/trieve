@@ -17,6 +17,7 @@ use actix_web::{web, HttpResponse};
 use difference::{Changeset, Difference};
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
 use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
+use redis::Commands;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -65,6 +66,13 @@ pub async fn create_card(
     let pool1 = pool.clone();
     let pool2 = pool.clone();
     let pool3 = pool.clone();
+
+    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
+    let client = redis::Client::open(redis_url)
+        .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
+    let mut con = client
+        .get_connection()
+        .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
 
     let html_parse_result = Command::new("node")
         .arg("./vault-nodejs/scripts/html-converter.js")
@@ -156,6 +164,11 @@ pub async fn create_card(
                 })
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+                con.set(format!("Verify: {}", metadata_1.id), true)
+                    .map_err(|err| {
+                        ServiceError::BadRequest(format!("Could not set redis key: {}", err))
+                    })?;
 
                 return Ok(HttpResponse::Ok().json(ReturnCreatedCard {
                     card_metadata: metadata_1,
@@ -250,6 +263,11 @@ pub async fn create_card(
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
+                con.set(format!("Verify: {}", metadata_1.id), true)
+                    .map_err(|err| {
+                        ServiceError::BadRequest(format!("Could not set redis key: {}", err))
+                    })?;
+
                 return Ok(HttpResponse::Ok().json(ReturnCreatedCard {
                     card_metadata: metadata_1,
                     duplicate: true,
@@ -327,6 +345,9 @@ pub async fn create_card(
         )
         .await?;
     }
+
+    con.set(format!("Verify: {}", card_metadata.id), true)
+        .map_err(|err| ServiceError::BadRequest(format!("Could not set redis key: {}", err)))?;
 
     Ok(HttpResponse::Ok().json(ReturnCreatedCard {
         card_metadata,
@@ -467,7 +488,7 @@ pub async fn update_card(
     };
 
     let private = card.private.unwrap_or(card_metadata.private);
-    let card_id1 = card.card_uuid.clone();
+    let card_id1 = card.card_uuid;
     let qdrant_point_id = web::block(move || get_qdrant_id_from_card_id_query(card_id1, pool1))
         .await?
         .map_err(|_| ServiceError::BadRequest("Card not found".into()))?;

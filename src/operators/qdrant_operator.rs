@@ -73,10 +73,7 @@ pub async fn update_qdrant_point_private_query(
     };
 
     let current_private = match current_point.payload.get("private") {
-        Some(private) => match private.as_bool() {
-            Some(private) => private,
-            None => false,
-        },
+        Some(private) => private.as_bool().unwrap_or(false),
         None => false,
     };
 
@@ -94,7 +91,7 @@ pub async fn update_qdrant_point_private_query(
                             Some(author) => author.to_string(),
                             None => "".to_string(),
                         })
-                        .filter(|author| author != "")
+                        .filter(|author| !author.is_empty())
                         .collect::<Vec<String>>(),
                     None => {
                         vec![]
@@ -180,7 +177,7 @@ pub async fn delete_qdrant_point_id_query(point_id: uuid::Uuid) -> Result<(), De
         .delete_points("debate_cards".to_string(), &points_selector, None)
         .await
         .map_err(|_err| DefaultError {
-            message: "Failed to delete point from qdrant".into(),
+            message: "Failed to delete point from qdrant",
         })?;
 
     Ok(())

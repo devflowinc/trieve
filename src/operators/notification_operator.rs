@@ -14,24 +14,6 @@ use crate::{
     handlers::notification_handler::Notification,
 };
 
-pub fn add_verificiation_notification_query(
-    notification: VerificationNotification,
-    pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
-    use crate::data::schema::verification_notifications::dsl as verification_notifications_columns;
-
-    let mut conn = pool.get().unwrap();
-
-    diesel::insert_into(verification_notifications_columns::verification_notifications)
-        .values(&notification)
-        .execute(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to create notification",
-        })?;
-
-    Ok(())
-}
-
 pub fn add_collection_created_notification_query(
     collection: FileUploadCompletedNotification,
     pool: web::Data<Pool>,
