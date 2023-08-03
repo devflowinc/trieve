@@ -128,9 +128,12 @@ pub async fn search_card_query(
         ))
         .into_boxed();
 
-    query = query
-        .filter(card_metadata_columns::private.eq(false).or(card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil()))))
-        .distinct();
+    query =
+        query
+            .filter(card_metadata_columns::private.eq(false).or(
+                card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
+            ))
+            .distinct();
 
     if !filter_oc_file_path.is_empty() {
         query = query.filter(
@@ -574,15 +577,16 @@ pub fn search_full_text_card_query(
                 .and(second_join.field(schema::card_metadata::private).eq(true))),
         )
         .filter(
-            card_metadata_columns::private.eq(false).and(
-                second_join
-                    .field(schema::card_metadata::qdrant_point_id)
-                    .is_not_null()
-                    .or(card_metadata_columns::qdrant_point_id.is_not_null()),
-            ),
-        )
-        .or_filter(
-            card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
+            card_metadata_columns::private
+                .eq(false)
+                .or(card_metadata_columns::author_id
+                    .eq(current_user_id.unwrap_or(uuid::Uuid::nil())))
+                .and(
+                    second_join
+                        .field(schema::card_metadata::qdrant_point_id)
+                        .is_not_null()
+                        .or(card_metadata_columns::qdrant_point_id.is_not_null()),
+                ),
         )
         .select((
             (
@@ -735,15 +739,16 @@ pub fn search_full_text_collection_query(
             ),
         )
         .filter(
-            card_metadata_columns::private.eq(false).and(
-                second_join
-                    .field(schema::card_metadata::qdrant_point_id)
-                    .is_not_null()
-                    .or(card_metadata_columns::qdrant_point_id.is_not_null()),
-            ),
-        )
-        .or_filter(
-            card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
+            card_metadata_columns::private
+                .eq(false)
+                .or(card_metadata_columns::author_id
+                    .eq(current_user_id.unwrap_or(uuid::Uuid::nil())))
+                .and(
+                    second_join
+                        .field(schema::card_metadata::qdrant_point_id)
+                        .is_not_null()
+                        .or(card_metadata_columns::qdrant_point_id.is_not_null()),
+                ),
         )
         .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id))
         .select((
@@ -1044,10 +1049,12 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
                     (card_collisions_columns::collision_qdrant_id.assume_not_null()),
                 ))
                 .filter(card_collisions_columns::collision_qdrant_id.eq_any(point_ids))
-                .filter(card_metadata_columns::private.eq(false).or(
-                    card_metadata_columns::author_id
-                        .eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
-                ))
+                .filter(
+                    card_metadata_columns::private
+                        .eq(false)
+                        .or(card_metadata_columns::author_id
+                            .eq(current_user_id.unwrap_or(uuid::Uuid::nil()))),
+                )
                 .load::<(CardMetadata, uuid::Uuid)>(&mut conn)
                 .map_err(|_| DefaultError {
                     message: "Failed to load metadata",
@@ -1121,36 +1128,36 @@ pub fn get_collided_cards_query(
 
     let mut conn = pool.get().unwrap();
 
-    let card_metadata: Vec<CardMetadata> = card_metadata_columns::card_metadata
-        .left_outer_join(
-            card_collisions_columns::card_collisions
-                .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
-        )
-        .select((
-            card_metadata_columns::id,
-            card_metadata_columns::content,
-            card_metadata_columns::link,
-            card_metadata_columns::author_id,
-            card_metadata_columns::qdrant_point_id,
-            card_metadata_columns::created_at,
-            card_metadata_columns::updated_at,
-            card_metadata_columns::oc_file_path,
-            card_metadata_columns::card_html,
-            card_metadata_columns::private,
-        ))
-        .filter(
-            card_collisions_columns::collision_qdrant_id
-                .eq_any(point_ids.clone())
-                .or(card_metadata_columns::qdrant_point_id.eq_any(point_ids)),
-        )
-        .filter(card_metadata_columns::private.eq(false).or(
-            card_metadata_columns::author_id
-                .eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
-        ))
-        .load::<CardMetadata>(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to load metadata",
-        })?;
+    let card_metadata: Vec<CardMetadata> =
+        card_metadata_columns::card_metadata
+            .left_outer_join(
+                card_collisions_columns::card_collisions
+                    .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
+            )
+            .select((
+                card_metadata_columns::id,
+                card_metadata_columns::content,
+                card_metadata_columns::link,
+                card_metadata_columns::author_id,
+                card_metadata_columns::qdrant_point_id,
+                card_metadata_columns::created_at,
+                card_metadata_columns::updated_at,
+                card_metadata_columns::oc_file_path,
+                card_metadata_columns::card_html,
+                card_metadata_columns::private,
+            ))
+            .filter(
+                card_collisions_columns::collision_qdrant_id
+                    .eq_any(point_ids.clone())
+                    .or(card_metadata_columns::qdrant_point_id.eq_any(point_ids)),
+            )
+            .filter(card_metadata_columns::private.eq(false).or(
+                card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
+            ))
+            .load::<CardMetadata>(&mut conn)
+            .map_err(|_| DefaultError {
+                message: "Failed to load metadata",
+            })?;
 
     let converted_cards: Vec<FullTextSearchResult> = card_metadata
         .iter()
