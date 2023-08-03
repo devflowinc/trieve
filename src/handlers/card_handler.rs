@@ -605,15 +605,15 @@ pub async fn search_full_text_card(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let current_user_id = user.map(|user| user.id);
-    let pool2 = thread_safe_pool.clone();
+    let pool1 = pool.clone();
+    let pool2 = pool.clone();
     let search_card_query_results = web::block(move || {
         search_full_text_card_query(
             data.content.clone(),
             page,
-            thread_safe_pool.lock().unwrap(),
+            pool1,
             current_user_id,
             data.filter_oc_file_path.clone(),
             data.filter_link_url.clone(),
@@ -628,11 +628,10 @@ pub async fn search_full_text_card(
         .map(|point| point.qdrant_point_id)
         .collect::<Vec<uuid::Uuid>>();
 
-    let collided_cards = web::block(move || {
-        get_collided_cards_query(point_ids, current_user_id, pool2.lock().unwrap())
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let collided_cards =
+        web::block(move || get_collided_cards_query(point_ids, current_user_id, pool2))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let full_text_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
@@ -681,10 +680,11 @@ pub async fn search_collections(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_openai_embedding(&data.content).await?;
     let collection_id = data.collection_id;
+    let pool1 = pool.clone();
+    let thread_safe_pool = Arc::new(Mutex::new(pool));
     let pool2 = thread_safe_pool.clone();
     let pool3 = thread_safe_pool.clone();
     let pool4 = thread_safe_pool.clone();
@@ -731,11 +731,10 @@ pub async fn search_collections(
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let collided_cards = web::block(move || {
-        get_collided_cards_query(point_ids_1, current_user_id, pool4.lock().unwrap())
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let collided_cards =
+        web::block(move || get_collided_cards_query(point_ids_1, current_user_id, pool1))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let score_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
@@ -791,9 +790,10 @@ pub async fn search_full_text_collections(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let collection_id = data.collection_id;
+    let pool1 = pool.clone();
+    let thread_safe_pool = Arc::new(Mutex::new(pool));
     let pool2 = thread_safe_pool.clone();
     let pool3 = thread_safe_pool.clone();
     let current_user_id = user.map(|user| user.id);
@@ -833,11 +833,10 @@ pub async fn search_full_text_collections(
         .map(|point| point.qdrant_point_id)
         .collect::<Vec<uuid::Uuid>>();
 
-    let collided_cards = web::block(move || {
-        get_collided_cards_query(point_ids, current_user_id, pool2.lock().unwrap())
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let collided_cards =
+        web::block(move || get_collided_cards_query(point_ids, current_user_id, pool1))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let full_text_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
