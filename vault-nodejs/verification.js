@@ -137,10 +137,6 @@ async function getKeys(matchingKeys) {
   // matchingKeys will be an array of strings if matches were found
   // otherwise it will be an empty array.
   let card_uuids = [];
-  while (activeRequests >= MAX_CONCURRENT_REQUESTS) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  activeRequests++;
 
   puppeteer
     .launch({ headless: true })
@@ -173,7 +169,6 @@ async function getKeys(matchingKeys) {
       card_metadata.rows[0].link,
       card_metadata.rows[0].content
     );
-    activeRequests--;
 
     let verification_uuid = uuidv4();
     const verif_insert = await pg.query(
@@ -209,12 +204,13 @@ async function verifyCard() {
     "Verify:*",
     { count: 1000 },
     async (matchingKeys) => {
-      await getKeys(matchingKeys);
-      if (activeRequests === 0) {
-        await keyvDb.quit();
-        await pg.end();
-        process.exit(0);
+      while (activeRequests >= MAX_CONCURRENT_REQUESTS) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
+      activeRequests++;
+      await getKeys(matchingKeys);
+      activeRequests--;
+      console.log(activeRequests);
     },
     (err, count) => {
       if (err) throw err;
