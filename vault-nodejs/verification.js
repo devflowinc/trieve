@@ -21,6 +21,8 @@ const pg = new Client(
   process.env.DATABASE_URL ||
     "postgresql://postgres:password@localhost:5432/ai_editor"
 );
+let MAX_CONCURRENT_REQUESTS = 5;
+let activeRequests = 0;
 
 const scanner = new redisScan(keyvDb);
 function getInnerHtml(html) {
@@ -36,15 +38,6 @@ import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 puppeteer.use(StealthPlugin());
 let browser;
-
-puppeteer
-  .launch({ headless: true })
-  .then((br) => {
-    browser = br;
-  })
-  .catch((err) => {
-    console.error(err);
-  });
 
 async function fetchPageContents(url) {
   const page = await browser.newPage();
@@ -85,7 +78,8 @@ async function get_webpage_text_fetch(link) {
         unlink(fileName, (err) => {
           console.error(err, (err) => {
             if (err) throw err; //handle your error the way you want to;
-            console.log(`${fileName} was deleted`); //or else the file will be deleted
+            console.log(`${fileName} was deleted`);
+            //or else the file will be deleted
           });
         });
         return html.replaceAll("/s+/", "");
@@ -138,66 +132,96 @@ async function get_webpage_score(link, content) {
   }
   return score;
 }
-async function verifyCard() {
-  await keyvDb.connect();
-  await pg.connect();
+
+async function getKeys(matchingKeys) {
+  // matchingKeys will be an array of strings if matches were found
+  // otherwise it will be an empty array.
   let card_uuids = [];
-  scanner.scan("Verify:*", async (err, matchingKeys) => {
-    if (err) throw err;
+  while (activeRequests >= MAX_CONCURRENT_REQUESTS) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  activeRequests++;
 
-    // matchingKeys will be an array of strings if matches were found
-    // otherwise it will be an empty array.
-    card_uuids = matchingKeys;
-    card_uuids = card_uuids.map((card_uuid) => {
-      card_uuid = card_uuid.replace("Verify: ", "");
-      return card_uuid;
+  puppeteer
+    .launch({ headless: true })
+    .then((br) => {
+      browser = br;
+    })
+    .catch((err) => {
+      console.error(err);
     });
-    for (let card of card_uuids) {
-      let card_metadata = await pg.query(
-        "SELECT * FROM card_metadata WHERE id = $1",
-        [card]
-      );
+  card_uuids = matchingKeys;
+  card_uuids = card_uuids.map((card_uuid) => {
+    card_uuid = card_uuid.replace("Verify: ", "");
+    return card_uuid;
+  });
+  for (let card of card_uuids) {
+    let card_metadata = await pg.query(
+      "SELECT * FROM card_metadata WHERE id = $1",
+      [card]
+    );
 
-      if (card_metadata.rows.length === 0) {
-        console.error("Card not found");
-        await keyvDb.del(`Verify: ${card}`);
-        continue;
-      }
+    if (card_metadata.rows.length === 0) {
+      console.error("Card not found");
+      activeRequests--;
 
-      let score = await get_webpage_score(
-        card_metadata.rows[0].link,
-        card_metadata.rows[0].content
-      );
-      let verification_uuid = uuidv4();
-      const verif_insert = await pg.query(
-        `INSERT INTO card_verification (id, card_id, similarity_score) 
+      await keyvDb.del(`Verify: ${card}`);
+      continue;
+    }
+
+    let score = await get_webpage_score(
+      card_metadata.rows[0].link,
+      card_metadata.rows[0].content
+    );
+    activeRequests--;
+
+    let verification_uuid = uuidv4();
+    const verif_insert = await pg.query(
+      `INSERT INTO card_verification (id, card_id, similarity_score) 
         VALUES ($1, $2, $3) 
         ON CONFLICT (card_id) 
         DO UPDATE SET similarity_score = $3
         RETURNING id;`,
-        [verification_uuid, card, score]
-      );
-      await pg.query(
-        `INSERT INTO verification_notifications (id, user_uuid, card_uuid, verification_uuid, similarity_score, user_read)
+      [verification_uuid, card, score]
+    );
+    await pg.query(
+      `INSERT INTO verification_notifications (id, user_uuid, card_uuid, verification_uuid, similarity_score, user_read)
         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          uuidv4(),
-          card_metadata.rows[0].author_id,
-          card,
-          verif_insert.rows[0].id,
-          score,
-          false,
-        ]
-      );
-      console.log(`Verified card ${card} with score ${score}`);
+      [
+        uuidv4(),
+        card_metadata.rows[0].author_id,
+        card,
+        verif_insert.rows[0].id,
+        score,
+        false,
+      ]
+    );
+    console.log(`Verified card ${card} with score ${score}`);
 
-      await keyvDb.del(`Verify: ${card}`);
+    await keyvDb.del(`Verify: ${card}`);
+  }
+}
+
+async function verifyCard() {
+  await keyvDb.connect();
+  await pg.connect();
+  scanner.eachScan(
+    "Verify:*",
+    { count: 1000 },
+    async (matchingKeys) => {
+      await getKeys(matchingKeys);
+      if (activeRequests === 0) {
+        await keyvDb.quit();
+        await pg.end();
+        process.exit(0);
+      }
+    },
+    (err, count) => {
+      if (err) throw err;
+      console.log(`Found ${count} cards to verify`);
     }
-    pg.end();
-    keyvDb.quit();
-    process.exit(0);
-  });
+  );
 }
 
 // Call verifyCard every 2 mniutes
-setInterval(verifyCard, 120000);
+verifyCard();
