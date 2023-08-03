@@ -9,7 +9,7 @@ use diesel::RunQueryDsl;
 use log::info;
 use s3::{creds::Credentials, Bucket, Region};
 use serde::{Deserialize, Serialize};
-use std::{path::PathBuf, process::Command, sync::MutexGuard};
+use std::{path::PathBuf, process::Command};
 
 use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
 use crate::{
@@ -94,7 +94,7 @@ pub fn create_file_query(
 
 pub fn get_user_id_of_file_query(
     file_id: uuid::Uuid,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<uuid::Uuid, DefaultError> {
     use crate::data::schema::files::dsl as files_columns;
     let mut conn = pool.get().map_err(|_| DefaultError {
@@ -113,7 +113,7 @@ pub fn get_user_id_of_file_query(
 pub fn update_file_query(
     file_id: uuid::Uuid,
     private: bool,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::files::dsl as files_columns;
     let mut conn = pool.get().map_err(|_| DefaultError {

@@ -1,5 +1,3 @@
-use std::sync::MutexGuard;
-
 use crate::{
     data::models::{
         CardCollectionAndFileWithCount, CardCollectionBookmark, CardMetadataWithCount,
@@ -183,7 +181,7 @@ pub fn get_collections_for_logged_in_user_query(
 
 pub fn get_collection_by_id_query(
     collection_id: uuid::Uuid,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<CardCollection, DefaultError> {
     use crate::data::schema::card_collection::dsl::*;
 
@@ -201,7 +199,7 @@ pub fn get_collection_by_id_query(
 
 pub fn delete_collection_by_id_query(
     collection_id: uuid::Uuid,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_collection::dsl as card_collection_columns;
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
@@ -244,7 +242,7 @@ pub fn update_card_collection_query(
     new_name: Option<String>,
     new_description: Option<String>,
     new_is_public: Option<bool>,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_collection::dsl::*;
 
@@ -265,7 +263,7 @@ pub fn update_card_collection_query(
 }
 
 pub fn create_card_bookmark_query(
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
     bookmark: CardCollectionBookmark,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_collection_bookmarks::dsl::*;
@@ -292,7 +290,7 @@ pub fn get_bookmarks_for_collection_query(
     collection: uuid::Uuid,
     page: u64,
     current_user_id: Option<uuid::Uuid>,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<CollectionsBookmarkQueryResult, DefaultError> {
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
@@ -427,7 +425,7 @@ pub fn get_collections_for_bookmark_query(
 pub fn delete_bookmark_query(
     bookmark: uuid::Uuid,
     collection: uuid::Uuid,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_collection_bookmarks::dsl::*;
 

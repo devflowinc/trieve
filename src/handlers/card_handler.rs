@@ -1,5 +1,4 @@
 use std::process::Command;
-use std::sync::{Arc, Mutex};
 
 use crate::data::models::{
     CardCollection, CardMetadata, CardMetadataWithVotesAndFiles, CardMetadataWithVotesWithScore,
@@ -26,9 +25,9 @@ use super::auth_handler::LoggedUser;
 pub async fn user_owns_card(
     user_id: uuid::Uuid,
     card_id: uuid::Uuid,
-    pool: Arc<Mutex<web::Data<r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::PgConnection>>>>>,
+    pool: web::Data<Pool>,
 ) -> Result<CardMetadata, actix_web::Error> {
-    let cards = web::block(move || get_metadata_from_id_query(card_id, pool.lock().unwrap()))
+    let cards = web::block(move || get_metadata_from_id_query(card_id, pool))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -62,11 +61,10 @@ pub async fn create_card(
     let private = card.private.unwrap_or(false);
     let mut collision: Option<uuid::Uuid> = None;
     let mut embedding_vector: Option<Vec<f32>> = None;
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
 
-    let pool1 = thread_safe_pool.clone();
-    let pool2 = thread_safe_pool.clone();
-    let pool3 = thread_safe_pool.clone();
+    let pool1 = pool.clone();
+    let pool2 = pool.clone();
+    let pool3 = pool.clone();
 
     let html_parse_result = Command::new("node")
         .arg("./vault-nodejs/scripts/html-converter.js")
@@ -130,11 +128,10 @@ pub async fn create_card(
 
     // // text based similarity check to avoid paying for openai api call if not necessary
     let card_content_1 = content.clone();
-    let first_text_result = web::block(move || {
-        global_top_full_text_card_query(card_content_1, thread_safe_pool.lock().unwrap())
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let first_text_result =
+        web::block(move || global_top_full_text_card_query(card_content_1, pool))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if let Some(score_card) = first_text_result {
         if score_card.score >= Some(4.99) {
@@ -155,7 +152,7 @@ pub async fn create_card(
                 );
                 let metadata_1 = card_metadata.clone();
                 web::block(move || {
-                    update_card_metadata_query(card_metadata, card.file_uuid, pool3.lock().unwrap())
+                    update_card_metadata_query(card_metadata, card.file_uuid, pool3)
                 })
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -196,7 +193,7 @@ pub async fn create_card(
                 get_metadata_from_point_ids(
                     vec![first_semantic_result.point_id],
                     Some(user.id),
-                    pool2.lock().unwrap(),
+                    pool2,
                 )
             })
             .await?;
@@ -248,7 +245,7 @@ pub async fn create_card(
                 let metadata_1 = card_metadata.clone();
 
                 web::block(move || {
-                    update_card_metadata_query(card_metadata, card.file_uuid, pool3.lock().unwrap())
+                    update_card_metadata_query(card_metadata, card.file_uuid, pool3)
                 })
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -287,7 +284,7 @@ pub async fn create_card(
                 card_metadata,
                 collision.expect("Collision should must be some"),
                 card.file_uuid,
-                pool1.lock().unwrap(),
+                pool1,
             )
         })
         .await?
@@ -317,11 +314,10 @@ pub async fn create_card(
             Some(qdrant_point_id),
             private,
         );
-        card_metadata = web::block(move || {
-            insert_card_metadata_query(card_metadata, card.file_uuid, pool1.lock().unwrap())
-        })
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        card_metadata =
+            web::block(move || insert_card_metadata_query(card_metadata, card.file_uuid, pool1))
+                .await?
+                .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
         create_new_qdrant_point_query(
             qdrant_point_id,
@@ -343,11 +339,10 @@ pub async fn delete_card(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
     let card_id_inner = card_id.into_inner();
-    let pool1 = thread_safe_pool.clone();
+    let pool1 = pool.clone();
 
-    let card_metadata = user_owns_card(user.id, card_id_inner, thread_safe_pool).await?;
+    let card_metadata = user_owns_card(user.id, card_id_inner, pool).await?;
 
     let qdrant = get_qdrant_connection()
         .await
@@ -392,10 +387,9 @@ pub async fn update_card(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
-    let pool1 = thread_safe_pool.clone();
-    let pool2 = thread_safe_pool.clone();
-    let card_metadata = user_owns_card(user.id, card.card_uuid, thread_safe_pool).await?;
+    let pool1 = pool.clone();
+    let pool2 = pool.clone();
+    let card_metadata = user_owns_card(user.id, card.card_uuid, pool).await?;
 
     let link = card
         .link
@@ -474,11 +468,9 @@ pub async fn update_card(
 
     let private = card.private.unwrap_or(card_metadata.private);
     let card_id1 = card.card_uuid.clone();
-    let qdrant_point_id = web::block(move || {
-        get_qdrant_id_from_card_id_query(card_id1, pool1.lock().unwrap().clone())
-    })
-    .await?
-    .map_err(|_| ServiceError::BadRequest("Card not found".into()))?;
+    let qdrant_point_id = web::block(move || get_qdrant_id_from_card_id_query(card_id1, pool1))
+        .await?
+        .map_err(|_| ServiceError::BadRequest("Card not found".into()))?;
 
     update_qdrant_point_private_query(qdrant_point_id, private, Some(user.id)).await?;
 
@@ -495,7 +487,7 @@ pub async fn update_card(
                 private,
             ),
             None,
-            pool2.lock().unwrap(),
+            pool2,
         )
     })
     .await?
@@ -684,18 +676,14 @@ pub async fn search_collections(
     let embedding_vector = create_openai_embedding(&data.content).await?;
     let collection_id = data.collection_id;
     let pool1 = pool.clone();
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
-    let pool2 = thread_safe_pool.clone();
-    let pool3 = thread_safe_pool.clone();
-    let pool4 = thread_safe_pool.clone();
+    let pool2 = pool.clone();
+    let pool3 = pool.clone();
     let current_user_id = user.map(|user| user.id);
 
-    let collection = web::block(move || {
-        get_collection_by_id_query(collection_id, thread_safe_pool.lock().unwrap())
-    })
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.to_string()))?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let collection = web::block(move || get_collection_by_id_query(collection_id, pool))
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if !collection.is_public && current_user_id.is_none() {
         return Err(ServiceError::Unauthorized.into());
@@ -725,11 +713,10 @@ pub async fn search_collections(
 
     let point_ids_1 = point_ids.clone();
 
-    let metadata_cards = web::block(move || {
-        get_metadata_from_point_ids(point_ids, current_user_id, pool3.lock().unwrap())
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let metadata_cards =
+        web::block(move || get_metadata_from_point_ids(point_ids, current_user_id, pool3))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let collided_cards =
         web::block(move || get_collided_cards_query(point_ids_1, current_user_id, pool1))
@@ -793,17 +780,13 @@ pub async fn search_full_text_collections(
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let collection_id = data.collection_id;
     let pool1 = pool.clone();
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
-    let pool2 = thread_safe_pool.clone();
-    let pool3 = thread_safe_pool.clone();
+    let pool3 = pool.clone();
     let current_user_id = user.map(|user| user.id);
 
-    let collection = web::block(move || {
-        get_collection_by_id_query(collection_id, thread_safe_pool.lock().unwrap())
-    })
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.to_string()))?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let collection = web::block(move || get_collection_by_id_query(collection_id, pool))
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if !collection.is_public && current_user_id.is_none() {
         return Err(ServiceError::Unauthorized.into());
@@ -817,7 +800,7 @@ pub async fn search_full_text_collections(
         search_full_text_collection_query(
             data.content.clone(),
             page,
-            pool3.lock().unwrap(),
+            pool3,
             current_user_id,
             data.filter_oc_file_path.clone(),
             data.filter_link_url.clone(),

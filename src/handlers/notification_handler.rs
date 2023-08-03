@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use crate::{
     data::models::{FileUploadCompletedNotificationWithName, Pool, VerificationNotification},
     errors::ServiceError,
@@ -34,13 +32,11 @@ pub async fn get_notifications(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_id = user.id;
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
 
-    let notifications = web::block(move || {
-        get_notifications_query(user_id, page.into_inner(), thread_safe_pool.lock().unwrap())
-    })
-    .await?
-    .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+    let notifications =
+        web::block(move || get_notifications_query(user_id, page.into_inner(), pool))
+            .await?
+            .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
 
     Ok(HttpResponse::Ok().json(notifications))
 }
@@ -55,14 +51,9 @@ pub async fn mark_notification_as_read(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_id = user.id;
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
 
     web::block(move || {
-        mark_notification_as_read_query(
-            user_id,
-            notification_id.into_inner().notification_id,
-            thread_safe_pool.lock().unwrap(),
-        )
+        mark_notification_as_read_query(user_id, notification_id.into_inner().notification_id, pool)
     })
     .await?
     .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
@@ -75,13 +66,10 @@ pub async fn mark_all_notifications_as_read(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_id = user.id;
-    let thread_safe_pool = Arc::new(Mutex::new(pool));
 
-    web::block(move || {
-        mark_all_notifications_as_read_query(user_id, thread_safe_pool.lock().unwrap())
-    })
-    .await?
-    .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+    web::block(move || mark_all_notifications_as_read_query(user_id, pool))
+        .await?
+        .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
 
     Ok(HttpResponse::NoContent().into())
 }

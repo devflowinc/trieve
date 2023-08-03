@@ -1,4 +1,4 @@
-use std::sync::MutexGuard;
+use actix_web::web;
 
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 
@@ -11,13 +11,15 @@ pub fn create_vote_query(
     voted_user_id: &uuid::Uuid,
     card_metadata_id: &uuid::Uuid,
     vote: &bool,
-    pool: MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<CardVote, DefaultError> {
     use crate::data::schema::card_votes::dsl as card_votes_columns;
 
-    let _ = delete_vote_query(voted_user_id, card_metadata_id, &pool);
+    let pool1 = pool.clone();
 
-    let mut conn = pool.get().unwrap();
+    let _ = delete_vote_query(voted_user_id, card_metadata_id, pool);
+
+    let mut conn = pool1.get().unwrap();
 
     let new_vote = CardVote::from_details(voted_user_id, card_metadata_id, vote);
 
@@ -34,7 +36,7 @@ pub fn create_vote_query(
 pub fn delete_vote_query(
     voted_user_id: &uuid::Uuid,
     card_metadata_id: &uuid::Uuid,
-    pool: &MutexGuard<'_, actix_web::web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_votes::dsl as card_votes_columns;
 
