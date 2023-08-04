@@ -21,6 +21,7 @@ use openai_dive::v1::{
     resources::{
         chat_completion::{ChatCompletionParameters, ChatMessage},
         completion::CompletionParameters,
+        shared::StopToken,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -299,6 +300,12 @@ pub async fn create_cut_card_handler(
     let uncut_card_data = data.into_inner();
     let uncut_card_data1 = uncut_card_data.clone();
 
+    if uncut_card_data.uncut_card.len() > 4000 {
+        return Ok(HttpResponse::BadRequest().json(DefaultError {
+            message: "Card is too long",
+        }));
+    }
+
     let hard_code_demo_text = "Artificial intelligence is biased. Human beings are biased. In fact, everyone and everything that makes choices is biased, insofar as we lend greater weight to certain factors over others when choosing. Still, as much as AI has (deservedly) gained a reputation for being prejudiced against certain demographics (e.g. women and people of colour), companies involved in artificial intelligence are increasingly getting better at combating algorithmic bias.Predominantly, the way they are doing this is through what's known as “explainable AI.” In the past, and even now, much of what counts for artificial intelligence has operated as a black box. Coders have consciously designed algorithmic neural networks that can learn from data, but once";
     // check if the demo text is in the uncut card
     if uncut_card_data.uncut_card.contains(hard_code_demo_text) {
@@ -329,10 +336,10 @@ pub async fn create_cut_card_handler(
         temperature: None,
         top_p: None,
         n: None,
-        stop: None,
+        stop: Some(StopToken::String("###".to_string())),
         max_tokens: Some(max_tokens),
-        presence_penalty: Some(0.8),
-        frequency_penalty: Some(0.8),
+        presence_penalty: None,
+        frequency_penalty: None,
         logit_bias: None,
         user: None,
         suffix: None,
@@ -341,18 +348,24 @@ pub async fn create_cut_card_handler(
         best_of: None,
     };
 
-    let completion = client
-        .completions()
-        .create(parameters)
-        .await
-        .expect("Failed to create completion");
+    let completion = match client.completions().create(parameters).await {
+        Ok(completion) => completion,
+        Err(_e) => {
+            log::info!("{}", format!("OpenAI error: {:?}", _e));
+            return Err(ServiceError::BadRequest("Could not create completion".into()).into());
+        }
+    };
 
-    let completion_string = completion
-        .choices
-        .first()
-        .expect("No choices returned from completion")
-        .text
-        .clone();
+    let completion_string = match completion.choices.first() {
+        Some(choice) => choice.text.clone(),
+        None => {
+            return Err(ServiceError::BadRequest(
+                "OpenAI was not able to create a cut for the card".into(),
+            )
+            .into())
+        }
+    };
+
     let completion_string1 = completion_string.clone();
 
     web::block(move || create_cut_card(user.id, completion_string, pool))
