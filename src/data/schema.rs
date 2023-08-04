@@ -100,6 +100,16 @@ diesel::table! {
 }
 
 diesel::table! {
+    cut_cards (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        cut_card_content -> Text,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     file_upload_completed_notifications (id) {
         id -> Uuid,
         user_uuid -> Uuid,
@@ -127,7 +137,6 @@ diesel::table! {
 diesel::table! {
     invitations (id) {
         id -> Uuid,
-        #[max_length = 100]
         email -> Varchar,
         expires_at -> Timestamp,
         created_at -> Timestamp,
@@ -142,7 +151,6 @@ diesel::table! {
         topic_id -> Uuid,
         sort_order -> Int4,
         content -> Text,
-        #[max_length = 10]
         role -> Varchar,
         deleted -> Bool,
         prompt_tokens -> Nullable<Int4>,
@@ -155,7 +163,6 @@ diesel::table! {
 diesel::table! {
     password_resets (id) {
         id -> Uuid,
-        #[max_length = 100]
         email -> Varchar,
         expires_at -> Timestamp,
         created_at -> Timestamp,
@@ -167,7 +174,6 @@ diesel::table! {
     stripe_customers (id) {
         id -> Uuid,
         stripe_id -> Text,
-        #[max_length = 100]
         email -> Nullable<Varchar>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
@@ -236,6 +242,7 @@ diesel::joinable!(card_votes -> card_metadata (card_metadata_id));
 diesel::joinable!(card_votes -> users (voted_user_id));
 diesel::joinable!(collections_from_files -> card_collection (collection_id));
 diesel::joinable!(collections_from_files -> files (file_id));
+diesel::joinable!(cut_cards -> users (user_id));
 diesel::joinable!(file_upload_completed_notifications -> card_collection (collection_uuid));
 diesel::joinable!(files -> users (user_id));
 diesel::joinable!(messages -> topics (topic_id));
@@ -253,6 +260,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     card_verification,
     card_votes,
     collections_from_files,
+    cut_cards,
     file_upload_completed_notifications,
     files,
     invitations,

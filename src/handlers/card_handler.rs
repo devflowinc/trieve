@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::process::Command;
 
 use crate::data::models::{
@@ -766,14 +767,14 @@ pub async fn search_collections(
 
             collided_cards.insert(0, card);
             // remove duplicates from collided cards
-            for i in 0..collided_cards.len() {
-                let mut j = i + 1;
-                for _ in j..collided_cards.len() {
-                    if collided_cards[i].id == collided_cards[j].id {
-                        collided_cards.remove(j);
-                    } else {
-                        j += 1;
-                    }
+            let mut seen_ids = HashSet::new();
+            let mut i = 0;
+            while i < collided_cards.len() {
+                if seen_ids.contains(&collided_cards[i].id) {
+                    collided_cards.remove(i);
+                } else {
+                    seen_ids.insert(collided_cards[i].id);
+                    i += 1;
                 }
             }
 
