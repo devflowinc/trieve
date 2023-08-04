@@ -24,7 +24,6 @@ const pg = new Client(
 );
 let MAX_CONCURRENT_REQUESTS = 5;
 let activeRequests = 0;
-
 const scanner = new redisScan(keyvDb);
 function getInnerHtml(html) {
   const root = parse(html);
@@ -39,56 +38,16 @@ import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 puppeteer.use(StealthPlugin());
 let browser;
-let cardUrlTries = 0;
-async function getCardUrl(content) {
-  try {
-    cardUrlTries++;
-    let response = await fetch(
-      `https://www.startpage.com/sp/search?q=${content.substring(0, 100)}`,
-      {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0",
-        },
-        method: "GET",
-        keepalive: false,
-        setMaxListeners: 5,
-      }
-    );
-    let html = await response.text();
-    let card_url;
-    parse(html)
-      .querySelectorAll("a")
-      .every((link) => {
-        let url = link.getAttribute("href");
-        if (
-          url &&
-          url.startsWith("http") &&
-          !url.includes("startpage.com") &&
-          !url.includes("startmail.com")
-        ) {
-          card_url = link.getAttribute("href");
-          return false;
-        }
-        return true;
-      });
-    cardUrlTries = 0;
-    return card_url;
-  } catch (error) {
-    if (cardUrlTries < 2) {
-      return await getCardUrl(content);
-    }
-    console.error("failed to get card url " + error.stack.split("\n")[0]);
-  }
-}
 
-async function fetchPageContents(url, content) {
+async function fetchPageContents(url) {
+  while (!browser) {
+    await new Promise((r) => setTimeout(r, 100));
+  }
   const page = await browser.newPage();
   page.setDefaultTimeout(5000);
 
   try {
     await page.goto(url);
-
     let body = await page.waitForSelector("body", { timeout: 5000 });
     const pageContent = await page.evaluate(() => {
       const elements = document.querySelectorAll("body");
@@ -105,24 +64,16 @@ async function fetchPageContents(url, content) {
       .replace(/(\r\n|\n|\r)/gm, " ")
       .replace(/\s+/g, " ")
       .trim();
+
     return cleanedContent;
   } catch (error) {
-    if (
-      error.message.includes("Cannot navigate to invalid URL") ||
-      error.message.includes("net::ERR_NAME_NOT_RESOLVED") ||
-      error.message.includes("net::ERR_CONNECTION_REFUSED")
-    ) {
-      url = await getCardUrl(content);
-      console.log("trying again with " + url);
-      return await fetchPageContents(url, content);
-    }
     console.error("failed to fetch webpage " + error.stack.split("\n")[0]);
     return "";
   } finally {
     await page.close();
   }
 }
-async function get_webpage_text_fetch(link, content) {
+async function get_webpage_text_fetch(link) {
   try {
     let content = await fetch(link).then(async (response) => {
       if (response.headers.get("content-type").includes("application/pdf")) {
@@ -155,11 +106,6 @@ async function get_webpage_text_fetch(link, content) {
 
     return content;
   } catch (error) {
-    if (error.message.includes("Failed to parse URL")) {
-      link = await getCardUrl(content);
-      console.log("trying again with " + link);
-      return await get_webpage_text_fetch(link, content);
-    }
     console.error("failed to fetch webpage " + error.stack.split("\n")[0]);
     return "";
   }
@@ -172,12 +118,18 @@ async function get_webpage_score(link, content) {
   }
   let score = 0;
   if (webpage_text !== "") {
-    const { stdout } = spawnSync("python", [
-      "../vault-python/fuzzy-text-match.py",
-      content,
-      webpage_text.replace("\n", ""),
-    ]);
-    score = stdout.toString();
+    try {
+      const { stdout } = spawnSync("python", [
+        "../vault-python/fuzzy-text-match.py",
+        content,
+        webpage_text.replace("\n", ""),
+      ]);
+      score = stdout.toString();
+    } catch (error) {
+      console.error(
+        "failed to get fuzzy text match score " + error.stack.split("\n")[0]
+      );
+    }
   }
   if (score < 80) {
     let pageContent = "";
