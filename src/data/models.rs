@@ -911,3 +911,25 @@ impl FileUploadCompletedNotificationWithName {
         }
     }
 }
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
+#[diesel(table_name = cut_cards)]
+pub struct CutCard {
+    pub id: uuid::Uuid,
+    pub user_id: uuid::Uuid,
+    pub cut_card_content: String,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl CutCard {
+    pub fn from_details(user_id: uuid::Uuid, cut_card_content: String) -> Self {
+        CutCard {
+            id: uuid::Uuid::new_v4(),
+            user_id,
+            cut_card_content,
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
+        }
+    }
+}
