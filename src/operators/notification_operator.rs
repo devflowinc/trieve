@@ -109,9 +109,17 @@ pub fn get_notifications_query(
     // Sort the combined_notifications by their created_at date property
     combined_notifications.sort_by(|a, b| match (a, b) {
         (Notification::FileUploadComplete(a_data), Notification::Verification(b_data)) => {
-            a_data.created_at.cmp(&b_data.created_at)
+            a_data.created_at.cmp(&b_data.created_at).reverse()
         }
-        _ => std::cmp::Ordering::Equal,
+        (Notification::Verification(a_data), Notification::FileUploadComplete(b_data)) => {
+            a_data.created_at.cmp(&b_data.created_at).reverse()
+        }
+        (Notification::Verification(a_data), Notification::Verification(b_data)) => {
+            a_data.created_at.cmp(&b_data.created_at).reverse()
+        }
+        (Notification::FileUploadComplete(a_data), Notification::FileUploadComplete(b_data)) => {
+            a_data.created_at.cmp(&b_data.created_at).reverse()
+        }
     });
 
     Ok(NotificationReturn {

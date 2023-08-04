@@ -647,7 +647,7 @@ pub async fn search_full_text_card(
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let full_text_cards: Vec<ScoreCardDTO> = search_card_query_results
+    let mut full_text_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
         .iter()
         .map(|search_result| {
@@ -667,6 +667,13 @@ pub async fn search_full_text_card(
             }
         })
         .collect();
+
+    // order full_text_cards by score desc
+    full_text_cards.sort_by(|a, b| {
+        b.score
+            .partial_cmp(&a.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
         score_cards: full_text_cards,

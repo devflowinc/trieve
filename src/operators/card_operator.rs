@@ -1014,6 +1014,7 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
                 card_metadata_columns::card_html,
                 card_metadata_columns::private,
             ))
+            .limit(500)
             .load::<CardMetadata>(&mut conn)
             .map_err(|_| DefaultError {
                 message: "Failed to load metadata",
@@ -1065,10 +1066,18 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
             .map(|(_, qdrant_id)| *qdrant_id)
             .collect::<Vec<uuid::Uuid>>();
 
-        let converted_cards: Vec<FullTextSearchResult> = card_metadata
+        let mut converted_cards: Vec<FullTextSearchResult> = card_metadata
             .iter()
             .map(|card| <CardMetadata as Into<FullTextSearchResult>>::into(card.0.clone()))
             .collect::<Vec<FullTextSearchResult>>();
+
+        // iterate over converted_cards and remove duplicates where the oc_file_path with /'s removed is the same and the content is the same
+        converted_cards.sort_by(|a, b| a.id.cmp(&b.id));
+        converted_cards.dedup_by(|a, b| {
+            a.oc_file_path.clone().unwrap_or_default().replace("/", "")
+                == b.oc_file_path.clone().unwrap_or_default().replace("/", "")
+                && a.card_html == b.card_html
+        });
 
         (converted_cards, collided_qdrant_ids)
     };
