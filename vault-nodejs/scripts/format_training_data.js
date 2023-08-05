@@ -23,7 +23,7 @@ for (let i = 0; i < jsonObject.length; i++) {
   const prompt = curContent + "\n\n###\n\n";
   const completion = " " + curCardHTML + "###";
 
-  if (prompt.length + completion.length > 10000) {
+  if (prompt.length + completion.length > 11000) {
     continue;
   }
 
