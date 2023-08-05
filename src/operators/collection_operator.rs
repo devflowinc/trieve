@@ -404,17 +404,32 @@ pub fn get_collections_for_bookmark_query(
         .select((
             card_collection_columns::id,
             card_collection_columns::name,
+            card_collection_columns::author_id,
             card_collection_bookmarks_columns::card_metadata_id.nullable(),
         ))
         .limit(100)
-        .load::<(uuid::Uuid, String, Option<uuid::Uuid>)>(&mut conn)
+        .load::<(uuid::Uuid, String, uuid::Uuid, Option<uuid::Uuid>)>(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Error getting bookmarks",
         })?
         .into_iter()
-        .map(|(id, name, card_id)| match card_id {
-            Some(card_id) => (SlimCollection { id, name }, card_id),
-            None => (SlimCollection { id, name }, uuid::Uuid::default()),
+        .map(|(id, name, author_id, card_id)| match card_id {
+            Some(card_id) => (
+                SlimCollection {
+                    id,
+                    name,
+                    author_id,
+                },
+                card_id,
+            ),
+            None => (
+                SlimCollection {
+                    id,
+                    name,
+                    author_id,
+                },
+                uuid::Uuid::default(),
+            ),
         })
         .collect();
 

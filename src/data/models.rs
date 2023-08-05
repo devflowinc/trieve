@@ -487,6 +487,7 @@ impl CardCollection {
 pub struct SlimCollection {
     pub id: uuid::Uuid,
     pub name: String,
+    pub author_id: uuid::Uuid,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Queryable)]
