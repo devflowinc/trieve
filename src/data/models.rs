@@ -483,6 +483,12 @@ impl CardCollection {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SlimCollection {
+    pub id: uuid::Uuid,
+    pub name: String,
+}
+
 #[derive(Debug, Default, Serialize, Deserialize, Queryable)]
 pub struct CardCollectionAndFile {
     pub id: uuid::Uuid,
