@@ -406,6 +406,7 @@ pub fn get_collections_for_bookmark_query(
             card_collection_columns::name,
             card_collection_bookmarks_columns::card_metadata_id.nullable(),
         ))
+        .limit(100)
         .load::<(uuid::Uuid, String, Option<uuid::Uuid>)>(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Error getting bookmarks",
