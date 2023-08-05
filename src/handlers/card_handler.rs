@@ -3,7 +3,7 @@ use std::process::Command;
 
 use crate::data::models::{
     CardCollection, CardMetadata, CardMetadataWithVotesAndFiles, CardMetadataWithVotesWithScore,
-    Pool,
+    Pool, UserDTO,
 };
 use crate::errors::ServiceError;
 use crate::operators::card_operator::*;
@@ -155,7 +155,15 @@ pub async fn create_card(
                     &card.card_html,
                     &card.link,
                     &card.oc_file_path,
-                    score_card_1.author.clone().unwrap().id,
+                    score_card_1.author.clone().unwrap_or(UserDTO {
+                        id: uuid::Uuid::default(),
+                        email: None,
+                        website: None,
+                        username: None,
+                        visible_email: false,
+                        created_at: chrono::NaiveDateTime::default(),
+                    })
+                    .id,
                     Some(score_card_1.qdrant_point_id),
                     card.private.unwrap_or(score_card_1.private),
                 );
@@ -574,15 +582,33 @@ pub async fn search_card(
         .search_results
         .iter()
         .map(|search_result| {
-            let card: CardMetadataWithVotesWithScore = <CardMetadataWithVotesAndFiles as Into<
-                CardMetadataWithVotesWithScore,
-            >>::into(
-                metadata_cards
-                    .iter()
-                    .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
-                    .unwrap()
-                    .clone(),
-            );
+            let card: CardMetadataWithVotesWithScore =
+                <CardMetadataWithVotesAndFiles as Into<CardMetadataWithVotesWithScore>>::into(
+                    match metadata_cards.iter().find(|metadata_card| {
+                        metadata_card.qdrant_point_id == search_result.point_id
+                    }) {
+                        Some(metadata_card) => metadata_card.clone(),
+                        None => CardMetadataWithVotesAndFiles {
+                            id: uuid::Uuid::default(),
+                            author: None,
+                            qdrant_point_id: uuid::Uuid::default(),
+                            total_upvotes: 0,
+                            total_downvotes: 0,
+                            vote_by_current_user: None,
+                            created_at: chrono::Utc::now().naive_local(),
+                            updated_at: chrono::Utc::now().naive_local(),
+                            private: false,
+                            score: Some(0.0),
+                            file_id: None,
+                            file_name: None,
+                            verification_score: None,
+                            content: "".to_string(),
+                            card_html: Some("".to_string()),
+                            link: Some("".to_string()),
+                            oc_file_path: None,
+                        },
+                    },
+                );
 
             let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
                 .iter()
@@ -756,15 +782,33 @@ pub async fn search_collections(
         .search_results
         .iter()
         .map(|search_result| {
-            let card: CardMetadataWithVotesWithScore = <CardMetadataWithVotesAndFiles as Into<
-                CardMetadataWithVotesWithScore,
-            >>::into(
-                metadata_cards
-                    .iter()
-                    .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
-                    .unwrap()
-                    .clone(),
-            );
+            let card: CardMetadataWithVotesWithScore =
+                <CardMetadataWithVotesAndFiles as Into<CardMetadataWithVotesWithScore>>::into(
+                    match metadata_cards.iter().find(|metadata_card| {
+                        metadata_card.qdrant_point_id == search_result.point_id
+                    }) {
+                        Some(metadata_card) => metadata_card.clone(),
+                        None => CardMetadataWithVotesAndFiles {
+                            id: uuid::Uuid::default(),
+                            author: None,
+                            qdrant_point_id: uuid::Uuid::default(),
+                            total_upvotes: 0,
+                            total_downvotes: 0,
+                            vote_by_current_user: None,
+                            created_at: chrono::Utc::now().naive_local(),
+                            updated_at: chrono::Utc::now().naive_local(),
+                            private: false,
+                            score: Some(0.0),
+                            file_id: None,
+                            file_name: None,
+                            verification_score: None,
+                            content: "".to_string(),
+                            card_html: Some("".to_string()),
+                            link: Some("".to_string()),
+                            oc_file_path: None,
+                        },
+                    },
+                );
 
             let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
                 .iter()
@@ -905,7 +949,21 @@ pub async fn get_card_by_id(
     if card.private && current_user_id.is_none() {
         return Err(ServiceError::Unauthorized.into());
     }
-    if card.private && Some(card.clone().author.unwrap().id) != current_user_id {
+    if card.private
+        && Some(
+            card.clone()
+                .author
+                .unwrap_or(UserDTO {
+                    id: uuid::Uuid::default(),
+                    email: None,
+                    website: None,
+                    username: None,
+                    visible_email: false,
+                    created_at: chrono::NaiveDateTime::default(),
+                })
+                .id,
+        ) != current_user_id
+    {
         return Err(ServiceError::Forbidden.into());
     }
     Ok(HttpResponse::Ok().json(card))
