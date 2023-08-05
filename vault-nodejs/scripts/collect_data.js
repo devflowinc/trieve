@@ -3,27 +3,69 @@ import fs from "fs";
 import path from "path";
 
 const queries = [
-  "Analyzing the impact of economic sanctions as a tool of foreign policy.",
-  "The role of diplomacy in resolving international conflicts: Case studies and lessons learned.",
-  "Assessing the effectiveness of humanitarian interventions in promoting global stability.",
-  'Exploring the concept of "soft power" and its significance in international relations.',
-  "The principle of non-intervention in sovereign states: Balancing humanitarian concerns and state sovereignty.",
-  "The implications of preemptive military strikes on international security and stability.",
-  "Examining the role of international organizations in shaping modern foreign policy.",
-  "Nationalism vs. globalism: How do these ideologies influence foreign policy decisions?",
-  "The ethics of arms trade: Navigating profits, security interests, and human rights.",
-  "Analyzing the impact of cultural diplomacy in strengthening international relationships.",
-  "The doctrine of containment: Historical analysis and its relevance in today's world.",
-  "Human rights as a cornerstone of foreign policy: Challenges and contradictions.",
-  "Nuclear disarmament and non-proliferation efforts: Progress, setbacks, and future prospects.",
-  "The role of intelligence agencies in shaping foreign policy strategies.",
-  "Exploring economic alliances and trade agreements as instruments of foreign policy.",
-  "Environmental diplomacy: Addressing global challenges through international cooperation.",
-  "The concept of responsibility to protect (R2P): When and how should states intervene in humanitarian crises?",
-  "Cybersecurity and international relations: Navigating digital threats and norms.",
-  "The impact of public opinion and media on foreign policy decision-making.",
-  "Religious diplomacy: Understanding the role of faith in shaping international relations.",
+  "Analyzing the impact of recent tax reform policies on middle-class families",
+  "Examining the role of Congress in shaping environmental protection laws",
+  "The evolution of healthcare policy and its implications for American citizens",
+  "Assessing the influence of lobbying and special interest groups on congressional decision-making",
+  "Exploring the debate over gun control and Second Amendment rights in the Supreme Court",
+  "Analyzing the implications of recent Supreme Court decisions on LGBTQ+ rights",
+  "The role of executive orders in shaping domestic policy during the Trump administration",
+  "Examining the balance of power between the President and Congress in matters of national security",
+  "The impact of the Affordable Care Act on healthcare accessibility and affordability",
+  "Assessing the role of the Supreme Court in safeguarding civil liberties during times of crisis",
+  "Exploring the principles of federalism and states' rights in contemporary policy debates",
+  "Analyzing the effects of recent immigration policies on immigrant communities and national identity",
+  "The role of Congress in overseeing and regulating the technology industry",
+  "Examining the Supreme Court's interpretation of religious freedoms in relation to public policies",
+  "Assessing the implications of campaign finance reform decisions on the political landscape",
+  "Exploring the use of executive privilege and its limitations in congressional investigations",
+  "The impact of the Supreme Court's stance on affirmative action in higher education",
+  "Analyzing the role of Congress in addressing income inequality and wealth distribution",
+  "Examining the principles of judicial review and their significance in domestic policy cases",
+  "Assessing the Trump administration's approach to environmental regulations and climate change",
+  "Unraveling the mysteries of underwater basket weaving as an ancient art form",
+  "The psychology behind why people develop a fascination with rubber ducks",
+  "Comparing the existential dilemmas of garden gnomes and flamingos",
+  "A deep dive into the history of left-handed shoelaces and their impact on fashion",
+  "The symbiotic relationship between belly button lint and interstellar dust",
+  "Exploring the culinary preferences of time-traveling dinosaurs",
+  "An investigative journey into the secret lives of sock puppets",
+  "The cultural significance of interpretive dance for communicating quantum physics",
+  "The hidden connection between parallel parking skills and parallel universes",
+  "Unconventional methods for translating human emotions into Morse code",
+  "Analyzing the geopolitical implications of diplomatic relations in the world of cloud formations",
+  "The evolution of interpretive hairstyles as a form of artistic expression",
+  "A cross-dimensional study of cat psychology in cardboard box environments",
+  "The impact of lunar phases on the nocturnal habits of synchronized swimming tadpoles",
+  "The socio-political influence of sentient vending machines on late-night snack choices",
+  "Exploring the transcendental art of transcendental toenail painting",
+  "The interplay between quantum entanglement and the art of knitting",
+  "An anthropological examination of parallel universes where gravity behaves like helium",
+  "The role of interpretive sneezing in deciphering ancient hieroglyphs",
+  "A philosophical analysis of the existential crisis faced by mismatched socks",
+  "Investigating the cosmic implications of crop circles in corn mazes",
+  "The impact of climate change on migratory bird patterns",
+  "Predator-prey relationships in marine ecosystems",
+  "Adaptations of desert animals to extreme temperatures",
+  "Bee colony collapse and its effects on pollination",
+  "The role of apex predators in maintaining ecosystem balance",
+  "The symbiotic relationship between clownfish and sea anemones",
+  "The phenomenon of bioluminescence in deep-sea creatures",
+  "How deforestation affects biodiversity in rainforests",
+  "The importance of keystone species in maintaining ecosystem health",
+  "The evolution of camouflage in various animal species",
+  "The social structure of elephant herds in the wild",
+  "The impact of plastic pollution on marine life",
+  "The role of mycorrhizal fungi in supporting plant growth",
+  "The challenges of overfishing and sustainable fishing practices",
+  "The ecological role of wolves in shaping ecosystems",
+  "The migration patterns of monarch butterflies and their conservation",
+  "The relationship between coral reefs and coastal protection",
+  "The coevolution of flowers and their pollinators",
+  "The communication methods of dolphins in underwater environments",
+  "The effects of invasive species on native habitats"
 ];
+
 let data = [];
 
 const getTrainingData = async (singleQuery, page) => {
@@ -53,8 +95,8 @@ const getTrainingData = async (singleQuery, page) => {
 
     for (let i = 0; i < cardSearchResponse.score_cards.length; i++) {
       const curMetadatas = cardSearchResponse.score_cards[i].metadata;
-      let closestContent = '';
-      let closestCardHTML = '';
+      let closestContent = "";
+      let closestCardHTML = "";
 
       let closestCardLengthDiff = Infinity;
 

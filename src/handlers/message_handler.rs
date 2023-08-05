@@ -300,7 +300,7 @@ pub async fn create_cut_card_handler(
     let uncut_card_data = data.into_inner();
     let uncut_card_data1 = uncut_card_data.clone();
 
-    if uncut_card_data.uncut_card.len() > 4000 {
+    if uncut_card_data.uncut_card.len() > 6000 {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
             message: "Card is too long",
         }));
@@ -331,7 +331,7 @@ pub async fn create_cut_card_handler(
     let max_tokens: u32 = 95 * uncut_str_len / 4 / 100;
 
     let parameters = CompletionParameters {
-        model: "curie:ft-arguflow-2023-08-05-08-23-49".into(),
+        model: "curie:ft-arguflow-2023-08-05-19-51-59".into(),
         prompt: format!("{}\n\n###\n\n", uncut_card_data1.uncut_card),
         temperature: None,
         top_p: None,
