@@ -328,10 +328,10 @@ pub async fn create_cut_card_handler(
         .try_into()
         .unwrap_or_default();
 
-    let max_tokens: u32 = 95 * uncut_str_len / 4 / 10;
+    let max_tokens: u32 = 95 * uncut_str_len / 4 / 100;
 
     let parameters = CompletionParameters {
-        model: "davinci:ft-arguflow-2023-08-03-22-10-26".into(),
+        model: "curie:ft-arguflow-2023-08-05-08-23-49".into(),
         prompt: format!("{}\n\n###\n\n", uncut_card_data1.uncut_card),
         temperature: None,
         top_p: None,
