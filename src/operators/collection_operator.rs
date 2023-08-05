@@ -1,14 +1,16 @@
 use crate::{
     data::models::{
         CardCollectionAndFileWithCount, CardCollectionBookmark, CardMetadataWithCount,
-        CardMetadataWithVotesAndFiles, FileCollection, FullTextSearchResult,
+        CardMetadataWithVotesAndFiles, FileCollection, FullTextSearchResult, SlimCollection,
     },
     diesel::{Connection, ExpressionMethods, QueryDsl, RunQueryDsl},
     operators::card_operator::get_metadata_query,
 };
 
 use actix_web::web;
-use diesel::{dsl::sql, sql_types::Int8, JoinOnDsl, NullableExpressionMethods};
+use diesel::{
+    dsl::sql, sql_types::Int8, BoolExpressionMethods, JoinOnDsl, NullableExpressionMethods,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -373,8 +375,9 @@ pub fn get_bookmarks_for_collection_query(
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BookmarkCollectionResult {
     pub card_uuid: uuid::Uuid,
-    pub collection_ids: Vec<uuid::Uuid>,
+    pub slim_collections: Vec<SlimCollection>,
 }
+
 pub fn get_collections_for_bookmark_query(
     bookmarks: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
@@ -385,36 +388,50 @@ pub fn get_collections_for_bookmark_query(
 
     let mut conn = pool.get().unwrap();
 
-    let user_collections: Vec<uuid::Uuid> = card_collection_columns::card_collection
-        .filter(card_collection_columns::author_id.eq(current_user_id.unwrap_or_default()))
-        .select(card_collection_columns::id)
-        .load::<uuid::Uuid>(&mut conn)
+    let collections: Vec<(SlimCollection, uuid::Uuid)> = card_collection_columns::card_collection
+        .left_join(
+            card_collection_bookmarks_columns::card_collection_bookmarks.on(
+                card_collection_columns::id
+                    .eq(card_collection_bookmarks_columns::collection_id)
+                    .and(card_collection_bookmarks_columns::card_metadata_id.eq_any(bookmarks)),
+            ),
+        )
+        .filter(
+            card_collection_columns::is_public
+                .eq(true)
+                .or(card_collection_columns::author_id.eq(current_user_id.unwrap_or_default())),
+        )
+        .select((
+            card_collection_columns::id,
+            card_collection_columns::name,
+            card_collection_bookmarks_columns::card_metadata_id.nullable(),
+        ))
+        .load::<(uuid::Uuid, String, Option<uuid::Uuid>)>(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Error getting bookmarks",
-        })?;
-
-    let collections = card_collection_bookmarks_columns::card_collection_bookmarks
-        .filter(card_collection_bookmarks_columns::card_metadata_id.eq_any(bookmarks))
-        .filter(card_collection_bookmarks_columns::collection_id.eq_any(user_collections))
-        .load::<CardCollectionBookmark>(&mut conn)
-        .map_err(|_err| DefaultError {
-            message: "Error getting bookmarks",
-        })?;
+        })?
+        .into_iter()
+        .map(|(id, name, card_id)| match card_id {
+            Some(card_id) => (SlimCollection { id, name }, card_id),
+            None => (SlimCollection { id, name }, uuid::Uuid::default()),
+        })
+        .collect();
 
     let bookmark_collections: Vec<BookmarkCollectionResult> =
         collections.into_iter().fold(Vec::new(), |mut acc, item| {
+            if item.1 == uuid::Uuid::default() {
+                return acc;
+            }
+
             //check if card in output already
-            if let Some(output_item) = acc
-                .iter_mut()
-                .find(|x| x.card_uuid == item.card_metadata_id)
-            {
+            if let Some(output_item) = acc.iter_mut().find(|x| x.card_uuid == item.1) {
                 //if it is, add collection to it
-                output_item.collection_ids.push(item.collection_id);
+                output_item.slim_collections.push(item.0);
             } else {
                 //if not make new output item
                 acc.push(BookmarkCollectionResult {
-                    card_uuid: item.card_metadata_id,
-                    collection_ids: vec![item.collection_id],
+                    card_uuid: item.1,
+                    slim_collections: vec![item.0],
                 });
             }
             acc
