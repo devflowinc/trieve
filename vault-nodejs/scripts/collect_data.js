@@ -6,7 +6,7 @@ const queries = [
   "Analyzing the impact of economic sanctions as a tool of foreign policy.",
   "The role of diplomacy in resolving international conflicts: Case studies and lessons learned.",
   "Assessing the effectiveness of humanitarian interventions in promoting global stability.",
-  "Exploring the concept of \"soft power\" and its significance in international relations.",
+  'Exploring the concept of "soft power" and its significance in international relations.',
   "The principle of non-intervention in sovereign states: Balancing humanitarian concerns and state sovereignty.",
   "The implications of preemptive military strikes on international security and stability.",
   "Examining the role of international organizations in shaping modern foreign policy.",
@@ -22,8 +22,8 @@ const queries = [
   "The concept of responsibility to protect (R2P): When and how should states intervene in humanitarian crises?",
   "Cybersecurity and international relations: Navigating digital threats and norms.",
   "The impact of public opinion and media on foreign policy decision-making.",
-  "Religious diplomacy: Understanding the role of faith in shaping international relations."
-]
+  "Religious diplomacy: Understanding the role of faith in shaping international relations.",
+];
 let data = [];
 
 const getTrainingData = async (singleQuery, page) => {
@@ -53,23 +53,30 @@ const getTrainingData = async (singleQuery, page) => {
 
     for (let i = 0; i < cardSearchResponse.score_cards.length; i++) {
       const curMetadatas = cardSearchResponse.score_cards[i].metadata;
-      let shortestContent = curMetadatas[0].content;
-      let shortestCardHTML = curMetadatas[0].card_html;
+      let closestContent = '';
+      let closestCardHTML = '';
 
-      for (let j = 1; j < curMetadatas.length; j++) {
-        if (curMetadatas[j].content.length < shortestContent.length) {
-          shortestContent = curMetadatas[j].content;
-          shortestCardHTML = curMetadatas[j].card_html;
+      let closestCardLengthDiff = Infinity;
+
+      for (let j = 0; j < curMetadatas.length; j++) {
+        const cardHTML = curMetadatas[j].card_html;
+        const cardLength = cardHTML.length;
+        const lengthDiff = Math.abs(cardLength - 4300);
+
+        if (cardLength <= 4300 && lengthDiff < closestCardLengthDiff) {
+          closestCardHTML = cardHTML;
+          closestContent = curMetadatas[j].content;
+          closestCardLengthDiff = lengthDiff;
         }
       }
 
-      if (shortestContent.length > 4300) {
+      if (closestContent < 3500 || closestContent.length > 4300) {
         continue;
       }
 
       data.push({
-        content: shortestContent,
-        card_html: shortestCardHTML,
+        content: closestContent,
+        card_html: closestCardHTML,
       });
       console.log("Pushed: ", data.length);
     }
@@ -83,7 +90,7 @@ const MAX_CONCURRENT_REQUESTS = 1;
 
 const getTrainingDataForAllQueries = async () => {
   const requestQueue = [];
-  const pages = [1, 2, 3, 4, 5, 6, 7, 8];
+  const pages = [1, 2, 3, 4, 5, 6];
 
   for (let p = 0; p < pages.length; p++) {
     for (let i = 0; i < queries.length; i++) {
