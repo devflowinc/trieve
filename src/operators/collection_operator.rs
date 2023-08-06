@@ -392,8 +392,7 @@ pub fn get_collections_for_bookmark_query(
         .left_join(
             card_collection_bookmarks_columns::card_collection_bookmarks.on(
                 card_collection_columns::id
-                    .eq(card_collection_bookmarks_columns::collection_id)
-                    .and(card_collection_bookmarks_columns::card_metadata_id.eq_any(card_ids)),
+                    .eq(card_collection_bookmarks_columns::collection_id),
             ),
         )
         .filter(
@@ -401,13 +400,14 @@ pub fn get_collections_for_bookmark_query(
                 .eq(true)
                 .or(card_collection_columns::author_id.eq(current_user_id.unwrap_or_default())),
         )
+        .filter(card_collection_bookmarks_columns::card_metadata_id.eq_any(card_ids))
         .select((
             card_collection_columns::id,
             card_collection_columns::name,
             card_collection_columns::author_id,
             card_collection_bookmarks_columns::card_metadata_id.nullable(),
         ))
-        .limit(100)
+        .limit(1000)
         .load::<(uuid::Uuid, String, uuid::Uuid, Option<uuid::Uuid>)>(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Error getting bookmarks",
@@ -434,6 +434,8 @@ pub fn get_collections_for_bookmark_query(
             ),
         })
         .collect();
+
+    log::info!("collections: {:?}", collections.len());
 
     let bookmark_collections: Vec<BookmarkCollectionResult> =
         collections.into_iter().fold(Vec::new(), |mut acc, item| {
