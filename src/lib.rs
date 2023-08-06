@@ -7,7 +7,7 @@ use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
 use actix_web::{
-    cookie::Key,
+    cookie::{Key, SameSite},
     middleware,
     web::{self, PayloadConfig},
     App, HttpServer,
@@ -113,7 +113,12 @@ pub async fn main() -> std::io::Result<()> {
                     PersistentSession::default().session_ttl(time::Duration::days(1)),
                 )
                 .cookie_name("vault".to_owned())
-                .cookie_secure(false)
+                .cookie_same_site(if std::env::var("COOKIE_SECURE").unwrap_or("false".to_owned()) == "true" {
+                    SameSite::None
+                } else {
+                    SameSite::Lax
+                })
+                .cookie_secure(std::env::var("COOKIE_SECURE").unwrap_or("false".to_owned()) == "true")
                 .cookie_path("/".to_owned())
                 .build(),
             )
