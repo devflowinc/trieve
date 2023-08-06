@@ -345,7 +345,7 @@ pub fn get_bookmarks_for_collection_query(
                 message: "Error getting bookmarks",
             })?;
 
-    let mut converted_cards: Vec<FullTextSearchResult> = bookmark_metadata
+    let converted_cards: Vec<FullTextSearchResult> = bookmark_metadata
         .iter()
         .map(|(card, collided_id)| match collided_id {
             Some(id) => {
@@ -356,13 +356,6 @@ pub fn get_bookmarks_for_collection_query(
             None => <CardMetadataWithCount as Into<FullTextSearchResult>>::into(card.clone()),
         })
         .collect::<Vec<FullTextSearchResult>>();
-
-    converted_cards.sort_by(|a, b| a.id.cmp(&b.id));
-    converted_cards.dedup_by(|a, b| {
-        a.oc_file_path.clone().unwrap_or_default().replace("/", "")
-            == b.oc_file_path.clone().unwrap_or_default().replace("/", "")
-            || a.card_html == b.card_html
-    });
 
     let card_metadata_with_upvotes_and_file_id =
         get_metadata_query(converted_cards, current_user_id, conn).map_err(|_| DefaultError {
