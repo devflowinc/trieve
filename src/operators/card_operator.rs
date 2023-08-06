@@ -1056,6 +1056,8 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
                         .or(card_metadata_columns::author_id
                             .eq(current_user_id.unwrap_or(uuid::Uuid::nil()))),
                 )
+                // TODO: Properly handle this and remove the arbitrary limit
+                .limit(5000)
                 .load::<(CardMetadata, uuid::Uuid)>(&mut conn)
                 .map_err(|_| DefaultError {
                     message: "Failed to load metadata",
@@ -1071,12 +1073,11 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
             .map(|card| <CardMetadata as Into<FullTextSearchResult>>::into(card.0.clone()))
             .collect::<Vec<FullTextSearchResult>>();
 
-        // iterate over converted_cards and remove duplicates where the oc_file_path with /'s removed is the same and the content is the same
         converted_cards.sort_by(|a, b| a.id.cmp(&b.id));
         converted_cards.dedup_by(|a, b| {
             a.oc_file_path.clone().unwrap_or_default().replace("/", "")
                 == b.oc_file_path.clone().unwrap_or_default().replace("/", "")
-                && a.card_html == b.card_html
+                || a.card_html == b.card_html
         });
 
         (converted_cards, collided_qdrant_ids)
@@ -1163,15 +1164,24 @@ pub fn get_collided_cards_query(
             .filter(card_metadata_columns::private.eq(false).or(
                 card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
             ))
+            // TODO: Properly handle this and remove the arbitrary limit
+            .limit(5000)
             .load::<CardMetadata>(&mut conn)
             .map_err(|_| DefaultError {
                 message: "Failed to load metadata",
             })?;
 
-    let converted_cards: Vec<FullTextSearchResult> = card_metadata
+    let mut converted_cards: Vec<FullTextSearchResult> = card_metadata
         .iter()
         .map(|card| <CardMetadata as Into<FullTextSearchResult>>::into(card.clone()))
         .collect::<Vec<FullTextSearchResult>>();
+
+    converted_cards.sort_by(|a, b| a.id.cmp(&b.id));
+    converted_cards.dedup_by(|a, b| {
+        a.oc_file_path.clone().unwrap_or_default().replace("/", "")
+            == b.oc_file_path.clone().unwrap_or_default().replace("/", "")
+            || a.card_html == b.card_html
+    });
 
     let card_metadata_with_upvotes_and_file_id =
         get_metadata_query(converted_cards, current_user_id, conn).map_err(|_| DefaultError {
