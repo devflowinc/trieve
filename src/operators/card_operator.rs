@@ -1057,7 +1057,7 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
                             .eq(current_user_id.unwrap_or(uuid::Uuid::nil()))),
                 )
                 // TODO: Properly handle this and remove the arbitrary limit
-                .limit(5000)
+                .limit(500)
                 .load::<(CardMetadata, uuid::Uuid)>(&mut conn)
                 .map_err(|_| DefaultError {
                     message: "Failed to load metadata",
@@ -1165,7 +1165,7 @@ pub fn get_collided_cards_query(
                 card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
             ))
             // TODO: Properly handle this and remove the arbitrary limit
-            .limit(5000)
+            .limit(500)
             .load::<CardMetadata>(&mut conn)
             .map_err(|_| DefaultError {
                 message: "Failed to load metadata",
