@@ -488,6 +488,7 @@ pub struct SlimCollection {
     pub id: uuid::Uuid,
     pub name: String,
     pub author_id: uuid::Uuid,
+    pub of_current_user: bool,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Queryable)]

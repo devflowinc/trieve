@@ -379,7 +379,7 @@ pub struct BookmarkCollectionResult {
 }
 
 pub fn get_collections_for_bookmark_query(
-    bookmarks: Vec<uuid::Uuid>,
+    card_ids: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<Vec<BookmarkCollectionResult>, DefaultError> {
@@ -393,7 +393,7 @@ pub fn get_collections_for_bookmark_query(
             card_collection_bookmarks_columns::card_collection_bookmarks.on(
                 card_collection_columns::id
                     .eq(card_collection_bookmarks_columns::collection_id)
-                    .and(card_collection_bookmarks_columns::card_metadata_id.eq_any(bookmarks)),
+                    .and(card_collection_bookmarks_columns::card_metadata_id.eq_any(card_ids)),
             ),
         )
         .filter(
@@ -419,6 +419,7 @@ pub fn get_collections_for_bookmark_query(
                     id,
                     name,
                     author_id,
+                    of_current_user: author_id == current_user_id.unwrap_or_default(),
                 },
                 card_id,
             ),
@@ -427,6 +428,7 @@ pub fn get_collections_for_bookmark_query(
                     id,
                     name,
                     author_id,
+                    of_current_user: author_id == current_user_id.unwrap_or_default(),
                 },
                 uuid::Uuid::default(),
             ),
