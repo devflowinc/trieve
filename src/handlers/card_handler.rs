@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::process::Command;
+use std::str::FromStr;
 
 use crate::data::models::{
     CardCollection, CardMetadata, CardMetadataWithVotesAndFiles, CardMetadataWithVotesWithScore,
@@ -61,8 +62,19 @@ pub async fn create_card(
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let private = card.private.unwrap_or(false);
+    let card_oc_file_path = card.oc_file_path.clone();
     let mut collision: Option<uuid::Uuid> = None;
     let mut embedding_vector: Option<Vec<f32>> = None;
+
+    if card_oc_file_path.unwrap_or("".to_string()) != ""
+        && user.id
+            != uuid::Uuid::from_str("ba4fff39-6f25-4dd6-bb12-d9cc117f42bf")
+                .unwrap_or(uuid::Uuid::nil())
+    {
+        return Ok(HttpResponse::BadRequest().json(json!({
+            "message": "Only admin can create cards with oc_file_path",
+        })));
+    }
 
     let pool1 = pool.clone();
     let pool2 = pool.clone();
@@ -155,15 +167,18 @@ pub async fn create_card(
                     &card.card_html,
                     &card.link,
                     &card.oc_file_path,
-                    score_card_1.author.clone().unwrap_or(UserDTO {
-                        id: uuid::Uuid::default(),
-                        email: None,
-                        website: None,
-                        username: None,
-                        visible_email: false,
-                        created_at: chrono::NaiveDateTime::default(),
-                    })
-                    .id,
+                    score_card_1
+                        .author
+                        .clone()
+                        .unwrap_or(UserDTO {
+                            id: uuid::Uuid::default(),
+                            email: None,
+                            website: None,
+                            username: None,
+                            visible_email: false,
+                            created_at: chrono::NaiveDateTime::default(),
+                        })
+                        .id,
                     Some(score_card_1.qdrant_point_id),
                     card.private.unwrap_or(score_card_1.private),
                 );
