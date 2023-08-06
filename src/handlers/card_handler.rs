@@ -6,7 +6,7 @@ use crate::data::models::{
     CardCollection, CardMetadata, CardMetadataWithVotesAndFiles, CardMetadataWithVotesWithScore,
     Pool, UserDTO,
 };
-use crate::errors::ServiceError;
+use crate::errors::{DefaultError, ServiceError};
 use crate::operators::card_operator::*;
 use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
@@ -71,9 +71,9 @@ pub async fn create_card(
             != uuid::Uuid::from_str("ba4fff39-6f25-4dd6-bb12-d9cc117f42bf")
                 .unwrap_or(uuid::Uuid::nil())
     {
-        return Ok(HttpResponse::BadRequest().json(json!({
-            "message": "Only admin can create cards with oc_file_path",
-        })));
+        return Ok(HttpResponse::Forbidden().json(DefaultError {
+            message: "Only admin can create cards with oc_file_path",
+        }));
     }
 
     let pool1 = pool.clone();
