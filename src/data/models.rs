@@ -941,3 +941,10 @@ impl CutCard {
         }
     }
 }
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
+#[diesel(table_name = card_metadata_count)]
+pub struct CardMetadataCount {
+    pub id: uuid::Uuid,
+    pub total_rows: i64,
+}

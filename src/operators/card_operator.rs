@@ -1557,13 +1557,13 @@ pub async fn delete_card_metadata_query(
 }
 
 pub fn get_card_count_query(pool: web::Data<Pool>) -> Result<i64, DefaultError> {
-    use crate::data::schema::card_metadata::dsl::*;
+    use crate::data::schema::card_metadata_count::dsl as card_metadata_count_columns;
 
     let mut conn = pool.get().unwrap();
 
-    card_metadata
-        .count()
-        .get_result::<i64>(&mut conn)
+    card_metadata_count_columns::card_metadata_count
+        .select(card_metadata_count_columns::total_rows)
+        .first(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Failed to get card count",
         })
