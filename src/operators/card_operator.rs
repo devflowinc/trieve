@@ -888,6 +888,7 @@ pub fn global_top_full_text_card_query(
             (card_collisions_columns::collision_qdrant_id.assume_not_null()),
         ))
         .distinct()
+        .limit(5)
         .into_boxed();
 
     query = query.filter(

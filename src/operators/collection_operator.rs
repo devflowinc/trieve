@@ -99,12 +99,18 @@ pub fn get_collections_for_specifc_user_query(
 ) -> Result<Vec<CardCollectionAndFileWithCount>, DefaultError> {
     use crate::data::schema::card_collection::dsl::*;
     use crate::data::schema::collections_from_files::dsl as collections_from_files_columns;
+    use crate::data::schema::user_collection_count::dsl as user_collection_count_columns;
+
     let page = if page == 0 { 1 } else { page };
     let mut conn = pool.get().unwrap();
     let mut collections = card_collection
         .left_outer_join(
             collections_from_files_columns::collections_from_files
                 .on(id.eq(collections_from_files_columns::collection_id)),
+        )
+        .left_outer_join(
+            user_collection_count_columns::user_collection_count
+                .on(author_id.eq(user_collection_count_columns::user_id)),
         )
         .select((
             id,
@@ -115,7 +121,7 @@ pub fn get_collections_for_specifc_user_query(
             created_at,
             updated_at,
             collections_from_files_columns::file_id.nullable(),
-            sql::<Int8>("count(*) OVER() AS full_count"),
+            user_collection_count_columns::collection_count.nullable(),
         ))
         .order_by(updated_at.desc())
         .filter(author_id.eq(user_id))
@@ -148,6 +154,7 @@ pub fn get_collections_for_logged_in_user_query(
 ) -> Result<Vec<CardCollectionAndFileWithCount>, DefaultError> {
     use crate::data::schema::card_collection::dsl::*;
     use crate::data::schema::collections_from_files::dsl as collections_from_files_columns;
+    use crate::data::schema::user_collection_count::dsl as user_collection_count_columns;
 
     let page = if page == 0 { 1 } else { page };
 
@@ -158,6 +165,10 @@ pub fn get_collections_for_logged_in_user_query(
             collections_from_files_columns::collections_from_files
                 .on(id.eq(collections_from_files_columns::collection_id)),
         )
+        .left_outer_join(
+            user_collection_count_columns::user_collection_count
+                .on(author_id.eq(user_collection_count_columns::user_id)),
+        )
         .select((
             id,
             author_id,
@@ -167,7 +178,7 @@ pub fn get_collections_for_logged_in_user_query(
             created_at,
             updated_at,
             collections_from_files_columns::file_id.nullable(),
-            sql::<Int8>("count(*) OVER() AS full_count"),
+            user_collection_count_columns::collection_count.nullable(),
         ))
         .filter(author_id.eq(current_user_id))
         .order(updated_at.desc())

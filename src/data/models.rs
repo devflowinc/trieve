@@ -513,7 +513,7 @@ pub struct CardCollectionAndFileWithCount {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub file_id: Option<uuid::Uuid>,
-    pub count: i64,
+    pub collection_count: Option<i32>,
 }
 
 impl From<CardCollectionAndFileWithCount> for CardCollectionAndFile {
@@ -947,4 +947,12 @@ impl CutCard {
 pub struct CardMetadataCount {
     pub id: uuid::Uuid,
     pub total_rows: i64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
+#[diesel(table_name = user_collection_count)]
+pub struct UserCollectionCount {
+    pub id: uuid::Uuid,
+    pub user_id: uuid::Uuid,
+    pub collection_count: i32,
 }
