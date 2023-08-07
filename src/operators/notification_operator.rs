@@ -90,7 +90,7 @@ pub fn get_notifications_query(
 
     let combined_count = match file_upload_completed.first() {
         Some((_, _, Some(count))) => count + verifications.len() as i32,
-        _ => 0 as i32,
+        _ => 0_i32,
     };
 
     // Combine file_upload_completed and verifications in order of their created_at date property

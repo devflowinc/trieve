@@ -1076,8 +1076,8 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
 
         converted_cards.sort_by(|a, b| a.id.cmp(&b.id));
         converted_cards.dedup_by(|a, b| {
-            a.oc_file_path.clone().unwrap_or_default().replace("/", "")
-                == b.oc_file_path.clone().unwrap_or_default().replace("/", "")
+            a.oc_file_path.clone().unwrap_or_default().replace('/', "")
+                == b.oc_file_path.clone().unwrap_or_default().replace('/', "")
                 || a.card_html == b.card_html
         });
 
@@ -1179,8 +1179,8 @@ pub fn get_collided_cards_query(
 
     converted_cards.sort_by(|a, b| a.id.cmp(&b.id));
     converted_cards.dedup_by(|a, b| {
-        a.oc_file_path.clone().unwrap_or_default().replace("/", "")
-            == b.oc_file_path.clone().unwrap_or_default().replace("/", "")
+        a.oc_file_path.clone().unwrap_or_default().replace('/', "")
+            == b.oc_file_path.clone().unwrap_or_default().replace('/', "")
             || a.card_html == b.card_html
     });
 
