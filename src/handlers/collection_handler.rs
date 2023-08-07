@@ -251,21 +251,11 @@ pub async fn get_all_bookmarks(
     let pool2 = pool.clone();
     let current_user_id = user.map(|user| user.id);
 
-    let collection = web::block(move || get_collection_by_id_query(collection_id, pool))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    if !collection.is_public && current_user_id.is_none() {
-        return Err(ServiceError::Unauthorized.into());
-    }
-    if !collection.is_public && Some(collection.author_id) != current_user_id {
-        return Err(ServiceError::Forbidden.into());
-    }
-
     let bookmarks = web::block(move || {
         get_bookmarks_for_collection_query(collection_id, page, current_user_id, pool2)
     })
     .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?;
 
     let point_ids = bookmarks
         .metadata
@@ -310,7 +300,7 @@ pub async fn get_all_bookmarks(
 
     Ok(HttpResponse::Ok().json(BookmarkData {
         bookmarks: collection_cards,
-        collection,
+        collection: bookmarks.collection,
         total_pages: bookmarks.total_pages,
     }))
 }

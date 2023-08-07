@@ -4,6 +4,7 @@ use crate::{
         CardMetadataWithVotesAndFiles, FileCollection, FullTextSearchResult, SlimCollection,
     },
     diesel::{Connection, ExpressionMethods, QueryDsl, RunQueryDsl},
+    errors::ServiceError,
     operators::card_operator::get_metadata_query,
 };
 
@@ -306,6 +307,7 @@ pub fn create_card_bookmark_query(
 }
 pub struct CollectionsBookmarkQueryResult {
     pub metadata: Vec<CardMetadataWithVotesAndFiles>,
+    pub collection: CardCollection,
     pub total_pages: i64,
 }
 pub fn get_bookmarks_for_collection_query(
@@ -313,7 +315,8 @@ pub fn get_bookmarks_for_collection_query(
     page: u64,
     current_user_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<CollectionsBookmarkQueryResult, DefaultError> {
+) -> Result<CollectionsBookmarkQueryResult, ServiceError> {
+    use crate::data::schema::card_collection::dsl as card_collection_columns;
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
@@ -321,27 +324,21 @@ pub fn get_bookmarks_for_collection_query(
 
     let mut conn = pool.get().unwrap();
 
-    let bookmarks = card_collection_bookmarks_columns::card_collection_bookmarks
-        .filter(card_collection_bookmarks_columns::collection_id.eq(collection))
-        .load::<CardCollectionBookmark>(&mut conn)
-        .map_err(|_err| DefaultError {
-            message: "Error getting bookmarks",
-        })?;
-
-    let bookmark_metadata: Vec<(CardMetadataWithCount, Option<uuid::Uuid>)> =
+    let bookmark_metadata: Vec<(CardMetadataWithCount, Option<uuid::Uuid>, CardCollection)> =
         card_metadata_columns::card_metadata
-            .filter(
-                card_metadata_columns::id.eq_any(
-                    bookmarks
-                        .iter()
-                        .map(|bookmark| bookmark.card_metadata_id)
-                        .collect::<Vec<uuid::Uuid>>(),
-                ),
+            .left_join(
+                card_collection_bookmarks_columns::card_collection_bookmarks
+                    .on(card_collection_bookmarks_columns::card_metadata_id
+                        .eq(card_metadata_columns::id)),
             )
             .left_join(
                 card_collisions_columns::card_collisions
                     .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
             )
+            .left_join(card_collection_columns::card_collection.on(
+                card_collection_columns::id.eq(card_collection_bookmarks_columns::collection_id),
+            ))
+            .filter(card_collection_bookmarks_columns::collection_id.eq(collection))
             .select((
                 (
                     card_metadata_columns::id,
@@ -357,17 +354,33 @@ pub fn get_bookmarks_for_collection_query(
                     sql::<Int8>("count(*) OVER() AS full_count"),
                 ),
                 card_collisions_columns::collision_qdrant_id.nullable(),
+                (
+                    card_collection_columns::id.assume_not_null(),
+                    card_collection_columns::author_id.assume_not_null(),
+                    card_collection_columns::name.assume_not_null(),
+                    card_collection_columns::is_public.assume_not_null(),
+                    card_collection_columns::description.assume_not_null(),
+                    card_collection_columns::created_at.assume_not_null(),
+                    card_collection_columns::updated_at.assume_not_null(),
+                ),
             ))
             .limit(10)
             .offset(((page - 1) * 10).try_into().unwrap_or(0))
-            .load::<(CardMetadataWithCount, Option<uuid::Uuid>)>(&mut conn)
-            .map_err(|_err| DefaultError {
-                message: "Error getting bookmarks",
-            })?;
+            .load::<(CardMetadataWithCount, Option<uuid::Uuid>, CardCollection)>(&mut conn)
+            .map_err(|_err| ServiceError::BadRequest("Error getting bookmarks".to_string()))?;
 
+    if !bookmark_metadata.get(0).unwrap().2.is_public && current_user_id.is_none() {
+        return Err(ServiceError::Unauthorized)?;
+    }
+
+    if !bookmark_metadata.get(0).unwrap().2.is_public
+        && Some(bookmark_metadata.get(0).unwrap().2.author_id) != current_user_id
+    {
+        return Err(ServiceError::Forbidden)?;
+    }
     let converted_cards: Vec<FullTextSearchResult> = bookmark_metadata
         .iter()
-        .map(|(card, collided_id)| match collided_id {
+        .map(|(card, collided_id, _card_collection)| match collided_id {
             Some(id) => {
                 let mut card = card.clone();
                 card.qdrant_point_id = Some(*id);
@@ -378,9 +391,8 @@ pub fn get_bookmarks_for_collection_query(
         .collect::<Vec<FullTextSearchResult>>();
 
     let card_metadata_with_upvotes_and_file_id =
-        get_metadata_query(converted_cards, current_user_id, conn).map_err(|_| DefaultError {
-            message: "Failed to load metadata",
-        })?;
+        get_metadata_query(converted_cards, current_user_id, conn)
+            .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
     let total_pages = match bookmark_metadata.get(0) {
         Some(metadata) => (metadata.0.count as f64 / 10.0).ceil() as i64,
@@ -389,6 +401,7 @@ pub fn get_bookmarks_for_collection_query(
 
     Ok(CollectionsBookmarkQueryResult {
         metadata: card_metadata_with_upvotes_and_file_id,
+        collection: bookmark_metadata.get(0).unwrap().2.clone(),
         total_pages,
     })
 }
