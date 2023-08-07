@@ -206,37 +206,46 @@ pub fn delete_collection_by_id_query(
     use crate::data::schema::card_collection::dsl as card_collection_columns;
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
     use crate::data::schema::collections_from_files::dsl as collections_from_files_columns;
+    use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
 
     let mut conn = pool.get().unwrap();
 
-    diesel::delete(
-        collections_from_files_columns::collections_from_files
-            .filter(collections_from_files_columns::collection_id.eq(collection_id)),
-    )
-    .execute(&mut conn)
-    .map_err(|_err| DefaultError {
-        message: "Error deleting collection",
-    })?;
+    let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
+        diesel::delete(
+            file_upload_completed_notifications_columns::file_upload_completed_notifications
+                .filter(
+                    file_upload_completed_notifications_columns::collection_uuid.eq(collection_id),
+                ),
+        )
+        .execute(conn)?;
 
-    diesel::delete(
-        card_collection_bookmarks_columns::card_collection_bookmarks
-            .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id)),
-    )
-    .execute(&mut conn)
-    .map_err(|_err| DefaultError {
-        message: "Error deleting collection",
-    })?;
+        diesel::delete(
+            collections_from_files_columns::collections_from_files
+                .filter(collections_from_files_columns::collection_id.eq(collection_id)),
+        )
+        .execute(conn)?;
 
-    diesel::delete(
-        card_collection_columns::card_collection
-            .filter(card_collection_columns::id.eq(collection_id)),
-    )
-    .execute(&mut conn)
-    .map_err(|_err| DefaultError {
-        message: "Error deleting collection",
-    })?;
+        diesel::delete(
+            card_collection_bookmarks_columns::card_collection_bookmarks
+                .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id)),
+        )
+        .execute(conn)?;
 
-    Ok(())
+        diesel::delete(
+            card_collection_columns::card_collection
+                .filter(card_collection_columns::id.eq(collection_id)),
+        )
+        .execute(conn)?;
+
+        Ok(())
+    });
+
+    match transaction_result {
+        Ok(_) => Ok(()),
+        Err(_) => Err(DefaultError {
+            message: "Error deleting collection",
+        }),
+    }
 }
 
 pub fn update_card_collection_query(
