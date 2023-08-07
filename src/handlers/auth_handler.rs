@@ -124,3 +124,7 @@ fn find_user_match(auth_data: AuthData, pool: web::Data<Pool>) -> Result<SlimUse
         message: "Incorrect email or password",
     })
 }
+
+pub async fn health_check() -> HttpResponse {
+    HttpResponse::Ok().finish()
+}

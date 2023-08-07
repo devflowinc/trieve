@@ -352,6 +352,9 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::put().to(
                                 handlers::notification_handler::mark_all_notifications_as_read,
                             )),
+                    )
+                    .service(
+                        web::resource("/health").route(web::get().to(handlers::auth_handler::health_check)),
                     ),
             )
     })
