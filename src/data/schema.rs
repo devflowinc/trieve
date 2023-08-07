@@ -205,10 +205,18 @@ diesel::table! {
 }
 
 diesel::table! {
-    user_collection_count (id) {
+    user_collection_counts (id) {
         id -> Uuid,
         user_id -> Uuid,
         collection_count -> Int4,
+    }
+}
+
+diesel::table! {
+    user_notification_counts (id) {
+        id -> Uuid,
+        user_uuid -> Uuid,
+        notification_count -> Int4,
     }
 }
 
@@ -266,7 +274,8 @@ diesel::joinable!(file_upload_completed_notifications -> card_collection (collec
 diesel::joinable!(files -> users (user_id));
 diesel::joinable!(messages -> topics (topic_id));
 diesel::joinable!(topics -> users (user_id));
-diesel::joinable!(user_collection_count -> users (user_id));
+diesel::joinable!(user_collection_counts -> users (user_id));
+diesel::joinable!(user_notification_counts -> users (user_uuid));
 diesel::joinable!(verification_notifications -> card_metadata (card_uuid));
 diesel::joinable!(verification_notifications -> card_verification (verification_uuid));
 diesel::joinable!(verification_notifications -> users (user_uuid));
@@ -289,7 +298,8 @@ diesel::allow_tables_to_appear_in_same_query!(
     password_resets,
     stripe_customers,
     topics,
-    user_collection_count,
+    user_collection_counts,
+    user_notification_counts,
     user_plans,
     users,
     verification_notifications,

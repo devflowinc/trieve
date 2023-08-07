@@ -1,7 +1,7 @@
 use actix_web::web;
 use diesel::{
-    dsl::sql, sql_types::Int8, ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl,
-    RunQueryDsl, SelectableHelper,
+    ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl, RunQueryDsl,
+    SelectableHelper,
 };
 use serde::{Deserialize, Serialize};
 
@@ -36,7 +36,7 @@ pub fn add_collection_created_notification_query(
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct NotificationReturn {
     pub notifications: Vec<Notification>,
-    pub full_count: i64,
+    pub full_count: i32,
     pub total_pages: i64,
 }
 pub fn get_notifications_query(
@@ -46,20 +46,18 @@ pub fn get_notifications_query(
 ) -> Result<NotificationReturn, DefaultError> {
     use crate::data::schema::card_collection::dsl as card_collection_columns;
     use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
+    use crate::data::schema::user_notification_counts::dsl as user_notification_counts_columns;
     use crate::data::schema::verification_notifications::dsl as verification_notifications_columns;
 
     let mut conn = pool.get().unwrap();
 
     let verifications = verification_notifications_columns::verification_notifications
         .filter(verification_notifications_columns::user_uuid.eq(user_id))
-        .select((
-            VerificationNotification::as_select(),
-            sql::<Int8>("count(*) OVER() AS full_count"),
-        ))
+        .select(VerificationNotification::as_select())
         .limit(10)
         .offset((page - 1) * 10)
         .order(verification_notifications_columns::created_at.desc())
-        .load::<(VerificationNotification, i64)>(&mut conn)
+        .load::<VerificationNotification>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to get notifications",
         })?;
@@ -71,22 +69,29 @@ pub fn get_notifications_query(
                     .on(file_upload_completed_notifications_columns::collection_uuid
                         .eq(card_collection_columns::id)),
             )
+            .left_outer_join(
+                user_notification_counts_columns::user_notification_counts
+                    .on(file_upload_completed_notifications_columns::user_uuid
+                        .eq(user_notification_counts_columns::user_uuid)),
+            )
             .filter(file_upload_completed_notifications_columns::user_uuid.eq(user_id))
             .select((
                 FileUploadCompletedNotification::as_select(),
-                sql::<Int8>("count(*) OVER() AS full_count"),
                 card_collection_columns::name.nullable(),
+                user_notification_counts_columns::notification_count.nullable(),
             ))
             .order(file_upload_completed_notifications_columns::created_at.desc())
             .limit(10)
             .offset((page - 1) * 10)
-            .load::<(FileUploadCompletedNotification, i64, Option<String>)>(&mut conn)
+            .load::<(FileUploadCompletedNotification, Option<String>, Option<i32>)>(&mut conn)
             .map_err(|_| DefaultError {
                 message: "Failed to get notifications",
             })?;
 
-    let combined_count =
-        verifications.get(0).map_or(0, |v| v.1) + file_upload_completed.get(0).map_or(0, |c| c.1);
+    let combined_count = match file_upload_completed.first() {
+        Some((_, _, Some(count))) => count + verifications.len() as i32,
+        _ => 0 as i32,
+    };
 
     // Combine file_upload_completed and verifications in order of their created_at date property
     let mut combined_notifications: Vec<Notification> = file_upload_completed
@@ -95,14 +100,14 @@ pub fn get_notifications_query(
             Notification::FileUploadComplete(
                 FileUploadCompletedNotificationWithName::from_file_upload_notification(
                     c.0.clone(),
-                    c.2.clone().unwrap_or("".to_string()),
+                    c.1.clone().unwrap_or("".to_string()),
                 ),
             )
         })
         .chain(
             verifications
                 .iter()
-                .map(|v| Notification::Verification(v.0.clone())),
+                .map(|v| Notification::Verification(v.clone())),
         )
         .collect();
 

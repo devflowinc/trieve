@@ -99,7 +99,7 @@ pub fn get_collections_for_specifc_user_query(
 ) -> Result<Vec<CardCollectionAndFileWithCount>, DefaultError> {
     use crate::data::schema::card_collection::dsl::*;
     use crate::data::schema::collections_from_files::dsl as collections_from_files_columns;
-    use crate::data::schema::user_collection_count::dsl as user_collection_count_columns;
+    use crate::data::schema::user_collection_counts::dsl as user_collection_count_columns;
 
     let page = if page == 0 { 1 } else { page };
     let mut conn = pool.get().unwrap();
@@ -109,7 +109,7 @@ pub fn get_collections_for_specifc_user_query(
                 .on(id.eq(collections_from_files_columns::collection_id)),
         )
         .left_outer_join(
-            user_collection_count_columns::user_collection_count
+            user_collection_count_columns::user_collection_counts
                 .on(author_id.eq(user_collection_count_columns::user_id)),
         )
         .select((
@@ -154,7 +154,7 @@ pub fn get_collections_for_logged_in_user_query(
 ) -> Result<Vec<CardCollectionAndFileWithCount>, DefaultError> {
     use crate::data::schema::card_collection::dsl::*;
     use crate::data::schema::collections_from_files::dsl as collections_from_files_columns;
-    use crate::data::schema::user_collection_count::dsl as user_collection_count_columns;
+    use crate::data::schema::user_collection_counts::dsl as user_collection_count_columns;
 
     let page = if page == 0 { 1 } else { page };
 
@@ -166,7 +166,7 @@ pub fn get_collections_for_logged_in_user_query(
                 .on(id.eq(collections_from_files_columns::collection_id)),
         )
         .left_outer_join(
-            user_collection_count_columns::user_collection_count
+            user_collection_count_columns::user_collection_counts
                 .on(author_id.eq(user_collection_count_columns::user_id)),
         )
         .select((
