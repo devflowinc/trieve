@@ -897,7 +897,7 @@ pub struct FileUploadCompletedNotificationWithName {
     pub id: uuid::Uuid,
     pub user_uuid: uuid::Uuid,
     pub collection_uuid: uuid::Uuid,
-    pub collection_name: String,
+    pub collection_name: Option<String>,
     pub user_read: bool,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -912,7 +912,7 @@ impl FileUploadCompletedNotificationWithName {
             id: notification.id,
             user_uuid: notification.user_uuid,
             collection_uuid: notification.collection_uuid,
-            collection_name,
+            collection_name: Some(collection_name),
             user_read: notification.user_read,
             created_at: notification.created_at,
             updated_at: notification.updated_at,
@@ -950,9 +950,17 @@ pub struct CardMetadataCount {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
-#[diesel(table_name = user_collection_count)]
+#[diesel(table_name = user_collection_counts)]
 pub struct UserCollectionCount {
     pub id: uuid::Uuid,
     pub user_id: uuid::Uuid,
     pub collection_count: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
+#[diesel(table_name = user_notification_counts)]
+pub struct UserNotificationCount {
+    pub id: uuid::Uuid,
+    pub user_uuid: uuid::Uuid,
+    pub notification_count: i32,
 }
