@@ -144,6 +144,7 @@ diesel::table! {
 diesel::table! {
     invitations (id) {
         id -> Uuid,
+        #[max_length = 100]
         email -> Varchar,
         expires_at -> Timestamp,
         created_at -> Timestamp,
@@ -158,6 +159,7 @@ diesel::table! {
         topic_id -> Uuid,
         sort_order -> Int4,
         content -> Text,
+        #[max_length = 10]
         role -> Varchar,
         deleted -> Bool,
         prompt_tokens -> Nullable<Int4>,
@@ -170,6 +172,7 @@ diesel::table! {
 diesel::table! {
     password_resets (id) {
         id -> Uuid,
+        #[max_length = 100]
         email -> Varchar,
         expires_at -> Timestamp,
         created_at -> Timestamp,
@@ -181,6 +184,7 @@ diesel::table! {
     stripe_customers (id) {
         id -> Uuid,
         stripe_id -> Text,
+        #[max_length = 100]
         email -> Nullable<Varchar>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
@@ -197,6 +201,14 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         normal_chat -> Bool,
+    }
+}
+
+diesel::table! {
+    user_collection_count (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        collection_count -> Int4,
     }
 }
 
@@ -254,6 +266,7 @@ diesel::joinable!(file_upload_completed_notifications -> card_collection (collec
 diesel::joinable!(files -> users (user_id));
 diesel::joinable!(messages -> topics (topic_id));
 diesel::joinable!(topics -> users (user_id));
+diesel::joinable!(user_collection_count -> users (user_id));
 diesel::joinable!(verification_notifications -> card_metadata (card_uuid));
 diesel::joinable!(verification_notifications -> card_verification (verification_uuid));
 diesel::joinable!(verification_notifications -> users (user_uuid));
@@ -276,6 +289,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     password_resets,
     stripe_customers,
     topics,
+    user_collection_count,
     user_plans,
     users,
     verification_notifications,
