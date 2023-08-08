@@ -27,10 +27,13 @@ pub fn add_collection_created_notification_query(
     )
     .values(&collection)
     .execute(&mut conn)
-    .map_err(|_| DefaultError {
-        message: "Failed to create notification",
+    .map_err(|err| {
+        log::error!("Failed to create notification: {:?}", err);
+        DefaultError {
+            message: "Failed to create notification",
+        }
     })?;
-
+    log::error!("fin");
     Ok(())
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]

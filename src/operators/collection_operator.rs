@@ -467,8 +467,6 @@ pub fn get_collections_for_bookmark_query(
         })
         .collect();
 
-    log::info!("collections: {:?}", collections.len());
-
     let bookmark_collections: Vec<BookmarkCollectionResult> =
         collections.into_iter().fold(Vec::new(), |mut acc, item| {
             if item.1 == uuid::Uuid::default() {
