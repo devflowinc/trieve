@@ -1156,7 +1156,7 @@ pub fn get_collided_cards_query(
                     .or(card_metadata_columns::qdrant_point_id.eq_any(point_ids)),
             )
             .filter(card_metadata_columns::private.eq(false).or(
-                card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
+                card_metadata_columns::author_id.eq(current_user_id.unwrap_or_default()),
             ))
             // TODO: Properly handle this and remove the arbitrary limit
             .limit(500)

@@ -339,6 +339,11 @@ pub fn get_bookmarks_for_collection_query(
                 card_collection_columns::id.eq(card_collection_bookmarks_columns::collection_id),
             ))
             .filter(card_collection_bookmarks_columns::collection_id.eq(collection))
+            .filter(
+                card_metadata_columns::private
+                    .eq(false)
+                    .or(card_metadata_columns::author_id.eq(current_user_id.unwrap_or_default())),
+            )
             .select((
                 (
                     card_metadata_columns::id,
