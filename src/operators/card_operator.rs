@@ -1069,17 +1069,10 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
             .map(|(_, qdrant_id)| *qdrant_id)
             .collect::<Vec<uuid::Uuid>>();
 
-        let mut converted_cards: Vec<FullTextSearchResult> = card_metadata
+        let converted_cards: Vec<FullTextSearchResult> = card_metadata
             .iter()
             .map(|card| <CardMetadata as Into<FullTextSearchResult>>::into(card.0.clone()))
             .collect::<Vec<FullTextSearchResult>>();
-
-        converted_cards.sort_by(|a, b| a.id.cmp(&b.id));
-        converted_cards.dedup_by(|a, b| {
-            a.oc_file_path.clone().unwrap_or_default().replace('/', "")
-                == b.oc_file_path.clone().unwrap_or_default().replace('/', "")
-                || a.card_html == b.card_html
-        });
 
         (converted_cards, collided_qdrant_ids)
     };
@@ -1172,17 +1165,10 @@ pub fn get_collided_cards_query(
                 message: "Failed to load metadata",
             })?;
 
-    let mut converted_cards: Vec<FullTextSearchResult> = card_metadata
+    let converted_cards: Vec<FullTextSearchResult> = card_metadata
         .iter()
         .map(|card| <CardMetadata as Into<FullTextSearchResult>>::into(card.clone()))
         .collect::<Vec<FullTextSearchResult>>();
-
-    converted_cards.sort_by(|a, b| a.id.cmp(&b.id));
-    converted_cards.dedup_by(|a, b| {
-        a.oc_file_path.clone().unwrap_or_default().replace('/', "")
-            == b.oc_file_path.clone().unwrap_or_default().replace('/', "")
-            || a.card_html == b.card_html
-    });
 
     let card_metadata_with_upvotes_and_file_id =
         get_metadata_query(converted_cards, current_user_id, conn).map_err(|_| DefaultError {
@@ -1193,8 +1179,6 @@ pub fn get_collided_cards_query(
         .iter()
         .map(|card| (card.clone(), card.qdrant_point_id))
         .collect::<Vec<(CardMetadataWithVotesAndFiles, uuid::Uuid)>>();
-
-    //combine card_metadata_with vote with the file_ids that was loaded
 
     Ok(card_metadatas_with_collided_qdrant_ids)
 }
