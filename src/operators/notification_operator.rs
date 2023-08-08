@@ -33,7 +33,7 @@ pub fn add_collection_created_notification_query(
             message: "Failed to create notification",
         }
     })?;
-    log::error!("fin");
+
     Ok(())
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
