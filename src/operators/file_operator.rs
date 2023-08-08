@@ -238,7 +238,7 @@ pub async fn convert_docx_to_html_query(
         })?;
 
     tokio::spawn(async move {
-        let _ = create_cards_with_handler(
+        let resp = create_cards_with_handler(
             oc_file_path,
             private,
             file_name,
@@ -249,6 +249,10 @@ pub async fn convert_docx_to_html_query(
             pool,
         )
         .await;
+
+        if resp.is_err() {
+            log::error!("Create cards with handler failed {:?}", resp);
+        }
     });
 
     Ok(UploadFileResult {
