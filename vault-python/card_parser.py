@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys
 from bs4 import BeautifulSoup
 import json
@@ -40,7 +41,7 @@ def main():
 
     with codecs.open(input_file, "r", encoding="utf-8") as file:
         html_string = file.read()
-    cards = extract_cards_from_html(html_string, 600)
+    cards = extract_cards_from_html(html_string, story_id)
     json_output = json.dumps(cards, default=lambda x: x.__dict__)
 
     sys.stdout.write(json_output)
