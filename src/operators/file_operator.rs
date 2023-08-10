@@ -136,7 +136,7 @@ pub struct CoreCard {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn convert_docx_to_html_query(
+pub async fn convert_doc_to_html_query(
     file_name: String,
     file_data: Vec<u8>,
     file_mime: String,
@@ -174,17 +174,29 @@ pub async fn convert_docx_to_html_query(
             .unwrap_or_default()
     ));
 
-    let libreoffice_lock_result = mutex_store.libreoffice.lock();
+    match file_mime.as_str() {
+        "text/html" => {
+            let temp_html_file_path = temp_html_file_path_buf.to_str().unwrap();
+            std::fs::write(temp_html_file_path, file_data.clone()).map_err(|err| {
+                log::error!("Could not write file to disk {:?}", err);
+                DefaultError {
+                    message: "Could not write file to disk",
+                }
+            })?;
+        }
+        _ => {
+            let libreoffice_lock_result = mutex_store.libreoffice.lock();
 
-    if libreoffice_lock_result.is_err() {
-        delete_docx_file()?;
-        return Err(DefaultError {
-            message: "Could not lock libreoffice",
-        });
-    }
+            if libreoffice_lock_result.is_err() {
+                delete_docx_file()?;
+                return Err(DefaultError {
+                    message: "Could not lock libreoffice",
+                });
+            }
 
-    let conversion_command_output =
-        Command::new(std::env::var("LIBREOFFICE_PATH").expect("LIBREOFFICE_PATH must be set"))
+            let conversion_command_output = Command::new(
+                std::env::var("LIBREOFFICE_PATH").expect("LIBREOFFICE_PATH must be set"),
+            )
             .arg("--headless")
             .arg("--convert-to")
             .arg("html")
@@ -193,15 +205,17 @@ pub async fn convert_docx_to_html_query(
             .arg(&temp_docx_file_path)
             .output();
 
-    drop(libreoffice_lock_result);
+            drop(libreoffice_lock_result);
 
-    delete_docx_file()?;
+            delete_docx_file()?;
 
-    if conversion_command_output.is_err() {
-        return Err(DefaultError {
-            message: "Could not convert file",
-        });
-    }
+            if conversion_command_output.is_err() {
+                return Err(DefaultError {
+                    message: "Could not convert file",
+                });
+            }
+        }
+    };
 
     let file_size = match file_data.len().try_into() {
         Ok(file_size) => file_size,
@@ -271,6 +285,8 @@ pub async fn create_cards_with_handler(
     glob_string: String,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
+    let parser_command = std::env::var("PARSER_COMMAND")
+        .unwrap_or("./vault-nodejs/scripts/card_parser.js".to_string());
     let delete_html_file = || {
         let files = glob::glob(glob_string.as_str()).expect("Failed to read glob pattern");
 
@@ -296,10 +312,7 @@ pub async fn create_cards_with_handler(
             });
         }
     };
-    let parsed_cards_command_output = Command::new("node")
-        .arg("./vault-nodejs/scripts/card_parser.js")
-        .arg(file_path_str)
-        .output();
+    let parsed_cards_command_output = Command::new(parser_command).arg(file_path_str).output();
 
     delete_html_file()?;
 
@@ -322,6 +335,7 @@ pub async fn create_cards_with_handler(
             });
         }
     };
+    log::error!("HANDLER cards {:?}", cards);
 
     let mut card_ids: Vec<uuid::Uuid> = [].to_vec();
 

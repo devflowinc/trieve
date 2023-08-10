@@ -2,7 +2,7 @@ use crate::{
     data::models::{File, Pool},
     errors::ServiceError,
     operators::file_operator::{
-        convert_docx_to_html_query, delete_file_query, get_file_query, get_user_file_query,
+        convert_doc_to_html_query, delete_file_query, get_file_query, get_user_file_query,
         get_user_id_of_file_query, update_file_query,
     },
     AppMutexStore,
@@ -53,15 +53,15 @@ pub async fn upload_file_handler(
     let upload_file_data = data.into_inner();
     let pool_inner = pool.clone();
 
-    let valid_file_suffixes = vec!["docx", "doc", "odt", "pdf"];
+    let valid_file_suffixes = vec!["docx", "doc", "odt", "pdf", "html"];
     let file_suffix = upload_file_data
         .file_name
         .split('.')
         .last()
         .ok_or_else(|| ServiceError::BadRequest("Could not get file suffix".to_string()))?;
-    if !valid_file_suffixes.contains(&file_suffix) {
+    if !valid_file_suffixes.contains(&file_suffix.clone()) {
         return Err(ServiceError::BadRequest(
-            "Invalid file suffix. You may only upload docx, doc, odt, or pdf files.".to_string(),
+            "Invalid file suffix. You may only upload docx, doc, odt, html or pdf files.".to_string(),
         )
         .into());
     }
@@ -75,7 +75,7 @@ pub async fn upload_file_handler(
 
     let file_mime = upload_file_data.file_mime_type;
 
-    let conversion_result = convert_docx_to_html_query(
+    let conversion_result = convert_doc_to_html_query(
         upload_file_data.file_name,
         decoded_file_data,
         file_mime,

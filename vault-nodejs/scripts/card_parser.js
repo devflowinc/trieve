@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { load } from "cheerio";
 import urlRegexSafe from "url-regex-safe";
 import { readFileSync } from "fs";
