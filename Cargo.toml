@@ -55,3 +55,7 @@ base64 = "0.21.2"
 glob = "0.3.1"
 itertools = "0.11.0"
 redis = { version = "0.23.1", features = ["tokio-rustls-comp"] }
+
+[features]
+minimum-length = []
+default = ["minimum-length"]

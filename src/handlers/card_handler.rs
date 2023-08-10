@@ -129,19 +129,19 @@ pub async fn create_card(
         }
     };
     // Card content can be at most 29000 characters long
-    if content.len() > 29000 {
+    if cfg!(feature = "minimum-length") && content.len() > 29000 {
         return Ok(HttpResponse::BadRequest().json(json!({
             "message": "Card content must be at most 29000 characters long",
         })));
     }
 
     let words_in_content = content.split(' ').collect::<Vec<&str>>().len();
-    if words_in_content < 70 {
+    if cfg!(feature = "minimum-length") && words_in_content < 70 {
         return Ok(HttpResponse::BadRequest().json(json!({
             "message": "Card content must be at least 70 words long",
         })));
     }
-    if words_in_content > 5000 {
+    if cfg!(feature = "minimum-length") && words_in_content > 5000 {
         return Ok(HttpResponse::BadRequest().json(json!({
             "message": "Card content must be at most 5000 words long",
         })));
