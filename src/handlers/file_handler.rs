@@ -59,9 +59,10 @@ pub async fn upload_file_handler(
         .split('.')
         .last()
         .ok_or_else(|| ServiceError::BadRequest("Could not get file suffix".to_string()))?;
-    if !valid_file_suffixes.contains(&file_suffix.clone()) {
+    if !valid_file_suffixes.contains(&file_suffix) {
         return Err(ServiceError::BadRequest(
-            "Invalid file suffix. You may only upload docx, doc, odt, html or pdf files.".to_string(),
+            "Invalid file suffix. You may only upload docx, doc, odt, html or pdf files."
+                .to_string(),
         )
         .into());
     }

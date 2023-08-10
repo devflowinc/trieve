@@ -152,6 +152,7 @@ pub async fn convert_doc_to_html_query(
     let glob_string = format!("./tmp/{}*", new_id);
     std::fs::write(&temp_docx_file_path, file_data.clone()).map_err(|err| {
         log::error!("Could not write file to disk {:?}", err);
+        log::error!("Temp file directory {:?}", temp_docx_file_path);
         DefaultError {
             message: "Could not write file to disk",
         }
@@ -179,6 +180,7 @@ pub async fn convert_doc_to_html_query(
             let temp_html_file_path = temp_html_file_path_buf.to_str().unwrap();
             std::fs::write(temp_html_file_path, file_data.clone()).map_err(|err| {
                 log::error!("Could not write file to disk {:?}", err);
+                log::error!("Temp file directory {:?}", temp_html_file_path);
                 DefaultError {
                     message: "Could not write file to disk",
                 }
