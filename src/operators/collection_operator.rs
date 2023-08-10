@@ -42,6 +42,7 @@ pub fn create_collection_query(
 
 pub fn create_collection_and_add_bookmarks_query(
     new_collection: CardCollection,
+    description: Option<String>,
     bookmarks: Vec<uuid::Uuid>,
     created_file_id: uuid::Uuid,
     pool: web::Data<Pool>,
