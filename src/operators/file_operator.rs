@@ -6,7 +6,6 @@ use base64::{
     Engine as _,
 };
 use diesel::RunQueryDsl;
-use log::info;
 use s3::{creds::Credentials, Bucket, Region};
 use serde::{Deserialize, Serialize};
 use std::{path::PathBuf, process::Command};
@@ -330,14 +329,13 @@ pub async fn create_cards_with_handler(
 
     let cards: Vec<CoreCard> = match serde_json::from_slice(&raw_parsed_cards) {
         Ok(cards) => cards,
-        Err(_) => {
-            log::error!("HANDLER Could not deserialize cards");
+        Err(err) => {
+            log::error!("HANDLER Could not deserialize cards {:?}", err);
             return Err(DefaultError {
                 message: "Could not deserialize cards",
             });
         }
     };
-    log::error!("HANDLER cards {:?}", cards);
 
     let mut card_ids: Vec<uuid::Uuid> = [].to_vec();
 
@@ -371,7 +369,7 @@ pub async fn create_cards_with_handler(
                 }
             }
             Err(error) => {
-                info!("Error creating card: {:?}", error.to_string());
+                log::error!("Error creating card: {:?}", error.to_string());
             }
         }
     }
