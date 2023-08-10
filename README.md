@@ -2,7 +2,7 @@
 
 The back end of Arguflow Debate Coach and Vault
 
-This repository utilizes [actix-web](https://actix.rs), a [Rust](https://www.rust-lang.org) language framework
+This project utilizes [Qdrant](https://qdrant.tech/) and [actix-web](https://actix.rs), a [Rust](https://www.rust-lang.org) language framework.
 
 ## How to contribute
 
@@ -18,28 +18,77 @@ This repository utilizes [actix-web](https://actix.rs), a [Rust](https://www.rus
 
 Create a .env file in the root directory of the project. This .env file will require the following url's and API keys
 
+`SALT`, `SECRET_KEY`, and the `STRIPE` keys are all optional.
+
 ```
 DATABASE_URL=postgresql://postgres:password@localhost:5432/vault
-REDIS_URL=redis://127.0.0.1:6379/
-SENDGRID_API_KEY=SG.XXXXXXXXXXXXXXXXXXxx
-OPENAI_API_KEY=sk-XXXXXXXXXXXXXXXXXXxx
-DOMAIN=localhost
-ALLOWED_ORIGIN=http://localhost:3000
-VERIFICATION_SERVER_URL=http://localhost:8091/verify
-STRIPE_API_SECRET_KEY=sk_test_XXXXXXXXXXXXXXXXXXxx
+REDIS_URL=redis://localhost:6379
+QDRANT_URL=http://127.0.0.1:6334
+SENDGRID_API_KEY=*******************
+OPENAI_API_KEY=*******************
+STRIPE_API_SECRET_KEY=*******************
+STRIPE_SILVER_PLAN_ID=*******************
+STRIPE_GOLD_PLAN_ID=*******************
+WEBHOOK_SIGNING_SECRET=*******************
+SECRET_KEY=*******************
+SALT=*******************
 LIBREOFFICE_PATH=libreoffice
-S3_ACCESS_KEY=XXXXXXXXXXXXXXXXXXxx
-S3_SECRET_KEY=XXXXXXXXXXXXXXXXXXxx
-S3_BUCKET=XXXXXXXXXXXXXXXXXXxx
-S3_ENDPOINT=XXXXXXXXXXXXXXXXXXxx
+S3_ENDPOINT=*******************
+S3_ACCESS_KEY=*******************
+S3_SECRET_KEY=*******************
+S3_BUCKET=vault
+VERIFICATION_SERVER_URL=http://localhost:8091/get_url_content
+QDRANT_API_KEY=qdrant_pass
+COOKIE_SECURE=false
 ```
 
-## APT packages needed
+## Getting started
 
-`chromium-browser`
-`openssl`
+The following information is also automated via the Dockerfile. The quick start would be:
 
-## Setting Up Local S3
+```
+docker build -t vault-server .
+docker run -p 8090:8090 vault-server
+```
+
+then follow the S3 instructions. Your `.env` file also needs to be renamed to `.env.docker`.
+
+### Install apt packages
+
+```
+curl \
+gcc \
+g++ \
+make \
+pkg-config \
+python3 \
+python3-pip \
+libpq-dev \
+libssl-dev \
+openssl \
+libreoffice
+```
+
+### Install NodeJS and Yarn
+
+You can use the following, but we recommend using [NVM](https://github.com/nvm-sh/nvm) and then running `yarn --cwd ./vault-nodejs install` .
+
+```
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g yarn && \
+    yarn --cwd ./vault-nodejs install
+```
+
+### Set rust to nightly
+
+`rustup default nightly`
+
+### Install python requirements
+
+`pip install -r ./vault-python/requirements.txt`
+
+### Setting Up Local S3
 
 1. `sudo docker compose up s3`
 2. Go to the MinIO dashboard at [http://127.0.0.1:42625](http://127.0.0.1:42625)
@@ -54,7 +103,7 @@ S3_ENDPOINT=XXXXXXXXXXXXXXXXXXxx
 11. Click "Buckets" and then "Create Bucket"
 12. Create a bucket named `vault` and set `S3_BUCKET` in the env to `vault`
 
-## Preparing for file uploads and conversions
+### Preparing for file uploads and conversions
 
 1. `sudo apt install pandoc`
 2. `mkdir tmp` from inside repository folder
@@ -62,6 +111,10 @@ S3_ENDPOINT=XXXXXXXXXXXXXXXXXXxx
 If you want to test things outside of the minio dashboard and Tokio server, then setup AWS CLI using [this guide from minio](https://min.io/docs/minio/linux/integrations/aws-cli-with-minio.html) with the region set to `""`
 
 - You can install it with `sudo apt install awscli` assuming you are using the apt package manager
+
+### Run the server in dev mode
+
+`cargo watch -x run`
 
 ## Running the test suite
 
