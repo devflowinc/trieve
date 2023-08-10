@@ -1,7 +1,7 @@
 import { parse } from "node-html-parser";
 
 function convertToText(html) {
-  const root = parse(html);
+  const root = parse("<body>" + html + "</body>");
   console.log(root.text);
 }
 
