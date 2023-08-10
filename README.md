@@ -1,6 +1,22 @@
+<p align="center">
+  <img height="100" src="https://raw.githubusercontent.com/arguflow/blog/5ef439020707b0e27bf901c8f6b4fb1f487a78d4/apps/frontend/public/assets/horizontal-logo.svg" alt="Arguflow">
+</p>
+
+<p align="center">
+    <b>Easy to use abstraction over Qdrant and Postgres for creating a semantic/full-text socially enabled embedding store on your data</b>
+</p>
+
+**Arguflow Vault Server**: Paired with [vault-client](https://github.com/arguflow/vault-client), Arguflow Vault is an abstraction layer over Qdrant which provides semantic and full-text search over arbitrary HTML cards, WYSIWYG TinyMCE editor, collection based organization, MMR, voting, and more. Vault Server is written in Rust 🦀 with Node and Python services where appropriate. Vault is still in early alpha, but you may find it useful if you are trying to build semantic or full text search over your data.
+
+<p align="center">
+<strong><a href="https://docs.arguflow.ai">Documentation</a> • <a href="https://vault.arguflow.ai">Competitive Debate Demo</a> • <a href="https://discord.gg/CuJVfgZf54">Discord</a>
+
+</strong>
+</p>
+
 # Vault Server
 
-The back end of Arguflow Debate Coach and Vault
+Server for providing both semantic and full text search, voting, and collection based organization.
 
 This project utilizes [Qdrant](https://qdrant.tech/) and [actix-web](https://actix.rs), a [Rust](https://www.rust-lang.org) language framework.
 
@@ -114,7 +130,10 @@ If you want to test things outside of the minio dashboard and Tokio server, then
 
 ### Run the server in dev mode
 
-`cargo watch -x run`
+```
+docker compose up -d
+cargo watch -x run
+```
 
 ## Running the test suite
 
