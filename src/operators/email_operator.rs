@@ -1,33 +1,30 @@
-use crate::{
-    data::models::{Invitation, PasswordReset},
-    errors::DefaultError,
-};
+use crate::{data::models::PasswordReset, errors::DefaultError};
 use sendgrid::v3::{Content, Email, Message, Personalization, Sender};
 
-pub fn send_invitation(app_url: String, invitation: &Invitation) -> Result<(), DefaultError> {
-    let sg_email_content = format!(
-        "Please click on the link below to complete registration. <br/>
-         <a href=\"{}/auth/register/{}?email={}\">
-         {}/register</a> <br>
-         your Invitation expires at <strong>{}</strong>",
-        app_url,
-        invitation.id,
-        invitation.email,
-        app_url,
-        invitation.expires_at.format("%I:%M %p %A, %-d %B, %C%y")
-    );
-    let sg_email_personalization = Personalization::new(Email::new(invitation.email.as_str()));
-    let sg_email = Message::new(Email::new("no-reply@arguflow.com"))
-        .set_subject("You have been invited to join Arguflow AI")
-        .add_content(
-            Content::new()
-                .set_content_type("text/html")
-                .set_value(sg_email_content),
-        )
-        .add_personalization(sg_email_personalization);
+// pub fn send_invitation(app_url: String, invitation: &Invitation) -> Result<(), DefaultError> {
+//     let sg_email_content = format!(
+//         "Please click on the link below to complete registration. <br/>
+//          <a href=\"{}/auth/register/{}?email={}\">
+//          {}/register</a> <br>
+//          your Invitation expires at <strong>{}</strong>",
+//         app_url,
+//         invitation.id,
+//         invitation.email,
+//         app_url,
+//         invitation.expires_at.format("%I:%M %p %A, %-d %B, %C%y")
+//     );
+//     let sg_email_personalization = Personalization::new(Email::new(invitation.email.as_str()));
+//     let sg_email = Message::new(Email::new("no-reply@arguflow.com"))
+//         .set_subject("You have been invited to join Arguflow AI")
+//         .add_content(
+//             Content::new()
+//                 .set_content_type("text/html")
+//                 .set_value(sg_email_content),
+//         )
+//         .add_personalization(sg_email_personalization);
 
-    send_email(sg_email)
-}
+//     send_email(sg_email)
+// }
 
 pub fn send_password_reset(
     app_url: String,

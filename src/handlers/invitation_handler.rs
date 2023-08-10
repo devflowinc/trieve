@@ -1,6 +1,6 @@
 use actix_web::{web, HttpRequest, HttpResponse};
 use diesel::prelude::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::to_string;
 
 use crate::{
@@ -9,8 +9,13 @@ use crate::{
         validators::email_regex,
     },
     errors::{DefaultError, ServiceError},
-    operators::{email_operator::send_invitation, user_operator::get_user_by_email_query},
+    operators::user_operator::get_user_by_email_query,
 };
+
+#[derive(Deserialize, Serialize)]
+pub struct InvitationResponse {
+    pub registration_url: String,
+}
 
 #[derive(Deserialize)]
 pub struct InvitationData {
@@ -44,11 +49,12 @@ pub async fn post_invitation(
         .to_string();
 
     let stringified_referral_tokens = to_string(&invitation_referral_tokens).unwrap();
-    web::block(move || create_invitation(host_name, email, stringified_referral_tokens, pool))
-        .await?
-        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    let registration_url =
+        web::block(move || create_invitation(host_name, email, stringified_referral_tokens, pool))
+            .await?
+            .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
-    Ok(HttpResponse::Ok().finish())
+    Ok(HttpResponse::Ok().json(InvitationResponse { registration_url }))
 }
 
 pub fn create_invitation(
@@ -56,9 +62,15 @@ pub fn create_invitation(
     email: String,
     invitation_referral_tokens: String,
     pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
+) -> Result<String, DefaultError> {
     let invitation = create_invitation_query(email, invitation_referral_tokens, pool)?;
-    send_invitation(app_url, &invitation)
+    // send_invitation(app_url, &invitation)
+
+    Ok(format!(
+        "{}/auth/register/{}?email={}",
+        app_url, invitation.id, invitation.email
+    )
+    .to_string())
 }
 
 /// Diesel query
