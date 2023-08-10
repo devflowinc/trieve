@@ -204,7 +204,7 @@ pub async fn create_card(
 
     // only check for embedding similarity if no text based collision was found
     if collision.is_none() {
-        let openai_embedding_vector = create_openai_embedding(&content).await?;
+        let openai_embedding_vector = create_embedding(&content).await?;
         embedding_vector = Some(openai_embedding_vector.clone());
 
         let first_semantic_result =
@@ -408,8 +408,9 @@ pub async fn delete_card(
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
+    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
     qdrant
-        .delete_points_blocking("debate_cards".to_string(), &deleted_values, None)
+        .delete_points_blocking(qdrant_collection, &deleted_values, None)
         .await
         .map_err(|_err| ServiceError::BadRequest("Failed deleting card from qdrant".into()))?;
     Ok(HttpResponse::NoContent().finish())
@@ -567,7 +568,7 @@ pub async fn search_card(
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_user_id = user.map(|user| user.id);
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
-    let embedding_vector = create_openai_embedding(&data.content).await?;
+    let embedding_vector = create_embedding(&data.content).await?;
     let pool1 = pool.clone();
 
     let search_card_query_results = search_card_query(
@@ -759,7 +760,7 @@ pub async fn search_collections(
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
-    let embedding_vector = create_openai_embedding(&data.content).await?;
+    let embedding_vector = create_embedding(&data.content).await?;
     let collection_id = data.collection_id;
     let pool1 = pool.clone();
     let pool2 = pool.clone();

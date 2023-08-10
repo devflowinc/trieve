@@ -60,13 +60,17 @@ pub async fn main() -> std::io::Result<()> {
     let redis_store = RedisSessionStore::new(redis_url.as_str()).await.unwrap();
 
     let qdrant_client = get_qdrant_connection().await.unwrap();
+    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
+    let embedding_size = std::env::var("EMBEDDING_SIZE").unwrap_or("1536".to_owned());
+    let embedding_size = embedding_size.parse::<u64>().unwrap_or(1536);
+    log::info!("Qdrant collection: {} size {}", qdrant_collection, embedding_size);
     let _ = qdrant_client
         .create_collection(&CreateCollection {
-            collection_name: "debate_cards".into(),
+            collection_name: qdrant_collection,
             vectors_config: Some(VectorsConfig {
                 config: Some(qdrant_client::qdrant::vectors_config::Config::Params(
                     VectorParams {
-                        size: 1536,
+                        size: embedding_size,
                         distance: Distance::Cosine.into(),
                         hnsw_config: None,
                         quantization_config: None,

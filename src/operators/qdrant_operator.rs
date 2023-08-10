@@ -27,8 +27,9 @@ pub async fn create_new_qdrant_point_query(
 
     let point = PointStruct::new(point_id.clone().to_string(), embedding_vector, payload);
 
+    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
     qdrant
-        .upsert_points_blocking("debate_cards".to_string(), vec![point], None)
+        .upsert_points_blocking(qdrant_collection, vec![point], None)
         .await
         .map_err(|_err| ServiceError::BadRequest("Failed inserting card to qdrant".into()))?;
 
@@ -50,9 +51,10 @@ pub async fn update_qdrant_point_private_query(
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
+    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
     let current_point_vec = qdrant
         .get_points(
-            "debate_cards",
+            qdrant_collection.clone(),
             &qdrant_point_id,
             false.into(),
             true.into(),
@@ -115,7 +117,7 @@ pub async fn update_qdrant_point_private_query(
 
     qdrant
         .overwrite_payload(
-            "debate_cards",
+            qdrant_collection,
             &points_selector,
             payload
                 .try_into()
@@ -137,9 +139,10 @@ pub async fn search_qdrant_query(
 ) -> Result<Vec<SearchResult>, DefaultError> {
     let qdrant = get_qdrant_connection().await?;
 
+    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
     let data = qdrant
         .search_points(&SearchPoints {
-            collection_name: "debate_cards".to_string(),
+            collection_name: qdrant_collection,
             vector: embedding_vector,
             limit: 10,
             offset: Some((page - 1) * 10),
@@ -172,9 +175,10 @@ pub async fn delete_qdrant_point_id_query(point_id: uuid::Uuid) -> Result<(), De
 
     let qdrant_point_id: Vec<PointId> = vec![point_id.to_string().into()];
     let points_selector = qdrant_point_id.into();
+    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
 
     qdrant
-        .delete_points("debate_cards".to_string(), &points_selector, None)
+        .delete_points(qdrant_collection, &points_selector, None)
         .await
         .map_err(|_err| DefaultError {
             message: "Failed to delete point from qdrant",

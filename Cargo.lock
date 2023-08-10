@@ -3203,6 +3203,7 @@ dependencies = [
  "r2d2",
  "redis 0.23.1",
  "regex",
+ "reqwest",
  "rust-argon2",
  "rust-s3",
  "sendgrid",

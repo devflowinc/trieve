@@ -7,6 +7,7 @@ use crate::data::models::{
 use crate::data::schema;
 use crate::diesel::TextExpressionMethods;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+use crate::errors::ServiceError;
 use crate::operators::qdrant_operator::search_qdrant_query;
 use crate::{
     data::models::{CardMetadata, Pool},
@@ -40,6 +41,24 @@ pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
     })
 }
 
+pub async fn create_embedding(message: &str) -> Result<Vec<f32>, actix_web::Error> {
+    if cfg!(feature = "custom-embeddings") {
+        create_server_embedding(message).await
+    } else {
+        create_openai_embedding(message).await
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CustomServerData {
+    pub input: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CustomServerResponse {
+    pub embeddings: Vec<f32>,
+}
+
 pub async fn create_openai_embedding(message: &str) -> Result<Vec<f32>, actix_web::Error> {
     let open_ai_api_key = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
     let client = Client::new(open_ai_api_key);
@@ -59,6 +78,29 @@ pub async fn create_openai_embedding(message: &str) -> Result<Vec<f32>, actix_we
 
     let vector = embeddings.data.get(0).unwrap().embedding.clone();
     Ok(vector.iter().map(|&x| x as f32).collect())
+}
+
+pub async fn create_server_embedding(message: &str) -> Result<Vec<f32>, actix_web::Error> {
+    let embedding_server_call =
+        std::env::var("EMBEDDING_SERVER_CALL").expect("EMBEDDING_SERVER_CALL must be set");
+
+    let client = reqwest::Client::new();
+    let resp = client
+        .post(embedding_server_call)
+        .json(&CustomServerData {
+            input: message.to_string(),
+        })
+        .send()
+        .await
+        .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
+        .json::<CustomServerResponse>()
+        .await
+        .map_err(|_e| {
+            log::error!("Failed parsing response from custom embedding server {:?}", _e);
+            ServiceError::BadRequest("Failed parsing response from custom embedding server".to_string())
+        })?;
+
+    Ok(resp.embeddings)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -197,17 +239,21 @@ pub async fn global_unfiltered_top_match_query(
 ) -> Result<SearchResult, DefaultError> {
     let qdrant = get_qdrant_connection().await?;
 
+    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
     let data = qdrant
         .search_points(&SearchPoints {
-            collection_name: "debate_cards".to_string(),
+            collection_name: qdrant_collection,
             vector: embedding_vector,
             limit: 1,
             with_payload: None,
             ..Default::default()
         })
         .await
-        .map_err(|_e| DefaultError {
-            message: "Failed to search points on Qdrant",
+        .map_err(|_e| {
+            log::error!("Failed to search points on Qdrant {:?}", _e);
+            DefaultError {
+                message: "Failed to search points on Qdrant",
+            }
         })?;
 
     let top_search_result: SearchResult = match data.result.get(0) {
@@ -1132,38 +1178,39 @@ pub fn get_collided_cards_query(
 
     let mut conn = pool.get().unwrap();
 
-    let card_metadata: Vec<CardMetadata> =
-        card_metadata_columns::card_metadata
-            .left_outer_join(
-                card_collisions_columns::card_collisions
-                    .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
-            )
-            .select((
-                card_metadata_columns::id,
-                card_metadata_columns::content,
-                card_metadata_columns::link,
-                card_metadata_columns::author_id,
-                card_metadata_columns::qdrant_point_id,
-                card_metadata_columns::created_at,
-                card_metadata_columns::updated_at,
-                card_metadata_columns::oc_file_path,
-                card_metadata_columns::card_html,
-                card_metadata_columns::private,
-            ))
-            .filter(
-                card_collisions_columns::collision_qdrant_id
-                    .eq_any(point_ids.clone())
-                    .or(card_metadata_columns::qdrant_point_id.eq_any(point_ids)),
-            )
-            .filter(card_metadata_columns::private.eq(false).or(
-                card_metadata_columns::author_id.eq(current_user_id.unwrap_or_default()),
-            ))
-            // TODO: Properly handle this and remove the arbitrary limit
-            .limit(500)
-            .load::<CardMetadata>(&mut conn)
-            .map_err(|_| DefaultError {
-                message: "Failed to load metadata",
-            })?;
+    let card_metadata: Vec<CardMetadata> = card_metadata_columns::card_metadata
+        .left_outer_join(
+            card_collisions_columns::card_collisions
+                .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
+        )
+        .select((
+            card_metadata_columns::id,
+            card_metadata_columns::content,
+            card_metadata_columns::link,
+            card_metadata_columns::author_id,
+            card_metadata_columns::qdrant_point_id,
+            card_metadata_columns::created_at,
+            card_metadata_columns::updated_at,
+            card_metadata_columns::oc_file_path,
+            card_metadata_columns::card_html,
+            card_metadata_columns::private,
+        ))
+        .filter(
+            card_collisions_columns::collision_qdrant_id
+                .eq_any(point_ids.clone())
+                .or(card_metadata_columns::qdrant_point_id.eq_any(point_ids)),
+        )
+        .filter(
+            card_metadata_columns::private
+                .eq(false)
+                .or(card_metadata_columns::author_id.eq(current_user_id.unwrap_or_default())),
+        )
+        // TODO: Properly handle this and remove the arbitrary limit
+        .limit(500)
+        .load::<CardMetadata>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })?;
 
     let converted_cards: Vec<FullTextSearchResult> = card_metadata
         .iter()
@@ -1512,13 +1559,14 @@ pub async fn delete_card_metadata_query(
         }
     });
 
+    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
     match transaction_result {
         Ok(result) => {
             if let TransactionResult::CardCollisionNotDetected = result {
                 let qdrant = get_qdrant_connection().await?;
                 let _ = qdrant
                     .delete_points(
-                        "debate_cards",
+                        qdrant_collection,
                         &vec![<String as Into<PointId>>::into(card_uuid.to_string())].into(),
                         None,
                     )
