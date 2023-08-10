@@ -32,10 +32,6 @@ def extract_cards_from_html(html_string, story_id):
 
 
 def main():
-    if len(sys.argv) != 3:
-        print("Usage: python extract_cards.py <filename>")
-        return
-
     input_file = sys.argv[1]
 
     with codecs.open(input_file, "r", encoding="utf-8") as file:
