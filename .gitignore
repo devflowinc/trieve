@@ -4,3 +4,11 @@
 tmp
 node_modules
 *.log
+story_html
+Fictions.csv
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+.DS_Store
+story_html.zip
