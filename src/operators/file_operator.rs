@@ -1,4 +1,7 @@
-use crate::{data::models::FileUploadCompletedNotification, diesel::Connection, AppMutexStore};
+use crate::{
+    data::models::FileUploadCompletedNotification, diesel::Connection,
+    handlers::card_handler::convert_html, AppMutexStore,
+};
 use actix_web::{body::MessageBody, web};
 use base64::{
     alphabet,
@@ -140,6 +143,7 @@ pub async fn convert_doc_to_html_query(
     file_data: Vec<u8>,
     file_mime: String,
     oc_file_path: Option<String>,
+    description: Option<String>,
     private: bool,
     user: LoggedUser,
     pool: web::Data<Pool>,
@@ -258,6 +262,7 @@ pub async fn convert_doc_to_html_query(
             private,
             file_name,
             created_file.id,
+            description,
             user,
             temp_html_file_path_buf,
             glob_string,
@@ -281,6 +286,7 @@ pub async fn create_cards_with_handler(
     private: bool,
     file_name: String,
     created_file_id: uuid::Uuid,
+    description: Option<String>,
     user: LoggedUser,
     temp_html_file_path_buf: PathBuf,
     glob_string: String,
@@ -373,7 +379,7 @@ pub async fn create_cards_with_handler(
             }
         }
     }
-
+    let converted_description = convert_html(&description.unwrap_or("".to_string()));
     let collection_id;
     match web::block(move || {
         create_collection_and_add_bookmarks_query(
@@ -381,7 +387,7 @@ pub async fn create_cards_with_handler(
                 user.id,
                 format!("Collection for file {}", file_name),
                 !private,
-                "".to_string(),
+                converted_description,
             ),
             card_ids,
             created_file_id,

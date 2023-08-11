@@ -50,6 +50,39 @@ pub struct CreateCardData {
     pub file_uuid: Option<uuid::Uuid>,
 }
 
+pub fn convert_html(html: &str) -> String {
+    let html_parse_result = Command::new("node")
+        .arg("./vault-nodejs/scripts/html-converter.js")
+        .arg("-html")
+        .arg(html)
+        .output();
+
+    let content = match html_parse_result {
+        Ok(result) => {
+            if result.status.success() {
+                Some(
+                    String::from_utf8(result.stdout)
+                        .unwrap()
+                        .lines()
+                        .collect::<Vec<&str>>()
+                        .join(" ")
+                        .trim_end()
+                        .to_string(),
+                )
+            } else {
+                return "".to_string();
+            }
+        }
+        Err(_) => {
+            return "".to_string();
+        }
+    };
+
+    match content {
+        Some(content) => content,
+        None => "".to_string(),
+    }
+}
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ReturnCreatedCard {
     pub card_metadata: CardMetadata,
@@ -68,14 +101,13 @@ pub async fn create_card(
 
     if card_oc_file_path.unwrap_or("".to_string()) != ""
         && user.id
-            != uuid::Uuid::from_str("ba4fff39-6f25-4dd6-bb12-d9cc117f42bf")
+            != uuid::Uuid::from_str("9757eb57-596f-430e-8905-09bfffccd710")
                 .unwrap_or(uuid::Uuid::nil())
     {
         return Ok(HttpResponse::Forbidden().json(DefaultError {
             message: "Only admin can create cards with oc_file_path",
         }));
     }
-
     let pool1 = pool.clone();
     let pool2 = pool.clone();
     let pool3 = pool.clone();
@@ -87,47 +119,7 @@ pub async fn create_card(
         .get_connection()
         .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
 
-    let html_parse_result = Command::new("node")
-        .arg("./vault-nodejs/scripts/html-converter.js")
-        .arg("-html")
-        .arg(card.card_html.as_ref().unwrap_or(&"".to_string()))
-        .output();
-
-    let content = match html_parse_result {
-        Ok(result) => {
-            if result.status.success() {
-                Some(
-                    String::from_utf8(result.stdout)
-                        .unwrap()
-                        .lines()
-                        .collect::<Vec<&str>>()
-                        .join(" ")
-                        .trim_end()
-                        .to_string(),
-                )
-            } else {
-                return Err(ServiceError::BadRequest(format!(
-                    "Could not run html-converter.js: {:?}",
-                    String::from_utf8(result.stderr).unwrap()
-                ))
-                .into());
-            }
-        }
-        Err(_) => {
-            return Ok(HttpResponse::BadRequest().json(json!({
-                "message": "Could not parse html",
-            })))
-        }
-    };
-
-    let content = match content {
-        Some(content) => content,
-        None => {
-            return Ok(HttpResponse::BadRequest().json(json!({
-                "message": "Could not parse html",
-            })))
-        }
-    };
+    let content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
     // Card content can be at most 29000 characters long
     if cfg!(feature = "minimum-length") && content.len() > 29000 {
         return Ok(HttpResponse::BadRequest().json(json!({

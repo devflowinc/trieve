@@ -69,8 +69,7 @@ pub fn create_invitation(
     Ok(format!(
         "{}/auth/register/{}?email={}",
         app_url, invitation.id, invitation.email
-    )
-    .to_string())
+    ))
 }
 
 /// Diesel query

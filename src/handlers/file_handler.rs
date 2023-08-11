@@ -37,6 +37,7 @@ pub struct UploadFileData {
     pub file_mime_type: String,
     pub private: bool,
     pub oc_file_path: Option<String>,
+    pub description: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -69,18 +70,34 @@ pub async fn upload_file_handler(
 
     let base64_engine = engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
 
-    let decoded_file_data = base64_engine
+    let decoded_cardhtml_file_data = base64_engine
         .decode(upload_file_data.base64_docx_file)
         .map_err(|_e| ServiceError::BadRequest("Could not decode base64 file".to_string()))?;
+    let decoded_description_file_data = if upload_file_data.description.is_some() {
+        Some(
+            String::from_utf8(
+                base64_engine
+                    .decode(upload_file_data.description.unwrap_or_default())
+                    .map_err(|_e| {
+                        ServiceError::BadRequest("Could not decode base64 file".to_string())
+                    })?,
+            )
+            .map_err(|_e| ServiceError::BadRequest("Could not decode base64 file".to_string()))?,
+        )
+    } else {
+        None
+    };
+
     let private = upload_file_data.private;
 
     let file_mime = upload_file_data.file_mime_type;
 
     let conversion_result = convert_doc_to_html_query(
         upload_file_data.file_name,
-        decoded_file_data,
+        decoded_cardhtml_file_data,
         file_mime,
         upload_file_data.oc_file_path,
+        decoded_description_file_data,
         private,
         user,
         pool_inner,
