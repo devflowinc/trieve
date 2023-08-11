@@ -56,6 +56,7 @@ S3_BUCKET=vault
 VERIFICATION_SERVER_URL=http://localhost:8091/get_url_content
 QDRANT_API_KEY=qdrant_pass
 COOKIE_SECURE=false
+ADMIN_UUID=********************
 ```
 
 ## Getting started
@@ -99,6 +100,10 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
 ### Set rust to nightly
 
 `rustup default nightly`
+
+### Make admin account
+
+Use [vault-client](https://github.com/arguflow/vault-client) to make an account. Get its uuid and set `ADMIN_UUID` to equal it in your .env
 
 ### Install python requirements
 
