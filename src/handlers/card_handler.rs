@@ -99,15 +99,17 @@ pub async fn create_card(
     let mut collision: Option<uuid::Uuid> = None;
     let mut embedding_vector: Option<Vec<f32>> = None;
 
-    if card_oc_file_path.unwrap_or("".to_string()) != ""
-        && user.id
-            != uuid::Uuid::from_str("9757eb57-596f-430e-8905-09bfffccd710")
-                .unwrap_or(uuid::Uuid::nil())
-    {
-        return Ok(HttpResponse::Forbidden().json(DefaultError {
-            message: "Only admin can create cards with oc_file_path",
-        }));
+
+    if card_oc_file_path.unwrap_or("".to_string()) != "" {
+        let admin_uuid: String = std::env::var("ADMIN_UUID").expect("ADMIN_UUID must be set");
+
+        if user.id != uuid::Uuid::from_str(&admin_uuid).unwrap_or(uuid::Uuid::nil()) {
+            return Ok(HttpResponse::Forbidden().json(DefaultError {
+                message: "Only admin can create cards with oc_file_path",
+            }));
+        }
     }
+
     let pool1 = pool.clone();
     let pool2 = pool.clone();
     let pool3 = pool.clone();
