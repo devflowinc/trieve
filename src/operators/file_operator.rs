@@ -319,7 +319,10 @@ pub async fn create_cards_with_handler(
             });
         }
     };
-    let parsed_cards_command_output = Command::new(parser_command).arg(file_path_str).output();
+    let parsed_cards_command_output = Command::new(parser_command)
+        .arg(file_path_str)
+        .arg(file_name.split("-")[0])
+        .output();
 
     delete_html_file()?;
 

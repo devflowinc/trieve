@@ -33,10 +33,11 @@ def extract_cards_from_html(html_string, story_id):
 
 def main():
     input_file = sys.argv[1]
+    story_id = sys.argv[2]
 
     with codecs.open(input_file, "r", encoding="utf-8") as file:
         html_string = file.read()
-    cards = extract_cards_from_html(html_string, input_file.split(".")[0])
+    cards = extract_cards_from_html(html_string, story_id)
     json_output = json.dumps(cards, default=lambda x: x.__dict__)
 
     sys.stdout.write(json_output)
