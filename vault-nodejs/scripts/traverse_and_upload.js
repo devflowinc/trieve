@@ -1,5 +1,4 @@
 import { readdir, stat, readFileSync } from "fs";
-import { fileTypeFromBuffer } from "file-type";
 import { join } from "path";
 import fetch from "node-fetch";
 import Keyv from "keyv";
