@@ -11,46 +11,46 @@ let authCookie = null;
 const MAX_CONCURRENT_REQUESTS = process.env.MAX_CONCURRENT_REQUESTS || 1;
 let activeRequests = 0;
 
-const convertAndUpload = async (filePath, ocFilePath) => {
+const convertAndUpload = async (filePath, story_id) => {
   const dirFileBuf = readFileSync(filePath);
+  const description = readFileSync(
+    filePath.replace("-chapters", "-description")
+  );
   // Check if the file read resulted in a buffer of length 0
   if (!dirFileBuf || dirFileBuf.length === 0) {
     console.error(`Error: ${filePath} is empty`);
     return;
   }
 
-  let base64FileBuf = dirFileBuf.toString("base64");
+  let contentBase64FileBuf = dirFileBuf.toString("base64");
+  let descriptionBase64FileBuf = description.toString("base64");
   // Check if the base64 encoding resulted in a string
   if (
-    !base64FileBuf ||
-    base64FileBuf.length === 0 ||
-    !(typeof base64FileBuf === "string")
+    !contentBase64FileBuf ||
+    contentBase64FileBuf.length === 0 ||
+    !(typeof contentBase64FileBuf === "string")
   ) {
     console.error(`Error: ${filePath} could not be converted to base64`);
     return;
   }
-  base64FileBuf = base64FileBuf
+  contentBase64FileBuf = contentBase64FileBuf
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");
 
-  let fileMimeType = "";
-  try {
-    fileMimeType = (await fileTypeFromBuffer(dirFileBuf)).mime;
-    if (!fileMimeType) {
-      throw new Error("No file type data");
-    }
-  } catch (_err) {
-    console.error(`Error: ${filePath} had no file type data`);
-    throw _err;
-  }
+  descriptionBase64FileBuf = descriptionBase64FileBuf
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+
   const fileName = filePath.split("/").pop();
 
   const requestBody = {
-    base64_docx_file: base64FileBuf,
+    base64_docx_file: contentBase64FileBuf,
+    description: descriptionBase64FileBuf,
     file_name: fileName,
-    file_mime_type: fileMimeType,
-    oc_file_path: ocFilePath,
+    file_mime_type: "text/html",
+    oc_file_path: story_id,
     private: false,
   };
 
@@ -60,15 +60,15 @@ const convertAndUpload = async (filePath, ocFilePath) => {
   }
   activeRequests++;
   // If file has already been uploaded, skip it
-  const keyvRecord = await keyvDb.get(ocFilePath);
+  const keyvRecord = await keyvDb.get(story_id);
   if (keyvRecord) {
     console.log(
-      `Skipped ${ocFilePath}, already uploaded because of keyv ${keyvRecord}`
+      `Skipped ${story_id}, already uploaded because of keyv ${keyvRecord}`
     );
     activeRequests--;
     return;
   }
-  await keyvDb.set(ocFilePath, true);
+  await keyvDb.set(story_id, true);
 
   await fetch(`${api_endpoint}/file`, {
     method: "POST",
@@ -81,13 +81,13 @@ const convertAndUpload = async (filePath, ocFilePath) => {
   }).then(async (response) => {
     if (!response.ok) {
       console.error(
-        `Error: ${response.status} ${response.statusText} for ${ocFilePath}`
+        `Error: ${response.status} ${response.statusText} for ${story_id}`
       );
-      await keyvDb.set(`${ocFilePath}_errored`, response.status);
+      await keyvDb.set(`${story_id}_errored`, response.status);
       activeRequests--;
       return;
     }
-    console.log(`Uploaded ${ocFilePath}`);
+    console.log(`Uploaded ${story_id}`);
     activeRequests--;
   });
 };
@@ -102,7 +102,9 @@ const traverseDirectory = async (directoryPath) => {
 
       const promises = files.map((file) => {
         const filePath = join(directoryPath, file);
-
+        if (filePath.includes("description")) {
+          return;
+        }
         return new Promise((resolve, reject) => {
           stat(filePath, async (err, stats) => {
             if (err) {
@@ -113,12 +115,10 @@ const traverseDirectory = async (directoryPath) => {
             if (stats.isDirectory()) {
               traverseDirectory(filePath).then(resolve).catch(reject);
             } else {
-              const truncatedFilePath = filePath.replace(
-                staticDirectoryPath,
-                ""
-              );
+              let truncatedFilePath = filePath.split("/").pop();
+              let story_id = truncatedFilePath.split("-")[0];
 
-              convertAndUpload(filePath, truncatedFilePath)
+              convertAndUpload(filePath, story_id)
                 .then(resolve)
                 .catch(() => {
                   resolve();
@@ -136,7 +136,6 @@ const traverseDirectory = async (directoryPath) => {
 // Usage: node script.js /path/to/directory
 
 const directoryPath = process.argv[2];
-const staticDirectoryPath = directoryPath;
 if (!directoryPath) {
   console.error("Please provide a directory path.");
   process.exit(1);
