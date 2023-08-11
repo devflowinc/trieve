@@ -116,6 +116,7 @@ const traverseDirectory = async (directoryPath) => {
             } else {
               let truncatedFilePath = filePath.split("/").pop();
               let story_id = truncatedFilePath.split("-")[0];
+              console.log(story_id);
 
               convertAndUpload(filePath, story_id)
                 .then(resolve)
