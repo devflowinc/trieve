@@ -9,6 +9,7 @@ use crate::diesel::TextExpressionMethods;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::errors::ServiceError;
 use crate::operators::qdrant_operator::search_qdrant_query;
+use crate::AppMutexStore;
 use crate::{
     data::models::{CardMetadata, Pool},
     errors::DefaultError,
@@ -41,8 +42,17 @@ pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
     })
 }
 
-pub async fn create_embedding(message: &str) -> Result<Vec<f32>, actix_web::Error> {
+pub async fn create_embedding(
+    message: &str,
+    mutex_store: web::Data<AppMutexStore>,
+) -> Result<Vec<f32>, actix_web::Error> {
     if cfg!(feature = "custom-embeddings") {
+        let _ = mutex_store
+            .embedding_semaphore
+            .acquire()
+            .await
+            .map_err(|_| ServiceError::BadRequest("Failed to acquire semaphore".to_string()))?;
+
         create_server_embedding(message).await
     } else {
         create_openai_embedding(message).await
@@ -96,8 +106,13 @@ pub async fn create_server_embedding(message: &str) -> Result<Vec<f32>, actix_we
         .json::<CustomServerResponse>()
         .await
         .map_err(|_e| {
-            log::error!("Failed parsing response from custom embedding server {:?}", _e);
-            ServiceError::BadRequest("Failed parsing response from custom embedding server".to_string())
+            log::error!(
+                "Failed parsing response from custom embedding server {:?}",
+                _e
+            );
+            ServiceError::BadRequest(
+                "Failed parsing response from custom embedding server".to_string(),
+            )
         })?;
 
     Ok(resp.embeddings)
