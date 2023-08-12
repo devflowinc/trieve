@@ -57,7 +57,10 @@ pub async fn main() -> std::io::Result<()> {
 
     let app_mutex_store = web::Data::new(AppMutexStore {
         libreoffice: Mutex::new(()),
-        embedding_semaphore: Semaphore::new(10),
+        embedding_semaphore: Semaphore::new(std::env::var("EMBEDDING_SEMAPHORE_SIZE")
+            .unwrap_or_else(|_| "10".to_string())
+            .parse()
+            .expect("Failed to parse EMBEDDING_SEMAPHORE_SIZE")),
     });
 
     let redis_store = RedisSessionStore::new(redis_url.as_str()).await.unwrap();
