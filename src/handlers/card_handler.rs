@@ -124,7 +124,7 @@ pub async fn create_card(
 
     let content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
     // Card content can be at most 470 characters long
-    if cfg!(feature = "minimum-length") && content.len() > 470 {
+    if cfg!(feature = "minimum-length") && content.len() < 470 {
         return Ok(HttpResponse::BadRequest().json(json!({
             "message": "Card content must be at most 470 characters long",
         })));
