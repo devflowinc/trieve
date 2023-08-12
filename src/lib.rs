@@ -18,6 +18,7 @@ use qdrant_client::{
     prelude::*,
     qdrant::{VectorParams, VectorsConfig},
 };
+use tokio::sync::Semaphore;
 
 use crate::operators::card_operator::get_qdrant_connection;
 
@@ -37,6 +38,7 @@ fn run_migrations(conn: &mut impl MigrationHarness<diesel::pg::Pg>) {
 
 pub struct AppMutexStore {
     pub libreoffice: Mutex<()>,
+    pub embedding_semaphore: Semaphore,
 }
 
 #[actix_web::main]
@@ -55,6 +57,7 @@ pub async fn main() -> std::io::Result<()> {
 
     let app_mutex_store = web::Data::new(AppMutexStore {
         libreoffice: Mutex::new(()),
+        embedding_semaphore: Semaphore::new(10),
     });
 
     let redis_store = RedisSessionStore::new(redis_url.as_str()).await.unwrap();
@@ -63,7 +66,11 @@ pub async fn main() -> std::io::Result<()> {
     let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
     let embedding_size = std::env::var("EMBEDDING_SIZE").unwrap_or("1536".to_owned());
     let embedding_size = embedding_size.parse::<u64>().unwrap_or(1536);
-    log::info!("Qdrant collection: {} size {}", qdrant_collection, embedding_size);
+    log::info!(
+        "Qdrant collection: {} size {}",
+        qdrant_collection,
+        embedding_size
+    );
     let _ = qdrant_client
         .create_collection(&CreateCollection {
             collection_name: qdrant_collection,

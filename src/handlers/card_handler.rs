@@ -15,6 +15,7 @@ use crate::operators::collection_operator::get_collection_by_id_query;
 use crate::operators::qdrant_operator::{
     create_new_qdrant_point_query, delete_qdrant_point_id_query, update_qdrant_point_private_query,
 };
+use crate::AppMutexStore;
 use actix_web::{web, HttpResponse};
 use difference::{Changeset, Difference};
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
@@ -92,13 +93,13 @@ pub struct ReturnCreatedCard {
 pub async fn create_card(
     card: web::Json<CreateCardData>,
     pool: web::Data<Pool>,
+    mutex_store: web::Data<AppMutexStore>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let private = card.private.unwrap_or(false);
     let card_oc_file_path = card.oc_file_path.clone();
     let mut collision: Option<uuid::Uuid> = None;
     let mut embedding_vector: Option<Vec<f32>> = None;
-
 
     if card_oc_file_path.unwrap_or("".to_string()) != "" {
         let admin_uuid: String = std::env::var("ADMIN_UUID").expect("ADMIN_UUID must be set");
@@ -198,7 +199,7 @@ pub async fn create_card(
 
     // only check for embedding similarity if no text based collision was found
     if collision.is_none() {
-        let openai_embedding_vector = create_embedding(&content).await?;
+        let openai_embedding_vector = create_embedding(&content, mutex_store).await?;
         embedding_vector = Some(openai_embedding_vector.clone());
 
         let first_semantic_result =
@@ -559,10 +560,11 @@ pub async fn search_card(
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
+    mutex_store: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_user_id = user.map(|user| user.id);
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
-    let embedding_vector = create_embedding(&data.content).await?;
+    let embedding_vector = create_embedding(&data.content, mutex_store).await?;
     let pool1 = pool.clone();
 
     let search_card_query_results = search_card_query(
@@ -751,10 +753,11 @@ pub async fn search_collections(
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
+    mutex_store: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
-    let embedding_vector = create_embedding(&data.content).await?;
+    let embedding_vector = create_embedding(&data.content, mutex_store).await?;
     let collection_id = data.collection_id;
     let pool1 = pool.clone();
     let pool2 = pool.clone();
