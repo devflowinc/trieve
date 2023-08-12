@@ -60,4 +60,4 @@ reqwest = { version = "0.11.18", features = ["json"] }
 [features]
 minimum-length = []
 custom-embeddings = []
-default = ["custom-embeddings"]
+default = ["custom-embeddings", "minimum-length"]
