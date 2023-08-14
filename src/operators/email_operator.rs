@@ -56,7 +56,7 @@ pub fn send_password_reset(
     send_email(sg_email)
 }
 
-pub fn send_health_check_error(email: &str, error: &actix_web::Error) -> Result<(), DefaultError> {
+pub fn send_health_check_error(email: String, error: String) -> Result<(), DefaultError> {
     let sg_email_content = format!(
         "WARNING health check is down. <br/>
         Error message: <br/>
