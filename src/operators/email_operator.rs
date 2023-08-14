@@ -56,6 +56,26 @@ pub fn send_password_reset(
     send_email(sg_email)
 }
 
+pub fn send_health_check_error(email: &str, error: &actix_web::Error) -> Result<(), DefaultError> {
+    let sg_email_content = format!(
+        "WARNING health check is down. <br/>
+        Error message: <br/>
+         <code>{}</code>",
+        error
+    );
+    let sg_email_personalization = Personalization::new(Email::new(email));
+    let sg_email = Message::new(Email::new("no-reply@arguflow.com"))
+        .set_subject("WARNING WARNING WARNING production is down WARNING WARING WARNING")
+        .add_content(
+            Content::new()
+                .set_content_type("text/html")
+                .set_value(sg_email_content),
+        )
+        .add_personalization(sg_email_personalization);
+
+    send_email(sg_email)
+}
+
 fn send_email(sg_email: Message) -> Result<(), DefaultError> {
     let sg_api_key = std::env::var("SENDGRID_API_KEY").expect("SENDGRID_API_KEY must be set");
     let sg_sender = Sender::new(sg_api_key);

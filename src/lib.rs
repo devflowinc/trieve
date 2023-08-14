@@ -46,6 +46,10 @@ pub async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
+    if std::env::var("ALERT_EMAIL").is_err() {
+        log::warn!("ALERT_EMAIL not set, this might be useful during health checks");
+    }
+
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
 
