@@ -20,13 +20,18 @@ pg.on("close", () => {
 pg.on("error", () => {
   pg.connect();
 });
-const getTrainingData = async (metadata) => {
+const getTrainingData = (metadata) => {
   try {
+    let collisions = [];
+    if (metadata.card_collisions) {
+      collisions = metadata.card_collisions.map((collision) => {
+        return { card_html: collision.f2, content: collision.f1 };
+      });
+    }
+
     const curMetadatas = [
       { card_html: metadata.card_html, content: metadata.content },
-      ...metadata.card_collisions.map((collision) => {
-        return { card_html: collision.f2, content: collision.f1 };
-      }),
+      ...collisions,
     ];
     let closestContent = "";
     let closestCardHTML = "";
@@ -54,7 +59,7 @@ const getTrainingData = async (metadata) => {
       content: closestContent,
       card_html: closestCardHTML,
     });
-    console.log("Pushed: ", data.length);
+    process.stdout.write(".");
   } catch (err) {
     console.log(err);
     return;
@@ -67,22 +72,19 @@ const getTrainingDataForAllQueries = async () => {
   const requestQueue = [];
   await pg.connect();
   fs.writeFileSync("data.json", "[");
-  for (let i = 0; i < 1945 * 5; i++) {
+  for (let i = 0; i < 20; i++) {
     const res = await pg.query(
-      'SELECT cm_main."content", cm_main.card_html , json_agg((cm_collision."content", cm_collision.card_html)) AS card_collisions FROM card_metadata cm_main LEFT JOIN card_collisions cc ON cm_main.qdrant_point_id  = cc.collision_qdrant_id LEFT JOIN card_metadata cm_collision ON cc.card_id  = cm_collision.id GROUP BY cm_main.id, cm_main."content" LIMIT 100 OFFSET $1*100;',
-      [i]
+      'SELECT cm_main.qdrant_point_id, json_agg((cm_collision.content, cm_collision.card_html)) FROM card_metadata cm_main LEFT JOIN card_collisions cc ON cm_main.qdrant_point_id  = cc.collision_qdrant_id LEFT JOIN card_metadata cm_collision ON cc.card_id  = cm_collision.id WHERE cm_main.qdrant_point_id IS NOT NULL GROUP BY cm_main.id, cm_main."content" LIMIT 12750 OFFSET $1*12750'
+      , [i]
     );
     res.rows.forEach(async (row) => {
-      requestQueue.push(getTrainingData(row));
-
-      if (requestQueue.length >= MAX_CONCURRENT_REQUESTS) {
-        await Promise.all(requestQueue);
-        requestQueue.length = 0; // Clear the queue
-      }
+      getTrainingData(row);
     });
     fs.appendFileSync("data.json", JSON.stringify(data) + ",");
+    console.log("writting out data", (i + 1));
+    data = []
   }
   fs.appendFileSync("data.json", "]");
 };
 
-getTrainingDataForAllQueries().then(() => {});
+getTrainingDataForAllQueries().then(() => { });
