@@ -10,7 +10,9 @@ use serde::Deserialize;
 use crate::{
     data::models::{Pool, SlimUser, User},
     errors::{DefaultError, ServiceError},
-    operators::user_operator::get_user_by_id_query,
+    operators::{
+        self, email_operator::send_health_check_error, user_operator::get_user_by_id_query,
+    }, AppMutexStore,
 };
 
 use crate::handlers::register_handler;
@@ -125,6 +127,15 @@ fn find_user_match(auth_data: AuthData, pool: web::Data<Pool>) -> Result<SlimUse
     })
 }
 
-pub async fn health_check() -> HttpResponse {
-    HttpResponse::Ok().finish()
+pub async fn health_check(
+    mutex_store: web::Data<AppMutexStore>,
+) -> Result<HttpResponse, actix_web::Error> {
+    operators::card_operator::create_embedding("health check", mutex_store)
+        .await
+        .map_err(|e| {
+            let alert_email = std::env::var("ALERT_EMAIL").expect("ALERT_EMAIL not set");
+            let _ = send_health_check_error(alert_email.as_str(), &e); // if this fails ff
+            e
+        })?;
+    Ok(HttpResponse::Ok().finish())
 }
