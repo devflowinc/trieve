@@ -39,7 +39,7 @@ const getTrainingData = (metadata) => {
     let closestCardLengthDiff = Infinity;
 
     for (let j = 0; j < curMetadatas.length; j++) {
-      if (!curMetadatas[j].card_html) continue;
+      if (!curMetadatas[j].card_html || !curMetadatas[j].content) continue;
       const cardHTML = curMetadatas[j].card_html;
       const cardLength = cardHTML.length;
       const lengthDiff = Math.abs(cardLength - 4300);
@@ -51,7 +51,7 @@ const getTrainingData = (metadata) => {
       }
     }
 
-    if (closestContent < 3500 || closestContent.length > 4300) {
+    if (closestContent.length < 3500 || closestContent.length > 4300) {
       return;
     }
 
@@ -66,18 +66,16 @@ const getTrainingData = (metadata) => {
   }
 };
 
-const MAX_CONCURRENT_REQUESTS = 1;
-
 const getTrainingDataForAllQueries = async () => {
   const requestQueue = [];
   await pg.connect();
   fs.writeFileSync("data.json", "[");
   for (let i = 0; i < 20; i++) {
     const res = await pg.query(
-      'SELECT cm_main.qdrant_point_id, json_agg((cm_collision.content, cm_collision.card_html)) FROM card_metadata cm_main LEFT JOIN card_collisions cc ON cm_main.qdrant_point_id  = cc.collision_qdrant_id LEFT JOIN card_metadata cm_collision ON cc.card_id  = cm_collision.id WHERE cm_main.qdrant_point_id IS NOT NULL GROUP BY cm_main.id, cm_main."content" LIMIT 12750 OFFSET $1*12750'
+      'SELECT cm_main.qdrant_point_id, cm_main.content, cm_main.card_html, json_agg((cm_collision.content, cm_collision.card_html)) FROM card_metadata cm_main LEFT JOIN card_collisions cc ON cm_main.qdrant_point_id  = cc.collision_qdrant_id LEFT JOIN card_metadata cm_collision ON cc.card_id  = cm_collision.id WHERE cm_main.qdrant_point_id IS NOT NULL GROUP BY cm_main.id, cm_main."content" LIMIT 12750 OFFSET $1*12750'
       , [i]
     );
-    res.rows.forEach(async (row) => {
+    res.rows.forEach((row) => {
       getTrainingData(row);
     });
     fs.appendFileSync("data.json", JSON.stringify(data) + ",");
