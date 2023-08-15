@@ -4,11 +4,18 @@ use crate::{
     data::models,
     data::models::Pool,
     errors::{DefaultError, ServiceError},
-    operators::message_operator::{
-        create_cut_card, create_message_query, create_topic_message_query, delete_message_query,
-        get_message_by_sort_for_topic_query, get_messages_for_topic_query, get_topic_messages,
-        user_owns_topic_query,
+    operators::{
+        card_operator::{
+            create_embedding, get_metadata_and_collided_cards_from_point_ids_query,
+            search_card_query,
+        },
+        message_operator::{
+            create_cut_card, create_message_query, create_topic_message_query,
+            delete_message_query, get_message_by_sort_for_topic_query,
+            get_messages_for_topic_query, get_topic_messages, user_owns_topic_query,
+        },
     },
+    AppMutexStore,
 };
 use actix::Arbiter;
 use actix_web::{
@@ -16,10 +23,11 @@ use actix_web::{
     HttpResponse,
 };
 use crossbeam_channel::unbounded;
+use futures_util::stream;
 use openai_dive::v1::{
     api::Client,
     resources::{
-        chat_completion::{ChatCompletionParameters, ChatMessage},
+        chat_completion::{ChatCompletionParameters, ChatMessage, Role},
         completion::CompletionParameters,
         shared::StopToken,
     },
@@ -40,6 +48,7 @@ pub async fn create_message_completion_handler(
     data: web::Json<CreateMessageData>,
     user: LoggedUser,
     pool: web::Data<Pool>,
+    mutex_store: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let create_message_data = data.into_inner();
     let new_message = models::Message::from_details(
@@ -77,7 +86,14 @@ pub async fn create_message_completion_handler(
         }
     };
 
-    stream_response(previous_messages, user.id, topic_id, fourth_pool).await
+    stream_response(
+        previous_messages,
+        user.id,
+        topic_id,
+        fourth_pool,
+        mutex_store,
+    )
+    .await
 }
 
 // get_all_topic_messages_handler
@@ -123,6 +139,7 @@ pub async fn edit_message_handler(
     data: web::Json<EditMessageData>,
     user: LoggedUser,
     pool: web::Data<Pool>,
+    mutex_store: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
     let message_sort_order = data.message_sort_order;
@@ -152,6 +169,7 @@ pub async fn edit_message_handler(
         }),
         user,
         third_pool,
+        mutex_store,
     )
     .await
 }
@@ -160,6 +178,7 @@ pub async fn regenerate_message_handler(
     data: web::Json<RegenerateMessageData>,
     user: LoggedUser,
     pool: web::Data<Pool>,
+    mutex_store: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
     let second_pool = pool.clone();
@@ -180,7 +199,14 @@ pub async fn regenerate_message_handler(
         }));
     }
     if previous_messages.len() == 3 {
-        return stream_response(previous_messages, user.id, topic_id, third_pool).await;
+        return stream_response(
+            previous_messages,
+            user.id,
+            topic_id,
+            third_pool,
+            mutex_store,
+        )
+        .await;
     }
 
     let mut message_to_regenerate = None;
@@ -215,6 +241,7 @@ pub async fn regenerate_message_handler(
         user.id,
         topic_id,
         third_pool,
+        mutex_store,
     )
     .await
 }
@@ -224,7 +251,11 @@ pub async fn stream_response(
     user_id: uuid::Uuid,
     topic_id: uuid::Uuid,
     pool: web::Data<Pool>,
+    mutex_store: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let pool1 = pool.clone();
+    let pool2 = pool.clone();
+
     let open_ai_messages: Vec<ChatMessage> = messages
         .iter()
         .map(|message| ChatMessage::from(message.clone()))
@@ -239,6 +270,110 @@ pub async fn stream_response(
         }
         messages_len + 1
     };
+
+    // find evidence for the counter-argument
+    let counter_arg_parameters = ChatCompletionParameters {
+        model: "gpt-3.5-turbo".into(),
+        messages: vec![ChatMessage {
+            role: Role::User,
+            content: format!(
+                "Write a 1-2 sentence counterargument for: \"{}\"",
+                open_ai_messages
+                    .clone()
+                    .last()
+                    .expect("No messages")
+                    .clone()
+                    .content
+            ),
+            name: None,
+        }],
+        temperature: None,
+        top_p: None,
+        n: None,
+        stop: None,
+        max_tokens: None,
+        presence_penalty: Some(0.8),
+        frequency_penalty: Some(0.8),
+        logit_bias: None,
+        user: None,
+    };
+
+    let evidence_search_query = client
+        .chat()
+        .create(counter_arg_parameters)
+        .await
+        .expect("No OpenAI Completion for evidence search");
+    let embedding_vector = create_embedding(
+        evidence_search_query
+            .choices
+            .first()
+            .expect("No response")
+            .message
+            .content
+            .as_str(),
+        mutex_store,
+    )
+    .await?;
+
+    let search_card_query_results = search_card_query(embedding_vector, 1, pool1, None, None, None)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    // get the first and third card from the result
+    let first_third_cards = vec![
+        search_card_query_results
+            .search_results
+            .get(0)
+            .expect("No first card")
+            .point_id,
+        search_card_query_results
+            .search_results
+            .get(2)
+            .expect("No third card")
+            .point_id,
+    ];
+    let (metadata_cards, _) = web::block(move || {
+        get_metadata_and_collided_cards_from_point_ids_query(first_third_cards, None, pool2)
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let metadata_card0 = metadata_cards.get(0).expect("No first card");
+    let metadata_card2 = metadata_cards.get(2).expect("No third card");
+
+    let last_message_with_evidence = format!(
+        "Here's my argument: {} \n\n Use the following evidence to write a counter-argument: \n\n {},{} \n {},{}",
+        open_ai_messages.last().unwrap().content,
+        metadata_card0
+            .link
+            .clone()
+            .unwrap_or("".to_string())
+            .to_string(),
+        metadata_card0.content[..2000].to_string(),
+        metadata_card2
+            .link
+            .clone()
+            .unwrap_or("".to_string())
+            .to_string(),
+        metadata_card2.content[..2000].to_string(),
+    );
+
+    // replace the last message with the last message with evidence
+    let open_ai_messages = open_ai_messages
+        .clone()
+        .into_iter()
+        .enumerate()
+        .map(|(index, message)| {
+            if index == open_ai_messages.len() - 1 {
+                ChatMessage {
+                    role: message.role,
+                    content: last_message_with_evidence.clone(),
+                    name: message.name,
+                }
+            } else {
+                message
+            }
+        })
+        .collect();
 
     let parameters = ChatCompletionParameters {
         model: "gpt-3.5-turbo".into(),
@@ -273,7 +408,14 @@ pub async fn stream_response(
         let _ = create_message_query(new_message, user_id, &pool);
     });
 
-    Ok(HttpResponse::Ok().streaming(stream.map(
+    let new_stream = stream::iter(vec![
+        Ok(Bytes::from(metadata_card0.id.to_string())),
+        Ok(Bytes::from(",".to_string())),
+        Ok(Bytes::from(metadata_card2.id.to_string())),
+        Ok(Bytes::from("||".to_string())),
+    ]);
+
+    Ok(HttpResponse::Ok().streaming(new_stream.chain(stream.map(
         move |response| -> Result<Bytes, actix_web::Error> {
             if let Ok(response) = response {
                 let chat_content = response.choices[0].delta.content.clone();
@@ -284,7 +426,7 @@ pub async fn stream_response(
             }
             Err(ServiceError::InternalServerError.into())
         },
-    )))
+    ))))
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

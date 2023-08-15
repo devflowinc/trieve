@@ -92,7 +92,7 @@ pub fn create_generic_system_and_prompt_message(
     let system_message_content = if normal_chat {
         "You are Arguflow Assistant, a large language model trained by Arguflow to be a helpful assistant."
     } else {
-        "You are Arguflow Debate Coach, a large language model trained by Arguflow to coach students on their debate capabilities."
+        "You are Arguflow Competitive Debate Opponent, a large language model trained by Arguflow to act as a debate partner for students."
     };
 
     let system_message = Message::from_details(
@@ -108,7 +108,7 @@ pub fn create_generic_system_and_prompt_message(
         "Hi".to_string()
     } else {
         format!(
-            "We are going to practice debating over the topic \"{}\". We are speaking to a judge. After my messages, you will respond exactly as follows:\n\nfeedback: {{aggressive feedback on how my argument could be improved}}\ncounterargument: {{A simulated counterargument, including evidence, that I can respond to in order to further practice my skills}}",
+            "We are going to practice debating over the topic \"{}\". We are speaking to a judge. After my messages, you will respond with a simulated competitive debate counterargument, citing the provided evidence, that I can respond to in order to further practice my competitive debate skills",
             topic.resolution,
         )
     };
