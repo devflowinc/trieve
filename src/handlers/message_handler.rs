@@ -338,7 +338,7 @@ pub async fn stream_response(
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let metadata_card0 = metadata_cards.get(0).expect("No first card");
-    let metadata_card2 = metadata_cards.get(2).expect("No third card");
+    let metadata_card2 = metadata_cards.get(1).expect("No third card metadata");
 
     let last_message_with_evidence = format!(
         "Here's my argument: {} \n\n Use the following evidence to write a counter-argument: \n\n {},{} \n {},{}",
@@ -348,13 +348,13 @@ pub async fn stream_response(
             .clone()
             .unwrap_or("".to_string())
             .to_string(),
-        metadata_card0.content[..2000].to_string(),
+        if metadata_card0.content.len() > 2000 {metadata_card0.content[..2000].to_string()} else {metadata_card0.content.clone()},
         metadata_card2
             .link
             .clone()
             .unwrap_or("".to_string())
             .to_string(),
-        metadata_card2.content[..2000].to_string(),
+            if metadata_card2.content.len() > 2000 {metadata_card2.content[..2000].to_string()} else {metadata_card2.content.clone()},
     );
 
     // replace the last message with the last message with evidence
