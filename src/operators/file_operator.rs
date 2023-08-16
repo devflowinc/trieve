@@ -321,9 +321,9 @@ pub async fn create_cards_with_handler(
             });
         }
     };
+    log::info!("HANDLER command {} {} {}", parser_command, file_path_str, file_name.split("-").collect::<Vec<&str>>()[0]);
     let parsed_cards_command_output = Command::new(parser_command)
         .arg(file_path_str)
-        .arg(file_name.split("-").collect::<Vec<&str>>()[0])
         .output();
 
     delete_html_file()?;
