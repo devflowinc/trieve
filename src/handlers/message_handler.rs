@@ -70,16 +70,33 @@ pub async fn create_message_completion_handler(
     }
 
     // get the previous messages
-    let previous_messages = web::block(move || get_topic_messages(topic_id, &second_pool))
+    let mut previous_messages = web::block(move || get_topic_messages(topic_id, &second_pool))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
+    // remove citations from the previous messages
+    previous_messages = previous_messages
+        .into_iter()
+        .map(|message| {
+            let mut message = message;
+            if message.role == "assistant" {
+                message.content = message
+                    .content
+                    .split("||")
+                    .last()
+                    .unwrap_or("I give up, I can't find a citation")
+                    .to_string();
+            }
+            message
+        })
+        .collect::<Vec<models::Message>>();
+
     // call create_topic_message_query with the new_message and previous_messages
-    let previous_messages_result = web::block(move || {
+    let new_topic_message_result = web::block(move || {
         create_topic_message_query(previous_messages, new_message, user.id, &third_pool)
     })
     .await?;
-    let previous_messages = match previous_messages_result {
+    let previous_messages = match new_topic_message_result {
         Ok(messages) => messages,
         Err(e) => {
             return Ok(HttpResponse::BadRequest().json(e));
@@ -186,7 +203,8 @@ pub async fn regenerate_message_handler(
 
     let previous_messages_result =
         web::block(move || get_topic_messages(topic_id, &second_pool)).await?;
-    let previous_messages = match previous_messages_result {
+
+    let mut previous_messages = match previous_messages_result {
         Ok(messages) => messages,
         Err(e) => {
             return Ok(HttpResponse::BadRequest().json(e));
@@ -208,6 +226,23 @@ pub async fn regenerate_message_handler(
         )
         .await;
     }
+
+    // remove citations from the previous messages
+    previous_messages = previous_messages
+        .into_iter()
+        .map(|message| {
+            let mut message = message;
+            if message.role == "assistant" {
+                message.content = message
+                    .content
+                    .split("||")
+                    .last()
+                    .unwrap_or("I give up, I can't find a citation")
+                    .to_string();
+            }
+            message
+        })
+        .collect::<Vec<models::Message>>();
 
     let mut message_to_regenerate = None;
     for message in previous_messages.iter().rev() {
@@ -331,17 +366,49 @@ pub async fn stream_response(
             .expect("No third card")
             .point_id,
     ];
-    let (metadata_cards, _) = web::block(move || {
+    let first_third_cards1 = first_third_cards.clone();
+
+    let (metadata_cards, collided_cards) = web::block(move || {
         get_metadata_and_collided_cards_from_point_ids_query(first_third_cards, None, pool2)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let metadata_card0 = metadata_cards.get(0).expect("No first card");
-    let metadata_card2 = metadata_cards.get(1).expect("No third card metadata");
+    let metadata_card0 = if metadata_cards.get(0).expect("No first card").private {
+        let matching_collided_card = collided_cards
+            .iter()
+            .find(|card| card.qdrant_id == first_third_cards1[0] && !card.metadata.private)
+            .expect("No public first card metadata");
+
+        matching_collided_card.metadata.clone()
+    } else {
+        metadata_cards
+            .get(0)
+            .expect("No first card metadata")
+            .clone()
+    };
+
+    let metadata_card2 = if metadata_cards.get(1).expect("No third card").private {
+        let matching_collided_card = collided_cards
+            .iter()
+            .find(|card| card.qdrant_id == first_third_cards1[1] && !card.metadata.private)
+            .expect("No public third card metadata");
+
+        matching_collided_card.metadata.clone()
+    } else {
+        metadata_cards
+            .get(1)
+            .expect("No third card metadata")
+            .clone()
+    };
+
+    let citation_cards = vec![metadata_card0.clone(), metadata_card2.clone()];
+    let citation_cards_stringified =
+        serde_json::to_string(&citation_cards).expect("Failed to serialize citation cards");
+    let citation_cards_stringified1 = citation_cards_stringified.clone();
 
     let last_message_with_evidence = format!(
-        "Here's my argument: {} \n\n Use the following evidence to write a counter-argument: \n\n {},{} \n {},{}",
+        "Here's my argument: {} \n\n Only use the following evidence as if you are citing it for your counter-argument : \n\n {},{} \n {},{}",
         open_ai_messages.last().unwrap().content,
         metadata_card0
             .link
@@ -397,7 +464,7 @@ pub async fn stream_response(
         let completion = chunk_v.join("");
 
         let new_message = models::Message::from_details(
-            completion,
+            format!("{}||{}", citation_cards_stringified, completion),
             topic_id,
             next_message_order().try_into().unwrap(),
             "assistant".to_string(),
@@ -409,9 +476,7 @@ pub async fn stream_response(
     });
 
     let new_stream = stream::iter(vec![
-        Ok(Bytes::from(metadata_card0.id.to_string())),
-        Ok(Bytes::from(",".to_string())),
-        Ok(Bytes::from(metadata_card2.id.to_string())),
+        Ok(Bytes::from(citation_cards_stringified1)),
         Ok(Bytes::from("||".to_string())),
     ]);
 
