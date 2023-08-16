@@ -46,7 +46,9 @@ pub async fn create_embedding(
     message: &str,
     mutex_store: web::Data<AppMutexStore>,
 ) -> Result<Vec<f32>, actix_web::Error> {
-    if cfg!(feature = "custom-embeddings") {
+    let use_custom: u8 = std::env::var("USE_CUSTOM_EMBEDDINGS").unwrap_or("1".to_string()).parse::<u8>().unwrap_or(1);
+
+    if use_custom == 0 {
         let _ = mutex_store
             .embedding_semaphore
             .acquire()
