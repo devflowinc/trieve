@@ -408,7 +408,7 @@ pub async fn stream_response(
     let citation_cards_stringified1 = citation_cards_stringified.clone();
 
     let last_message_with_evidence = format!(
-        "Here's my argument: {} \n\n Only use the following evidence as if you are citing it for your counter-argument : \n\n {},{} \n {},{}",
+        "Here's my argument: {} \n\n Pretending you found it, use the following evidence and only the following evidence when constructing your counter-argument : \n\n {},{} \n {},{}",
         open_ai_messages.last().unwrap().content,
         metadata_card0
             .link

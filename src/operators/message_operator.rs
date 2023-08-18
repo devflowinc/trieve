@@ -108,7 +108,7 @@ pub fn create_generic_system_and_prompt_message(
         "Hi".to_string()
     } else {
         format!(
-            "We are going to practice debating over the topic \"{}\". We are speaking to a judge. After my messages, you will respond with a simulated competitive debate counterargument, citing the provided evidence, that I can respond to in order to further practice my competitive debate skills",
+            "We are going to practice debating over the topic \"{}\". Treat all evidence as if you found it and not me. After my messages, you will respond with a competitive debate counterargument, citing the provided evidence, that I can respond to in order to further practice my competitive debate skills",
             topic.resolution,
         )
     };
