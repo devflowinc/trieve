@@ -136,9 +136,9 @@ pub async fn health_check(
     if let Err(e) = result {
         let alert_email = std::env::var("ALERT_EMAIL").expect("ALERT_EMAIL not set");
         let err_string = format!("{:?}", e);
-        let _ = web::block(|| { 
-            send_health_check_error(alert_email, err_string) // if this fails ff
-        }).await;
+        // let _ = web::block(|| { 
+        //     send_health_check_error(alert_email, err_string) // if this fails ff
+        // }).await;
         return Err(e);
     }
     Ok(HttpResponse::Ok().finish())
