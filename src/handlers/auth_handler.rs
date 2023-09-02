@@ -10,9 +10,7 @@ use serde::Deserialize;
 use crate::{
     data::models::{Pool, SlimUser, User},
     errors::{DefaultError, ServiceError},
-    operators::{
-        self, email_operator::send_health_check_error, user_operator::get_user_by_id_query,
-    },
+    operators::{self, user_operator::get_user_by_id_query},
     AppMutexStore,
 };
 
@@ -134,9 +132,9 @@ pub async fn health_check(
     let result = operators::card_operator::create_embedding("health check", mutex_store).await;
 
     if let Err(e) = result {
-        let alert_email = std::env::var("ALERT_EMAIL").expect("ALERT_EMAIL not set");
-        let err_string = format!("{:?}", e);
-        // let _ = web::block(|| { 
+        // let alert_email = std::env::var("ALERT_EMAIL").expect("ALERT_EMAIL not set");
+        // let err_string = format!("{:?}", e);
+        // let _ = web::block(|| {
         //     send_health_check_error(alert_email, err_string) // if this fails ff
         // }).await;
         return Err(e);

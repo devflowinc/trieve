@@ -149,114 +149,120 @@ pub async fn convert_doc_to_html_query(
     pool: web::Data<Pool>,
     mutex_store: web::Data<AppMutexStore>,
 ) -> Result<UploadFileResult, DefaultError> {
-    let new_id = uuid::Uuid::new_v4();
-    let uuid_file_name = format!("{}-{}", new_id, file_name.replace('/', ""));
-    let temp_docx_file_path = format!("./tmp/{}", uuid_file_name);
-    let glob_string = format!("./tmp/{}*", new_id);
-    std::fs::write(&temp_docx_file_path, file_data.clone()).map_err(|err| {
-        log::error!("Could not write file to disk {:?}", err);
-        log::error!("Temp file directory {:?}", temp_docx_file_path);
-        DefaultError {
-            message: "Could not write file to disk",
-        }
-    })?;
+    let user1 = user.clone();
+    let file_name1 = file_name.clone();
+    let file_mime1 = file_mime.clone();
+    let file_data1 = file_data.clone();
+    let oc_file_path1 = oc_file_path.clone();
 
-    let delete_docx_file = || {
-        std::fs::remove_file(temp_docx_file_path.clone()).map_err(|err| {
-            log::error!("Could not delete temp docx file {:?}", err);
+    tokio::spawn(async move {
+        let new_id = uuid::Uuid::new_v4();
+        let uuid_file_name = format!("{}-{}", new_id, file_name.replace('/', ""));
+        let temp_docx_file_path = format!("./tmp/{}", uuid_file_name);
+        let glob_string = format!("./tmp/{}*", new_id);
+        std::fs::write(&temp_docx_file_path, file_data.clone()).map_err(|err| {
+            log::error!("Could not write file to disk {:?}", err);
+            log::error!("Temp file directory {:?}", temp_docx_file_path);
             DefaultError {
-                message: "Could not delete temp docx file",
-            }
-        })
-    };
-
-    let temp_html_file_path_buf = std::path::PathBuf::from(&format!(
-        "./tmp/{}.html",
-        uuid_file_name
-            .rsplit_once('.')
-            .map(|x| x.0)
-            .unwrap_or_default()
-    ));
-
-    match file_mime.as_str() {
-        "text/html" => {
-            let temp_html_file_path = temp_html_file_path_buf.to_str().unwrap();
-            std::fs::write(temp_html_file_path, file_data.clone()).map_err(|err| {
-                log::error!("Could not write file to disk {:?}", err);
-                log::error!("Temp file directory {:?}", temp_html_file_path);
-                DefaultError {
-                    message: "Could not write file to disk",
-                }
-            })?;
-        }
-        _ => {
-            let libreoffice_lock_result = mutex_store.libreoffice.lock();
-
-            if libreoffice_lock_result.is_err() {
-                delete_docx_file()?;
-                return Err(DefaultError {
-                    message: "Could not lock libreoffice",
-                });
-            }
-
-            let conversion_command_output = Command::new(
-                std::env::var("LIBREOFFICE_PATH").expect("LIBREOFFICE_PATH must be set"),
-            )
-            .arg("--headless")
-            .arg("--convert-to")
-            .arg("html")
-            .arg("--outdir")
-            .arg("./tmp")
-            .arg(&temp_docx_file_path)
-            .output();
-
-            drop(libreoffice_lock_result);
-
-            delete_docx_file()?;
-
-            if conversion_command_output.is_err() {
-                return Err(DefaultError {
-                    message: "Could not convert file",
-                });
-            }
-        }
-    };
-
-    let file_size = match file_data.len().try_into() {
-        Ok(file_size) => file_size,
-        Err(_) => {
-            return Err(DefaultError {
-                message: "Could not convert file size to i64",
-            })
-        }
-    };
-
-    let created_file = create_file_query(
-        user.id,
-        &file_name,
-        &file_mime,
-        file_size,
-        private,
-        oc_file_path.clone(),
-        pool.clone(),
-    )?;
-
-    let bucket = get_aws_bucket()?;
-    bucket
-        .put_object_with_content_type(
-            created_file.id.to_string(),
-            file_data.as_slice(),
-            &file_mime,
-        )
-        .await
-        .map_err(|e| {
-            log::info!("Could not upload file to S3 {:?}", e);
-            DefaultError {
-                message: "Could not upload file to S3",
+                message: "Could not write file to disk",
             }
         })?;
 
-    tokio::spawn(async move {
+        let delete_docx_file = || {
+            std::fs::remove_file(temp_docx_file_path.clone()).map_err(|err| {
+                log::error!("Could not delete temp docx file {:?}", err);
+                DefaultError {
+                    message: "Could not delete temp docx file",
+                }
+            })
+        };
+
+        let temp_html_file_path_buf = std::path::PathBuf::from(&format!(
+            "./tmp/{}.html",
+            uuid_file_name
+                .rsplit_once('.')
+                .map(|x| x.0)
+                .unwrap_or_default()
+        ));
+
+        match file_mime.as_str() {
+            "text/html" => {
+                let temp_html_file_path = temp_html_file_path_buf.to_str().unwrap();
+                std::fs::write(temp_html_file_path, file_data.clone()).map_err(|err| {
+                    log::error!("Could not write file to disk {:?}", err);
+                    log::error!("Temp file directory {:?}", temp_html_file_path);
+                    DefaultError {
+                        message: "Could not write file to disk",
+                    }
+                })?;
+            }
+            _ => {
+                let libreoffice_lock_result = mutex_store.libreoffice.lock();
+
+                if libreoffice_lock_result.is_err() {
+                    delete_docx_file()?;
+                    return Err(DefaultError {
+                        message: "Could not lock libreoffice",
+                    });
+                }
+
+                let conversion_command_output = Command::new(
+                    std::env::var("LIBREOFFICE_PATH").expect("LIBREOFFICE_PATH must be set"),
+                )
+                .arg("--headless")
+                .arg("--convert-to")
+                .arg("html")
+                .arg("--outdir")
+                .arg("./tmp")
+                .arg(&temp_docx_file_path)
+                .output();
+
+                drop(libreoffice_lock_result);
+
+                delete_docx_file()?;
+
+                if conversion_command_output.is_err() {
+                    return Err(DefaultError {
+                        message: "Could not convert file",
+                    });
+                }
+            }
+        };
+
+        let file_size = match file_data.len().try_into() {
+            Ok(file_size) => file_size,
+            Err(_) => {
+                return Err(DefaultError {
+                    message: "Could not convert file size to i64",
+                })
+            }
+        };
+
+        let created_file = create_file_query(
+            user.id,
+            &file_name,
+            &file_mime,
+            file_size,
+            private,
+            oc_file_path.clone(),
+            pool.clone(),
+        )?;
+
+        let bucket = get_aws_bucket()?;
+        bucket
+            .put_object_with_content_type(
+                created_file.id.to_string(),
+                file_data.as_slice(),
+                &file_mime,
+            )
+            .await
+            .map_err(|e| {
+                log::info!("Could not upload file to S3 {:?}", e);
+                DefaultError {
+                    message: "Could not upload file to S3",
+                }
+            })?;
+
         let resp = create_cards_with_handler(
             oc_file_path,
             private,
@@ -274,10 +280,19 @@ pub async fn convert_doc_to_html_query(
         if resp.is_err() {
             log::error!("Create cards with handler failed {:?}", resp);
         }
+
+        Ok(())
     });
 
     Ok(UploadFileResult {
-        file_metadata: created_file,
+        file_metadata: File::from_details(
+            user1.id,
+            &file_name1,
+            &file_mime1,
+            private,
+            file_data1.len().try_into().unwrap(),
+            oc_file_path1,
+        ),
     })
 }
 
@@ -321,10 +336,13 @@ pub async fn create_cards_with_handler(
             });
         }
     };
-    log::info!("HANDLER command {} {} {}", parser_command, file_path_str, file_name.split("-").collect::<Vec<&str>>()[0]);
-    let parsed_cards_command_output = Command::new(parser_command)
-        .arg(file_path_str)
-        .output();
+    log::info!(
+        "HANDLER command {} {} {}",
+        parser_command,
+        file_path_str,
+        file_name.split("-").collect::<Vec<&str>>()[0]
+    );
+    let parsed_cards_command_output = Command::new(parser_command).arg(file_path_str).output();
 
     delete_html_file()?;
 

@@ -56,6 +56,7 @@ pub fn send_password_reset(
     send_email(sg_email)
 }
 
+#[allow(dead_code)]
 pub fn send_health_check_error(email: String, error: String) -> Result<(), DefaultError> {
     let sg_email_content = format!(
         "WARNING health check is down. <br/>
