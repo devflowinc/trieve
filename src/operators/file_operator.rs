@@ -340,7 +340,7 @@ pub async fn create_cards_with_handler(
         "HANDLER command {} {} {}",
         parser_command,
         file_path_str,
-        file_name.split("-").collect::<Vec<&str>>()[0]
+        file_name.split('-').collect::<Vec<&str>>()[0]
     );
     let parsed_cards_command_output = Command::new(parser_command).arg(file_path_str).output();
 
