@@ -1,0 +1,6 @@
+fastapi==0.103.1
+nltk==3.8.1
+pydantic==1.9.0
+scikit_learn==1.1.1
+transformers==4.33.1
+uvicorn==0.17.5
