@@ -492,6 +492,7 @@ pub async fn stream_response(
 pub struct CutCardData {
     pub uncut_card: String,
     pub num_sentences: Option<i32>,
+    pub model: Option<String>,
 }
 
 pub async fn create_cut_card_handler(
@@ -505,6 +506,7 @@ pub async fn create_cut_card_handler(
     let json = json!({
         "input": uncut_card_data.uncut_card,
         "num_sentences": uncut_card_data.num_sentences,
+        "model": uncut_card_data.model
     });
     let res = client
         .post("http://3.142.75.154/cut")
