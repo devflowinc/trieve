@@ -64,6 +64,7 @@ services:
       - vault-network
   vault-server:
     image: arguflow/vault-server
+    build: ./server/
     networks:
       - vault-network
     ports:
@@ -71,11 +72,11 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - QDRANT_URL=http://qdrant-database:6334
-      - DATABASE_URL=postgres://postgres:password@db:5432/ai_editor
-      - S3_ACCESS_KEY=********************
-      - S3_SECRET_KEY=****************************************
+      - DATABASE_URL=postgres://postgres:password@db:5432/vault
+      - S3_ACCESS_KEY=ZiuIuCVAJDj5zCbxBhLC
+      - S3_SECRET_KEY=rnHShpEzoInB5blpD1XE6R8iSdojGWbXHTHjE3qz
       - S3_BUCKET=vault
-      - OPENAI_API_KEY=sk-************************************************
+      - OPENAI_API_KEY=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
     depends_on:
       - s3
       - qdrant-database
@@ -83,6 +84,7 @@ services:
       - db
   vault-chat:
     image: arguflow/vault-chat
+    build: ./chat/
     networks:
       - vault-network
     ports:
@@ -93,6 +95,7 @@ services:
       - PUBLIC_API_HOST=http://vault-server:8090/api
   vault-search:
     image: arguflow/vault-search
+    build: ./search/
     networks:
       - vault-network
     ports:

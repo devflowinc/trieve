@@ -1,0 +1,118 @@
+---
+import Footer from "../../components/Footer.astro";
+import SearchLayout from "../../layouts/SearchLayout.astro";
+import { CollectionPage } from "../../components/CollectionPage";
+import type {
+  CardCollectionBookmarkDTO,
+  CardCollectionBookmarksWithStatusDTO,
+  CardCollectionSearchDTO,
+} from "../../../utils/apiTypes";
+import type { Filters } from "../../components/ResultsPage";
+
+let { collectionID } = Astro.params;
+collectionID = collectionID ?? "";
+const requestParams = Astro.request.url.split("?")[1];
+const params = new URLSearchParams(requestParams);
+const page = Number(params.get("page")) || 1;
+const query = params.get("q") ?? "";
+const dataTypeFilters: Filters = {
+  dataTypes: params.get("datatypes")?.split(",") ?? [],
+  links: params.get("links")?.split(",") ?? [],
+};
+const searchType: string = params.get("searchType") ?? "search";
+
+const apiHost = import.meta.env.API_HOST as string;
+let collectionCards: CardCollectionBookmarksWithStatusDTO = {
+  metadata: {
+    bookmarks: [],
+    collection: {
+      id: "",
+      name: "",
+      description: "",
+      is_public: false,
+      author_id: "",
+      created_at: "",
+      updated_at: "",
+    },
+    total_pages: 0,
+  },
+  status: 0,
+};
+
+let title = "Arguflow Search";
+let description = "";
+try {
+  if (query === "") {
+    const collectionCardResponse = await fetch(
+      `${apiHost}/card_collection/${collectionID}/${page}`,
+      {
+        method: "GET",
+      },
+    );
+    if (!collectionCardResponse.ok) {
+      throw new Error(
+        `Failed to fetch collection cards: ${collectionCardResponse.status} ${collectionCardResponse.statusText}`,
+      );
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const collectionCardJson: CardCollectionBookmarkDTO =
+      await collectionCardResponse.json();
+    collectionCards = {
+      metadata: collectionCardJson,
+      status: collectionCardResponse.status,
+    };
+    title = `${collectionCards.metadata.collection.name} |` + title;
+    if (collectionCards.metadata.collection.description !== "") {
+      description = collectionCards.metadata.collection.description;
+    }
+  } else {
+    const collectionCardResponse = await fetch(
+      `${apiHost}/card_collection/${searchType}/${page}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          content: query,
+          filter_oc_file_path: dataTypeFilters.dataTypes,
+          filter_link_url: dataTypeFilters.links,
+          collection_id: collectionID,
+        }),
+      },
+    );
+    if (!collectionCardResponse.ok) {
+      throw new Error(
+        `Failed to fetch collection cards: ${collectionCardResponse.status} ${collectionCardResponse.statusText}`,
+      );
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const collectionCardJson: CardCollectionSearchDTO =
+      await collectionCardResponse.json();
+    collectionCards = {
+      metadata: collectionCardJson,
+      status: collectionCardResponse.status,
+    };
+    title = `🔍${query} |` + title;
+  }
+} catch (e) {
+  console.error(e);
+}
+---
+
+<SearchLayout title={title} description={description}>
+  <CollectionPage
+    collectionID={collectionID}
+    page={page}
+    defaultCollectionCards={collectionCards}
+    query={query}
+    dataTypeFilters={dataTypeFilters}
+    searchType={searchType}
+    client:load
+  />
+  <div class="flex-1"></div>
+  <Footer />
+</SearchLayout>

@@ -1,0 +1,78 @@
+---
+import {
+  BiLogosDiscord,
+  BiLogosGithub,
+  BiLogosTelegram,
+  BiLogosTwitter,
+} from "solid-icons/bi";
+import { SiMatrix } from "solid-icons/si";
+import ThemeModeController from "./ThemeModeController";
+import { Show } from "solid-js";
+import type { CardCountDTO } from "../../utils/apiTypes";
+
+const apiHost = import.meta.env.API_HOST as string;
+let total_cards = 0;
+
+try {
+  const total_cards_req = await fetch(`${apiHost}/card/count`);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const total_cards_json: CardCountDTO = await total_cards_req.json();
+
+  total_cards = total_cards_json.total_count;
+} catch (e) {
+  console.error(e);
+}
+---
+
+<div class="flex w-full flex-col items-center space-y-2 py-4">
+  <div class="flex w-full justify-center space-x-3">
+    <a
+      href="https://matrix.to/#/#arguflow-general:matrix.zerodao.gg"
+      target="_blank"
+      class="hover:text-turquoise-500 dark:hover:text-acid-500"
+    >
+      <SiMatrix size={30} class="fill-current" client:only />
+    </a>
+    <a
+      href="https://t.me/+vUOq6omKOn5lY2Zh"
+      target="_blank"
+      class="hover:text-turquoise-500 dark:hover:text-acid-500"
+    >
+      <BiLogosTelegram size={30} class="fill-current" client:only />
+    </a>
+    <a
+      href="https://discord.gg/CuJVfgZf54"
+      target="_blank"
+      class="hover:text-turquoise-500 dark:hover:text-acid-500"
+    >
+      <BiLogosDiscord size={30} class="fill-current" client:only />
+    </a>
+    <a
+      href="https://twitter.com/arguflow"
+      target="_blank"
+      class="hover:text-turquoise-500 dark:hover:text-acid-500"
+    >
+      <BiLogosTwitter size={30} class="fill-current" client:only />
+    </a>
+    <a
+      href="https://github.com/orgs/arguflow/repositories"
+      target="_blank"
+      class="hover:text-turquoise-500 dark:hover:text-acid-500"
+    >
+      <BiLogosGithub size={30} class="fill-current" client:only />
+    </a>
+  </div>
+  <Show when={total_cards > 0}>
+    <div
+      class="w-full text-center text-sm text-neutral-600 dark:text-neutral-400"
+    >
+      {total_cards.toLocaleString()} cards in the database
+    </div>
+  </Show>
+  <div class="flex w-full justify-center space-x-4">
+    <div>contact@arguflow.gg</div>
+    <div>
+      <ThemeModeController client:only="solid-js" />
+    </div>
+  </div>
+</div>

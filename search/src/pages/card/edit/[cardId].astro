@@ -1,0 +1,53 @@
+---
+import Footer from "../../../components/Footer.astro";
+import SearchLayout from "../../../layouts/SearchLayout.astro";
+import {
+  isCardMetadataWithVotes,
+  type CardMetadataWithVotes,
+  type SingleCardDTO,
+} from "../../../../utils/apiTypes";
+import { EditCardPageForm } from "../../../components/EditCardPageForm";
+
+const { cardId } = Astro.params;
+const requestParams = Astro.request.url.split("?")[1];
+const params = new URLSearchParams(requestParams);
+const collisions = params.get("collisions") ?? "";
+
+const apiHost = import.meta.env.API_HOST as string;
+let specificCard: SingleCardDTO;
+
+try {
+  const specificCardResult = await fetch(`${apiHost}/card/${cardId ?? ""}`, {
+    method: "GET",
+  });
+  const specificCardJson = (await specificCardResult.json()) as unknown;
+
+  if (!isCardMetadataWithVotes(specificCardJson)) {
+    throw new Error("Invalid card metadata");
+  }
+
+  specificCard = {
+    metadata: specificCardJson,
+    status: specificCardResult.status,
+  };
+} catch (e) {
+  specificCard = { metadata: null, status: 404 };
+}
+---
+
+<head>
+  <script src="/tinymce/tinymce.min.js" :inline></script>
+</head>
+<SearchLayout title={`Edit Card | Arguflow Search`}>
+  <EditCardPageForm
+    cardId={cardId}
+    defaultResultCard={specificCard as {
+      metadata: CardMetadataWithVotes;
+      status: number;
+    }}
+    collisions={collisions}
+    client:load
+  />
+  <div class="flex-1"></div>
+  <Footer />
+</SearchLayout>

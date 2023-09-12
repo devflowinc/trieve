@@ -1,0 +1,22 @@
+{
+  "theme_color": "#292d30",
+  "background_color": "#d0a65b",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/",
+  "name": "Arguflow Search",
+  "short_name": "Arguflow Search",
+  "description": "Search, create, and rate evidence for any topic.",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
