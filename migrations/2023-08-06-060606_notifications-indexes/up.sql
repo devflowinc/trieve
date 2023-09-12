@@ -1,7 +1,0 @@
--- Your SQL goes here
-CREATE INDEX idx_file_upload_completed_notifications_user_uuid ON file_upload_completed_notifications (user_uuid);
-CREATE INDEX idx_file_upload_completed_notifications_collection_uuid ON file_upload_completed_notifications (collection_uuid);
-
-CREATE INDEX idx_verification_notifications_user_uuid ON verification_notifications (user_uuid);
-CREATE INDEX idx_verification_notifications_card_uuid ON verification_notifications (card_uuid);
-CREATE INDEX idx_verification_notifications_verification_uuid ON verification_notifications (verification_uuid);

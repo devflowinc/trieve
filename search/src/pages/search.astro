@@ -1,0 +1,76 @@
+---
+import SearchLayout from "../layouts/SearchLayout.astro";
+import Footer from "../components/Footer.astro";
+import ResultsPage, { Filters } from "../components/ResultsPage";
+import type { CardsWithTotalPagesDTO } from "../../utils/apiTypes";
+import SearchForm from "../components/SearchForm";
+
+const apiHost = import.meta.env.API_HOST as string;
+const requestParams = Astro.request.url.split("?")[1];
+const params = new URLSearchParams(requestParams);
+const query = params.get("q") ?? "";
+const page = Number(params.get("page")) || 1;
+const dataTypeFilters: Filters = {
+  dataTypes: params.get("datatypes")?.split(",") ?? [],
+  links: params.get("links")?.split(",") ?? [],
+};
+const searchType: string = params.get("searchType") ?? "search";
+let initialScoreCards: CardsWithTotalPagesDTO = {
+  score_cards: [],
+  total_card_pages: 0,
+};
+try {
+  const initialScoreCardsResult = await fetch(
+    `${apiHost}/card/${searchType}/${page}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        content: query,
+        filter_oc_file_path: dataTypeFilters.dataTypes,
+        filter_link_url: dataTypeFilters.links,
+      }),
+    },
+  );
+
+  if (!initialScoreCardsResult.ok) {
+    throw new Error(
+      `Failed to fetch initial score cards: ${initialScoreCardsResult.status}`,
+    );
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const initialScoreCardsJson = await initialScoreCardsResult.json();
+  initialScoreCards = initialScoreCardsJson as CardsWithTotalPagesDTO;
+} catch (e) {
+  console.error(e);
+}
+---
+
+<SearchLayout title={`${query} | Arguflow Search`}>
+  <div class="max-w-6xl mx-auto w-full">
+    <div
+      class="mt-8 mx-auto w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)] px-4 sm:px-8 md:px-20"
+    >
+      <SearchForm
+        query={query}
+        filters={dataTypeFilters}
+        searchType={searchType}
+        client:load
+      />
+    </div>
+  </div>
+  <ResultsPage
+    page={page}
+    query={query}
+    filters={dataTypeFilters}
+    defaultResultCards={initialScoreCards}
+    searchType={searchType}
+    client:load
+  />
+  <div class="flex-1"></div>
+  <Footer />
+</SearchLayout>

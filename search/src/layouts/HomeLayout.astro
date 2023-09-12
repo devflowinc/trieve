@@ -1,0 +1,112 @@
+---
+import { HomeNavbar } from "../components/Atoms/HomeNavbar";
+const plausibleHost = import.meta.env.PLAUSIBLE_HOST as string;
+---
+
+<style is:global>
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-corner);
+    border-radius: 3px !important;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background-color: var(--scrollbar-track);
+    border-radius: 3px !important;
+  }
+  .scrollbar-thin::-webkit-scrollbar-corner {
+    background-color: var(--scrollbar-corner);
+    border-radius: 3px !important;
+  }
+</style>
+<html lang="en">
+  <head>
+    <script is:inline>
+      const theme = (() => {
+        if (
+          typeof localStorage !== "undefined" &&
+          localStorage.getItem("theme")
+        ) {
+          return localStorage.getItem("theme");
+        }
+        if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+          return "dark";
+        }
+        return "light";
+      })();
+
+      if (theme === "light") {
+        document.documentElement.classList.remove("dark");
+      } else {
+        document.documentElement.classList.add("dark");
+      }
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("/sw.js").then(
+            function (registration) {
+              console.log(
+                "Service Worker registered with scope:",
+                registration.scope,
+              );
+            },
+            function (error) {
+              console.log("Service Worker registration failed:", error);
+            },
+          );
+        });
+      }
+    </script>
+    <meta charset="UTF-8" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#5E5E5E" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Arguflow Search</title>
+    <meta
+      name="description"
+      content="Demo of Arguflow's best-in-class semantic search infrastructure for debate evidence. "
+    />
+
+    <!-- Facebook Meta Tags -->
+    <meta property="og:url" content="https://search.arguflow.ai/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Arguflow Search" />
+    <meta
+      property="og:description"
+      content="Demo of Arguflow's best-in-class semantic search infrastructure for debate evidence. "
+    />
+    <meta
+      property="og:image"
+      content="https://docs.arguflow.ai/arguflow-og.png"
+    />
+
+    <!-- Twitter Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="twitter:domain" content="search.arguflow.ai" />
+    <meta property="twitter:url" content="https://search.arguflow.ai/" />
+    <meta name="twitter:title" content="Arguflow Search" />
+    <meta
+      name="twitter:description"
+      content="Demo of Arguflow's best-in-class semantic search infrastructure for debate evidence. "
+    />
+    <meta
+      name="twitter:image"
+      content="https://docs.arguflow.ai/arguflow-og.png"
+    />
+    <script
+      defer
+      data-domain={`${plausibleHost}`}
+      src="https://perhaps.arguflow.com/js/script.js"></script>
+  </head>
+  <body
+    class="scrollbar-track-rounded-md scrollbar-thumb-rounded-md scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
+  >
+    <div
+      class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white"
+    >
+      <HomeNavbar client:load />
+      <slot />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,97 @@
+---
+import {
+  CardCollectionDTO,
+  UserDTOWithVotesAndCards,
+  isCardCollectionPageDTO,
+  isUserDTOWithVotesAndCards,
+} from "../../../utils/apiTypes";
+import Footer from "../../components/Footer.astro";
+import SearchLayout from "../../layouts/SearchLayout.astro";
+import { UserCardDisplay } from "../../components/UserCardDisplay";
+
+const apiHost = import.meta.env.API_HOST as string;
+let { id } = Astro.params;
+id = id?.split("&")[0];
+const requestParams = Astro.request.url.split("?")[1];
+const params = new URLSearchParams(requestParams);
+const page = Number(params.get("page")) || 1;
+
+let user: UserDTOWithVotesAndCards | null = null;
+let title = "User Not Foound";
+let userCollections: CardCollectionDTO[] | null = null;
+let userCollectionPageCount = 1;
+
+try {
+  if (!id) {
+    throw new Error("No user id provided");
+  }
+
+  const queryPromise = fetch(`${apiHost}/user/${id}/${page}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  const collectionsPromise = fetch(`${apiHost}/user/collections/${id}/1`, {
+    method: "GET",
+  });
+
+  const [queryResult, collectionsResult] = await Promise.all([
+    queryPromise,
+    collectionsPromise,
+  ]);
+
+  if (queryResult.status !== 200) {
+    throw new Error("Error fetching user");
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const maybeUser = await queryResult.json();
+  if (isUserDTOWithVotesAndCards(maybeUser)) {
+    user = maybeUser;
+    title = user.username ?? user.email;
+    title += " | Arguflow Search";
+  } else {
+    throw new Error("Invalid response");
+  }
+
+  if (collectionsResult.ok) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const maybeCollections = await collectionsResult.json();
+    if (isCardCollectionPageDTO(maybeCollections)) {
+      userCollections = maybeCollections.collections;
+      userCollectionPageCount =
+        maybeCollections.total_pages == 0 ? 1 : maybeCollections.total_pages;
+    }
+  }
+} catch (error) {
+  console.error("Error fetching data", error);
+}
+---
+
+<SearchLayout title={title}>
+  <div class="mx-auto w-full max-w-6xl px-4">
+    <h1
+      class="py-8 line-clamp-1 break-all text-center text-lg font-bold min-[320px]:text-xl sm:text-4xl"
+    >
+      {user ? user.username ?? user.email : "User not found"}
+    </h1>
+    {
+      user && (
+        <>
+          <UserCardDisplay
+            id={id ?? ""}
+            page={page}
+            initialUser={user}
+            initialUserCollections={userCollections ?? []}
+            initialUserCollectionPageCount={userCollectionPageCount}
+            client:load
+          />
+        </>
+      )
+    }
+  </div>
+  <div class="flex-1"></div>
+  <Footer />
+</SearchLayout>
