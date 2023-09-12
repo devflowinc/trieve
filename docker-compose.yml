@@ -96,30 +96,13 @@ services:
     ports:
       - 8090:8090
     environment:
-      - REDIS_URL=${REDIS_URL}
-      - QDRANT_URL=${QDRANT_URL}
-      - QDRANT_API_KEY=${QDRANT_API_KEY}
-      - DATABASE_URL=${DATABASE_URL}
-      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
-      - S3_SECRET_KEY=${S3_SECRET_KEY}
-      - S3_ENDPOINT=${S3_ENDPOINT}
-      - S3_BUCKET=${S3_BUCKET}
-      - COOKIE_SECURE=${COOKIE_SECURE}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - VERIFICATION_SERVER_URL=${VERIFICATION_SERVER_URL}
-      - LIBREOFFICE_PATH=${LIBREOFFICE_PATH}
-      - PARSER_COMMAND=${PARSER_COMMAND}
-      - EMBEDDING_SERVER_CALL=${EMBEDDING_SERVER_CALL}
-      - QDRANT_COLLECTION=${QDRANT_COLLECTION}
-      - EMBEDDING_SIZE=${EMBEDDING_SIZE}
-      - ALERT_EMAIL=${ALERT_EMAIL}
-      - USE_EMBED_SERVER=${USE_EMBED_SERVER}
-      - STRIPE_API_SECRET_KEY=${STRIPE_API_SECRET_KEY}
-      - STRIPE_SILVER_PLAN_ID=${STRIPE_SILVER_PLAN_ID}
-      - STRIPE_GOLD_PLAN_ID=${STRIPE_GOLD_PLAN_ID}
-      - WEBHOOK_SIGNING_SECRET=${WEBHOOK_SIGNING_SECRET}
-      - SECRET_KEY=${SECRET_KEY}
-      - SALT=${SALT}
+      - REDIS_URL=redis://redis:6379
+      - QDRANT_URL=http://qdrant-database:6334
+      - DATABASE_URL=postgres://postgres:password@db:5432/vault
+      - S3_ACCESS_KEY=ZiuIuCVAJDj5zCbxBhLC
+      - S3_SECRET_KEY=rnHShpEzoInB5blpD1XE6R8iSdojGWbXHTHjE3qz
+      - S3_BUCKET=vault
+      - OPENAI_API_KEY=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
     depends_on:
       - s3
       - qdrant-database
@@ -128,8 +111,6 @@ services:
   vault-chat:
     image: arguflow/vault-chat
     build: ./chat/
-    volumes:
-      - ./.env.chat:/app/.env
     networks:
       - vault-network
     ports:
@@ -139,8 +120,6 @@ services:
   vault-search:
     image: arguflow/vault-search
     build: ./search/
-    volumes:
-      - ./.env.search:/app/.env
     networks:
       - vault-network
     ports:
