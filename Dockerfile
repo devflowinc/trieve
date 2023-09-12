@@ -1,6 +1,25 @@
-# Use Ubuntu 22.04 as the base image
-FROM ubuntu:22.04
+FROM rust:1 AS chef 
+# We only pay the installation cost once, 
+# it will be cached from the second build onwards
+RUN cargo install cargo-chef 
+WORKDIR app
 
+FROM chef AS planner
+COPY . .
+RUN cargo chef prepare  --recipe-path recipe.json
+
+FROM chef AS builder
+COPY --from=planner /app/recipe.json recipe.json
+# Build dependencies - this is the caching Docker layer!
+RUN cargo chef cook --release --recipe-path recipe.json
+# Build application
+COPY . .
+RUN cargo build --release
+
+# Use Ubuntu 22.04 as the base image
+FROM node:18 as runtime
+
+COPY --from=builder /app/target/release/vault-server /usr/local/bin
 # Update package list and install required dependencies
 RUN apt-get update && apt-get install -y \
     curl \
@@ -9,39 +28,29 @@ RUN apt-get update && apt-get install -y \
     make \
     pkg-config \
     python3 \
-    python3-pip
+    python3-pip \
+    python-is-python3 \
+    libpq-dev \
+    libssl-dev \
+    pkg-config \
+    openssl \
+    libreoffice \
+    ca-certificates \
+    curl \
+    gnupg
 
-# Install Rust and Cargo
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
-
-# Clean up APT cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get -y upgrade
 
 WORKDIR /app
 COPY . /app/
-COPY .env.docker /app/.env
+COPY .env.dist /app/.env
 
-# Install Node.js and Yarn
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs && \
-    npm install -g yarn && \
-    yarn --cwd ./vault-nodejs install
+# Install yarn
+RUN yarn --cwd ./vault-nodejs install
 
-RUN apt-get update && \
-  apt-get -y upgrade && \
-  apt-get -y install libpq-dev libssl-dev pkg-config openssl libreoffice
-
-RUN rustup default nightly
-
-RUN pip install -r ./vault-python/requirements.txt
-
+RUN pip install -r ./vault-python/requirements.txt --break-system-packages
 RUN rm -rf ./tmp
-
 RUN mkdir tmp
 
-RUN cargo build --release
-
 EXPOSE 8090
-
-ENTRYPOINT ["/bin/bash", "-c", "cargo run --release"]
+ENTRYPOINT ["/usr/local/bin/vault-server"]
