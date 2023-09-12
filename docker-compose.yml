@@ -12,6 +12,8 @@ services:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - vault-network
 
   redis:
     image: redis
@@ -21,6 +23,8 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+    networks:
+      - vault-network
 
   script-redis:
     image: redis
@@ -30,6 +34,8 @@ services:
       - "6380:6379"
     volumes:
       - script-redis-data:/data
+    networks:
+      - vault-network
 
   qdrant-database:
     image: qdrant/qdrant:v1.3.2
@@ -40,6 +46,8 @@ services:
       - 6334:6334
     volumes:
       - qdrant_data:/qdrant/storage
+    networks:
+      - vault-network
 
   s3:
     image: minio/minio
@@ -52,6 +60,51 @@ services:
     volumes:
       - s3-data:/data
     command: server --console-address ":42625" /data
+    networks:
+      - vault-network
+  vault-server:
+    image: arguflow/vault-server
+    networks:
+      - vault-network
+    ports:
+      - 8090:8090
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - QDRANT_URL=http://qdrant-database:6334
+      - DATABASE_URL=postgres://postgres:password@db:5432/ai_editor
+      - S3_ACCESS_KEY=********************
+      - S3_SECRET_KEY=****************************************
+      - S3_BUCKET=vault
+      - OPENAI_API_KEY=sk-************************************************
+    depends_on:
+      - s3
+      - qdrant-database
+      - redis
+      - db
+  vault-chat:
+    image: arguflow/vault-chat
+    networks:
+      - vault-network
+    ports:
+      - 3000:3000
+    environment:
+      - API_HOST=http://vault-server:8090/api
+      - PUBLIC_HOST=http://127.0.0.1:3000
+      - PUBLIC_API_HOST=http://vault-server:8090/api
+  vault-search:
+    image: arguflow/vault-search
+    networks:
+      - vault-network
+    ports:
+      - 3001:3000
+    environment:
+      - API_HOST=http://vault-server:8090/api
+      - PUBLIC_HOST=http://127.0.0.1:3001
+      - PUBLIC_API_HOST=http://vault-server:8090/api
+
+networks:
+  vault-network:
+    driver: bridge
 
 volumes:
   redis-data:

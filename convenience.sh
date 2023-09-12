@@ -3,19 +3,21 @@
 # Function to reset the Qdrant database
 reset_qdrant_database() {
     echo "Resetting the Qdrant database..."
-    sudo docker compose stop qdrant-database
-    sudo docker compose rm -f qdrant-database
-    sudo docker volume rm vault-server_qdrant_data
-    sudo docker compose up -d qdrant-database
+    docker compose stop vault-server
+    docker compose stop qdrant-database
+    docker compose rm -f qdrant-database
+    docker volume rm vault-server_qdrant_data
+    docker compose up -d qdrant-database
     diesel db reset
+    docker compose up -d vault-server
 }
 
 reset_s3_service() {
     echo "Resetting the S3 service..."
-    sudo docker compose stop s3
-    sudo docker compose rm -f s3
-    sudo docker volume rm vault_s3-data
-    sudo docker compose up -d s3
+    docker compose stop s3
+    docker compose rm -f s3
+    docker volume rm vault_s3-data
+    docker compose up -d s3
 }
 
 # Function to set up the Python environment
@@ -29,10 +31,10 @@ setup_python_environment() {
 # Function to reset the script database
 reset_script_redis() {
     echo "Resetting the script Redis database..."
-    sudo docker compose stop script-redis
-    sudo docker compose rm -f script-redis
-    sudo docker volume rm vault_script-redis-data
-    sudo docker compose up -d script-redis
+    docker compose stop script-redis
+    docker compose rm -f script-redis
+    docker volume rm vault_script-redis-data
+    docker compose up -d script-redis
 }
 
 # Main script logic
