@@ -1,0 +1,4 @@
+-- Your SQL goes here
+ALTER TABLE users
+ALTER COLUMN email TYPE TEXT,
+ALTER COLUMN hash TYPE TEXT;
