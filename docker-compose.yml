@@ -70,9 +70,9 @@ services:
     ports:
       - 8090:8090
     environment:
-      - REDIS_URL=redis://redis:6379
-      - QDRANT_URL=http://qdrant-database:6334
-      - DATABASE_URL=postgres://postgres:password@db:5432/vault
+      - REDIS_URL=${REDIS_URL}
+      - QDRANT_URL=${QDRANT_URL}
+      - DATABASE_URL=${DATABASE_URL}
       - S3_ACCESS_KEY=ZiuIuCVAJDj5zCbxBhLC
       - S3_SECRET_KEY=rnHShpEzoInB5blpD1XE6R8iSdojGWbXHTHjE3qz
       - S3_BUCKET=vault
@@ -90,7 +90,7 @@ services:
     ports:
       - 3000:3000
     environment:
-      - API_HOST=http://vault-server:8090/api
+      - API_HOST=${API_HOST}
       - PUBLIC_HOST=http://127.0.0.1:3000
       - PUBLIC_API_HOST=http://vault-server:8090/api
   vault-search:
@@ -101,9 +101,9 @@ services:
     ports:
       - 3001:3000
     environment:
-      - API_HOST=http://vault-server:8090/api
+      - API_HOST=${API_HOST}
       - PUBLIC_HOST=http://127.0.0.1:3001
-      - PUBLIC_API_HOST=http://vault-server:8090/api
+      - PUBLIC_API_HOST=${API_HOST}
 
 networks:
   vault-network:
