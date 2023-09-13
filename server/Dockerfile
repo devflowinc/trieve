@@ -43,7 +43,7 @@ RUN apt-get update && apt-get -y upgrade
 
 WORKDIR /app
 COPY . /app/
-COPY .env.dist /app/.env
+COPY .env.default /app/.env
 
 # Install yarn
 RUN yarn --cwd ./vault-nodejs install
