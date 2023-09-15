@@ -55,15 +55,16 @@ diesel::table! {
     card_metadata (id) {
         id -> Uuid,
         content -> Text,
-        link -> Nullable<Text>,
+        filter_one -> Nullable<Text>,
         author_id -> Uuid,
         qdrant_point_id -> Nullable<Uuid>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
-        oc_file_path -> Nullable<Text>,
+        filter_two -> Nullable<Text>,
         card_html -> Nullable<Text>,
         card_metadata_tsvector -> Nullable<Tsvector>,
         private -> Bool,
+        metadata -> Nullable<Jsonb>,
     }
 }
 
@@ -137,7 +138,7 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         size -> Int8,
-        oc_file_path -> Nullable<Text>,
+        filter_two -> Nullable<Text>,
     }
 }
 
