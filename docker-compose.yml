@@ -127,6 +127,8 @@ services:
   vault-chat:
     image: arguflow/vault-chat
     build: ./chat/
+    volumes:
+      - ./.env.chat:app/.env
     networks:
       - vault-network
     ports:
@@ -136,6 +138,8 @@ services:
   vault-search:
     image: arguflow/vault-search
     build: ./search/
+    volumes:
+      - ./.env.search:/app/.env
     networks:
       - vault-network
     ports:
