@@ -405,13 +405,13 @@ pub async fn stream_response(
         "Here's my argument: {} \n\n Pretending you found it, use the following evidence and only the following evidence when constructing your counter-argument : \n\n {},{} \n {},{}",
         open_ai_messages.last().unwrap().content,
         metadata_card0
-            .filter_one
+            .link
             .clone()
             .unwrap_or("".to_string())
             ,
         if metadata_card0.content.len() > 2000 {metadata_card0.content[..2000].to_string()} else {metadata_card0.content.clone()},
         metadata_card2
-            .filter_one
+            .link
             .clone()
             .unwrap_or("".to_string())
             ,
