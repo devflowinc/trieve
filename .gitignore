@@ -20,3 +20,4 @@ vault-nodejs/scripts/clean_training_data1.json
 vault-python/application.zip
 vault-python/arguflow-dataset.zip
 vault-python/arguflow-dataset
+server/target
