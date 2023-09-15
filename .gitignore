@@ -21,4 +21,5 @@ vault-python/application.zip
 vault-python/arguflow-dataset.zip
 vault-python/arguflow-dataset
 server/target
-vault-python/.arguflow-dataset.zip.icloud
+*.icloud
+chat/src/.root 2.css.icloud
