@@ -25,6 +25,7 @@ use diesel::{
     BoolExpressionMethods, Connection, JoinOnDsl, NullableExpressionMethods, SelectableHelper,
 };
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
+
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::{
     prelude::{QdrantClient, QdrantClientConfig},
@@ -139,15 +140,12 @@ pub async fn search_card_query(
     embedding_vector: Vec<f32>,
     page: u64,
     pool: web::Data<Pool>,
-    filter_oc_file_path: Option<Vec<String>>,
-    filter_link_url: Option<Vec<String>>,
+    filters: Option<serde_json::Value>,
     current_user_id: Option<uuid::Uuid>,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
-    let filter_oc_file_path = filter_oc_file_path.unwrap_or([].to_vec());
-    let filter_link_url = filter_link_url.unwrap_or([].to_vec());
 
-    if filter_oc_file_path.is_empty() && filter_link_url.is_empty() {
+    if filters.is_none() {
         let mut filter = Filter::default();
         filter.should.push(Condition::is_empty("private"));
         filter.should.push(Condition::is_null("private"));
@@ -197,25 +195,30 @@ pub async fn search_card_query(
             ))
             .distinct();
 
-    if !filter_oc_file_path.is_empty() {
-        query = query.filter(
-            card_metadata_columns::filter_two
-                .like(format!("%{}%", filter_oc_file_path.get(0).unwrap())),
-        );
-    }
-
-    for file_path in filter_oc_file_path.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::filter_two.like(format!("%{}%", file_path)));
-    }
-
-    if !filter_link_url.is_empty() {
-        query = query.filter(
-            card_metadata_columns::filter_one
-                .like(format!("%{}%", filter_link_url.get(0).unwrap())),
-        );
-    }
-    for link_url in filter_link_url.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::filter_one.like(format!("%{}%", link_url)));
+    if let serde_json::Value::Object(obj) = &filters.unwrap() {
+        for key in obj.keys() {
+            let value = obj.get(key).unwrap();
+            match value {
+                serde_json::Value::Array(arr) => {
+                    query = query.filter(
+                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                            .like(format!("%{}%", arr.get(0).unwrap().as_str().unwrap())),
+                    );
+                    for item in arr.iter().skip(1) {
+                        query = query.or_filter(
+                            sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                                .like(format!("%{}%", item.as_str().unwrap())),
+                        );
+                    }
+                }
+                _ => {
+                    query = query.filter(
+                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                            .like(format!("%{}%", value.as_str().unwrap())),
+                    );
+                }
+            }
+        }
     }
 
     let filtered_option_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
@@ -316,8 +319,7 @@ pub async fn search_card_collections_query(
     embedding_vector: Vec<f32>,
     page: u64,
     pool: web::Data<Pool>,
-    filter_oc_file_path: Option<Vec<String>>,
-    filter_link_url: Option<Vec<String>>,
+    filters: Option<serde_json::Value>,
     collection_id: uuid::Uuid,
     user_id: Option<uuid::Uuid>,
 ) -> Result<SearchCardQueryResult, DefaultError> {
@@ -353,29 +355,32 @@ pub async fn search_card_collections_query(
         .distinct()
         .into_boxed();
 
-    let filter_oc_file_path = filter_oc_file_path.unwrap_or([].to_vec());
-    let filter_link_url = filter_link_url.unwrap_or([].to_vec());
-
-    if !filter_oc_file_path.is_empty() {
-        query = query.filter(
-            card_metadata_columns::filter_two
-                .like(format!("%{}%", filter_oc_file_path.get(0).unwrap())),
-        );
+    if let serde_json::Value::Object(obj) = &filters.unwrap() {
+        for key in obj.keys() {
+            let value = obj.get(key).unwrap();
+            match value {
+                serde_json::Value::Array(arr) => {
+                    query = query.filter(
+                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                            .like(format!("%{}%", arr.get(0).unwrap().as_str().unwrap())),
+                    );
+                    for item in arr.iter().skip(1) {
+                        query = query.or_filter(
+                            sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                                .like(format!("%{}%", item.as_str().unwrap())),
+                        );
+                    }
+                }
+                _ => {
+                    query = query.filter(
+                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                            .like(format!("%{}%", value.as_str().unwrap())),
+                    );
+                }
+            }
+        }
     }
 
-    for file_path in filter_oc_file_path.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::filter_two.like(format!("%{}%", file_path)));
-    }
-
-    if !filter_link_url.is_empty() {
-        query = query.filter(
-            card_metadata_columns::filter_one
-                .like(format!("%{}%", filter_link_url.get(0).unwrap())),
-        );
-    }
-    for link_url in filter_link_url.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::filter_one.like(format!("%{}%", link_url)));
-    }
     let filtered_option_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
             message: "Failed to load metadata",
@@ -607,8 +612,7 @@ pub fn search_full_text_card_query(
     page: u64,
     pool: web::Data<Pool>,
     current_user_id: Option<uuid::Uuid>,
-    filter_oc_file_path: Option<Vec<String>>,
-    filter_link_url: Option<Vec<String>>,
+    filters: Option<serde_json::Value>,
 ) -> Result<FullTextSearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
@@ -693,30 +697,31 @@ pub fn search_full_text_card_query(
             .sql(")"),
     );
 
-    let filter_oc_file_path = filter_oc_file_path.unwrap_or([].to_vec());
-    let filter_link_url = filter_link_url.unwrap_or([].to_vec());
-
-    if !filter_oc_file_path.is_empty() {
-        query = query.filter(
-            card_metadata_columns::filter_two
-                .like(format!("%{}%", filter_oc_file_path.get(0).unwrap())),
-        );
+    if let serde_json::Value::Object(obj) = &filters.unwrap() {
+        for key in obj.keys() {
+            let value = obj.get(key).unwrap();
+            match value {
+                serde_json::Value::Array(arr) => {
+                    query = query.filter(
+                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                            .like(format!("%{}%", arr.get(0).unwrap().as_str().unwrap())),
+                    );
+                    for item in arr.iter().skip(1) {
+                        query = query.or_filter(
+                            sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                                .like(format!("%{}%", item.as_str().unwrap())),
+                        );
+                    }
+                }
+                _ => {
+                    query = query.filter(
+                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                            .like(format!("%{}%", value.as_str().unwrap())),
+                    );
+                }
+            }
+        }
     }
-
-    for file_path in filter_oc_file_path.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::filter_two.like(format!("%{}%", file_path)));
-    }
-
-    if !filter_link_url.is_empty() {
-        query = query.filter(
-            card_metadata_columns::filter_one
-                .like(format!("%{}%", filter_link_url.get(0).unwrap())),
-        );
-    }
-    for link_url in filter_link_url.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::filter_one.like(format!("%{}%", link_url)));
-    }
-
     query = query.order((
         card_metadata_columns::qdrant_point_id,
         second_join.field(schema::card_metadata::qdrant_point_id),
@@ -761,8 +766,7 @@ pub fn search_full_text_collection_query(
     page: u64,
     pool: web::Data<Pool>,
     current_user_id: Option<uuid::Uuid>,
-    filter_oc_file_path: Option<Vec<String>>,
-    filter_link_url: Option<Vec<String>>,
+    filters: Option<serde_json::Value>,
     collection_id: uuid::Uuid,
 ) -> Result<FullTextSearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
@@ -857,28 +861,30 @@ pub fn search_full_text_collection_query(
             .sql(")"),
     );
 
-    let filter_oc_file_path = filter_oc_file_path.unwrap_or([].to_vec());
-    let filter_link_url = filter_link_url.unwrap_or([].to_vec());
-
-    if !filter_oc_file_path.is_empty() {
-        query = query.filter(
-            card_metadata_columns::filter_two
-                .like(format!("%{}%", filter_oc_file_path.get(0).unwrap())),
-        );
-    }
-
-    for file_path in filter_oc_file_path.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::filter_two.like(format!("%{}%", file_path)));
-    }
-
-    if !filter_link_url.is_empty() {
-        query = query.filter(
-            card_metadata_columns::filter_one
-                .like(format!("%{}%", filter_link_url.get(0).unwrap())),
-        );
-    }
-    for link_url in filter_link_url.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::filter_one.like(format!("%{}%", link_url)));
+    if let serde_json::Value::Object(obj) = &filters.unwrap() {
+        for key in obj.keys() {
+            let value = obj.get(key).unwrap();
+            match value {
+                serde_json::Value::Array(arr) => {
+                    query = query.filter(
+                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                            .like(format!("%{}%", arr.get(0).unwrap().as_str().unwrap())),
+                    );
+                    for item in arr.iter().skip(1) {
+                        query = query.or_filter(
+                            sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                                .like(format!("%{}%", item.as_str().unwrap())),
+                        );
+                    }
+                }
+                _ => {
+                    query = query.filter(
+                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                            .like(format!("%{}%", value.as_str().unwrap())),
+                    );
+                }
+            }
+        }
     }
 
     query = query.order((

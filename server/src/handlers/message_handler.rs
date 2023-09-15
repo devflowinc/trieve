@@ -344,7 +344,7 @@ pub async fn stream_response(
     )
     .await?;
 
-    let search_card_query_results = search_card_query(embedding_vector, 1, pool1, None, None, None)
+    let search_card_query_results = search_card_query(embedding_vector, 1, pool1, None, None)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
     // get the first and third card from the result

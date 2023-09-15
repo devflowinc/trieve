@@ -571,8 +571,7 @@ pub async fn update_card(
 #[derive(Serialize, Deserialize)]
 pub struct SearchCardData {
     content: String,
-    filter_oc_file_path: Option<Vec<String>>,
-    filter_link_url: Option<Vec<String>>,
+    filters: Option<serde_json::Value>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -603,8 +602,7 @@ pub async fn search_card(
         embedding_vector,
         page,
         pool1,
-        data.filter_oc_file_path.clone(),
-        data.filter_link_url.clone(),
+        data.filters.clone(),
         current_user_id,
     )
     .await
@@ -708,8 +706,7 @@ pub async fn search_full_text_card(
             page,
             pool1,
             current_user_id,
-            data.filter_oc_file_path.clone(),
-            data.filter_link_url.clone(),
+            data.filters.clone(),
         )
     })
     .await?
@@ -771,8 +768,7 @@ pub async fn search_full_text_card(
 #[derive(Serialize, Deserialize)]
 pub struct SearchCollectionsData {
     content: String,
-    filter_oc_file_path: Option<Vec<String>>,
-    filter_link_url: Option<Vec<String>>,
+    filters: Option<serde_json::Value>,
     collection_id: uuid::Uuid,
 }
 #[derive(Serialize, Deserialize)]
@@ -814,8 +810,7 @@ pub async fn search_collections(
         embedding_vector,
         page,
         pool2,
-        data.filter_oc_file_path.clone(),
-        data.filter_link_url.clone(),
+        data.filters.clone(),
         data.collection_id,
         current_user_id,
     )
@@ -938,8 +933,7 @@ pub async fn search_full_text_collections(
             page,
             pool3,
             current_user_id,
-            data.filter_oc_file_path.clone(),
-            data.filter_link_url.clone(),
+            data.filters.clone(),
             data.collection_id,
         )
     })
