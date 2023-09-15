@@ -1,0 +1,23 @@
+{
+	"theme_color": "#292d30",
+	"background_color": "#d0a65b",
+	"display": "standalone",
+	"scope": "/",
+	"start_url": "/",
+	"name": "Arguflow Chat",
+	"short_name": "LLM Chat",
+	"description": "Demo of Arguflow retrieval-augmented LLM-chat Infrastructure.",
+	"icons": [
+		{
+			"src": "/android-chrome-192x192.png",
+			"sizes": "192x192",
+			"type": "image/png"
+		},
+		{
+			"src": "/android-chrome-512x512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "any maskable icon"
+		}
+	]
+}
