@@ -45,8 +45,8 @@ pub async fn user_owns_card(
 #[derive(Serialize, Deserialize)]
 pub struct CreateCardData {
     pub card_html: Option<String>,
-    pub filter_one: Option<String>,
-    pub filter_two: Option<String>,
+    pub link: Option<String>,
+    pub tag_set: Option<String>,
     pub private: Option<bool>,
     pub file_uuid: Option<uuid::Uuid>,
     pub metadata: Option<serde_json::Value>,
@@ -98,7 +98,7 @@ pub async fn create_card(
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let private = card.private.unwrap_or(false);
-    let card_oc_file_path = card.filter_two.clone();
+    let card_oc_file_path = card.tag_set.clone();
     let mut collision: Option<uuid::Uuid> = None;
     let mut embedding_vector: Option<Vec<f32>> = None;
 
@@ -187,8 +187,8 @@ pub async fn create_card(
                     score_card_1.id,
                     &content,
                     &card.card_html,
-                    &card.filter_one,
-                    &card.filter_one,
+                    &card.link,
+                    &card.link,
                     score_card_1
                         .author
                         .clone()
@@ -296,8 +296,8 @@ pub async fn create_card(
                     top_score_card.id,
                     &content,
                     &card.card_html,
-                    &card.filter_one,
-                    &card.filter_two,
+                    &card.link,
+                    &card.tag_set,
                     top_score_card_author_id,
                     Some(top_score_card.qdrant_point_id),
                     top_score_card.private,
@@ -339,8 +339,8 @@ pub async fn create_card(
         card_metadata = CardMetadata::from_details(
             &content,
             &card.card_html,
-            &card.filter_one,
-            &card.filter_two,
+            &card.link,
+            &card.tag_set,
             user.id,
             None,
             private,
@@ -375,8 +375,8 @@ pub async fn create_card(
         card_metadata = CardMetadata::from_details(
             &content,
             &card.card_html,
-            &card.filter_one,
-            &card.filter_two,
+            &card.link,
+            &card.tag_set,
             user.id,
             Some(qdrant_point_id),
             private,
@@ -445,7 +445,7 @@ pub async fn delete_card(
 #[derive(Serialize, Deserialize, Clone)]
 pub struct UpdateCardData {
     card_uuid: uuid::Uuid,
-    filter_one: Option<String>,
+    link: Option<String>,
     card_html: Option<String>,
     private: Option<bool>,
 }
@@ -464,9 +464,9 @@ pub async fn update_card(
     let card_metadata = user_owns_card(user.id, card.card_uuid, pool).await?;
 
     let link = card
-        .filter_one
+        .link
         .clone()
-        .unwrap_or_else(|| card_metadata.filter_one.clone().unwrap_or_default());
+        .unwrap_or_else(|| card_metadata.link.clone().unwrap_or_default());
 
     let html_parse_result = Command::new("node")
         .arg("./vault-nodejs/scripts/html-converter.js")
@@ -552,8 +552,8 @@ pub async fn update_card(
                 card.card_uuid,
                 &card_metadata.content,
                 &card_html,
-                &card_metadata.filter_one.clone(),
-                &card_metadata.filter_two,
+                &Some(link),
+                &card_metadata.tag_set,
                 user.id,
                 card_metadata.qdrant_point_id,
                 private,
@@ -646,8 +646,8 @@ pub async fn search_card(
                             verification_score: None,
                             content: "".to_string(),
                             card_html: Some("".to_string()),
-                            filter_one: Some("".to_string()),
-                            filter_two: Some("".to_string()),
+                            link: Some("".to_string()),
+                            tag_set: Some("".to_string()),
                             metadata: None,
                         },
                     },
@@ -670,8 +670,8 @@ pub async fn search_card(
 
             collided_cards.sort_by(|a, b| a.id.cmp(&b.id));
             collided_cards.dedup_by(|a, b| {
-                a.filter_two.clone().unwrap_or_default().replace('/', "")
-                    == b.filter_two.clone().unwrap_or_default().replace('/', "")
+                a.tag_set.clone().unwrap_or_default().replace('/', "")
+                    == b.tag_set.clone().unwrap_or_default().replace('/', "")
                     || a.clone().card_html.unwrap_or_default()
                         == b.clone().card_html.unwrap_or_default()
             });
@@ -739,8 +739,8 @@ pub async fn search_full_text_card(
 
             collided_cards.sort_by(|a, b| a.id.cmp(&b.id));
             collided_cards.dedup_by(|a, b| {
-                a.filter_two.clone().unwrap_or_default().replace('/', "")
-                    == b.filter_two.clone().unwrap_or_default().replace('/', "")
+                a.tag_set.clone().unwrap_or_default().replace('/', "")
+                    == b.tag_set.clone().unwrap_or_default().replace('/', "")
                     || a.clone().card_html.unwrap_or_default()
                         == b.clone().card_html.unwrap_or_default()
             });
@@ -861,8 +861,8 @@ pub async fn search_collections(
                             verification_score: None,
                             content: "".to_string(),
                             card_html: Some("".to_string()),
-                            filter_one: Some("".to_string()),
-                            filter_two: Some("".to_string()),
+                            link: Some("".to_string()),
+                            tag_set: Some("".to_string()),
                             metadata: None,
                         },
                     },

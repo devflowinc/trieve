@@ -146,12 +146,12 @@ pub fn get_user_with_votes_and_cards_by_id_query(
         .select((
             card_metadata_columns::id,
             card_metadata_columns::content,
-            card_metadata_columns::filter_one,
+            card_metadata_columns::link,
             card_metadata_columns::author_id,
             card_metadata_columns::qdrant_point_id,
             card_metadata_columns::created_at,
             card_metadata_columns::updated_at,
-            card_metadata_columns::filter_two,
+            card_metadata_columns::tag_set,
             card_metadata_columns::card_html,
             card_metadata_columns::private,
             card_metadata_columns::metadata,
@@ -236,7 +236,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
             CardMetadataWithVotesAndFiles {
                 id: metadata.id,
                 content: metadata.content.clone(),
-                filter_one: metadata.filter_one.clone(),
+                link: metadata.link.clone(),
                 author,
                 qdrant_point_id: metadata.qdrant_point_id.unwrap_or(uuid::Uuid::nil()),
                 total_upvotes,
@@ -245,13 +245,13 @@ pub fn get_user_with_votes_and_cards_by_id_query(
                 vote_by_current_user,
                 created_at: metadata.created_at,
                 updated_at: metadata.updated_at,
-                filter_two: metadata.filter_two.clone(),
+                tag_set: metadata.tag_set.clone(),
                 private: metadata.private,
                 score: None,
                 file_name: card_with_file_name.map(|file| file.file_name.clone()),
                 file_id: card_with_file_name.map(|file| file.file_id),
                 verification_score,
-                metadata: metadata.metadata,
+                metadata: metadata.metadata.clone(),
             }
         })
         .collect();
