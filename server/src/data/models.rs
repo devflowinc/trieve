@@ -235,14 +235,15 @@ impl UserPlan {
 pub struct CardMetadataWithCount {
     pub id: uuid::Uuid,
     pub content: String,
-    pub link: Option<String>,
+    pub filter_one: Option<String>,
     pub author_id: uuid::Uuid,
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub oc_file_path: Option<String>,
+    pub filter_two: Option<String>,
     pub card_html: Option<String>,
     pub private: bool,
+    pub metadata: Option<serde_json::Value>,
     pub count: i64,
 }
 
@@ -251,37 +252,40 @@ pub struct CardMetadataWithCount {
 pub struct CardMetadata {
     pub id: uuid::Uuid,
     pub content: String,
-    pub link: Option<String>,
+    pub filter_one: Option<String>,
     pub author_id: uuid::Uuid,
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub oc_file_path: Option<String>,
+    pub filter_two: Option<String>,
     pub card_html: Option<String>,
     pub private: bool,
+    pub metadata: Option<serde_json::Value>,
 }
 
 impl CardMetadata {
     pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(
         content: S,
         card_html: &Option<String>,
-        link: &Option<String>,
-        oc_file_path: &Option<String>,
+        filter_one: &Option<String>,
+        filter_two: &Option<String>,
         author_id: T,
         qdrant_point_id: Option<uuid::Uuid>,
         private: bool,
+        metadata: Option<serde_json::Value>,
     ) -> Self {
         CardMetadata {
             id: uuid::Uuid::new_v4(),
             content: content.into(),
             card_html: card_html.clone(),
-            link: link.clone(),
+            filter_one: filter_one.clone(),
             author_id: author_id.into(),
             qdrant_point_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
-            oc_file_path: oc_file_path.clone(),
+            filter_two: filter_two.clone(),
             private,
+            metadata,
         }
     }
 }
@@ -292,23 +296,25 @@ impl CardMetadata {
         id: T,
         content: S,
         card_html: &Option<String>,
-        link: &Option<String>,
-        oc_file_path: &Option<String>,
+        filter_one: &Option<String>,
+        filter_two: &Option<String>,
         author_id: T,
         qdrant_point_id: Option<uuid::Uuid>,
         private: bool,
+        metadata: Option<serde_json::Value>,
     ) -> Self {
         CardMetadata {
             id: id.into(),
             content: content.into(),
             card_html: card_html.clone(),
-            link: link.clone(),
+            filter_one: filter_one.clone(),
             author_id: author_id.into(),
             qdrant_point_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
-            oc_file_path: oc_file_path.clone(),
+            filter_two: filter_two.clone(),
             private,
+            metadata,
         }
     }
 }
@@ -371,15 +377,16 @@ pub struct CardMetadataWithVotes {
     pub author: Option<UserDTO>,
     pub content: String,
     pub card_html: Option<String>,
-    pub link: Option<String>,
+    pub filter_one: Option<String>,
     pub qdrant_point_id: uuid::Uuid,
     pub total_upvotes: i64,
     pub total_downvotes: i64,
     pub vote_by_current_user: Option<bool>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub oc_file_path: Option<String>,
+    pub filter_two: Option<String>,
     pub private: bool,
+    pub metadata: Option<serde_json::Value>,
     pub score: Option<f64>,
 }
 
@@ -389,18 +396,19 @@ pub struct CardMetadataWithVotesWithScore {
     pub author: Option<UserDTO>,
     pub content: String,
     pub card_html: Option<String>,
-    pub link: Option<String>,
+    pub filter_one: Option<String>,
     pub qdrant_point_id: uuid::Uuid,
     pub total_upvotes: i64,
     pub total_downvotes: i64,
     pub vote_by_current_user: Option<bool>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub oc_file_path: Option<String>,
+    pub filter_two: Option<String>,
     pub file_id: Option<uuid::Uuid>,
     pub file_name: Option<String>,
     pub private: bool,
     pub verification_score: Option<i64>,
+    pub metadata: Option<serde_json::Value>,
     pub score: Option<f64>,
 }
 
@@ -611,14 +619,15 @@ pub struct UserScore {
 pub struct FullTextSearchResult {
     pub id: uuid::Uuid,
     pub content: String,
-    pub link: Option<String>,
+    pub filter_one: Option<String>,
     pub author_id: uuid::Uuid,
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub oc_file_path: Option<String>,
+    pub filter_two: Option<String>,
     pub card_html: Option<String>,
     pub private: bool,
+    pub metadata: Option<serde_json::Value>,
     pub score: Option<f64>,
     pub count: i64,
 }
@@ -628,15 +637,16 @@ impl From<CardMetadata> for FullTextSearchResult {
         FullTextSearchResult {
             id: card.id,
             content: card.content,
-            link: card.link,
+            filter_one: card.filter_one,
             author_id: card.author_id,
             qdrant_point_id: card.qdrant_point_id,
             created_at: card.created_at,
             updated_at: card.updated_at,
-            oc_file_path: card.oc_file_path,
+            filter_two: card.filter_two,
             card_html: card.card_html,
             score: None,
             private: card.private,
+            metadata: card.metadata,
             count: 0,
         }
     }
@@ -647,15 +657,16 @@ impl From<CardMetadataWithCount> for FullTextSearchResult {
         FullTextSearchResult {
             id: card.id,
             content: card.content,
-            link: card.link,
+            filter_one: card.filter_one,
             author_id: card.author_id,
             qdrant_point_id: card.qdrant_point_id,
             created_at: card.created_at,
             updated_at: card.updated_at,
-            oc_file_path: card.oc_file_path,
+            filter_two: card.filter_two,
             card_html: card.card_html,
             score: None,
             private: card.private,
+            metadata: card.metadata,
             count: card.count,
         }
     }
@@ -667,7 +678,7 @@ impl From<CardMetadataWithVotesAndFiles> for CardMetadataWithVotesWithScore {
             id: cards.id,
             author: cards.author,
             content: cards.content,
-            link: cards.link,
+            filter_one: cards.filter_one,
             qdrant_point_id: cards.qdrant_point_id,
             total_upvotes: cards.total_upvotes,
             total_downvotes: cards.total_downvotes,
@@ -675,11 +686,12 @@ impl From<CardMetadataWithVotesAndFiles> for CardMetadataWithVotesWithScore {
             created_at: cards.created_at,
             updated_at: cards.updated_at,
             card_html: cards.card_html,
-            oc_file_path: cards.oc_file_path,
+            filter_two: cards.filter_two,
             file_id: cards.file_id,
             file_name: cards.file_name,
             private: cards.private,
             verification_score: cards.verification_score,
+            metadata: cards.metadata,
             score: cards.score,
         }
     }
@@ -696,7 +708,7 @@ pub struct File {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub size: i64,
-    pub oc_file_path: Option<String>,
+    pub filter_two: Option<String>,
 }
 
 impl File {
@@ -706,7 +718,7 @@ impl File {
         mime_type: &str,
         private: bool,
         size: i64,
-        oc_file_path: Option<String>,
+        filter_two: Option<String>,
     ) -> Self {
         File {
             id: uuid::Uuid::new_v4(),
@@ -717,7 +729,7 @@ impl File {
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             size,
-            oc_file_path,
+            filter_two,
         }
     }
 }
@@ -786,16 +798,17 @@ pub struct CardMetadataWithVotesAndFiles {
     pub author: Option<UserDTO>,
     pub content: String,
     pub card_html: Option<String>,
-    pub link: Option<String>,
+    pub filter_one: Option<String>,
     pub qdrant_point_id: uuid::Uuid,
     pub total_upvotes: i64,
     pub total_downvotes: i64,
     pub vote_by_current_user: Option<bool>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub oc_file_path: Option<String>,
+    pub filter_two: Option<String>,
     pub private: bool,
     pub score: Option<f64>,
+    pub metadata: Option<serde_json::Value>,
     pub file_id: Option<uuid::Uuid>,
     pub file_name: Option<String>,
     pub verification_score: Option<i64>,
@@ -808,17 +821,18 @@ impl From<CardMetadataWithVotes> for CardMetadataWithVotesAndFiles {
             author: card.author,
             content: card.content,
             card_html: card.card_html,
-            link: card.link,
+            filter_one: card.filter_one,
             qdrant_point_id: card.qdrant_point_id,
             total_upvotes: card.total_upvotes,
             total_downvotes: card.total_downvotes,
             vote_by_current_user: card.vote_by_current_user,
             created_at: card.created_at,
             updated_at: card.updated_at,
-            oc_file_path: card.oc_file_path,
+            filter_two: card.filter_two,
             private: card.private,
             score: card.score,
             file_id: None,
+            metadata: card.metadata,
             file_name: None,
             verification_score: None,
         }

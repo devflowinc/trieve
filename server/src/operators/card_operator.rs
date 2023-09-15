@@ -46,7 +46,10 @@ pub async fn create_embedding(
     message: &str,
     mutex_store: web::Data<AppMutexStore>,
 ) -> Result<Vec<f32>, actix_web::Error> {
-    let use_custom: u8 = std::env::var("USE_CUSTOM_EMBEDDINGS").unwrap_or("1".to_string()).parse::<u8>().unwrap_or(1);
+    let use_custom: u8 = std::env::var("USE_CUSTOM_EMBEDDINGS")
+        .unwrap_or("1".to_string())
+        .parse::<u8>()
+        .unwrap_or(1);
 
     if use_custom == 0 {
         let _ = mutex_store
@@ -196,23 +199,23 @@ pub async fn search_card_query(
 
     if !filter_oc_file_path.is_empty() {
         query = query.filter(
-            card_metadata_columns::oc_file_path
+            card_metadata_columns::filter_two
                 .like(format!("%{}%", filter_oc_file_path.get(0).unwrap())),
         );
     }
 
     for file_path in filter_oc_file_path.iter().skip(1) {
-        query =
-            query.or_filter(card_metadata_columns::oc_file_path.like(format!("%{}%", file_path)));
+        query = query.or_filter(card_metadata_columns::filter_two.like(format!("%{}%", file_path)));
     }
 
     if !filter_link_url.is_empty() {
         query = query.filter(
-            card_metadata_columns::link.like(format!("%{}%", filter_link_url.get(0).unwrap())),
+            card_metadata_columns::filter_one
+                .like(format!("%{}%", filter_link_url.get(0).unwrap())),
         );
     }
     for link_url in filter_link_url.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
+        query = query.or_filter(card_metadata_columns::filter_one.like(format!("%{}%", link_url)));
     }
 
     let filtered_option_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
@@ -355,23 +358,23 @@ pub async fn search_card_collections_query(
 
     if !filter_oc_file_path.is_empty() {
         query = query.filter(
-            card_metadata_columns::oc_file_path
+            card_metadata_columns::filter_two
                 .like(format!("%{}%", filter_oc_file_path.get(0).unwrap())),
         );
     }
 
     for file_path in filter_oc_file_path.iter().skip(1) {
-        query =
-            query.or_filter(card_metadata_columns::oc_file_path.like(format!("%{}%", file_path)));
+        query = query.or_filter(card_metadata_columns::filter_two.like(format!("%{}%", file_path)));
     }
 
     if !filter_link_url.is_empty() {
         query = query.filter(
-            card_metadata_columns::link.like(format!("%{}%", filter_link_url.get(0).unwrap())),
+            card_metadata_columns::filter_one
+                .like(format!("%{}%", filter_link_url.get(0).unwrap())),
         );
     }
     for link_url in filter_link_url.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
+        query = query.or_filter(card_metadata_columns::filter_one.like(format!("%{}%", link_url)));
     }
     let filtered_option_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
@@ -571,8 +574,8 @@ pub fn get_metadata_query(
             CardMetadataWithVotesAndFiles {
                 id: metadata.id,
                 content: metadata.content,
-                link: metadata.link,
-                oc_file_path: metadata.oc_file_path,
+                filter_one: metadata.filter_one,
+                filter_two: metadata.filter_two,
                 author,
                 qdrant_point_id,
                 total_upvotes,
@@ -586,6 +589,7 @@ pub fn get_metadata_query(
                 file_id: card_with_file_name.map(|file| file.file_id),
                 file_name: card_with_file_name.map(|file| file.file_name.to_string()),
                 verification_score,
+                metadata: metadata.metadata,
             }
         })
         .collect();
@@ -655,14 +659,15 @@ pub fn search_full_text_card_query(
             (
                 card_metadata_columns::id,
                 card_metadata_columns::content,
-                card_metadata_columns::link,
+                card_metadata_columns::filter_one,
                 card_metadata_columns::author_id,
                 card_metadata_columns::qdrant_point_id,
                 card_metadata_columns::created_at,
                 card_metadata_columns::updated_at,
-                card_metadata_columns::oc_file_path,
+                card_metadata_columns::filter_two,
                 card_metadata_columns::card_html,
                 card_metadata_columns::private,
+                card_metadata_columns::metadata,
                 sql::<Nullable<Double>>(
                     "(ts_rank(card_metadata.card_metadata_tsvector, plainto_tsquery('english', ",
                 )
@@ -693,23 +698,23 @@ pub fn search_full_text_card_query(
 
     if !filter_oc_file_path.is_empty() {
         query = query.filter(
-            card_metadata_columns::oc_file_path
+            card_metadata_columns::filter_two
                 .like(format!("%{}%", filter_oc_file_path.get(0).unwrap())),
         );
     }
 
     for file_path in filter_oc_file_path.iter().skip(1) {
-        query =
-            query.or_filter(card_metadata_columns::oc_file_path.like(format!("%{}%", file_path)));
+        query = query.or_filter(card_metadata_columns::filter_two.like(format!("%{}%", file_path)));
     }
 
     if !filter_link_url.is_empty() {
         query = query.filter(
-            card_metadata_columns::link.like(format!("%{}%", filter_link_url.get(0).unwrap())),
+            card_metadata_columns::filter_one
+                .like(format!("%{}%", filter_link_url.get(0).unwrap())),
         );
     }
     for link_url in filter_link_url.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
+        query = query.or_filter(card_metadata_columns::filter_one.like(format!("%{}%", link_url)));
     }
 
     query = query.order((
@@ -818,14 +823,15 @@ pub fn search_full_text_collection_query(
             (
                 card_metadata_columns::id,
                 card_metadata_columns::content,
-                card_metadata_columns::link,
+                card_metadata_columns::filter_one,
                 card_metadata_columns::author_id,
                 card_metadata_columns::qdrant_point_id,
                 card_metadata_columns::created_at,
                 card_metadata_columns::updated_at,
-                card_metadata_columns::oc_file_path,
+                card_metadata_columns::filter_two,
                 card_metadata_columns::card_html,
                 card_metadata_columns::private,
+                card_metadata_columns::metadata,
                 sql::<Nullable<Double>>(
                     "(ts_rank(card_metadata.card_metadata_tsvector, plainto_tsquery('english', ",
                 )
@@ -856,23 +862,23 @@ pub fn search_full_text_collection_query(
 
     if !filter_oc_file_path.is_empty() {
         query = query.filter(
-            card_metadata_columns::oc_file_path
+            card_metadata_columns::filter_two
                 .like(format!("%{}%", filter_oc_file_path.get(0).unwrap())),
         );
     }
 
     for file_path in filter_oc_file_path.iter().skip(1) {
-        query =
-            query.or_filter(card_metadata_columns::oc_file_path.like(format!("%{}%", file_path)));
+        query = query.or_filter(card_metadata_columns::filter_two.like(format!("%{}%", file_path)));
     }
 
     if !filter_link_url.is_empty() {
         query = query.filter(
-            card_metadata_columns::link.like(format!("%{}%", filter_link_url.get(0).unwrap())),
+            card_metadata_columns::filter_one
+                .like(format!("%{}%", filter_link_url.get(0).unwrap())),
         );
     }
     for link_url in filter_link_url.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
+        query = query.or_filter(card_metadata_columns::filter_one.like(format!("%{}%", link_url)));
     }
 
     query = query.order((
@@ -933,14 +939,15 @@ pub fn global_top_full_text_card_query(
             (
                 card_metadata_columns::id,
                 card_metadata_columns::content,
-                card_metadata_columns::link,
+                card_metadata_columns::filter_one,
                 card_metadata_columns::author_id,
                 card_metadata_columns::qdrant_point_id,
                 card_metadata_columns::created_at,
                 card_metadata_columns::updated_at,
-                card_metadata_columns::oc_file_path,
+                card_metadata_columns::filter_two,
                 card_metadata_columns::card_html,
                 card_metadata_columns::private,
+                card_metadata_columns::metadata,
                 sql::<Nullable<Double>>(
                     "(ts_rank(card_metadata_tsvector, plainto_tsquery('english', ",
                 )
@@ -1014,14 +1021,15 @@ pub fn get_metadata_from_point_ids(
         .select((
             card_metadata_columns::id,
             card_metadata_columns::content,
-            card_metadata_columns::link,
+            card_metadata_columns::filter_one,
             card_metadata_columns::author_id,
             card_metadata_columns::qdrant_point_id,
             card_metadata_columns::created_at,
             card_metadata_columns::updated_at,
-            card_metadata_columns::oc_file_path,
+            card_metadata_columns::filter_two,
             card_metadata_columns::card_html,
             card_metadata_columns::private,
+            card_metadata_columns::metadata,
         ))
         .load::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
@@ -1069,14 +1077,15 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
             .select((
                 card_metadata_columns::id,
                 card_metadata_columns::content,
-                card_metadata_columns::link,
+                card_metadata_columns::filter_one,
                 card_metadata_columns::author_id,
                 card_metadata_columns::qdrant_point_id,
                 card_metadata_columns::created_at,
                 card_metadata_columns::updated_at,
-                card_metadata_columns::oc_file_path,
+                card_metadata_columns::filter_two,
                 card_metadata_columns::card_html,
                 card_metadata_columns::private,
+                card_metadata_columns::metadata,
             ))
             .limit(500)
             .load::<CardMetadata>(&mut conn)
@@ -1102,14 +1111,15 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
                     (
                         card_metadata_columns::id,
                         card_metadata_columns::content,
-                        card_metadata_columns::link,
+                        card_metadata_columns::filter_one,
                         card_metadata_columns::author_id,
                         card_metadata_columns::qdrant_point_id,
                         card_metadata_columns::created_at,
                         card_metadata_columns::updated_at,
-                        card_metadata_columns::oc_file_path,
+                        card_metadata_columns::filter_two,
                         card_metadata_columns::card_html,
                         card_metadata_columns::private,
+                        card_metadata_columns::metadata,
                     ),
                     (card_collisions_columns::collision_qdrant_id.assume_not_null()),
                 ))
@@ -1203,14 +1213,15 @@ pub fn get_collided_cards_query(
         .select((
             card_metadata_columns::id,
             card_metadata_columns::content,
-            card_metadata_columns::link,
+            card_metadata_columns::filter_one,
             card_metadata_columns::author_id,
             card_metadata_columns::qdrant_point_id,
             card_metadata_columns::created_at,
             card_metadata_columns::updated_at,
-            card_metadata_columns::oc_file_path,
+            card_metadata_columns::filter_two,
             card_metadata_columns::card_html,
             card_metadata_columns::private,
+            card_metadata_columns::metadata,
         ))
         .filter(
             card_collisions_columns::collision_qdrant_id
@@ -1260,14 +1271,15 @@ pub fn get_metadata_from_id_query(
         .select((
             card_metadata_columns::id,
             card_metadata_columns::content,
-            card_metadata_columns::link,
+            card_metadata_columns::filter_one,
             card_metadata_columns::author_id,
             card_metadata_columns::qdrant_point_id,
             card_metadata_columns::created_at,
             card_metadata_columns::updated_at,
-            card_metadata_columns::oc_file_path,
+            card_metadata_columns::filter_two,
             card_metadata_columns::card_html,
             card_metadata_columns::private,
+            card_metadata_columns::metadata,
         ))
         .first::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
@@ -1289,14 +1301,15 @@ pub fn get_metadata_and_votes_from_id_query(
         .select((
             card_metadata_columns::id,
             card_metadata_columns::content,
-            card_metadata_columns::link,
+            card_metadata_columns::filter_one,
             card_metadata_columns::author_id,
             card_metadata_columns::qdrant_point_id,
             card_metadata_columns::created_at,
             card_metadata_columns::updated_at,
-            card_metadata_columns::oc_file_path,
+            card_metadata_columns::filter_two,
             card_metadata_columns::card_html,
             card_metadata_columns::private,
+            card_metadata_columns::metadata,
         ))
         .first::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
@@ -1410,7 +1423,7 @@ pub fn update_card_metadata_query(
             card_metadata_columns::card_metadata.filter(card_metadata_columns::id.eq(card_data.id)),
         )
         .set((
-            card_metadata_columns::link.eq(card_data.link),
+            card_metadata_columns::filter_one.eq(card_data.filter_one),
             card_metadata_columns::card_html.eq(card_data.card_html),
             card_metadata_columns::private.eq(card_data.private),
         ))

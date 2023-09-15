@@ -134,7 +134,7 @@ pub fn update_file_query(
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CoreCard {
     pub card_html: String,
-    pub link: String,
+    pub filter_one: String,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -378,10 +378,11 @@ pub async fn create_cards_with_handler(
 
         let create_card_data = CreateCardData {
             card_html: Some(replaced_card_html.clone()),
-            link: Some(card.link.clone()),
-            oc_file_path: oc_file_path.clone(),
+            filter_one: Some(card.filter_one.clone()),
+            filter_two: oc_file_path.clone(),
             private: Some(private),
             file_uuid: Some(created_file_id),
+            metadata: None,
         };
         let web_json_create_card_data = web::Json(create_card_data);
 
