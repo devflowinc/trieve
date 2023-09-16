@@ -37,8 +37,17 @@ reset_script_redis() {
     docker compose up -d script-redis
 }
 
+start_local_services() {
+    echo "Starting local services..."
+    docker compose up -d db
+    docker compose up -d redis
+    docker compose up -d qdrant-database
+    docker compose up -d s3
+    docker compose up -d s3-client
+}
+
 # Main script logic
-while getopts ":qps3" opt; do
+while getopts ":qps3l" opt; do
     case $opt in
         q)
             reset_qdrant_database
@@ -51,6 +60,9 @@ while getopts ":qps3" opt; do
             ;;
         s)
             reset_script_redis
+            ;;
+        l)
+            start_local_services
             ;;
         \?)
             echo "Invalid option: -$OPTARG" >&2
