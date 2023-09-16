@@ -95,7 +95,6 @@ export const CollectionPage = (props: CollectionPageProps) => {
     setShowConfirmCollectionmDeleteModal,
   ] = createSignal(false);
 
-  const [collectionPage, setCollectionPage] = createSignal(1);
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(1);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const [onDelete, setOnDelete] = createSignal(() => {});
@@ -175,7 +174,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
           credentials: "include",
           body: JSON.stringify({
             content: props.query,
-            filter_oc_file_path: props.dataTypeFilters.dataTypes,
+            filter_tag_set: props.dataTypeFilters.dataTypes,
             filter_link_url: props.dataTypeFilters.links,
             collection_id: props.collectionID,
           }),
@@ -236,14 +235,13 @@ export const CollectionPage = (props: CollectionPageProps) => {
   });
 
   createEffect(() => {
-    collectionPage();
     fetchBookmarks();
   });
 
   // Fetch the card collections for the auth'ed user
   const fetchCardCollections = () => {
     if (!user()) return;
-    void fetch(`${apiHost}/card_collection/${collectionPage()}`, {
+    void fetch(`${apiHost}/card_collection/1`, {
       method: "GET",
       credentials: "include",
     }).then((response) => {
@@ -461,16 +459,12 @@ export const CollectionPage = (props: CollectionPageProps) => {
                 <div class="mt-4">
                   <ScoreCardArray
                     totalCollectionPages={totalCollectionPages()}
-                    collectionPage={collectionPage()}
-                    setCollectionPage={setCollectionPage}
                     signedInUserId={user()?.id}
                     cards={card.metadata}
                     score={isScoreCardDTO(card) ? card.score : 0}
                     collection={true}
                     setShowModal={setShowNeedLoginModal}
                     cardCollections={cardCollections()}
-                    fetchCardCollections={fetchCardCollections}
-                    fetchBookmarks={fetchBookmarks}
                     bookmarks={bookmarks()}
                     setOnDelete={setOnDelete}
                     setShowConfirmModal={setShowConfirmDeleteModal}
