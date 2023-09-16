@@ -119,7 +119,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       signal: abortController.signal,
       body: JSON.stringify({
         content: props.query,
-        filter_oc_file_path: props.filters.dataTypes,
+        filter_tag_set: props.filters.dataTypes,
         filter_link_url: props.filters.links,
       }),
     }).then((response) => {

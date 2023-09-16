@@ -346,31 +346,31 @@ const ScoreCard = (props: ScoreCardProps) => {
                   {props.card.link}
                 </a>
               </Show>
-              <Show when={props.card.oc_file_path}>
+              <Show when={props.card.tag_set}>
                 <div class="flex space-x-2">
                   <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                     OC_Path:{" "}
                   </span>
                   <span class="line-clamp-1 break-all">
-                    {props.card.oc_file_path?.split("/").slice(0, -1).join("/")}
+                    {props.card.tag_set?.split("/").slice(0, -1).join("/")}
                   </span>
                 </div>
               </Show>
-              <Show when={props.card.oc_file_path ?? props.card.file_name}>
+              <Show when={props.card.tag_set ?? props.card.file_name}>
                 <div class="flex space-x-2">
                   <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                     Brief:{" "}
                   </span>
-                  <Show when={props.card.oc_file_path && !props.card.file_name}>
+                  <Show when={props.card.tag_set && !props.card.file_name}>
                     <a
                       class="line-clamp-1 text-magenta-500 underline dark:text-turquoise-400"
                       target="_blank"
                       href={`https://oc.arguflow.com/${
-                        props.card.oc_file_path ?? ""
+                        props.card.tag_set ?? ""
                       }`}
                     >
-                      {props.card.oc_file_path?.split("/").pop() ??
-                        props.card.oc_file_path}
+                      {props.card.tag_set?.split("/").pop() ??
+                        props.card.tag_set}
                     </a>
                   </Show>
                   <Show when={props.card.file_name}>
