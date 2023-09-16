@@ -1,12 +1,11 @@
 FROM node:lts AS runtime
 WORKDIR /app
 
-COPY . .
-
+COPY package.json yarn.lock ./
 RUN yarn install
-RUN yarn build
+COPY . .
 
 ENV HOST=0.0.0.0
 ENV PORT=3000
 EXPOSE 3000
-CMD node ./dist/server/entry.mjs
+CMD yarn build && node ./dist/server/entry.mjs
