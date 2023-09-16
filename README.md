@@ -175,3 +175,42 @@ diesel::debug*query::<diesel::pg::Pg, *>(&query);
 ## How to get Rust debug level logs
 
 Run `export RUST_LOG=debug`
+
+## Recommended local dev setup
+
+This repository used to solely house the `server` folder, but has recently been expanded to contain both `search` and `chat`. We recommend that you open VSCode for the `search` and `chat` folders independently. 
+
+### Setup env's
+
+```
+cp .env.chat ./chat/.env
+cp .env.search ./search/.env
+cp ./server/.env.dist ./server/.env
+```
+
+### Start docker container services needed for local dev
+
+```
+./convenience -l
+```
+
+### Start services for local dev
+
+We know this is bad. Currently, We recommend managing this through tmuux. 
+
+```
+cd server
+cargo watch -x run
+```
+
+```
+cd search
+yarn
+yarn dev
+```
+
+```
+cd chat
+yarn
+yarn dev
+```
