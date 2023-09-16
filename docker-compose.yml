@@ -67,6 +67,7 @@ services:
     command: server --console-address ":42625" /data
     networks:
       - vault-network
+
   s3-client:
     image: minio/mc
     depends_on:
@@ -88,6 +89,7 @@ services:
 
       exit 0;
       "
+
   vault-server:
     image: arguflow/vault-server
     build: ./server/
@@ -125,6 +127,7 @@ services:
       - qdrant-database
       - redis
       - db
+
   vault-chat:
     image: arguflow/vault-chat
     build: ./chat/
