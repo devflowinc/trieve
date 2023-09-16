@@ -205,17 +205,15 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                 {props.card.link}
               </a>
             </Show>
-            <Show when={props.card.oc_file_path}>
+            <Show when={props.card.tag_set}>
               <div class="flex space-x-2">
                 <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                   OC Path:{" "}
                 </span>
-                <a>
-                  {props.card.oc_file_path?.split("/").slice(0, -1).join("/")}
-                </a>
+                <a>{props.card.tag_set?.split("/").slice(0, -1).join("/")}</a>
               </div>
             </Show>
-            <Show when={props.card.oc_file_path ?? props.card.file_name}>
+            <Show when={props.card.tag_set ?? props.card.file_name}>
               <div class="flex space-x-2">
                 <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                   Brief:{" "}
