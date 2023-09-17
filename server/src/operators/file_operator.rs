@@ -66,7 +66,7 @@ pub fn create_file_query(
     mime_type: &str,
     file_size: i64,
     private: bool,
-    oc_file_path: Option<String>,
+    tag_set: Option<String>,
     pool: web::Data<Pool>,
 ) -> Result<File, DefaultError> {
     use crate::data::schema::files::dsl as files_columns;
@@ -81,7 +81,7 @@ pub fn create_file_query(
         mime_type,
         private,
         file_size,
-        oc_file_path,
+        tag_set,
     );
 
     let created_file: File = diesel::insert_into(files_columns::files)
@@ -142,7 +142,7 @@ pub async fn convert_doc_to_html_query(
     file_name: String,
     file_data: Vec<u8>,
     file_mime: String,
-    oc_file_path: Option<String>,
+    tag_set: Option<String>,
     description: Option<String>,
     private: bool,
     user: LoggedUser,
@@ -153,7 +153,7 @@ pub async fn convert_doc_to_html_query(
     let file_name1 = file_name.clone();
     let file_mime1 = file_mime.clone();
     let file_data1 = file_data.clone();
-    let oc_file_path1 = oc_file_path.clone();
+    let tag_set1 = tag_set.clone();
 
     tokio::spawn(async move {
         let new_id = uuid::Uuid::new_v4();
@@ -244,7 +244,7 @@ pub async fn convert_doc_to_html_query(
             &file_mime,
             file_size,
             private,
-            oc_file_path.clone(),
+            tag_set.clone(),
             pool.clone(),
         )?;
 
@@ -264,7 +264,7 @@ pub async fn convert_doc_to_html_query(
             })?;
 
         let resp = create_cards_with_handler(
-            oc_file_path,
+            tag_set,
             private,
             file_name,
             created_file.id,
@@ -291,14 +291,14 @@ pub async fn convert_doc_to_html_query(
             &file_mime1,
             private,
             file_data1.len().try_into().unwrap(),
-            oc_file_path1,
+            tag_set1,
         ),
     })
 }
 
 #[allow(clippy::too_many_arguments)]
 pub async fn create_cards_with_handler(
-    oc_file_path: Option<String>,
+    tag_set: Option<String>,
     private: bool,
     file_name: String,
     created_file_id: uuid::Uuid,
@@ -379,7 +379,7 @@ pub async fn create_cards_with_handler(
         let create_card_data = CreateCardData {
             card_html: Some(replaced_card_html.clone()),
             link: Some(card.link.clone()),
-            tag_set: oc_file_path.clone(),
+            tag_set: tag_set.clone(),
             private: Some(private),
             file_uuid: Some(created_file_id),
             metadata: None,

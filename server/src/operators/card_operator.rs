@@ -200,23 +200,50 @@ pub async fn search_card_query(
             let value = obj.get(key).unwrap();
             match value {
                 serde_json::Value::Array(arr) => {
-                    query = query.filter(
-                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                            .like(format!("%{}%", arr.get(0).unwrap().as_str().unwrap())),
-                    );
-                    for item in arr.iter().skip(1) {
-                        query = query.or_filter(
-                            sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                                .like(format!("%{}%", item.as_str().unwrap())),
-                        );
+                    let first_val = arr.get(0);
+
+                    match first_val {
+                        Some(serde_json::Value::String(_)) => {
+                            query = query.filter(
+                                sql::<Text>(&format!("card_metadata.metadata->>'{}'", key)).like(
+                                    format!(
+                                        "%{}%",
+                                        arr.get(0)
+                                            .expect("arr must be of length at least 1 to get here")
+                                            .as_str()
+                                            .expect("must be string")
+                                    ),
+                                ),
+                            );
+                            for item in arr.iter().skip(1) {
+                                match item {
+                                    serde_json::Value::String(_) => {
+                                        query =
+                                            query.or_filter(
+                                                sql::<Text>(&format!(
+                                                    "card_metadata.metadata->>'{}'",
+                                                    key
+                                                ))
+                                                .like(format!(
+                                                    "%{}%",
+                                                    item.as_str().expect("must be string")
+                                                )),
+                                            );
+                                    }
+                                    _ => (),
+                                }
+                            }
+                        }
+                        _ => (),
                     }
                 }
-                _ => {
+                serde_json::Value::String(_) => {
                     query = query.filter(
                         sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                            .like(format!("%{}%", value.as_str().unwrap())),
+                            .like(format!("%{}%", value.as_str().expect("must be string"))),
                     );
                 }
+                _ => (),
             }
         }
     }

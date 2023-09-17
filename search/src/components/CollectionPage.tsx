@@ -174,8 +174,8 @@ export const CollectionPage = (props: CollectionPageProps) => {
           credentials: "include",
           body: JSON.stringify({
             content: props.query,
-            filter_tag_set: props.dataTypeFilters.dataTypes,
-            filter_link_url: props.dataTypeFilters.links,
+            tag_set: props.dataTypeFilters.dataTypes,
+            link: props.dataTypeFilters.links,
             collection_id: props.collectionID,
           }),
         },

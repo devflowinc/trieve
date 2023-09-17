@@ -1,12 +1,11 @@
 use std::collections::HashSet;
 use std::process::Command;
-use std::str::FromStr;
 
 use crate::data::models::{
     CardCollection, CardMetadata, CardMetadataWithVotesAndFiles, CardMetadataWithVotesWithScore,
     Pool, UserDTO,
 };
-use crate::errors::{DefaultError, ServiceError};
+use crate::errors::ServiceError;
 use crate::operators::card_operator::*;
 use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
@@ -98,19 +97,9 @@ pub async fn create_card(
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let private = card.private.unwrap_or(false);
-    let card_oc_file_path = card.tag_set.clone();
+    let card_tag_set = card.tag_set.clone();
     let mut collision: Option<uuid::Uuid> = None;
     let mut embedding_vector: Option<Vec<f32>> = None;
-
-    if card_oc_file_path.unwrap_or("".to_string()) != "" {
-        let admin_uuid: String = std::env::var("ADMIN_UUID").expect("ADMIN_UUID must be set");
-
-        if user.id != uuid::Uuid::from_str(&admin_uuid).unwrap_or(uuid::Uuid::nil()) {
-            return Ok(HttpResponse::Forbidden().json(DefaultError {
-                message: "Only admin can create cards with oc_file_path",
-            }));
-        }
-    }
 
     let pool1 = pool.clone();
     let pool2 = pool.clone();

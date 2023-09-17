@@ -49,7 +49,7 @@ const convertAndUpload = async (filePath, story_id) => {
     description: descriptionBase64FileBuf,
     file_name: fileName,
     file_mime_type: "text/html",
-    oc_file_path: story_id,
+    tag_set: story_id,
     private: false,
   };
 
