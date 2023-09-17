@@ -774,6 +774,8 @@ pub async fn search_full_text_card(
 #[derive(Serialize, Deserialize)]
 pub struct SearchCollectionsData {
     content: String,
+    link: Option<Vec<String>>,
+    tag_set: Option<Vec<String>>,
     filters: Option<serde_json::Value>,
     collection_id: uuid::Uuid,
 }

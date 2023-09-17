@@ -264,7 +264,7 @@ pub struct CardMetadata {
 }
 
 impl CardMetadata {
-    #[warn(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)]
     pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(
         content: S,
         card_html: &Option<String>,
