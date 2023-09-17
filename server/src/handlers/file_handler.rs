@@ -36,7 +36,7 @@ pub struct UploadFileData {
     pub file_name: String,
     pub file_mime_type: String,
     pub private: bool,
-    pub oc_file_path: Option<String>,
+    pub tag_set: Option<String>,
     pub description: Option<String>,
 }
 
@@ -96,7 +96,7 @@ pub async fn upload_file_handler(
         upload_file_data.file_name,
         decoded_cardhtml_file_data,
         file_mime,
-        upload_file_data.oc_file_path,
+        upload_file_data.tag_set,
         decoded_description_file_data,
         private,
         user,

@@ -77,8 +77,8 @@ try {
         credentials: "include",
         body: JSON.stringify({
           content: query,
-          filter_tag_set: dataTypeFilters.dataTypes,
-          filter_link_url: dataTypeFilters.links,
+          tag_set: dataTypeFilters.dataTypes,
+          link: dataTypeFilters.links,
           collection_id: collectionID,
         }),
       },
