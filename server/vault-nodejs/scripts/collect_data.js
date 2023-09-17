@@ -80,8 +80,8 @@ const getTrainingData = async (singleQuery, page) => {
         credentials: "include",
         body: JSON.stringify({
           content: singleQuery,
-          filter_link_url: [],
-          filter_oc_file_path: [],
+          link: [],
+          tag_set: [],
         }),
       }
     );

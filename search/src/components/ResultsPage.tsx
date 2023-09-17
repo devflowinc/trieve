@@ -46,7 +46,6 @@ const ResultsPage = (props: ResultsPageProps) => {
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
     createSignal(false);
 
-  const [collectionPage, setCollectionPage] = createSignal(1);
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -56,7 +55,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   const fetchCardCollections = () => {
     if (!user()) return;
 
-    void fetch(`${apiHost}/card_collection/${collectionPage()}`, {
+    void fetch(`${apiHost}/card_collection/1`, {
       method: "GET",
       credentials: "include",
     }).then((response) => {
@@ -119,8 +118,8 @@ const ResultsPage = (props: ResultsPageProps) => {
       signal: abortController.signal,
       body: JSON.stringify({
         content: props.query,
-        filter_tag_set: props.filters.dataTypes,
-        filter_link_url: props.filters.links,
+        tag_set: props.filters.dataTypes,
+        link: props.filters.links,
       }),
     }).then((response) => {
       if (response.ok) {
@@ -163,15 +162,11 @@ const ResultsPage = (props: ResultsPageProps) => {
               <div>
                 <ScoreCardArray
                   totalCollectionPages={totalCollectionPages()}
-                  collectionPage={collectionPage()}
-                  setCollectionPage={setCollectionPage}
                   signedInUserId={user()?.id}
                   cardCollections={cardCollections()}
                   cards={card.metadata}
                   score={card.score}
                   setShowModal={setShowNeedLoginModal}
-                  fetchCardCollections={fetchCardCollections}
-                  fetchBookmarks={fetchBookmarks}
                   bookmarks={bookmarks()}
                   setOnDelete={setOnDelete}
                   setShowConfirmModal={setShowConfirmDeleteModal}
