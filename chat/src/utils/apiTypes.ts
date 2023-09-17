@@ -6,7 +6,7 @@ export interface CardMetadata {
   qdrant_point_id: string;
   created_at: string;
   updated_at: string;
-  oc_file_path: string | null;
+  tag_set: string | null;
   file_id: string | null;
   file_name: string | null;
 }
@@ -29,9 +29,9 @@ export const isCardMetadata = (card: unknown): card is CardMetadata => {
     typeof (card as CardMetadata).created_at === "string" &&
     indirectHasOwnProperty(card, "updated_at") &&
     typeof (card as CardMetadata).updated_at === "string" &&
-    indirectHasOwnProperty(card, "oc_file_path") &&
-    (typeof (card as CardMetadata).oc_file_path === "string" ||
-      (card as CardMetadata).oc_file_path === null)
+    indirectHasOwnProperty(card, "tag_set") &&
+    (typeof (card as CardMetadata).tag_set === "string" ||
+      (card as CardMetadata).tag_set === null)
   );
 };
 
