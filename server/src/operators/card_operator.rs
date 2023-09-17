@@ -5,7 +5,6 @@ use crate::data::models::{
     CardVote, FullTextSearchResult, User, UserDTO,
 };
 use crate::data::schema;
-use crate::data::schema::card_metadata::link;
 use crate::diesel::TextExpressionMethods;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::errors::ServiceError;
@@ -197,20 +196,23 @@ pub async fn search_card_query(
                 card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
             ))
             .distinct();
-    if !tag_set.is_empty() {
-        query = query
-            .filter(card_metadata_columns::tag_set.like(format!("%{}%", tag_set.get(0).unwrap())));
+    let tag_set_inner = tag_set.unwrap_or_default();
+    let link_inner = link.unwrap_or_default();
+    if !tag_set_inner.is_empty() {
+        query = query.filter(
+            card_metadata_columns::tag_set.like(format!("%{}%", tag_set_inner.get(0).unwrap())),
+        );
     }
 
-    for tag in tag_set.iter().skip(1) {
+    for tag in tag_set_inner.iter().skip(1) {
         query = query.or_filter(card_metadata_columns::tag_set.like(format!("%{}%", tag)));
     }
 
-    if !link.is_empty() {
-        query =
-            query.filter(card_metadata_columns::link.like(format!("%{}%", link.get(0).unwrap())));
+    if !link_inner.is_empty() {
+        query = query
+            .filter(card_metadata_columns::link.like(format!("%{}%", link_inner.get(0).unwrap())));
     }
-    for link_url in link.iter().skip(1) {
+    for link_url in link_inner.iter().skip(1) {
         query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
     }
 
@@ -334,6 +336,7 @@ pub async fn global_unfiltered_top_match_query(
     Ok(top_search_result)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn search_card_collections_query(
     embedding_vector: Vec<f32>,
     page: u64,
@@ -375,20 +378,23 @@ pub async fn search_card_collections_query(
         .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id))
         .distinct()
         .into_boxed();
-    if !tag_set.is_empty() {
-        query = query
-            .filter(card_metadata_columns::tag_set.like(format!("%{}%", tag_set.get(0).unwrap())));
+    let tag_set_inner = tag_set.unwrap_or_default();
+    let link_inner = link.unwrap_or_default();
+    if !tag_set_inner.is_empty() {
+        query = query.filter(
+            card_metadata_columns::tag_set.like(format!("%{}%", tag_set_inner.get(0).unwrap())),
+        );
     }
 
-    for tag in tag_set.iter().skip(1) {
+    for tag in tag_set_inner.iter().skip(1) {
         query = query.or_filter(card_metadata_columns::tag_set.like(format!("%{}%", tag)));
     }
 
-    if !link.is_empty() {
-        query =
-            query.filter(card_metadata_columns::link.like(format!("%{}%", link.get(0).unwrap())));
+    if !link_inner.is_empty() {
+        query = query
+            .filter(card_metadata_columns::link.like(format!("%{}%", link_inner.get(0).unwrap())));
     }
-    for link_url in link.iter().skip(1) {
+    for link_url in link_inner.iter().skip(1) {
         query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
     }
 
@@ -735,20 +741,23 @@ pub fn search_full_text_card_query(
             .bind::<Text, _>(user_query)
             .sql(")"),
     );
-    if !tag_set.is_empty() {
-        query = query
-            .filter(card_metadata_columns::tag_set.like(format!("%{}%", tag_set.get(0).unwrap())));
+    let tag_set_inner = tag_set.unwrap_or_default();
+    let link_inner = link.unwrap_or_default();
+    if !tag_set_inner.is_empty() {
+        query = query.filter(
+            card_metadata_columns::tag_set.like(format!("%{}%", tag_set_inner.get(0).unwrap())),
+        );
     }
 
-    for tag in tag_set.iter().skip(1) {
+    for tag in tag_set_inner.iter().skip(1) {
         query = query.or_filter(card_metadata_columns::tag_set.like(format!("%{}%", tag)));
     }
 
-    if !link.is_empty() {
-        query =
-            query.filter(card_metadata_columns::link.like(format!("%{}%", link.get(0).unwrap())));
+    if !link_inner.is_empty() {
+        query = query
+            .filter(card_metadata_columns::link.like(format!("%{}%", link_inner.get(0).unwrap())));
     }
-    for link_url in link.iter().skip(1) {
+    for link_url in link_inner.iter().skip(1) {
         query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
     }
 
@@ -816,6 +825,7 @@ pub fn search_full_text_card_query(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn search_full_text_collection_query(
     user_query: String,
     page: u64,
@@ -917,20 +927,23 @@ pub fn search_full_text_collection_query(
             .bind::<Text, _>(user_query)
             .sql(")"),
     );
-    if !tag_set.is_empty() {
-        query = query
-            .filter(card_metadata_columns::tag_set.like(format!("%{}%", tag_set.get(0).unwrap())));
+    let tag_set_inner = tag_set.unwrap_or_default();
+    let link_inner = link.unwrap_or_default();
+    if !tag_set_inner.is_empty() {
+        query = query.filter(
+            card_metadata_columns::tag_set.like(format!("%{}%", tag_set_inner.get(0).unwrap())),
+        );
     }
 
-    for tag in tag_set.iter().skip(1) {
+    for tag in tag_set_inner.iter().skip(1) {
         query = query.or_filter(card_metadata_columns::tag_set.like(format!("%{}%", tag)));
     }
 
-    if !link.is_empty() {
-        query =
-            query.filter(card_metadata_columns::link.like(format!("%{}%", link.get(0).unwrap())));
+    if !link_inner.is_empty() {
+        query = query
+            .filter(card_metadata_columns::link.like(format!("%{}%", link_inner.get(0).unwrap())));
     }
-    for link_url in link.iter().skip(1) {
+    for link_url in link_inner.iter().skip(1) {
         query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
     }
     if let serde_json::Value::Object(obj) = &filters.unwrap() {
