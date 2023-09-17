@@ -254,17 +254,17 @@ const ScoreCard = (props: ScoreCardProps) => {
                 {props.card.link}
               </a>
             </Show>
-            <Show when={props.card.oc_file_path}>
+            <Show when={props.card.tag_set}>
               <div class="flex space-x-2">
                 <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                   OC_Path:{" "}
                 </span>
                 <span class="line-clamp-1 break-all">
-                  {props.card.oc_file_path?.split("/").slice(0, -1).join("/")}
+                  {props.card.tag_set?.split("/").slice(0, -1).join("/")}
                 </span>
               </div>
             </Show>
-            <Show when={props.card.oc_file_path ?? props.card.file_name}>
+            <Show when={props.card.tag_set ?? props.card.file_name}>
               <div class="flex space-x-2">
                 <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                   Brief:{" "}
