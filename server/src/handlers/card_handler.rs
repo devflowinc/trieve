@@ -97,7 +97,6 @@ pub async fn create_card(
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let private = card.private.unwrap_or(false);
-    let card_tag_set = card.tag_set.clone();
     let mut collision: Option<uuid::Uuid> = None;
     let mut embedding_vector: Option<Vec<f32>> = None;
 
