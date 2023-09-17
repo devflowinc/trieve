@@ -5,6 +5,7 @@ use crate::data::models::{
     CardVote, FullTextSearchResult, User, UserDTO,
 };
 use crate::data::schema;
+use crate::data::schema::card_metadata::link;
 use crate::diesel::TextExpressionMethods;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::errors::ServiceError;
@@ -140,12 +141,14 @@ pub async fn search_card_query(
     embedding_vector: Vec<f32>,
     page: u64,
     pool: web::Data<Pool>,
+    link: Option<Vec<String>>,
+    tag_set: Option<Vec<String>>,
     filters: Option<serde_json::Value>,
     current_user_id: Option<uuid::Uuid>,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
 
-    if filters.is_none() {
+    if filters.is_none() && link.is_none() && tag_set.is_none() {
         let mut filter = Filter::default();
         filter.should.push(Condition::is_empty("private"));
         filter.should.push(Condition::is_null("private"));
@@ -194,8 +197,24 @@ pub async fn search_card_query(
                 card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
             ))
             .distinct();
+    if !tag_set.is_empty() {
+        query = query
+            .filter(card_metadata_columns::tag_set.like(format!("%{}%", tag_set.get(0).unwrap())));
+    }
 
-    if let serde_json::Value::Object(obj) = &filters.unwrap() {
+    for tag in tag_set.iter().skip(1) {
+        query = query.or_filter(card_metadata_columns::tag_set.like(format!("%{}%", tag)));
+    }
+
+    if !link.is_empty() {
+        query =
+            query.filter(card_metadata_columns::link.like(format!("%{}%", link.get(0).unwrap())));
+    }
+    for link_url in link.iter().skip(1) {
+        query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
+    }
+
+    if let serde_json::Value::Object(obj) = &filters.unwrap_or(serde_json::json!({})) {
         for key in obj.keys() {
             let value = obj.get(key).unwrap();
             match value {
@@ -319,6 +338,8 @@ pub async fn search_card_collections_query(
     embedding_vector: Vec<f32>,
     page: u64,
     pool: web::Data<Pool>,
+    link: Option<Vec<String>>,
+    tag_set: Option<Vec<String>>,
     filters: Option<serde_json::Value>,
     collection_id: uuid::Uuid,
     user_id: Option<uuid::Uuid>,
@@ -354,6 +375,22 @@ pub async fn search_card_collections_query(
         .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id))
         .distinct()
         .into_boxed();
+    if !tag_set.is_empty() {
+        query = query
+            .filter(card_metadata_columns::tag_set.like(format!("%{}%", tag_set.get(0).unwrap())));
+    }
+
+    for tag in tag_set.iter().skip(1) {
+        query = query.or_filter(card_metadata_columns::tag_set.like(format!("%{}%", tag)));
+    }
+
+    if !link.is_empty() {
+        query =
+            query.filter(card_metadata_columns::link.like(format!("%{}%", link.get(0).unwrap())));
+    }
+    for link_url in link.iter().skip(1) {
+        query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
+    }
 
     if let serde_json::Value::Object(obj) = &filters.unwrap() {
         for key in obj.keys() {
@@ -613,6 +650,8 @@ pub fn search_full_text_card_query(
     pool: web::Data<Pool>,
     current_user_id: Option<uuid::Uuid>,
     filters: Option<serde_json::Value>,
+    link: Option<Vec<String>>,
+    tag_set: Option<Vec<String>>,
 ) -> Result<FullTextSearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
@@ -696,6 +735,22 @@ pub fn search_full_text_card_query(
             .bind::<Text, _>(user_query)
             .sql(")"),
     );
+    if !tag_set.is_empty() {
+        query = query
+            .filter(card_metadata_columns::tag_set.like(format!("%{}%", tag_set.get(0).unwrap())));
+    }
+
+    for tag in tag_set.iter().skip(1) {
+        query = query.or_filter(card_metadata_columns::tag_set.like(format!("%{}%", tag)));
+    }
+
+    if !link.is_empty() {
+        query =
+            query.filter(card_metadata_columns::link.like(format!("%{}%", link.get(0).unwrap())));
+    }
+    for link_url in link.iter().skip(1) {
+        query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
+    }
 
     if let serde_json::Value::Object(obj) = &filters.unwrap() {
         for key in obj.keys() {
@@ -767,6 +822,8 @@ pub fn search_full_text_collection_query(
     pool: web::Data<Pool>,
     current_user_id: Option<uuid::Uuid>,
     filters: Option<serde_json::Value>,
+    link: Option<Vec<String>>,
+    tag_set: Option<Vec<String>>,
     collection_id: uuid::Uuid,
 ) -> Result<FullTextSearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
@@ -860,7 +917,22 @@ pub fn search_full_text_collection_query(
             .bind::<Text, _>(user_query)
             .sql(")"),
     );
+    if !tag_set.is_empty() {
+        query = query
+            .filter(card_metadata_columns::tag_set.like(format!("%{}%", tag_set.get(0).unwrap())));
+    }
 
+    for tag in tag_set.iter().skip(1) {
+        query = query.or_filter(card_metadata_columns::tag_set.like(format!("%{}%", tag)));
+    }
+
+    if !link.is_empty() {
+        query =
+            query.filter(card_metadata_columns::link.like(format!("%{}%", link.get(0).unwrap())));
+    }
+    for link_url in link.iter().skip(1) {
+        query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
+    }
     if let serde_json::Value::Object(obj) = &filters.unwrap() {
         for key in obj.keys() {
             let value = obj.get(key).unwrap();

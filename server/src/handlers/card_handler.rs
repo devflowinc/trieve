@@ -571,6 +571,8 @@ pub async fn update_card(
 #[derive(Serialize, Deserialize)]
 pub struct SearchCardData {
     content: String,
+    link: Option<Vec<String>>,
+    tag_set: Option<Vec<String>>,
     filters: Option<serde_json::Value>,
 }
 
@@ -602,6 +604,8 @@ pub async fn search_card(
         embedding_vector,
         page,
         pool1,
+        data.link.clone(),
+        data.tag_set.clone(),
         data.filters.clone(),
         current_user_id,
     )
@@ -707,6 +711,8 @@ pub async fn search_full_text_card(
             pool1,
             current_user_id,
             data.filters.clone(),
+            data.link.clone(),
+            data.tag_set.clone(),
         )
     })
     .await?
@@ -810,6 +816,8 @@ pub async fn search_collections(
         embedding_vector,
         page,
         pool2,
+        data.link.clone(),
+        data.tag_set.clone(),
         data.filters.clone(),
         data.collection_id,
         current_user_id,
@@ -934,6 +942,8 @@ pub async fn search_full_text_collections(
             pool3,
             current_user_id,
             data.filters.clone(),
+            data.link.clone(),
+            data.tag_set.clone(),
             data.collection_id,
         )
     })
