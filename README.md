@@ -3,11 +3,8 @@
 </p>
 
 <p align="center">
-    <b>Software suite for deploying semantic search and RAG over arbitrary data sources. Contains a server with maximal-marginal-relevant abstracted for you and routes for bookmarks, retrieval, filtering, recommendations, etc. along with white-label'able UI's for search and retrieval-augmented LLM chat.</b>
+    <b>Software suite for deploying semantic search and RAG/no-hallucination LLM-chat over arbitrary data cards/chunks. Contains a server for duplication detection, bookmarks, retrieval, filtering, recommendations, etc. and also white-label'able UI's for search and retrieval-augmented LLM chat. Build, contribute, and stay-tuned!</b>
 </p>
-
-**Arguflow**: There are infinite use-cases for semantic search and RAG/no-hallucination LLM-chat. Arguflow aims to make building and deploying those experiences to users easy by shipping a server and white-label'able UIs which support all of the search/RAG operations you could want. This suite is licensed to other businesses such that they can stay on top of the latest AI productivity improvements. In the near future, we expect to implement reliable anti-hallucination mechanisms which will strengthen our LLM-chat performance. Build, contribute, and stay-tuned!
-
 <p align="center">
 <strong><a href="https://docs.arguflow.ai">Documentation</a> • <a href="https://search.arguflow.ai">Debate Search Demo</a> • <a href="https://chat.arguflow.ai">RAG Debate Opponent Demo</a> • <a href="https://discord.gg/CuJVfgZf54">Discord</a> • <a href="https://matrix.to/#/#arguflow-general:matrix.zerodao.gg">Matrix</a>
 
