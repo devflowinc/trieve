@@ -59,7 +59,6 @@ const SearchForm = () => {
       },
       credentials: "include",
       body: JSON.stringify({
-        content: cardTextContentValue,
         card_html: cardHTMLContentValue,
         link: evidenceLinkValue,
         private: _private(),
