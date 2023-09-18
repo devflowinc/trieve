@@ -78,6 +78,7 @@ pub fn send_health_check_error(email: String, error: String) -> Result<(), Defau
 }
 
 fn send_email(sg_email: Message) -> Result<(), DefaultError> {
+    env!("SENDGRID_API_KEY","SENDGRID_API_KEY is not present.");
     let sg_api_key = std::env::var("SENDGRID_API_KEY").expect("SENDGRID_API_KEY must be set");
     let sg_sender = Sender::new(sg_api_key);
     let sg_response = sg_sender.send(&sg_email);

@@ -22,6 +22,7 @@ pub async fn create_stripe_checkout_session(
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    env!("APP_URL","APP_URL is not present.");
     let app_url: String =
         std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:3000".into());
     let user_one = user.clone();

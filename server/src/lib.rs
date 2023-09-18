@@ -46,15 +46,15 @@ pub async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    env!("ALERT_EMAIL","MY_ENV_VAR is not present.")
+    env!("ALERT_EMAIL","MY_ENV_VAR is not present.");
     if std::env::var("ALERT_EMAIL").is_err() {
         log::warn!("ALERT_EMAIL not set, this might be useful during health checks");
     }
      
-    env!("DATABASE_URL","DATABASE_URL is not present.")
+    env!("DATABASE_URL","DATABASE_URL is not present.");
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
-    env!("REDIS_URL","REDIS_URL is not present.")
+    env!("REDIS_URL","REDIS_URL is not present.");
     let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
 
     // create db connection pool
@@ -66,7 +66,7 @@ pub async fn main() -> std::io::Result<()> {
     let app_mutex_store = web::Data::new(AppMutexStore {
         libreoffice: Mutex::new(()),
         embedding_semaphore: Semaphore::new(
-            env!("EMBEDDING_SEMAPHORE_SIZE","EMBEDDING_SEMAPHORE_SIZE is not present.")
+            env!("EMBEDDING_SEMAPHORE_SIZE","EMBEDDING_SEMAPHORE_SIZE is not present.");
             std::env::var("EMBEDDING_SEMAPHORE_SIZE")
                 .unwrap_or_else(|_| "10".to_string())
                 .parse()
@@ -77,10 +77,10 @@ pub async fn main() -> std::io::Result<()> {
     let redis_store = RedisSessionStore::new(redis_url.as_str()).await.unwrap();
 
     let qdrant_client = get_qdrant_connection().await.unwrap();
-    env!("QDRANT_COLLECTION","QDRANT_COLLECTION is not present.")
+    env!("QDRANT_COLLECTION","QDRANT_COLLECTION is not present.");
     let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
 
-    env!("EMBEDDING_SIZE","EMBEDDING_SIZE is not present.")
+    env!("EMBEDDING_SIZE","EMBEDDING_SIZE is not present.");
     let embedding_size = std::env::var("EMBEDDING_SIZE").unwrap_or("1536".to_owned());
     let embedding_size = embedding_size.parse::<u64>().unwrap_or(1536);
     log::info!(
@@ -113,7 +113,7 @@ pub async fn main() -> std::io::Result<()> {
 
     log::info!("starting HTTP server at http://localhost:8090");
 
-    env!("COOKIE_SECURE","COOKIE_SECURE is not present.")
+    env!("COOKIE_SECURE","COOKIE_SECURE is not present.");
     HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_origin()

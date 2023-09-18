@@ -20,6 +20,8 @@ pub async fn create_stripe_checkout_session_operation(
     success_url: String,
 ) -> Result<String, DefaultError> {
     let stripe_client = get_stripe_client()?;
+
+    env!("APP_URL","APP_URL is not present.");
     let app_url: String =
         std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:3000".into());
     let cancel_url = app_url.to_string();
@@ -107,9 +109,11 @@ pub fn update_plan_query(
 ) -> Result<(), DefaultError> {
     use crate::data::schema::user_plans::dsl::{plan, status, user_plans};
 
+    env!("STRIPE_SILVER_PLAN_ID","STRIPE_SILVER_PLAN_ID is not present.");
     let silver_plan_id =
         std::env::var("STRIPE_SILVER_PLAN_ID").expect("STRIPE_SILVER_PLAN_ID must be set");
 
+    env!("STRIPE_GOLD_PLAN_ID","STRIPE_GOLD_PLAN_ID is not present.");
     let gold_plan_id =
         std::env::var("STRIPE_GOLD_PLAN_ID").expect("STRIPE_GOLD_PLAN_ID must be set");
 
@@ -215,6 +219,8 @@ pub fn insert_stripe_customer_query(
 }
 
 pub fn get_stripe_client() -> Result<stripe::Client, DefaultError> {
+
+    env!("STRIPE_API_SECRET_KEY","STRIPE_API_SECRET_KEY is not present.");
     let stripe_api_secret_key =
         std::env::var("STRIPE_API_SECRET_KEY").expect("STRIPE_API_SECRET_KEY must be set");
     Ok(stripe::Client::new(stripe_api_secret_key))
@@ -274,6 +280,8 @@ pub fn handle_webhook_query(
     payload: web::Bytes,
     pool: &web::Data<Pool>,
 ) -> Result<(), DefaultError> {
+
+    env!("WEBHOOK_SIGNING_SECRET","WEBHOOK_SIGNING_SECRET is not present.");
     let webhook_secret =
         std::env::var("WEBHOOK_SIGNING_SECRET").expect("WEBHOOK_SIGNING_SECRET must be set");
 

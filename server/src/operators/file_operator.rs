@@ -33,6 +33,11 @@ use super::collection_operator::create_collection_and_add_bookmarks_query;
 use super::notification_operator::add_collection_created_notification_query;
 
 pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
+
+    env!("S3_ACCESS_KEY","S3_ACCESS_KEY is not present.");
+    env!("S3_SECRET_KEY","S3_SECRET_KEY is not present.");
+    env!("S3_ENDPOINT","S3_ENDPOINT is not present.");
+    env!("S3_BUCKET","S3_BUCKET is not present.");
     let s3_access_key = std::env::var("S3_ACCESS_KEY").expect("S3_ACCESS_KEY must be set");
     let s3_secret_key = std::env::var("S3_SECRET_KEY").expect("S3_SECRET_KEY must be set");
     let s3_endpoint = std::env::var("S3_ENDPOINT").expect("S3_ENDPOINT must be set");
@@ -206,6 +211,7 @@ pub async fn convert_doc_to_html_query(
                     });
                 }
 
+                env!("LIBREOFFICE_PATH","LIBREOFFICE_PATH is not present.");
                 let conversion_command_output = Command::new(
                     std::env::var("LIBREOFFICE_PATH").expect("LIBREOFFICE_PATH must be set"),
                 )
@@ -309,6 +315,7 @@ pub async fn create_cards_with_handler(
     pool: web::Data<Pool>,
     mutex_store: web::Data<AppMutexStore>,
 ) -> Result<(), DefaultError> {
+    env!("PARSER_COMMAND","PARSER_COMMAND is not present.");
     let parser_command = std::env::var("PARSER_COMMAND")
         .unwrap_or("./vault-nodejs/scripts/card_parser.js".to_string());
     let delete_html_file = || {

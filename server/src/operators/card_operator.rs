@@ -34,6 +34,8 @@ use qdrant_client::{
 use serde::{Deserialize, Serialize};
 
 pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
+    env!("QDRANT_URL","QDRANT_URL is not present.");
+    env!("QDRANT_API_KEY","QDRANT_API_KEY is not present.");
     let qdrant_url = std::env::var("QDRANT_URL").expect("QDRANT_URL must be set");
     let qdrant_api_key = std::env::var("QDRANT_API_KEY").expect("QDRANT_API_KEY must be set");
     let mut config = QdrantClientConfig::from_url(qdrant_url.as_str());
@@ -288,6 +290,7 @@ pub async fn global_unfiltered_top_match_query(
 ) -> Result<SearchResult, DefaultError> {
     let qdrant = get_qdrant_connection().await?;
 
+    env!("QDRANT_COLLECTION","QDRANT_COLLECTION is not present.");
     let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
     let data = qdrant
         .search_points(&SearchPoints {
