@@ -2,6 +2,7 @@ use actix_web::{web, HttpResponse};
 use argon2::{self, Config};
 use diesel::prelude::*;
 use once_cell::sync::Lazy;
+use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -114,4 +115,15 @@ fn insert_user_from_invitation(
 
             Ok(inserted_user.into())
         })
+}
+
+pub fn generate_api_key() -> String {
+    let rng = rand::thread_rng();
+    let api_key: String = rng
+        .sample_iter(&Alphanumeric)
+        .take(32)
+        .map(char::from)
+        .collect();
+
+    api_key
 }

@@ -1,12 +1,13 @@
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use crate::{
     data::models::{Pool, UserDTOWithScore},
     errors::{DefaultError, ServiceError},
     operators::user_operator::{
         get_top_users_query, get_total_users_query, get_user_with_votes_and_cards_by_id_query,
-        update_user_query,
+        set_user_api_key_query, update_user_query,
     },
 };
 
@@ -94,4 +95,15 @@ pub async fn get_top_users(
         })),
         Err(e) => Ok(HttpResponse::BadRequest().json(e)),
     }
+}
+
+pub async fn set_user_api_key(
+    user: LoggedUser,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let new_api_key = web::block(move || set_user_api_key_query(user.id, pool))
+        .await?
+        .map_err(|_err| ServiceError::BadRequest("Failed to set new API key for user".into()))?;
+
+    Ok(HttpResponse::Ok().json(json!({ "api_key": new_api_key })))
 }

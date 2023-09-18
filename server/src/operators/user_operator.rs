@@ -3,6 +3,7 @@ use crate::data::models::{
     SlimUser, UserDTOWithScore, UserDTOWithVotesAndCards, UserScore,
 };
 use crate::diesel::prelude::*;
+use crate::handlers::register_handler::{generate_api_key, hash_password};
 use crate::handlers::user_handler::UpdateUserData;
 use crate::{
     data::models::{Pool, User},
@@ -10,6 +11,7 @@ use crate::{
 };
 use actix_web::web;
 use diesel::sql_types::{BigInt, Text};
+
 pub fn get_user_by_email_query(
     user_email: &String,
     pool: &web::Data<Pool>,
@@ -442,4 +444,26 @@ pub fn get_total_users_query(pool: web::Data<Pool>) -> Result<i64, DefaultError>
         })?;
 
     Ok(total_users)
+}
+
+pub fn set_user_api_key_query(
+    user_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<String, DefaultError> {
+    use crate::data::schema::users::dsl as users_columns;
+
+    let raw_api_key = generate_api_key();
+    let hashed_api_key = hash_password(&raw_api_key)?;
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::update(users_columns::users.filter(users_columns::id.eq(user_id)))
+        .set(users_columns::api_key_hash.eq(hashed_api_key))
+        .execute(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to set api key",
+        })?;
+
+
+    Ok(raw_api_key)
 }
