@@ -75,14 +75,7 @@ pub fn create_file_query(
         message: "Could not get database connection",
     })?;
 
-    let new_file = File::from_details(
-        user_id,
-        file_name,
-        mime_type,
-        private,
-        file_size,
-        tag_set,
-    );
+    let new_file = File::from_details(user_id, file_name, mime_type, private, file_size, tag_set);
 
     let created_file: File = diesel::insert_into(files_columns::files)
         .values(&new_file)
@@ -336,12 +329,7 @@ pub async fn create_cards_with_handler(
             });
         }
     };
-    log::info!(
-        "HANDLER command {} {} {}",
-        parser_command,
-        file_path_str,
-        file_name.split('-').collect::<Vec<&str>>()[0]
-    );
+    log::info!("HANDLER command {} {}", parser_command, file_path_str,);
     let parsed_cards_command_output = Command::new(parser_command).arg(file_path_str).output();
 
     delete_html_file()?;

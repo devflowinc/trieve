@@ -110,7 +110,6 @@ pub async fn create_card(
     let mut con = client
         .get_connection()
         .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
-
     let content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
     // Card content can be at least 470 characters long
 
