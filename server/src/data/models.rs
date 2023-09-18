@@ -21,6 +21,7 @@ pub struct User {
     pub username: Option<String>,
     pub website: Option<String>,
     pub visible_email: bool,
+    pub api_key_hash: Option<String>,
 }
 
 impl User {
@@ -34,6 +35,7 @@ impl User {
             username: None,
             website: None,
             visible_email: true,
+            api_key_hash: None,
         }
     }
 }

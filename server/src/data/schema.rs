@@ -243,6 +243,7 @@ diesel::table! {
         username -> Nullable<Text>,
         website -> Nullable<Text>,
         visible_email -> Bool,
+        api_key_hash -> Nullable<Text>,
     }
 }
 
