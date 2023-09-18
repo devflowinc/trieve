@@ -3,22 +3,18 @@
 </p>
 
 <p align="center">
-    <b>Easy to use abstraction over Qdrant and Postgres for creating a semantic/full-text socially enabled embedding store on your data</b>
+    <b>Software suite for deploying semantic search and RAG over arbitrary data sources. Contains a server with maximal-marginal-relevant abstracted for you and routes for bookmarks, retrieval, filtering, recommendations, etc. along with white-label'able UI's for search and retrieval-augmented LLM chat.</b>
 </p>
 
-**Arguflow Vault Server**: Paired with [vault-client](https://github.com/arguflow/vault-client), Arguflow Vault is an abstraction layer over Qdrant which provides semantic and full-text search over arbitrary HTML cards, WYSIWYG TinyMCE editor, collection based organization, MMR, voting, and more. Vault Server is written in Rust 🦀 with Node and Python services where appropriate. Vault is still in early alpha, but you may find it useful if you are trying to build semantic or full text search over your data.
+**Arguflow**: There are infinite use-cases for semantic search and RAG/no-hallucination LLM-chat. Arguflow aims to make building and deploying those experiences to users easy by shipping a server and white-label'able UIs which support all of the search/RAG operations you could want. This suite is licensed to other businesses such that they can stay on top of the latest AI productivity improvements. In the near future, we expect to implement reliable anti-hallucination mechanisms which will strengthen our LLM-chat performance. Build, contribute, and stay-tuned!
 
 <p align="center">
-<strong><a href="https://docs.arguflow.ai">Documentation</a> • <a href="https://vault.arguflow.ai">Competitive Debate Demo</a> • <a href="https://discord.gg/CuJVfgZf54">Discord</a>
+<strong><a href="https://docs.arguflow.ai">Documentation</a> • <a href="https://search.arguflow.ai">Debate Search Demo</a> • <a href="https://chat.arguflow.ai">RAG Debate Opponent Demo</a> • <a href="https://discord.gg/CuJVfgZf54">Discord</a> • <a href="https://matrix.to/#/#arguflow-general:matrix.zerodao.gg">Matrix</a>
 
 </strong>
 </p>
 
-# Vault Server
-
-Server for providing both semantic and full text search, voting, and collection based organization.
-
-This project utilizes [Qdrant](https://qdrant.tech/) and [actix-web](https://actix.rs), a [Rust](https://www.rust-lang.org) language framework.
+# Arguflow
 
 ## How to contribute
 
@@ -30,45 +26,11 @@ This project utilizes [Qdrant](https://qdrant.tech/) and [actix-web](https://act
 6. Push your changes to your forked repository: git push origin your-branch-name
 7. Open a pull request to the main repository and describe your changes in the PR description
 
-## Storing environment variables in .env file
+## Self-hosting the API and UI's
 
-Create a .env file in the root directory of the project. This .env file will require the following url's and API keys
+We have a full self-hosting guide available on our [documentation page here](https://docs.arguflow.ai/self_hosting).
 
-`SALT`, `SECRET_KEY`, and the `STRIPE` keys are all optional.
-
-```
-DATABASE_URL=postgresql://postgres:password@localhost:5432/vault
-REDIS_URL=redis://localhost:6379
-QDRANT_URL=http://127.0.0.1:6334
-SENDGRID_API_KEY=*******************
-OPENAI_API_KEY=*******************
-STRIPE_API_SECRET_KEY=*******************
-STRIPE_SILVER_PLAN_ID=*******************
-STRIPE_GOLD_PLAN_ID=*******************
-WEBHOOK_SIGNING_SECRET=*******************
-SECRET_KEY=*******************
-SALT=*******************
-LIBREOFFICE_PATH=libreoffice
-S3_ENDPOINT=*******************
-S3_ACCESS_KEY=*******************
-S3_SECRET_KEY=*******************
-S3_BUCKET=vault
-VERIFICATION_SERVER_URL=http://localhost:8091/get_url_content
-QDRANT_API_KEY=qdrant_pass
-COOKIE_SECURE=false
-ADMIN_UUID=********************
-```
-
-## Getting started
-
-The following information is also automated via the Dockerfile. The quick start would be:
-
-```
-docker build -t vault-server .
-docker run -p 8090:8090 vault-server
-```
-
-then follow the S3 instructions. Your `.env` file also needs to be renamed to `.env.docker`.
+## Local development
 
 ### Install apt packages
 
@@ -108,59 +70,6 @@ Use [vault-client](https://github.com/arguflow/vault-client) to make an account.
 ### Install python requirements
 
 `pip install -r ./vault-python/requirements.txt`
-
-### Setting Up Local S3
-
-1. `sudo docker compose up s3`
-2. Go to the MinIO dashboard at [http://127.0.0.1:42625](http://127.0.0.1:42625)
-3. Sign in with `rootuser` and `rootpassword`
-4. Go to [http://127.0.0.1:42625/identity/users](http://127.0.0.1:42625/identity/users)
-5. Set `S3_ENDPOINT` to `http://127.0.0.1:9000`
-6. Click "Create User"
-7. Set the credentials to "s3user" and "s3password"
-8. Assign the user roles for access
-9. Click the user and navigate to "Service Accounts"
-10. Click "Create Access Key" and save the created keys to your .env under `S3_ACCESS_KEY` and `S3_SECRET_KEY` respectively
-11. Click "Buckets" and then "Create Bucket"
-12. Create a bucket named `vault` and set `S3_BUCKET` in the env to `vault`
-
-### Preparing for file uploads and conversions
-
-1. `sudo apt install pandoc`
-2. `mkdir tmp` from inside repository folder
-
-If you want to test things outside of the minio dashboard and Tokio server, then setup AWS CLI using [this guide from minio](https://min.io/docs/minio/linux/integrations/aws-cli-with-minio.html) with the region set to `""`
-
-- You can install it with `sudo apt install awscli` assuming you are using the apt package manager
-
-### Run the server in dev mode
-
-```
-docker compose up -d
-cargo watch -x run
-```
-
-## Running the test suite
-
-This section refers to the jest testing suite found in the `vault-nodejs` folder of this repository
-
-1. Set the variables found in `.env.dist` in the `.env` file of the testing suite
-2. `cd` into the testing suite folder
-3. Run `yarn`
-4. Run `yarn test`
-
-## Resetting the application data db's
-
-1. `sudo docker compose stop qdrant-database`
-2. `sudo docker compose rm -f qdrant-database`
-3. `sudo docker volume rm vault_qdrant_data`
-4. `diesel db reset`
-
-## Resetting the script db
-
-1. `sudo docker compose stop script-redis`
-2. `sudo docker compose rm -f script-redis`
-3. `sudo docker volume rm vault_script-redis-data`
 
 ## How to debug diesel by getting the exact generated SQL
 
