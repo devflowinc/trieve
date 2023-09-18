@@ -262,6 +262,10 @@ pub async fn main() -> std::io::Result<()> {
                                 web::resource("")
                                     .route(web::put().to(handlers::user_handler::update_user)),
                             )
+                            .service(
+                                web::resource("/user/set_api_key")
+                            .route(web::put().to(handlers::user_handler::set_user_api_key)),
+                            )
                             .service(web::resource("/{user_id}/{page}")
                                 .route(web::get().to(handlers::user_handler::get_user_with_votes_and_cards_by_id)),
                             )

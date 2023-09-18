@@ -2975,6 +2975,7 @@ dependencies = [
  "openai_dive",
  "qdrant-client",
  "r2d2",
+ "rand",
  "redis 0.23.3",
  "regex",
  "reqwest",
