@@ -41,7 +41,7 @@ export default function Home() {
   });
 
   return (
-    <div class="bg-neutral-50 text-neutral-900 dark:bg-neutral-900 dark:text-neutral-50">
+    <div class="flex min-h-screen flex-col bg-neutral-50 text-neutral-900 dark:bg-neutral-900 dark:text-neutral-50">
       <div class="bg-gradient-radial-t from-magenta-400 p-4">
         <div class="flex items-center justify-between rounded-lg bg-neutral-50 px-4 py-3 shadow-md dark:bg-neutral-800 lg:m-auto lg:max-w-5xl">
           <div class="flex items-center">
@@ -108,6 +108,7 @@ export default function Home() {
           />
         </div>
       </div>
+      <div class="flex-1" />
       <footer class="mt-14 flex flex-col items-center bg-gradient-radial-b from-magenta pb-4 pt-20">
         <div class="flex items-center">
           <img
