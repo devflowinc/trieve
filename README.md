@@ -60,13 +60,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
 
 `rustup default nightly`
 
-### Make admin account
-
-Use [vault-client](https://github.com/arguflow/vault-client) to make an account. Get its uuid and set `ADMIN_UUID` to equal it in your .env
-
 ### Install python requirements
 
-`pip install -r ./vault-python/requirements.txt`
+`pip install -r ./server/vault-python/requirements.txt`
 
 ## How to debug diesel by getting the exact generated SQL
 
@@ -76,7 +72,7 @@ diesel::debug*query::<diesel::pg::Pg, *>(&query);
 
 1. `virtualenv venv`
 2. `source venv/bin/activate`
-3. `pip install -r ./vault-python/requirements.txt`
+3. `pip install -r ./server/vault-python/requirements.txt`
 
 ## How to get Rust debug level logs
 
