@@ -161,16 +161,20 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::delete().to(handlers::auth_handler::logout))
                             .route(web::get().to(handlers::auth_handler::get_me)),
                     )
-                    .service(web::resource("/password/{email}").route(
-                        web::get().to(
-                            handlers::password_reset_handler::send_password_reset_email_handler,
-                        ),
-                    ))
                     .service(
-                        web::resource("/password").route(
-                            web::post()
-                                .to(handlers::password_reset_handler::reset_user_password_handler),
-                        ),
+                        web::scope("/password")
+                            .service(
+                                web::resource("").route(
+                                    web::post()
+                                        .to(handlers::password_reset_handler::reset_user_password_handler),
+                                )
+                            )
+                            .service(web::resource("/{email}").route(
+                                web::get().to(
+                                    handlers::password_reset_handler::send_password_reset_email_handler,
+                                ),
+                            ),
+                            ),
                     )
                     .service(
                         web::resource("/topic")
@@ -198,45 +202,51 @@ pub async fn main() -> std::io::Result<()> {
                         ),
                     )
                     .service(
-                        web::resource("/card")
-                            .route(web::post().to(handlers::card_handler::create_card)),
+                        web::scope("/card")
+                            .service(
+                                web::resource("")
+                                    .route(web::post().to(handlers::card_handler::create_card)),
+                            )
+                            .service(
+                                web::resource("/update")
+                                    .route(web::put().to(handlers::card_handler::update_card)),
+                            )
+                            .service(
+                                web::resource("/count")
+                                    .route(web::get().to(handlers::card_handler::get_total_card_count)),
+                            )
+                            .service(
+                                web::resource("/cut")
+                                    .route(web::post().to(handlers::message_handler::create_cut_card_handler)),
+                            )
+                            .service(
+                                web::resource("/search/")
+                                    .route(web::post().to(handlers::card_handler::search_card)),
+                            )
+                            .service(
+                                web::resource("/search/{page}")
+                                    .route(web::post().to(handlers::card_handler::search_card)),
+                            )
+                            .service(
+                                web::resource("/fulltextsearch/{page}")
+                                    .route(web::post().to(handlers::card_handler::search_full_text_card)),
+                            )
+                            .service(
+                                web::resource("/{card_id}")
+                                    .route(web::get().to(handlers::card_handler::get_card_by_id))
+                                    .route(web::delete().to(handlers::card_handler::delete_card)),
+                            ),
                     )
                     .service(
-                        web::resource("/card/update")
-                            .route(web::put().to(handlers::card_handler::update_card)),
-                    )
-                    .service(
-                        web::resource("/card/count")
-                            .route(web::get().to(handlers::card_handler::get_total_card_count)),
-                    )
-                    .service(
-                        web::resource("/card/cut")
-                            .route(web::post().to(handlers::message_handler::create_cut_card_handler)),
-                    )
-                    .service(
-                        web::resource("/card/search/")
-                            .route(web::post().to(handlers::card_handler::search_card)),
-                    )
-                    .service(
-                        web::resource("/card/search/{page}")
-                            .route(web::post().to(handlers::card_handler::search_card)),
-                    )
-                    .service(
-                        web::resource("/card/fulltextsearch/{page}")
-                            .route(web::post().to(handlers::card_handler::search_full_text_card)),
-                    )
-                    .service(
-                        web::resource("/card/{card_id}")
-                            .route(web::get().to(handlers::card_handler::get_card_by_id))
-                            .route(web::delete().to(handlers::card_handler::delete_card)),
-                    )
-                    .service(
-                        web::resource("/vote")
-                            .route(web::post().to(handlers::vote_handler::create_vote)),
-                    )
-                    .service(
-                        web::resource("/vote/{card_metadata_id}")
-                            .route(web::delete().to(handlers::vote_handler::delete_vote)),
+                        web::scope("/vote")
+                            .service(
+                                web::resource("")
+                                    .route(web::post().to(handlers::vote_handler::create_vote)),
+                            )
+                            .service(
+                                web::resource("/{card_metadata_id}")
+                                    .route(web::delete().to(handlers::vote_handler::delete_vote)),
+                            ),
                     )
                     .service(
                         web::scope("/stripe")
@@ -273,22 +283,25 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::get().to(handlers::card_handler::get_most_recent_cards)),
                     )
                     .service(
-                        web::resource("/user/files/{user_id}")
-                            .route(web::get().to(handlers::file_handler::get_user_files_handler)),
-                    )
-                    .service(
-                        web::resource("/user/collections/{user_id}/{page}").route(
-                            web::get().to(
-                                handlers::collection_handler::get_specific_user_card_collections,
+                        web::scope("/user")
+                            .service(
+                                web::resource("")
+                                    .route(web::put().to(handlers::user_handler::update_user)),
+                            )
+                            .service(web::resource("/{user_id}/{page}")
+                                .route(web::get().to(handlers::user_handler::get_user_with_votes_and_cards_by_id)),
+                            )
+                            .service(
+                                web::resource("/files/{user_id}")
+                                    .route(web::get().to(handlers::file_handler::get_user_files_handler)),
+                            )
+                            .service(
+                                web::resource("/collections/{user_id}/{page}").route(
+                                    web::get().to(
+                                        handlers::collection_handler::get_specific_user_card_collections,
+                                    ),
+                                ),
                             ),
-                        ),
-                    )
-                    .service(web::resource("/user/{user_id}/{page}").route(
-                        web::get().to(handlers::user_handler::get_user_with_votes_and_cards_by_id),
-                    ))
-                    .service(
-                        web::resource("/user")
-                            .route(web::put().to(handlers::user_handler::update_user)),
                     )
                     .service(
                         web::scope("/card_collection")
@@ -350,22 +363,28 @@ pub async fn main() -> std::io::Result<()> {
                         ),
                     )
                     .service(
-                        web::resource("/file")
-                            .route(web::put().to(handlers::file_handler::update_file_handler))
-                            .route(web::post().to(handlers::file_handler::upload_file_handler)),
+                        web::scope("/file")
+                            .service(
+                                web::resource("")
+                                    .route(web::put().to(handlers::file_handler::update_file_handler))
+                                    .route(web::post().to(handlers::file_handler::upload_file_handler)),
+                            )
+                            .service(
+                                web::resource("/{file_id}")
+                                    .route(web::get().to(handlers::file_handler::get_file_handler))
+                                    .route(web::delete().to(handlers::file_handler::delete_file_handler)),
+                            ),
                     )
                     .service(
-                        web::resource("/file/{file_id}")
-                            .route(web::get().to(handlers::file_handler::get_file_handler))
-                            .route(web::delete().to(handlers::file_handler::delete_file_handler)),
-                    )
-                    .service(web::resource("/notifications").route(
-                        web::put().to(handlers::notification_handler::mark_notification_as_read),
-                    ))
-                    .service(
-                        web::resource("/notifications/{page}").route(
-                            web::get().to(handlers::notification_handler::get_notifications),
-                        ),
+                        web::scope("/notifications")
+                            .service(web::resource("").route(
+                                web::put().to(handlers::notification_handler::mark_notification_as_read),
+                            ))
+                            .service(
+                                web::resource("/{page}").route(
+                                    web::get().to(handlers::notification_handler::get_notifications),
+                                ),
+                            ),
                     )
                     .service(
                         web::resource("/notifications_readall")
