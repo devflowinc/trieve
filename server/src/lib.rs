@@ -238,32 +238,6 @@ pub async fn main() -> std::io::Result<()> {
                         web::resource("/vote/{card_metadata_id}")
                             .route(web::delete().to(handlers::vote_handler::delete_vote)),
                     )
-                    // .service(
-                    //     web::scope("/stripe")
-                    //         .service(
-                    //             web::resource("/plan")
-                    //                 .route(
-                    //                     web::get().to(handlers::stripe_handler::get_subscription),
-                    //                 )
-                    //                 .route(
-                    //                     web::delete()
-                    //                         .to(handlers::stripe_handler::cancel_subscription),
-                    //                 )
-                    //                 .route(web::put().to(handlers::stripe_handler::change_plan)),
-                    //         )
-                    //         .service(
-                    //             web::resource("/webhook").route(
-                    //                 web::post().to(handlers::stripe_handler::stripe_webhook),
-                    //             ),
-                    //         )
-                    //         .service(
-                    //             web::resource("/{plan_id}").route(
-                    //                 web::get().to(
-                    //                     handlers::stripe_handler::create_stripe_checkout_session,
-                    //                 ),
-                    //             ),
-                    //         ),
-                    // )
                     .service(
                         web::resource("/top_users/{page}")
                             .route(web::get().to(handlers::user_handler::get_top_users)),
