@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     data::models::{Invitation, Pool, SlimUser, User},
     errors::DefaultError,
-    operators::stripe_customer_operator::create_stripe_customer_query,
+    // operators::stripe_customer_operator::create_stripe_customer_query,
 };
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -43,7 +43,7 @@ pub async fn register_user(
     let password = password_data_inner.password;
     let password_confirmation = password_data_inner.password_confirmation;
     let invitation_id = invitation_id.into_inner();
-    let db_pool_two = pool.clone();
+    // let db_pool_two = pool.clone();
 
     if password.len() < 8 {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
@@ -61,9 +61,9 @@ pub async fn register_user(
 
     match user {
         Ok(user) => {
-            let user_clone = user.clone();
-            let _ =
-                create_stripe_customer_query(Some(user_clone.email.as_str()), db_pool_two).await;
+            // let user_clone = user.clone();
+            // let _ =
+            //     create_stripe_customer_query(Some(user_clone.email.as_str()), db_pool_two).await;
             Ok(HttpResponse::Ok().json(&user))
         }
         Err(e) => Ok(HttpResponse::BadRequest().json(e)),
