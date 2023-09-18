@@ -19,7 +19,7 @@ assignees: ''
 
 <please describe what is required to close this issue here>
 
-### Community 
+### Community channels
 
 Matrix is preferred. Reach out on discord or Matrix for further assistance. 
 
