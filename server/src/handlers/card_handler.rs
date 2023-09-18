@@ -103,7 +103,8 @@ pub async fn create_card(
     let pool1 = pool.clone();
     let pool2 = pool.clone();
     let pool3 = pool.clone();
-
+ 
+    env!("REDIS_URL","REDIS_URL is not present.")
     let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
     let client = redis::Client::open(redis_url)
         .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
@@ -114,20 +115,25 @@ pub async fn create_card(
     let content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
     // Card content can be at least 470 characters long
 
+    env!("MINIMUM_CARD_CHAR_LENGTH","MINIMUM_CARD_CHAR_LENGTH is not present.")
     let minimum_card_char_len = std::env::var("MINIMUM_CARD_CHAR_LENGTH")
         .unwrap_or("0".to_string())
         .parse::<usize>()
         .unwrap_or(0);
 
+    env!("MAXIMUM_CARD_CHAR_LENGTH","MAXIMUM_CARD_CHAR_LENGTH is not present.")
     let maximum_card_char_len = std::env::var("MAXIMUM_CARD_CHAR_LENGTH")
         .unwrap_or("29000".to_string())
         .parse::<usize>()
         .unwrap_or(29000);
 
+    env!("MINIMUM_CARD_WORD_LENGTH","MINIMUM_CARD_WORD_LENGTH is not present.")
     let minimum_card_word_len = std::env::var("MINIMUM_CARD_WORD_LENGTH")
         .unwrap_or("70".to_string())
         .parse::<usize>()
         .unwrap_or(70);
+
+    env!("MAXIMUM_CARD_WORD_LENGTH","MAXIMUM_CARD_WORD_LENGTH is not present.")    
     let maximum_card_word_len = std::env::var("MAXIMUM_CARD_WORD_LENGTH")
         .unwrap_or("5000".to_string())
         .parse::<usize>()
@@ -422,6 +428,7 @@ pub async fn delete_card(
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
+    env!("QDRANT_COLLECTION","QDRANT_COLLECTION is not present.")  
     let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
     qdrant
         .delete_points_blocking(qdrant_collection, &deleted_values, None)

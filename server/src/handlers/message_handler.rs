@@ -290,6 +290,7 @@ pub async fn stream_response(
         .map(|message| ChatMessage::from(message.clone()))
         .collect();
 
+    env!("OPENAI_API_KEY","OPENAI_API_KEY is not present.") 
     let open_ai_api_key = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
     let client = Client::new(open_ai_api_key);
     let next_message_order = move || {
