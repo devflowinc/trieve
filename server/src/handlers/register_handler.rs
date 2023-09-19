@@ -16,11 +16,11 @@ pub struct SetPasswordData {
     pub password_confirmation: String,
 }
 
-env!("SECRET_KEY","SECRET_KEY is not present.");
+
 pub static SECRET_KEY: Lazy<String> =
     Lazy::new(|| std::env::var("SECRET_KEY").unwrap_or_else(|_| "0123".repeat(16)));
 
-env!("SALT","SALT is not present.");
+
 pub static SALT: Lazy<String> =
     Lazy::new(|| std::env::var("SALT").unwrap_or_else(|_| "supersecuresalt".to_string()));
 

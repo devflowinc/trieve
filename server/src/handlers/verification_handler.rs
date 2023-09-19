@@ -20,8 +20,7 @@ pub async fn verify_card_content(
 ) -> Result<HttpResponse, actix_web::Error> {
     // Try naive html get first then use the headless browser approach
     let data = data.into_inner();
-    env!("REDIS_URL","REDIS_URL is not present.");
-    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
+    let redis_url = env!("REDIS_URL","REDIS_URL is not present.");
     let client = redis::Client::open(redis_url)
         .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
     let mut con = client

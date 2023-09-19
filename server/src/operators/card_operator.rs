@@ -34,10 +34,8 @@ use qdrant_client::{
 use serde::{Deserialize, Serialize};
 
 pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
-    env!("QDRANT_URL","QDRANT_URL is not present.");
-    env!("QDRANT_API_KEY","QDRANT_API_KEY is not present.");
-    let qdrant_url = std::env::var("QDRANT_URL").expect("QDRANT_URL must be set");
-    let qdrant_api_key = std::env::var("QDRANT_API_KEY").expect("QDRANT_API_KEY must be set");
+    let qdrant_url = env!("QDRANT_URL","QDRANT_URL is not present.");
+    let qdrant_api_key = env!("QDRANT_API_KEY","QDRANT_API_KEY is not present.");
     let mut config = QdrantClientConfig::from_url(qdrant_url.as_str());
     config.api_key = Some(qdrant_api_key);
     QdrantClient::new(Some(config)).map_err(|_err| DefaultError {

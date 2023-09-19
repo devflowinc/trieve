@@ -46,16 +46,14 @@ pub async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    env!("ALERT_EMAIL","MY_ENV_VAR is not present.");
-    if std::env::var("ALERT_EMAIL").is_err() {
+    if option_env!("ALERT_EMAIL").is_none() {
         log::warn!("ALERT_EMAIL not set, this might be useful during health checks");
     }
-     
-    env!("DATABASE_URL","DATABASE_URL is not present.");
-    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
-    env!("REDIS_URL","REDIS_URL is not present.");
-    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
+   let database_url = env!("DATABASE_URL","DATABASE_URL is not present.");
+
+
+    let redis_url = env!("REDIS_URL","REDIS_URL is not present.");
 
     // create db connection pool
     let manager = r2d2::ConnectionManager::<PgConnection>::new(database_url);
@@ -66,22 +64,19 @@ pub async fn main() -> std::io::Result<()> {
     let app_mutex_store = web::Data::new(AppMutexStore {
         libreoffice: Mutex::new(()),
         embedding_semaphore: Semaphore::new(
-            env!("EMBEDDING_SEMAPHORE_SIZE","EMBEDDING_SEMAPHORE_SIZE is not present.");
-            std::env::var("EMBEDDING_SEMAPHORE_SIZE")
+                env!("EMBEDDING_SEMAPHORE_SIZE","EMBEDDING_SEMAPHORE_SIZE is not present.");
                 .unwrap_or_else(|_| "10".to_string())
                 .parse()
-                .expect("Failed to parse EMBEDDING_SEMAPHORE_SIZE"),
         ),
     });
 
     let redis_store = RedisSessionStore::new(redis_url.as_str()).await.unwrap();
 
     let qdrant_client = get_qdrant_connection().await.unwrap();
-    env!("QDRANT_COLLECTION","QDRANT_COLLECTION is not present.");
-    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
+    let qdrant_collection = env!("QDRANT_COLLECTION","QDRANT_COLLECTION is not present.").to_owned();
 
-    env!("EMBEDDING_SIZE","EMBEDDING_SIZE is not present.");
-    let embedding_size = std::env::var("EMBEDDING_SIZE").unwrap_or("1536".to_owned());
+
+    let embedding_size = env!("EMBEDDING_SIZE","EMBEDDING_SIZE is not present.").to_owned();
     let embedding_size = embedding_size.parse::<u64>().unwrap_or(1536);
     log::info!(
         "Qdrant collection: {} size {}",
@@ -113,7 +108,6 @@ pub async fn main() -> std::io::Result<()> {
 
     log::info!("starting HTTP server at http://localhost:8090");
 
-    env!("COOKIE_SECURE","COOKIE_SECURE is not present.");
     HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_origin()
@@ -142,12 +136,12 @@ pub async fn main() -> std::io::Result<()> {
                     PersistentSession::default().session_ttl(time::Duration::days(1)),
                 )
                 .cookie_name("vault".to_owned())
-                .cookie_same_site(if std::env::var("COOKIE_SECURE").unwrap_or("false".to_owned()) == "true" {
+                .cookie_same_site(if env!("COOKIE_SECURE","COOKIE_SECURE is not present.") == "true" {
                     SameSite::None
                 } else {
                     SameSite::Lax
                 })
-                .cookie_secure(std::env::var("COOKIE_SECURE").unwrap_or("false".to_owned()) == "true")
+                .cookie_secure(env!("COOKIE_SECURE","COOKIE_SECURE is not present.") == "true")
                 .cookie_path("/".to_owned())
                 .build(),
             )

@@ -104,8 +104,8 @@ pub async fn create_card(
     let pool2 = pool.clone();
     let pool3 = pool.clone();
  
-    env!("REDIS_URL","REDIS_URL is not present.");
-    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
+    
+    let redis_url = env!("REDIS_URL","REDIS_URL is not present.");
     let client = redis::Client::open(redis_url)
         .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
     let mut con = client
@@ -428,8 +428,7 @@ pub async fn delete_card(
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    env!("QDRANT_COLLECTION","QDRANT_COLLECTION is not present.");
-    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
+    let qdrant_collection = env!("QDRANT_COLLECTION","QDRANT_COLLECTION is not present.").to_owned();
     qdrant
         .delete_points_blocking(qdrant_collection, &deleted_values, None)
         .await
