@@ -34,9 +34,9 @@ use qdrant_client::{
 use serde::{Deserialize, Serialize};
 
 pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
-    let qdrant_url = std::env::var("QDRANT_URL").expect("QDRANT_URL must be set");
-    let qdrant_api_key = std::env::var("QDRANT_API_KEY").expect("QDRANT_API_KEY must be set");
-    let mut config = QdrantClientConfig::from_url(qdrant_url.as_str());
+    let qdrant_url = env!("QDRANT_URL", "QDRANT_URL should be set");
+    let qdrant_api_key = env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set").into();
+    let mut config = QdrantClientConfig::from_url(qdrant_url);
     config.api_key = Some(qdrant_api_key);
     QdrantClient::new(Some(config)).map_err(|_err| DefaultError {
         message: "Failed to connect to Qdrant",
@@ -76,7 +76,7 @@ pub struct CustomServerResponse {
 }
 
 pub async fn create_openai_embedding(message: &str) -> Result<Vec<f32>, actix_web::Error> {
-    let open_ai_api_key = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
+    let open_ai_api_key = env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let client = Client::new(open_ai_api_key);
 
     // Vectorize
@@ -97,8 +97,10 @@ pub async fn create_openai_embedding(message: &str) -> Result<Vec<f32>, actix_we
 }
 
 pub async fn create_server_embedding(message: &str) -> Result<Vec<f32>, actix_web::Error> {
-    let embedding_server_call =
-        std::env::var("EMBEDDING_SERVER_CALL").expect("EMBEDDING_SERVER_CALL must be set");
+    let embedding_server_call = env!(
+        "EMBEDDING_SERVER_CALL",
+        "EMBEDDING_SERVER_CALL should be set"
+    );
 
     let client = reqwest::Client::new();
     let resp = client
