@@ -22,7 +22,8 @@ use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;
 use diesel::sql_types::{Bool, Double};
 use diesel::{
-    BoolExpressionMethods, Connection, JoinOnDsl, NullableExpressionMethods, SelectableHelper,
+    BoolExpressionMethods, Connection, JoinOnDsl, NullableExpressionMethods,
+    PgTextExpressionMethods, SelectableHelper,
 };
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 
@@ -199,17 +200,17 @@ pub async fn search_card_query(
     let tag_set_inner = tag_set.unwrap_or_default();
     let link_inner = link.unwrap_or_default();
     if let Some(tag) = tag_set_inner.get(0) {
-        query = query.filter(card_metadata_columns::tag_set.like(format!("%{}%", tag)));
+        query = query.filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
     }
     for tag in tag_set_inner.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::tag_set.like(format!("%{}%", tag)));
+        query = query.or_filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
     }
 
     if let Some(link_inner) = link_inner.get(0) {
-        query = query.filter(card_metadata_columns::link.like(format!("%{}%", link_inner)));
+        query = query.filter(card_metadata_columns::link.ilike(format!("%{}%", link_inner)));
     }
     for link_url in link_inner.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
+        query = query.or_filter(card_metadata_columns::link.ilike(format!("%{}%", link_url)));
     }
 
     if let Some(serde_json::Value::Object(obj)) = &filters {
@@ -221,7 +222,7 @@ pub async fn search_card_query(
                             if let Some(string_val) = first_val.as_str() {
                                 query = query.filter(
                                     sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                                        .like(format!("%{}%", string_val)),
+                                        .ilike(format!("%{}%", string_val)),
                                 );
                             }
                         }
@@ -230,7 +231,7 @@ pub async fn search_card_query(
                             if let Some(string_val) = item.as_str() {
                                 query = query.or_filter(
                                     sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                                        .like(format!("%{}%", string_val)),
+                                        .ilike(format!("%{}%", string_val)),
                                 );
                             }
                         }
@@ -238,7 +239,7 @@ pub async fn search_card_query(
                     serde_json::Value::String(string_val) => {
                         query = query.filter(
                             sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                                .like(format!("%{}%", string_val)),
+                                .ilike(format!("%{}%", string_val)),
                         );
                     }
                     _ => (),
@@ -387,17 +388,17 @@ pub async fn search_card_collections_query(
     let link_inner = link.unwrap_or_default();
 
     if let Some(tag) = tag_set_inner.get(0) {
-        query = query.filter(card_metadata_columns::tag_set.like(format!("%{}%", tag)));
+        query = query.filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
     }
     for tag in tag_set_inner.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::tag_set.like(format!("%{}%", tag)));
+        query = query.or_filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
     }
 
     if let Some(link_inner) = link_inner.get(0) {
-        query = query.filter(card_metadata_columns::link.like(format!("%{}%", link_inner)));
+        query = query.filter(card_metadata_columns::link.ilike(format!("%{}%", link_inner)));
     }
     for link_url in link_inner.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
+        query = query.or_filter(card_metadata_columns::link.ilike(format!("%{}%", link_url)));
     }
 
     if let Some(serde_json::Value::Object(obj)) = &filters {
@@ -409,7 +410,7 @@ pub async fn search_card_collections_query(
                             if let Some(string_val) = first_val.as_str() {
                                 query = query.filter(
                                     sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                                        .like(format!("%{}%", string_val)),
+                                        .ilike(format!("%{}%", string_val)),
                                 );
                             }
                         }
@@ -418,7 +419,7 @@ pub async fn search_card_collections_query(
                             if let Some(string_val) = item.as_str() {
                                 query = query.or_filter(
                                     sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                                        .like(format!("%{}%", string_val)),
+                                        .ilike(format!("%{}%", string_val)),
                                 );
                             }
                         }
@@ -426,7 +427,7 @@ pub async fn search_card_collections_query(
                     serde_json::Value::String(string_val) => {
                         query = query.filter(
                             sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                                .like(format!("%{}%", string_val)),
+                                .ilike(format!("%{}%", string_val)),
                         );
                     }
                     _ => (),
@@ -756,20 +757,20 @@ pub fn search_full_text_card_query(
     let link_inner = link.unwrap_or_default();
     if !tag_set_inner.is_empty() {
         query = query.filter(
-            card_metadata_columns::tag_set.like(format!("%{}%", tag_set_inner.get(0).unwrap())),
+            card_metadata_columns::tag_set.ilike(format!("%{}%", tag_set_inner.get(0).unwrap())),
         );
     }
 
     for tag in tag_set_inner.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::tag_set.like(format!("%{}%", tag)));
+        query = query.or_filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
     }
 
     if !link_inner.is_empty() {
         query = query
-            .filter(card_metadata_columns::link.like(format!("%{}%", link_inner.get(0).unwrap())));
+            .filter(card_metadata_columns::link.ilike(format!("%{}%", link_inner.get(0).unwrap())));
     }
     for link_url in link_inner.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
+        query = query.or_filter(card_metadata_columns::link.ilike(format!("%{}%", link_url)));
     }
 
     if let serde_json::Value::Object(obj) = &filters.unwrap() {
@@ -779,19 +780,19 @@ pub fn search_full_text_card_query(
                 serde_json::Value::Array(arr) => {
                     query = query.filter(
                         sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                            .like(format!("%{}%", arr.get(0).unwrap().as_str().unwrap())),
+                            .ilike(format!("%{}%", arr.get(0).unwrap().as_str().unwrap())),
                     );
                     for item in arr.iter().skip(1) {
                         query = query.or_filter(
                             sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                                .like(format!("%{}%", item.as_str().unwrap())),
+                                .ilike(format!("%{}%", item.as_str().unwrap())),
                         );
                     }
                 }
                 _ => {
                     query = query.filter(
                         sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                            .like(format!("%{}%", value.as_str().unwrap())),
+                            .ilike(format!("%{}%", value.as_str().unwrap())),
                     );
                 }
             }
@@ -948,17 +949,17 @@ pub fn search_full_text_collection_query(
     let link_inner = link.unwrap_or_default();
 
     if let Some(tag) = tag_set_inner.get(0) {
-        query = query.filter(card_metadata_columns::tag_set.like(format!("%{}%", tag)));
+        query = query.filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
     }
     for tag in tag_set_inner.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::tag_set.like(format!("%{}%", tag)));
+        query = query.or_filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
     }
 
     if let Some(link_inner) = link_inner.get(0) {
-        query = query.filter(card_metadata_columns::link.like(format!("%{}%", link_inner)));
+        query = query.filter(card_metadata_columns::link.ilike(format!("%{}%", link_inner)));
     }
     for link_url in link_inner.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::link.like(format!("%{}%", link_url)));
+        query = query.or_filter(card_metadata_columns::link.ilike(format!("%{}%", link_url)));
     }
 
     if let Some(serde_json::Value::Object(obj)) = &filters {
@@ -970,7 +971,7 @@ pub fn search_full_text_collection_query(
                             if let Some(string_val) = first_val.as_str() {
                                 query = query.filter(
                                     sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                                        .like(format!("%{}%", string_val)),
+                                        .ilike(format!("%{}%", string_val)),
                                 );
                             }
                         }
@@ -979,7 +980,7 @@ pub fn search_full_text_collection_query(
                             if let Some(string_val) = item.as_str() {
                                 query = query.or_filter(
                                     sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                                        .like(format!("%{}%", string_val)),
+                                        .ilike(format!("%{}%", string_val)),
                                 );
                             }
                         }
@@ -987,7 +988,7 @@ pub fn search_full_text_collection_query(
                     serde_json::Value::String(string_val) => {
                         query = query.filter(
                             sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                                .like(format!("%{}%", string_val)),
+                                .ilike(format!("%{}%", string_val)),
                         );
                     }
                     _ => (),
