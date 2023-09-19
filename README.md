@@ -93,12 +93,12 @@ cp ./server/.env.dist ./server/.env
 ### Start docker container services needed for local dev
 
 ```
-./convenience -l
+./convenience.sh -l
 ```
 
 ### Start services for local dev
 
-We know this is bad. Currently, We recommend managing this through tmuux. 
+We know this is bad. Currently, We recommend managing this through tmux. 
 
 ```
 cd server
