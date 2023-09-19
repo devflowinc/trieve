@@ -2,5 +2,10 @@
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter"
   },
-  "python.formatting.provider": "none"
+  "files.associations": {
+    "chat/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}": "./chat/.eslintrc.json",
+    "search/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}": "./search/.eslintrc.json",
+    "chat/**/*": "./chat/tsconfig.json",
+    "search/**/*": "./search/tsconfig.json"
+  }
 }
