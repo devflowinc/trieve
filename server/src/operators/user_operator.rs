@@ -464,6 +464,30 @@ pub fn set_user_api_key_query(
             message: "Failed to set api key",
         })?;
 
-
     Ok(raw_api_key)
+}
+
+pub fn get_user_from_api_key_query(
+    api_key: &String,
+    pool: &web::Data<Pool>,
+) -> Result<SlimUser, DefaultError> {
+    use crate::data::schema::users::dsl as users_columns;
+
+    let api_key_hash = hash_password(api_key)?;
+
+    let mut conn = pool.get().unwrap();
+
+    let user: Option<User> = users_columns::users
+        .filter(users_columns::api_key_hash.eq(api_key_hash))
+        .first::<User>(&mut conn)
+        .optional()
+        .map_err(|_| DefaultError {
+            message: "Error loading user",
+        })?;
+    match user {
+        Some(user) => Ok(SlimUser::from(user)),
+        None => Err(DefaultError {
+            message: "User not found",
+        }),
+    }
 }

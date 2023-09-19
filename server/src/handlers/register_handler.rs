@@ -119,11 +119,13 @@ fn insert_user_from_invitation(
 
 pub fn generate_api_key() -> String {
     let rng = rand::thread_rng();
-    let api_key: String = rng
-        .sample_iter(&Alphanumeric)
-        .take(32)
-        .map(char::from)
-        .collect();
+    let api_key: String = format!(
+        "af-{}",
+        rng.sample_iter(&Alphanumeric)
+            .take(32)
+            .map(char::from)
+            .collect::<String>()
+    );
 
     api_key
 }

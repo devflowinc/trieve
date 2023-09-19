@@ -10,7 +10,10 @@ use serde::Deserialize;
 use crate::{
     data::models::{Pool, SlimUser, User},
     errors::{DefaultError, ServiceError},
-    operators::{self, user_operator::get_user_by_id_query},
+    operators::{
+        self,
+        user_operator::{get_user_by_id_query, get_user_from_api_key_query},
+    },
     AppMutexStore,
 };
 
@@ -35,6 +38,17 @@ impl FromRequest for LoggedUser {
             if let Ok(user_json) = identity.id() {
                 if let Ok(user) = serde_json::from_str(&user_json) {
                     return ready(Ok(user));
+                }
+            }
+        }
+
+        if let Some(authen_header) = req.headers().get("Authorization") {
+            if let Ok(authen_header) = authen_header.to_str() {
+                if let Some(pool) = req.app_data::<web::Data<Pool>>() {
+                    if let Ok(user) = get_user_from_api_key_query(&authen_header.to_string(), pool)
+                    {
+                        return ready(Ok(user));
+                    }
                 }
             }
         }
