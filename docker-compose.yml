@@ -152,6 +152,8 @@ services:
       - API_HOST=${API_HOST}
       - PUBLIC_HOST=${PUBLIC_SEARCH_URL}
       - PUBLIC_API_HOST=${API_HOST}
+      - PUBLIC_TAG_SET_ITEMS=${PUBLIC_TAG_SET_ITEMS}
+      - PUBLIC_LINK_ITEMS=${PUBLIC_LINK_ITEMS}
 
 networks:
   vault-network:

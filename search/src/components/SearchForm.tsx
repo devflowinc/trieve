@@ -16,104 +16,15 @@ import {
 import { FaSolidCheck } from "solid-icons/fa";
 import type { Filters } from "./ResultsPage";
 
-const filterDataTypeComboboxSections: ComboboxSection[] = [
-  {
-    name: "Data set",
-    comboboxItems: [
-      {
-        name: "2013OpenEv",
-      },
-      {
-        name: "2014OpenEv",
-      },
-      {
-        name: "2015OpenEv",
-      },
-      {
-        name: "2016OpenEv",
-      },
-      {
-        name: "2017OpenEv",
-      },
-      {
-        name: "2018OpenEv",
-      },
-      {
-        name: "2019OpenEv",
-      },
-      {
-        name: "2020OpenEv",
-      },
-      {
-        name: "2021OpenEv",
-      },
-      {
-        name: "2022OpenEv",
-      },
-      {
-        name: "hsld22-all-2023",
-      },
-      {
-        name: "hspf22-all-2023",
-      },
-      {
-        name: "hspolicy22-all-2023",
-      },
-      {
-        name: "ndtceda22-all-2023",
-      },
-      {
-        name: "nfald22-all-2023",
-      },
-    ],
-  },
-];
-const filterLinkComboboxSections: ComboboxSection[] = [
-  {
-    name: "Links",
-    comboboxItems: [
-      {
-        name: "reuters.com",
-      },
-      {
-        name: "bloomberg.com",
-      },
-      {
-        name: "jstor.org",
-      },
-      {
-        name: "tandfonline.com",
-      },
-      {
-        name: "theatlantic.com",
-      },
-      {
-        name: "theguardian.com",
-      },
-      {
-        name: "nytimes.com",
-      },
-      {
-        name: "foreignaffairs.com",
-      },
-      {
-        name: "heritage.org",
-      },
-      {
-        name: "brookings.edu",
-      },
-      {
-        name: "sagepub.com",
-      },
-      {
-        name: "ncbi.nlm.nih.com",
-      },
-      {
-        name: "businessinsider.com",
-      },
-    ],
-  },
-];
+const parseEnvData = (data: string | undefined): ComboboxItem[] => {
+  const names = data?.split(",");
+  if (!names) return [];
+  return names.map((name) => {
+    return {
+      name: name,
+    };
+  });
+};
 
 const SearchForm = (props: {
   query?: string;
@@ -121,6 +32,22 @@ const SearchForm = (props: {
   searchType: string;
   collectionID?: string;
 }) => {
+  const TAG_SET_ITEMS = parseEnvData(import.meta.env.PUBLIC_TAG_SET_ITEMS);
+  const LINKS_ITEMS = parseEnvData(import.meta.env.PUBLIC_LINK_ITEMS);
+
+  const filterDataTypeComboboxSections: ComboboxSection[] = [
+    {
+      name: "Tag Set",
+      comboboxItems: TAG_SET_ITEMS,
+    },
+  ];
+  const filterLinkComboboxSections: ComboboxSection[] = [
+    {
+      name: "Links",
+      comboboxItems: LINKS_ITEMS,
+    },
+  ];
+
   const [searchTypes, setSearchTypes] = createSignal([
     { name: "Full Text", isSelected: false, route: "fulltextsearch" },
     { name: "Semantic", isSelected: true, route: "search" },
