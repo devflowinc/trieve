@@ -43,7 +43,7 @@ export interface CardMetadataDisplayProps {
 const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
   const api_host = import.meta.env.PUBLIC_API_HOST as string;
   const similarityScoreThreshold =
-    (import.meta.env.SIMILARITY_SCORE_THRESHOLD as number | undefined) ?? 80;
+    (import.meta.env.PUBLIC_SIMILARITY_SCORE_THRESHOLD as number | undefined) ?? 80;
 
   const [expanded, setExpanded] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);

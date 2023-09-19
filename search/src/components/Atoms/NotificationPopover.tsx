@@ -21,7 +21,7 @@ import { SingleNotification } from "../Notification";
 export const NotificationPopover = (props: { user: UserDTO | null }) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const similarityScoreThreshold =
-    (import.meta.env.SIMILARITY_SCORE_THRESHOLD as number | undefined) ?? 80;
+    (import.meta.env.PUBLIC_SIMILARITY_SCORE_THRESHOLD as number | undefined) ?? 80;
 
   const [notifs, setNotifs] = createSignal<NotificationDTO[]>([]);
   const [page, setPage] = createSignal(1);
