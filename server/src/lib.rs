@@ -149,10 +149,12 @@ pub async fn main() -> std::io::Result<()> {
                 web::scope("/api")
                     .service(
                         web::resource("/invitation")
+                            .wrap(auth_middleware.clone())
                             .route(web::post().to(handlers::invitation_handler::post_invitation)),
                     )
                     .service(
                         web::resource("/register/{invitation_id}")
+                            .wrap(auth_middleware.clone())
                             .route(web::post().to(handlers::register_handler::register_user)),
                     )
                     .service(
@@ -178,6 +180,7 @@ pub async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::resource("/topic")
+                            .wrap(auth_middleware.clone())
                             .route(web::post().to(handlers::topic_handler::create_topic))
                             .route(web::delete().to(handlers::topic_handler::delete_topic))
                             .route(web::put().to(handlers::topic_handler::update_topic))
@@ -185,6 +188,7 @@ pub async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::resource("/message")
+                            .wrap(auth_middleware.clone())
                             .route(
                                 web::post().to(
                                     handlers::message_handler::create_message_completion_handler,
@@ -197,7 +201,8 @@ pub async fn main() -> std::io::Result<()> {
                             ),
                     )
                     .service(
-                        web::resource("/messages/{messages_topic_id}").route(
+                        web::resource("/messages/{messages_topic_id}")
+                        .wrap(auth_middleware.clone()).route(
                             web::get().to(handlers::message_handler::get_all_topic_messages),
                         ),
                     )
@@ -205,34 +210,42 @@ pub async fn main() -> std::io::Result<()> {
                         web::scope("/card")
                             .service(
                                 web::resource("")
+                                .wrap(auth_middleware.clone())
                                     .route(web::post().to(handlers::card_handler::create_card)),
                             )
                             .service(
                                 web::resource("/update")
+                                .wrap(auth_middleware.clone())
                                     .route(web::put().to(handlers::card_handler::update_card)),
                             )
                             .service(
                                 web::resource("/count")
+                                .wrap(auth_middleware.clone())
                                     .route(web::get().to(handlers::card_handler::get_total_card_count)),
                             )
                             .service(
                                 web::resource("/cut")
+                                .wrap(auth_middleware.clone())
                                     .route(web::post().to(handlers::message_handler::create_cut_card_handler)),
                             )
                             .service(
                                 web::resource("/search/")
+                                .wrap(auth_middleware.clone())
                                     .route(web::post().to(handlers::card_handler::search_card)),
                             )
                             .service(
                                 web::resource("/search/{page}")
+                                .wrap(auth_middleware.clone())
                                     .route(web::post().to(handlers::card_handler::search_card)),
                             )
                             .service(
                                 web::resource("/fulltextsearch/{page}")
+                                .wrap(auth_middleware.clone())
                                     .route(web::post().to(handlers::card_handler::search_full_text_card)),
                             )
                             .service(
                                 web::resource("/{card_id}")
+                                .wrap(auth_middleware.clone())
                                     .route(web::get().to(handlers::card_handler::get_card_by_id))
                                     .route(web::delete().to(handlers::card_handler::delete_card)),
                             ),
@@ -241,19 +254,23 @@ pub async fn main() -> std::io::Result<()> {
                         web::scope("/vote")
                             .service(
                                 web::resource("")
+                                .wrap(auth_middleware.clone())
                                     .route(web::post().to(handlers::vote_handler::create_vote)),
                             )
                             .service(
                                 web::resource("/{card_metadata_id}")
+                                .wrap(auth_middleware.clone())
                                     .route(web::delete().to(handlers::vote_handler::delete_vote)),
                             ),
                     )
                     .service(
                         web::resource("/top_users/{page}")
+                        .wrap(auth_middleware.clone())
                             .route(web::get().to(handlers::user_handler::get_top_users)),
                     )
                     .service(
                         web::resource("/recent_cards/{page}")
+                        .wrap(auth_middleware.clone())
                             .route(web::get().to(handlers::card_handler::get_most_recent_cards)),
                     )
                     .service(
@@ -285,6 +302,7 @@ pub async fn main() -> std::io::Result<()> {
                         web::scope("/card_collection")
                             .service(
                                 web::resource("")
+                                .wrap(auth_middleware.clone())
                                     .route(
                                         web::post().to(
                                             handlers::collection_handler::create_card_collection,
@@ -302,7 +320,8 @@ pub async fn main() -> std::io::Result<()> {
                                     ),
                             )
                             .service(
-                                web::resource("/bookmark").route(
+                                web::resource("/bookmark")
+                                .wrap(auth_middleware.clone()).route(
                                     web::post().to(
                                         handlers::collection_handler::get_collections_card_is_in,
                                     ),
@@ -310,6 +329,7 @@ pub async fn main() -> std::io::Result<()> {
                             )
                             .service(
                                 web::resource("/{page_or_card_collection_id}")
+                                .wrap(auth_middleware.clone())
                                     .route(
                                         web::post().to(handlers::collection_handler::add_bookmark),
                                     )
@@ -321,17 +341,20 @@ pub async fn main() -> std::io::Result<()> {
                                             .to(handlers::collection_handler::get_logged_in_user_card_collections)),
                             )
                             .service(
-                                web::resource("/search/{page}").route(
+                                web::resource("/search/{page}")
+                                .wrap(auth_middleware.clone()).route(
                                     web::post().to(handlers::card_handler::search_collections),
                                 ),
                             )
                             .service(
-                                web::resource("/fulltextsearch/{page}").route(
+                                web::resource("/fulltextsearch/{page}")
+                                .wrap(auth_middleware.clone()).route(
                                     web::post()
                                         .to(handlers::card_handler::search_full_text_collections),
                                 ),
                             )
-                            .service(web::resource("/{collection_id}/{page}").route(
+                            .service(web::resource("/{collection_id}/{page}")
+                            .wrap(auth_middleware.clone()).route(
                                 web::get().to(handlers::collection_handler::get_all_bookmarks),
                             )),
                     )
@@ -344,34 +367,40 @@ pub async fn main() -> std::io::Result<()> {
                         web::scope("/file")
                             .service(
                                 web::resource("")
+                                .wrap(auth_middleware.clone())
                                     .route(web::put().to(handlers::file_handler::update_file_handler))
                                     .route(web::post().to(handlers::file_handler::upload_file_handler)),
                             )
                             .service(
                                 web::resource("/{file_id}")
+                                .wrap(auth_middleware.clone())
                                     .route(web::get().to(handlers::file_handler::get_file_handler))
                                     .route(web::delete().to(handlers::file_handler::delete_file_handler)),
                             ),
                     )
                     .service(
                         web::scope("/notifications")
-                            .service(web::resource("").route(
+                            .service(web::resource("")
+                            .wrap(auth_middleware.clone()).route(
                                 web::put().to(handlers::notification_handler::mark_notification_as_read),
                             ))
                             .service(
-                                web::resource("/{page}").route(
+                                web::resource("/{page}")
+                                .wrap(auth_middleware.clone()).route(
                                     web::get().to(handlers::notification_handler::get_notifications),
                                 ),
                             ),
                     )
                     .service(
                         web::resource("/notifications_readall")
+                        .wrap(auth_middleware.clone())
                             .route(web::put().to(
                                 handlers::notification_handler::mark_all_notifications_as_read,
                             )),
                     )
                     .service(
-                        web::resource("/health").route(web::get().to(handlers::auth_handler::health_check)),
+                        web::resource("/health")
+                        .wrap(auth_middleware.clone()).route(web::get().to(handlers::auth_handler::health_check)),
                     ),
             )
     })
