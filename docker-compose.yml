@@ -118,6 +118,7 @@ services:
       - USE_EMBED_SERVER=${USE_EMBED_SERVER}
       - SECRET_KEY=${SECRET_KEY}
       - SALT=${SALT}
+      - SENDGRID_EMAIL_ADDRESS=${SENDGRID_EMAIL_ADDRESS}
     depends_on:
       - s3
       - qdrant-database
