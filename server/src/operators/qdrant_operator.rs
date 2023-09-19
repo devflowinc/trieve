@@ -27,7 +27,6 @@ pub async fn create_new_qdrant_point_query(
 
     let point = PointStruct::new(point_id.clone().to_string(), embedding_vector, payload);
 
-
     let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
     qdrant
         .upsert_points_blocking(qdrant_collection, vec![point], None)

@@ -311,7 +311,6 @@ pub async fn create_cards_with_handler(
     pool: web::Data<Pool>,
     mutex_store: web::Data<AppMutexStore>,
 ) -> Result<(), DefaultError> {
-    
     let parser_command = std::env::var("PARSER_COMMAND")
         .unwrap_or("./vault-nodejs/scripts/card_parser.js".to_string());
     let delete_html_file = || {

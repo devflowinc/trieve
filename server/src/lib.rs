@@ -64,19 +64,18 @@ pub async fn main() -> std::io::Result<()> {
     let app_mutex_store = web::Data::new(AppMutexStore {
         libreoffice: Mutex::new(()),
         embedding_semaphore: Semaphore::new(
-                env!("EMBEDDING_SEMAPHORE_SIZE","EMBEDDING_SEMAPHORE_SIZE is not present.");
+            std::env::var("EMBEDDING_SEMAPHORE_SIZE")
                 .unwrap_or_else(|_| "10".to_string())
                 .parse()
+                .expect("Failed to parse EMBEDDING_SEMAPHORE_SIZE"),
         ),
     });
 
     let redis_store = RedisSessionStore::new(redis_url.as_str()).await.unwrap();
 
     let qdrant_client = get_qdrant_connection().await.unwrap();
-    let qdrant_collection = env!("QDRANT_COLLECTION","QDRANT_COLLECTION is not present.").to_owned();
-
-
-    let embedding_size = env!("EMBEDDING_SIZE","EMBEDDING_SIZE is not present.").to_owned();
+    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
+    let embedding_size = std::env::var("EMBEDDING_SIZE").unwrap_or("1536".to_owned());
     let embedding_size = embedding_size.parse::<u64>().unwrap_or(1536);
     log::info!(
         "Qdrant collection: {} size {}",
@@ -136,12 +135,12 @@ pub async fn main() -> std::io::Result<()> {
                     PersistentSession::default().session_ttl(time::Duration::days(1)),
                 )
                 .cookie_name("vault".to_owned())
-                .cookie_same_site(if env!("COOKIE_SECURE","COOKIE_SECURE is not present.") == "true" {
+                .cookie_same_site(if std::env::var("COOKIE_SECURE").unwrap_or("false".to_owned()) == "true" {
                     SameSite::None
                 } else {
                     SameSite::Lax
                 })
-                .cookie_secure(env!("COOKIE_SECURE","COOKIE_SECURE is not present.") == "true")
+                .cookie_secure(std::env::var("COOKIE_SECURE").unwrap_or("false".to_owned()) == "true")
                 .cookie_path("/".to_owned())
                 .build(),
             )
