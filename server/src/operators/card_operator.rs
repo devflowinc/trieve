@@ -5,7 +5,6 @@ use crate::data::models::{
     CardVote, FullTextSearchResult, User, UserDTO,
 };
 use crate::data::schema;
-use crate::diesel::TextExpressionMethods;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::errors::ServiceError;
 use crate::operators::qdrant_operator::search_qdrant_query;
