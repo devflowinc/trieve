@@ -122,6 +122,7 @@ services:
       - WEBHOOK_SIGNING_SECRET=${WEBHOOK_SIGNING_SECRET}
       - SECRET_KEY=${SECRET_KEY}
       - SALT=${SALT}
+      - SENDGRID_EMAIL_ADDRESS=${SENDGRID_EMAIL_ADDRESS}
     depends_on:
       - s3
       - qdrant-database

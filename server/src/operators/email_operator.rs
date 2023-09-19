@@ -14,7 +14,7 @@ use sendgrid::v3::{Content, Email, Message, Personalization, Sender};
 //         invitation.expires_at.format("%I:%M %p %A, %-d %B, %C%y")
 //     );
 //     let sg_email_personalization = Personalization::new(Email::new(invitation.email.as_str()));
-//     let sg_email = Message::new(Email::new("no-reply@arguflow.com"))
+//     let sg_email = std::env::var("SENDGRID_EMAIL_ADDRESS").expect("SENDGRID_EMAIL_ADDRESS must be set");
 //         .set_subject("You have been invited to join Arguflow AI")
 //         .add_content(
 //             Content::new()
@@ -44,7 +44,7 @@ pub fn send_password_reset(
             .format("%I:%M %p %A, %-d %B, %C%y")
     );
     let sg_email_personalization = Personalization::new(Email::new(password_reset.email.as_str()));
-    let sg_email = Message::new(Email::new("no-reply@arguflow.com"))
+    let sg_email = std::env::var("SENDGRID_EMAIL_ADDRESS").expect("SENDGRID_EMAIL_ADDRESS must be set");
         .set_subject("Reset your Arguflow AI password")
         .add_content(
             Content::new()
@@ -65,7 +65,7 @@ pub fn send_health_check_error(email: String, error: String) -> Result<(), Defau
         error
     );
     let sg_email_personalization = Personalization::new(Email::new(email));
-    let sg_email = Message::new(Email::new("no-reply@arguflow.com"))
+    let sg_email = std::env::var("SENDGRID_EMAIL_ADDRESS").expect("SENDGRID_EMAIL_ADDRESS must be set");
         .set_subject("WARNING WARNING WARNING production is down WARNING WARING WARNING")
         .add_content(
             Content::new()
