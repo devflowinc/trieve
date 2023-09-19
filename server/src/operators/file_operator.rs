@@ -33,10 +33,10 @@ use super::collection_operator::create_collection_and_add_bookmarks_query;
 use super::notification_operator::add_collection_created_notification_query;
 
 pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
-    let s3_access_key = std::env::var("S3_ACCESS_KEY").expect("S3_ACCESS_KEY must be set");
-    let s3_secret_key = std::env::var("S3_SECRET_KEY").expect("S3_SECRET_KEY must be set");
-    let s3_endpoint = std::env::var("S3_ENDPOINT").expect("S3_ENDPOINT must be set");
-    let s3_bucket_name = std::env::var("S3_BUCKET").expect("S3_BUCKET must be set");
+    let s3_access_key = env!("S3_ACCESS_KEY", "S3_ACCESS_KEY should be set").into();
+    let s3_secret_key = env!("S3_SECRET_KEY", "S3_SECRET_KEY should be set").into();
+    let s3_endpoint = env!("S3_ENDPOINT", "S3_ENDPOINT should be set").into();
+    let s3_bucket_name = env!("S3_BUCKET", "S3_BUCKET should be set");
 
     let aws_region = Region::Custom {
         region: "".to_owned(),
@@ -51,7 +51,7 @@ pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
         expiration: None,
     };
 
-    let aws_bucket = Bucket::new(&s3_bucket_name, aws_region, aws_credentials)
+    let aws_bucket = Bucket::new(s3_bucket_name, aws_region, aws_credentials)
         .map_err(|_| DefaultError {
             message: "Could not create bucket",
         })?
@@ -199,16 +199,15 @@ pub async fn convert_doc_to_html_query(
                     });
                 }
 
-                let conversion_command_output = Command::new(
-                    std::env::var("LIBREOFFICE_PATH").expect("LIBREOFFICE_PATH must be set"),
-                )
-                .arg("--headless")
-                .arg("--convert-to")
-                .arg("html")
-                .arg("--outdir")
-                .arg("./tmp")
-                .arg(&temp_docx_file_path)
-                .output();
+                let conversion_command_output =
+                    Command::new(env!("LIBREOFFICE_PATH", "LIBREOFFICE_PATH should be set"))
+                        .arg("--headless")
+                        .arg("--convert-to")
+                        .arg("html")
+                        .arg("--outdir")
+                        .arg("./tmp")
+                        .arg(&temp_docx_file_path)
+                        .output();
 
                 drop(libreoffice_lock_result);
 

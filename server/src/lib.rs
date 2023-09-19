@@ -43,15 +43,15 @@ pub struct AppMutexStore {
 
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
-    dotenv::dotenv().ok();
+    dotenvy::dotenv().ok();
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     if std::env::var("ALERT_EMAIL").is_err() {
         log::warn!("ALERT_EMAIL not set, this might be useful during health checks");
     }
 
-    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
+    let database_url = env!("DATABASE_URL", "DATABASE_URL should be set");
+    let redis_url = env!("REDIS_URL", "REDIS_URL should be set");
 
     // create db connection pool
     let manager = r2d2::ConnectionManager::<PgConnection>::new(database_url);
@@ -69,7 +69,7 @@ pub async fn main() -> std::io::Result<()> {
         ),
     });
 
-    let redis_store = RedisSessionStore::new(redis_url.as_str()).await.unwrap();
+    let redis_store = RedisSessionStore::new(redis_url).await.unwrap();
 
     let qdrant_client = get_qdrant_connection().await.unwrap();
     let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());

@@ -104,7 +104,7 @@ pub async fn create_card(
     let pool2 = pool.clone();
     let pool3 = pool.clone();
 
-    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
+    let redis_url = env!("REDIS_URL", "REDIS_URL should be set");
     let client = redis::Client::open(redis_url)
         .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
     let mut con = client
@@ -127,6 +127,7 @@ pub async fn create_card(
         .unwrap_or("70".to_string())
         .parse::<usize>()
         .unwrap_or(70);
+
     let maximum_card_word_len = std::env::var("MAXIMUM_CARD_WORD_LENGTH")
         .unwrap_or("5000".to_string())
         .parse::<usize>()

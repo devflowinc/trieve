@@ -377,13 +377,13 @@ pub fn get_bookmarks_for_collection_query(
             .map_err(|_err| ServiceError::BadRequest("Error getting bookmarks".to_string()))?;
 
     if !bookmark_metadata.get(0).unwrap().2.is_public && current_user_id.is_none() {
-        return Err(ServiceError::Unauthorized)?;
+        Err(ServiceError::Unauthorized)?;
     }
 
     if !bookmark_metadata.get(0).unwrap().2.is_public
         && Some(bookmark_metadata.get(0).unwrap().2.author_id) != current_user_id
     {
-        return Err(ServiceError::Forbidden)?;
+        Err(ServiceError::Forbidden)?;
     }
     let converted_cards: Vec<FullTextSearchResult> = bookmark_metadata
         .iter()

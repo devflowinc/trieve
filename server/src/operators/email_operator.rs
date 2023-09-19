@@ -14,7 +14,7 @@ use sendgrid::v3::{Content, Email, Message, Personalization, Sender};
 //         invitation.expires_at.format("%I:%M %p %A, %-d %B, %C%y")
 //     );
 //     let sg_email_personalization = Personalization::new(Email::new(invitation.email.as_str()));
-//     let email_address = Email::new(std::env::var("SENDGRID_EMAIL_ADDRESS").expect("SENDGRID_EMAIL_ADDRESS must be set"));
+//     let email_address = Email::new(env!("SENDGRID_EMAIL_ADDRESS", "SENDGRID_EMAIL_ADDRESS should be set"));
 //     let sg_email = Message::new(email_address)
 //         .set_subject("You have been invited to join Arguflow AI")
 //         .add_content(
@@ -45,9 +45,10 @@ pub fn send_password_reset(
             .format("%I:%M %p %A, %-d %B, %C%y")
     );
     let sg_email_personalization = Personalization::new(Email::new(password_reset.email.as_str()));
-    let email_address = Email::new(
-        std::env::var("SENDGRID_EMAIL_ADDRESS").expect("SENDGRID_EMAIL_ADDRESS must be set"),
-    );
+    let email_address = Email::new(env!(
+        "SENDGRID_EMAIL_ADDRESS",
+        "SENDGRID_EMAIL_ADDRESS should be set"
+    ));
     let sg_email = Message::new(email_address)
         .set_subject("Reset your Arguflow AI password")
         .add_content(
@@ -69,9 +70,10 @@ pub fn send_health_check_error(email: String, error: String) -> Result<(), Defau
         error
     );
     let sg_email_personalization = Personalization::new(Email::new(email));
-    let email_address = Email::new(
-        std::env::var("SENDGRID_EMAIL_ADDRESS").expect("SENDGRID_EMAIL_ADDRESS must be set"),
-    );
+    let email_address = Email::new(env!(
+        "SENDGRID_EMAIL_ADDRESS",
+        "SENDGRID_EMAIL_ADDRESS should be set"
+    ));
     let sg_email = Message::new(email_address)
         .set_subject("WARNING WARNING WARNING production is down WARNING WARING WARNING")
         .add_content(
@@ -85,7 +87,7 @@ pub fn send_health_check_error(email: String, error: String) -> Result<(), Defau
 }
 
 fn send_email(sg_email: Message) -> Result<(), DefaultError> {
-    let sg_api_key = std::env::var("SENDGRID_API_KEY").expect("SENDGRID_API_KEY must be set");
+    let sg_api_key = env!("SENDGRID_API_KEY", "SENDGRID_API_KEY should be set").into();
     let sg_sender = Sender::new(sg_api_key);
     let sg_response = sg_sender.send(&sg_email);
     match sg_response {

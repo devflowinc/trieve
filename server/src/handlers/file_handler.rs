@@ -54,7 +54,7 @@ pub async fn upload_file_handler(
     let upload_file_data = data.into_inner();
     let pool_inner = pool.clone();
 
-    let valid_file_suffixes = vec!["docx", "doc", "odt", "pdf", "html"];
+    let valid_file_suffixes = ["docx", "doc", "odt", "pdf", "html"];
     let file_suffix = upload_file_data
         .file_name
         .split('.')
