@@ -58,9 +58,7 @@ pub async fn register_user(
         web::block(move || insert_user_from_invitation(invitation_id, password, pool)).await?;
 
     match user {
-        Ok(user) => {
-            Ok(HttpResponse::Ok().json(&user))
-        }
+        Ok(user) => Ok(HttpResponse::Ok().json(&user)),
         Err(e) => Ok(HttpResponse::BadRequest().json(e)),
     }
 }
