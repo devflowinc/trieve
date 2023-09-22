@@ -1,5 +1,5 @@
 import { BiRegularSearch, BiRegularX } from "solid-icons/bi";
-import { For, Show, createEffect, createSignal } from "solid-js";
+import { For, Show, createEffect, createSignal, onCleanup } from "solid-js";
 import {
   Combobox,
   ComboboxItem,
@@ -59,6 +59,7 @@ const SearchForm = (props: {
   // eslint-disable-next-line solid/reactivity
   const [textareaInput, setTextareaInput] = createSignal(props.query ?? "");
   const [typewriterEffect, setTypewriterEffect] = createSignal("");
+  const [textareaFocused, setTextareaFocused] = createSignal(false);
 
   const [filterDataTypes, setFilterDataTypes] = createSignal<ComboboxSection[]>(
     filterDataTypeComboboxSections,
@@ -125,10 +126,14 @@ const SearchForm = (props: {
     createSignal<ComboboxItem[]>(initialDataTypeFilters);
   const [selectedLinkComboboxItems, setLinkSelectedComboboxItems] =
     createSignal<ComboboxItem[]>(initialLinkFilters);
-  const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
+  const resizeTextarea = (
+    textarea: HTMLTextAreaElement | null,
+    avoidSetInput: bool | undefined,
+  ) => {
     if (!textarea) return;
 
     textarea.style.height = `${textarea.scrollHeight}px`;
+    if (avoidSetInput) return;
     setTextareaInput(textarea.value);
   };
 
@@ -181,9 +186,9 @@ const SearchForm = (props: {
   });
 
   createEffect(() => {
-    const curInput = textareaInput();
+    const shouldNotRun = textareaInput() || textareaFocused();
 
-    if (curInput) {
+    if (shouldNotRun) {
       return;
     }
 
@@ -195,6 +200,10 @@ const SearchForm = (props: {
     let currentTextIndex = 0;
     let currentCharIndex = 0;
     let isDeleting = false;
+
+    let timeoutRefOne = null;
+    let timeoutRefTwo = null;
+    let timeoutRefThree = null;
 
     const typeText = () => {
       const currentText = textArray[currentTextIndex];
@@ -209,18 +218,25 @@ const SearchForm = (props: {
 
       if (!isDeleting && currentCharIndex === currentText.length) {
         isDeleting = true;
-        setTimeout(typeText, 1000);
+        timeoutRefOne = setTimeout(typeText, 1000);
       } else if (isDeleting && currentCharIndex === 0) {
         isDeleting = false;
         currentTextIndex = (currentTextIndex + 1) % textArray.length;
-        setTimeout(typeText, typingSpeed);
+        timeoutRefTwo = setTimeout(typeText, typingSpeed);
       } else {
         const speed = isDeleting ? deleteSpeed : typingSpeed;
-        setTimeout(typeText, speed);
+        timeoutRefThree = setTimeout(typeText, speed);
       }
     };
 
     typeText();
+
+    onCleanup(() => {
+      console.log("cleaning up");
+      clearTimeout(timeoutRefOne);
+      clearTimeout(timeoutRefTwo);
+      clearTimeout(timeoutRefThree);
+    });
   });
 
   return (
@@ -234,9 +250,14 @@ const SearchForm = (props: {
               classList={{
                 "scrollbar-track-rounded-md scrollbar-thumb-rounded-md mr-2 h-fit max-h-[240px] w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600":
                   true,
-                "text-neutral-600": !textareaInput(),
+                "text-neutral-600": !textareaInput() && !textareaFocused(),
               }}
-              value={textareaInput() || typewriterEffect()}
+              onFocus={() => setTextareaFocused(true)}
+              onBlur={() => setTextareaFocused(false)}
+              value={
+                textareaInput() ||
+                (textareaFocused() ? textareaInput() : typewriterEffect())
+              }
               onInput={(e) => resizeTextarea(e.target)}
               onKeyDown={(e) => {
                 if (
@@ -260,6 +281,7 @@ const SearchForm = (props: {
                     document.getElementById(
                       "search-query-textarea",
                     ) as HTMLTextAreaElement,
+                    true,
                   );
                 }}
               >
