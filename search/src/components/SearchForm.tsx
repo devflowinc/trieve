@@ -58,6 +58,7 @@ const SearchForm = (props: {
   ]);
   // eslint-disable-next-line solid/reactivity
   const [textareaInput, setTextareaInput] = createSignal(props.query ?? "");
+  const [typewriterEffect, setTypewriterEffect] = createSignal("");
 
   const [filterDataTypes, setFilterDataTypes] = createSignal<ComboboxSection[]>(
     filterDataTypeComboboxSections,
@@ -179,19 +180,63 @@ const SearchForm = (props: {
     });
   });
 
+  createEffect(() => {
+    const curInput = textareaInput();
+
+    if (curInput) {
+      return;
+    }
+
+    const textArray = import.meta.env.PUBLIC_SEARCH_QUERIES.split(",");
+
+    const typingSpeed = 50;
+    const deleteSpeed = 30;
+
+    let currentTextIndex = 0;
+    let currentCharIndex = 0;
+    let isDeleting = false;
+
+    const typeText = () => {
+      const currentText = textArray[currentTextIndex];
+
+      if (isDeleting) {
+        setTypewriterEffect(currentText.substring(0, currentCharIndex - 1));
+        currentCharIndex--;
+      } else {
+        setTypewriterEffect(currentText.substring(0, currentCharIndex + 1));
+        currentCharIndex++;
+      }
+
+      if (!isDeleting && currentCharIndex === currentText.length) {
+        isDeleting = true;
+        setTimeout(typeText, 1000);
+      } else if (isDeleting && currentCharIndex === 0) {
+        isDeleting = false;
+        currentTextIndex = (currentTextIndex + 1) % textArray.length;
+        setTimeout(typeText, typingSpeed);
+      } else {
+        const speed = isDeleting ? deleteSpeed : typingSpeed;
+        setTimeout(typeText, speed);
+      }
+    };
+
+    typeText();
+  });
+
   return (
     <div class="w-full">
       <form class="w-full space-y-4 dark:text-white" onSubmit={onSubmit}>
         <div class="flex space-x-2">
           <div class="flex w-full justify-center space-x-2 rounded-md bg-neutral-100 px-4 py-1 pr-[10px] dark:bg-neutral-700 ">
-            <Show when={!props.query}>
-              <BiRegularSearch class="mt-1 h-6 w-6 fill-current" />
-            </Show>
+            <BiRegularSearch class="mt-1 h-6 w-6 fill-current" />
             <textarea
               id="search-query-textarea"
-              class="scrollbar-track-rounded-md scrollbar-thumb-rounded-md mr-2 h-fit max-h-[240px] w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
-              placeholder="Search for cards..."
-              value={textareaInput()}
+              classList={{
+                "scrollbar-track-rounded-md scrollbar-thumb-rounded-md mr-2 h-fit max-h-[240px] w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600":
+                  true,
+                "text-neutral-600": !textareaInput(),
+              }}
+              value={textareaInput() || typewriterEffect()}
               onInput={(e) => resizeTextarea(e.target)}
               onKeyDown={(e) => {
                 if (
@@ -202,9 +247,7 @@ const SearchForm = (props: {
                 }
               }}
               rows="1"
-            >
-              {textareaInput()}
-            </textarea>
+            />
             <Show when={textareaInput()}>
               <button
                 classList={{
