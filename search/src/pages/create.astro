@@ -2,6 +2,11 @@
 import SearchLayout from "../layouts/SearchLayout.astro";
 import CreateNewEvidenceForm from "../components/CreateNewEvidenceForm";
 import Footer from "../components/Footer.astro";
+const create_evidence_feature =
+  import.meta.env.PUBLIC_CREATE_EVIDENCE_FEATURE !== "off";
+if (!create_evidence_feature) {
+  return Astro.redirect("/404");
+}
 ---
 
 <head>
