@@ -1,5 +1,5 @@
 import { BiRegularSearch, BiRegularX } from "solid-icons/bi";
-import { For, Show, createEffect, createSignal } from "solid-js";
+import { For, Show, createEffect, createSignal, onCleanup } from "solid-js";
 import {
   Combobox,
   ComboboxItem,
@@ -64,6 +64,8 @@ const SearchForm = (props: {
   ]);
   // eslint-disable-next-line solid/reactivity
   const [textareaInput, setTextareaInput] = createSignal(props.query ?? "");
+  const [typewriterEffect, setTypewriterEffect] = createSignal("");
+  const [textareaFocused, setTextareaFocused] = createSignal(false);
 
   const [filterDataTypes, setFilterDataTypes] = createSignal<ComboboxSection[]>(
     filterDataTypeComboboxSections,
@@ -133,10 +135,15 @@ const SearchForm = (props: {
   const [feelingLuckyText, setFeelingLuckyText] = createSignal(feelingSuffixes);
   const [feelingLuckySpinning, setFeelingLuckySpinning] = createSignal(false);
 
-  const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
+  const resizeTextarea = (
+    textarea: HTMLTextAreaElement | null,
+    avoidSetInput: boolean | undefined,
+  ) => {
     if (!textarea) return;
 
     textarea.style.height = `${textarea.scrollHeight}px`;
+    if (avoidSetInput) return;
+    setTextareaInput(textarea.value);
     setTextareaInput(textarea.value);
   };
 
@@ -176,6 +183,7 @@ const SearchForm = (props: {
       document.getElementById(
         "search-query-textarea",
       ) as HTMLTextAreaElement | null,
+      false,
     );
     setSearchTypes((prev) => {
       return prev.map((item) => {
@@ -185,6 +193,63 @@ const SearchForm = (props: {
           return { ...item, isSelected: false };
         }
       });
+    });
+  });
+
+  createEffect(() => {
+    const shouldNotRun = textareaInput() || textareaFocused();
+
+    if (shouldNotRun) {
+      return;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+    const textArray: string[] = import.meta.env.PUBLIC_SEARCH_QUERIES.split(
+      ",",
+    );
+
+    const typingSpeed = 50;
+    const deleteSpeed = 30;
+
+    let currentTextIndex = 0;
+    let currentCharIndex = 0;
+    let isDeleting = false;
+
+    let timeoutRefOne: number;
+    let timeoutRefTwo: number;
+    let timeoutRefThree: number;
+
+    const typeText = () => {
+      const currentText = textArray[currentTextIndex];
+
+      if (isDeleting) {
+        setTypewriterEffect(currentText.substring(0, currentCharIndex - 1));
+        currentCharIndex--;
+      } else {
+        setTypewriterEffect(currentText.substring(0, currentCharIndex + 1));
+        currentCharIndex++;
+      }
+
+      if (!isDeleting && currentCharIndex === currentText.length) {
+        isDeleting = true;
+        timeoutRefOne = setTimeout(typeText, 1000);
+      } else if (isDeleting && currentCharIndex === 0) {
+        isDeleting = false;
+        currentTextIndex = (currentTextIndex + 1) % textArray.length;
+        timeoutRefTwo = setTimeout(typeText, typingSpeed);
+      } else {
+        const speed = isDeleting ? deleteSpeed : typingSpeed;
+        timeoutRefThree = setTimeout(typeText, speed);
+      }
+    };
+
+    typeText();
+
+    onCleanup(() => {
+      console.log("cleaning up");
+      clearTimeout(timeoutRefOne);
+      clearTimeout(timeoutRefTwo);
+      clearTimeout(timeoutRefThree);
     });
   });
 
@@ -225,15 +290,21 @@ const SearchForm = (props: {
       <form class="w-full space-y-4 dark:text-white" onSubmit={onSubmit}>
         <div class="flex space-x-2">
           <div class="flex w-full justify-center space-x-2 rounded-md bg-neutral-100 px-4 py-1 pr-[10px] dark:bg-neutral-700 ">
-            <Show when={!props.query}>
-              <BiRegularSearch class="mt-1 h-6 w-6 fill-current" />
-            </Show>
+            <BiRegularSearch class="mt-1 h-6 w-6 fill-current" />
             <textarea
               id="search-query-textarea"
-              class="scrollbar-track-rounded-md scrollbar-thumb-rounded-md mr-2 h-fit max-h-[240px] w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
-              placeholder="Search for cards..."
-              value={textareaInput()}
-              onInput={(e) => resizeTextarea(e.target)}
+              classList={{
+                "scrollbar-track-rounded-md scrollbar-thumb-rounded-md mr-2 h-fit max-h-[240px] w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600":
+                  true,
+                "text-neutral-600": !textareaInput() && !textareaFocused(),
+              }}
+              onFocus={() => setTextareaFocused(true)}
+              onBlur={() => setTextareaFocused(false)}
+              value={
+                textareaInput() ||
+                (textareaFocused() ? textareaInput() : typewriterEffect())
+              }
+              onInput={(e) => resizeTextarea(e.target, false)}
               onKeyDown={(e) => {
                 if (
                   ((e.ctrlKey || e.metaKey) && e.key === "Enter") ||
@@ -243,9 +314,7 @@ const SearchForm = (props: {
                 }
               }}
               rows="1"
-            >
-              {textareaInput()}
-            </textarea>
+            />
             <Show when={textareaInput()}>
               <button
                 classList={{
@@ -258,6 +327,7 @@ const SearchForm = (props: {
                     document.getElementById(
                       "search-query-textarea",
                     ) as HTMLTextAreaElement,
+                    true,
                   );
                 }}
               >
@@ -424,7 +494,7 @@ const SearchForm = (props: {
           </Popover>
         </div>
         <Show when={!props.query && !props.collectionID}>
-          <div class="flex flex-col gap-y-2 sm:flex-row sm:justify-center sm:gap-y-0 sm:space-x-2 sm:px-6">
+          <div class="flex justify-center space-x-4 sm:gap-y-0 sm:space-x-2 sm:px-6">
             <button
               class="w-fit rounded bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700"
               type="submit"
@@ -440,7 +510,7 @@ const SearchForm = (props: {
               </a>
             </Show>
             <a
-              class="relative h-[40px] overflow-hidden rounded bg-neutral-100 p-2 text-center transition-width duration-1000 hover:bg-neutral-100 dark:bg-neutral-700"
+              class="relative hidden h-[40px] overflow-hidden rounded bg-neutral-100 p-2 text-center transition-width duration-1000 hover:bg-neutral-100 dark:bg-neutral-700 sm:block"
               href={`/search?q=I'm feeling ${
                 feelingLuckyText().findLast(() => true) ?? ""
               }`}
