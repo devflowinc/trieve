@@ -13,7 +13,7 @@ assignees: ''
 
 ### Target(s)
 
-<replace w/ one or more of the following options: `server`, `search`, `chat`
+<replace w/ one or more of the following options: `server`, `search`, `chat`>
 
 ### Requirement to close
 
