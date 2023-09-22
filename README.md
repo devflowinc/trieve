@@ -62,7 +62,11 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
 
 ### Install python requirements
 
-`pip install -r ./server/vault-python/requirements.txt`
+`pip install -r ./server/server-python/requirements.txt`
+
+### Install node requirements
+
+`yarn --cwd ./server/server-nodejs`
 
 ## How to debug diesel by getting the exact generated SQL
 
