@@ -88,13 +88,13 @@ libreoffice
 
 ### Install NodeJS and Yarn
 
-You can use the following, but we recommend using [NVM](https://github.com/nvm-sh/nvm) and then running `yarn --cwd ./vault-nodejs install` .
+You can use the following, but we recommend using [NVM](https://github.com/nvm-sh/nvm) and then running `yarn --cwd ./server-nodejs install` .
 
 ```
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
     apt-get install -y nodejs && \
     npm install -g yarn && \
-    yarn --cwd ./vault-nodejs install
+    yarn --cwd ./server-nodejs install
 ```
 
 ### Set rust to nightly
@@ -107,7 +107,7 @@ Use [vault-client](https://github.com/arguflow/vault-client) to make an account.
 
 ### Install python requirements
 
-`pip install -r ./vault-python/requirements.txt`
+`pip install -r ./server-python/requirements.txt`
 
 ### Setting Up Local S3
 
@@ -142,7 +142,7 @@ cargo watch -x run
 
 ## Running the test suite
 
-This section refers to the jest testing suite found in the `vault-nodejs` folder of this repository
+This section refers to the jest testing suite found in the `server-nodejs` folder of this repository
 
 1. Set the variables found in `.env.dist` in the `.env` file of the testing suite
 2. `cd` into the testing suite folder
@@ -170,7 +170,7 @@ diesel::debug*query::<diesel::pg::Pg, *>(&query);
 
 1. `virtualenv venv`
 2. `source venv/bin/activate`
-3. `pip install -r ./vault-python/requirements.txt`
+3. `pip install -r ./server-python/requirements.txt`
 
 ## How to get Rust debug level logs
 

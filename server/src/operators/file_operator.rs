@@ -302,7 +302,7 @@ pub async fn create_cards_with_handler(
     mutex_store: web::Data<AppMutexStore>,
 ) -> Result<(), DefaultError> {
     let parser_command = std::env::var("PARSER_COMMAND")
-        .unwrap_or("./vault-nodejs/scripts/card_parser.js".to_string());
+        .unwrap_or("./server-nodejs/scripts/card_parser.js".to_string());
     let delete_html_file = || {
         let files = glob::glob(glob_string.as_str()).expect("Failed to read glob pattern");
 

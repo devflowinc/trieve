@@ -28,39 +28,39 @@ for chunk in pd.read_csv(input_file, chunksize=chunk_size):
         print(index)
         if index < 172800:
             with open(
-                "/Users/denssumesh/Documents/GitHub/ai-editor/vault-python/arguflow-dataset/train.source",
+                "/Users/denssumesh/Documents/GitHub/ai-editor/server-python/arguflow-dataset/train.source",
                 "a",
             ) as json_file:
                 string = prompt
                 json_file.write(string + "\n")
             with open(
-                "/Users/denssumesh/Documents/GitHub/ai-editor/vault-python/arguflow-dataset/train.target",
+                "/Users/denssumesh/Documents/GitHub/ai-editor/server-python/arguflow-dataset/train.target",
                 "a",
             ) as json_file:
                 string = completion
                 json_file.write(string + "\n")
         elif index < 194400:
             with open(
-                "/Users/denssumesh/Documents/GitHub/ai-editor/vault-python/arguflow-dataset/val.source",
+                "/Users/denssumesh/Documents/GitHub/ai-editor/server-python/arguflow-dataset/val.source",
                 "a",
             ) as json_file:
                 string = prompt
                 json_file.write(string + "\n")
             with open(
-                "/Users/denssumesh/Documents/GitHub/ai-editor/vault-python/arguflow-dataset/v2al.target",
+                "/Users/denssumesh/Documents/GitHub/ai-editor/server-python/arguflow-dataset/v2al.target",
                 "a",
             ) as json_file:
                 string = completion
                 json_file.write(string + "\n")
         else:
             with open(
-                "/Users/denssumesh/Documents/GitHub/ai-editor/vault-python/arguflow-dataset/test.source",
+                "/Users/denssumesh/Documents/GitHub/ai-editor/server-python/arguflow-dataset/test.source",
                 "a",
             ) as json_file:
                 string = prompt
                 json_file.write(string + "\n")
             with open(
-                "/Users/denssumesh/Documents/GitHub/ai-editor/vault-python/arguflow-dataset/test.target",
+                "/Users/denssumesh/Documents/GitHub/ai-editor/server-python/arguflow-dataset/test.target",
                 "a",
             ) as json_file:
                 string = completion
