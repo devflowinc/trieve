@@ -10,7 +10,7 @@
     "plugin:prettier/recommended"
   ],
   "parser": "@typescript-eslint/parser",
-  "parserOptions": { "project": ["${workspaceFolder}/search/tsconfig.json"] },
+  "parserOptions": { "project": ["./search/tsconfig.json"] },
   "plugins": ["@typescript-eslint", "solid"],
   "rules": {
     "prettier/prettier": ["error", { "endOfLine": "auto" }]

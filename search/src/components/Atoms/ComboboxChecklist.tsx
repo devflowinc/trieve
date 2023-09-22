@@ -43,7 +43,7 @@ export const Combobox = (props: ComboboxProps) => {
 
     if (!inputValue()) return sectionsWithSelected;
     return sectionsWithSelected.map((section) => {
-      let sectionSelectedItems = section.sectionSelectedItems.filter(
+      const sectionSelectedItems = section.sectionSelectedItems.filter(
         (option) => {
           return option.name.toLowerCase().includes(inputValue().toLowerCase());
         },

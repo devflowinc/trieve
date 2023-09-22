@@ -1,11 +1,10 @@
-import "./SearchForm.css";
 import { BiRegularSearch, BiRegularX } from "solid-icons/bi";
-import { For, Show, createEffect, createSignal, onMount } from "solid-js";
+import { For, Show, createEffect, createSignal } from "solid-js";
 import {
   Combobox,
   ComboboxItem,
   ComboboxSection,
-} from "../Atoms/ComboboxChecklist";
+} from "./Atoms/ComboboxChecklist";
 import {
   Menu,
   MenuItem,
@@ -15,7 +14,7 @@ import {
   Transition,
 } from "solid-headless";
 import { FaSolidCheck } from "solid-icons/fa";
-import type { Filters } from "../ResultsPage";
+import type { Filters } from "./ResultsPage";
 
 const parseEnvComboboxItems = (data: string | undefined): ComboboxItem[] => {
   const names = data?.split(",");
@@ -33,29 +32,29 @@ const SearchForm = (props: {
   searchType: string;
   collectionID?: string;
 }) => {
-  const tag_set_items = parseEnvComboboxItems(
+  const tagSetItems = parseEnvComboboxItems(
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     import.meta.env.PUBLIC_TAG_SET_ITEMS,
   );
-  const links_items = parseEnvComboboxItems(import.meta.env.PUBLIC_LINK_ITEMS);
-  const create_evidence_feature =
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+  const linksItems = parseEnvComboboxItems(import.meta.env.PUBLIC_LINK_ITEMS);
+  const createEvidenceFeature =
     import.meta.env.PUBLIC_CREATE_EVIDENCE_FEATURE !== "off";
-  const allTexts = (
-    import.meta.env.PUBLIC_LUCKY_ITEMS || "Lorem,Ipsum,Lorem,Ipsum,Lorem,Ipsum,LoremIpsumLoremIpsumLoremIpsum"
-  )
-    .split(",")
-    .filter((i: string | null | undefined) => i)
-    .map((i: string) => i.trim());
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+  const feelingSuffixes: string[] = (
+    import.meta.env.PUBLIC_LUCKY_ITEMS || "Happy,Sad,Excited,Who the hell knows"
+  ).split(",");
 
   const filterDataTypeComboboxSections: ComboboxSection[] = [
     {
       name: "Tag Set",
-      comboboxItems: tag_set_items,
+      comboboxItems: tagSetItems,
     },
   ];
   const filterLinkComboboxSections: ComboboxSection[] = [
     {
       name: "Links",
-      comboboxItems: links_items,
+      comboboxItems: linksItems,
     },
   ];
 
@@ -131,6 +130,9 @@ const SearchForm = (props: {
     createSignal<ComboboxItem[]>(initialDataTypeFilters);
   const [selectedLinkComboboxItems, setLinkSelectedComboboxItems] =
     createSignal<ComboboxItem[]>(initialLinkFilters);
+  const [feelingLuckyText, setFeelingLuckyText] = createSignal(feelingSuffixes);
+  const [feelingLuckySpinning, setFeelingLuckySpinning] = createSignal(false);
+
   const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
     if (!textarea) return;
 
@@ -186,147 +188,36 @@ const SearchForm = (props: {
     });
   });
 
-  onMount(() => {
-    const getLuckyText: () => HTMLAnchorElement | null = function () {
-      const text = document.getElementById(
-        "lucky-text",
-      ) as HTMLAnchorElement | null;
-      return text;
-    };
+  // contains the logic for the feeling lucky button
+  createEffect(() => {
+    let hoverTimeout: number;
 
-    // Scroll in new text and URL from randomized list
-    const newText = function (inputText: string) {
-      // Timeout is set to the same length as the slideout animation duration
-      setTimeout(() => {
-        const text = getLuckyText();
-        if (text) {
-          text.classList.add("text-in");
-          text.classList.remove("text-out");
-          const button = document.getElementById("lucky-button");
-          if (button) {
-            if (inputText.length > "Lucky".length) {
-              button.classList.add("overflow-x-hidden");
-              button.classList.add("widening-animation");
-            } else {
-              button.classList.remove("overflow-x-hidden");
-              button.classList.remove("widening-animation");
-            }
+    const feelingRandom = () => {
+      setFeelingLuckyText((prev) => {
+        const arr = prev.slice();
+        while (arr[arr.length - 1] === prev[prev.length - 1]) {
+          for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
           }
-          text.textContent = `I'm Feeling ${inputText}`;
-          text.href = `/search?q=${inputText}`;
         }
-      }, 100);
+        return arr;
+      });
+
+      hoverTimeout = setTimeout(() => setFeelingLuckySpinning(false), 300);
     };
 
-    // Scroll out current / previous text before scrolling in new text
-    const oldText = function () {
-      const text = getLuckyText();
-      if (text) {
-        text.classList.remove("text-in");
-        text.classList.add("text-out");
-      }
-    };
-
-    // Interval object to track where we are in the text rotation
-    const updateTextInterval = (() => {
-      let interval = 0;
-      const getInterval = () => interval;
-      const increment = () => interval++;
-      const reset = () => (interval = 0);
-      return { getInterval, increment, reset };
-    })();
-
-    // Customized list of button text & URLs
-    const buttonText = (() => {
-      const text = allTexts;
-      console.log(text);
-      // Randomizes buttonText array
-      let randomizeText = () => {
-        // Fishers-Yates shuffle algorithm
-        for (let i = text.length - 1; i > 0; i--) {
-          let rando = Math.floor(Math.random() * (i + 1));
-          [text[i], text[rando]] = [text[rando], text[i]];
-        }
-      };
-      const getText = () => text;
-      return { getText, randomizeText };
-    })();
-
-    // Random number generator used to determine how many links we show on rotation
-    // as well as the direction the text scrolls
-    const randomNumCount = (() => {
-      let randomNum: number;
-
-      const setRandomNum = () => {
-        const maxNum = buttonText.getText().length - 1;
-        const minNum = 2;
-        randomNum = Math.floor(Math.random() * (maxNum - minNum + 1)) + minNum;
-      };
-
-      const getRandomNum = () => randomNum;
-
-      return { setRandomNum, getRandomNum };
-    })();
-
-    // Uses random number generator randomNumCount to determine text scroll direction
-    const setTextDirection = function () {
-      const randomNum = randomNumCount.getRandomNum();
-      const text = getLuckyText();
-
-      if (randomNum % 2 === 0) {
-        if (text) text.style.animationDirection = "normal";
-      } else {
-        if (text) text.style.animationDirection = "reverse";
-      }
-    };
-
-    // Global variable set in changeText and cleared in resetButton
-    let hoverTimeout: any;
-
-    // On mouseleave, reset the button to its original text & URL
-    // also reset textInterval in preparation for next hover
-    const resetButton = function () {
-      updateTextInterval.reset();
-      // randomNum = randomNumCount.setRandomNum();
-      newText("Lucky");
-    };
-
-    // Scrolls from old text to new text for length of randomized interval
-    const changeText = function () {
-      oldText();
-      newText(buttonText.getText()[updateTextInterval.getInterval()]);
-      updateTextInterval.increment();
-
-      // hoverTimeout is set to slideout + slidein duration total
-      // This allows enough time for text to change between updates
-      // Timeout is a named global variable so we can clear it in resetButton upon mouseleave
-      if (updateTextInterval.getInterval() < randomNumCount.getRandomNum()) {
-        hoverTimeout = setTimeout(changeText, 200);
-      }
-    };
-
-    // On lucky button hover, set our randomized elements and then
-    // call changeText() to scroll through these elements
-    const feelingRandom = function () {
-      randomNumCount.setRandomNum();
-      setTextDirection();
-      buttonText.randomizeText();
-      changeText();
-    };
-
-    // On leaving lucky button, stop scrolling text
-    // and reset to original text/URL
-    const feelingLucky = function () {
+    const feelingLucky = () => {
       clearTimeout(hoverTimeout);
-      resetButton();
+      setFeelingLuckySpinning(false);
     };
 
-    const button = document.getElementById("lucky-button");
-    if (button) {
-      console.log("Enetered");
-      button.addEventListener("mouseenter", feelingRandom);
-      button.addEventListener("mouseleave", feelingLucky);
+    const spinning = feelingLuckySpinning();
+    if (spinning) {
+      feelingRandom();
+      return;
     }
+    feelingLucky();
   });
 
   return (
@@ -540,7 +431,7 @@ const SearchForm = (props: {
             >
               Search for Evidence
             </button>
-            <Show when={create_evidence_feature}>
+            <Show when={createEvidenceFeature}>
               <a
                 class="w-fit rounded bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"
                 href="/create"
@@ -548,14 +439,31 @@ const SearchForm = (props: {
                 Create Evidence Card
               </a>
             </Show>
-            <div
-              id="lucky-button"
-              class="h-[40px] w-fit overflow-y-hidden rounded bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+            <a
+              class="relative h-[40px] overflow-hidden rounded bg-neutral-100 p-2 text-center transition-width duration-1000 hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+              href={`/search?q=I'm feeling ${
+                feelingLuckyText().findLast(() => true) ?? ""
+              }`}
+              onMouseEnter={() => {
+                setFeelingLuckySpinning(true);
+              }}
+              onMouseLeave={() => {
+                setFeelingLuckySpinning(false);
+              }}
             >
-              <a href="/search?q=" id="lucky-text">
-                I'm Feeling Lucky
-              </a>
-            </div>
+              <Show when={feelingLuckySpinning()}>
+                <span class="block h-[40px] animate-scrollup overflow-hidden">
+                  <For each={feelingLuckyText()}>
+                    {(text) => <p>I'm Feeling {text}</p>}
+                  </For>
+                </span>
+              </Show>
+              <Show when={!feelingLuckySpinning()}>
+                <span>
+                  I'm Feeling {feelingLuckyText().findLast(() => true)}
+                </span>
+              </Show>
+            </a>
           </div>
         </Show>
       </form>
