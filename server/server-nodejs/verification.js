@@ -120,7 +120,7 @@ async function get_webpage_score(link, content) {
   if (webpage_text !== "") {
     try {
       const { stdout } = spawnSync("python", [
-        "../vault-python/fuzzy-text-match.py",
+        "../server-python/fuzzy-text-match.py",
         content,
         webpage_text.replace("\n", ""),
       ]);
@@ -138,7 +138,7 @@ async function get_webpage_score(link, content) {
     }
 
     const { stdout } = spawnSync("python", [
-      "../vault-python/fuzzy-text-match.py",
+      "../server-python/fuzzy-text-match.py",
       content,
       pageContent.replace("\n", ""),
     ]);

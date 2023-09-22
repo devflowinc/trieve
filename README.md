@@ -47,13 +47,13 @@ libreoffice
 
 ### Install NodeJS and Yarn
 
-You can use the following, but we recommend using [NVM](https://github.com/nvm-sh/nvm) and then running `yarn --cwd ./vault-nodejs install` .
+You can use the following, but we recommend using [NVM](https://github.com/nvm-sh/nvm) and then running `yarn --cwd ./server-nodejs install` .
 
 ```
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
     apt-get install -y nodejs && \
     npm install -g yarn && \
-    yarn --cwd ./vault-nodejs install
+    yarn --cwd ./server-nodejs install
 ```
 
 ### Set rust to nightly
@@ -76,7 +76,7 @@ diesel::debug*query::<diesel::pg::Pg, *>(&query);
 
 1. `virtualenv venv`
 2. `source venv/bin/activate`
-3. `pip install -r ./server/vault-python/requirements.txt`
+3. `pip install -r ./server/server-python/requirements.txt`
 
 ## How to get Rust debug level logs
 

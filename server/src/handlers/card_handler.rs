@@ -53,7 +53,7 @@ pub struct CreateCardData {
 
 pub fn convert_html(html: &str) -> String {
     let html_parse_result = Command::new("node")
-        .arg("./vault-nodejs/scripts/html-converter.js")
+        .arg("./server-nodejs/scripts/html-converter.js")
         .arg("-html")
         .arg(html)
         .output();
@@ -458,7 +458,7 @@ pub async fn update_card(
         .unwrap_or_else(|| card_metadata.link.clone().unwrap_or_default());
 
     let html_parse_result = Command::new("node")
-        .arg("./vault-nodejs/scripts/html-converter.js")
+        .arg("./server-nodejs/scripts/html-converter.js")
         .arg("-html")
         .arg(card.card_html.as_ref().unwrap_or(&"".to_string()))
         .output();

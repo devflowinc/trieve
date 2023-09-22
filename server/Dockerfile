@@ -46,9 +46,9 @@ COPY . /app/
 COPY .env.default /app/.env
 
 # Install yarn
-RUN yarn --cwd ./vault-nodejs install
+RUN yarn --cwd ./server-nodejs install
 
-RUN pip install -r ./vault-python/requirements.txt --break-system-packages
+RUN pip install -r ./server-python/requirements.txt --break-system-packages
 RUN rm -rf ./tmp
 RUN mkdir tmp
 
