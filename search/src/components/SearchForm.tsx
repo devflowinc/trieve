@@ -426,21 +426,21 @@ const SearchForm = (props: {
         <Show when={!props.query && !props.collectionID}>
           <div class="flex flex-col gap-y-2 sm:flex-row sm:justify-center sm:gap-y-0 sm:space-x-2 sm:px-6">
             <button
-              class="w-fit rounded bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+              class="w-fit rounded bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700"
               type="submit"
             >
               Search for Evidence
             </button>
             <Show when={createEvidenceFeature}>
               <a
-                class="w-fit rounded bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+                class="w-fit rounded bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700"
                 href="/create"
               >
                 Create Evidence Card
               </a>
             </Show>
             <a
-              class="relative h-[40px] overflow-hidden rounded bg-neutral-100 p-2 text-center transition-width duration-1000 hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+              class="relative h-[40px] overflow-hidden rounded bg-neutral-100 p-2 text-center transition-width duration-1000 hover:bg-neutral-100 dark:bg-neutral-700"
               href={`/search?q=I'm feeling ${
                 feelingLuckyText().findLast(() => true) ?? ""
               }`}
