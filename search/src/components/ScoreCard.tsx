@@ -1,4 +1,4 @@
-import { Setter, Show, createEffect, createSignal } from "solid-js";
+import { Setter, Show, createEffect, onMount, createSignal } from "solid-js";
 import type {
   CardBookmarksDTO,
   CardCollectionDTO,
@@ -20,6 +20,16 @@ import { Tooltip } from "./Atoms/Tooltip";
 import { AiOutlineCopy, AiOutlineExclamation } from "solid-icons/ai";
 import CommunityBookmarkPopover from "./CommunityBookmarkPopover";
 import { getLocalTime } from "./CardMetadataDisplay";
+
+declare global {
+  interface Window {
+    counter?: number;
+    changes?: number;
+    last_props?: string;
+    latest_props?: string;
+    last_changes?: number;
+  }
+}
 
 export const sanitzerOptions = {
   allowedTags: [...sanitizeHtml.defaults.allowedTags, "font"],
@@ -49,20 +59,63 @@ const ScoreCard = (props: ScoreCardProps) => {
     (import.meta.env.PUBLIC_SIMILARITY_SCORE_THRESHOLD as number | undefined) ??
     80;
 
-  const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
   const [userVote, setUserVote] = createSignal(0);
+  const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
   const [totalVote, setTotalVote] = createSignal(
     // eslint-disable-next-line solid/reactivity
     props.card.total_upvotes - props.card.total_downvotes,
   );
-  const [showPropsModal, setShowPropsModal] = createSignal(false);
-  const [deleting, setDeleting] = createSignal(false);
-  const [deleted, setDeleted] = createSignal(false);
   const [copied, setCopied] = createSignal(false);
+  const [deleted, setDeleted] = createSignal(false);
+  const [deleting, setDeleting] = createSignal(false);
+  const [hydrated, setHydrated] = createSignal(false);
+  const [showPropsModal, setShowPropsModal] = createSignal(false);
+
+  onMount(() => {
+    const checkLoop = setInterval(() => {
+      if (window["last_changes"]) {
+        if (window["last_changes"] === window["changes"]) {
+          if (window["last_changes"] !== 0) {
+            setHydrated(true);
+            clearInterval(checkLoop);
+          } else {
+            window["last_changes"] = window["changes"];
+          }
+        } else {
+          window["last_changes"] = window["changes"];
+        }
+      } else {
+        if (!Number.isNaN(window["changes"])) {
+          window["last_changes"] = window["changes"];
+        }
+      }
+    }, 1000);
+  });
+
+  createEffect(() => {
+    // add the dep props by just mentioning it.
+    const t = JSON.stringify(props);
+    // now add a tracking logic
+    if (window["latest_props"]) {
+      if (window["latest_props"] === window["last_props"]) {
+        if (window["counter"] !== 1) {
+          window["changes"] = (window["changes"] || 0) + 1;
+          return;
+        }
+      } else {
+        window["counter"] = (window["counter"] || 1) + 1;
+        window["last_props"] = window["latest_props"];
+      }
+      window["latest_props"] = t;
+    } else {
+      window["counter"] = 1;
+      window["latest_props"] = t;
+      window["last_props"] = window["latest_props"];
+    }
+  });
 
   createEffect(() => {
     if (!showPropsModal()) return;
-
     props.setShowModal(true);
     setShowPropsModal(false);
   });
@@ -437,22 +490,24 @@ const ScoreCard = (props: ScoreCardProps) => {
             )}
           />
         </Show>
-        <button
-          class="ml-2 font-semibold"
-          onClick={() => setExpanded((prev) => !prev)}
-        >
-          {expanded() ? (
-            <div class="flex flex-row items-center">
-              <div>Show Less</div>{" "}
-              <BiRegularChevronUp class="h-8 w-8 fill-current" />
-            </div>
-          ) : (
-            <div class="flex flex-row items-center">
-              <div>Show More</div>{" "}
-              <BiRegularChevronDown class="h-8 w-8 fill-current" />
-            </div>
-          )}
-        </button>
+        {hydrated() === true && (
+          <button
+            onClick={() => setExpanded((prev) => !prev)}
+            class="ml-2 font-semibold"
+          >
+            {expanded() ? (
+              <div class="flex flex-row items-center">
+                <div>Show Less</div>{" "}
+                <BiRegularChevronUp class="h-8 w-8 fill-current" />
+              </div>
+            ) : (
+              <div class="flex flex-row items-center">
+                <div>Show More</div>{" "}
+                <BiRegularChevronDown class="h-8 w-8 fill-current" />
+              </div>
+            )}
+          </button>
+        )}
       </div>
     </Show>
   );
