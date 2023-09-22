@@ -124,9 +124,9 @@ pub async fn create_card(
         .unwrap_or(29000);
 
     let minimum_card_word_len = std::env::var("MINIMUM_CARD_WORD_LENGTH")
-        .unwrap_or("70".to_string())
+        .unwrap_or("0".to_string())
         .parse::<usize>()
-        .unwrap_or(70);
+        .unwrap_or(0);
 
     let maximum_card_word_len = std::env::var("MAXIMUM_CARD_WORD_LENGTH")
         .unwrap_or("5000".to_string())
