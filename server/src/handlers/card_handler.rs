@@ -145,7 +145,8 @@ pub async fn create_card(
         })));
     }
 
-    let words_in_content = content.split(' ').collect::<Vec<&str>>().len();
+    let words_in_content = content.split_whitespace().collect::<Vec<&str>>().len();
+    log::info!("Words in content: {}", words_in_content);
     if words_in_content < minimum_card_word_len {
         return Ok(HttpResponse::BadRequest().json(json!({
             "message": format!("Card content must be at least {} words long", minimum_card_word_len),

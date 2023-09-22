@@ -25,7 +25,7 @@ setup_python_environment() {
     echo "Setting up the Python environment..."
     virtualenv venv
     source venv/bin/activate
-    pip install -r ./vault-python/requirements.txt
+    pip install -r ./server-python/requirements.txt
 }
 
 # Function to reset the script database
