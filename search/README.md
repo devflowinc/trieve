@@ -14,9 +14,9 @@
 </strong>
 </p>
 
-# Vault Search 
+# Arguflow
 
-## Getting Started 
+## Getting Started
 
 ### Set your .env
 
@@ -35,7 +35,7 @@ PLAUSIBLE_HOST=**********
 
 ```
 yarn
-yarn dev 
+yarn dev
 ```
 
 ### Run with docker

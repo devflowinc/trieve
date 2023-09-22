@@ -46,7 +46,8 @@ export interface ScoreCardProps {
 const ScoreCard = (props: ScoreCardProps) => {
   const api_host = import.meta.env.PUBLIC_API_HOST as string;
   const similarityScoreThreshold =
-    (import.meta.env.PUBLIC_SIMILARITY_SCORE_THRESHOLD as number | undefined) ?? 80;
+    (import.meta.env.PUBLIC_SIMILARITY_SCORE_THRESHOLD as number | undefined) ??
+    80;
 
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
   const [userVote, setUserVote] = createSignal(0);

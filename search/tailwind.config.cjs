@@ -119,6 +119,20 @@ module.exports = {
           950: "#000000",
         },
       },
+      keyframes: {
+        scrollup: {
+          "0%": { transform: "translateY(-125%)" },
+          "25%": { transform: "translateY(-75%)" },
+          "50%": { transform: "translateY(-50%)" },
+          "100%": { transform: "translateY(0%)" },
+        },
+      },
+      animation: {
+        scrollup: "scrollup 180ms linear infinite",
+      },
+      transitionProperty: {
+        width: "width",
+      },
     },
   },
   plugins: [
