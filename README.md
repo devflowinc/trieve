@@ -70,7 +70,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
 
 ## How to debug diesel by getting the exact generated SQL
 
-diesel::debug*query::<diesel::pg::Pg, *>(&query);
+`diesel::debug*query::<diesel::pg::Pg, *>(&query);`
 
 ## How to set up the python verification script
 
