@@ -152,6 +152,7 @@ services:
       - PUBLIC_API_HOST=${API_HOST}
       - PUBLIC_TAG_SET_ITEMS=${PUBLIC_TAG_SET_ITEMS}
       - PUBLIC_LINK_ITEMS=${PUBLIC_LINK_ITEMS}
+      - PUBLIC_LUCKY_ITEMS=${PUBLIC_LUCKY_ITEMS}
 
 networks:
   vault-network:

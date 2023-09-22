@@ -1,0 +1,57 @@
+@keyframes slidein {
+  0% {
+    top: -125%;
+  }
+  25% {
+    top: -75%;
+  }
+  50% {
+    top: -50%;
+  }
+  100% {
+    top: 0;
+  }
+}
+
+@keyframes slideout {
+  0% {
+    top: 0;
+  }
+  25% {
+    top: 50%;
+  }
+  50% {
+    top: 75%;
+  }
+  100% {
+    top: 125%;
+  }
+}
+
+.widening-animation {
+  animation: widen 0.4s ease-in-out;
+}
+
+/* Keyframes animation for widening the button */
+@keyframes widen {
+  0% {
+    width: 160px;
+  }
+  100% {
+    width: 300px;
+  }
+}
+
+#lucky-text {
+  position: relative;
+  text-decoration: none;
+  color: #454040;
+}
+
+#lucky-text.text-out {
+  animation: slideout 100ms linear;
+}
+
+#lucky-text.text-in {
+  animation: slidein 100ms ease-in;
+}
