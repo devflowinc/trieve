@@ -89,6 +89,7 @@ This repository used to solely house the `server` folder, but has recently been 
 ### Setup env's
 
 ```
+cp .env.dist .env
 cp .env.chat ./chat/.env
 cp .env.search ./search/.env
 cp ./server/.env.dist ./server/.env
