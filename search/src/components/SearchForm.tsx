@@ -16,7 +16,7 @@ import {
 import { FaSolidCheck } from "solid-icons/fa";
 import type { Filters } from "./ResultsPage";
 
-const parseEnvData = (data: string | undefined): ComboboxItem[] => {
+const parseEnvComboboxItems = (data: string | undefined): ComboboxItem[] => {
   const names = data?.split(",");
   if (!names) return [];
   return names.map((name) => {
@@ -32,19 +32,23 @@ const SearchForm = (props: {
   searchType: string;
   collectionID?: string;
 }) => {
-  const TAG_SET_ITEMS = parseEnvData(import.meta.env.PUBLIC_TAG_SET_ITEMS);
-  const LINKS_ITEMS = parseEnvData(import.meta.env.PUBLIC_LINK_ITEMS);
+  const tag_set_items = parseEnvComboboxItems(
+    import.meta.env.PUBLIC_TAG_SET_ITEMS,
+  );
+  const links_items = parseEnvComboboxItems(import.meta.env.PUBLIC_LINK_ITEMS);
+  const create_evidence_feature =
+    import.meta.env.PUBLIC_CREATE_EVIDENCE_FEATURE !== "off";
 
   const filterDataTypeComboboxSections: ComboboxSection[] = [
     {
       name: "Tag Set",
-      comboboxItems: TAG_SET_ITEMS,
+      comboboxItems: tag_set_items,
     },
   ];
   const filterLinkComboboxSections: ComboboxSection[] = [
     {
       name: "Links",
-      comboboxItems: LINKS_ITEMS,
+      comboboxItems: links_items,
     },
   ];
 
@@ -386,12 +390,14 @@ const SearchForm = (props: {
             >
               Search for Evidence
             </button>
-            <a
-              class="w-fit rounded bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"
-              href="/create"
-            >
-              Create Evidence Card
-            </a>
+            <Show when={create_evidence_feature}>
+              <a
+                class="w-fit rounded bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+                href="/create"
+              >
+                Create Evidence Card
+              </a>
+            </Show>
           </div>
         </Show>
       </form>
