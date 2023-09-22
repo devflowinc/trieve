@@ -1,10 +1,11 @@
+import "./SearchForm.css";
 import { BiRegularSearch, BiRegularX } from "solid-icons/bi";
-import { For, Show, createEffect, createSignal, onCleanup } from "solid-js";
+import { For, Show, createEffect, createSignal, onMount } from "solid-js";
 import {
   Combobox,
   ComboboxItem,
   ComboboxSection,
-} from "./Atoms/ComboboxChecklist";
+} from "../Atoms/ComboboxChecklist";
 import {
   Menu,
   MenuItem,
@@ -14,7 +15,7 @@ import {
   Transition,
 } from "solid-headless";
 import { FaSolidCheck } from "solid-icons/fa";
-import type { Filters } from "./ResultsPage";
+import type { Filters } from "../ResultsPage";
 
 const parseEnvComboboxItems = (data: string | undefined): ComboboxItem[] => {
   const names = data?.split(",");
@@ -38,6 +39,12 @@ const SearchForm = (props: {
   const links_items = parseEnvComboboxItems(import.meta.env.PUBLIC_LINK_ITEMS);
   const create_evidence_feature =
     import.meta.env.PUBLIC_CREATE_EVIDENCE_FEATURE !== "off";
+  const allTexts = (
+    import.meta.env.PUBLIC_LUCKY_ITEMS || "Lorem,Ipsum,Lorem,Ipsum,Lorem,Ipsum,LoremIpsumLoremIpsumLoremIpsum"
+  )
+    .split(",")
+    .filter((i: string | null | undefined) => i)
+    .map((i: string) => i.trim());
 
   const filterDataTypeComboboxSections: ComboboxSection[] = [
     {
@@ -58,8 +65,6 @@ const SearchForm = (props: {
   ]);
   // eslint-disable-next-line solid/reactivity
   const [textareaInput, setTextareaInput] = createSignal(props.query ?? "");
-  const [typewriterEffect, setTypewriterEffect] = createSignal("");
-  const [textareaFocused, setTextareaFocused] = createSignal(false);
 
   const [filterDataTypes, setFilterDataTypes] = createSignal<ComboboxSection[]>(
     filterDataTypeComboboxSections,
@@ -126,14 +131,10 @@ const SearchForm = (props: {
     createSignal<ComboboxItem[]>(initialDataTypeFilters);
   const [selectedLinkComboboxItems, setLinkSelectedComboboxItems] =
     createSignal<ComboboxItem[]>(initialLinkFilters);
-  const resizeTextarea = (
-    textarea: HTMLTextAreaElement | null,
-    avoidSetInput: bool | undefined,
-  ) => {
+  const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
     if (!textarea) return;
 
     textarea.style.height = `${textarea.scrollHeight}px`;
-    if (avoidSetInput) return;
     setTextareaInput(textarea.value);
   };
 
@@ -185,58 +186,147 @@ const SearchForm = (props: {
     });
   });
 
-  createEffect(() => {
-    const shouldNotRun = textareaInput() || textareaFocused();
+  onMount(() => {
+    const getLuckyText: () => HTMLAnchorElement | null = function () {
+      const text = document.getElementById(
+        "lucky-text",
+      ) as HTMLAnchorElement | null;
+      return text;
+    };
 
-    if (shouldNotRun) {
-      return;
-    }
+    // Scroll in new text and URL from randomized list
+    const newText = function (inputText: string) {
+      // Timeout is set to the same length as the slideout animation duration
+      setTimeout(() => {
+        const text = getLuckyText();
+        if (text) {
+          text.classList.add("text-in");
+          text.classList.remove("text-out");
+          const button = document.getElementById("lucky-button");
+          if (button) {
+            if (inputText.length > "Lucky".length) {
+              button.classList.add("overflow-x-hidden");
+              button.classList.add("widening-animation");
+            } else {
+              button.classList.remove("overflow-x-hidden");
+              button.classList.remove("widening-animation");
+            }
+          }
+          text.textContent = `I'm Feeling ${inputText}`;
+          text.href = `/search?q=${inputText}`;
+        }
+      }, 100);
+    };
 
-    const textArray = import.meta.env.PUBLIC_SEARCH_QUERIES.split(",");
-
-    const typingSpeed = 50;
-    const deleteSpeed = 30;
-
-    let currentTextIndex = 0;
-    let currentCharIndex = 0;
-    let isDeleting = false;
-
-    let timeoutRefOne = null;
-    let timeoutRefTwo = null;
-    let timeoutRefThree = null;
-
-    const typeText = () => {
-      const currentText = textArray[currentTextIndex];
-
-      if (isDeleting) {
-        setTypewriterEffect(currentText.substring(0, currentCharIndex - 1));
-        currentCharIndex--;
-      } else {
-        setTypewriterEffect(currentText.substring(0, currentCharIndex + 1));
-        currentCharIndex++;
-      }
-
-      if (!isDeleting && currentCharIndex === currentText.length) {
-        isDeleting = true;
-        timeoutRefOne = setTimeout(typeText, 1000);
-      } else if (isDeleting && currentCharIndex === 0) {
-        isDeleting = false;
-        currentTextIndex = (currentTextIndex + 1) % textArray.length;
-        timeoutRefTwo = setTimeout(typeText, typingSpeed);
-      } else {
-        const speed = isDeleting ? deleteSpeed : typingSpeed;
-        timeoutRefThree = setTimeout(typeText, speed);
+    // Scroll out current / previous text before scrolling in new text
+    const oldText = function () {
+      const text = getLuckyText();
+      if (text) {
+        text.classList.remove("text-in");
+        text.classList.add("text-out");
       }
     };
 
-    typeText();
+    // Interval object to track where we are in the text rotation
+    const updateTextInterval = (() => {
+      let interval = 0;
+      const getInterval = () => interval;
+      const increment = () => interval++;
+      const reset = () => (interval = 0);
+      return { getInterval, increment, reset };
+    })();
 
-    onCleanup(() => {
-      console.log("cleaning up");
-      clearTimeout(timeoutRefOne);
-      clearTimeout(timeoutRefTwo);
-      clearTimeout(timeoutRefThree);
-    });
+    // Customized list of button text & URLs
+    const buttonText = (() => {
+      const text = allTexts;
+      console.log(text);
+      // Randomizes buttonText array
+      let randomizeText = () => {
+        // Fishers-Yates shuffle algorithm
+        for (let i = text.length - 1; i > 0; i--) {
+          let rando = Math.floor(Math.random() * (i + 1));
+          [text[i], text[rando]] = [text[rando], text[i]];
+        }
+      };
+      const getText = () => text;
+      return { getText, randomizeText };
+    })();
+
+    // Random number generator used to determine how many links we show on rotation
+    // as well as the direction the text scrolls
+    const randomNumCount = (() => {
+      let randomNum: number;
+
+      const setRandomNum = () => {
+        const maxNum = buttonText.getText().length - 1;
+        const minNum = 2;
+        randomNum = Math.floor(Math.random() * (maxNum - minNum + 1)) + minNum;
+      };
+
+      const getRandomNum = () => randomNum;
+
+      return { setRandomNum, getRandomNum };
+    })();
+
+    // Uses random number generator randomNumCount to determine text scroll direction
+    const setTextDirection = function () {
+      const randomNum = randomNumCount.getRandomNum();
+      const text = getLuckyText();
+
+      if (randomNum % 2 === 0) {
+        if (text) text.style.animationDirection = "normal";
+      } else {
+        if (text) text.style.animationDirection = "reverse";
+      }
+    };
+
+    // Global variable set in changeText and cleared in resetButton
+    let hoverTimeout: any;
+
+    // On mouseleave, reset the button to its original text & URL
+    // also reset textInterval in preparation for next hover
+    const resetButton = function () {
+      updateTextInterval.reset();
+      // randomNum = randomNumCount.setRandomNum();
+      newText("Lucky");
+    };
+
+    // Scrolls from old text to new text for length of randomized interval
+    const changeText = function () {
+      oldText();
+      newText(buttonText.getText()[updateTextInterval.getInterval()]);
+      updateTextInterval.increment();
+
+      // hoverTimeout is set to slideout + slidein duration total
+      // This allows enough time for text to change between updates
+      // Timeout is a named global variable so we can clear it in resetButton upon mouseleave
+      if (updateTextInterval.getInterval() < randomNumCount.getRandomNum()) {
+        hoverTimeout = setTimeout(changeText, 200);
+      }
+    };
+
+    // On lucky button hover, set our randomized elements and then
+    // call changeText() to scroll through these elements
+    const feelingRandom = function () {
+      randomNumCount.setRandomNum();
+      setTextDirection();
+      buttonText.randomizeText();
+      changeText();
+    };
+
+    // On leaving lucky button, stop scrolling text
+    // and reset to original text/URL
+    const feelingLucky = function () {
+      clearTimeout(hoverTimeout);
+      resetButton();
+    };
+
+    const button = document.getElementById("lucky-button");
+    if (button) {
+      console.log("Enetered");
+      button.addEventListener("mouseenter", feelingRandom);
+      button.addEventListener("mouseleave", feelingLucky);
+    }
   });
 
   return (
@@ -244,20 +334,14 @@ const SearchForm = (props: {
       <form class="w-full space-y-4 dark:text-white" onSubmit={onSubmit}>
         <div class="flex space-x-2">
           <div class="flex w-full justify-center space-x-2 rounded-md bg-neutral-100 px-4 py-1 pr-[10px] dark:bg-neutral-700 ">
-            <BiRegularSearch class="mt-1 h-6 w-6 fill-current" />
+            <Show when={!props.query}>
+              <BiRegularSearch class="mt-1 h-6 w-6 fill-current" />
+            </Show>
             <textarea
               id="search-query-textarea"
-              classList={{
-                "scrollbar-track-rounded-md scrollbar-thumb-rounded-md mr-2 h-fit max-h-[240px] w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600":
-                  true,
-                "text-neutral-600": !textareaInput() && !textareaFocused(),
-              }}
-              onFocus={() => setTextareaFocused(true)}
-              onBlur={() => setTextareaFocused(false)}
-              value={
-                textareaInput() ||
-                (textareaFocused() ? textareaInput() : typewriterEffect())
-              }
+              class="scrollbar-track-rounded-md scrollbar-thumb-rounded-md mr-2 h-fit max-h-[240px] w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
+              placeholder="Search for cards..."
+              value={textareaInput()}
               onInput={(e) => resizeTextarea(e.target)}
               onKeyDown={(e) => {
                 if (
@@ -268,7 +352,9 @@ const SearchForm = (props: {
                 }
               }}
               rows="1"
-            />
+            >
+              {textareaInput()}
+            </textarea>
             <Show when={textareaInput()}>
               <button
                 classList={{
@@ -281,7 +367,6 @@ const SearchForm = (props: {
                     document.getElementById(
                       "search-query-textarea",
                     ) as HTMLTextAreaElement,
-                    true,
                   );
                 }}
               >
@@ -448,9 +533,9 @@ const SearchForm = (props: {
           </Popover>
         </div>
         <Show when={!props.query && !props.collectionID}>
-          <div class="flex flex-row justify-center space-x-2 px-6 md:px-40">
+          <div class="flex flex-col gap-y-2 sm:flex-row sm:justify-center sm:gap-y-0 sm:space-x-2 sm:px-6">
             <button
-              class="w-fit rounded  bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+              class="w-fit rounded bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"
               type="submit"
             >
               Search for Evidence
@@ -463,6 +548,14 @@ const SearchForm = (props: {
                 Create Evidence Card
               </a>
             </Show>
+            <div
+              id="lucky-button"
+              class="h-[40px] w-fit overflow-y-hidden rounded bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+            >
+              <a href="/search?q=" id="lucky-text">
+                I'm Feeling Lucky
+              </a>
+            </div>
           </div>
         </Show>
       </form>
