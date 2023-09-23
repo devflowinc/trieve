@@ -26,6 +26,8 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 
   const [user, setUser] = createSignal<UserDTOWithVotesAndCards>();
+  const [clientSideRequestFinished, setClientSideRequestFinished] =
+    createSignal(false);
   const [loggedUser, setLoggedUser] = createSignal<UserDTO>();
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
   const [showConfirmModal, setShowConfirmModal] = createSignal(false);
@@ -67,6 +69,7 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
       if (response.ok) {
         void response.json().then((data) => {
           setUser(data as UserDTOWithVotesAndCards);
+          setClientSideRequestFinished(true);
         });
       }
     });
@@ -191,6 +194,7 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
                     fetchCardCollections={fetchCardCollections}
                     setOnDelete={setOnDelete}
                     bookmarks={bookmarks()}
+                    showExpand={clientSideRequestFinished()}
                   />
                 </div>
               )}
