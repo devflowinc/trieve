@@ -1,7 +1,11 @@
 import { createSignal } from "solid-js";
 import RegisterOrUserProfile from "../RegisterOrUserProfile";
 
-export const HomeNavbar = () => {
+export interface HomeNavbarProps {
+  stars: number;
+}
+
+export const HomeNavbar = (props: HomeNavbarProps) => {
   const [isOpen, setIsOpen] = createSignal(false);
   return (
     <nav class="mb-8 bg-white dark:bg-shark-800 dark:text-white">
@@ -23,7 +27,7 @@ export const HomeNavbar = () => {
                 Docs
               </a>
               <div>
-                <RegisterOrUserProfile />
+                <RegisterOrUserProfile stars={props.stars} />
               </div>
             </div>
           </div>

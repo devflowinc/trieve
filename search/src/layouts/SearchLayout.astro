@@ -14,6 +14,23 @@ if (description == null || description === "") {
     "Demo of Arguflow's best-in-class semantic search infrastructure for debate evidence";
 }
 const plausibleHost = import.meta.env.PLAUSIBLE_HOST as string;
+
+let stars = 0;
+try {
+  const ghStarResponse = await fetch(
+    `https://api.github.com/repos/arguflow/arguflow`,
+    {
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `token ${import.meta.env.GITHUB_TOKEN}`,
+      },
+    },
+  );
+  const ghStarJson = await ghStarResponse.json();
+  stars = ghStarJson.stargazers_count;
+} catch (e) {
+  console.error(e);
+}
 ---
 
 <html lang="en">
@@ -98,7 +115,7 @@ const plausibleHost = import.meta.env.PLAUSIBLE_HOST as string;
     <div
       class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white"
     >
-      <Navbar client:load />
+      <Navbar stars={stars} client:load />
       <slot />
     </div>
   </body>
