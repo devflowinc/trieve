@@ -1,0 +1,12 @@
+name: cargo clippy
+
+jobs:
+  cargo-fmt:
+    name: cargo-fmt
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Get latest version of stable Rust
+      run: rustup update stable
+    - name: Check formatting with cargo fmt
+      run: make cargo-fmt
