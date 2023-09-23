@@ -343,35 +343,39 @@ const ScoreCard = (props: ScoreCardProps) => {
               </Show>
             </div>
             <div class="flex w-full flex-col">
-              <Show when={props.card.link}>
-                <a
-                  class="line-clamp-1 w-fit break-all text-magenta-500 underline dark:text-turquoise-400"
-                  target="_blank"
-                  href={props.card.link ?? ""}
-                >
-                  {props.card.link}
-                </a>
-              </Show>
+              <For each={frontMatterVals}>
+                {(frontMatterVal) => (
+                  <>
+                    <Show when={props.card.link && frontMatterVal == "link"}>
+                      <a
+                        class="line-clamp-1 w-fit break-all text-magenta-500 underline dark:text-turquoise-400"
+                        target="_blank"
+                        href={props.card.link ?? ""}
+                      >
+                        {props.card.link}
+                      </a>
+                    </Show>
+                    <Show when={frontMatterVal !== "link"}>
+                      <div class="flex space-x-2">
+                        <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                          {frontMatterVal}:{" "}
+                        </span>
+                        <span class="line-clamp-1 break-all">
+                          {(props.card.metadata ?? ({} as any))[
+                            frontMatterVal
+                          ].toString()}
+                        </span>
+                      </div>
+                    </Show>
+                  </>
+                )}
+              </For>
               <div class="grid w-fit auto-cols-min grid-cols-[1fr,3fr] gap-x-2 text-neutral-800 dark:text-neutral-200">
                 <Show when={props.score != 0}>
                   <span class="font-semibold">Similarity: </span>
                   <span>{props.score.toPrecision(3)}</span>
                 </Show>
               </div>
-              <For each={frontMatterVals}>
-                {(frontMatterVal) => (
-                  <div class="flex space-x-2">
-                    <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                      {frontMatterVal}:{" "}
-                    </span>
-                    <span class="line-clamp-1 break-all">
-                      {(props.card.metadata ?? ({} as unknown))[
-                        frontMatterVal
-                      ].toString()}
-                    </span>
-                  </div>
-                )}
-              </For>
             </div>
           </div>
         </div>
