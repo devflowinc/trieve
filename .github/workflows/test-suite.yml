@@ -1,5 +1,6 @@
 name: cargo clippy
 
+on: push
 jobs:
   cargo-fmt:
     name: cargo-fmt
@@ -10,14 +11,14 @@ jobs:
       run: rustup update stable
     - name: Check formatting with cargo fmt
       run: cargo fmt
-  clippy:
-    name: clippy
+
+  clippy_check:
     runs-on: ubuntu-latest
-    needs: cargo-fmt
     steps:
-    - uses: actions/checkout@v3
-    - name: Get latest version of stable Rust
-      run: rustup update stable
-    - name: Lint code for quality and style with Clippy
-      run: cargo clippy
+      - uses: actions/checkout@v1
+      - run: rustup component add clippy
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-features
 
