@@ -9,6 +9,7 @@ export interface CardMetadata {
   tag_set: string | null;
   file_id: string | null;
   file_name: string | null;
+  metadata: JSON | null;
 }
 
 export const indirectHasOwnProperty = (obj: unknown, prop: string): boolean => {
@@ -31,7 +32,9 @@ export const isCardMetadata = (card: unknown): card is CardMetadata => {
     typeof (card as CardMetadata).updated_at === "string" &&
     indirectHasOwnProperty(card, "tag_set") &&
     (typeof (card as CardMetadata).tag_set === "string" ||
-      (card as CardMetadata).tag_set === null)
+      (card as CardMetadata).tag_set === null) &&
+    (typeof (card as CardMetadata).metadata === "object" ||
+      (card as CardMetadata).metadata === null)
   );
 };
 

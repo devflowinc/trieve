@@ -1,4 +1,4 @@
-import { Setter, Show, createEffect, createSignal } from "solid-js";
+import { For, Setter, Show, createEffect, createSignal } from "solid-js";
 import type {
   CardBookmarksDTO,
   CardCollectionDTO,
@@ -19,7 +19,6 @@ import { FiEdit, FiGlobe, FiLock, FiTrash, FiCheck } from "solid-icons/fi";
 import { Tooltip } from "./Atoms/Tooltip";
 import { AiOutlineCopy, AiOutlineExclamation } from "solid-icons/ai";
 import CommunityBookmarkPopover from "./CommunityBookmarkPopover";
-import { getLocalTime } from "./CardMetadataDisplay";
 
 export const sanitzerOptions = {
   allowedTags: [...sanitizeHtml.defaults.allowedTags, "font"],
@@ -49,6 +48,11 @@ const ScoreCard = (props: ScoreCardProps) => {
   const similarityScoreThreshold =
     (import.meta.env.PUBLIC_SIMILARITY_SCORE_THRESHOLD as number | undefined) ??
     80;
+
+  const frontMatterVals = (
+    (import.meta.env.FRONTMATTER_VALS as string | undefined) ??
+    "link,tag_set,file_name"
+  ).split(",");
 
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
   const [userVote, setUserVote] = createSignal(0);
@@ -348,63 +352,26 @@ const ScoreCard = (props: ScoreCardProps) => {
                   {props.card.link}
                 </a>
               </Show>
-              <Show when={props.card.tag_set}>
-                <div class="flex space-x-2">
-                  <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                    OC_Path:{" "}
-                  </span>
-                  <span class="line-clamp-1 break-all">
-                    {props.card.tag_set?.split("/").slice(0, -1).join("/")}
-                  </span>
-                </div>
-              </Show>
-              <Show when={props.card.tag_set ?? props.card.file_name}>
-                <div class="flex space-x-2">
-                  <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                    Brief:{" "}
-                  </span>
-                  <Show when={props.card.tag_set && !props.card.file_name}>
-                    <a
-                      class="line-clamp-1 text-magenta-500 underline dark:text-turquoise-400"
-                      target="_blank"
-                      href={`https://oc.arguflow.com/${
-                        props.card.tag_set ?? ""
-                      }`}
-                    >
-                      {props.card.tag_set?.split("/").pop() ??
-                        props.card.tag_set}
-                    </a>
-                  </Show>
-                  <Show when={props.card.file_name}>
-                    <a
-                      class="line-clamp-1 cursor-pointer break-all text-magenta-500 underline dark:text-turquoise-400"
-                      target="_blank"
-                      onClick={(e) => downloadFile(e)}
-                    >
-                      {props.card.file_name}
-                    </a>
-                  </Show>
-                </div>
-              </Show>
               <div class="grid w-fit auto-cols-min grid-cols-[1fr,3fr] gap-x-2 text-neutral-800 dark:text-neutral-200">
                 <Show when={props.score != 0}>
                   <span class="font-semibold">Similarity: </span>
                   <span>{props.score.toPrecision(3)}</span>
                 </Show>
-                <Show when={props.card.author}>
-                  <span class="font-semibold">Author: </span>
-                  <a
-                    href={`/user/${props.card.author?.id ?? ""}`}
-                    class="line-clamp-1 break-all underline"
-                  >
-                    {props.card.author?.username ?? props.card.author?.email}
-                  </a>
-                </Show>
-                <span class="font-semibold">Created: </span>
-                <span>
-                  {getLocalTime(props.card.created_at).toLocaleDateString()}
-                </span>
               </div>
+              <For each={frontMatterVals}>
+                {(frontMatterVal) => (
+                  <div class="flex space-x-2">
+                    <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                      {frontMatterVal}:{" "}
+                    </span>
+                    <span class="line-clamp-1 break-all">
+                      {(props.card.metadata ?? ({} as unknown))[
+                        frontMatterVal
+                      ].toString()}
+                    </span>
+                  </div>
+                )}
+              </For>
             </div>
           </div>
         </div>
