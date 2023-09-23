@@ -14,6 +14,7 @@ import {
 import UserStoreContext from "./components/contexts/UserStoreContext";
 import "./root.css";
 import { createEffect } from "solid-js";
+import ShowToast from "./components/ShowToast";
 
 export default function Root() {
   const theme = (() => {
@@ -103,6 +104,7 @@ export default function Root() {
       <Body>
         <ErrorBoundary>
           <UserStoreContext>
+            <ShowToast />
             <Routes>
               <FileRoutes />
             </Routes>
