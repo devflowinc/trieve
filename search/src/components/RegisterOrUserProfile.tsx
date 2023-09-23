@@ -11,14 +11,15 @@ import { IoSettingsOutline } from "solid-icons/io";
 import { Show, createEffect, createSignal } from "solid-js";
 import { isUserDTO, type UserDTO } from "../../utils/apiTypes";
 import { NotificationPopover } from "./Atoms/NotificationPopover";
-import { AiFillGithub } from 'solid-icons/ai'
-import { TbMinusVertical } from 'solid-icons/tb'
-const RegisterOrUserProfile = () => {
+import { AiFillGithub } from "solid-icons/ai";
+import { TbMinusVertical } from "solid-icons/tb";
+import type { HomeNavbarProps } from "./Atoms/HomeNavbar";
+
+const RegisterOrUserProfile = (props: HomeNavbarProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 
   const [isLoadingUser, setIsLoadingUser] = createSignal(true);
   const [currentUser, setCurrentUser] = createSignal<UserDTO | null>(null);
-  const [stars, setStars] = createSignal(null);
 
   const logout = () => {
     void fetch(`${apiHost}/auth`, {
@@ -56,29 +57,29 @@ const RegisterOrUserProfile = () => {
     });
   });
 
-      createEffect(async()=>{
-      const response = await fetch(`https://api.github.com/repos/arguflow/arguflow`);
-        const data = await response.json();
-        setStars(data.stargazers_count);
-    })
   return (
     <div>
       <Show when={!isLoadingUser()}>
-        <div class="flex">
+        <div class="flex items-center space-x-2">
           <Show when={!currentUser()}>
             <div class="flex items-center space-x-3">
               <a href="/auth/login" class="min-[420px]:text-lg">
                 Login
               </a>
-             <a href="https://github.com/arguflow/arguflow">
-              <div class="flex items-center justify-center border border-black dark:border-white rounded py-1 px-2 dark:hover:bg-neutral-700 dark:hover:border-neutral-700 hover:bg-gray-300 hover:border-gray-300">
-              <AiFillGithub class="mr-2 h-[26px] w-[26px]"/>
-              <p class="text-sm">STAR US</p>
-              <TbMinusVertical size={25}/>
-              <p>{stars()}</p>
-              </div>
-             </a>
+              <a href="/auth/register" class="min-[420px]:text-lg">
+                Register
+              </a>
             </div>
+          </Show>
+          <Show when={props.stars}>
+            <a href="https://github.com/arguflow/arguflow">
+              <div class="flex items-center justify-center rounded border border-black px-2 py-1 hover:border-gray-300 hover:bg-gray-300 dark:border-white dark:hover:border-neutral-700 dark:hover:bg-neutral-700">
+                <AiFillGithub class="mr-2 h-[26px] w-[26px]" />
+                <p class="text-sm">STAR US</p>
+                <TbMinusVertical size={25} />
+                <p>{props.stars}</p>
+              </div>
+            </a>
           </Show>
           <NotificationPopover user={currentUser()} />
           <Show when={!!currentUser()}>

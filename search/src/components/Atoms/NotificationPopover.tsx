@@ -118,7 +118,7 @@ export const NotificationPopover = (props: { user: UserDTO | null }) => {
                   fetchNotifs();
                 }}
               >
-                <IoNotificationsOutline class="mr-4 h-6 w-6 fill-current" />
+                <IoNotificationsOutline class="h-6 w-6 fill-current" />
                 {notifs().find((notif) => !notif.user_read) && (
                   <span class="relative">
                     <div class="absolute right-3 top-0 h-2 w-2 rounded-full bg-red-500" />
