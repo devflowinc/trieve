@@ -38,6 +38,7 @@ export interface CardMetadataDisplayProps {
   setShowConfirmModal: Setter<boolean>;
   fetchCardCollections: () => void;
   setOnDelete: Setter<() => void>;
+  showExpand?: boolean;
 }
 
 const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
@@ -276,7 +277,11 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
           />
         </Show>
         <button
-          class="ml-2 font-semibold"
+          classList={{
+            "ml-2 font-semibold": true,
+            "animate-pulse": !props.showExpand,
+          }}
+          disabled={!props.showExpand}
           onClick={() => setExpanded((prev) => !prev)}
         >
           {expanded() ? (

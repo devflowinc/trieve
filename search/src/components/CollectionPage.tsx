@@ -71,6 +71,8 @@ export const CollectionPage = (props: CollectionPageProps) => {
   const [searchMetadatasWithVotes, setSearchMetadatasWithVotes] = createSignal<
     ScoreCardDTO[]
   >(searchCardMetadatasWithVotes);
+  const [clientSideRequestFinished, setClientSideRequestFinished] =
+    createSignal(false);
   const [collectionInfo, setCollectionInfo] = createSignal<CardCollectionDTO>(
     props.defaultCollectionCards.metadata.collection,
   );
@@ -187,6 +189,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
             setCollectionInfo(collectionBookmarks.collection);
             setTotalPages(collectionBookmarks.total_pages);
             setSearchMetadatasWithVotes(collectionBookmarks.bookmarks);
+            setClientSideRequestFinished(true);
             setError("");
           });
         }
@@ -468,6 +471,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
                     bookmarks={bookmarks()}
                     setOnDelete={setOnDelete}
                     setShowConfirmModal={setShowConfirmDeleteModal}
+                    showExpand={clientSideRequestFinished()}
                   />
                 </div>
               )}

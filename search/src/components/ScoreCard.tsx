@@ -41,6 +41,7 @@ export interface ScoreCardProps {
   setShowConfirmModal: Setter<boolean>;
   initialExpanded?: boolean;
   bookmarks: CardBookmarksDTO[];
+  showExpand?: boolean;
 }
 
 const ScoreCard = (props: ScoreCardProps) => {
@@ -438,7 +439,11 @@ const ScoreCard = (props: ScoreCardProps) => {
           />
         </Show>
         <button
-          class="ml-2 font-semibold"
+          classList={{
+            "ml-2 font-semibold": true,
+            "animate-pulse": !props.showExpand,
+          }}
+          disabled={!props.showExpand}
           onClick={() => setExpanded((prev) => !prev)}
         >
           {expanded() ? (
