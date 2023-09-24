@@ -43,7 +43,13 @@ pub struct AppMutexStore {
 
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
-    dotenvy::dotenv().ok();
+
+    if cfg!(feature = "require-env") {
+        dotenvy::dotenv().ok();
+    } else {
+        dotenvy::from_filename(".env.dist").ok();
+    }
+
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     if std::env::var("ALERT_EMAIL").is_err() {
