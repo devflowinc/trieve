@@ -122,12 +122,15 @@ export const AfMessage = (props: AfMessageProps) => {
                 </Show>
               </div>
             </div>
-            <Show when={props.role === "user" && showEditingIcon()}>
+            <Show when={props.role === "user"}>
               <button
-                class="text-neutral-600 dark:text-neutral-400"
+                classList={{
+                  "text-neutral-600 dark:text-neutral-400": showEditingIcon(),
+                  "text-transparent": !showEditingIcon(),
+                }}
                 onClick={() => setEditing(true)}
               >
-                <BiRegularEdit />
+                <BiRegularEdit class="fill-current" />
               </button>
             </Show>
           </div>
