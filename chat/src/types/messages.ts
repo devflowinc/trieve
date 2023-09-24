@@ -16,11 +16,11 @@ export const isMessageArray = (data: unknown): data is Message[] => {
 };
 
 export const messageRoleFromIndex = (idx: number) => {
-  if (idx == 0 || idx == 1) {
+  if (idx == 0) {
     return "system";
   }
   if (idx % 2 == 0) {
-    return "user";
+    return "assistant";
   }
-  return "assistant";
+  return "user";
 };

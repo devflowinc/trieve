@@ -1,4 +1,4 @@
-use crate::data::models::CutCard;
+use crate::data::models::{CutCard, Topic};
 use crate::diesel::prelude::*;
 use crate::operators::topic_operator::get_topic_query;
 use crate::{
@@ -38,20 +38,20 @@ pub fn user_owns_topic_query(
     user_given_id: uuid::Uuid,
     topic_id: uuid::Uuid,
     pool: &web::Data<Pool>,
-) -> bool {
+) -> Result<Topic, DefaultError> {
     use crate::data::schema::topics::dsl::*;
 
     let mut conn = pool.get().unwrap();
 
-    let topic = topics
+    let topic: Topic = topics
         .filter(id.eq(topic_id))
-        .filter(user_id.eq(user_id))
-        .first::<crate::data::models::Topic>(&mut conn);
-    if topic.is_err() {
-        return false;
-    }
+        .filter(user_id.eq(user_given_id))
+        .first::<crate::data::models::Topic>(&mut conn)
+        .map_err(|_db_error| DefaultError {
+            message: "Error getting topic",
+        })?;
 
-    topic.unwrap().user_id == user_given_id
+    Ok(topic)
 }
 
 pub fn create_message_query(
@@ -83,16 +83,16 @@ pub fn create_message_query(
     Ok(())
 }
 
-pub fn create_generic_system_and_prompt_message(
+pub fn create_generic_system_message(
     messages_topic_id: uuid::Uuid,
     normal_chat: bool,
     pool: &web::Data<Pool>,
-) -> Result<Vec<Message>, DefaultError> {
+) -> Result<Message, DefaultError> {
     let topic = crate::operators::topic_operator::get_topic_query(messages_topic_id, pool)?;
     let system_message_content = if normal_chat {
         "You are Arguflow Assistant, a large language model trained by Arguflow to be a helpful assistant."
     } else {
-        "You are Arguflow Competitive Debate Opponent, a large language model trained by Arguflow to act as a debate partner for students."
+        "You are Arguflow retrieval augmented chatbot, a large language model trained by Arguflow to respond in the same tone as and with the context of retrieved information."
     };
 
     let system_message = Message::from_details(
@@ -104,28 +104,11 @@ pub fn create_generic_system_and_prompt_message(
         Some(0),
     );
 
-    let user_message_content = if normal_chat {
-        "Hi".to_string()
-    } else {
-        format!(
-            "We are going to practice debating over the topic \"{}\". Treat all evidence as if you found it and not me. After my messages, you will respond with a competitive debate counterargument, citing the provided evidence, that I can respond to in order to further practice my competitive debate skills",
-            topic.resolution,
-        )
-    };
-
-    let user_message = Message::from_details(
-        user_message_content,
-        topic.id,
-        0,
-        "user".into(),
-        Some(0),
-        Some(0),
-    );
-
-    Ok(vec![system_message, user_message])
+    Ok(system_message)
 }
 
 pub fn create_topic_message_query(
+    normal_chat: bool,
     previous_messages: Vec<Message>,
     new_message: Message,
     given_user_id: uuid::Uuid,
@@ -136,18 +119,14 @@ pub fn create_topic_message_query(
     let mut previous_messages_len = previous_messages.len();
 
     if previous_messages.is_empty() {
-        // Check if this is a normal chat or not
-        let normal_chat = get_topic_query(new_message.topic_id, pool)?.normal_chat;
-        let starter_messages =
-            create_generic_system_and_prompt_message(new_message.topic_id, normal_chat, pool)?;
-        ret_messages.extend(starter_messages.clone());
-        for starter_message in starter_messages {
-            create_message_query(starter_message, given_user_id, pool)?;
-            previous_messages_len += 1;
-        }
+        let system_message =
+            create_generic_system_message(new_message.topic_id, normal_chat, pool)?;
+        ret_messages.extend(vec![system_message.clone()]);
+        create_message_query(system_message, given_user_id, pool)?;
+        previous_messages_len = 1;
     }
 
-    new_message_copy.sort_order = (previous_messages_len + 1).try_into().unwrap();
+    new_message_copy.sort_order = previous_messages_len as i32;
 
     create_message_query(new_message_copy.clone(), given_user_id, pool)?;
     ret_messages.push(new_message_copy);

@@ -1,8 +1,6 @@
-import { Transition } from "solid-headless";
 import { Show, createEffect, createSignal } from "solid-js";
 import { useSearchParams } from "solid-start";
-import { NewTopicForm } from "~/components/Forms/NewTopicForm";
-import Layout from "~/components/Layouts/MainLayout";
+import MainLayout from "~/components/Layouts/MainLayout";
 import { Navbar } from "~/components/Navbar/Navbar";
 import { Sidebar } from "~/components/Navbar/Sidebar";
 import { detectReferralToken, isTopic } from "~/types/actix-api";
@@ -16,9 +14,10 @@ export const debate = () => {
     undefined,
   );
   const [sidebarOpen, setSideBarOpen] = createSignal<boolean>(true);
-  const [isCreatingTopic, setIsCreatingTopic] = createSignal<boolean>(false);
+  const [isCreatingTopic, setIsCreatingTopic] = createSignal<boolean>(true);
   const [isCreatingNormalTopic, setIsCreatingNormalTopic] =
     createSignal<boolean>(false);
+  const [topics, setTopics] = createSignal<Topic[]>([]);
   const [loadingTopic, setLoadingTopic] = createSignal<boolean>(false);
   const [isLogin, setIsLogin] = createSignal<boolean>(false);
 
@@ -45,8 +44,6 @@ export const debate = () => {
       }
     });
   });
-
-  const [topics, setTopics] = createSignal<Topic[]>([]);
 
   const refetchTopics = async (): Promise<Topic[]> => {
     const response = await fetch(`${api_host}/topic`, {
@@ -77,7 +74,7 @@ export const debate = () => {
   return (
     <Show when={isLogin()}>
       <div class="relative flex h-screen flex-row bg-zinc-100 dark:bg-zinc-900">
-        <div class="hidden w-1/3 lg:block">
+        <div class="hidden w-1/4 overflow-x-hidden lg:block">
           <Sidebar
             currentTopic={selectedTopic}
             setCurrentTopic={setSelectedTopic}
@@ -111,77 +108,26 @@ export const debate = () => {
             </div>
           </div>
         </Show>
-        <Show
-          when={
-            !loadingTopic() &&
-            !isCreatingTopic() &&
-            selectedTopic() !== undefined
-          }
-        >
-          <Transition
-            class="flex w-full flex-col"
-            show={
-              !loadingTopic() &&
-              !isCreatingTopic() &&
-              selectedTopic() !== undefined
-            }
-            enter="transition-opacity duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="transition-opacity duration-300"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div
-              id="topic-layout"
-              class="overflow-y-auto scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600"
-            >
-              <Navbar
-                selectedTopic={selectedTopic}
-                setSideBarOpen={setSideBarOpen}
-                setIsCreatingTopic={setIsCreatingTopic}
-                setIsCreatingNormalTopic={setIsCreatingNormalTopic}
-              />
-              <Layout selectedTopic={selectedTopic} />
-            </div>
-          </Transition>
-        </Show>
-        <Show when={!loadingTopic() && (isCreatingTopic() || !selectedTopic())}>
-          <Transition
-            class="flex w-full flex-col space-y-16"
-            show={!loadingTopic() && (isCreatingTopic() || !selectedTopic())}
-            enter="transition-opacity duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="transition-opacity duration-300"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
+        <Show when={!loadingTopic()}>
+          <div
+            id="topic-layout"
+            class="w-full overflow-y-auto scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600"
           >
             <Navbar
               selectedTopic={selectedTopic}
               setSideBarOpen={setSideBarOpen}
+              isCreatingTopic={isCreatingTopic}
               setIsCreatingTopic={setIsCreatingTopic}
-              setIsCreatingNormalTopic={setIsCreatingNormalTopic}
-            />
-            <NewTopicForm
-              onSuccessfulTopicCreation={() => {
-                setLoadingTopic(true);
-                setIsCreatingTopic(false);
-                setTimeout(() => {
-                  void refetchTopics().then((topics_result) => {
-                    setSelectedTopic(topics_result[0]);
-                    setLoadingTopic(false);
-                  });
-                }, 500);
-              }}
-              setIsCreatingTopic={setIsCreatingTopic}
-              selectedTopic={selectedTopic}
-              setCurrentTopic={setSelectedTopic}
-              topics={topics}
               isCreatingNormalTopic={isCreatingNormalTopic}
               setIsCreatingNormalTopic={setIsCreatingNormalTopic}
             />
-          </Transition>
+            <MainLayout
+              setTopics={setTopics}
+              setSelectedTopic={setSelectedTopic}
+              isCreatingNormalTopic={isCreatingNormalTopic}
+              selectedTopic={selectedTopic}
+            />
+          </div>
         </Show>
       </div>
     </Show>

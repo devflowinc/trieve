@@ -1,30 +1,29 @@
-import { Accessor, For, Show, createEffect, createSignal } from "solid-js";
+import {
+  Accessor,
+  For,
+  Setter,
+  Show,
+  createEffect,
+  createSignal,
+} from "solid-js";
 import {
   FiArrowDown,
   FiRefreshCcw,
   FiSend,
   FiStopCircle,
 } from "solid-icons/fi";
-import { FaSolidScaleUnbalanced } from "solid-icons/fa";
-import { RiOthersBoxingLine } from "solid-icons/ri";
 import {
   isMessageArray,
   messageRoleFromIndex,
   type Message,
 } from "~/types/messages";
 import { Topic } from "~/types/topics";
-import {
-  Menu,
-  MenuItem,
-  Popover,
-  PopoverButton,
-  PopoverPanel,
-  Transition,
-} from "solid-headless";
 import { AfMessage } from "../Atoms/AfMessage";
-import { IoFunnelOutline, IoOptions } from "solid-icons/io";
 
 export interface LayoutProps {
+  setTopics: Setter<Topic[]>;
+  isCreatingNormalTopic: Accessor<boolean>;
+  setSelectedTopic: Setter<Topic | undefined>;
   selectedTopic: Accessor<Topic | undefined>;
 }
 
@@ -37,7 +36,7 @@ const scrollToBottomOfMessages = () => {
   // element.scrollIntoView({ block: "end" });
 };
 
-const Layout = (props: LayoutProps) => {
+const MainLayout = (props: LayoutProps) => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
 
   const resizeTextarea = (textarea: HTMLTextAreaElement) => {
@@ -138,37 +137,78 @@ const Layout = (props: LayoutProps) => {
     regenerateLastMessage,
   }: {
     new_message_content: string;
-    topic_id: string;
+    topic_id: string | undefined;
     regenerateLastMessage?: boolean;
   }) => {
+    let final_topic_id = topic_id;
+
+    if (!final_topic_id) {
+      const isNormalTopic = props.isCreatingNormalTopic();
+
+      let body: object = {
+        resolution: new_message_content,
+      };
+
+      if (isNormalTopic) {
+        body = {
+          resolution: new_message_content,
+          normal_chat: true,
+        };
+      }
+
+      const topicResponse = await fetch(`${api_host}/topic`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
+
+      if (!topicResponse.ok) {
+        const newEvent = new CustomEvent("show-toast", {
+          detail: {
+            type: "error",
+            message: "Error creating topic",
+          },
+        });
+        window.dispatchEvent(newEvent);
+        return;
+      }
+
+      const newTopic = (await topicResponse.json()) as unknown as Topic;
+      props.setTopics((prev) => {
+        return [newTopic, ...prev];
+      });
+      props.setSelectedTopic(newTopic);
+      final_topic_id = newTopic.id;
+    }
+    console.log("past topic creation");
+
     let requestMethod = "POST";
 
     if (regenerateLastMessage) {
       requestMethod = "DELETE";
       setMessages((prev) => {
         const newMessages = [{ content: "" }];
-        return [
-          ...prev.slice(0, prev.length > 3 ? prev.length - 1 : prev.length),
-          ...newMessages,
-        ];
+        return [...prev.slice(-1), ...newMessages];
       });
     } else {
       setNewMessageContent("");
-      const newMessageTextarea = document.getElementById(
-        "new-message-content-textarea",
-      ) as HTMLTextAreaElement;
-      resizeTextarea(newMessageTextarea);
+      const newMessageTextarea = document.querySelector(
+        "#new-message-content-textarea",
+      ) as HTMLTextAreaElement | undefined;
+      console.log("newMessageTextarea: ", newMessageTextarea);
+      newMessageTextarea && resizeTextarea(newMessageTextarea);
 
       setMessages((prev) => {
         const newMessages = [{ content: new_message_content }, { content: "" }];
-        if (prev.length === 0) {
-          newMessages.unshift(...[{ content: "" }, { content: "" }]);
-        }
         return [...prev, ...newMessages];
       });
     }
 
     try {
+      console.log("fetching completion");
       const res = await fetch(`${api_host}/message`, {
         method: requestMethod,
         headers: {
@@ -177,7 +217,7 @@ const Layout = (props: LayoutProps) => {
         credentials: "include",
         body: JSON.stringify({
           new_message_content,
-          topic_id,
+          topic_id: final_topic_id,
         }),
         signal: completionAbortController().signal,
       });
@@ -241,20 +281,21 @@ const Layout = (props: LayoutProps) => {
 
   return (
     <>
-      <Show when={loadingMessages()}>
+      <Show when={loadingMessages() && props.selectedTopic()}>
         <div class="flex w-full flex-col">
           <div class="flex w-full flex-col items-center justify-center">
             <img src="/cooking-crab.gif" class="aspect-square w-[128px]" />
           </div>
         </div>
       </Show>
-      <Show when={!loadingMessages()}>
-        <div class="relative flex flex-col justify-between">
+      <Show when={!loadingMessages() || !props.selectedTopic()}>
+        <div class="relative flex w-full flex-col justify-between">
           <div class="flex flex-col items-center pb-32" id="topic-messages">
             <For each={messages()}>
               {(message, idx) => {
                 return (
                   <AfMessage
+                    normalChat={!!props.selectedTopic()?.normal_chat}
                     role={messageRoleFromIndex(idx())}
                     content={message.content}
                     onEdit={(content: string) => {
@@ -275,7 +316,7 @@ const Layout = (props: LayoutProps) => {
                         signal: completionAbortController().signal,
                         body: JSON.stringify({
                           new_message_content: content,
-                          message_sort_order: idx() + 1,
+                          message_sort_order: idx(),
                           topic_id: props.selectedTopic()?.id,
                         }),
                       })
@@ -306,8 +347,8 @@ const Layout = (props: LayoutProps) => {
             </For>
           </div>
 
-          <div class="fixed bottom-0 right-0 flex w-full flex-col items-center space-y-4 bg-gradient-to-b from-transparent via-zinc-200 to-zinc-100 p-4 dark:via-zinc-800 dark:to-zinc-900 lg:w-3/4">
-            <Show when={messages().length > 2}>
+          <div class="fixed bottom-0 right-0 flex w-full flex-col items-center space-y-4 bg-gradient-to-b from-transparent via-zinc-200 to-zinc-100 p-4 dark:via-zinc-800 dark:to-zinc-900 lg:w-4/5">
+            <Show when={messages().length > 1}>
               <div class="flex w-full justify-center">
                 <Show when={!streamingCompletion()}>
                   <button
@@ -363,7 +404,7 @@ const Layout = (props: LayoutProps) => {
               </div>
             </Show>
             <div class="flex w-full flex-row space-x-2">
-              <form class="relative mr-12 flex h-fit max-h-[calc(100vh-32rem)] w-full flex-col items-center overflow-y-auto rounded-xl bg-neutral-50 py-1 pl-4 pr-6 text-neutral-800 dark:bg-neutral-700 dark:text-white">
+              <form class="relative flex h-fit max-h-[calc(100vh-32rem)] w-full flex-col items-center overflow-y-auto rounded-xl bg-neutral-50 py-1 pl-4 pr-6 text-neutral-800 dark:bg-neutral-700 dark:text-white">
                 <textarea
                   id="new-message-content-textarea"
                   class="w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
@@ -379,9 +420,6 @@ const Layout = (props: LayoutProps) => {
                         return;
                       }
                       const topic_id = props.selectedTopic()?.id;
-                      if (!topic_id) {
-                        return;
-                      }
                       void fetchCompletion({
                         new_message_content,
                         topic_id,
@@ -407,101 +445,6 @@ const Layout = (props: LayoutProps) => {
                   <FiSend />
                 </button>
               </form>
-              <div class="absolute bottom-4 right-4 flex h-10 w-10 items-center justify-center dark:text-white">
-                <Popover defaultOpen={false} class="relative flex items-center">
-                  {({ isOpen }) => (
-                    <>
-                      <PopoverButton aria-label="Toggle theme mode">
-                        <IoOptions class="h-5 w-5" />
-                      </PopoverButton>
-                      <Transition
-                        show={isOpen()}
-                        enter="transition duration-200"
-                        enterFrom="opacity-0 -translate-y-1 scale-50"
-                        enterTo="opacity-100 translate-y-0 scale-100"
-                        leave="transition duration-150"
-                        leaveFrom="opacity-100 translate-y-0 scale-100"
-                        leaveTo="opacity-0 -translate-y-1 scale-50"
-                      >
-                        <PopoverPanel
-                          unmount={true}
-                          class="absolute -right-2 -top-[185px] z-50 w-fit transform"
-                        >
-                          <Menu class="flex flex-col space-y-1 overflow-hidden rounded-lg border border-neutral-400 bg-neutral-50 p-1 shadow-lg drop-shadow-lg dark:border-slate-900 dark:bg-neutral-700 dark:text-white">
-                            <MenuItem as="button" aria-label="Empty" />
-                            <MenuItem
-                              as="button"
-                              class="flex items-center space-x-2 rounded-md border border-neutral-200 px-2 py-1 hover:cursor-pointer focus:bg-neutral-200 focus:outline-none dark:border-neutral-600 dark:focus:bg-neutral-600"
-                              onClick={() => {
-                                setNewMessageContent(
-                                  'You are the Debate judge who must decide a winner in the debate, reason to the best degree who won this debate, respond either "affirmative" or "negative". Then explain why.',
-                                );
-                              }}
-                            >
-                              <div>
-                                <FaSolidScaleUnbalanced class="h-6 w-6" />
-                              </div>
-                              <div>
-                                <div
-                                  classList={{
-                                    "text-md font-medium": true,
-                                  }}
-                                >
-                                  Judge
-                                </div>
-                              </div>
-                            </MenuItem>
-                            <MenuItem
-                              as="button"
-                              class="flex items-center space-x-2 rounded-md border border-neutral-200 px-2 py-1 hover:cursor-pointer focus:bg-neutral-200 focus:outline-none dark:border-neutral-600 dark:focus:bg-neutral-600"
-                            >
-                              <div>
-                                <RiOthersBoxingLine class="h-6 w-6" />
-                              </div>
-                              <div>
-                                <div
-                                  classList={{
-                                    "text-md font-medium": true,
-                                  }}
-                                  onClick={() => {
-                                    setNewMessageContent(
-                                      "Summarize the main areas of clash that occurred in this debate",
-                                    );
-                                  }}
-                                >
-                                  Summarize Clash
-                                </div>
-                              </div>
-                            </MenuItem>
-                            <MenuItem
-                              as="button"
-                              class="flex items-center space-x-2 rounded-md border border-neutral-200 px-2 py-1 hover:cursor-pointer focus:bg-neutral-200 focus:outline-none dark:border-neutral-600 dark:focus:bg-neutral-600"
-                            >
-                              <div>
-                                <IoFunnelOutline class="h-6 w-6" />
-                              </div>
-                              <div>
-                                <div
-                                  classList={{
-                                    "text-md font-medium": true,
-                                  }}
-                                  onClick={() => {
-                                    setNewMessageContent(
-                                      "Summarize the themes of our debate thus far",
-                                    );
-                                  }}
-                                >
-                                  Summarize Themes
-                                </div>
-                              </div>
-                            </MenuItem>
-                          </Menu>
-                        </PopoverPanel>
-                      </Transition>
-                    </>
-                  )}
-                </Popover>
-              </div>
             </div>
           </div>
         </div>
@@ -510,4 +453,4 @@ const Layout = (props: LayoutProps) => {
   );
 };
 
-export default Layout;
+export default MainLayout;

@@ -1,4 +1,3 @@
-import { Transition } from "solid-headless";
 import { Show, createEffect, createSignal } from "solid-js";
 import {
   UserDTO,
@@ -87,26 +86,10 @@ const SearchForm = () => {
 
   return (
     <>
-      <Transition
-        show={!currentUser()}
-        enter="transition duration-400"
-        enterFrom="opacity-0"
-        enterTo="opacity-100"
-        leave="transition duration-150"
-        leaveFrom="opacity-100"
-        leaveTo="opacity-0"
-      >
+      <Show when={currentUser()}>
         <div class="mx-auto mt-16 h-32 w-32 animate-spin rounded-full border-b-2 border-t-2 border-neutral-900 dark:border-white" />
-      </Transition>
-      <Transition
-        show={!!currentUser()}
-        enter="transition duration-600"
-        enterFrom="opacity-0"
-        enterTo="opacity-100"
-        leave="transition duration-200"
-        leaveFrom="opacity-100"
-        leaveTo="opacity-0"
-      >
+      </Show>
+      <Show when={!!currentUser()}>
         <form
           class="mb-8 h-full w-full text-neutral-800 dark:text-white"
           onSubmit={(e) => {
@@ -172,7 +155,7 @@ const SearchForm = () => {
             </button>
           </div>
         </form>
-      </Transition>
+      </Show>
     </>
   );
 };
