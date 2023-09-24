@@ -18,7 +18,6 @@ export const debate = () => {
   const [isCreatingNormalTopic, setIsCreatingNormalTopic] =
     createSignal<boolean>(false);
   const [topics, setTopics] = createSignal<Topic[]>([]);
-  const [loadingTopic, setLoadingTopic] = createSignal<boolean>(false);
   const [isLogin, setIsLogin] = createSignal<boolean>(false);
 
   detectReferralToken(searchParams.t);
@@ -101,34 +100,25 @@ export const debate = () => {
             />
           </Show>
         </div>
-        <Show when={loadingTopic()}>
-          <div class="flex w-full flex-col">
-            <div class="flex w-full flex-col items-center justify-center">
-              <img src="/cooking-crab.gif" class="aspect-square w-[128px]" />
-            </div>
-          </div>
-        </Show>
-        <Show when={!loadingTopic()}>
-          <div
-            id="topic-layout"
-            class="w-full overflow-y-auto scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600"
-          >
-            <Navbar
-              selectedTopic={selectedTopic}
-              setSideBarOpen={setSideBarOpen}
-              isCreatingTopic={isCreatingTopic}
-              setIsCreatingTopic={setIsCreatingTopic}
-              isCreatingNormalTopic={isCreatingNormalTopic}
-              setIsCreatingNormalTopic={setIsCreatingNormalTopic}
-            />
-            <MainLayout
-              setTopics={setTopics}
-              setSelectedTopic={setSelectedTopic}
-              isCreatingNormalTopic={isCreatingNormalTopic}
-              selectedTopic={selectedTopic}
-            />
-          </div>
-        </Show>
+        <div
+          id="topic-layout"
+          class="w-full overflow-y-auto scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600"
+        >
+          <Navbar
+            selectedTopic={selectedTopic}
+            setSideBarOpen={setSideBarOpen}
+            isCreatingTopic={isCreatingTopic}
+            setIsCreatingTopic={setIsCreatingTopic}
+            isCreatingNormalTopic={isCreatingNormalTopic}
+            setIsCreatingNormalTopic={setIsCreatingNormalTopic}
+          />
+          <MainLayout
+            setTopics={setTopics}
+            setSelectedTopic={setSelectedTopic}
+            isCreatingNormalTopic={isCreatingNormalTopic}
+            selectedTopic={selectedTopic}
+          />
+        </div>
       </div>
     </Show>
   );

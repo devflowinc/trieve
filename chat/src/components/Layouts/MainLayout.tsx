@@ -5,6 +5,7 @@ import {
   Show,
   createEffect,
   createSignal,
+  onCleanup,
 } from "solid-js";
 import {
   FiArrowDown,
@@ -61,7 +62,7 @@ const MainLayout = (props: LayoutProps) => {
   createEffect(() => {
     const element = document.getElementById("topic-layout");
     if (!element) {
-      console.error("Could not find element with id 'topic-messages'");
+      console.error("Could not find element with id 'topic-layout'");
       return;
     }
 
@@ -75,13 +76,13 @@ const MainLayout = (props: LayoutProps) => {
       );
     });
 
-    return () => {
+    onCleanup(() => {
       element.removeEventListener("scroll", () => {
         setAtMessageBottom(
           element.scrollHeight - element.scrollTop === element.clientHeight,
         );
       });
-    };
+    });
   });
 
   createEffect(() => {
@@ -140,9 +141,11 @@ const MainLayout = (props: LayoutProps) => {
     topic_id: string | undefined;
     regenerateLastMessage?: boolean;
   }) => {
-    let final_topic_id = topic_id;
+    let finalTopicId = topic_id;
 
-    if (!final_topic_id) {
+    if (!finalTopicId) {
+      setNewMessageContent("");
+      setStreamingCompletion(true);
       const isNormalTopic = props.isCreatingNormalTopic();
 
       let body: object = {
@@ -166,6 +169,7 @@ const MainLayout = (props: LayoutProps) => {
       });
 
       if (!topicResponse.ok) {
+        setStreamingCompletion(false);
         const newEvent = new CustomEvent("show-toast", {
           detail: {
             type: "error",
@@ -180,13 +184,17 @@ const MainLayout = (props: LayoutProps) => {
       props.setTopics((prev) => {
         return [newTopic, ...prev];
       });
-      props.setSelectedTopic(newTopic);
-      final_topic_id = newTopic.id;
+      props.setSelectedTopic({
+        id: newTopic.id,
+        resolution: newTopic.resolution,
+        side: newTopic.side,
+        normal_chat: newTopic.normal_chat,
+        set_inline: true,
+      });
+      finalTopicId = newTopic.id;
     }
-    console.log("past topic creation");
 
     let requestMethod = "POST";
-
     if (regenerateLastMessage) {
       requestMethod = "DELETE";
       setMessages((prev): Message[] => {
@@ -202,6 +210,13 @@ const MainLayout = (props: LayoutProps) => {
       newMessageTextarea && resizeTextarea(newMessageTextarea);
 
       setMessages((prev) => {
+        if (prev.length === 0) {
+          return [
+            { content: "" },
+            { content: new_message_content },
+            { content: "" },
+          ];
+        }
         const newMessages = [{ content: new_message_content }, { content: "" }];
         return [...prev, ...newMessages];
       });
@@ -216,7 +231,7 @@ const MainLayout = (props: LayoutProps) => {
         credentials: "include",
         body: JSON.stringify({
           new_message_content,
-          topic_id: final_topic_id,
+          topic_id: finalTopicId,
         }),
         signal: completionAbortController().signal,
       });
@@ -225,7 +240,6 @@ const MainLayout = (props: LayoutProps) => {
       if (!reader) {
         return;
       }
-      setStreamingCompletion(true);
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const _ = await handleReader(reader);
     } catch (e) {
@@ -237,10 +251,11 @@ const MainLayout = (props: LayoutProps) => {
     topicId: string | undefined,
     abortController: AbortController,
   ) => {
-    setLoadingMessages(true);
     if (!topicId) {
       return;
     }
+
+    setLoadingMessages(true);
     const res = await fetch(`${api_host}/messages/${topicId}`, {
       method: "GET",
       headers: {
@@ -258,13 +273,20 @@ const MainLayout = (props: LayoutProps) => {
   };
 
   createEffect(() => {
+    const curTopic = props.selectedTopic();
+
+    if (curTopic?.set_inline) {
+      setLoadingMessages(false);
+      return;
+    }
+
     setMessages([]);
     const fetchMessagesAbortController = new AbortController();
-    void fetchMessages(props.selectedTopic()?.id, fetchMessagesAbortController);
+    void fetchMessages(curTopic?.id, fetchMessagesAbortController);
 
-    return () => {
+    onCleanup(() => {
       fetchMessagesAbortController.abort();
-    };
+    });
   });
 
   const submitNewMessage = () => {
@@ -280,7 +302,12 @@ const MainLayout = (props: LayoutProps) => {
 
   return (
     <>
-      <Show when={loadingMessages() && props.selectedTopic()}>
+      <Show
+        when={
+          (loadingMessages() && props.selectedTopic()) ||
+          (streamingCompletion() && messages().length == 0)
+        }
+      >
         <div class="flex w-full flex-col">
           <div class="flex w-full flex-col items-center justify-center">
             <img src="/cooking-crab.gif" class="aspect-square w-[128px]" />
@@ -347,7 +374,7 @@ const MainLayout = (props: LayoutProps) => {
           </div>
 
           <div class="fixed bottom-0 right-0 flex w-full flex-col items-center space-y-4 bg-gradient-to-b from-transparent via-zinc-200 to-zinc-100 p-4 dark:via-zinc-800 dark:to-zinc-900 lg:w-4/5">
-            <Show when={messages().length > 1}>
+            <Show when={messages().length > 0}>
               <div class="flex w-full justify-center">
                 <Show when={!streamingCompletion()}>
                   <button
