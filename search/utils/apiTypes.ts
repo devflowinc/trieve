@@ -9,7 +9,7 @@ export interface CardMetadata {
   tag_set: string | null;
   file_id: string | null;
   file_name: string | null;
-  metadata: JSON | null;
+  metadata: object | null;
 }
 
 export const indirectHasOwnProperty = (obj: unknown, prop: string): boolean => {
