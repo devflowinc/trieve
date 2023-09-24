@@ -189,16 +189,16 @@ const MainLayout = (props: LayoutProps) => {
 
     if (regenerateLastMessage) {
       requestMethod = "DELETE";
-      setMessages((prev) => {
+      setMessages((prev): Message[] => {
         const newMessages = [{ content: "" }];
-        return [...prev.slice(-1), ...newMessages];
+        console.log([...prev.slice(0, -1), ...newMessages]);
+        return [...prev.slice(0, -1), ...newMessages];
       });
     } else {
       setNewMessageContent("");
       const newMessageTextarea = document.querySelector(
         "#new-message-content-textarea",
       ) as HTMLTextAreaElement | undefined;
-      console.log("newMessageTextarea: ", newMessageTextarea);
       newMessageTextarea && resizeTextarea(newMessageTextarea);
 
       setMessages((prev) => {
@@ -208,7 +208,6 @@ const MainLayout = (props: LayoutProps) => {
     }
 
     try {
-      console.log("fetching completion");
       const res = await fetch(`${api_host}/message`, {
         method: requestMethod,
         headers: {

@@ -212,12 +212,13 @@ pub async fn regenerate_message_handler(
         }
     };
 
-    if previous_messages.len() < 3 {
+    if previous_messages.len() < 2 {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
             message: "Not enough messages to regenerate",
         }));
     }
-    if previous_messages.len() == 3 {
+
+    if previous_messages.len() == 2 {
         return stream_response(
             user_topic.normal_chat,
             previous_messages,
