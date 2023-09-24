@@ -7,7 +7,6 @@ import {
   BiRegularTrash,
   BiRegularX,
 } from "solid-icons/bi";
-import { TbGavel } from "solid-icons/tb";
 import { Accessor, createSignal, For, Setter, Show } from "solid-js";
 import type { Topic } from "~/types/topics";
 import { FiSettings } from "solid-icons/fi";
@@ -115,7 +114,7 @@ export const Sidebar = (props: SidebarProps) => {
               <span class="text-xl">
                 <BiRegularPlus class="fill-current" />
               </span>
-              <span>New Retrieval Augmented Chat</span>
+              <span>Retrieval Augmented Chat</span>
             </div>
           </button>
           <button
@@ -131,7 +130,7 @@ export const Sidebar = (props: SidebarProps) => {
               <span class="text-xl">
                 <BiRegularPlus class="fill-current" />
               </span>
-              <span>New Normal Chat</span>
+              <span>Normal Chat</span>
             </div>
           </button>
         </div>
@@ -142,7 +141,7 @@ export const Sidebar = (props: SidebarProps) => {
                 classList={{
                   "flex items-center space-x-4 py-2 w-full rounded-md": true,
                   "bg-neutral-200 dark:bg-neutral-700":
-                    props.currentTopic() === topic,
+                    props.currentTopic()?.id === topic.id,
                 }}
                 onClick={() => {
                   const topics = props.topics();

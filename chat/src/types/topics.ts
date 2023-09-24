@@ -3,4 +3,5 @@ export interface Topic {
   resolution: string;
   side: boolean;
   normal_chat?: boolean;
+  set_inline?: boolean;
 }
