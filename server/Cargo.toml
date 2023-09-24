@@ -55,3 +55,7 @@ simsearch = "0.2.4"
 
 [build-dependencies]
 dotenvy = "0.15.7"
+
+[features]
+default = ["require-env"]
+require-env = []
