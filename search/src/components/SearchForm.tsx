@@ -246,7 +246,6 @@ const SearchForm = (props: {
     typeText();
 
     onCleanup(() => {
-      console.log("cleaning up");
       clearTimeout(timeoutRefOne);
       clearTimeout(timeoutRefTwo);
       clearTimeout(timeoutRefThree);
@@ -255,30 +254,38 @@ const SearchForm = (props: {
 
   // contains the logic for the feeling lucky button
   createEffect(() => {
-    let hoverTimeout: number;
+    let hoverTimeout = 0;
 
     const feelingRandom = () => {
       setFeelingLuckyText((prev) => {
         const arr = prev.slice();
-        while (arr[arr.length - 1] === prev[prev.length - 1]) {
-          for (let i = arr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [arr[i], arr[j]] = [arr[j], arr[i]];
-          }
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        if (arr[arr.length - 1] === prev[prev.length - 1]) {
+          [arr[arr.length - 1], arr[0]] = [arr[0], arr[arr.length - 1]];
         }
         return arr;
       });
 
-      hoverTimeout = setTimeout(() => setFeelingLuckySpinning(false), 300);
+      hoverTimeout = setTimeout(() => {
+        setFeelingLuckySpinning(false);
+        hoverTimeout = 0;
+      }, 300);
     };
 
     const feelingLucky = () => {
       clearTimeout(hoverTimeout);
+      hoverTimeout = 0;
       setFeelingLuckySpinning(false);
     };
 
     const spinning = feelingLuckySpinning();
     if (spinning) {
+      if (hoverTimeout) {
+        return;
+      }
       feelingRandom();
       return;
     }
