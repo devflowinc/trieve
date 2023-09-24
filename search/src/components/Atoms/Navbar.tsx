@@ -1,9 +1,15 @@
-import { createSignal } from "solid-js";
+import { Show, createSignal } from "solid-js";
 import RegisterOrUserProfile from "../RegisterOrUserProfile";
 import type { HomeNavbarProps } from "./HomeNavbar";
 
 export const Navbar = (props: HomeNavbarProps) => {
+  const createEvidenceFeature =
+    import.meta.env.PUBLIC_CREATE_EVIDENCE_FEATURE !== "off";
+  const uploadDocumentFeature =
+    import.meta.env.PUBLIC_DOCUMENT_UPLOAD_FEATURE !== "off";
+
   const [isOpen, setIsOpen] = createSignal(false);
+
   return (
     <nav class="mb-8 bg-white dark:bg-shark-800 dark:text-white">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -16,18 +22,22 @@ export const Navbar = (props: HomeNavbarProps) => {
               </div>
             </a>
             <div class="flex w-full items-center justify-end space-x-1 sm:space-x-4">
-              <a
-                href="/create"
-                class="hidden text-center min-[420px]:text-lg min-[920px]:block"
-              >
-                Create Card
-              </a>
-              <a
-                href="/upload"
-                class="hidden text-center min-[420px]:text-lg min-[920px]:block"
-              >
-                Upload Files
-              </a>
+              <Show when={createEvidenceFeature}>
+                <a
+                  href="/create"
+                  class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+                >
+                  Create Card
+                </a>
+              </Show>
+              <Show when={uploadDocumentFeature}>
+                <a
+                  href="/upload"
+                  class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+                >
+                  Upload Files
+                </a>
+              </Show>
               <a
                 href="https://docs.arguflow.ai"
                 target="_blank"
@@ -91,18 +101,22 @@ export const Navbar = (props: HomeNavbarProps) => {
         id="mobile-menu"
       >
         <div class="space-y-1 px-2 pb-3 pt-2 sm:px-3">
-          <a
-            href="/create"
-            class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
-          >
-            Create Card
-          </a>
-          <a
-            href="/upload"
-            class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
-          >
-            Upload Files
-          </a>
+          <Show when={createEvidenceFeature}>
+            <a
+              href="/create"
+              class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+            >
+              Create Card
+            </a>
+          </Show>
+          <Show when={uploadDocumentFeature}>
+            <a
+              href="/upload"
+              class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
+            >
+              Upload Files
+            </a>
+          </Show>
           <a
             href="https://docs.arguflow.ai"
             target="_blank"

@@ -51,6 +51,15 @@ pub async fn upload_file_handler(
     mutex_store: web::Data<AppMutexStore>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let document_upload_feature =
+        std::env::var("DOCUMENT_UPLOAD_FEATURE").unwrap_or("off".to_string());
+
+    if document_upload_feature != "on" {
+        return Err(
+            ServiceError::BadRequest("Document upload feature is disabled".to_string()).into(),
+        );
+    }
+
     let upload_file_data = data.into_inner();
     let pool_inner = pool.clone();
 
@@ -120,6 +129,15 @@ pub async fn update_file_handler(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let document_upload_feature =
+        std::env::var("DOCUMENT_UPLOAD_FEATURE").unwrap_or("off".to_string());
+
+    if document_upload_feature != "on" {
+        return Err(
+            ServiceError::BadRequest("Document upload feature is disabled".to_string()).into(),
+        );
+    }
+
     let pool1 = pool.clone();
 
     user_owns_file(user.id, data.file_id, pool).await?;

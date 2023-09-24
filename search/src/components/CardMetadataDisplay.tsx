@@ -1,9 +1,9 @@
-import { Setter, Show, createSignal } from "solid-js";
-import type {
-  CardBookmarksDTO,
-  CardCollectionDTO,
-  CardMetadataWithVotes,
-  FileDTO,
+import { For, Setter, Show, createSignal } from "solid-js";
+import {
+  indirectHasOwnProperty,
+  type CardBookmarksDTO,
+  type CardCollectionDTO,
+  type CardMetadataWithVotes,
 } from "../../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import sanitizeHtml from "sanitize-html";
@@ -47,7 +47,8 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
     (import.meta.env.PUBLIC_SIMILARITY_SCORE_THRESHOLD as number | undefined) ??
     80;
   const frontMatterVals = (
-    (import.meta.env.FRONTMATTER_VALS as String) ?? "link,tag_set,file_name"
+    (import.meta.env.PUBLIC_FRONTMATTER_VALS as string | undefined) ??
+    "link,tag_set,file_name"
   ).split(",");
 
   const [expanded, setExpanded] = createSignal(false);
@@ -76,49 +77,6 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
     });
 
     props.setShowConfirmModal(true);
-  };
-
-  function base64UrlToDownloadFile(base64Url: string, fileName: string) {
-    // Decode base64 URL encoded string
-    const base64Data = atob(base64Url.replace(/-/g, "+").replace(/_/g, "/"));
-
-    // Convert binary string to ArrayBuffer
-    const buffer = new ArrayBuffer(base64Data.length);
-    const array = new Uint8Array(buffer);
-    for (let i = 0; i < base64Data.length; i++) {
-      array[i] = base64Data.charCodeAt(i);
-    }
-
-    // Create Blob from ArrayBuffer
-    const blob = new Blob([buffer], { type: "application/octet-stream" });
-
-    // Create URL object
-    const url = URL.createObjectURL(blob);
-
-    // Create <a> element
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName;
-
-    // Programmatically click the link to trigger the file download
-    link.click();
-
-    // Clean up URL object
-    URL.revokeObjectURL(url);
-  }
-
-  const downloadFile = (e: Event) => {
-    e.stopPropagation();
-    e.preventDefault();
-    void fetch(`${api_host}/file/${props.card.file_id ?? ""}`, {
-      method: "GET",
-      credentials: "include",
-    }).then((response) => {
-      void response.json().then((data) => {
-        const file = data as FileDTO;
-        base64UrlToDownloadFile(file.base64url_content, file.file_name);
-      });
-    });
   };
 
   return (
@@ -213,15 +171,31 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                       {props.card.link}
                     </a>
                   </Show>
-                  <Show when={frontMatterVal !== "link"}>
+                  <Show
+                    when={
+                      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                      frontMatterVal !== "link" &&
+                      props.card.metadata &&
+                      indirectHasOwnProperty(
+                        props.card.metadata,
+                        frontMatterVal,
+                      ) &&
+                      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+                      (props.card.metadata as any)[frontMatterVal]
+                    }
+                  >
                     <div class="flex space-x-2">
                       <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                         {frontMatterVal}:{" "}
                       </span>
                       <span class="line-clamp-1 break-all">
-                        {(props.card.metadata ?? ({} as any))[
-                          frontMatterVal
-                        ].toString()}
+                        {props.card.metadata &&
+                          indirectHasOwnProperty(
+                            props.card.metadata,
+                            frontMatterVal,
+                          ) &&
+                          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+                          (props.card.metadata as any)[frontMatterVal]}
                       </span>
                     </div>
                   </Show>
