@@ -324,6 +324,7 @@ const MainLayout = (props: LayoutProps) => {
                     normalChat={!!props.selectedTopic()?.normal_chat}
                     role={messageRoleFromIndex(idx())}
                     content={message.content}
+                    streamingCompletion={streamingCompletion}
                     onEdit={(content: string) => {
                       const newMessage: Message = {
                         content: "",

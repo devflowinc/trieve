@@ -51,7 +51,7 @@ const ScoreCard = (props: ScoreCardProps) => {
 
   const frontMatterVals = (
     (import.meta.env.PUBLIC_FRONTMATTER_VALS as string | undefined) ??
-    "link,tag_set,file_name"
+    "link,tag_set"
   ).split(",");
 
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);

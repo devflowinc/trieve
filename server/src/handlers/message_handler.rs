@@ -518,7 +518,7 @@ pub async fn stream_response(
     let stream = client.chat().create_stream(parameters).await.unwrap();
 
     if !citation_cards_stringified.is_empty() {
-        citation_cards_stringified = format!("||{}", citation_cards_stringified);
+        citation_cards_stringified = format!("{}||", citation_cards_stringified);
         citation_cards_stringified1 = citation_cards_stringified.clone();
     }
 

@@ -1,6 +1,13 @@
 import { BiRegularEdit, BiSolidUserRectangle } from "solid-icons/bi";
 import { AiFillRobot } from "solid-icons/ai";
-import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
+import {
+  Accessor,
+  For,
+  Show,
+  createEffect,
+  createMemo,
+  createSignal,
+} from "solid-js";
 import { CardMetadataWithVotes } from "~/utils/apiTypes";
 import ScoreCard from "../ScoreCard";
 
@@ -9,6 +16,7 @@ export interface AfMessageProps {
   role: "user" | "assistant" | "system";
   content: string;
   onEdit: (content: string) => void;
+  streamingCompletion: Accessor<boolean>;
 }
 
 export const AfMessage = (props: AfMessageProps) => {
@@ -18,30 +26,24 @@ export const AfMessage = (props: AfMessageProps) => {
     window.innerWidth < 450 ? true : false,
   );
   const [editingMessageContent, setEditingMessageContent] = createSignal("");
+  const [cardMetadatas, setCardMetadatas] = createSignal<
+    CardMetadataWithVotes[]
+  >([]);
 
   createEffect(() => {
     setEditingMessageContent(props.content);
   });
 
   const displayMessage = createMemo(() => {
-    if (props.normalChat) return { content: props.content };
-
-    if (props.role !== "assistant") {
-      const split_content = props.content.split("||");
-
-      return {
-        content: split_content.length > 1 ? split_content[1] : props.content,
-      };
-    }
+    if (props.normalChat || props.role !== "assistant")
+      return { content: props.content };
 
     const split_content = props.content.split("||");
-    let card_metadata_with_votes: CardMetadataWithVotes[] = [];
     let content = props.content;
     if (split_content.length > 1) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      card_metadata_with_votes = JSON.parse(split_content[0]);
+      setCardMetadatas(JSON.parse(split_content[0]));
       content = split_content[1];
-    } else if (props.content.length > 50) {
+    } else if (props.content.length > 25) {
       return {
         content:
           "I am stumped and cannot figure out how to respond to this. Try regenerating your response or making a new topic.",
@@ -49,7 +51,6 @@ export const AfMessage = (props: AfMessageProps) => {
     }
 
     return {
-      card_metadata_with_votes,
       content,
     };
   });
@@ -88,13 +89,13 @@ export const AfMessage = (props: AfMessageProps) => {
                 classList={{
                   "w-full": true,
                   "flex flex-col gap-y-8 items-start lg:gap-4 lg:grid lg:grid-cols-3 flex-col-reverse lg:flex-row":
-                    !!displayMessage().card_metadata_with_votes,
+                    !!cardMetadatas(),
                 }}
               >
                 <div class="col-span-2 whitespace-pre-line text-neutral-800 dark:text-neutral-50">
                   {editedContent() || displayMessage().content.trimStart()}
                 </div>
-                <Show when={displayMessage().content === ""}>
+                <Show when={!displayMessage().content}>
                   <div class="col-span-2 w-full whitespace-pre-line">
                     <img
                       src="/cooking-crab.gif"
@@ -102,9 +103,9 @@ export const AfMessage = (props: AfMessageProps) => {
                     />
                   </div>
                 </Show>
-                <Show when={displayMessage().card_metadata_with_votes}>
+                <Show when={cardMetadatas()}>
                   <div class="w-full flex-col space-y-3">
-                    <For each={displayMessage().card_metadata_with_votes}>
+                    <For each={cardMetadatas()}>
                       {(card) => (
                         <ScoreCard
                           signedInUserId={undefined}
@@ -115,6 +116,7 @@ export const AfMessage = (props: AfMessageProps) => {
                           score={0}
                           initialExpanded={false}
                           bookmarks={[]}
+                          showExpand={!props.streamingCompletion()}
                         />
                       )}
                     </For>

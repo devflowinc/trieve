@@ -192,10 +192,10 @@ export const Sidebar = (props: SidebarProps) => {
                 {editingIndex() !== index() && (
                   <div class="flex flex-1 items-center px-3">
                     <Show when={topic.normal_chat}>
-                      <BiRegularChat class="mr-2" />
+                      <BiRegularChat class="mr-2 fill-current" />
                     </Show>
                     <Show when={!topic.normal_chat}>
-                      <BiRegularBrain class="mr-2" />
+                      <BiRegularBrain class="mr-2 fill-current" />
                     </Show>
                     <p class="line-clamp-1 break-all">{topic.resolution}</p>
                     <div class="flex-1" />
