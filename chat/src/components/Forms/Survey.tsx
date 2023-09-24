@@ -1,5 +1,11 @@
-import { Transition } from "solid-headless";
-import { Accessor, createEffect, createSignal, For, onCleanup } from "solid-js";
+import {
+  Accessor,
+  createEffect,
+  createSignal,
+  For,
+  onCleanup,
+  Show,
+} from "solid-js";
 import { CgChevronDoubleRight } from "solid-icons/cg";
 import { getThemeMode } from "../Atoms/OnScreenThemeModeController";
 
@@ -147,17 +153,8 @@ const AnswerChoices = (props: {
   };
 
   return (
-    <div class="">
-      <Transition
-        show={props.show()}
-        class="flex h-full w-full flex-col items-center space-y-4"
-        enter="transform transition duration-[600ms]"
-        enterFrom="opacity-0"
-        enterTo="opacity-100"
-        leave="transform duration-200 transition ease-in-out"
-        leaveFrom="opacity-100 "
-        leaveTo="opacity-0 "
-      >
+    <div>
+      <Show when={props.show()}>
         <div class="flex w-full flex-col space-y-2 font-medium">
           <For each={answers}>
             {(answer) => (
@@ -188,7 +185,7 @@ const AnswerChoices = (props: {
         <span class="hidden border border-blue-500 text-blue-500" />
         <span class="hidden border border-green-500 text-green-500" />
         <span class="hidden border border-yellow-500 text-yellow-500" />
-      </Transition>
+      </Show>
     </div>
   );
 };
@@ -215,16 +212,7 @@ const WaitlistForm = (props: {
   };
 
   return (
-    <Transition
-      show={props.show()}
-      class="flex w-full flex-col items-center space-y-4 px-4"
-      enter="transform transition duration-[2000ms]"
-      enterFrom="opacity-0 "
-      enterTo="opacity-100 "
-      leave="transform duration-200 transition ease-in-out"
-      leaveFrom="opacity-100 "
-      leaveTo="opacity-0 "
-    >
+    <Show when={props.show()}>
       <div class="flex w-full flex-col items-center space-y-4 px-4">
         <p class="text-center text-xl font-medium text-cod-gray dark:text-white">
           Join our waitlist!
@@ -249,22 +237,13 @@ const WaitlistForm = (props: {
           </button>
         </form>
       </div>
-    </Transition>
+    </Show>
   );
 };
 
 const ThankYou = (props: { show: Accessor<boolean> }) => {
   return (
-    <Transition
-      show={props.show()}
-      class="flex w-full flex-col items-center space-y-4 px-4"
-      enter="transform transition duration-[2000ms]"
-      enterFrom="opacity-0 "
-      enterTo="opacity-100 "
-      leave="transform duration-200 transition ease-in-out"
-      leaveFrom="opacity-100 "
-      leaveTo="opacity-0 "
-    >
+    <Show when={props.show()}>
       <div class="flex w-full flex-col items-center space-y-4 px-4">
         <p class="text-center font-medium text-cod-gray dark:text-white">
           Thank you for joining our waitlist! We're excited to have you on
@@ -272,7 +251,7 @@ const ThankYou = (props: { show: Accessor<boolean> }) => {
           we have new features. Stay tuned!
         </p>
       </div>
-    </Transition>
+    </Show>
   );
 };
 
@@ -305,16 +284,7 @@ const SurveyResults = (props: {
   });
 
   return (
-    <Transition
-      show={props.show() && surveyResults().length > 0}
-      class="mt-12 flex w-full flex-col items-center space-y-4 px-4"
-      enter="transform transition duration-[2000ms]"
-      enterFrom="opacity-0 "
-      enterTo="opacity-100 "
-      leave="transform duration-200 transition ease-in-out"
-      leaveFrom="opacity-100 "
-      leaveTo="opacity-0 "
-    >
+    <Show when={props.show() && surveyResults().length > 0}>
       <div class="flex w-full flex-col items-center space-y-4 px-4">
         <p class="text-center text-xl font-medium text-cod-gray dark:text-white">
           Survey Results
@@ -338,6 +308,6 @@ const SurveyResults = (props: {
           )}
         </For>
       </div>
-    </Transition>
+    </Show>
   );
 };

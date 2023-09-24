@@ -1,4 +1,5 @@
 import {
+  BiRegularBrain,
   BiRegularChat,
   BiRegularCheck,
   BiRegularLogOut,
@@ -114,7 +115,7 @@ export const Sidebar = (props: SidebarProps) => {
               <span class="text-xl">
                 <BiRegularPlus class="fill-current" />
               </span>
-              <span>New Debate Topic</span>
+              <span>New Retrieval Augmented Chat</span>
             </div>
           </button>
           <button
@@ -130,11 +131,11 @@ export const Sidebar = (props: SidebarProps) => {
               <span class="text-xl">
                 <BiRegularPlus class="fill-current" />
               </span>
-              <span>New Regular Chat</span>
+              <span>New Normal Chat</span>
             </div>
           </button>
         </div>
-        <div class="flex w-full flex-col space-y-2 overflow-y-auto px-2 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600">
+        <div class="flex w-full flex-col space-y-2 overflow-y-auto overflow-x-hidden px-2 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600">
           <For each={props.topics()}>
             {(topic, index) => (
               <button
@@ -195,9 +196,9 @@ export const Sidebar = (props: SidebarProps) => {
                       <BiRegularChat class="mr-2" />
                     </Show>
                     <Show when={!topic.normal_chat}>
-                      <TbGavel class="mr-2" />
+                      <BiRegularBrain class="mr-2" />
                     </Show>
-                    <p class="line-clamp-1 text-left">{topic.resolution}</p>
+                    <p class="line-clamp-1 break-all">{topic.resolution}</p>
                     <div class="flex-1" />
                     <div class="flex flex-row items-center space-x-2">
                       {props.currentTopic() == topic && (

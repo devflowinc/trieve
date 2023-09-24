@@ -1,6 +1,6 @@
 use crate::{
     data::models::{Pool, Topic},
-    errors::DefaultError,
+    errors::{DefaultError, ServiceError},
     handlers::auth_handler::LoggedUser,
     operators::topic_operator::{
         create_topic_query, delete_topic_query, get_all_topics_for_user_query,
@@ -9,6 +9,8 @@ use crate::{
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
+
+use super::message_handler::get_topic_string;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateTopicData {
@@ -31,12 +33,17 @@ pub async fn create_topic(
         }));
     }
 
-    let new_topic = Topic::from_details(resolution, user.id, normal_chat);
+    let topic_resolution = get_topic_string(resolution).await.map_err(|e| {
+        ServiceError::BadRequest(format!("Error getting topic string: {}", e.to_string()))
+    })?;
+
+    let new_topic = Topic::from_details(topic_resolution, user.id, normal_chat);
+    let new_topic1 = new_topic.clone();
 
     let create_topic_result = web::block(move || create_topic_query(new_topic, &pool)).await?;
 
     match create_topic_result {
-        Ok(()) => Ok(HttpResponse::NoContent().finish()),
+        Ok(()) => Ok(HttpResponse::Ok().json(new_topic1)),
         Err(e) => Ok(HttpResponse::BadRequest().json(e)),
     }
 }

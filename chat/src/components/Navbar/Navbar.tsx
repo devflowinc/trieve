@@ -5,7 +5,9 @@ import { Topic } from "~/types/topics";
 export interface NavbarProps {
   setSideBarOpen: Setter<boolean>;
   selectedTopic: () => Topic | undefined;
+  isCreatingTopic: () => boolean;
   setIsCreatingTopic: Setter<boolean>;
+  isCreatingNormalTopic: () => boolean;
   setIsCreatingNormalTopic: Setter<boolean>;
 }
 
@@ -19,7 +21,12 @@ export const Navbar = (props: NavbarProps) => {
         />
       </div>
       <div class="flex w-full items-center justify-center px-2 text-center">
-        <p>{props.selectedTopic()?.resolution ?? "New Topic"}</p>
+        <p>
+          {props.selectedTopic()?.resolution ??
+            (props.isCreatingNormalTopic()
+              ? "New Normal Chat"
+              : "New Retrieval Augmented Chat")}
+        </p>
       </div>
       <div class="lg:hidden">
         <BiRegularPlus

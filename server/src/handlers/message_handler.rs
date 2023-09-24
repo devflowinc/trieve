@@ -45,63 +45,68 @@ pub async fn create_message_completion_handler(
     mutex_store: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let create_message_data = data.into_inner();
+    let pool1 = pool.clone();
+    let pool2 = pool.clone();
+    let pool3 = pool.clone();
+    let pool4 = pool.clone();
+    let topic_id = create_message_data.topic_id;
+
     let new_message = models::Message::from_details(
         create_message_data.new_message_content,
-        create_message_data.topic_id,
+        topic_id,
         0,
         "user".to_string(),
         None,
         None,
     );
-    let topic_id = create_message_data.topic_id;
-    let second_pool = pool.clone();
-    let third_pool = pool.clone();
-    let fourth_pool = pool.clone();
 
-    let user_owns_topic = web::block(move || user_owns_topic_query(user.id, topic_id, &pool));
-    if let Ok(false) = user_owns_topic.await {
-        return Ok(HttpResponse::Unauthorized().json("Unauthorized"));
-    }
+    let user_topic = web::block(move || user_owns_topic_query(user.id, topic_id, &pool1))
+        .await?
+        .map_err(|_e| ServiceError::Unauthorized)?;
 
     // get the previous messages
-    let mut previous_messages = web::block(move || get_topic_messages(topic_id, &second_pool))
+    let mut previous_messages = web::block(move || get_topic_messages(topic_id, &pool2))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    // remove citations from the previous messages
-    previous_messages = previous_messages
-        .into_iter()
-        .map(|message| {
-            let mut message = message;
-            if message.role == "assistant" {
-                message.content = message
-                    .content
-                    .split("||")
-                    .last()
-                    .unwrap_or("I give up, I can't find a citation")
-                    .to_string();
-            }
-            message
-        })
-        .collect::<Vec<models::Message>>();
+    if !user_topic.normal_chat {
+        // remove citations from the previous messages
+        previous_messages = previous_messages
+            .into_iter()
+            .map(|message| {
+                let mut message = message;
+                if message.role == "assistant" {
+                    message.content = message
+                        .content
+                        .split("||")
+                        .last()
+                        .unwrap_or("I give up, I can't find a citation")
+                        .to_string();
+                }
+                message
+            })
+            .collect::<Vec<models::Message>>();
+    }
 
     // call create_topic_message_query with the new_message and previous_messages
-    let new_topic_message_result = web::block(move || {
-        create_topic_message_query(previous_messages, new_message, user.id, &third_pool)
+    let previous_messages = web::block(move || {
+        create_topic_message_query(
+            user_topic.normal_chat,
+            previous_messages,
+            new_message,
+            user.id,
+            &pool3,
+        )
     })
-    .await?;
-    let previous_messages = match new_topic_message_result {
-        Ok(messages) => messages,
-        Err(e) => {
-            return Ok(HttpResponse::BadRequest().json(e));
-        }
-    };
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     stream_response(
+        user_topic.normal_chat,
         previous_messages,
         user.id,
         topic_id,
-        fourth_pool,
+        pool4,
         mutex_store,
     )
     .await
@@ -120,11 +125,9 @@ pub async fn get_all_topic_messages(
     let second_pool = pool.clone();
     let topic_id: uuid::Uuid = messages_topic_id.into_inner();
     // check if the user owns the topic
-    let user_owns_topic =
-        web::block(move || user_owns_topic_query(user.id, topic_id, &second_pool));
-    if let Ok(false) = user_owns_topic.await {
-        return Ok(HttpResponse::Unauthorized().json("Unauthorized"));
-    }
+    let _user_topic = web::block(move || user_owns_topic_query(user.id, topic_id, &second_pool))
+        .await?
+        .map_err(|_e| ServiceError::Unauthorized)?;
 
     let messages = web::block(move || get_messages_for_topic_query(topic_id, &pool)).await?;
 
@@ -192,11 +195,15 @@ pub async fn regenerate_message_handler(
     mutex_store: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
-    let second_pool = pool.clone();
-    let third_pool = pool.clone();
+    let pool1 = pool.clone();
+    let pool2 = pool.clone();
+    let pool3 = pool.clone();
 
-    let previous_messages_result =
-        web::block(move || get_topic_messages(topic_id, &second_pool)).await?;
+    let user_topic = web::block(move || user_owns_topic_query(user.id, topic_id, &pool1))
+        .await?
+        .map_err(|_e| ServiceError::Unauthorized)?;
+
+    let previous_messages_result = web::block(move || get_topic_messages(topic_id, &pool2)).await?;
 
     let mut previous_messages = match previous_messages_result {
         Ok(messages) => messages,
@@ -212,10 +219,11 @@ pub async fn regenerate_message_handler(
     }
     if previous_messages.len() == 3 {
         return stream_response(
+            user_topic.normal_chat,
             previous_messages,
             user.id,
             topic_id,
-            third_pool,
+            pool3,
             mutex_store,
         )
         .await;
@@ -266,56 +274,29 @@ pub async fn regenerate_message_handler(
     let _ = web::block(move || delete_message_query(&user.id, message_id, topic_id, &pool)).await?;
 
     stream_response(
+        user_topic.normal_chat,
         previous_messages_to_regenerate,
         user.id,
         topic_id,
-        third_pool,
+        pool3,
         mutex_store,
     )
     .await
 }
 
-pub async fn stream_response(
-    messages: Vec<models::Message>,
-    user_id: uuid::Uuid,
-    topic_id: uuid::Uuid,
-    pool: web::Data<Pool>,
-    mutex_store: web::Data<AppMutexStore>,
-) -> Result<HttpResponse, actix_web::Error> {
-    let pool1 = pool.clone();
-    let pool2 = pool.clone();
-
-    let open_ai_messages: Vec<ChatMessage> = messages
-        .iter()
-        .map(|message| ChatMessage::from(message.clone()))
-        .collect();
-
-    let open_ai_api_key = env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
-    let client = Client::new(open_ai_api_key);
-    let next_message_order = move || {
-        let messages_len = messages.len();
-        if messages_len == 0 {
-            return 3;
-        }
-        messages_len + 1
+pub async fn get_topic_string(prompt: String) -> Result<String, DefaultError> {
+    let prompt_topic_message = ChatMessage {
+        role: Role::User,
+        content: format!(
+            "Write a 2-3 word topic name from the following prompt: {}",
+            prompt
+        ),
+        name: None,
     };
-
-    // find evidence for the counter-argument
-    let counter_arg_parameters = ChatCompletionParameters {
+    let openai_messages = vec![prompt_topic_message];
+    let parameters = ChatCompletionParameters {
         model: "gpt-3.5-turbo".into(),
-        messages: vec![ChatMessage {
-            role: Role::User,
-            content: format!(
-                "Write a 1-2 sentence counterargument for: \"{}\"",
-                open_ai_messages
-                    .clone()
-                    .last()
-                    .expect("No messages")
-                    .clone()
-                    .content
-            ),
-            name: None,
-        }],
+        messages: openai_messages,
         temperature: None,
         top_p: None,
         n: None,
@@ -327,108 +308,189 @@ pub async fn stream_response(
         user: None,
     };
 
-    let evidence_search_query = client
+    let openai_api_key = env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+    let client = Client::new(openai_api_key);
+    let query = client
         .chat()
-        .create(counter_arg_parameters)
+        .create(parameters)
         .await
-        .expect("No OpenAI Completion for evidence search");
-    let embedding_vector = create_embedding(
-        evidence_search_query
-            .choices
-            .first()
-            .expect("No response")
-            .message
-            .content
-            .as_str(),
-        mutex_store,
-    )
-    .await?;
+        .expect("No OpenAI Completion for topic");
+    let topic = query
+        .choices
+        .first()
+        .expect("No response for OpenAI completion")
+        .message
+        .content
+        .to_string();
 
-    let search_card_query_results =
-        search_card_query(embedding_vector, 1, pool1, None, None, None, None)
+    Ok(topic)
+}
+
+pub async fn stream_response(
+    normal_chat: bool,
+    messages: Vec<models::Message>,
+    user_id: uuid::Uuid,
+    topic_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+    mutex_store: web::Data<AppMutexStore>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let pool1 = pool.clone();
+    let pool2 = pool.clone();
+
+    let openai_messages: Vec<ChatMessage> = messages
+        .iter()
+        .map(|message| ChatMessage::from(message.clone()))
+        .collect();
+
+    let openai_api_key = env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+    let client = Client::new(openai_api_key);
+    let next_message_order = move || {
+        let messages_len = messages.len();
+        if messages_len == 0 {
+            return 2;
+        }
+        messages_len
+    };
+
+    let mut last_message = openai_messages
+        .last()
+        .expect("There needs to be at least 1 prior message")
+        .content
+        .clone();
+    let mut citation_cards_stringified = "".to_string();
+    let mut citation_cards_stringified1 = citation_cards_stringified.clone();
+
+    if !normal_chat {
+        // find evidence for the counter-argument
+        let counter_arg_parameters = ChatCompletionParameters {
+            model: "gpt-3.5-turbo".into(),
+            messages: vec![ChatMessage {
+                role: Role::User,
+                content: format!(
+                    "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \"{}\"",
+                    openai_messages
+                        .clone()
+                        .last()
+                        .expect("No messages")
+                        .clone()
+                        .content
+                ),
+                name: None,
+            }],
+            temperature: None,
+            top_p: None,
+            n: None,
+            stop: None,
+            max_tokens: None,
+            presence_penalty: Some(0.8),
+            frequency_penalty: Some(0.8),
+            logit_bias: None,
+            user: None,
+        };
+
+        let evidence_search_query = client
+            .chat()
+            .create(counter_arg_parameters)
             .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    // get the first and third card from the result
-    let first_third_cards = vec![
-        search_card_query_results
-            .search_results
-            .get(0)
-            .expect("No first card")
-            .point_id,
-        search_card_query_results
-            .search_results
-            .get(2)
-            .expect("No third card")
-            .point_id,
-    ];
-    let first_third_cards1 = first_third_cards.clone();
+            .expect("No OpenAI Completion for evidence search");
+        let embedding_vector = create_embedding(
+            evidence_search_query
+                .choices
+                .first()
+                .expect("No response")
+                .message
+                .content
+                .as_str(),
+            mutex_store,
+        )
+        .await?;
 
-    let (metadata_cards, collided_cards) = web::block(move || {
-        get_metadata_and_collided_cards_from_point_ids_query(first_third_cards, None, pool2)
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        let search_card_query_results =
+            search_card_query(embedding_vector, 1, pool1, None, None, None, None)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        // get the first and third card from the result
+        let first_third_cards = vec![
+            search_card_query_results
+                .search_results
+                .get(0)
+                .expect("No first card")
+                .point_id,
+            search_card_query_results
+                .search_results
+                .get(2)
+                .expect("No third card")
+                .point_id,
+        ];
+        let first_third_cards1 = first_third_cards.clone();
 
-    let metadata_card0 = if metadata_cards.get(0).expect("No first card").private {
-        let matching_collided_card = collided_cards
-            .iter()
-            .find(|card| card.qdrant_id == first_third_cards1[0] && !card.metadata.private)
-            .expect("No public first card metadata");
+        let (metadata_cards, collided_cards) = web::block(move || {
+            get_metadata_and_collided_cards_from_point_ids_query(first_third_cards, None, pool2)
+        })
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-        matching_collided_card.metadata.clone()
-    } else {
-        metadata_cards
-            .get(0)
-            .expect("No first card metadata")
-            .clone()
-    };
+        let metadata_card0 = if metadata_cards.get(0).expect("No first card").private {
+            let matching_collided_card = collided_cards
+                .iter()
+                .find(|card| card.qdrant_id == first_third_cards1[0] && !card.metadata.private)
+                .expect("No public first card metadata");
 
-    let metadata_card2 = if metadata_cards.get(1).expect("No third card").private {
-        let matching_collided_card = collided_cards
-            .iter()
-            .find(|card| card.qdrant_id == first_third_cards1[1] && !card.metadata.private)
-            .expect("No public third card metadata");
+            matching_collided_card.metadata.clone()
+        } else {
+            metadata_cards
+                .get(0)
+                .expect("No first card metadata")
+                .clone()
+        };
 
-        matching_collided_card.metadata.clone()
-    } else {
-        metadata_cards
-            .get(1)
-            .expect("No third card metadata")
-            .clone()
-    };
+        let metadata_card2 = if metadata_cards.get(1).expect("No third card").private {
+            let matching_collided_card = collided_cards
+                .iter()
+                .find(|card| card.qdrant_id == first_third_cards1[1] && !card.metadata.private)
+                .expect("No public third card metadata");
 
-    let citation_cards = vec![metadata_card0.clone(), metadata_card2.clone()];
-    let citation_cards_stringified =
-        serde_json::to_string(&citation_cards).expect("Failed to serialize citation cards");
-    let citation_cards_stringified1 = citation_cards_stringified.clone();
+            matching_collided_card.metadata.clone()
+        } else {
+            metadata_cards
+                .get(1)
+                .expect("No third card metadata")
+                .clone()
+        };
 
-    let last_message_with_evidence = format!(
-        "Here's my argument: {} \n\n Pretending you found it, use the following evidence and only the following evidence when constructing your counter-argument : \n\n {},{} \n {},{}",
-        open_ai_messages.last().unwrap().content,
-        metadata_card0
-            .link
-            .clone()
-            .unwrap_or("".to_string())
-            ,
-        if metadata_card0.content.len() > 2000 {metadata_card0.content[..2000].to_string()} else {metadata_card0.content.clone()},
-        metadata_card2
-            .link
-            .clone()
-            .unwrap_or("".to_string())
-            ,
-            if metadata_card2.content.len() > 2000 {metadata_card2.content[..2000].to_string()} else {metadata_card2.content.clone()},
-    );
+        let citation_cards = vec![metadata_card0.clone(), metadata_card2.clone()];
+        citation_cards_stringified =
+            serde_json::to_string(&citation_cards).expect("Failed to serialize citation cards");
+        citation_cards_stringified1 = citation_cards_stringified.clone();
+
+        last_message = format!(
+            "Here's my prompt: {} \n\n Pretending you found it, base your tone on and use the following retrieved information as the basis of your response: \n\n {},{} \n {},{}",
+            openai_messages.last().expect("There needs to be at least 1 prior message").content,
+            metadata_card0
+                .link
+                .clone()
+                .unwrap_or("".to_string())
+                ,
+            if metadata_card0.content.len() > 2000 {metadata_card0.content[..2000].to_string()} else {metadata_card0.content.clone()},
+            metadata_card2
+                .link
+                .clone()
+                .unwrap_or("".to_string())
+                ,
+                if metadata_card2.content.len() > 2000 {metadata_card2.content[..2000].to_string()} else {metadata_card2.content.clone()},
+        );
+    }
 
     // replace the last message with the last message with evidence
-    let open_ai_messages = open_ai_messages
+    let open_ai_messages = openai_messages
         .clone()
         .into_iter()
         .enumerate()
         .map(|(index, message)| {
-            if index == open_ai_messages.len() - 1 {
+            if index == openai_messages.len() - 1 {
                 ChatMessage {
                     role: message.role,
-                    content: last_message_with_evidence.clone(),
+                    content: last_message.clone(),
                     name: message.name,
                 }
             } else {
@@ -454,12 +516,17 @@ pub async fn stream_response(
     let (s, r) = unbounded::<String>();
     let stream = client.chat().create_stream(parameters).await.unwrap();
 
+    if !citation_cards_stringified.is_empty() {
+        citation_cards_stringified = format!("||{}", citation_cards_stringified);
+        citation_cards_stringified1 = citation_cards_stringified.clone();
+    }
+
     Arbiter::new().spawn(async move {
         let chunk_v: Vec<String> = r.iter().collect();
         let completion = chunk_v.join("");
 
         let new_message = models::Message::from_details(
-            format!("{}||{}", citation_cards_stringified, completion),
+            format!("{}{}", citation_cards_stringified, completion),
             topic_id,
             next_message_order().try_into().unwrap(),
             "assistant".to_string(),
@@ -470,10 +537,7 @@ pub async fn stream_response(
         let _ = create_message_query(new_message, user_id, &pool);
     });
 
-    let new_stream = stream::iter(vec![
-        Ok(Bytes::from(citation_cards_stringified1)),
-        Ok(Bytes::from("||".to_string())),
-    ]);
+    let new_stream = stream::iter(vec![Ok(Bytes::from(citation_cards_stringified1))]);
 
     Ok(HttpResponse::Ok().streaming(new_stream.chain(stream.map(
         move |response| -> Result<Bytes, actix_web::Error> {

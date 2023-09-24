@@ -5,6 +5,7 @@ import { CardMetadataWithVotes } from "~/utils/apiTypes";
 import ScoreCard from "../ScoreCard";
 
 export interface AfMessageProps {
+  normalChat: boolean;
   role: "user" | "assistant" | "system";
   content: string;
   onEdit: (content: string) => void;
@@ -23,6 +24,8 @@ export const AfMessage = (props: AfMessageProps) => {
   });
 
   const displayMessage = createMemo(() => {
+    if (props.normalChat) return { content: props.content };
+
     if (props.role !== "assistant") {
       const split_content = props.content.split("||");
 
@@ -41,18 +44,13 @@ export const AfMessage = (props: AfMessageProps) => {
     } else if (props.content.length > 50) {
       return {
         content:
-          "I am stumped and cannot figure out how to respond to this. Try regenerating your response or making a new debate topic.",
+          "I am stumped and cannot figure out how to respond to this. Try regenerating your response or making a new topic.",
       };
     }
 
     return {
       card_metadata_with_votes,
-      content:
-        card_metadata_with_votes.length > 1
-          ? content
-              .replace("counterargument:", "")
-              .replace("Counterargument:", "")
-          : "",
+      content,
     };
   });
 
