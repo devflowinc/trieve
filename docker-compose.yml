@@ -135,7 +135,10 @@ services:
     ports:
       - 3000:3000
     environment:
+      - VITE_FRONTMATTER_VALS=${VITE_FRONTMATTER_VALS}
+      - VITE_DATASET=${VITE_DATASET}
       - VITE_API_HOST=${API_HOST}
+      - VITE_SEARCH_URL=${PUBLIC_SEARCH_URL}
 
   vault-search:
     image: arguflow/vault-search

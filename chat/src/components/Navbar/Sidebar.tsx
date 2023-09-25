@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import {
   BiRegularBrain,
   BiRegularChat,
@@ -7,13 +8,20 @@ import {
   BiRegularTrash,
   BiRegularX,
 } from "solid-icons/bi";
-import { Accessor, createSignal, For, Setter, Show } from "solid-js";
+import {
+  Accessor,
+  createEffect,
+  createSignal,
+  For,
+  Setter,
+  Show,
+} from "solid-js";
 import type { Topic } from "~/types/topics";
 import { FiSettings } from "solid-icons/fi";
 import { FullScreenModal } from "../Atoms/FullScreenModal";
 import { OnScreenThemeModeController } from "../Atoms/OnScreenThemeModeController";
-import { BsQuestionCircle } from "solid-icons/bs";
-import { FaSolidCircle } from "solid-icons/fa";
+import { AiFillGithub } from "solid-icons/ai";
+import { TbMinusVertical } from "solid-icons/tb";
 
 export interface SidebarProps {
   topics: Accessor<Topic[]>;
@@ -25,18 +33,14 @@ export interface SidebarProps {
   setIsCreatingNormalTopic: Setter<boolean>;
 }
 
-const HelpTips: string[] = [
-  "Only enter one argument/contention at a time. Refrain from including multiple arguments at once.",
-  "Press shift+enter to create a new line in the enter your argument input box.",
-];
-
 export const Sidebar = (props: SidebarProps) => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+  const dataset = import.meta.env.VITE_DATASET as unknown as string;
 
   const [editingIndex, setEditingIndex] = createSignal(-1);
   const [editingTopic, setEditingTopic] = createSignal("");
   const [settingsModalOpen, setSettingsModalOpen] = createSignal(false);
-  const [helpModalOpen, setHelpModalOpen] = createSignal(false);
+  const [starCount, setStarCount] = createSignal(0);
 
   const submitEditText = async () => {
     const topics = props.topics();
@@ -96,6 +100,26 @@ export const Sidebar = (props: SidebarProps) => {
       window.location.href = "/auth/login";
     });
   };
+
+  createEffect(() => {
+    try {
+      void fetch(`https://api.github.com/repos/arguflow/arguflow`, {
+        headers: {
+          Accept: "application/vnd.github+json",
+        },
+      }).then((response) => {
+        if (!response.ok) {
+          return;
+        }
+        void response.json().then((data) => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          setStarCount(data.stargazers_count);
+        });
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  });
 
   return (
     <div class="absolute z-50 flex h-screen w-screen flex-row dark:text-gray-50 lg:relative lg:w-full">
@@ -223,33 +247,46 @@ export const Sidebar = (props: SidebarProps) => {
             class="flex w-full items-center space-x-4  rounded-md px-3 py-2 hover:bg-neutral-200   dark:hover:bg-neutral-700"
             onClick={logout}
           >
-            <div class="text-3xl">
-              <BiRegularLogOut class="fill-current" />
-            </div>
+            <BiRegularLogOut class="h-6 w-6 fill-current" />
             <div>Logout</div>
           </button>
           <button
-            class="flex w-full items-center space-x-4  rounded-md px-3 py-2 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+            class="flex w-full items-center space-x-4 rounded-md px-3 py-2 hover:bg-neutral-200 dark:hover:bg-neutral-700"
             onClick={() => setSettingsModalOpen(true)}
           >
-            <div class="pl-1 text-2xl">
-              <FiSettings />
-            </div>
+            <FiSettings class="h-6 w-6" />
             <div>Settings</div>
           </button>
-          <button
-            class="flex w-full items-center space-x-4  rounded-md px-3 py-2 hover:bg-neutral-200 dark:hover:bg-neutral-700"
-            onClick={() => setHelpModalOpen(true)}
+          <a
+            href="https://github.com/arguflow/arguflow"
+            class="flex w-full items-center space-x-4 rounded-md px-3 py-2 hover:bg-neutral-200 dark:hover:bg-neutral-700"
           >
-            <div class="pl-1 text-2xl">
-              <BsQuestionCircle />
+            <AiFillGithub class="h-6 w-6 fill-current" />
+            <div class="flex">
+              <p>STAR US</p>
+              <TbMinusVertical class="h-6 w-6" />
+              <p>{starCount()}</p>
             </div>
-            <div>Help</div>
-          </button>
+          </a>
+          <a
+            href="https://github.com/arguflow/arguflow"
+            class="flex items-center space-x-1 px-3 py-2"
+          >
+            <img src="/logo_512.png" class="h-7 w-7" />
+            <div>
+              <div class="mb-[-4px] w-full text-end align-bottom text-xs leading-3 text-turquoise">
+                {dataset}
+              </div>
+              <div class="align-top text-lg">
+                <span>Arguflow</span>
+                <span class="text-magenta">Chat</span>\
+              </div>
+            </div>
+          </a>
         </div>
       </div>
       <button
-        class="w-1/3 flex-col justify-start bg-gray-500/5 backdrop-blur-[3px] lg:hidden"
+        class="w-1/3 flex-col bg-gray-500/5 backdrop-blur-[3px] lg:hidden"
         onClick={(e) => {
           e.preventDefault();
           props.setSideBarOpen(false);
@@ -259,23 +296,6 @@ export const Sidebar = (props: SidebarProps) => {
           <BiRegularX />
         </div>
       </button>
-      <Show when={helpModalOpen()}>
-        <FullScreenModal isOpen={helpModalOpen} setIsOpen={setHelpModalOpen}>
-          <div class="min-w-[250px] sm:min-w-[300px]">
-            <div class="mb-4 text-xl font-bold">Tips and Tricks</div>
-            <div class="flex flex-col space-y-3">
-              <For each={HelpTips}>
-                {(tip) => (
-                  <div class="flex flex-row items-center space-x-4">
-                    <FaSolidCircle class="h-2 w-2" />
-                    <div>{tip}</div>
-                  </div>
-                )}
-              </For>
-            </div>
-          </div>
-        </FullScreenModal>
-      </Show>
 
       <Show when={settingsModalOpen()}>
         <FullScreenModal
