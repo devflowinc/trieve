@@ -362,13 +362,16 @@ pub async fn stream_response(
     let mut citation_cards_stringified1 = citation_cards_stringified.clone();
 
     if !normal_chat {
+        let rag_prompt = std::env::var("RAG_PROMPT").unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string());
+
         // find evidence for the counter-argument
         let counter_arg_parameters = ChatCompletionParameters {
             model: "gpt-3.5-turbo".into(),
             messages: vec![ChatMessage {
                 role: Role::User,
                 content: format!(
-                    "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \"{}\"",
+                    "{}{}",
+                    rag_prompt,
                     openai_messages
                         .clone()
                         .last()
