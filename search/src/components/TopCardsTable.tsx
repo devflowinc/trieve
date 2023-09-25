@@ -1,18 +1,18 @@
-import { For, Show, createEffect, createSignal } from "solid-js";
+import { For, Show, createEffect, createSignal, onCleanup } from "solid-js";
 import type { CardMetadataWithVotes } from "../../utils/apiTypes";
 import { FaSolidChevronRight, FaSolidChevronLeft } from "solid-icons/fa";
 
-export interface RecentCardsTableProps {
-  recentCards?: CardMetadataWithVotes[];
+export interface TopCardsTableProps {
+  topCards?: CardMetadataWithVotes[];
 }
 
-export const RecentCardsTable = (props: RecentCardsTableProps) => {
+export const TopCardsTable = (props: TopCardsTableProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 
   const [errorText, setErrorText] = createSignal("");
-  const [recentCards, setRecentCards] = createSignal<CardMetadataWithVotes[]>(
+  const [topCards, setTopCards] = createSignal<CardMetadataWithVotes[]>(
     // eslint-disable-next-line solid/reactivity
-    props.recentCards ?? [],
+    props.topCards ?? [],
   );
   const [isLoading, setIsLoading] = createSignal(false);
 
@@ -20,10 +20,16 @@ export const RecentCardsTable = (props: RecentCardsTableProps) => {
 
   createEffect(() => {
     const curPage = page();
+    setErrorText("");
+    if (curPage == 1) {
+      setTopCards(props.topCards ?? []);
+      return;
+    }
+
     const abortController = new AbortController();
     setIsLoading(true);
 
-    void fetch(`${apiHost}/recent_cards/${curPage}`, {
+    void fetch(`${apiHost}/top_cards/${curPage}`, {
       signal: abortController.signal,
       headers: {
         "Content-Type": "application/json",
@@ -37,14 +43,13 @@ export const RecentCardsTable = (props: RecentCardsTableProps) => {
       }
 
       void response.json().then((data) => {
-        setRecentCards(data as unknown as CardMetadataWithVotes[]);
+        setTopCards(data as unknown as CardMetadataWithVotes[]);
       });
     });
 
-    return () => {
-      setIsLoading(false);
-      abortController.abort();
-    };
+    onCleanup(() => {
+      -abortController.abort();
+    });
   });
 
   return (
@@ -53,10 +58,10 @@ export const RecentCardsTable = (props: RecentCardsTableProps) => {
         <div class="sm:flex sm:items-center">
           <div class="sm:flex-auto">
             <h1 class="text-base font-semibold leading-6 text-neutral-900 dark:text-neutral-100">
-              Recently Created Cards
+              Top Document Chunks
             </h1>
             <p class="mt-2 text-sm text-neutral-700 dark:text-neutral-200">
-              A list of the most recently created cards.
+              The document chunks with the most upvotes
             </p>
             <Show when={errorText()}>
               <p class="mt-2 text-sm text-red-600 dark:text-red-400">
@@ -96,7 +101,7 @@ export const RecentCardsTable = (props: RecentCardsTableProps) => {
               </tr>
             </thead>
             <tbody class="divide-y divide-neutral-300 dark:divide-neutral-600">
-              <For each={recentCards()}>
+              <For each={topCards()}>
                 {(recent_card) => (
                   <tr>
                     <td>
@@ -111,8 +116,7 @@ export const RecentCardsTable = (props: RecentCardsTableProps) => {
                     </td>
                     <td>
                       <div class="line-clamp-1 break-all p-1 text-sm text-neutral-800 dark:text-neutral-100">
-                        {recent_card.total_upvotes -
-                          recent_card.total_downvotes}
+                        {recent_card.total_upvotes}
                       </div>
                     </td>
                     <td>
@@ -151,18 +155,20 @@ export const RecentCardsTable = (props: RecentCardsTableProps) => {
             </button>
           </Show>
           <div class="flex-1" />
-          <button
-            classList={{
-              "flex items-center space-x-1 rounded-md bg-neutral-100 p-2 px-4 py-2 text-sm dark:bg-neutral-600":
-                true,
-              "animate-pulse": isLoading(),
-            }}
-            disabled={recentCards().length < 5 || isLoading()}
-            onClick={() => setPage(page() + 1)}
-          >
-            <span>Next</span>
-            <FaSolidChevronRight class="h-4 w-4 fill-current" />
-          </button>
+          <Show when={topCards().length >= 5}>
+            <button
+              classList={{
+                "flex items-center space-x-1 rounded-md bg-neutral-100 p-2 px-4 py-2 text-sm dark:bg-neutral-600":
+                  true,
+                "animate-pulse": isLoading(),
+              }}
+              disabled={topCards().length < 5 || isLoading()}
+              onClick={() => setPage(page() + 1)}
+            >
+              <span>Next</span>
+              <FaSolidChevronRight class="h-4 w-4 fill-current" />
+            </button>
+          </Show>
         </div>
       </div>
     </div>

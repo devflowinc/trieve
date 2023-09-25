@@ -253,8 +253,8 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::get().to(handlers::user_handler::get_top_users)),
                     )
                     .service(
-                        web::resource("/recent_cards/{page}")
-                            .route(web::get().to(handlers::card_handler::get_most_recent_cards)),
+                        web::resource("/top_cards/{page}")
+                            .route(web::get().to(handlers::card_handler::get_top_cards)),
                     )
                     .service(
                         web::scope("/user")

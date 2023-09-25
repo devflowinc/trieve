@@ -1,8 +1,9 @@
 use std::collections::HashSet;
 
 use crate::data::models::{
-    CardCollisions, CardFile, CardFileWithName, CardMetadataWithVotesAndFiles, CardVerifications,
-    CardVote, FullTextSearchResult, User, UserDTO,
+    CardCollisions, CardFile, CardFileWithName, CardMetadataWithVotes,
+    CardMetadataWithVotesAndFiles, CardVerifications, CardVote, FullTextSearchResult, User,
+    UserDTO,
 };
 use crate::data::schema;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
@@ -16,9 +17,9 @@ use crate::{
 use actix_web::web;
 use diesel::dsl::sql;
 use diesel::result::Error::NotFound;
-use diesel::sql_types::Int8;
 use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;
+use diesel::sql_types::{BigInt, Int8};
 use diesel::sql_types::{Bool, Double};
 use diesel::{
     BoolExpressionMethods, Connection, JoinOnDsl, NullableExpressionMethods,
@@ -1806,36 +1807,43 @@ pub fn get_qdrant_id_from_card_id_query(
     }
 }
 
-pub fn get_recently_created_cards_query(
+pub fn get_top_cards_query(
     page: u64,
     pool: web::Data<Pool>,
-) -> Result<Vec<CardMetadataWithVotesAndFiles>, DefaultError> {
+) -> Result<Vec<CardMetadataWithVotes>, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+    use crate::data::schema::card_votes::dsl as card_votes_columns;
 
     let mut conn = pool.get().unwrap();
 
-    let recent_ten_cards = card_metadata_columns::card_metadata
-        .select(CardMetadata::as_select())
+    let top_10_cards = card_metadata_columns::card_metadata
+        .left_outer_join(
+            card_votes_columns::card_votes
+                .on(card_metadata_columns::id.eq(card_votes_columns::card_metadata_id)),
+        )
+        .select((CardMetadata::as_select(), diesel::dsl::sql::<BigInt>("(SUM(case when vote = true then 1 else 0 end) - SUM(case when vote = false then 1 else 0 end)) as score")))
         .filter(card_metadata_columns::private.eq(false))
-        .order(card_metadata_columns::created_at.desc())
+        .group_by(card_metadata_columns::id)
+        .order(sql::<Text>("score DESC"))
         .limit(5)
         .offset(
             ((page - 1) * 5)
                 .try_into()
                 .expect("Failed to convert u64 to i64"),
         )
-        .load::<CardMetadata>(&mut conn)
-        .map_err(|_err| DefaultError {
+        .load::<(CardMetadata, i64)>(&mut conn)
+        .map_err(|err| {
+            log::info!("Failed to get recently created cards: {:?}", err);
+            
+            return DefaultError {
             message: "Failed to get recently created cards",
-        })?;
+        }})?;
 
-    let recent_ten_full_text_results: Vec<FullTextSearchResult> = recent_ten_cards
+    let recent_ten_full_text_results: Vec<CardMetadataWithVotes> = top_10_cards
         .iter()
-        .map(|x| FullTextSearchResult::from(x.clone()))
+        .map(|x| CardMetadataWithVotes::from(x.clone()))
         .collect();
 
-    let result = get_metadata_query(recent_ten_full_text_results, None, conn)?;
-
-    Ok(result)
+    Ok(recent_ten_full_text_results)
 }
