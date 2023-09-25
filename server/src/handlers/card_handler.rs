@@ -605,7 +605,7 @@ pub async fn search_card(
         .search_results
         .iter()
         .map(|search_result| {
-            let card: CardMetadataWithVotesWithScore =
+            let mut card: CardMetadataWithVotesWithScore =
                 <CardMetadataWithVotesAndFiles as Into<CardMetadataWithVotesWithScore>>::into(
                     match metadata_cards.iter().find(|metadata_card| {
                         metadata_card.qdrant_point_id == search_result.point_id
@@ -633,6 +633,7 @@ pub async fn search_card(
                         },
                     },
                 );
+            card = find_relevant_sentence(card.clone(), data.content.clone()).unwrap_or(card);
 
             let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
                 .iter()

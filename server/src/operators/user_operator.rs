@@ -468,7 +468,7 @@ pub fn set_user_api_key_query(
 }
 
 pub fn get_user_from_api_key_query(
-    api_key: &String,
+    api_key: &str,
     pool: &web::Data<Pool>,
 ) -> Result<SlimUser, DefaultError> {
     use crate::data::schema::users::dsl as users_columns;
