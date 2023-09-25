@@ -1,9 +1,12 @@
+/* eslint-disable prettier/prettier */
+import { AiFillGithub } from "solid-icons/ai";
 import {
   BiLogosGithub,
   BiLogosTwitch,
   BiLogosTwitter,
   BiLogosYoutube,
 } from "solid-icons/bi";
+import { TbMinusVertical } from "solid-icons/tb";
 import { createEffect, createSignal } from "solid-js";
 import { A, useSearchParams } from "solid-start";
 import ThemeModeController from "~/components/Navbar/ThemeModeController";
@@ -11,9 +14,13 @@ import { detectReferralToken } from "~/types/actix-api";
 
 export default function Home() {
   const api_host: string = import.meta.env.VITE_API_HOST as unknown as string;
+  const searchURL = import.meta.env.VITE_SEARCH_URL as string;
+  const dataset = import.meta.env.VITE_DATASET as unknown as string;
+  const youtubeEmbedURL = import.meta.env.VITE_YOUTUBE_EMBED_URL as string;
 
   const [searchParams] = useSearchParams();
   const [isLogin, setIsLogin] = createSignal<boolean>(false);
+  const [starCount, setStarCount] = createSignal(0);
 
   detectReferralToken(searchParams.t);
 
@@ -40,11 +47,31 @@ export default function Home() {
     };
   });
 
+  createEffect(() => {
+    try {
+      void fetch(`https://api.github.com/repos/arguflow/arguflow`, {
+        headers: {
+          Accept: "application/vnd.github+json",
+        },
+      }).then((response) => {
+        if (!response.ok) {
+          return;
+        }
+        void response.json().then((data) => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          setStarCount(data.stargazers_count);
+        });
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  });
+
   return (
     <div class="flex min-h-screen flex-col bg-neutral-50 text-neutral-900 dark:bg-neutral-900 dark:text-neutral-50">
       <div class="bg-gradient-radial-t from-magenta-400 p-4">
-        <div class="flex items-center justify-between rounded-lg bg-neutral-50 px-4 py-3 shadow-md dark:bg-neutral-800 lg:m-auto lg:max-w-5xl">
-          <div class="flex items-center">
+        <div class="flex items-center justify-end rounded-lg bg-neutral-50 px-4 py-3 shadow-md dark:bg-neutral-800 sm:justify-between lg:m-auto lg:max-w-5xl">
+          <div class="hidden items-center sm:flex">
             <img
               class="w-10"
               src="/logo_transparent.svg"
@@ -52,44 +79,59 @@ export default function Home() {
               elementtiming={""}
               fetchpriority={"high"}
             />
-            <p class="text-lg">
-              <span>Arguflow </span>
-              <span class="text-magenta">Chat</span>
-            </p>
+            <div>
+              <div class="mb-[-4px] w-full text-end align-bottom text-xs leading-3 text-turquoise">
+                {dataset}
+              </div>
+              <div class="align-top text-lg">
+                <span>Arguflow</span>
+                <span class="text-magenta">Chat</span>\
+              </div>
+            </div>
           </div>
           <div class="flex items-center gap-4">
             <div class="hidden items-center gap-4 md:flex">
-              <a class="hover:underline" href="https://arguflow.ai/">
-                Home
-              </a>
-              <a class="hover:underline" href="https://search.arguflow.ai/">
-                Evidence Search
+              <a class="hover:underline" href={searchURL}>
+                Search
               </a>
               <a class="hover:underline" href="https://blog.arguflow.ai/">
                 Blog
               </a>
             </div>
+            <a href="https://github.com/arguflow/arguflow">
+              <div class="flex items-center justify-center rounded border border-black px-2 py-1 hover:border-gray-300 hover:bg-gray-300 dark:border-white dark:hover:border-neutral-700 dark:hover:bg-neutral-700">
+                <AiFillGithub class="mr-2 h-[26px] w-[26px] fill-current" />
+                <p class="text-sm">STAR US</p>
+                <TbMinusVertical size={25} />
+                <p>{starCount()}</p>
+              </div>
+            </a>
             <ThemeModeController />
             <A
-              class="rounded-lg bg-turquoise px-4 py-2 dark:text-neutral-900"
+              class="rounded-lg bg-turquoise px-4 py-2 font-semibold dark:text-neutral-900"
               href={isLogin() ? "/debate" : "/register"}
             >
-              Start Debating
+              Chat Now
             </A>
           </div>
         </div>
         <div class="py-4" />
         <div class="flex flex-col items-center space-y-8">
-          <p class="text-5xl md:text-6xl">
-            <span>Arguflow </span>
-            <span class="text-magenta">Chat</span>
-          </p>
+          <div>
+            <div class="mb-[-4px] w-full text-end align-bottom text-lg leading-3 text-turquoise">
+              {dataset}
+            </div>
+            <div class="text-5xl md:text-6xl">
+              <span>Arguflow</span>
+              <span class="text-magenta">Chat</span>
+            </div>
+          </div>
           <p class="text-center text-lg">
-            Demo of Arguflow's LLM-chat infrastructure for a retrieval augmented
-            AI debate opponent
+            Retrieval augmented LLM chatbot that lets you chat with{" "}
+            <span class="text-turquoise"> {dataset}</span>
           </p>
           <A
-            class="rounded-lg bg-gradient-to-br from-cyan-900 to-turquoise px-4 py-2 text-white shadow-md"
+            class="rounded-lg bg-turquoise px-4 py-2 font-semibold text-black shadow-md"
             href={"https://arguflow.ai/meet"}
           >
             Get a Custom Solution
@@ -101,7 +143,7 @@ export default function Home() {
         <div class="w-fit px-4">
           <iframe
             class="h-[169px] w-[300px] md:h-[315px] md:w-[560px]"
-            src="https://www.youtube.com/embed/RRJzvyKbM60"
+            src={youtubeEmbedURL}
             title="YouTube video player"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowfullscreen
@@ -118,31 +160,35 @@ export default function Home() {
             elementtiming={""}
             fetchpriority={"high"}
           />
-          <p class="text-lg">
-            <span>Arguflow </span>
-            <span class="text-magenta">Chat</span>
-          </p>
+          <div>
+            <div class="mb-[-4px] w-full text-end align-bottom text-xs leading-3 text-turquoise">
+              {dataset}
+            </div>
+            <div class="align-top text-lg">
+              <span>Arguflow</span>
+              <span class="text-magenta">Chat</span>\
+            </div>
+          </div>
         </div>
         <div class="flex w-full flex-col  items-center gap-2">
-          <a href="#pricing">Pricing</a>
-          <a href="mailto:contact@arguflow.gg">Contact</a>
+          <a href="mailto:contact@arguflow.gg">contact@arguflow.gg</a>
         </div>
         <div class="py-2" />
         <div class="flex gap-3">
           <a href="https://twitter.com/arguflowai" target="_blank">
-            <BiLogosTwitter size={30} />
+            <BiLogosTwitter size={30} class="fill-current" />
           </a>
           <a href="https://twitch.tv/arguflow" target="_blank">
-            <BiLogosTwitch size={30} />
+            <BiLogosTwitch size={30} class="fill-current" />
           </a>
           <a href="https://www.youtube.com/@arguflow">
-            <BiLogosYoutube size={30} />
+            <BiLogosYoutube size={30} class="fill-current" />
           </a>
           <a
             href="https://github.com/orgs/arguflow/repositories"
             target="_blank"
           >
-            <BiLogosGithub size={30} />
+            <BiLogosGithub size={30} class="fill-current" />
           </a>
         </div>
       </footer>
