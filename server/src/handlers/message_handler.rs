@@ -113,7 +113,6 @@ pub async fn create_message_completion_handler(
 }
 
 // get_all_topic_messages_handler
-// verify that the user owns the topic for the topic_id they are requesting
 // get all the messages for the topic_id
 // filter out deleted messages
 // return the messages

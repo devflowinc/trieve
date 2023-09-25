@@ -1,5 +1,5 @@
 use crate::{
-    data::models::{FileUploadCompletedNotificationWithName, Pool, VerificationNotification},
+    data::models::{FileUploadCompletedNotificationWithName, Pool},
     errors::ServiceError,
     operators::notification_operator::{
         get_notifications_query, mark_all_notifications_as_read_query,
@@ -11,18 +11,9 @@ use serde::{Deserialize, Serialize};
 
 use super::auth_handler::LoggedUser;
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct VerificationNotificationData {
-    pub card_uuid: uuid::Uuid,
-    pub user_uuid: uuid::Uuid,
-    pub verification_uuid: uuid::Uuid,
-    pub score: i64,
-}
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(untagged)]
 pub enum Notification {
-    Verification(VerificationNotification),
     FileUploadComplete(FileUploadCompletedNotificationWithName),
 }
 

@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::data::models::{
-    CardCollisions, CardFile, CardFileWithName, CardMetadataWithVotesAndFiles, CardVerifications,
+    CardCollisions, CardFile, CardFileWithName, CardMetadataWithVotesAndFiles,
     CardVote, FullTextSearchResult, User, UserDTO,
 };
 use crate::data::schema;
@@ -478,7 +478,6 @@ pub fn get_metadata_query(
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
-    use crate::data::schema::card_verification::dsl as card_verification_columns;
     use crate::data::schema::card_votes::dsl as card_votes_columns;
     use crate::data::schema::files::dsl as files_columns;
     use crate::data::schema::users::dsl as user_columns;
@@ -495,10 +494,6 @@ pub fn get_metadata_query(
         )
         .left_outer_join(
             user_columns::users.on(card_metadata_columns::author_id.eq(user_columns::id)),
-        )
-        .left_outer_join(
-            card_verification_columns::card_verification
-                .on(card_metadata_columns::id.eq(card_verification_columns::card_id)),
         )
         .left_outer_join(
             card_votes_columns::card_votes
@@ -518,14 +513,6 @@ pub fn get_metadata_query(
                 card_files_columns::card_id,
                 card_files_columns::file_id,
                 files_columns::file_name,
-            )
-                .nullable(),
-            (
-                card_verification_columns::id,
-                card_verification_columns::card_id,
-                card_verification_columns::similarity_score,
-                card_verification_columns::created_at,
-                card_verification_columns::updated_at,
             )
                 .nullable(),
             (
@@ -557,7 +544,6 @@ pub fn get_metadata_query(
         ))
         .load::<(
             Option<CardFileWithName>,
-            Option<CardVerifications>,
             Option<CardVote>,
             Option<User>,
             (uuid::Uuid, Option<uuid::Uuid>),
@@ -567,9 +553,8 @@ pub fn get_metadata_query(
         })?;
 
     #[allow(clippy::type_complexity)]
-    let (file_ids, card_verifications, card_votes, card_creators, card_collisions): (
+    let (file_ids, card_votes, card_creators, card_collisions): (
         Vec<Option<CardFileWithName>>,
-        Vec<Option<CardVerifications>>,
         Vec<Option<CardVote>>,
         Vec<Option<User>>,
         Vec<(uuid::Uuid, Option<uuid::Uuid>)>,
@@ -610,13 +595,7 @@ pub fn get_metadata_query(
                     created_at: user.created_at,
                 });
 
-            let verification_score = card_verifications
-                .iter()
-                .flatten()
-                .find(|verification| verification.card_id == metadata.id)
-                .map(|verification| verification.similarity_score);
-
-            let card_with_file_name = file_ids
+          let card_with_file_name = file_ids
                 .iter()
                 .flatten()
                 .find(|file| file.card_id == metadata.id);
@@ -650,7 +629,6 @@ pub fn get_metadata_query(
                 card_html: metadata.card_html,
                 file_id: card_with_file_name.map(|file| file.file_id),
                 file_name: card_with_file_name.map(|file| file.file_name.to_string()),
-                verification_score,
                 metadata: metadata.metadata,
             }
         })

@@ -17,8 +17,6 @@ use crate::{
     AppMutexStore,
 };
 
-use crate::handlers::register_handler;
-
 #[derive(Debug, Deserialize)]
 pub struct AuthData {
     pub email: String,
@@ -57,18 +55,7 @@ impl FromRequest for LoggedUser {
     }
 }
 
-pub fn verify(hash: &str, password: &str) -> Result<bool, ServiceError> {
-    argon2::verify_encoded_ext(
-        hash,
-        password.as_bytes(),
-        register_handler::SECRET_KEY.as_bytes(),
-        &[],
-    )
-    .map_err(|err| {
-        dbg!(err);
-        ServiceError::Unauthorized
-    })
-}
+
 
 pub async fn logout(id: Identity) -> HttpResponse {
     id.logout();
@@ -129,11 +116,7 @@ fn find_user_match(auth_data: AuthData, pool: web::Data<Pool>) -> Result<SlimUse
         .unwrap();
 
     if let Some(user) = items.pop() {
-        if let Ok(matching) = verify(&user.hash, &auth_data.password) {
-            if matching {
-                return Ok(user.into());
-            }
-        }
+        return Ok(user.into());
     }
     Err(DefaultError {
         message: "Incorrect email or password",

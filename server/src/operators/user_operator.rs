@@ -1,5 +1,5 @@
 use crate::data::models::{
-    CardFileWithName, CardMetadata, CardMetadataWithVotesAndFiles, CardVerifications, CardVote,
+    CardFileWithName, CardMetadata, CardMetadataWithVotesAndFiles, CardVote,
     SlimUser, UserDTOWithScore, UserDTOWithVotesAndCards, UserScore,
 };
 use crate::diesel::prelude::*;
@@ -89,7 +89,6 @@ pub fn get_user_with_votes_and_cards_by_id_query(
 ) -> Result<UserDTOWithVotesAndCards, DefaultError> {
     use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
-    use crate::data::schema::card_verification::dsl as card_verification_columns;
     use crate::data::schema::card_votes::dsl as card_votes_columns;
     use crate::data::schema::files::dsl as files_columns;
     use crate::data::schema::users::dsl as user_columns;
@@ -201,20 +200,6 @@ pub fn get_user_with_votes_and_cards_by_id_query(
             message: "Failed to load metadata",
         })?;
 
-    let card_verifications: Vec<CardVerifications> = card_verification_columns::card_verification
-        .filter(
-            card_verification_columns::card_id.eq_any(
-                user_card_metadatas
-                    .iter()
-                    .map(|card| card.id)
-                    .collect::<Vec<uuid::Uuid>>()
-                    .as_slice(),
-            ),
-        )
-        .load::<CardVerifications>(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to load verification metadata",
-        })?;
 
     let card_metadata_with_upvotes: Vec<CardMetadataWithVotesAndFiles> = (user_card_metadatas)
         .iter()
@@ -230,11 +215,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
             let author = None;
             let card_with_file_name = file_ids.iter().find(|file| file.card_id == metadata.id);
 
-            let verification_score = card_verifications
-                .iter()
-                .find(|verification| verification.card_id == metadata.id)
-                .map(|verification| verification.similarity_score);
-
+           
             CardMetadataWithVotesAndFiles {
                 id: metadata.id,
                 content: metadata.content.clone(),
@@ -252,7 +233,6 @@ pub fn get_user_with_votes_and_cards_by_id_query(
                 score: None,
                 file_name: card_with_file_name.map(|file| file.file_name.clone()),
                 file_id: card_with_file_name.map(|file| file.file_id),
-                verification_score,
                 metadata: metadata.metadata.clone(),
             }
         })

@@ -336,11 +336,6 @@ pub async fn main() -> std::io::Result<()> {
                             )),
                     )
                     .service(
-                        web::resource("/verification").route(
-                            web::post().to(handlers::verification_handler::verify_card_content),
-                        ),
-                    )
-                    .service(
                         web::scope("/file")
                             .service(
                                 web::resource("")

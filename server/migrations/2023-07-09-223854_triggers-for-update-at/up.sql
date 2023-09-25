@@ -1,6 +1,4 @@
 -- Your SQL goes here
-ALTER TABLE card_verification ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT NOW();
-ALTER TABLE card_verification ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT NOW();
 
 
 CREATE OR REPLACE FUNCTION update_updated_at()
@@ -46,7 +44,6 @@ FOR EACH ROW
 EXECUTE FUNCTION update_updated_at();
 
 CREATE TRIGGER update_updated_at
-BEFORE UPDATE ON card_verification
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at();
 
@@ -101,6 +98,5 @@ FOR EACH ROW
 EXECUTE FUNCTION update_updated_at();
 
 CREATE TRIGGER update_updated_at
-BEFORE UPDATE ON verification_notifications
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at();

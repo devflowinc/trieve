@@ -75,15 +75,6 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    card_verification (id) {
-        id -> Uuid,
-        card_id -> Uuid,
-        similarity_score -> Int8,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
-    }
-}
 
 diesel::table! {
     card_votes (id) {
@@ -247,18 +238,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    verification_notifications (id) {
-        id -> Uuid,
-        user_uuid -> Uuid,
-        card_uuid -> Uuid,
-        verification_uuid -> Uuid,
-        similarity_score -> Int8,
-        user_read -> Bool,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
-    }
-}
+
 
 diesel::joinable!(card_collection -> users (author_id));
 diesel::joinable!(card_collection_bookmarks -> card_collection (collection_id));
@@ -266,7 +246,6 @@ diesel::joinable!(card_collection_bookmarks -> card_metadata (card_metadata_id))
 diesel::joinable!(card_files -> card_metadata (card_id));
 diesel::joinable!(card_files -> files (file_id));
 diesel::joinable!(card_metadata -> users (author_id));
-diesel::joinable!(card_verification -> card_metadata (card_id));
 diesel::joinable!(card_votes -> card_metadata (card_metadata_id));
 diesel::joinable!(card_votes -> users (voted_user_id));
 diesel::joinable!(collections_from_files -> card_collection (collection_id));
@@ -278,9 +257,6 @@ diesel::joinable!(messages -> topics (topic_id));
 diesel::joinable!(topics -> users (user_id));
 diesel::joinable!(user_collection_counts -> users (user_id));
 diesel::joinable!(user_notification_counts -> users (user_uuid));
-diesel::joinable!(verification_notifications -> card_metadata (card_uuid));
-diesel::joinable!(verification_notifications -> card_verification (verification_uuid));
-diesel::joinable!(verification_notifications -> users (user_uuid));
 
 diesel::allow_tables_to_appear_in_same_query!(
     card_collection,
@@ -289,7 +265,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     card_files,
     card_metadata,
     card_metadata_count,
-    card_verification,
     card_votes,
     collections_from_files,
     cut_cards,
@@ -304,5 +279,4 @@ diesel::allow_tables_to_appear_in_same_query!(
     user_notification_counts,
     user_plans,
     users,
-    verification_notifications,
 );

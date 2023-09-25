@@ -23,11 +23,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger for verification_notifications
-CREATE TRIGGER update_verification_notification_count
-AFTER INSERT OR DELETE ON verification_notifications
-FOR EACH ROW
-EXECUTE FUNCTION update_notification_count();
+
 
 -- Trigger for file_upload_completed_notifications
 CREATE TRIGGER update_file_upload_notification_count
@@ -38,6 +34,5 @@ EXECUTE FUNCTION update_notification_count();
 -- Initialize user_notification_counts with existing data
 INSERT INTO user_notification_counts (id, user_uuid, notification_count)
 SELECT DISTINCT ON (user_uuid) gen_random_uuid(), user_uuid, 
-    ((SELECT COUNT(*) FROM verification_notifications WHERE user_uuid = user_uuid) + 
-        (SELECT COUNT(*) FROM file_upload_completed_notifications WHERE user_uuid = user_uuid))
+    (SELECT COUNT(*) FROM file_upload_completed_notifications WHERE user_uuid = user_uuid))
 FROM file_upload_completed_notifications;

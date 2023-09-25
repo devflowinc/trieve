@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use crate::{
     data::models::{
         FileUploadCompletedNotification, FileUploadCompletedNotificationWithName, Pool,
-        VerificationNotification,
     },
     errors::DefaultError,
     handlers::notification_handler::Notification,
@@ -50,20 +49,8 @@ pub fn get_notifications_query(
     use crate::data::schema::card_collection::dsl as card_collection_columns;
     use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
     use crate::data::schema::user_notification_counts::dsl as user_notification_counts_columns;
-    use crate::data::schema::verification_notifications::dsl as verification_notifications_columns;
 
     let mut conn = pool.get().unwrap();
-
-    let verifications = verification_notifications_columns::verification_notifications
-        .filter(verification_notifications_columns::user_uuid.eq(user_id))
-        .select(VerificationNotification::as_select())
-        .limit(10)
-        .offset((page - 1) * 10)
-        .order(verification_notifications_columns::created_at.desc())
-        .load::<VerificationNotification>(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to get notifications",
-        })?;
 
     let file_upload_completed =
         file_upload_completed_notifications_columns::file_upload_completed_notifications
@@ -91,12 +78,12 @@ pub fn get_notifications_query(
                 message: "Failed to get notifications",
             })?;
 
-    let combined_count = match file_upload_completed.first() {
-        Some((_, _, Some(count))) => count + verifications.len() as i32,
+     let combined_count = match file_upload_completed.first() {
+        Some((_, _, Some(count))) => count + 0 as i32,
         _ => 0_i32,
     };
 
-    // Combine file_upload_completed and verifications in order of their created_at date property
+    // Combine file_upload_completedin order of their created_at date property
     let mut combined_notifications: Vec<Notification> = file_upload_completed
         .iter()
         .map(|c| {
@@ -107,24 +94,10 @@ pub fn get_notifications_query(
                 ),
             )
         })
-        .chain(
-            verifications
-                .iter()
-                .map(|v| Notification::Verification(v.clone())),
-        )
         .collect();
 
     // Sort the combined_notifications by their created_at date property
     combined_notifications.sort_by(|a, b| match (a, b) {
-        (Notification::FileUploadComplete(a_data), Notification::Verification(b_data)) => {
-            a_data.created_at.cmp(&b_data.created_at).reverse()
-        }
-        (Notification::Verification(a_data), Notification::FileUploadComplete(b_data)) => {
-            a_data.created_at.cmp(&b_data.created_at).reverse()
-        }
-        (Notification::Verification(a_data), Notification::Verification(b_data)) => {
-            a_data.created_at.cmp(&b_data.created_at).reverse()
-        }
         (Notification::FileUploadComplete(a_data), Notification::FileUploadComplete(b_data)) => {
             a_data.created_at.cmp(&b_data.created_at).reverse()
         }
@@ -143,18 +116,11 @@ pub fn mark_notification_as_read_query(
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
-    use crate::data::schema::verification_notifications::dsl as verification_notifications_columns;
 
     let mut conn = pool.get().unwrap();
 
     // We have to do both, just in case there is a weird collision between both tables
-    let verification_result = diesel::update(
-        verification_notifications_columns::verification_notifications
-            .filter(verification_notifications_columns::user_uuid.eq(user_id))
-            .filter(verification_notifications_columns::id.eq(notification_id)),
-    )
-    .set(verification_notifications_columns::user_read.eq(true))
-    .execute(&mut conn);
+  
 
     let file_upload_completed_result = diesel::update(
         file_upload_completed_notifications_columns::file_upload_completed_notifications
@@ -164,12 +130,15 @@ pub fn mark_notification_as_read_query(
     .set(file_upload_completed_notifications_columns::user_read.eq(true))
     .execute(&mut conn);
 
-    match verification_result.or(file_upload_completed_result) {
+
+    match file_upload_completed_result {
         Ok(_) => Ok(()),
         Err(_) => Err(DefaultError {
             message: "Failed to mark notification as read",
         }),
     }
+
+   
 }
 
 pub fn mark_all_notifications_as_read_query(
@@ -177,16 +146,10 @@ pub fn mark_all_notifications_as_read_query(
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
-    use crate::data::schema::verification_notifications::dsl as verification_notifications_columns;
 
     let mut conn = pool.get().unwrap();
 
-    let verification_result = diesel::update(
-        verification_notifications_columns::verification_notifications
-            .filter(verification_notifications_columns::user_uuid.eq(user_id)),
-    )
-    .set(verification_notifications_columns::user_read.eq(true))
-    .execute(&mut conn);
+  
 
     let file_upload_completed_result = diesel::update(
         file_upload_completed_notifications_columns::file_upload_completed_notifications
@@ -195,7 +158,7 @@ pub fn mark_all_notifications_as_read_query(
     .set(file_upload_completed_notifications_columns::user_read.eq(true))
     .execute(&mut conn);
 
-    match verification_result.or(file_upload_completed_result) {
+    match file_upload_completed_result {
         Ok(_) => Ok(()),
         Err(_) => Err(DefaultError {
             message: "Failed to mark all notifications as read",
