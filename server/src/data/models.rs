@@ -393,6 +393,28 @@ pub struct CardMetadataWithVotes {
     pub score: Option<f64>,
 }
 
+impl From<(CardMetadata, i64)> for CardMetadataWithVotes {
+    fn from(x: (CardMetadata, i64)) -> Self {
+        CardMetadataWithVotes {
+            id: x.0.id,
+            author: None,
+            content: x.0.content,
+            card_html: x.0.card_html,
+            link: x.0.link,
+            qdrant_point_id: x.0.qdrant_point_id.unwrap(),
+            total_upvotes: x.1.max(0),
+            total_downvotes: 0,
+            vote_by_current_user: None,
+            created_at: x.0.created_at,
+            updated_at: x.0.updated_at,
+            tag_set: x.0.tag_set,
+            private: x.0.private,
+            metadata: x.0.metadata,
+            score: None,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CardMetadataWithVotesWithScore {
     pub id: uuid::Uuid,

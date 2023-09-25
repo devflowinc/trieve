@@ -4,7 +4,7 @@ import Footer from "../components/Footer.astro";
 import type { CardMetadataWithVotes } from "../../utils/apiTypes";
 import type { Filters } from "../components/ResultsPage";
 import HomeLayout from "../layouts/HomeLayout.astro";
-import { RecentCardsTable } from "../components/RecentCardsTable";
+import { TopCardsTable } from "../components/TopCardsTable";
 
 const apiHost = import.meta.env.API_HOST as string;
 const dataset = import.meta.env.DATASET as string;
@@ -20,7 +20,7 @@ const searchType: string = params.get("searchType") ?? "search";
 
 let recentCards: CardMetadataWithVotes[] = [];
 try {
-  await fetch(`${apiHost}/recent_cards/${page}`)
+  await fetch(`${apiHost}/top_cards/${page}`)
     .then((response) => response.json())
     .then((recentCardsResult) => {
       recentCards = recentCardsResult as CardMetadataWithVotes[];
@@ -42,8 +42,7 @@ try {
             {dataset}
           </div>
           <div class="text-4xl">
-            <span>Arguflow</span>
-            <span class="text-magenta">Chat</span>
+            <span>Arguflow</span><span class="text-magenta">Search</span>
           </div>
         </div>
       </a>
@@ -60,7 +59,7 @@ try {
     </div>
   </div>
   <div class="my-16 sm:my-24">
-    <RecentCardsTable recentCards={recentCards} client:load />
+    <TopCardsTable topCards={recentCards} client:load />
   </div>
   <div class="flex-1"></div>
   <Footer />
