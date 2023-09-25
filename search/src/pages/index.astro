@@ -1,16 +1,13 @@
 ---
 import SearchForm from "../components/SearchForm";
 import Footer from "../components/Footer.astro";
-import type {
-  CardMetadataWithVotes,
-  UsersWithTotalPagesDTO,
-} from "../../utils/apiTypes";
+import type { CardMetadataWithVotes } from "../../utils/apiTypes";
 import type { Filters } from "../components/ResultsPage";
 import HomeLayout from "../layouts/HomeLayout.astro";
 import { RecentCardsTable } from "../components/RecentCardsTable";
-import { FirstVisitPopUp } from "../components/FirstVisitPopUp";
 
 const apiHost = import.meta.env.API_HOST as string;
+const dataset = import.meta.env.DATASET as string;
 
 const requestParams = Astro.request.url.split("?")[1];
 const params = new URLSearchParams(requestParams);
@@ -21,39 +18,34 @@ const filters: Filters = {
 };
 const searchType: string = params.get("searchType") ?? "search";
 
-let topUsersWithPages: UsersWithTotalPagesDTO = {
-  total_user_pages: 1,
-  users: [],
-};
 let recentCards: CardMetadataWithVotes[] = [];
 try {
-  const topUsersPromise = fetch(`${apiHost}/top_users/${page}`)
-    .then((response) => response.json())
-    .then((topUsersCardsResult) => {
-      topUsersWithPages = topUsersCardsResult as UsersWithTotalPagesDTO;
-    });
-
-  const recentCardsPromise = fetch(`${apiHost}/recent_cards/${page}`)
+  await fetch(`${apiHost}/recent_cards/${page}`)
     .then((response) => response.json())
     .then((recentCardsResult) => {
       recentCards = recentCardsResult as CardMetadataWithVotes[];
     });
-
-  await Promise.all([topUsersPromise, recentCardsPromise]);
 } catch (e) {
   console.error(e);
 }
 ---
 
 <HomeLayout>
-  <FirstVisitPopUp client:only />
   <div class="space-y mt-12 flex w-full flex-col items-center">
     <div class="flex w-full items-center justify-center">
       <a class="flex items-center justify-center" href="/">
         <img class="w-12" src="/logo_transparent.png" alt="Logo" />
-        <h1 class="text-4xl">
-          Arguflow<span class="text-magenta">Search</span>
-        </h1>
+        <div>
+          <div
+            class="mb-[-4px] w-full text-end align-bottom text-lg leading-3 text-turquoise"
+          >
+            {dataset}
+          </div>
+          <div class="text-4xl">
+            <span>Arguflow</span>
+            <span class="text-magenta">Chat</span>
+          </div>
+        </div>
       </a>
     </div>
     <div class="text-center text-lg">

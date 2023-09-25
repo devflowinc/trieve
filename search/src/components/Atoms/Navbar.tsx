@@ -17,8 +17,14 @@ export const Navbar = (props: HomeNavbarProps) => {
           <div class="mx-auto flex h-[60px] w-full max-w-6xl items-center justify-between">
             <a class="flex w-full items-center" href="/">
               <img class="w-6 sm:w-12" src="/logo_transparent.png" alt="Logo" />
-              <div class="hidden min-[360px]:block min-[380px]:text-xl sm:text-4xl">
-                Arguflow<span class="text-magenta">Search</span>
+              <div class="hidden min-[360px]:block ">
+                <div class="mb-[-4px] w-full text-end align-bottom leading-3 text-turquoise sm:mb-[-10px] sm:text-lg">
+                  {props.dataset}
+                </div>
+                <div class="min-[380px]:text-xl sm:text-4xl">
+                  <span>Arguflow</span>
+                  <span class="text-magenta">Search</span>
+                </div>
               </div>
             </a>
             <div class="flex w-full items-center justify-end space-x-1 sm:space-x-4">

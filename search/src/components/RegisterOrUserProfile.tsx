@@ -13,9 +13,12 @@ import { isUserDTO, type UserDTO } from "../../utils/apiTypes";
 import { NotificationPopover } from "./Atoms/NotificationPopover";
 import { AiFillGithub } from "solid-icons/ai";
 import { TbMinusVertical } from "solid-icons/tb";
-import type { HomeNavbarProps } from "./Atoms/HomeNavbar";
 
-const RegisterOrUserProfile = (props: HomeNavbarProps) => {
+export interface RegisterOrUserProfileProps {
+  stars: number;
+}
+
+const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 
   const [isLoadingUser, setIsLoadingUser] = createSignal(true);
