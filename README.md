@@ -95,7 +95,7 @@ cp .env.server ./server/.env
 ### Start docker container services needed for local dev
 
 ```
-cat .env.chat .env.search .env.server > .env
+cat .env.chat .env.search .env.server .env.docker-compose > .env
 ./convenience.sh -l
 ```
 

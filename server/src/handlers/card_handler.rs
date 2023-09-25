@@ -19,7 +19,6 @@ use actix_web::{web, HttpResponse};
 use difference::{Changeset, Difference};
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
 use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
-use redis::Commands;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -96,6 +95,15 @@ pub async fn create_card(
     mutex_store: web::Data<AppMutexStore>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let only_admin_can_create_cards =
+        std::env::var("ONLY_ADMIN_CAN_CREATE_CARDS").unwrap_or("off".to_string());
+    if only_admin_can_create_cards == "on" {
+        let admin_email = std::env::var("ADMIN_EMAIL").unwrap_or("".to_string());
+        if admin_email != user.email {
+            return Err(ServiceError::Forbidden.into());
+        }
+    }
+
     let private = card.private.unwrap_or(false);
     let mut collision: Option<uuid::Uuid> = None;
     let mut embedding_vector: Option<Vec<f32>> = None;
@@ -104,12 +112,6 @@ pub async fn create_card(
     let pool2 = pool.clone();
     let pool3 = pool.clone();
 
-    let redis_url = env!("REDIS_URL", "REDIS_URL should be set");
-    let client = redis::Client::open(redis_url)
-        .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
-    let mut con = client
-        .get_connection()
-        .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
     let content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
     // Card content can be at least 470 characters long
 
@@ -199,11 +201,6 @@ pub async fn create_card(
                 })
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-                con.set(format!("Verify: {}", metadata_1.id), true)
-                    .map_err(|err| {
-                        ServiceError::BadRequest(format!("Could not set redis key: {}", err))
-                    })?;
 
                 return Ok(HttpResponse::Ok().json(ReturnCreatedCard {
                     card_metadata: metadata_1,
@@ -299,11 +296,6 @@ pub async fn create_card(
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-                con.set(format!("Verify: {}", metadata_1.id), true)
-                    .map_err(|err| {
-                        ServiceError::BadRequest(format!("Could not set redis key: {}", err))
-                    })?;
-
                 return Ok(HttpResponse::Ok().json(ReturnCreatedCard {
                     card_metadata: metadata_1,
                     duplicate: true,
@@ -383,9 +375,6 @@ pub async fn create_card(
         )
         .await?;
     }
-
-    con.set(format!("Verify: {}", card_metadata.id), true)
-        .map_err(|err| ServiceError::BadRequest(format!("Could not set redis key: {}", err)))?;
 
     Ok(HttpResponse::Ok().json(ReturnCreatedCard {
         card_metadata,
