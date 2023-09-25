@@ -45,8 +45,7 @@ impl FromRequest for LoggedUser {
         if let Some(authen_header) = req.headers().get("Authorization") {
             if let Ok(authen_header) = authen_header.to_str() {
                 if let Some(pool) = req.app_data::<web::Data<Pool>>() {
-                    if let Ok(user) = get_user_from_api_key_query(&authen_header.to_string(), pool)
-                    {
+                    if let Ok(user) = get_user_from_api_key_query(authen_header, pool) {
                         return ready(Ok(user));
                     }
                 }

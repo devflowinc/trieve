@@ -475,13 +475,13 @@ pub async fn stream_response(
                 .clone()
                 .unwrap_or("".to_string())
                 ,
-            if metadata_card0.content.len() > 2000 {metadata_card0.content[..2000].to_string()} else {metadata_card0.content.clone()},
+            if metadata_card0.content.len() > 2000 {metadata_card0.content[..2000].to_string()} else {metadata_card0.content},
             metadata_card2
                 .link
                 .clone()
                 .unwrap_or("".to_string())
                 ,
-                if metadata_card2.content.len() > 2000 {metadata_card2.content[..2000].to_string()} else {metadata_card2.content.clone()},
+                if metadata_card2.content.len() > 2000 {metadata_card2.content[..2000].to_string()} else {metadata_card2.content},
         );
     }
 

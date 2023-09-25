@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
 use crate::data::models::{
-    CardCollisions, CardFile, CardFileWithName, CardMetadataWithVotes,
-    CardMetadataWithVotesAndFiles, CardVerifications, CardVote, FullTextSearchResult, User,
-    UserDTO,
+    CardCollisions, CardFile, CardFileWithName, CardMetadataWithVotesAndFiles,
+    CardMetadataWithVotesWithScore, CardVerifications, CardVote, FullTextSearchResult, User,
+    UserDTO, CardMetadataWithVotes
 };
 use crate::data::schema;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
@@ -33,6 +33,7 @@ use qdrant_client::{
     qdrant::{point_id::PointIdOptions, Condition, Filter, HasIdCondition, PointId, SearchPoints},
 };
 use serde::{Deserialize, Serialize};
+use simsearch::SimSearch;
 
 pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
     let qdrant_url = env!("QDRANT_URL", "QDRANT_URL should be set");
@@ -1836,7 +1837,7 @@ pub fn get_top_cards_query(
         .map_err(|err| {
             log::info!("Failed to get recently created cards: {:?}", err);
             
-            return DefaultError {
+            DefaultError {
             message: "Failed to get recently created cards",
         }})?;
 
@@ -1846,4 +1847,38 @@ pub fn get_top_cards_query(
         .collect();
 
     Ok(recent_ten_full_text_results)
+}
+
+pub fn find_relevant_sentence(
+    input: CardMetadataWithVotesWithScore,
+    query: String,
+) -> Result<CardMetadataWithVotesWithScore, DefaultError> {
+    let content = &input.card_html.clone().unwrap_or(input.content.clone());
+    let mut engine: SimSearch<u32> = SimSearch::new();
+    let mut split_content = content.split('.').collect::<Vec<&str>>();
+    //insert all sentences into the engine
+    for (index, sentence) in split_content.iter().enumerate() {
+        engine.insert(index.try_into().unwrap(), sentence);
+    }
+
+    //search for the query
+    let results = engine.search(&query);
+    if let Some(x) = results.first() {
+        let index = x;
+        let highlighted_sentence =
+            "<span class=\"bg-yellow-200 dark:bg-yellow-400 dark:text-black\">".to_string()
+                + split_content
+                    .clone()
+                    .into_iter()
+                    .nth((*index).try_into().unwrap())
+                    .unwrap()
+                + "</span>";
+        split_content[*index as usize] = highlighted_sentence.as_str();
+
+        let mut new_output = input;
+        new_output.card_html = Some(split_content.join(".") + ".");
+        Ok(new_output)
+    } else {
+        Ok(input)
+    }
 }

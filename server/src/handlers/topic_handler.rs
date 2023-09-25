@@ -33,9 +33,9 @@ pub async fn create_topic(
         }));
     }
 
-    let topic_resolution = get_topic_string(resolution).await.map_err(|e| {
-        ServiceError::BadRequest(format!("Error getting topic string: {}", e.to_string()))
-    })?;
+    let topic_resolution = get_topic_string(resolution)
+        .await
+        .map_err(|e| ServiceError::BadRequest(format!("Error getting topic string: {}", e)))?;
 
     let new_topic = Topic::from_details(topic_resolution, user.id, normal_chat);
     let new_topic1 = new_topic.clone();
