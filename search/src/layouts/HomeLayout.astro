@@ -2,6 +2,7 @@
 import "../global.css";
 import { HomeNavbar } from "../components/Atoms/HomeNavbar";
 const plausibleHost = import.meta.env.PLAUSIBLE_HOST as string;
+const dataset = import.meta.env.DATASET as string;
 
 let stars = 0;
 try {
@@ -109,7 +110,7 @@ try {
     <div
       class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white"
     >
-      <HomeNavbar stars={stars} client:load />
+      <HomeNavbar stars={stars} dataset={dataset} client:load />
       <slot />
     </div>
   </body>

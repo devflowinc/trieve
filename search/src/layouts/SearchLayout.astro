@@ -2,6 +2,9 @@
 import "../global.css";
 import { Navbar } from "../components/Atoms/Navbar";
 
+const plausibleHost = import.meta.env.PLAUSIBLE_HOST as string;
+const dataset = import.meta.env.DATASET as string;
+
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
 let title: string | null | undefined = Astro.props.title;
 if (title == null) {
@@ -14,7 +17,6 @@ if (description == null || description === "") {
   description =
     "Demo of Arguflow's best-in-class semantic search infrastructure for debate evidence";
 }
-const plausibleHost = import.meta.env.PLAUSIBLE_HOST as string;
 
 let stars = 0;
 try {
@@ -116,7 +118,7 @@ try {
     <div
       class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white"
     >
-      <Navbar stars={stars} client:load />
+      <Navbar stars={stars} dataset={dataset} client:load />
       <slot />
     </div>
   </body>

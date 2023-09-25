@@ -166,6 +166,7 @@ services:
       - PUBLIC_LUCKY_ITEMS=${PUBLIC_LUCKY_ITEMS}
       - PUBLIC_FRONTMATTER_VALS=${PUBLIC_FRONTMATTER_VALS}
       - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - DATASET=${DATASET}
 
 networks:
   vault-network:

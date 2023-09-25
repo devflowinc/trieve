@@ -3,6 +3,7 @@ import RegisterOrUserProfile from "../RegisterOrUserProfile";
 
 export interface HomeNavbarProps {
   stars: number;
+  dataset: string;
 }
 
 export const HomeNavbar = (props: HomeNavbarProps) => {
