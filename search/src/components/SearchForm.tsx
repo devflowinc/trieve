@@ -19,11 +19,13 @@ import type { Filters } from "./ResultsPage";
 const parseEnvComboboxItems = (data: string | undefined): ComboboxItem[] => {
   const names = data?.split(",");
   if (!names) return [];
-  return names.map((name) => {
-    return {
-      name: name,
-    };
-  });
+  return names
+    .filter((name) => name && name !== "")
+    .map((name) => {
+      return {
+        name: name,
+      };
+    });
 };
 
 const SearchForm = (props: {
@@ -355,69 +357,87 @@ const SearchForm = (props: {
           </div>
         </div>
         <div class="flex space-x-2">
-          <Popover defaultOpen={false} class="relative">
-            {({ isOpen, setState }) => (
-              <>
-                <PopoverButton
-                  aria-label="Toggle filters"
-                  type="button"
-                  class="flex items-center space-x-1 text-sm "
-                >
-                  <span>Filters</span>{" "}
-                  <svg
-                    fill="currentColor"
-                    stroke-width="0"
-                    style={{ overflow: "visible", color: "currentColor" }}
-                    viewBox="0 0 16 16"
-                    class="h-3.5 w-3.5 "
-                    height="1em"
-                    width="1em"
-                    xmlns="http://www.w3.org/2000/svg"
+          <Show
+            when={
+              filterDataTypes()[0].comboboxItems.length > 0 ||
+              filterLinks()[0].comboboxItems.length > 0
+            }
+          >
+            <Popover defaultOpen={false} class="relative">
+              {({ isOpen, setState }) => (
+                <>
+                  <PopoverButton
+                    aria-label="Toggle filters"
+                    type="button"
+                    class="flex items-center space-x-1 text-sm "
                   >
-                    <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />
-                  </svg>
-                </PopoverButton>
-                <Transition
-                  show={isOpen()}
-                  enter="transition duration-200"
-                  enterFrom="opacity-0"
-                  enterTo="opacity-100"
-                  leave="transition duration-150"
-                  leaveFrom="opacity-100"
-                  leaveTo="opacity-0"
-                >
-                  <PopoverPanel
-                    unmount={false}
-                    class="absolute z-10 mt-2 h-fit w-fit rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-800"
+                    <span>Filters</span>{" "}
+                    <svg
+                      fill="currentColor"
+                      stroke-width="0"
+                      style={{ overflow: "visible", color: "currentColor" }}
+                      viewBox="0 0 16 16"
+                      class="h-3.5 w-3.5 "
+                      height="1em"
+                      width="1em"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />
+                    </svg>
+                  </PopoverButton>
+                  <Transition
+                    show={isOpen()}
+                    enter="transition duration-200"
+                    enterFrom="opacity-0"
+                    enterTo="opacity-100"
+                    leave="transition duration-150"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
                   >
-                    <Menu class="h-0">
-                      <MenuItem class="h-0" as="button" aria-label="Empty" />
-                    </Menu>
-                    <div class="flex w-full min-w-full space-x-2">
-                      <Show when={!props.collectionID}>
-                        <Combobox
-                          selectedComboboxItems={selectedDataTypeComboboxItems}
-                          setSelectedComboboxItems={
-                            setDataTypeSelectedComboboxItems
+                    <PopoverPanel
+                      unmount={false}
+                      class="absolute z-10 mt-2 h-fit w-fit rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-800"
+                    >
+                      <Menu class="h-0">
+                        <MenuItem class="h-0" as="button" aria-label="Empty" />
+                      </Menu>
+                      <div class="flex w-full min-w-full space-x-2">
+                        <Show
+                          when={
+                            !props.collectionID &&
+                            filterDataTypes()[0].comboboxItems.length > 0
                           }
-                          comboboxSections={filterDataTypes}
-                          setComboboxSections={setFilterDataTypes}
-                          setPopoverOpen={setState}
-                        />
-                      </Show>
-                      <Combobox
-                        selectedComboboxItems={selectedLinkComboboxItems}
-                        setSelectedComboboxItems={setLinkSelectedComboboxItems}
-                        comboboxSections={filterLinks}
-                        setComboboxSections={setFilterLinks}
-                        setPopoverOpen={setState}
-                      />
-                    </div>
-                  </PopoverPanel>
-                </Transition>
-              </>
-            )}
-          </Popover>
+                        >
+                          <Combobox
+                            selectedComboboxItems={
+                              selectedDataTypeComboboxItems
+                            }
+                            setSelectedComboboxItems={
+                              setDataTypeSelectedComboboxItems
+                            }
+                            comboboxSections={filterDataTypes}
+                            setComboboxSections={setFilterDataTypes}
+                            setPopoverOpen={setState}
+                          />
+                        </Show>
+                        <Show when={filterLinks()[0].comboboxItems.length > 0}>
+                          <Combobox
+                            selectedComboboxItems={selectedLinkComboboxItems}
+                            setSelectedComboboxItems={
+                              setLinkSelectedComboboxItems
+                            }
+                            comboboxSections={filterLinks}
+                            setComboboxSections={setFilterLinks}
+                            setPopoverOpen={setState}
+                          />
+                        </Show>
+                      </div>
+                    </PopoverPanel>
+                  </Transition>
+                </>
+              )}
+            </Popover>
+          </Show>
           <Popover defaultOpen={false} class="relative">
             {({ isOpen, setState }) => (
               <>
