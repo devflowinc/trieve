@@ -330,8 +330,10 @@ const ScoreCard = (props: ScoreCardProps) => {
                               props.card.metadata,
                               frontMatterVal,
                             ) &&
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                            (props.card.metadata as any)[frontMatterVal]}
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
+                            (props.card.metadata as any)[
+                              frontMatterVal
+                            ].replace(/ +/g, " ")}
                         </span>
                       </div>
                     </Show>

@@ -57,7 +57,7 @@ const ScoreCard = (props: ScoreCardProps) => {
   const api_host = import.meta.env.VITE_API_HOST as string;
   const frontMatterVals = (
     (import.meta.env.VITE_FRONTMATTER_VALS as string | undefined) ??
-    "link,tag_set,file_name"
+    "link,tag_set"
   ).split(",");
   const searchURL = import.meta.env.VITE_SEARCH_URL as string;
 
@@ -234,8 +234,11 @@ const ScoreCard = (props: ScoreCardProps) => {
                             props.card.metadata,
                             frontMatterVal,
                           ) &&
-                          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                          (props.card.metadata as any)[frontMatterVal]}
+                          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
+                          (props.card.metadata as any)[frontMatterVal].replace(
+                            / +/g,
+                            " ",
+                          )}
                       </span>
                     </div>
                   </Show>
