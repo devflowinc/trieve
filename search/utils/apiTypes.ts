@@ -10,6 +10,9 @@ export interface CardMetadata {
   file_id: string | null;
   file_name: string | null;
   metadata: object | null;
+  private?: boolean;
+  total_upvotes?: number;
+  total_downvotes?: number;
 }
 
 export const indirectHasOwnProperty = (obj: unknown, prop: string): boolean => {
