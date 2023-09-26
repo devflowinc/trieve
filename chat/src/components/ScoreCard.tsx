@@ -270,7 +270,7 @@ const ScoreCard = (props: ScoreCardProps) => {
       <button
         classList={{
           "ml-2 font-semibold": true,
-          "text-neutral-300 dark:text-neutral-600": !props.showExpand,
+          "text-neutral-300 dark:text-neutral-500": !props.showExpand,
         }}
         disabled={!props.showExpand}
         onClick={() => setExpanded((prev) => !prev)}

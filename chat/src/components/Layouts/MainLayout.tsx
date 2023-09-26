@@ -142,10 +142,10 @@ const MainLayout = (props: LayoutProps) => {
     regenerateLastMessage?: boolean;
   }) => {
     let finalTopicId = topic_id;
+    setStreamingCompletion(true);
 
     if (!finalTopicId) {
       setNewMessageContent("");
-      setStreamingCompletion(true);
       const isNormalTopic = props.isCreatingNormalTopic();
 
       let body: object = {

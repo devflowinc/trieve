@@ -309,11 +309,6 @@ export const Sidebar = (props: SidebarProps) => {
                 <div>Theme:</div>
                 <OnScreenThemeModeController />
               </div>
-              <div class="text-lg font-bold">Subscription Details</div>
-              <div class="flex w-full items-center justify-between space-x-4">
-                <div>Tier:</div>
-                <div>Free</div>
-              </div>
             </div>
           </div>
         </FullScreenModal>

@@ -6,7 +6,7 @@ import { Sidebar } from "~/components/Navbar/Sidebar";
 import { detectReferralToken, isTopic } from "~/types/actix-api";
 import { Topic } from "~/types/topics";
 
-export const debate = () => {
+export const chat = () => {
   const api_host: string = import.meta.env.VITE_API_HOST as unknown as string;
 
   const [searchParams] = useSearchParams();
@@ -124,4 +124,4 @@ export const debate = () => {
   );
 };
 
-export default debate;
+export default chat;

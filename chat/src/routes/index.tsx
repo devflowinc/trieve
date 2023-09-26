@@ -109,7 +109,7 @@ export default function Home() {
             <ThemeModeController />
             <A
               class="rounded-lg bg-turquoise px-4 py-2 font-semibold dark:text-neutral-900"
-              href={isLogin() ? "/debate" : "/register"}
+              href={isLogin() ? "/chat" : "/register"}
             >
               Chat Now
             </A>

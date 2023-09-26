@@ -78,7 +78,7 @@ const login = () => {
                     });
                     return;
                   }
-                  window.location.href = "/debate";
+                  window.location.href = "/chat";
                 });
               }}
             >

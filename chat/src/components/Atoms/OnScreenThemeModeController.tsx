@@ -38,7 +38,7 @@ export const OnScreenThemeModeController = () => {
           setMode("dark");
         }}
       >
-        <BiRegularMoon class="block dark:hidden" />
+        <BiRegularMoon class="block fill-current dark:hidden" />
       </button>
 
       <button
@@ -55,7 +55,7 @@ export const OnScreenThemeModeController = () => {
           }
         }}
       >
-        <BiSolidMoon class="hidden dark:block" />
+        <BiSolidMoon class="hidden fill-current dark:block" />
       </button>
       <div class="h-4 border-r" />
       <button
@@ -72,7 +72,7 @@ export const OnScreenThemeModeController = () => {
           }
         }}
       >
-        <BiSolidSun class="block dark:hidden" />
+        <BiSolidSun class="block fill-current dark:hidden" />
       </button>
       <button
         onClick={() => {
@@ -80,7 +80,7 @@ export const OnScreenThemeModeController = () => {
           setMode("light");
         }}
       >
-        <BiRegularSun class="hidden dark:block" />
+        <BiRegularSun class="hidden fill-current dark:block" />
       </button>
     </div>
   );
