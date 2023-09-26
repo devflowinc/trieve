@@ -1856,7 +1856,7 @@ pub fn find_relevant_sentence(
     let content = &input.card_html.clone().unwrap_or(input.content.clone());
     let mut engine: SimSearch<u32> = SimSearch::new();
     let mut split_content = content
-        .split('.')
+        .split(". ")
         .map(|x| x.to_string())
         .collect::<Vec<String>>();
     //insert all sentences into the engine
@@ -1885,7 +1885,7 @@ pub fn find_relevant_sentence(
         );
         split_content[*index as usize] = highlighted_sentence;
 
-        new_output.card_html = Some(split_content.join(".") + ".");
+        new_output.card_html = Some(split_content.join(". ") + ".");
     }
     Ok(new_output)
 }
