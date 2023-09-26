@@ -13,7 +13,12 @@ import {
   CardMetadata,
 } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
-import { BiRegularLogInCircle, BiRegularXCircle } from "solid-icons/bi";
+import {
+  BiRegularLogInCircle,
+  BiRegularQuestionMark,
+  BiRegularX,
+  BiRegularXCircle,
+} from "solid-icons/bi";
 import { FiEdit, FiLock, FiTrash } from "solid-icons/fi";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
 import { PaginationController } from "./Atoms/PaginationController";
@@ -21,6 +26,7 @@ import { ScoreCardArray } from "./ScoreCardArray";
 import SearchForm from "./SearchForm";
 import type { Filters } from "./ResultsPage";
 import CardMetadataDisplay from "./CardMetadataDisplay";
+import { TbRobot } from "solid-icons/tb";
 
 export interface CollectionPageProps {
   collectionID: string;
@@ -110,6 +116,11 @@ export const CollectionPage = (props: CollectionPageProps) => {
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const [onCollectionDelete, setOnCollectionDelete] = createSignal(() => {});
+
+  const [collectionQuery, setCollectionQuery] = createSignal("");
+  const [streamingCollectionInference, setStreamingCollectionInference] =
+    createSignal(false);
+  const [collectionInference, setCollectionInference] = createSignal("");
 
   // Fetch the user info for the auth'ed user
   createEffect(() => {
@@ -347,6 +358,65 @@ export const CollectionPage = (props: CollectionPageProps) => {
     });
   };
 
+  const fetchCollectionInference = async (
+    collection_id: string,
+    page: number,
+  ) => {
+    setCollectionInference("");
+
+    try {
+      const response = await fetch(`${apiHost}/card_collection/generate`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          collection_id: collection_id,
+          page: page,
+          query: collectionQuery(),
+        }),
+      });
+
+      const reader = response.body?.getReader();
+      setStreamingCollectionInference(true);
+
+      if (!reader) return;
+
+      let done = false;
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        if (readerDone) {
+          done = readerDone;
+          setStreamingCollectionInference(false);
+          continue;
+        }
+
+        const decoder = new TextDecoder();
+        const chunk = decoder.decode(value);
+        setCollectionInference((prev) => prev + chunk);
+      }
+    } catch (e) {
+      console.error(e);
+      setStreamingCollectionInference(false);
+    }
+  };
+
+  const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
+    if (!textarea) return;
+
+    textarea.style.height = `${textarea.scrollHeight}px`;
+    setCollectionQuery(textarea.value);
+  };
+
+  createEffect(() => {
+    resizeTextarea(
+      document.getElementById(
+        "collection-query-textarea",
+      ) as HTMLTextAreaElement | null,
+    );
+  });
+
   return (
     <>
       <div class="flex w-full flex-col items-center space-y-2">
@@ -376,23 +446,96 @@ export const CollectionPage = (props: CollectionPageProps) => {
               </button>
             </Show>
           </div>
-          <div class="flex max-w-6xl items-center px-4 sm:px-8 md:px-20">
-            <Show when={!editing()}>
-              <div class="mx-2 flex items-center space-x-2">
-                <h1 class="mb-4 break-all text-center text-lg min-[320px]:text-xl sm:text-3xl">
-                  {collectionInfo().name}
-                </h1>
+          <Show when={!editing()}>
+            <div class="flex w-full items-center justify-center">
+              <h1 class="break-all text-center text-lg min-[320px]:text-xl sm:text-3xl">
+                {collectionInfo().name}
+              </h1>
+            </div>
+            <Show when={collectionInfo().description.length > 0 && !editing()}>
+              <div class="mx-auto flex max-w-[300px] justify-items-center gap-x-2 md:max-w-fit">
+                <div class="text-center text-lg font-semibold">
+                  Description:
+                </div>
+                <div class="line-clamp-1 flex w-full justify-start text-center text-lg">
+                  {collectionInfo().description}
+                </div>
               </div>
             </Show>
-          </div>
-          <Show when={collectionInfo().description.length > 0 && !editing()}>
-            <div class="mx-auto mb-4 flex max-w-[300px] justify-items-center gap-x-2 md:max-w-fit">
-              <div class="text-center text-lg font-semibold">Description:</div>
-              <div class="line-clamp-1 flex w-full justify-start text-center text-lg">
-                {collectionInfo().description}
+            <div class="flex w-full max-w-6xl flex-col items-center justify-end space-x-2 px-4 pb-10 sm:px-8 md:px-20">
+              <div class="mt-4 flex w-full max-w-[calc(100%-32px)] justify-center space-x-2 rounded-md bg-neutral-100 px-4 py-1 pr-[10px] dark:bg-neutral-700 min-[360px]:max-w-[calc(100%-64px)]">
+                <Show when={!props.query}>
+                  <TbRobot class="mt-1 h-6 w-6" />
+                </Show>
+                <textarea
+                  id="collection-query-textarea"
+                  class="scrollbar-track-rounded-md scrollbar-thumb-rounded-md mr-2 h-fit max-h-[240px] w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
+                  placeholder="Prompt the AI to generate text based on the cards in this collection..."
+                  value={collectionQuery()}
+                  onInput={(e) => {
+                    resizeTextarea(e.target);
+                  }}
+                  onKeyDown={(e) => {
+                    if (
+                      ((e.ctrlKey || e.metaKey) && e.key === "Enter") ||
+                      (!e.shiftKey && e.key === "Enter")
+                    ) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      void fetchCollectionInference(
+                        props.collectionID,
+                        props.page,
+                      );
+                    }
+                  }}
+                  rows="1"
+                />
+                <Show when={collectionQuery()}>
+                  <button
+                    classList={{
+                      "pt-[2px]": !!props.query,
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setCollectionQuery("");
+                    }}
+                  >
+                    <BiRegularX class="h-7 w-7 fill-current" />
+                  </button>
+                </Show>
+                <Show when={props.query}>
+                  <button
+                    classList={{
+                      "border-l border-neutral-600 pl-[10px] dark:border-neutral-200":
+                        !!collectionQuery(),
+                    }}
+                    type="submit"
+                  >
+                    <BiRegularQuestionMark class="mt-1 h-6 w-6 fill-current" />
+                  </button>
+                </Show>
               </div>
+              <Show
+                when={streamingCollectionInference() || collectionInference()}
+              >
+                <div class="my-4 h-2 bg-neutral-500" />
+                <Show when={!collectionInference()}>
+                  <img
+                    src="/cooking-crab.gif"
+                    class="aspect-square w-[128px]"
+                    alt="cooking crab loading animation"
+                  />
+                </Show>
+                <Show when={collectionInference()}>
+                  <div
+                    class="mx-auto w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]"
+                    innerText={collectionInference()}
+                  />
+                </Show>
+              </Show>
             </div>
           </Show>
+
           <Show when={editing()}>
             <div class="vertical-align-left mt-8 grid w-full max-w-6xl auto-rows-max grid-cols-[1fr,3fr] gap-y-2 px-4 sm:px-8 md:px-20">
               <h1 class="text-md min-[320px]:text-md sm:text-md mt-10 text-left font-bold">
