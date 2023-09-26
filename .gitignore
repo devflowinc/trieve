@@ -23,3 +23,4 @@ server-python/arguflow-dataset
 server/target
 *.icloud
 chat/src/.root 2.css.icloud
+server/server-python/test.ipynb

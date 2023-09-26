@@ -553,7 +553,7 @@ pub struct SearchCardData {
     filters: Option<serde_json::Value>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ScoreCardDTO {
     metadata: Vec<CardMetadataWithVotesWithScore>,
     score: f64,
@@ -634,7 +634,6 @@ pub async fn search_card(
                     },
                 );
             card = find_relevant_sentence(card.clone(), data.content.clone()).unwrap_or(card);
-
             let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
                 .iter()
                 .filter(|card| card.qdrant_id == search_result.point_id)
@@ -650,21 +649,18 @@ pub async fn search_card(
                 collided_cards.insert(0, card);
             }
 
-            collided_cards.sort_by(|a, b| a.id.cmp(&b.id));
             collided_cards.dedup_by(|a, b| {
                 a.tag_set.clone().unwrap_or_default().replace('/', "")
                     == b.tag_set.clone().unwrap_or_default().replace('/', "")
                     || a.clone().card_html.unwrap_or_default()
                         == b.clone().card_html.unwrap_or_default()
             });
-
             ScoreCardDTO {
                 metadata: collided_cards,
                 score: search_result.score.into(),
             }
         })
         .collect();
-
     Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
         score_cards,
         total_card_pages: search_card_query_results.total_card_pages,
