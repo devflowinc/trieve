@@ -10,6 +10,7 @@ import {
   CardCollectionSearchDTO,
   isScoreCardDTO,
   isCardCollectionPageDTO,
+  CardMetadata,
 } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { BiRegularLogInCircle, BiRegularXCircle } from "solid-icons/bi";
@@ -19,6 +20,7 @@ import { PaginationController } from "./Atoms/PaginationController";
 import { ScoreCardArray } from "./ScoreCardArray";
 import SearchForm from "./SearchForm";
 import type { Filters } from "./ResultsPage";
+import CardMetadataDisplay from "./CardMetadataDisplay";
 
 export interface CollectionPageProps {
   collectionID: string;
@@ -88,6 +90,11 @@ export const CollectionPage = (props: CollectionPageProps) => {
   const [totalPages, setTotalPages] = createSignal(
     props.defaultCollectionCards.metadata.total_pages,
   );
+  const [loadingRecommendations, setLoadingRecommendations] =
+    createSignal(false);
+  const [recommendedCards, setRecommendedCards] = createSignal<CardMetadata[]>(
+    [],
+  );
 
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
     createSignal(false);
@@ -148,6 +155,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
             setCollectionInfo(collectionBookmarks.collection);
             setTotalPages(collectionBookmarks.total_pages);
             setMetadatasWithVotes(collectionBookmarks.bookmarks);
+            setClientSideRequestFinished(true);
             setError("");
           });
         }
@@ -302,6 +310,39 @@ export const CollectionPage = (props: CollectionPageProps) => {
       }
       if (response.status == 401) {
         setShowNeedLoginModal(true);
+      }
+    });
+  };
+
+  const fetchRecommendations = (
+    ids: string[],
+    prev_recommendations: CardMetadata[],
+  ) => {
+    setLoadingRecommendations(true);
+    void fetch(`${apiHost}/card/recommend`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        positive_card_ids: ids,
+        limit: prev_recommendations.length + 10,
+      }),
+    }).then((response) => {
+      if (response.ok) {
+        void response.json().then((data) => {
+          const typed_data = data as CardMetadata[];
+          const deduped_data = typed_data.filter((d) => {
+            return !prev_recommendations.some((c) => c.id == d.id);
+          });
+          const new_recommendations = [
+            ...prev_recommendations,
+            ...deduped_data,
+          ];
+          setLoadingRecommendations(false);
+          setRecommendedCards(new_recommendations);
+        });
       }
     });
   };
@@ -491,6 +532,56 @@ export const CollectionPage = (props: CollectionPageProps) => {
                 page={props.page}
                 totalPages={totalPages()}
               />
+            </div>
+          </Show>
+          <Show when={recommendedCards().length > 0}>
+            <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
+              <div class="flex w-full flex-col items-center rounded-md p-2">
+                <div class="text-xl font-semibold">Related Cards</div>
+              </div>
+              <For each={recommendedCards()}>
+                {(card) => (
+                  <>
+                    <div class="mt-4">
+                      <CardMetadataDisplay
+                        totalCollectionPages={totalCollectionPages()}
+                        signedInUserId={user()?.id}
+                        viewingUserId={user()?.id}
+                        card={card}
+                        cardCollections={cardCollections()}
+                        bookmarks={bookmarks()}
+                        setShowModal={setShowNeedLoginModal}
+                        setShowConfirmModal={setShowConfirmDeleteModal}
+                        fetchCardCollections={fetchCardCollections}
+                        setOnDelete={setOnDelete}
+                        showExpand={true}
+                      />
+                    </div>
+                  </>
+                )}
+              </For>
+            </div>
+          </Show>
+          <Show when={metadatasWithVotes().length > 0}>
+            <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
+              <button
+                classList={{
+                  "w-full rounded  bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800":
+                    true,
+                  "animate-pulse": loadingRecommendations(),
+                }}
+                onClick={() =>
+                  fetchRecommendations(
+                    metadatasWithVotes().map(
+                      (m) => m.metadata[0].qdrant_point_id,
+                    ),
+                    recommendedCards(),
+                  )
+                }
+              >
+                {recommendedCards().length == 0 ? "Get" : "Get More"} Related
+                Cards
+              </button>
             </div>
           </Show>
           <Show when={error().length > 0}>

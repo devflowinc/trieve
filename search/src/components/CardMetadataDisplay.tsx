@@ -4,15 +4,15 @@ import {
   type CardBookmarksDTO,
   type CardCollectionDTO,
   type CardMetadataWithVotes,
+  CardMetadata,
 } from "../../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import sanitizeHtml from "sanitize-html";
-import { VsCheck, VsFileSymlinkFile } from "solid-icons/vs";
+import { VsFileSymlinkFile } from "solid-icons/vs";
 import BookmarkPopover from "./BookmarkPopover";
 import { FiEdit, FiGlobe, FiLock, FiTrash } from "solid-icons/fi";
 import { sanitzerOptions } from "./ScoreCard";
 import { Tooltip } from "./Atoms/Tooltip";
-import { AiOutlineExclamation } from "solid-icons/ai";
 import CommunityBookmarkPopover from "./CommunityBookmarkPopover";
 
 export const getLocalTime = (strDate: string | Date) => {
@@ -31,7 +31,7 @@ export interface CardMetadataDisplayProps {
   totalCollectionPages: number;
   signedInUserId?: string;
   viewingUserId?: string;
-  card: CardMetadataWithVotes;
+  card: CardMetadataWithVotes | CardMetadata;
   cardCollections: CardCollectionDTO[];
   bookmarks: CardBookmarksDTO[];
   setShowModal: Setter<boolean>;
@@ -43,9 +43,6 @@ export interface CardMetadataDisplayProps {
 
 const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
   const api_host = import.meta.env.PUBLIC_API_HOST as string;
-  const similarityScoreThreshold =
-    (import.meta.env.PUBLIC_SIMILARITY_SCORE_THRESHOLD as number | undefined) ??
-    80;
   const frontMatterVals = (
     (import.meta.env.PUBLIC_FRONTMATTER_VALS as string | undefined) ??
     "link,tag_set,file_name"
@@ -94,30 +91,6 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
               <Tooltip
                 body={<FiGlobe class="h-5 w-5 text-green-500" />}
                 tooltipText="Publicly visible"
-              />
-            </Show>
-            <Show
-              when={
-                props.card.verification_score != null &&
-                props.card.verification_score > similarityScoreThreshold
-              }
-            >
-              <Tooltip
-                body={<VsCheck class="h-5 w-5 text-green-500" />}
-                tooltipText="This card has been verified"
-              />
-            </Show>
-            <Show
-              when={
-                props.card.verification_score != null &&
-                props.card.verification_score < similarityScoreThreshold
-              }
-            >
-              <Tooltip
-                body={
-                  <AiOutlineExclamation class="h-5 w-5 fill-amber-700 dark:fill-amber-300" />
-                }
-                tooltipText="This card could not be verified"
               />
             </Show>
             <div class="flex-1" />
@@ -202,12 +175,15 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                 </>
               )}
             </For>
-            <div class="flex w-fit gap-x-2 text-neutral-800 dark:text-neutral-200">
-              <span class="font-semibold">Cumulative Score: </span>
-              <span>
-                {props.card.total_upvotes - props.card.total_downvotes}
-              </span>
-            </div>
+            <Show when={props.card.total_upvotes && props.card.total_downvotes}>
+              <div class="flex w-fit gap-x-2 text-neutral-800 dark:text-neutral-200">
+                <span class="font-semibold">Cumulative Score: </span>
+                <span>
+                  {(props.card.total_upvotes ?? 0) -
+                    (props.card.total_downvotes ?? 0)}
+                </span>
+              </div>
+            </Show>
           </div>
         </div>
         <div class="mb-1 h-1 w-full border-b border-neutral-300 dark:border-neutral-600" />

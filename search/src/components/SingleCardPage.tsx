@@ -1,4 +1,4 @@
-import { Show, createEffect, createMemo, createSignal } from "solid-js";
+import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
 import {
   isUserDTO,
   type CardCollectionDTO,
@@ -8,11 +8,13 @@ import {
   SingleCardDTO,
   CardBookmarksDTO,
   isCardCollectionPageDTO,
+  CardMetadata,
 } from "../../utils/apiTypes";
 import ScoreCard from "./ScoreCard";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { BiRegularLogIn, BiRegularXCircle } from "solid-icons/bi";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
+import CardMetadataDisplay from "./CardMetadataDisplay";
 
 export interface SingleCardPageProps {
   cardId: string | undefined;
@@ -37,6 +39,13 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const [onDelete, setOnDelete] = createSignal(() => {});
+  const [clientSideRequestFinished, setClientSideRequestFinished] =
+    createSignal(false);
+  const [loadingRecommendations, setLoadingRecommendations] =
+    createSignal(false);
+  const [recommendedCards, setRecommendedCards] = createSignal<CardMetadata[]>(
+    [],
+  );
 
   if (props.defaultResultCard.status == 401) {
     setError("You are not authorized to view this card.");
@@ -64,25 +73,6 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
     });
   };
 
-  createEffect(() => {
-    fetchCardCollections();
-    fetchBookmarks();
-  });
-
-  // Fetch the user info for the auth'ed user
-  createEffect(() => {
-    void fetch(`${apiHost}/auth`, {
-      method: "GET",
-      credentials: "include",
-    }).then((response) => {
-      if (response.ok) {
-        void response.json().then((data) => {
-          isUserDTO(data) ? setUser(data) : setUser(undefined);
-        });
-      }
-    });
-  });
-
   const fetchBookmarks = () => {
     void fetch(`${apiHost}/card_collection/bookmark`, {
       method: "POST",
@@ -102,6 +92,58 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
     });
   };
 
+  const fetchRecommendations = (
+    ids: string[],
+    prev_recommendations: CardMetadata[],
+  ) => {
+    setLoadingRecommendations(true);
+    void fetch(`${apiHost}/card/recommend`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        positive_card_ids: ids,
+        limit: prev_recommendations.length + 10,
+      }),
+    }).then((response) => {
+      if (response.ok) {
+        void response.json().then((data) => {
+          const typed_data = data as CardMetadata[];
+          const deduped_data = typed_data.filter((d) => {
+            return !prev_recommendations.some((c) => c.id == d.id);
+          });
+          const new_recommendations = [
+            ...prev_recommendations,
+            ...deduped_data,
+          ];
+          setLoadingRecommendations(false);
+          setRecommendedCards(new_recommendations);
+        });
+      }
+    });
+  };
+
+  createEffect(() => {
+    fetchCardCollections();
+    fetchBookmarks();
+  });
+
+  // Fetch the user info for the auth'ed user
+  createEffect(() => {
+    void fetch(`${apiHost}/auth`, {
+      method: "GET",
+      credentials: "include",
+    }).then((response) => {
+      if (response.ok) {
+        void response.json().then((data) => {
+          isUserDTO(data) ? setUser(data) : setUser(undefined);
+        });
+      }
+    });
+  });
+
   createEffect(() => {
     setFetching(true);
     void fetch(`${apiHost}/card/${props.cardId ?? ""}`, {
@@ -117,6 +159,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
           }
 
           setCardMetadata(data);
+          setClientSideRequestFinished(true);
           setError("");
           setFetching(false);
         });
@@ -156,6 +199,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
         setOnDelete={setOnDelete}
         setShowConfirmModal={setShowConfirmDeleteModal}
         initialExpanded={true}
+        showExpand={clientSideRequestFinished()}
       />
     );
   });
@@ -164,10 +208,59 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
     <>
       <div class="mt-2 flex w-full flex-col items-center justify-center">
         <div class="flex w-full max-w-6xl flex-col justify-center px-4 sm:px-8 md:px-20">
-          {getCard()}
           <Show when={error().length > 0 && !fetching()}>
             <div class="flex w-full flex-col items-center rounded-md p-2">
               <div class="text-xl font-bold text-red-500">{error()}</div>
+            </div>
+          </Show>
+          {getCard()}
+          <Show when={cardMetadata()}>
+            <Show when={recommendedCards().length > 0}>
+              <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
+                <div class="flex w-full flex-col items-center rounded-md p-2">
+                  <div class="text-xl font-semibold">Related Cards</div>
+                </div>
+
+                <For each={recommendedCards()}>
+                  {(card) => (
+                    <>
+                      <div class="mt-4">
+                        <CardMetadataDisplay
+                          totalCollectionPages={totalCollectionPages()}
+                          signedInUserId={user()?.id}
+                          viewingUserId={user()?.id}
+                          card={card}
+                          cardCollections={cardCollections()}
+                          bookmarks={bookmarks()}
+                          setShowModal={setShowNeedLoginModal}
+                          setShowConfirmModal={setShowConfirmDeleteModal}
+                          fetchCardCollections={fetchCardCollections}
+                          setOnDelete={setOnDelete}
+                          showExpand={true}
+                        />
+                      </div>
+                    </>
+                  )}
+                </For>
+              </div>
+            </Show>
+            <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
+              <button
+                classList={{
+                  "w-full rounded  bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800":
+                    true,
+                  "animate-pulse": loadingRecommendations(),
+                }}
+                onClick={() =>
+                  fetchRecommendations(
+                    [cardMetadata()?.qdrant_point_id ?? ""],
+                    recommendedCards(),
+                  )
+                }
+              >
+                {recommendedCards().length == 0 ? "Get" : "Get More"} Related
+                Cards
+              </button>
             </div>
           </Show>
         </div>
