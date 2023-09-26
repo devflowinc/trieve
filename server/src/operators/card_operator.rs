@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
 use crate::data::models::{
-    CardCollisions, CardFile, CardFileWithName, CardMetadataWithVotesAndFiles,
-    CardMetadataWithVotesWithScore, CardVerifications, CardVote, FullTextSearchResult, User,
-    UserDTO, CardMetadataWithVotes
+    CardCollisions, CardFile, CardFileWithName, CardMetadataWithVotes,
+    CardMetadataWithVotesAndFiles, CardMetadataWithVotesWithScore, CardVerifications, CardVote,
+    FullTextSearchResult, User, UserDTO,
 };
 use crate::data::schema;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
@@ -1855,30 +1855,37 @@ pub fn find_relevant_sentence(
 ) -> Result<CardMetadataWithVotesWithScore, DefaultError> {
     let content = &input.card_html.clone().unwrap_or(input.content.clone());
     let mut engine: SimSearch<u32> = SimSearch::new();
-    let mut split_content = content.split('.').collect::<Vec<&str>>();
+    let mut split_content = content
+        .split('.')
+        .map(|x| x.to_string())
+        .collect::<Vec<String>>();
     //insert all sentences into the engine
-    for (index, sentence) in split_content.iter().enumerate() {
-        engine.insert(index.try_into().unwrap(), sentence);
-    }
+    split_content
+        .iter()
+        .enumerate()
+        .for_each(|(index, sentence)| {
+            engine.insert(index.try_into().unwrap(), sentence);
+        });
+
+    let mut new_output = input;
 
     //search for the query
     let results = engine.search(&query);
-    if let Some(x) = results.first() {
+    for x in results.iter().take(2) {
         let index = x;
-        let highlighted_sentence =
-            "<span class=\"bg-yellow-200 dark:bg-yellow-400 dark:text-black\">".to_string()
-                + split_content
-                    .clone()
-                    .into_iter()
-                    .nth((*index).try_into().unwrap())
-                    .unwrap()
-                + "</span>";
-        split_content[*index as usize] = highlighted_sentence.as_str();
+        let highlighted_sentence = format!(
+            "{}{}{}",
+            "<mark>",
+            &split_content
+                .clone()
+                .into_iter()
+                .nth((*index).try_into().unwrap())
+                .unwrap(),
+            "</mark>"
+        );
+        split_content[*index as usize] = highlighted_sentence;
 
-        let mut new_output = input;
         new_output.card_html = Some(split_content.join(".") + ".");
-        Ok(new_output)
-    } else {
-        Ok(input)
     }
+    Ok(new_output)
 }
