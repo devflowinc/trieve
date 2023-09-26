@@ -313,6 +313,7 @@ pub struct CollectionsBookmarkQueryResult {
 pub fn get_bookmarks_for_collection_query(
     collection: uuid::Uuid,
     page: u64,
+    limit: Option<i64>,
     current_user_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<CollectionsBookmarkQueryResult, ServiceError> {
@@ -321,6 +322,7 @@ pub fn get_bookmarks_for_collection_query(
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
     let page = if page == 0 { 1 } else { page };
+    let limit = limit.unwrap_or(10);
 
     let mut conn = pool.get().unwrap();
 
@@ -371,8 +373,8 @@ pub fn get_bookmarks_for_collection_query(
                     card_collection_columns::updated_at.assume_not_null(),
                 ),
             ))
-            .limit(10)
-            .offset(((page - 1) * 10).try_into().unwrap_or(0))
+            .limit(limit)
+            .offset(((page - 1) * limit as u64).try_into().unwrap_or(0))
             .load::<(CardMetadataWithCount, Option<uuid::Uuid>, CardCollection)>(&mut conn)
             .map_err(|_err| ServiceError::BadRequest("Error getting bookmarks".to_string()))?;
 

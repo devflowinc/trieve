@@ -307,6 +307,13 @@ pub async fn main() -> std::io::Result<()> {
                                     ),
                             )
                             .service(
+                                web::resource("/generate").route(
+                                    web::post().to(
+                                        handlers::collection_handler::generate_off_collection,
+                                    ),
+                                ),
+                            )
+                            .service(
                                 web::resource("/bookmark").route(
                                     web::post().to(
                                         handlers::collection_handler::get_collections_card_is_in,
