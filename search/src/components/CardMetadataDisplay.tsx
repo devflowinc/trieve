@@ -175,7 +175,9 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                 </>
               )}
             </For>
-            <Show when={props.card.total_upvotes && props.card.total_downvotes}>
+            <Show
+              when={!!props.card.total_upvotes && !!props.card.total_downvotes}
+            >
               <div class="flex w-fit gap-x-2 text-neutral-800 dark:text-neutral-200">
                 <span class="font-semibold">Cumulative Score: </span>
                 <span>
