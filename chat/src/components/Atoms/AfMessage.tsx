@@ -149,7 +149,7 @@ export const AfMessage = (props: AfMessageProps) => {
               <textarea
                 id="new-message-content-textarea"
                 class="max-h-[180px] w-full resize-none whitespace-pre-wrap rounded bg-transparent p-2 py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
-                placeholder="Write your argument"
+                placeholder="Write a question or prompt for the assistant..."
                 value={editingMessageContent()}
                 onInput={(e) => resizeTextarea(e.target)}
                 onKeyDown={(e) => {
