@@ -60,10 +60,6 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
 
 `rustup default nightly`
 
-### Install python requirements
-
-`pip install -r ./server/server-python/requirements.txt`
-
 ### Install node requirements
 
 `yarn --cwd ./server/server-nodejs`
