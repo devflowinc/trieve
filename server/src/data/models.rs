@@ -401,7 +401,7 @@ impl From<(CardMetadata, i64)> for CardMetadataWithVotes {
             content: x.0.content,
             card_html: x.0.card_html,
             link: x.0.link,
-            qdrant_point_id: x.0.qdrant_point_id.unwrap(),
+            qdrant_point_id: x.0.qdrant_point_id.unwrap_or_default(),
             total_upvotes: x.1.max(0),
             total_downvotes: 0,
             vote_by_current_user: None,

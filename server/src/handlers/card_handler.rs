@@ -649,12 +649,6 @@ pub async fn search_card(
                 collided_cards.insert(0, card);
             }
 
-            collided_cards.dedup_by(|a, b| {
-                a.tag_set.clone().unwrap_or_default().replace('/', "")
-                    == b.tag_set.clone().unwrap_or_default().replace('/', "")
-                    || a.clone().card_html.unwrap_or_default()
-                        == b.clone().card_html.unwrap_or_default()
-            });
             ScoreCardDTO {
                 metadata: collided_cards,
                 score: search_result.score.into(),
@@ -716,14 +710,6 @@ pub async fn search_full_text_card(
                 .collect();
 
             collided_cards.insert(0, search_result.clone().into());
-
-            collided_cards.sort_by(|a, b| a.id.cmp(&b.id));
-            collided_cards.dedup_by(|a, b| {
-                a.tag_set.clone().unwrap_or_default().replace('/', "")
-                    == b.tag_set.clone().unwrap_or_default().replace('/', "")
-                    || a.clone().card_html.unwrap_or_default()
-                        == b.clone().card_html.unwrap_or_default()
-            });
 
             ScoreCardDTO {
                 metadata: collided_cards,

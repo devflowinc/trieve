@@ -106,12 +106,6 @@ pub async fn main() -> std::io::Result<()> {
     log::info!("starting HTTP server at http://localhost:8090");
 
     HttpServer::new(move || {
-        let cors = Cors::permissive()
-            .allowed_methods(vec!["GET", "POST", "DELETE", "OPTIONS", "PUT"])
-            .allow_any_header()
-            .supports_credentials()
-            .max_age(3600);
-
         App::new()
             .app_data(PayloadConfig::new(250000000))
             .app_data(web::Data::new(pool.clone()))
@@ -122,7 +116,7 @@ pub async fn main() -> std::io::Result<()> {
                     .visit_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
                     .build(),
             )
-            .wrap(cors)
+            .wrap(Cors::permissive())
             .wrap(
                 SessionMiddleware::builder(
                     redis_store.clone(),
