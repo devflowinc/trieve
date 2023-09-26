@@ -21,10 +21,10 @@ export const TopCardsTable = (props: TopCardsTableProps) => {
   createEffect(() => {
     const curPage = page();
     setErrorText("");
-    if (curPage == 1) {
-      setTopCards(props.topCards ?? []);
-      return;
-    }
+    // if (curPage == 1) {
+    //   setTopCards(props.topCards ?? []);
+    //   return;
+    // }
 
     const abortController = new AbortController();
     setIsLoading(true);

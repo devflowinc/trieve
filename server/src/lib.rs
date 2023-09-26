@@ -106,8 +106,7 @@ pub async fn main() -> std::io::Result<()> {
     log::info!("starting HTTP server at http://localhost:8090");
 
     HttpServer::new(move || {
-        let cors = Cors::default()
-            .allow_any_origin()
+        let cors = Cors::permissive()
             .allowed_methods(vec!["GET", "POST", "DELETE", "OPTIONS", "PUT"])
             .allow_any_header()
             .supports_credentials()
