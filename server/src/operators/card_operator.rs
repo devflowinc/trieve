@@ -1854,38 +1854,46 @@ pub fn find_relevant_sentence(
     query: String,
 ) -> Result<CardMetadataWithVotesWithScore, DefaultError> {
     let content = &input.card_html.clone().unwrap_or(input.content.clone());
-    let mut engine: SimSearch<u32> = SimSearch::new();
+    let mut engine: SimSearch<String> = SimSearch::new();
     let mut split_content = content
         .split(". ")
-        .map(|x| x.to_string())
-        .collect::<Vec<String>>();
+        .map(|x| x.split(',').map(|y| y.to_string()).collect::<Vec<String>>())
+        .collect::<Vec<Vec<String>>>();
     //insert all sentences into the engine
     split_content
         .iter()
         .enumerate()
-        .for_each(|(index, sentence)| {
-            engine.insert(index.try_into().unwrap(), sentence);
+        .for_each(|(idx, sentence)| {
+            sentence.iter().enumerate().for_each(|(idy, phrase)| {
+                engine.insert(format!("{:?},{:?},{}",idx, idy, &phrase.clone()),&phrase.clone());
+            })
         });
 
     let mut new_output = input;
 
     //search for the query
     let results = engine.search(&query);
-    for x in results.iter().take(2) {
-        let index = x;
+    let amount = if split_content.len() < 5 {
+        2
+    } else {
+        3
+    };
+    for x in results.iter().take(amount) {
+        let split_x: Vec<&str> = x.split(',').collect();
+        if split_x.len() < 3 {
+            continue;
+        }
+        let sentence_index = split_x[0].parse::<usize>().unwrap();
+        let phrase_index = split_x[1].parse::<usize>().unwrap();
         let highlighted_sentence = format!(
             "{}{}{}",
             "<mark>",
-            &split_content
-                .clone()
-                .into_iter()
-                .nth((*index).try_into().unwrap())
-                .unwrap(),
+            split_x[2],
             "</mark>"
         );
-        split_content[*index as usize] = highlighted_sentence;
-
-        new_output.card_html = Some(split_content.join(". ") + ".");
+        split_content[sentence_index][phrase_index] = highlighted_sentence;
     }
+    new_output.card_html = Some(split_content.iter().map(|x| x.join(", ")).collect::<Vec<String>>().join(". ") + ".");
     Ok(new_output)
 }
+
