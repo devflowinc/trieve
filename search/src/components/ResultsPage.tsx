@@ -104,7 +104,10 @@ const ResultsPage = (props: ResultsPageProps) => {
         void response.json().then((data) => {
           isUserDTO(data) ? setUser(data) : setUser(undefined);
         });
+        return;
       }
+
+      setClientSideRequestFinished(true);
     });
   });
 
@@ -173,7 +176,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                   bookmarks={bookmarks()}
                   setOnDelete={setOnDelete}
                   setShowConfirmModal={setShowConfirmDeleteModal}
-                  showExpand={!user() || clientSideRequestFinished()}
+                  showExpand={clientSideRequestFinished()}
                 />
               </div>
             )}
