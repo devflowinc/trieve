@@ -173,7 +173,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                   bookmarks={bookmarks()}
                   setOnDelete={setOnDelete}
                   setShowConfirmModal={setShowConfirmDeleteModal}
-                  showExpand={clientSideRequestFinished()}
+                  showExpand={!user() || clientSideRequestFinished()}
                 />
               </div>
             )}

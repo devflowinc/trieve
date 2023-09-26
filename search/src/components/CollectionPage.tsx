@@ -166,7 +166,6 @@ export const CollectionPage = (props: CollectionPageProps) => {
             setCollectionInfo(collectionBookmarks.collection);
             setTotalPages(collectionBookmarks.total_pages);
             setMetadatasWithVotes(collectionBookmarks.bookmarks);
-            setClientSideRequestFinished(true);
             setError("");
           });
         }
@@ -182,6 +181,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
           );
           setShowNeedLoginModal(true);
         }
+        setClientSideRequestFinished(true);
       });
     } else {
       void fetch(
@@ -208,7 +208,6 @@ export const CollectionPage = (props: CollectionPageProps) => {
             setCollectionInfo(collectionBookmarks.collection);
             setTotalPages(collectionBookmarks.total_pages);
             setSearchMetadatasWithVotes(collectionBookmarks.bookmarks);
-            setClientSideRequestFinished(true);
             setError("");
           });
         }
@@ -218,6 +217,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
         if (response.status == 401) {
           setShowNeedLoginModal(true);
         }
+        setClientSideRequestFinished(true);
       });
 
       return () => {
