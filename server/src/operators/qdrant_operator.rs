@@ -1,4 +1,9 @@
-use qdrant_client::qdrant::{point_id::PointIdOptions, Filter, PointId, PointStruct, SearchPoints};
+use std::str::FromStr;
+
+use qdrant_client::qdrant::{
+    point_id::PointIdOptions, with_payload_selector::SelectorOptions, Filter, PointId, PointStruct,
+    RecommendPoints, SearchPoints, WithPayloadSelector,
+};
 use serde_json::json;
 
 use super::card_operator::{get_qdrant_connection, SearchResult};
@@ -185,4 +190,55 @@ pub async fn delete_qdrant_point_id_query(point_id: uuid::Uuid) -> Result<(), De
         })?;
 
     Ok(())
+}
+
+pub async fn recommend_qdrant_query(
+    positive_ids: Vec<uuid::Uuid>,
+) -> Result<Vec<uuid::Uuid>, DefaultError> {
+    let collection_name = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
+
+    let point_ids: Vec<PointId> = positive_ids
+        .iter()
+        .map(|id| id.to_string().into())
+        .collect();
+
+    let recommend_points = RecommendPoints {
+        collection_name,
+        positive: point_ids,
+        negative: vec![],
+        filter: None,
+        limit: 10,
+        with_payload: Some(WithPayloadSelector {
+            selector_options: Some(SelectorOptions::Enable(true)),
+        }),
+        params: None,
+        score_threshold: None,
+        offset: None,
+        using: None,
+        with_vectors: None,
+        lookup_from: None,
+        read_consistency: None,
+    };
+
+    let qdrant_client = get_qdrant_connection().await?;
+
+    let recommended_point_ids = qdrant_client
+        .recommend(&recommend_points)
+        .await
+        .map_err(|err| {
+            log::info!("Failed to recommend points from qdrant: {:?}", err);
+            DefaultError {
+                message: "Failed to recommend points from qdrant. Your are likely providing an invalid point id.",
+            }
+        })?
+        .result
+        .into_iter()
+        .map(|point| match point.id?.point_id_options? {
+            PointIdOptions::Uuid(id) => uuid::Uuid::from_str(&id).ok(),
+            PointIdOptions::Num(_) => None,
+        })
+        .filter_map(|id| id)
+        .collect::<Vec<uuid::Uuid>>();
+
+    Ok(recommended_point_ids)
 }

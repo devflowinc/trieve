@@ -208,6 +208,11 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(web::post().to(handlers::card_handler::create_card)),
                             )
                             .service(
+                                web::resource("/recommend").route(
+                                    web::post().to(handlers::card_handler::get_recommended_cards),
+                                ),
+                            )
+                            .service(
                                 web::resource("/update")
                                     .route(web::put().to(handlers::card_handler::update_card)),
                             )
