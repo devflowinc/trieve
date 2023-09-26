@@ -124,6 +124,7 @@ services:
       - PARSER_COMMAND=${PARSER_COMMAND}
       - EMBEDDING_SERVER_CALL=${EMBEDDING_SERVER_CALL}
       - EMBEDDING_SIZE=${EMBEDDING_SIZE}
+      - N_RETRIEVALS_TO_INCLUDE=${N_RETRIEVALS_TO_INCLUDE}
     depends_on:
       - s3
       - qdrant-database

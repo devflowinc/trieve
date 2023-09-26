@@ -1,6 +1,6 @@
 use crate::{
     data::models,
-    data::models::Pool,
+    data::models::{CardMetadataWithVotesAndFiles, Pool},
     errors::{DefaultError, ServiceError},
     operators::{
         card_operator::{
@@ -413,75 +413,54 @@ pub async fn stream_response(
             search_card_query(embedding_vector, 1, pool1, None, None, None, None)
                 .await
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-        // get the first and third card from the result
-        let first_third_cards = vec![
-            search_card_query_results
-                .search_results
-                .get(0)
-                .expect("No first card")
-                .point_id,
-            search_card_query_results
-                .search_results
-                .get(2)
-                .expect("No third card")
-                .point_id,
-        ];
-        let first_third_cards1 = first_third_cards.clone();
+        let n_retrievals_to_include = std::env::var("N_RETRIEVALS_TO_INCLUDE")
+            .unwrap_or("3".to_string())
+            .parse::<usize>()
+            .expect("N_RETRIEVALS_TO_INCLUDE must be a number");
+
+        let retrieval_card_ids = search_card_query_results
+            .search_results
+            .iter()
+            .take(n_retrievals_to_include)
+            .map(|card| card.point_id)
+            .collect::<Vec<uuid::Uuid>>();
 
         let (metadata_cards, collided_cards) = web::block(move || {
-            get_metadata_and_collided_cards_from_point_ids_query(first_third_cards, None, pool2)
+            get_metadata_and_collided_cards_from_point_ids_query(retrieval_card_ids, None, pool2)
         })
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-        let metadata_card0 = if metadata_cards.get(0).expect("No first card").private {
-            let matching_collided_card = collided_cards
-                .iter()
-                .find(|card| card.qdrant_id == first_third_cards1[0] && !card.metadata.private)
-                .expect("No public first card metadata");
+        let citation_cards: Vec<CardMetadataWithVotesAndFiles> = metadata_cards
+            .iter()
+            .map(|card| {
+                if card.private {
+                    let matching_collided_card = collided_cards
+                        .iter()
+                        .find(|card| card.qdrant_id == card.qdrant_id && !card.metadata.private)
+                        .expect("No public card metadata");
 
-            matching_collided_card.metadata.clone()
-        } else {
-            metadata_cards
-                .get(0)
-                .expect("No first card metadata")
-                .clone()
-        };
+                    matching_collided_card.metadata.clone()
+                } else {
+                    card.clone()
+                }
+            })
+            .collect();
 
-        let metadata_card2 = if metadata_cards.get(1).expect("No third card").private {
-            let matching_collided_card = collided_cards
-                .iter()
-                .find(|card| card.qdrant_id == first_third_cards1[1] && !card.metadata.private)
-                .expect("No public third card metadata");
-
-            matching_collided_card.metadata.clone()
-        } else {
-            metadata_cards
-                .get(1)
-                .expect("No third card metadata")
-                .clone()
-        };
-
-        let citation_cards = vec![metadata_card0.clone(), metadata_card2.clone()];
         citation_cards_stringified =
             serde_json::to_string(&citation_cards).expect("Failed to serialize citation cards");
         citation_cards_stringified1 = citation_cards_stringified.clone();
 
+        let rag_content = citation_cards
+            .iter()
+            .map(|card| card.content.clone())
+            .collect::<Vec<String>>()
+            .join("\n\n");
+
         last_message = format!(
-            "Here's my prompt: {} \n\n Pretending you found it, base your tone on and use the following retrieved information as the basis of your response: \n\n {},{} \n {},{}",
+            "Here's my prompt: {} \n\n Pretending you found it, base your tone on and use the following retrieved information as the basis of your response: {}",
             openai_messages.last().expect("There needs to be at least 1 prior message").content,
-            metadata_card0
-                .link
-                .clone()
-                .unwrap_or("".to_string())
-                ,
-            if metadata_card0.content.len() > 2000 {metadata_card0.content[..2000].to_string()} else {metadata_card0.content},
-            metadata_card2
-                .link
-                .clone()
-                .unwrap_or("".to_string())
-                ,
-                if metadata_card2.content.len() > 2000 {metadata_card2.content[..2000].to_string()} else {metadata_card2.content},
+            rag_content,
         );
     }
 
