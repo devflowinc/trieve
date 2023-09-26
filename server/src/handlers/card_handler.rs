@@ -12,7 +12,7 @@ use crate::operators::card_operator::{
 };
 use crate::operators::collection_operator::get_collection_by_id_query;
 use crate::operators::qdrant_operator::{
-    create_new_qdrant_point_query, delete_qdrant_point_id_query, update_qdrant_point_private_query,
+    create_new_qdrant_point_query, delete_qdrant_point_id_query, update_qdrant_point_private_query, recommend_qdrant_query,
 };
 use crate::AppMutexStore;
 use actix_web::{web, HttpResponse};
@@ -1022,4 +1022,36 @@ pub async fn get_total_card_count(pool: web::Data<Pool>) -> Result<HttpResponse,
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(json!({ "total_count": total_count })))
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct RecommendCardsRequest {
+    pub positive_card_ids: Vec<uuid::Uuid>,
+}
+
+pub async fn get_recommended_cards(
+    data: web::Json<RecommendCardsRequest>,
+    pool: web::Data<Pool>,
+    _user: LoggedUser,
+) -> Result<HttpResponse, actix_web::Error> {
+    let positive_card_ids = data.positive_card_ids.clone();
+
+    let recommended_qdrant_point_ids =
+        recommend_qdrant_query(positive_card_ids)
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!("Could not get recommended cards: {}", err))
+            })?;
+
+    let recommended_card_metadatas =
+        web::block(move || get_metadata_from_point_ids(recommended_qdrant_point_ids, None, pool))
+            .await?
+            .map_err(|err| {
+                ServiceError::BadRequest(format!(
+                    "Could not get recommended card_metadas from qdrant_point_ids: {}",
+                    err
+                ))
+            })?;
+
+    Ok(HttpResponse::Ok().json(recommended_card_metadatas))
 }
