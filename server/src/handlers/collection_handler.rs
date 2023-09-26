@@ -1,4 +1,13 @@
-use actix_web::{web, HttpResponse};
+use actix_web::{
+    web::{self, Bytes},
+    HttpResponse,
+};
+use crossbeam_channel::unbounded;
+use futures_util::StreamExt;
+use openai_dive::v1::{
+    api::Client,
+    resources::chat_completion::{ChatCompletionParameters, ChatMessage, Role},
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -252,7 +261,7 @@ pub async fn get_all_bookmarks(
     let current_user_id = user.map(|user| user.id);
 
     let bookmarks = web::block(move || {
-        get_bookmarks_for_collection_query(collection_id, page, current_user_id, pool2)
+        get_bookmarks_for_collection_query(collection_id, page, None, current_user_id, pool2)
     })
     .await?
     .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?;
@@ -350,4 +359,100 @@ pub async fn delete_bookmark(
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+
+pub struct GenerateOffCollectionData {
+    pub collection_id: uuid::Uuid,
+    pub page: Option<u64>,
+    pub query: Option<String>,
+}
+
+pub async fn generate_off_collection(
+    body: web::Json<GenerateOffCollectionData>,
+    pool: web::Data<Pool>,
+    user: LoggedUser,
+) -> Result<HttpResponse, actix_web::Error> {
+    let request_data = body.into_inner();
+    let collection_id = request_data.collection_id;
+    let page = request_data.page.unwrap_or(1);
+    let collection_bookmarks = web::block(move || {
+        get_bookmarks_for_collection_query(collection_id, page, Some(25), Some(user.id), pool)
+    })
+    .await??
+    .metadata;
+
+    let query = request_data.query.unwrap_or(
+        "Now, provide a multi paragraph summary of the information I provided.".to_string(),
+    );
+
+    let mut messages: Vec<ChatMessage> = Vec::new();
+    messages.push(ChatMessage {
+        role: Role::User,
+        content: format!(
+            "I am going to provide several pieces of information for you to use in response to a request or question. You will not respond until I ask you to."
+        ),
+        name: None,
+    });
+    messages.push(ChatMessage {
+        role: Role::Assistant,
+        content: "Understood, I will not reply until I receive a direct request or question."
+            .to_string(),
+        name: None,
+    });
+    collection_bookmarks.iter().for_each(|bookmark| {
+        messages.push(ChatMessage {
+            role: Role::User,
+            content: bookmark.content.clone(),
+            name: None,
+        });
+        messages.push(ChatMessage {
+            role: Role::Assistant,
+            content: "".to_string(),
+            name: None,
+        });
+    });
+    messages.push(ChatMessage {
+        role: Role::User,
+        content: query,
+        name: None,
+    });
+
+    let summary_completion_param = ChatCompletionParameters {
+        model: "gpt-3.5-turbo-16k".into(),
+        messages,
+        temperature: None,
+        top_p: None,
+        n: None,
+        stop: None,
+        max_tokens: None,
+        presence_penalty: Some(0.8),
+        frequency_penalty: Some(0.8),
+        logit_bias: None,
+        user: None,
+    };
+
+    let open_ai_api_key = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
+    let client = Client::new(open_ai_api_key);
+
+    let (s, _r) = unbounded::<String>();
+    let stream = client
+        .chat()
+        .create_stream(summary_completion_param)
+        .await
+        .expect("Failed to create chat");
+
+    Ok(HttpResponse::Ok().streaming(stream.map(
+        move |response| -> Result<Bytes, actix_web::Error> {
+            if let Ok(response) = response {
+                let chat_content = response.choices[0].delta.content.clone();
+                if let Some(message) = chat_content.clone() {
+                    let _ = s.send(message);
+                }
+                return Ok(Bytes::from(chat_content.unwrap_or("".to_string())));
+            }
+            Err(ServiceError::InternalServerError.into())
+        },
+    )))
 }
