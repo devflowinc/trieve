@@ -41,14 +41,25 @@ pub struct AppMutexStore {
     pub embedding_semaphore: Semaphore,
 }
 
+#[macro_export]
+#[cfg(feature = "require-env")]
+macro_rules! get_env {
+    ($name:expr, $message:expr) => {
+        env!($name, $message)
+    };
+}
+
+#[macro_export]
+#[cfg(not(feature = "require-env"))]
+macro_rules! get_env {
+    ($name:expr, $message:expr) => {
+        option_env!($name).expect($message)
+    };
+}
+
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
-
-    if cfg!(feature = "require-env") {
-        dotenvy::dotenv().ok();
-    } else {
-        dotenvy::from_filename(".env.dist").ok();
-    }
+    dotenvy::dotenv().ok();
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
@@ -56,8 +67,8 @@ pub async fn main() -> std::io::Result<()> {
         log::warn!("ALERT_EMAIL not set, this might be useful during health checks");
     }
 
-    let database_url = env!("DATABASE_URL", "DATABASE_URL should be set");
-    let redis_url = env!("REDIS_URL", "REDIS_URL should be set");
+    let database_url = get_env!("DATABASE_URL", "DATABASE_URL should be set");
+    let redis_url = get_env!("REDIS_URL", "REDIS_URL should be set");
 
     // create db connection pool
     let manager = r2d2::ConnectionManager::<PgConnection>::new(database_url);
