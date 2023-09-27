@@ -1,4 +1,4 @@
-use crate::errors::ServiceError;
+use crate::{errors::ServiceError, get_env};
 
 use actix_web::{web, HttpResponse};
 use redis::Commands;
@@ -20,7 +20,7 @@ pub async fn verify_card_content(
 ) -> Result<HttpResponse, actix_web::Error> {
     // Try naive html get first then use the headless browser approach
     let data = data.into_inner();
-    let redis_url = env!("REDIS_URL", "REDIS_URL should be set");
+    let redis_url = get_env!("REDIS_URL", "REDIS_URL should be set");
     let client = redis::Client::open(redis_url)
         .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
     let mut con = client

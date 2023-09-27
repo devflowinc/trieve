@@ -1,4 +1,5 @@
 use crate::{
+    get_env,
     data::models,
     data::models::{CardMetadataWithVotesAndFiles, Pool},
     errors::{DefaultError, ServiceError},
@@ -309,7 +310,7 @@ pub async fn get_topic_string(prompt: String) -> Result<String, DefaultError> {
         user: None,
     };
 
-    let openai_api_key = env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+    let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let client = Client::new(openai_api_key);
     let query = client
         .chat()
@@ -343,7 +344,7 @@ pub async fn stream_response(
         .map(|message| ChatMessage::from(message.clone()))
         .collect();
 
-    let openai_api_key = env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+    let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let client = Client::new(openai_api_key);
     let next_message_order = move || {
         let messages_len = messages.len();

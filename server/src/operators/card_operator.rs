@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-
+use crate::get_env;
 use crate::data::models::{
     CardCollisions, CardFile, CardFileWithName, CardMetadataWithVotes,
     CardMetadataWithVotesAndFiles, CardMetadataWithVotesWithScore, CardVerifications, CardVote,
@@ -36,8 +36,8 @@ use serde::{Deserialize, Serialize};
 use simsearch::SimSearch;
 
 pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
-    let qdrant_url = env!("QDRANT_URL", "QDRANT_URL should be set");
-    let qdrant_api_key = env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set").into();
+    let qdrant_url = get_env!("QDRANT_URL", "QDRANT_URL should be set");
+    let qdrant_api_key = get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set").into();
     let mut config = QdrantClientConfig::from_url(qdrant_url);
     config.api_key = Some(qdrant_api_key);
     QdrantClient::new(Some(config)).map_err(|_err| DefaultError {
@@ -78,7 +78,7 @@ pub struct CustomServerResponse {
 }
 
 pub async fn create_openai_embedding(message: &str) -> Result<Vec<f32>, actix_web::Error> {
-    let open_ai_api_key = env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+    let open_ai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let client = Client::new(open_ai_api_key);
 
     // Vectorize
@@ -99,7 +99,7 @@ pub async fn create_openai_embedding(message: &str) -> Result<Vec<f32>, actix_we
 }
 
 pub async fn create_server_embedding(message: &str) -> Result<Vec<f32>, actix_web::Error> {
-    let embedding_server_call = env!(
+    let embedding_server_call = get_env!(
         "EMBEDDING_SERVER_CALL",
         "EMBEDDING_SERVER_CALL should be set"
     );

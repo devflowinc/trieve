@@ -14,41 +14,21 @@ COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 # Build application
 COPY . .
-RUN cargo build --release
+RUN cargo build --release --no-default-features
 
 # Use Ubuntu 22.04 as the base image
-FROM node:18 as runtime
+FROM node:18-alpine3.18 as runtime
 
 COPY --from=builder /app/target/release/vault-server /usr/local/bin
-# Update package list and install required dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    gcc \
-    g++ \
-    make \
-    pkg-config \
-    python3 \
-    python3-pip \
-    python-is-python3 \
-    libpq-dev \
-    libssl-dev \
-    pkg-config \
-    openssl \
-    libreoffice \
-    ca-certificates \
-    curl \
-    gnupg
-
-RUN apt-get update && apt-get -y upgrade
+RUN apk upgrade --no-cache && apk add --no-cache ca-certificates
 
 WORKDIR /app
 COPY . /app/
-COPY .env.default /app/.env
+COPY .env.dist /app/.env
 
 # Install yarn
 RUN yarn --cwd ./server-nodejs install
 
-RUN pip install -r ./server-python/requirements.txt --break-system-packages
 RUN rm -rf ./tmp
 RUN mkdir tmp
 
