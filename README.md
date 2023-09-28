@@ -28,7 +28,7 @@
 </p>
 
 <p align="center">
-    <b>Arguflow is a truly all-in-one service for hosting semantic search and retrieval-augmented generation (RAG) on your data.</b>
+    <b>Arguflow is a truly all-in-one service for hosting AI powered semantic search and LLM retrieval-augmented generation (RAG) on your data.</b>
 </p>
 <a href="https://www.youtube.com/watch?v=jX84z2QkfUM&t=7s">
 
