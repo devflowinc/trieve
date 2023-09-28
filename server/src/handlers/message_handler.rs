@@ -438,7 +438,7 @@ pub async fn stream_response(
                 if card.private {
                     let matching_collided_card = collided_cards
                         .iter()
-                        .find(|card| card.qdrant_id == card.qdrant_id && !card.metadata.private)
+                        .find(|card| !card.metadata.private)
                         .expect("No public card metadata");
 
                     matching_collided_card.metadata.clone()
