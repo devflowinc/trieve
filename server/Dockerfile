@@ -27,8 +27,6 @@ COPY ./server-nodejs/package.json /app/server-nodejs/package.json
 RUN yarn --cwd ./server-nodejs install
 COPY ./server-nodejs/ /app/server-nodejs
 
-COPY .env.dist /app/.env
-
 RUN mkdir tmp
 
 RUN apt-get update && apt-get install -y libpq-dev pkg-config build-essential

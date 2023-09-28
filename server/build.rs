@@ -1,6 +1,6 @@
 use std::error::Error;
 
-#[cfg(feature = "require-env")]
+#[cfg(not(feature = "runtime-env"))]
 fn main() -> Result<(), Box<dyn Error>> {
     use std::env;
     dotenvy::dotenv().expect("Failed to read .env file. Did you `cp .env.dist .env` ?");
@@ -14,7 +14,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[cfg(not(feature = "require-env"))]
+#[cfg(feature = "runtime-env")]
 fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 
