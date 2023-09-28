@@ -42,7 +42,7 @@ pub struct AppMutexStore {
 }
 
 #[macro_export]
-#[cfg(feature = "require-env")]
+#[cfg(not(feature = "runtime-env"))]
 macro_rules! get_env {
     ($name:expr, $message:expr) => {
         env!($name, $message)
@@ -50,11 +50,16 @@ macro_rules! get_env {
 }
 
 #[macro_export]
-#[cfg(not(feature = "require-env"))]
+#[cfg(feature = "runtime-env")]
 macro_rules! get_env {
-    ($name:expr, $message:expr) => {
-        option_env!($name).expect($message)
-    };
+    ($name:expr, $message:expr) => {{
+        lazy_static::lazy_static! {
+            static ref ENV_VAR: String = {
+                std::env::var($name).expect($message)
+            };
+        }
+        ENV_VAR.as_str()
+    }};
 }
 
 #[actix_web::main]

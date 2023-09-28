@@ -2,7 +2,7 @@ version: "3"
 
 services:
   db:
-    image: postgres
+    image: postgres:15
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -134,14 +134,14 @@ services:
   vault-chat:
     image: arguflow/vault-chat
     build: ./chat/
-    volumes:
-      - ./.env.chat:/app/.env
     networks:
       - vault-network
     ports:
       - 3000:3000
+    depends_on:
+      - vault-server
     environment:
-      - VITE_FRONTMATTER_VALS=${PUBLIC_FRONTMATTER_VALS}
+      - VITE_FRONTMATTER_VALS=${VITE_FRONTMATTER_VALS}
       - VITE_DATASET=${DATASET}
       - VITE_API_HOST=${API_HOST}
       - VITE_SEARCH_URL=${PUBLIC_SEARCH_URL}
@@ -149,12 +149,12 @@ services:
   vault-search:
     image: arguflow/vault-search
     build: ./search/
-    volumes:
-      - ./.env.search:/app/.env
     networks:
       - vault-network
     ports:
       - 3001:3000
+    depends_on:
+      - vault-server
     environment:
       - API_HOST=${API_HOST}
       - PUBLIC_HOST=${PUBLIC_SEARCH_URL}

@@ -14,23 +14,24 @@ COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 # Build application
 COPY . .
-RUN cargo build --release --no-default-features
+RUN cargo build --release --features "runtime-env"
 
 # Use Ubuntu 22.04 as the base image
-FROM node:18-alpine3.18 as runtime
-
-COPY --from=builder /app/target/release/vault-server /usr/local/bin
-RUN apk upgrade --no-cache && apk add --no-cache ca-certificates
+FROM node:18-bookworm as runtime
 
 WORKDIR /app
-COPY . /app/
-COPY .env.dist /app/.env
-
+COPY --from=builder /app/target/release/vault-server /app/vault-server
+COPY ./server-nodejs/yarn.lock /app/server-nodejs/yarn.lock
+COPY ./server-nodejs/package.json /app/server-nodejs/package.json
 # Install yarn
 RUN yarn --cwd ./server-nodejs install
+COPY ./server-nodejs/ /app/server-nodejs
 
-RUN rm -rf ./tmp
+COPY .env.dist /app/.env
+
 RUN mkdir tmp
 
+RUN apt-get update && apt-get install -y libpq-dev pkg-config build-essential
+
 EXPOSE 8090
-ENTRYPOINT ["/usr/local/bin/vault-server"]
+ENTRYPOINT ["/app/vault-server"]
