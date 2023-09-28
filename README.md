@@ -64,16 +64,6 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
 
 `yarn --cwd ./server/server-nodejs`
 
-## How to debug diesel by getting the exact generated SQL
-
-`diesel::debug*query::<diesel::pg::Pg, *>(&query);`
-
-## How to set up the python verification script
-
-1. `virtualenv venv`
-2. `source venv/bin/activate`
-3. `pip install -r ./server/server-python/requirements.txt`
-
 ## How to get Rust debug level logs
 
 Run `export RUST_LOG=debug`
