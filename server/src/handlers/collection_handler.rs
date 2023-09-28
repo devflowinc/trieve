@@ -390,9 +390,7 @@ pub async fn generate_off_collection(
     let mut messages: Vec<ChatMessage> = Vec::new();
     messages.push(ChatMessage {
         role: Role::User,
-        content: format!(
-            "I am going to provide several pieces of information for you to use in response to a request or question. You will not respond until I ask you to."
-        ),
+        content: "I am going to provide several pieces of information for you to use in response to a request or question. You will not respond until I ask you to.".to_string(),
         name: None,
     });
     messages.push(ChatMessage {

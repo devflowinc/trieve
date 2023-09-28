@@ -233,11 +233,10 @@ pub async fn recommend_qdrant_query(
         })?
         .result
         .into_iter()
-        .map(|point| match point.id?.point_id_options? {
+        .filter_map(|point| match point.id?.point_id_options? {
             PointIdOptions::Uuid(id) => uuid::Uuid::from_str(&id).ok(),
             PointIdOptions::Num(_) => None,
         })
-        .filter_map(|id| id)
         .collect::<Vec<uuid::Uuid>>();
 
     Ok(recommended_point_ids)
