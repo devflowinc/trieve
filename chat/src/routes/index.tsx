@@ -7,7 +7,7 @@ import {
   BiLogosYoutube,
 } from "solid-icons/bi";
 import { TbMinusVertical } from "solid-icons/tb";
-import { createEffect, createSignal } from "solid-js";
+import { createEffect, createSignal, onCleanup } from "solid-js";
 import { A, useSearchParams } from "solid-start";
 import ThemeModeController from "~/components/Navbar/ThemeModeController";
 import { detectReferralToken } from "~/types/actix-api";
@@ -42,9 +42,9 @@ export default function Home() {
       setIsLogin(true);
     });
 
-    return () => {
+    onCleanup(() => {
       abort_controller.abort();
-    };
+    });
   });
 
   createEffect(() => {
