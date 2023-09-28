@@ -1,27 +1,57 @@
 <p align="center">
   <img height="100" src="https://raw.githubusercontent.com/arguflow/blog/5ef439020707b0e27bf901c8f6b4fb1f487a78d4/apps/frontend/public/assets/horizontal-logo.svg" alt="Arguflow">
 </p>
-
 <p align="center">
-    <b>Software suite for deploying semantic search and RAG/no-hallucination LLM-chat over arbitrary data cards/chunks. Contains a server for duplication detection, bookmarks, retrieval, filtering, recommendations, etc. and also white-label'able UI's for search and retrieval-augmented LLM chat. Build, contribute, and stay-tuned!</b>
-</p>
-<p align="center">
-<strong><a href="https://docs.arguflow.ai">Documentation</a> • <a href="https://search.arguflow.ai">Debate Search Demo</a> • <a href="https://chat.arguflow.ai">RAG Debate Opponent Demo</a> • <a href="https://discord.gg/CuJVfgZf54">Discord</a> • <a href="https://matrix.to/#/#arguflow-general:matrix.zerodao.gg">Matrix</a>
-
+<strong><a href="https://docs.arguflow.ai">Documentation</a> | <a href="https://blog.arguflow.ai">Blog</a> | <a href="https://www.youtube.com/watch?v=jX84z2QkfUM&t=7s">Demo Video</a>
 </strong>
 </p>
 
-# Arguflow
+<p align="center">
+    <a href="https://github.com/arguflow/arguflow/stargazers">
+        <img src="https://img.shields.io/github/stars/arguflow/arguflow.svg?style=flat&color=yellow" alt="Github stars"/>
+    </a>
+    <a href="https://github.com/arguflow/arguflow">
+        <img src="https://img.shields.io/github/last-commit/arguflow/arguflow.svg?style=flat&color=blue" alt="GitHub last commit"/>
+    </a>
+    <a href="https://github.com/arguflow/arguflow/issues">
+        <img src="https://img.shields.io/github/issues/arguflow/arguflow.svg?style=flat&color=success" alt="GitHub issues"/>
+    </a>
+    <a href="https://discord.gg/CuJVfgZf54">
+        <img src="https://img.shields.io/badge/discord-join-purple?style=flat&logo=discord&logocolor=white" alt="Join Discord"/>
+    </a>
+    <a href="https://matrix.to/#/#arguflow-general:matrix.zerodao.gg">
+        <img src="https://img.shields.io/badge/matrix-join-purple?style=flat&logo=matrix&logocolor=white" alt="Join Matrix"/>
+    </a>
+    <a href="https://t.me/+vUOq6omKOn5lY2Zh">
+        <img src="https://img.shields.io/badge/telegram-join-purple?style=flat&logo=telegram&logocolor=white" alt="Join Matrix"/>
+    </a>
+</p>
+
+<p align="center">
+    <b>Arguflow is a truly all-in-one service for hosting semantic search and retrieval-augmented generation (RAG) on your data.</b>
+</p>
+<a href="https://www.youtube.com/watch?v=jX84z2QkfUM&t=7s">
+
+![arguflow architecture diagram](/assets/arguflow-system-diagram.png)
+</a>
+
+## Live Demos
+
+- [OpenCaselist search](https://search.arguflow.ai)
+- [OpenCaselist RAG](https://chat.arguflow.ai)
+- [Enron Corpus search](https://enron-search.arguflow.ai)
+- [Enron Corpus RAG](https://enron-chat.arguflow.ai)
 
 ## How to contribute
 
-1. Fork the repository and clone it to your local machine
-2. Create a new branch with a descriptive name: git checkout -b your-branch-name
-3. Make your changes to the README file. Please ensure that your changes are relevant and add value to the project
-4. Test your changes locally to ensure that they do not break anything
-5. Commit your changes with a descriptive commit message: git commit -m "Add descriptive commit message here"
-6. Push your changes to your forked repository: git push origin your-branch-name
-7. Open a pull request to the main repository and describe your changes in the PR description
+1. Find an issue in the [issues tab](https://github.com/arguflow/arguflow/issues) that you would like to work on.
+2. Fork the repository and clone it to your local machine
+3. Create a new branch with a descriptive name: git checkout -b your-branch-name
+4. Solve the issue by adding or removing code on your forked branch.
+5. Test your changes locally to ensure that they do not break anything
+6. Commit your changes with a descriptive commit message: git commit -m "Add descriptive commit message here"
+7. Push your changes to your forked repository: git push origin your-branch-name
+8. Open a pull request to the main repository and describe your changes in the PR description
 
 ## Self-hosting the API and UI's
 
@@ -56,19 +86,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
     yarn --cwd ./server-nodejs install
 ```
 
-### Set rust to nightly
-
-`rustup default nightly`
-
 ### Install node requirements
 
 `yarn --cwd ./server/server-nodejs`
-
-## How to get Rust debug level logs
-
-Run `export RUST_LOG=debug`
-
-## Recommended local dev setup
 
 ### Setup env's
 
@@ -77,6 +97,15 @@ cp .env.chat ./chat/.env
 cp .env.search ./search/.env
 cp .env.server ./server/.env
 ```
+
+### Add your `OPENAI_API_KEY` to `./server/.env`
+
+[Here is a guide for acquiring that](https://blog.streamlit.io/beginners-guide-to-openai-api/#get-your-own-openai-api-key).
+
+#### Steps once you have the key
+
+1. Open the `./server/.env` file
+2. Replace the value for `OPENAI_API_KEY` to be your own OpenAI API key.
 
 ### Start docker container services needed for local dev
 
@@ -87,7 +116,7 @@ cat .env.chat .env.search .env.server .env.docker-compose > .env
 
 ### Start services for local dev
 
-We know this is bad. Currently, We recommend managing this through tmux.
+We know this is bad. Currently, We recommend managing this through tmux or VSCode terminal tabs.
 
 ```
 cd server
