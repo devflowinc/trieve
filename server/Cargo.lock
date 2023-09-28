@@ -2992,6 +2992,7 @@ dependencies = [
  "futures-util",
  "glob",
  "itertools 0.11.0",
+ "lazy_static",
  "log",
  "once_cell",
  "openai_dive",

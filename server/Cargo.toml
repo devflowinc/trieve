@@ -52,10 +52,11 @@ reqwest = { version = "0.11.18", features = ["json"] }
 rand = "0.8.5"
 dotenvy = "0.15.7"
 simsearch = "0.2.4"
+lazy_static = { version = "1.4.0" }
 
 [build-dependencies]
 dotenvy = "0.15.7"
 
 [features]
-default = ["require-env"]
-require-env = []
+default = []
+runtime-env = []
