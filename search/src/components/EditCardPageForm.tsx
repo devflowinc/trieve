@@ -138,7 +138,7 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
           }
 
           setEvidenceLink(data.link ?? "");
-          setPrivate(data.private ?? false);
+          setPrivate(data.private);
           setCardHtml(data.card_html ?? "");
           setTopLevelError("");
           setFetching(false);
