@@ -12,5 +12,10 @@ jobs:
       - name: Install dependencies
         run: yarn --cwd chat
       - name: Running lint
-        run: yarn --cwd chat lint
-
+        run: yarn --cwd chat lint:CI
+      - name: Annotate Code Linting Results
+        uses: ataylorme/eslint-annotate-action@1.0.4
+        if: always()
+        with:
+          repo-token: '${{ secrets.GITHUB_TOKEN }}'
+          report-json: 'eslint_report.json'
