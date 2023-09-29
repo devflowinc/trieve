@@ -1,0 +1,16 @@
+name: chat eslint/prettier
+
+on: 
+  push
+jobs:
+  clippy_check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setting up 
+        run: sed -i 's/chat\///' ./chat/.eslintrc.json
+      - name: Install dependencies
+        run: yarn --cwd chat
+      - name: Running lint
+        run: yarn --cwd chat lint
+

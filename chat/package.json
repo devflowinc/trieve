@@ -3,7 +3,8 @@
   "scripts": {
     "dev": "solid-start dev",
     "build": "solid-start build",
-    "start": "solid-start start"
+    "start": "solid-start start",
+    "lint": "prettier \"**/*.{js,jsx,ts,tsx,md,mdx,astro}\" && eslint \"src/**/*.{js,ts,jsx,tsx,astro}\""
   },
   "type": "module",
   "devDependencies": {

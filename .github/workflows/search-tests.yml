@@ -1,0 +1,16 @@
+name: search eslint/prettier
+
+on: 
+  push
+jobs:
+  clippy_check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setting up 
+        run: sed -i 's/search\///' ./search/.eslintrc.json
+      - name: Install dependencies
+        run: yarn --cwd search/
+      - name: Running lint
+        run: yarn --cwd search lint
+
