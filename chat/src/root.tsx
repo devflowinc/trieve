@@ -17,6 +17,8 @@ import { createEffect } from "solid-js";
 import ShowToast from "./components/ShowToast";
 
 export default function Root() {
+  const plausibleHost = import.meta.env.VITE_PLAUSIBLE_HOST as string;
+
   const theme = (() => {
     if (typeof localStorage !== "undefined" && localStorage.getItem("theme")) {
       return localStorage.getItem("theme");
@@ -52,7 +54,7 @@ export default function Root() {
     const script: any = document.createElement("script");
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     script.src = "https://perhaps.arguflow.com/js/script.js";
-    script["data-domain"] = "chat.arguflow.ai";
+    script["data-domain"] = plausibleHost;
     script.defer = true;
     document.body.appendChild(script);
 
