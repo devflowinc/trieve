@@ -4,7 +4,8 @@
     "dev": "solid-start dev",
     "build": "solid-start build",
     "start": "solid-start start",
-    "lint": "prettier \"**/*.{js,jsx,ts,tsx,md,mdx,astro}\" && eslint \"src/**/*.{js,ts,jsx,tsx,astro}\""
+    "lint": "prettier \"**/*.{js,jsx,ts,tsx,md,mdx,astro}\" && eslint \"src/**/*.{js,ts,jsx,tsx,astro}\"",
+    "lint:CI": "eslint --output-file eslint_report.json --format json \"src/**/*.{js,ts,jsx,tsx,astro}\""
   },
   "type": "module",
   "devDependencies": {
