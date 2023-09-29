@@ -50,7 +50,7 @@ services:
       - vault-network
 
   s3:
-    image: minio/minio
+    image: minio/minio:RELEASE.2023-09-27T15-22-50Z
     ports:
       - 9000:9000
       - 42625:42625
@@ -145,6 +145,7 @@ services:
       - VITE_DATASET=${DATASET}
       - VITE_API_HOST=${API_HOST}
       - VITE_SEARCH_URL=${PUBLIC_SEARCH_URL}
+      - VITE_PLAUSIBLE_HOST=${VITE_PLAUSIBLE_HOST}
 
   vault-search:
     image: arguflow/vault-search
@@ -167,6 +168,7 @@ services:
       - PUBLIC_LUCKY_ITEMS=${PUBLIC_LUCKY_ITEMS}
       - PUBLIC_FRONTMATTER_VALS=${PUBLIC_FRONTMATTER_VALS}
       - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - PLAUSIBLE_HOST=${PLAUSIBLE_HOST}
       - DATASET=${DATASET}
 
 networks:
