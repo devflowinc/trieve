@@ -18,5 +18,5 @@ jobs:
         if: always()
         with:
           repo-token: '${{ secrets.GITHUB_TOKEN }}'
-          report-json: 'search/eslint_report.json'
+          report-json: './search/eslint_report.json'
 
