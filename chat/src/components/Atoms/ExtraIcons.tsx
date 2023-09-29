@@ -1,5 +1,3 @@
-import { IconProps } from "solid-icons";
-
-export const ArguflowLogo = (props: IconProps) => {
+export const ArguflowLogo = () => {
   return <img src="/public/logo_transparent.svg" alt="" />;
 };

@@ -1,10 +1,4 @@
-import {
-  Accessor,
-  createContext,
-  createSignal,
-  createEffect,
-  JSX,
-} from "solid-js";
+import { Accessor, createContext, createSignal, JSX } from "solid-js";
 
 export interface GlobalStoreProviderType {
   isLogin: Accessor<boolean> | null;

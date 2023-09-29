@@ -1,4 +1,4 @@
-import { For, Show, createEffect, createSignal, onCleanup } from "solid-js";
+import { For, createEffect, createSignal, onCleanup } from "solid-js";
 import { BsCheck2Circle } from "solid-icons/bs";
 import { BiRegularErrorCircle } from "solid-icons/bi";
 import { VsClose } from "solid-icons/vs";
