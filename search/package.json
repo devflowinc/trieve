@@ -10,7 +10,7 @@
     "astro": "astro",
     "lint": "prettier --write  \"**/*.{js,jsx,ts,tsx,md,mdx,astro}\" && eslint --fix \"src/**/*.{js,ts,jsx,tsx,astro}\"",
     "lint:only": "eslint --fix \"src/**/*.{js,ts,jsx,tsx,astro}\"",
-    "lint:CI": "eslint --output-file eslint_report.json --format json \"src/**/*.{js,ts,jsx,tsx,astro}\""
+    "lint:CI": "eslint --fix --output-file eslint_report.json --format json \"src/**/*.{js,ts,jsx,tsx,astro}\""
   },
   "description": "The Astro server that serves as the client for Arguflow Search (https://search.arguflow.ai)",
   "dependencies": {

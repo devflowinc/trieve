@@ -10,7 +10,7 @@ jobs:
       - name: Setting up 
         run: sed -i 's/search\///' ./search/.eslintrc.json
       - name: Install dependencies
-        run: yarn --cwd search/
+        run: yarn --cwd search
       - name: Running lint
         run: yarn --cwd search lint:CI
       - name: Annotate Code Linting Results
