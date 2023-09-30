@@ -62,6 +62,7 @@ We have a full self-hosting guide available on our [documentation page here](htt
 ### Install apt packages
 
 ```
+sudo apt install
 curl \
 gcc \
 g++ \
