@@ -378,7 +378,13 @@ pub async fn main() -> std::io::Result<()> {
                                 web::resource("/{file_id}")
                                     .route(web::get().to(handlers::file_handler::get_file_handler))
                                     .route(web::delete().to(handlers::file_handler::delete_file_handler)),
-                            ),
+                            )
+                            .service(
+                        web::resource("/image/{file_name}").route(
+                            web::get().to(handlers::file_handler::get_image_file),
+                        ),
+                    )
+
                     )
                     .service(
                         web::scope("/notifications")

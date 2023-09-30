@@ -1865,7 +1865,10 @@ pub fn find_relevant_sentence(
         .enumerate()
         .for_each(|(idx, sentence)| {
             sentence.iter().enumerate().for_each(|(idy, phrase)| {
-                engine.insert(format!("{:?},{:?},{}",idx, idy, &phrase.clone()),&phrase.clone());
+                engine.insert(
+                    format!("{:?},{:?},{}", idx, idy, &phrase.clone()),
+                    &phrase.clone(),
+                );
             })
         });
 
@@ -1873,11 +1876,7 @@ pub fn find_relevant_sentence(
 
     //search for the query
     let results = engine.search(&query);
-    let amount = if split_content.len() < 5 {
-        2
-    } else {
-        3
-    };
+    let amount = if split_content.len() < 5 { 2 } else { 3 };
     for x in results.iter().take(amount) {
         let split_x: Vec<&str> = x.split(',').collect();
         if split_x.len() < 3 {
@@ -1885,15 +1884,16 @@ pub fn find_relevant_sentence(
         }
         let sentence_index = split_x[0].parse::<usize>().unwrap();
         let phrase_index = split_x[1].parse::<usize>().unwrap();
-        let highlighted_sentence = format!(
-            "{}{}{}",
-            "<mark>",
-            split_x[2],
-            "</mark>"
-        );
+        let highlighted_sentence = format!("{}{}{}", "<mark>", split_x[2], "</mark>");
         split_content[sentence_index][phrase_index] = highlighted_sentence;
     }
-    new_output.card_html = Some(split_content.iter().map(|x| x.join(", ")).collect::<Vec<String>>().join(". ") + ".");
+    new_output.card_html = Some(
+        split_content
+            .iter()
+            .map(|x| x.join(", "))
+            .collect::<Vec<String>>()
+            .join(". ")
+            + ".",
+    );
     Ok(new_output)
 }
-

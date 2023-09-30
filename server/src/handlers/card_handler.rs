@@ -12,7 +12,8 @@ use crate::operators::card_operator::{
 };
 use crate::operators::collection_operator::get_collection_by_id_query;
 use crate::operators::qdrant_operator::{
-    create_new_qdrant_point_query, delete_qdrant_point_id_query, update_qdrant_point_private_query, recommend_qdrant_query,
+    create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
+    update_qdrant_point_private_query,
 };
 use crate::AppMutexStore;
 use actix_web::{web, HttpResponse};
