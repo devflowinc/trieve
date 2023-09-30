@@ -41,7 +41,9 @@ const ResultsPage = (props: ResultsPageProps) => {
 
   const [resultCards, setResultCards] =
     createSignal<ScoreCardDTO[]>(initialResultCards);
-  const [clientSideRequestFinished, setClientSideRequestFinished] =
+  const [authClientSideRequestFinished, setAuthClientSideRequestFinished] =
+    createSignal(false);
+  const [cardClientSideRequestFinished, setCardClientSideRequestFinished] =
     createSignal(false);
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
 
@@ -107,7 +109,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         return;
       }
 
-      setClientSideRequestFinished(true);
+      setAuthClientSideRequestFinished(true);
     });
   });
 
@@ -132,7 +134,7 @@ const ResultsPage = (props: ResultsPageProps) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           const result = data.score_cards as ScoreCardDTO[];
           setResultCards(result);
-          setClientSideRequestFinished(true);
+          setCardClientSideRequestFinished(true);
         });
       }
     });
@@ -176,7 +178,10 @@ const ResultsPage = (props: ResultsPageProps) => {
                   bookmarks={bookmarks()}
                   setOnDelete={setOnDelete}
                   setShowConfirmModal={setShowConfirmDeleteModal}
-                  showExpand={clientSideRequestFinished()}
+                  showExpand={
+                    authClientSideRequestFinished() &&
+                    cardClientSideRequestFinished()
+                  }
                 />
               </div>
             )}
