@@ -426,6 +426,7 @@ pub struct UpdateCardData {
     link: Option<String>,
     card_html: Option<String>,
     private: Option<bool>,
+    json_metadata: Option<serde_json::Value>,
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct CardHtmlUpdateError {
@@ -535,7 +536,7 @@ pub async fn update_card(
                 user.id,
                 card_metadata.qdrant_point_id,
                 private,
-                card_metadata.metadata,
+                card.json_metadata.clone(),
             ),
             None,
             pool2,
