@@ -1,8 +1,8 @@
 use crate::{
-    get_env,
     data::models,
     data::models::{CardMetadataWithVotesAndFiles, Pool},
     errors::{DefaultError, ServiceError},
+    get_env,
     operators::{
         card_operator::{
             create_embedding, get_metadata_and_collided_cards_from_point_ids_query,

@@ -53,6 +53,7 @@ rand = "0.8.5"
 dotenvy = "0.15.7"
 simsearch = "0.2.4"
 lazy_static = { version = "1.4.0" }
+actix-files = "0.6.2"
 
 [build-dependencies]
 dotenvy = "0.15.7"

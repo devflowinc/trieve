@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::{
     data::models::{File, Pool},
     errors::ServiceError,
@@ -7,6 +9,7 @@ use crate::{
     },
     AppMutexStore,
 };
+use actix_files::NamedFile;
 use actix_web::{web, HttpResponse};
 use base64::{
     alphabet,
@@ -182,4 +185,25 @@ pub async fn delete_file_handler(
     delete_file_query(file_id.into_inner(), user.id, pool).await?;
 
     Ok(HttpResponse::NoContent().finish())
+}
+
+pub async fn get_image_file(
+    file_name: web::Path<String>,
+    _user: LoggedUser,
+) -> Result<NamedFile, actix_web::Error> {
+    let root_dir = "./images";
+    // split the path by slashes and make surer there are no .. in the path
+    if let Some(name) = file_name.to_string().split('/').last() {
+        if name.contains("..") {
+            return Err(ServiceError::BadRequest("Invalid file name".to_string()).into());
+        }
+
+        let file_path: PathBuf = format!("{}/{}", root_dir, name).into();
+
+        if file_path.exists() {
+            return Ok(NamedFile::open(file_path)?);
+        }
+    }
+
+    Err(ServiceError::BadRequest("Invalid file name, not found".to_string()).into())
 }
