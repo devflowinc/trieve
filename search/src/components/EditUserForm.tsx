@@ -86,7 +86,7 @@ const SearchForm = () => {
 
   return (
     <>
-      <Show when={currentUser()}>
+      <Show when={!currentUser()}>
         <div class="mx-auto mt-16 h-32 w-32 animate-spin rounded-full border-b-2 border-t-2 border-neutral-900 dark:border-white" />
       </Show>
       <Show when={!!currentUser()}>
