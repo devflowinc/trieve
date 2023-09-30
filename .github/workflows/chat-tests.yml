@@ -4,6 +4,9 @@ on:
   push:
     paths:
       'chat/**'
+  pull_request:
+    paths:
+      'chat/**'
 jobs:
   eslint:
     runs-on: ubuntu-latest
