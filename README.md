@@ -60,9 +60,8 @@ We have a full self-hosting guide available on our [documentation page here](htt
 ## Local development
 
 ### Install apt packages
-
 ```
-curl \
+sudo apt install curl \
 gcc \
 g++ \
 make \
@@ -74,7 +73,6 @@ libssl-dev \
 openssl \
 libreoffice
 ```
-
 ### Install NodeJS and Yarn
 
 You can use the following, but we recommend using [NVM](https://github.com/nvm-sh/nvm) and then running `yarn --cwd ./server-nodejs install` .
