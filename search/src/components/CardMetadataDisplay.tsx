@@ -48,6 +48,13 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
     "link,tag_set,file_name"
   ).split(",");
 
+  const linesBeforeShowMore = (() => {
+    const parsedLinesBeforeShowMore = Number.parseInt(
+      (import.meta.env.PUBLIC_LINES_BEFORE_SHOW_MORE as string | undefined) ?? "4", 10
+    )
+    return Number.isNaN(parsedLinesBeforeShowMore) ? 4 : parsedLinesBeforeShowMore;
+  })();
+
   const [expanded, setExpanded] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
   const [deleted, setDeleted] = createSignal(false);
@@ -198,6 +205,7 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
               "line-clamp-4 gradient-mask-b-0": !expanded(),
               "text-ellipsis max-w-[100%] break-words space-y-5": true,
             }}
+            style={{"-webkit-line-clamp": linesBeforeShowMore}}
           >
             {props.card.content.toString()}
           </p>
@@ -209,6 +217,7 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
               "text-ellipsis max-w-[100%] break-words space-y-5 leading-normal":
                 true,
             }}
+            style={{"-webkit-line-clamp": linesBeforeShowMore}}
             // eslint-disable-next-line solid/no-innerhtml
             innerHTML={sanitizeHtml(
               props.card.card_html !== undefined
@@ -233,12 +242,12 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
           {expanded() ? (
             <div class="flex flex-row items-center">
               <div>Show Less</div>{" "}
-              <BiRegularChevronUp class="h-8 w-8  fill-current" />
+              <BiRegularChevronUp class="h-8 w-8 fill-current" />
             </div>
           ) : (
             <div class="flex flex-row items-center">
               <div>Show More</div>{" "}
-              <BiRegularChevronDown class="h-8 w-8  fill-current" />
+              <BiRegularChevronDown class="h-8 w-8 fill-current" />
             </div>
           )}
         </button>
