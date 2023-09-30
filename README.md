@@ -17,7 +17,7 @@
         <img src="https://img.shields.io/github/issues/arguflow/arguflow.svg?style=flat&color=success" alt="GitHub issues"/>
     </a>
     <a href="https://discord.gg/CuJVfgZf54">
-        <img src="https://img.shields.io/badge/discord-join-purple?style=flat&logo=discord&logocolor=white" alt="Join Discord"/>
+        <img src="https://img.shields.io/discord/1130153053056684123.svg?label=Discord&logo=Discord&colorB=7289da&style=flat" alt="Join Discord"/>
     </a>
     <a href="https://matrix.to/#/#arguflow-general:matrix.zerodao.gg">
         <img src="https://img.shields.io/badge/matrix-join-purple?style=flat&logo=matrix&logocolor=white" alt="Join Matrix"/>
