@@ -1,6 +1,9 @@
 name: search test suite
 
 on: 
+  pull_request:
+    paths:
+      'search/**'
   push:
     paths:
       'search/**'
