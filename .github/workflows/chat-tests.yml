@@ -1,7 +1,9 @@
 name: chat test suite
 
 on: 
-  push
+  push:
+    paths:
+      'chat/**'
 jobs:
   eslint:
     runs-on: ubuntu-latest
