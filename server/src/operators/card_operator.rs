@@ -1558,6 +1558,7 @@ pub fn update_card_metadata_query(
             card_metadata_columns::link.eq(card_data.link),
             card_metadata_columns::card_html.eq(card_data.card_html),
             card_metadata_columns::private.eq(card_data.private),
+            card_metadata_columns::metadata.eq(card_data.metadata),
         ))
         .execute(conn)?;
 

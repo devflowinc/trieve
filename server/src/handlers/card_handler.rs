@@ -489,7 +489,9 @@ pub async fn update_card(
         }
     };
 
-    if new_content.replace(' ', "") != card_metadata.content.replace(' ', "") {
+    if new_content.replace(' ', "") != card_metadata.content.replace(' ', "")
+        && !new_content.is_empty()
+    {
         let Changeset { diffs, .. } = Changeset::new(&card_metadata.content, &new_content, " ");
         let mut ret: String = Default::default();
         for diff in diffs {
