@@ -78,7 +78,7 @@ pub fn get_notifications_query(
                 message: "Failed to get notifications",
             })?;
 
-    let mut combined_notifications: Vec<Notification> = file_upload_completed
+    let combined_notifications: Vec<Notification> = file_upload_completed
         .iter()
         .map(|c| {
             Notification::FileUploadComplete(
@@ -89,11 +89,12 @@ pub fn get_notifications_query(
             )
         })
         .collect();
+    let notification_count = file_upload_completed.len();
 
     Ok(NotificationReturn {
         notifications: combined_notifications,
-        full_count: combined_count,
-        total_pages: ((combined_count) as f64 / 10.0).ceil() as i64,
+        full_count: notification_count as i32,
+        total_pages: (notification_count as f64 / 10.0).ceil() as i64,
     })
 }
 
@@ -113,6 +114,12 @@ pub fn mark_notification_as_read_query(
     .set(file_upload_completed_notifications_columns::user_read.eq(true))
     .execute(&mut conn);
 
+    match file_upload_completed_result {
+        Ok(_) => Ok(()),
+        Err(_) => Err(DefaultError {
+            message: "Failed to mark notification as read",
+        }),
+    }
 }
 
 pub fn mark_all_notifications_as_read_query(
@@ -130,4 +137,10 @@ pub fn mark_all_notifications_as_read_query(
     .set(file_upload_completed_notifications_columns::user_read.eq(true))
     .execute(&mut conn);
 
+    match file_upload_completed_result {
+        Ok(_) => Ok(()),
+        Err(_) => Err(DefaultError {
+            message: "Failed to mark all notifications as read",
+        }),
+    }
 }

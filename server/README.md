@@ -53,7 +53,6 @@ S3_ENDPOINT=*******************
 S3_ACCESS_KEY=*******************
 S3_SECRET_KEY=*******************
 S3_BUCKET=vault
-VERIFICATION_SERVER_URL=http://localhost:8091/get_url_content
 QDRANT_API_KEY=qdrant_pass
 COOKIE_SECURE=false
 ADMIN_UUID=********************
@@ -165,12 +164,6 @@ This section refers to the jest testing suite found in the `server-nodejs` folde
 ## How to debug diesel by getting the exact generated SQL
 
 diesel::debug*query::<diesel::pg::Pg, *>(&query);
-
-## How to set up the python verification script
-
-1. `virtualenv venv`
-2. `source venv/bin/activate`
-3. `pip install -r ./server-python/requirements.txt`
 
 ## How to get Rust debug level logs
 

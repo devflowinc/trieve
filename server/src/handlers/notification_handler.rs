@@ -11,10 +11,11 @@ use serde::{Deserialize, Serialize};
 
 use super::auth_handler::LoggedUser;
 
-#[derive(Debug, Deserialize, Serialize)]
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(untagged)]
+pub enum Notification {
+    FileUploadComplete(FileUploadCompletedNotificationWithName),
+}
 
 pub async fn get_notifications(
     user: LoggedUser,
