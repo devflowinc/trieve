@@ -11,7 +11,7 @@ module.exports = {
     },
     extend: {
       lineClamp: {
-        'collapsed': "4",
+        "collapsed": "4",
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",

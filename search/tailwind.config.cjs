@@ -10,7 +10,7 @@ module.exports = {
     },
     extend: {
       lineClamp: {
-        'collapsed': "4",
+        "collapsed": "4",
       },
       colors: {
         shark: {
