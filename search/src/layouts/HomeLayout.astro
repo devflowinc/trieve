@@ -3,7 +3,9 @@ import "../global.css";
 import { HomeNavbar } from "../components/Atoms/HomeNavbar";
 const plausibleHost = import.meta.env.PLAUSIBLE_HOST as string;
 const dataset = import.meta.env.DATASET as string;
-
+const description = import.meta.env.DESCRIPTION as string;
+const description_og = import.meta.env.DESCRIPTION_OG as string;
+const description_twitter = import.meta.env.DESCRIPTION_TWITTER as string;
 let stars = 0;
 try {
   const ghStarResponse = await fetch(
@@ -73,7 +75,7 @@ try {
     <title>Arguflow Search</title>
     <meta
       name="description"
-      content="Demo of Arguflow's best-in-class semantic search infrastructure for debate evidence. "
+      content={description}
     />
 
     <!-- Facebook Meta Tags -->
@@ -82,7 +84,7 @@ try {
     <meta property="og:title" content="Arguflow Search" />
     <meta
       property="og:description"
-      content="Demo of Arguflow's best-in-class semantic search infrastructure for debate evidence. "
+      content={description_og}
     />
     <meta
       property="og:image"
@@ -96,7 +98,7 @@ try {
     <meta name="twitter:title" content="Arguflow Search" />
     <meta
       name="twitter:description"
-      content="Demo of Arguflow's best-in-class semantic search infrastructure for debate evidence. "
+      content={description_twitter}
     />
     <meta
       name="twitter:image"

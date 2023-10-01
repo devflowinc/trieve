@@ -4,6 +4,8 @@ import { Navbar } from "../components/Atoms/Navbar";
 
 const plausibleHost = import.meta.env.PLAUSIBLE_HOST as string;
 const dataset = import.meta.env.DATASET as string;
+const description_first = (import.meta as any).env.DESCRIPTION as string;
+const description_twitter = (import.meta as any).env.DESCRIPTION_TWITTER as string;
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
 let title: string | null | undefined = Astro.props.title;
@@ -15,7 +17,7 @@ if (title == null) {
 let description: string | null | undefined = Astro.props.description;
 if (description == null || description === "") {
   description =
-    "Demo of Arguflow's best-in-class semantic search infrastructure for debate evidence";
+    description_first;
 }
 
 let stars = 0;
@@ -104,7 +106,7 @@ try {
     <meta name="twitter:title" content="Arguflow Search" />
     <meta
       name="twitter:description"
-      content="Demo of Arguflow's best-in-class semantic search infrastructure for debate evidence "
+      content={description_twitter}
     />
     <meta
       name="twitter:image"
