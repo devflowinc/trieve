@@ -3,9 +3,8 @@ import "../global.css";
 import { HomeNavbar } from "../components/Atoms/HomeNavbar";
 const plausibleHost = import.meta.env.PLAUSIBLE_HOST as string;
 const dataset = import.meta.env.DATASET as string;
-const description = import.meta.env.DESCRIPTION as string;
-const description_og = import.meta.env.DESCRIPTION_OG as string;
-const description_twitter = import.meta.env.DESCRIPTION_TWITTER as string;
+const ogDescription = import.meta.env.OG_DESCRIPTION as string;
+
 let stars = 0;
 try {
   const ghStarResponse = await fetch(
@@ -73,19 +72,13 @@ try {
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <meta name="viewport" content="width=device-width" />
     <title>Arguflow Search</title>
-    <meta
-      name="description"
-      content={description}
-    />
+    <meta name="description" content={ogDescription} />
 
     <!-- Facebook Meta Tags -->
     <meta property="og:url" content="https://search.arguflow.ai/" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Arguflow Search" />
-    <meta
-      property="og:description"
-      content={description_og}
-    />
+    <meta property="og:description" content={ogDescription} />
     <meta
       property="og:image"
       content="https://docs.arguflow.ai/arguflow-og.png"
@@ -96,10 +89,7 @@ try {
     <meta property="twitter:domain" content="search.arguflow.ai" />
     <meta property="twitter:url" content="https://search.arguflow.ai/" />
     <meta name="twitter:title" content="Arguflow Search" />
-    <meta
-      name="twitter:description"
-      content={description_twitter}
-    />
+    <meta name="twitter:description" content={ogDescription} />
     <meta
       name="twitter:image"
       content="https://docs.arguflow.ai/arguflow-og.png"
