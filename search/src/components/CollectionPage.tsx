@@ -1,4 +1,4 @@
-import { Show, createEffect, createSignal, For } from "solid-js";
+import { Show, createEffect, createSignal, For, onMount } from "solid-js";
 import {
   isUserDTO,
   type CardCollectionDTO,
@@ -256,7 +256,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
     });
   });
 
-  createEffect(() => {
+  onMount(() => {
     fetchBookmarks();
   });
 
