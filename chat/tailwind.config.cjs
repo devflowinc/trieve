@@ -10,6 +10,9 @@ module.exports = {
       sans: ["Quicksand", "sans-serif"],
     },
     extend: {
+      lineClamp: {
+        'collapsed': "4",
+      },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-radial-t":

@@ -48,17 +48,6 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
     "link,tag_set,file_name"
   ).split(",");
 
-  const linesBeforeShowMore = (() => {
-    const parsedLinesBeforeShowMore = Number.parseInt(
-      (import.meta.env.PUBLIC_LINES_BEFORE_SHOW_MORE as string | undefined) ??
-        "4",
-      10,
-    );
-    return Number.isNaN(parsedLinesBeforeShowMore)
-      ? 4
-      : parsedLinesBeforeShowMore;
-  })();
-
   const [expanded, setExpanded] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
   const [deleted, setDeleted] = createSignal(false);
@@ -205,13 +194,10 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
         <div class="mb-1 h-1 w-full border-b border-neutral-300 dark:border-neutral-600" />
         <div
           classList={{
-            "line-clamp-4 gradient-mask-b-0": !expanded(),
+            "line-clamp-collapsed gradient-mask-b-0": !expanded(),
             "text-ellipsis max-w-[100%] break-words space-y-5 leading-normal":
               true,
           }}
-          style={
-            !expanded() ? { "-webkit-line-clamp": linesBeforeShowMore } : {}
-          }
           // eslint-disable-next-line solid/no-innerhtml
           innerHTML={sanitizeHtml(
             props.card.card_html !== undefined

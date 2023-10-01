@@ -9,6 +9,9 @@ module.exports = {
       sans: ["Quicksand", "sans-serif"],
     },
     extend: {
+      lineClamp: {
+        'collapsed': "4",
+      },
       colors: {
         shark: {
           DEFAULT: "#202124",
