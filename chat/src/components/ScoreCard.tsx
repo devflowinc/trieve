@@ -63,9 +63,13 @@ const ScoreCard = (props: ScoreCardProps) => {
 
   const linesBeforeShowMore = (() => {
     const parsedLinesBeforeShowMore = Number.parseInt(
-      (import.meta.env.VITE_LINES_BEFORE_SHOW_MORE as string | undefined) ?? "4", 10
-    )
-    return Number.isNaN(parsedLinesBeforeShowMore) ? 4 : parsedLinesBeforeShowMore;
+      (import.meta.env.VITE_LINES_BEFORE_SHOW_MORE as string | undefined) ??
+        "4",
+      10,
+    );
+    return Number.isNaN(parsedLinesBeforeShowMore)
+      ? 4
+      : parsedLinesBeforeShowMore;
   })();
 
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
@@ -262,7 +266,7 @@ const ScoreCard = (props: ScoreCardProps) => {
           "text-ellipsis max-w-[100%] break-words space-y-5 leading-normal":
             true,
         }}
-        style={{"-webkit-line-clamp": linesBeforeShowMore}}
+        style={!expanded() ? { "-webkit-line-clamp": linesBeforeShowMore } : {}}
         // eslint-disable-next-line solid/no-innerhtml, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
         innerHTML={sanitizeHtml(
           props.card.card_html !== undefined
