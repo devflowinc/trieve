@@ -36,6 +36,7 @@
     "solid-icons": "^1.0.4",
     "solid-js": "^1.7.2",
     "solid-start": "^0.2.26",
+    "tailwind-gradient-mask-image": "^1.0.0",
     "tailwind-scrollbar": "^3.0.0",
     "undici": "^5.15.1"
   },

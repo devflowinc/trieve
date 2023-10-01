@@ -56,9 +56,13 @@ const ScoreCard = (props: ScoreCardProps) => {
 
   const linesBeforeShowMore = (() => {
     const parsedLinesBeforeShowMore = Number.parseInt(
-      (import.meta.env.PUBLIC_LINES_BEFORE_SHOW_MORE as string | undefined) ?? "4", 10
-    )
-    return Number.isNaN(parsedLinesBeforeShowMore) ? 4 : parsedLinesBeforeShowMore;
+      (import.meta.env.PUBLIC_LINES_BEFORE_SHOW_MORE as string | undefined) ??
+        "4",
+      10,
+    );
+    return Number.isNaN(parsedLinesBeforeShowMore)
+      ? 4
+      : parsedLinesBeforeShowMore;
   })();
 
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
@@ -357,37 +361,27 @@ const ScoreCard = (props: ScoreCardProps) => {
           </div>
         </div>
         <div class="mb-1 h-1 w-full border-b border-neutral-300 dark:border-neutral-600" />
-        <Show when={props.card.card_html == null}>
-          <p
-            classList={{
-              "line-clamp-4 gradient-mask-b-0": !expanded(),
-            }}
-            style={{"-webkit-line-clamp": linesBeforeShowMore}}
-          >
-            {props.card.content.toString()}
-          </p>
-        </Show>
-        <Show when={props.card.card_html != null}>
-          <div
-            classList={{
-              "line-clamp-4 gradient-mask-b-0": !expanded(),
-              "text-ellipsis max-w-[100%] break-words space-y-5 leading-normal":
-                true,
-            }}
-            style={{"-webkit-line-clamp": linesBeforeShowMore}}
-            // eslint-disable-next-line solid/no-innerhtml
-            innerHTML={sanitizeHtml(
-              props.card.card_html !== undefined
-                ? props.card.card_html
-                    .replaceAll("line-height", "lh")
-                    .replace("\n", " ")
-                    .replace(`<br>`, " ")
-                    .replace(`\\n`, " ")
-                : "",
-              sanitzerOptions,
-            )}
-          />
-        </Show>
+        <div
+          classList={{
+            "line-clamp-4 gradient-mask-b-0": !expanded(),
+            "text-ellipsis max-w-[100%] break-words space-y-5 leading-normal":
+              true,
+          }}
+          style={
+            !expanded() ? { "-webkit-line-clamp": linesBeforeShowMore } : {}
+          }
+          // eslint-disable-next-line solid/no-innerhtml
+          innerHTML={sanitizeHtml(
+            props.card.card_html !== undefined
+              ? props.card.card_html
+                  .replaceAll("line-height", "lh")
+                  .replace("\n", " ")
+                  .replace(`<br>`, " ")
+                  .replace(`\\n`, " ")
+              : "",
+            sanitzerOptions,
+          )}
+        />
         <button
           classList={{
             "ml-2 font-semibold": true,

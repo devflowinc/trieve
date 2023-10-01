@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable no-undef */
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -90,6 +92,8 @@ module.exports = {
       },
     },
   },
-  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-call
-  plugins: [require("tailwind-scrollbar")({ nocompatible: true })],
+  plugins: [
+    require("tailwind-scrollbar")({ nocompatible: true }),
+    require("tailwind-gradient-mask-image"),
+  ],
 };
