@@ -183,31 +183,6 @@ async function getKeys(matchingKeys) {
       card_metadata.rows[0].link,
       card_metadata.rows[0].content
     );
-
-    let verification_uuid = uuidv4();
-    const verif_insert = await pg.query(
-      `INSERT INTO card_verification (id, card_id, similarity_score) 
-        VALUES ($1, $2, $3) 
-        ON CONFLICT (card_id) 
-        DO UPDATE SET similarity_score = $3
-        RETURNING id;`,
-      [verification_uuid, card, score]
-    );
-    await pg.query(
-      `INSERT INTO verification_notifications (id, user_uuid, card_uuid, verification_uuid, similarity_score, user_read)
-        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [
-        uuidv4(),
-        card_metadata.rows[0].author_id,
-        card,
-        verif_insert.rows[0].id,
-        score,
-        false,
-      ]
-    );
-    console.log(`Verified card ${card} with score ${score}`);
-
-    await keyvDb.del(`Verify: ${card}`);
   }
   await browser.close();
 }

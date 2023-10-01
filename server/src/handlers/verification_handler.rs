@@ -6,14 +6,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(untagged)]
-pub enum VerifyData {
-    CardVerification { card_uuid: uuid::Uuid },
-}
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct VerificationStatus {
-    pub score: i64,
-}
 
 pub async fn verify_card_content(
     data: web::Json<VerifyData>,
@@ -26,15 +20,6 @@ pub async fn verify_card_content(
     let mut con = client
         .get_connection()
         .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
-
-    match data {
-        VerifyData::CardVerification { card_uuid } => {
-            con.set(format!("Verify: {}", card_uuid), true)
-                .map_err(|err| {
-                    ServiceError::BadRequest(format!("Could not set redis key: {}", err))
-                })?;
-        }
-    };
 
     Ok(HttpResponse::NoContent().finish())
 }
