@@ -432,7 +432,6 @@ pub struct CardMetadataWithVotesWithScore {
     pub file_id: Option<uuid::Uuid>,
     pub file_name: Option<String>,
     pub private: bool,
-    pub verification_score: Option<i64>,
     pub metadata: Option<serde_json::Value>,
     pub score: Option<f64>,
 }
@@ -715,7 +714,6 @@ impl From<CardMetadataWithVotesAndFiles> for CardMetadataWithVotesWithScore {
             file_id: cards.file_id,
             file_name: cards.file_name,
             private: cards.private,
-            verification_score: cards.verification_score,
             metadata: cards.metadata,
             score: cards.score,
         }
@@ -836,7 +834,6 @@ pub struct CardMetadataWithVotesAndFiles {
     pub metadata: Option<serde_json::Value>,
     pub file_id: Option<uuid::Uuid>,
     pub file_name: Option<String>,
-    pub verification_score: Option<i64>,
 }
 
 impl From<CardMetadataWithVotes> for CardMetadataWithVotesAndFiles {
@@ -859,53 +856,13 @@ impl From<CardMetadataWithVotes> for CardMetadataWithVotesAndFiles {
             file_id: None,
             metadata: card.metadata,
             file_name: None,
-            verification_score: None,
         }
     }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable)]
-#[diesel(table_name = card_verification)]
-pub struct CardVerifications {
-    pub id: uuid::Uuid,
-    pub card_id: uuid::Uuid,
-    pub similarity_score: i64,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-}
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable, Selectable)]
-#[diesel(table_name = verification_notifications)]
-pub struct VerificationNotification {
-    pub id: uuid::Uuid,
-    pub user_uuid: uuid::Uuid,
-    pub card_uuid: uuid::Uuid,
-    pub verification_uuid: uuid::Uuid,
-    pub similarity_score: i64,
-    pub user_read: bool,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-}
-
-impl VerificationNotification {
-    pub fn from_details(
-        card_uuid: uuid::Uuid,
-        user_uuid: uuid::Uuid,
-        verification_uuid: uuid::Uuid,
-        similarity_score: i64,
-    ) -> Self {
-        VerificationNotification {
-            id: uuid::Uuid::new_v4(),
-            card_uuid,
-            user_uuid,
-            verification_uuid,
-            similarity_score,
-            user_read: false,
-            created_at: chrono::Utc::now().naive_local(),
-            updated_at: chrono::Utc::now().naive_local(),
-        }
-    }
-}
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable, Selectable)]
 #[diesel(table_name = file_upload_completed_notifications)]
