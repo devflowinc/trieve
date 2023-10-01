@@ -237,7 +237,6 @@ diesel::table! {
     }
 }
 
-
 diesel::joinable!(card_collection -> users (author_id));
 diesel::joinable!(card_collection_bookmarks -> card_collection (collection_id));
 diesel::joinable!(card_collection_bookmarks -> card_metadata (card_metadata_id));

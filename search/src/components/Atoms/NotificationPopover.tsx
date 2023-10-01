@@ -9,7 +9,6 @@ import {
   isFileUploadCompleteNotificationDTO,
   type NotificationDTO,
   type UserDTO,
-  isVerificationNotificationDTO,
   NotificationWithPagesDTO,
 } from "../../../utils/apiTypes";
 import { IoNotificationsOutline } from "solid-icons/io";
@@ -60,18 +59,10 @@ export const NotificationPopover = (props: { user: UserDTO | null }) => {
       }),
     }).then((response) => {
       if (response.ok) {
-        const isVerif = isVerificationNotificationDTO(notification);
         const isFileUpload = isFileUploadCompleteNotificationDTO(notification);
         setNotifs((prev_notifs) =>
           prev_notifs.map((notif) => {
-            if (isVerif && isVerificationNotificationDTO(notif)) {
-              if (notification.card_uuid === notif.card_uuid) {
-                notif.user_read = true;
-              }
-            } else if (
-              isFileUpload &&
-              isFileUploadCompleteNotificationDTO(notif)
-            ) {
+            if (isFileUpload && isFileUploadCompleteNotificationDTO(notif)) {
               if (notification.collection_uuid === notif.collection_uuid) {
                 notif.user_read = true;
               }

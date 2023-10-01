@@ -860,10 +860,6 @@ impl From<CardMetadataWithVotes> for CardMetadataWithVotesAndFiles {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable)]
-
-#[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable, Selectable)]
-
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable, Selectable)]
 #[diesel(table_name = file_upload_completed_notifications)]
 pub struct FileUploadCompletedNotification {

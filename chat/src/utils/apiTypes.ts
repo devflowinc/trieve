@@ -44,7 +44,6 @@ export type CardMetadataWithVotes = Exclude<CardMetadata, "author"> & {
   total_downvotes: number;
   vote_by_current_user: boolean | null;
   private: boolean | null;
-  verification_score: number | null;
 };
 
 export const isCardMetadataWithVotes = (
@@ -417,45 +416,7 @@ export const isFileUploadCompleteNotificationDTO = (
   );
 };
 
-export interface VerificationDTO {
-  id: string;
-  user_uuid: string;
-  card_uuid: string;
-  verification_uuid: string;
-  similarity_score: number;
-  user_read: boolean;
-  created_at: Date;
-  updated_at: Date;
-}
-
-export const isVerificationNotificationDTO = (
-  notification: unknown,
-): notification is VerificationDTO => {
-  if (typeof notification !== "object" || notification === null) return false;
-
-  return (
-    indirectHasOwnProperty(notification, "id") &&
-    typeof (notification as VerificationDTO).id === "string" &&
-    indirectHasOwnProperty(notification, "user_uuid") &&
-    typeof (notification as VerificationDTO).user_uuid === "string" &&
-    indirectHasOwnProperty(notification, "card_uuid") &&
-    typeof (notification as VerificationDTO).card_uuid === "string" &&
-    indirectHasOwnProperty(notification, "verification_uuid") &&
-    typeof (notification as VerificationDTO).verification_uuid === "string" &&
-    indirectHasOwnProperty(notification, "similarity_score") &&
-    typeof (notification as VerificationDTO).similarity_score === "number" &&
-    indirectHasOwnProperty(notification, "user_read") &&
-    typeof (notification as VerificationDTO).user_read === "boolean" &&
-    indirectHasOwnProperty(notification, "created_at") &&
-    typeof (notification as VerificationDTO).created_at === "string" &&
-    indirectHasOwnProperty(notification, "updated_at") &&
-    typeof (notification as VerificationDTO).updated_at === "string"
-  );
-};
-
-export type NotificationDTO =
-  | FileUploadCompleteNotificationDTO
-  | VerificationDTO;
+export type NotificationDTO = FileUploadCompleteNotificationDTO;
 
 export interface NotificationWithPagesDTO {
   notifications: NotificationDTO[];

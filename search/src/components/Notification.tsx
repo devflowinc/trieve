@@ -2,9 +2,7 @@ import { Accessor, Show, createSignal } from "solid-js";
 import {
   FileUploadCompleteNotificationDTO,
   NotificationDTO,
-  VerificationDTO,
   isFileUploadCompleteNotificationDTO,
-  isVerificationNotificationDTO,
 } from "../../utils/apiTypes";
 import { VsCheck } from "solid-icons/vs";
 import { getLocalTime } from "./CardMetadataDisplay";
@@ -30,10 +28,9 @@ export interface NotificationProps {
 
 export const SingleNotification = (props: NotificationProps) => {
   // eslint-disable-next-line solid/reactivity
-  const isVerif = isVerificationNotificationDTO(props.notification);
-  // eslint-disable-next-line solid/reactivity
   const isFileUpload = isFileUploadCompleteNotificationDTO(props.notification);
 
+  // eslint-disable-next-line solid/reactivity
   const [read, setRead] = createSignal(props.notification.user_read);
 
   const markNotificationAsRead = () => {
@@ -59,37 +56,6 @@ export const SingleNotification = (props: NotificationProps) => {
           }}
         >
           <div class="flex flex-row justify-start space-x-2 py-[16px] text-sm">
-            <Show when={isVerif}>
-              <span class="text-left">
-                {isVerif &&
-                (props.notification as VerificationDTO).similarity_score >
-                  props.similarityScoreThreshold ? (
-                  <a
-                    href={`/card/${
-                      (props.notification as VerificationDTO).card_uuid
-                    }`}
-                    onClick={() => {
-                      markNotificationAsRead();
-                    }}
-                  >
-                    Your <text class="underline dark:text-acid-500">card</text>{" "}
-                    was verified! 🎉
-                  </a>
-                ) : (
-                  <a
-                    href={`/card/${
-                      (props.notification as VerificationDTO).card_uuid
-                    }`}
-                    onClick={() => {
-                      markNotificationAsRead();
-                    }}
-                  >
-                    Your <text class="underline dark:text-acid-500">card</text>{" "}
-                    could not be verified
-                  </a>
-                )}
-              </span>
-            </Show>
             <Show when={isFileUpload}>
               <span class="text-left">
                 <a

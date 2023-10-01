@@ -185,30 +185,6 @@ const ScoreCard = (props: ScoreCardProps) => {
                 tooltipText="Publicly visible"
               />
             </Show>
-            <Show
-              when={
-                props.card.verification_score != null &&
-                props.card.verification_score > similarityScoreThreshold
-              }
-            >
-              <Tooltip
-                body={<VsCheck class="h-5 w-5 text-green-500" />}
-                tooltipText="This card has been verified"
-              />
-            </Show>
-            <Show
-              when={
-                props.card.verification_score != null &&
-                props.card.verification_score < similarityScoreThreshold
-              }
-            >
-              <Tooltip
-                body={
-                  <AiOutlineExclamation class="h-5 w-5 fill-amber-700 dark:fill-amber-300" />
-                }
-                tooltipText="This card could not be verified"
-              />
-            </Show>
             <div class="flex-1" />
             <Show when={!copied()}>
               <button class="h-fit" onClick={() => copyCard()}>
