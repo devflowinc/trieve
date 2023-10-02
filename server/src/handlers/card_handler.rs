@@ -658,6 +658,7 @@ pub async fn search_card(
             }
         })
         .collect();
+
     Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
         score_cards,
         total_card_pages: search_card_query_results.total_card_pages,

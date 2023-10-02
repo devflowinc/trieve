@@ -151,7 +151,10 @@ pub async fn search_card_query(
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
 
-    if filters.is_none() && link.is_none() && tag_set.is_none() {
+    let link_tag_set_present = link.clone().is_some_and(|links| !links.is_empty())
+        || tag_set.clone().is_some_and(|tags| !tags.is_empty());
+
+    if filters.is_none() && !link_tag_set_present {
         let mut filter = Filter::default();
         filter.should.push(Condition::is_empty("private"));
         filter.should.push(Condition::is_null("private"));

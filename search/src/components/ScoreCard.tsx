@@ -13,11 +13,11 @@ import {
   RiArrowsArrowUpCircleLine,
 } from "solid-icons/ri";
 import BookmarkPopover from "./BookmarkPopover";
-import { VsCheck, VsFileSymlinkFile } from "solid-icons/vs";
+import { VsFileSymlinkFile } from "solid-icons/vs";
 import sanitizeHtml from "sanitize-html";
 import { FiEdit, FiGlobe, FiLock, FiTrash, FiCheck } from "solid-icons/fi";
 import { Tooltip } from "./Atoms/Tooltip";
-import { AiOutlineCopy, AiOutlineExclamation } from "solid-icons/ai";
+import { AiOutlineCopy } from "solid-icons/ai";
 import CommunityBookmarkPopover from "./CommunityBookmarkPopover";
 
 export const sanitzerOptions = {
@@ -45,9 +45,6 @@ export interface ScoreCardProps {
 
 const ScoreCard = (props: ScoreCardProps) => {
   const api_host = import.meta.env.PUBLIC_API_HOST as string;
-  const similarityScoreThreshold =
-    (import.meta.env.PUBLIC_SIMILARITY_SCORE_THRESHOLD as number | undefined) ??
-    80;
 
   const frontMatterVals = (
     (import.meta.env.PUBLIC_FRONTMATTER_VALS as string | undefined) ??
