@@ -656,6 +656,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
                     setOnDelete={setOnDelete}
                     setShowConfirmModal={setShowConfirmDeleteModal}
                     showExpand={clientSideRequestFinished()}
+                    setCardCollections={setCardCollections}
                   />
                 </div>
               )}
