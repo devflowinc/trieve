@@ -1,11 +1,16 @@
+import type { Setter } from "solid-js";
 import { Show, createSignal } from "solid-js";
-import type { CardMetadataWithVotes } from "../../utils/apiTypes";
+import type {
+  CardMetadataWithVotes,
+  CardCollectionDTO,
+} from "../../utils/apiTypes";
 import type { ScoreCardProps } from "./ScoreCard";
 import { FiChevronLeft, FiChevronRight } from "solid-icons/fi";
 import ScoreCard from "./ScoreCard";
 
 export type ScoreCardAraryProps = Omit<ScoreCardProps, "card"> & {
   cards: CardMetadataWithVotes[];
+  setCardCollections: Setter<CardCollectionDTO[]>;
 };
 
 export const ScoreCardArray = (props: ScoreCardAraryProps) => {

@@ -175,6 +175,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                   setOnDelete={setOnDelete}
                   setShowConfirmModal={setShowConfirmDeleteModal}
                   showExpand={clientSideRequestFinished()}
+                  setCardCollections={setCardCollections}
                 />
               </div>
             )}
