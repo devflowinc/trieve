@@ -41,6 +41,7 @@ export interface ScoreCardProps {
   initialExpanded?: boolean;
   bookmarks: CardBookmarksDTO[];
   showExpand?: boolean;
+  setCardCollections: Setter<CardCollectionDTO[]>;
 }
 
 const ScoreCard = (props: ScoreCardProps) => {
@@ -236,6 +237,7 @@ const ScoreCard = (props: ScoreCardProps) => {
               bookmarks={props.bookmarks.filter(
                 (bookmark) => bookmark.card_uuid === props.card.id,
               )}
+              setCardCollections={props.setCardCollections}
             />
           </div>
           <div class="flex w-full items-start">

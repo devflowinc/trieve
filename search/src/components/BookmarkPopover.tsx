@@ -24,6 +24,7 @@ export interface BookmarkPopoverProps {
   totalCollectionPages: number;
   setLoginModal: Setter<boolean>;
   bookmarks: CardBookmarksDTO[];
+  setCardCollections: Setter<CardCollectionDTO[]>;
 }
 
 const BookmarkPopover = (props: BookmarkPopoverProps) => {
@@ -138,17 +139,17 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
               });
             });
 
-            setLocalCardCollections(() => {
-              const deDupedPrev = data.collections.filter((collection) => {
-                return (
-                  collectionsToAdd.find(
-                    (collectionToAdd) => collectionToAdd.id == collection.id,
-                  ) == undefined
-                );
-              });
-
-              return [...collectionsToAdd, ...deDupedPrev];
+            const deDupedPrev = data.collections.filter((collection) => {
+              return (
+                collectionsToAdd.find(
+                  (collectionToAdd) => collectionToAdd.id == collection.id,
+                ) == undefined
+              );
             });
+
+            const updatedCollections = [...collectionsToAdd, ...deDupedPrev];
+            setLocalCardCollections(updatedCollections);
+            props.setCardCollections(updatedCollections);
           }
         });
       }
