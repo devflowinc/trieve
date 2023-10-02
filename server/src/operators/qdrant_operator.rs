@@ -145,6 +145,7 @@ pub async fn search_qdrant_query(
     let qdrant = get_qdrant_connection().await?;
 
     let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
+
     let data = qdrant
         .search_points(&SearchPoints {
             collection_name: qdrant_collection.to_string(),
