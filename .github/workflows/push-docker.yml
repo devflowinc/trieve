@@ -1,6 +1,12 @@
-
+name: Create Docker Images
 # Create Docker images tagged based off commit
 on:
+  workflow_call:
+    secrets:
+      DOCKER_USERNAME:
+        required: true
+      DOCKER_PASSWORD:
+        required: true
   # workflow_dispatch:
   push:
   #   branches:
