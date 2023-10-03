@@ -8,13 +8,19 @@ import {
   type SingleCardDTO,
 } from "../../../utils/apiTypes";
 
+const apiHost = import.meta.env.API_HOST as string;
+const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
+
 const { cardId } = Astro.params;
 
 let title = "Arguflow Search";
-const apiHost = import.meta.env.API_HOST as string;
 let specificCards: SingleCardDTO;
 
 try {
+  if (alwaysRequireAuth === "on") {
+    throw new Error("Auth always required");
+  }
+
   const specificCard = await fetch(`${apiHost}/card/${cardId ?? ""}`, {
     method: "GET",
   });

@@ -7,18 +7,23 @@ import {
 } from "solid-icons/bi";
 import { SiMatrix } from "solid-icons/si";
 import ThemeModeController from "./ThemeModeController";
-import { Show } from "solid-js";
 import type { CardCountDTO } from "../../utils/apiTypes";
 
 const apiHost = import.meta.env.API_HOST as string;
-let total_cards = 0;
+const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
+
+let totalCards = 0;
 
 try {
-  const total_cards_req = await fetch(`${apiHost}/card/count`);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const total_cards_json: CardCountDTO = await total_cards_req.json();
+  if (alwaysRequireAuth === "on") {
+    throw new Error("alwaysRequireAuth is on");
+  }
 
-  total_cards = total_cards_json.total_count;
+  const totalCardsReq = await fetch(`${apiHost}/card/count`);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const totalCardsJson: CardCountDTO = await totalCardsReq.json();
+
+  totalCards = totalCardsJson.total_count;
 } catch (e) {
   console.error(e);
 }
@@ -62,13 +67,13 @@ try {
       <BiLogosGithub size={30} class="fill-current" client:only />
     </a>
   </div>
-  <Show when={total_cards > 0}>
-    <div
-      class="w-full text-center text-sm text-neutral-600 dark:text-neutral-400"
-    >
-      {total_cards.toLocaleString()} cards in the database
-    </div>
-  </Show>
+  {
+    totalCards > 0 && alwaysRequireAuth !== "on" && (
+      <div class="w-full text-center text-sm text-neutral-600 dark:text-neutral-400">
+        {totalCards.toLocaleString()} cards in the database
+      </div>
+    )
+  }
   <div class="flex w-full justify-center space-x-4">
     <div>contact@arguflow.gg</div>
     <div>

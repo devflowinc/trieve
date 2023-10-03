@@ -44,12 +44,9 @@ const ResultsPage = (props: ResultsPageProps) => {
   const [clientSideRequestFinished, setClientSideRequestFinished] =
     createSignal(false);
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
-
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
     createSignal(false);
-
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
-
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const [onDelete, setOnDelete] = createSignal(() => {});
   const [bookmarks, setBookmarks] = createSignal<CardBookmarksDTO[]>([]);
@@ -149,7 +146,17 @@ const ResultsPage = (props: ResultsPageProps) => {
   return (
     <>
       <div class="mt-12 flex w-full flex-col items-center space-y-4">
-        <Show when={resultCards().length === 0}>
+        <Show when={resultCards().length === 0 && !clientSideRequestFinished()}>
+          <div
+            class="text-primary inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-magenta border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+            role="status"
+          >
+            <span class="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+              Loading...
+            </span>
+          </div>
+        </Show>
+        <Show when={resultCards().length === 0 && clientSideRequestFinished()}>
           <button
             onClick={() => {
               window.location.href = `/search?q=${props.query}&page=${

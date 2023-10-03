@@ -6,6 +6,8 @@ import type { CardsWithTotalPagesDTO } from "../../utils/apiTypes";
 import SearchForm from "../components/SearchForm";
 
 const apiHost = import.meta.env.API_HOST as string;
+const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
+
 const requestParams = Astro.request.url.split("?")[1];
 const params = new URLSearchParams(requestParams);
 const query = params.get("q") ?? "";
@@ -19,7 +21,12 @@ let initialScoreCards: CardsWithTotalPagesDTO = {
   score_cards: [],
   total_card_pages: 0,
 };
+
 try {
+  if (alwaysRequireAuth === "on") {
+    throw new Error("Always require auth is on");
+  }
+
   const initialScoreCardsResult = await fetch(
     `${apiHost}/card/${searchType}/${page}`,
     {
