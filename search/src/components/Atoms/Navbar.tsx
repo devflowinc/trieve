@@ -17,7 +17,7 @@ export const Navbar = (props: HomeNavbarProps) => {
           <div class="mx-auto flex h-[60px] w-full max-w-6xl items-center justify-between">
             <a class="flex w-full items-center" href="/">
               <img class="w-6 sm:w-12" src="/logo_transparent.png" alt="Logo" />
-              <div class="hidden min-[360px]:block ">
+              <div class="hidden min-[450px]:block ">
                 <div class="mb-[-4px] w-full text-end align-bottom leading-3 text-turquoise sm:mb-[-10px] sm:text-lg">
                   {props.dataset}
                 </div>
