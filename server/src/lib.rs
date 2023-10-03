@@ -20,7 +20,7 @@ use qdrant_client::{
 };
 use tokio::sync::Semaphore;
 
-use crate::operators::card_operator::get_qdrant_connection;
+use crate::{operators::card_operator::get_qdrant_connection, handlers::auth_handler::create_admin_account};
 
 mod data;
 mod errors;
@@ -124,6 +124,16 @@ pub async fn main() -> std::io::Result<()> {
         });
 
     run_migrations(&mut pool.get().unwrap());
+
+    let email = std::env::var("ADMIN_USER_EMAIL");
+    let password = std::env::var("ADMIN_USER_PASSWORD");
+
+    match (email, password) {
+        (Ok(email), Ok(password)) => create_admin_account(email, password, pool.clone()).await,
+        (Ok(_), Err(_)) => log::warn!("ADMIN_USER_EMAIL is set, but ADMIN_USER_PASSWORD is not"),
+        (Err(_), Ok(_)) => log::warn!("ADMIN_USER_PASSWORD is set, but ADMIN_USER_EMAIL is not"),
+        (Err(_), Err(_)) => log::info!("No admin user is set"),
+    }
 
     log::info!("starting HTTP server at http://localhost:8090");
 
