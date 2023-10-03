@@ -37,6 +37,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
+          cache-from: type=registry,ref=arguflow/search:latest
+          cache-to: type=inline
           context: search/
           file: ./search/Dockerfile
           push: true
@@ -64,6 +66,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
+          cache-from: type=registry,ref=arguflow/chat:latest
+          cache-to: type=inline
           context: chat/
           file: ./chat/Dockerfile
           push: true
@@ -91,6 +95,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
+          cache-from: type=registry,ref=arguflow/server:latest
+          cache-to: type=inline
           context: server/
           file: ./server/Dockerfile
           push: true
