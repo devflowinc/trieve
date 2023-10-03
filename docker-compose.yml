@@ -13,7 +13,7 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - vault-network
+      - app-network
 
   redis:
     image: redis
@@ -24,7 +24,7 @@ services:
     volumes:
       - redis-data:/data
     networks:
-      - vault-network
+      - app-network
 
   script-redis:
     image: redis
@@ -35,7 +35,7 @@ services:
     volumes:
       - script-redis-data:/data
     networks:
-      - vault-network
+      - app-network
 
   qdrant-database:
     image: qdrant/qdrant:v1.3.2
@@ -47,7 +47,7 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     networks:
-      - vault-network
+      - app-network
 
   s3:
     image: minio/minio:RELEASE.2023-09-27T15-22-50Z
@@ -66,7 +66,7 @@ services:
       - s3-data:/data
     command: server --console-address ":42625" /data
     networks:
-      - vault-network
+      - app-network
 
   s3-client:
     image: minio/mc
@@ -75,7 +75,7 @@ services:
         condition: service_healthy
     restart: on-failure
     networks:
-      - vault-network
+      - app-network
     entrypoint: >
       /bin/sh -c "
       mc config host add myminio http://s3:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
@@ -90,11 +90,11 @@ services:
       exit 0;
       "
 
-  vault-server:
-    image: arguflow/vault-server
+  server:
+    image: arguflow/server
     build: ./server/
     networks:
-      - vault-network
+      - app-network
     ports:
       - 8090:8090
     environment:
@@ -133,15 +133,15 @@ services:
       - redis
       - db
 
-  vault-chat:
-    image: arguflow/vault-chat
+  chat:
+    image: arguflow/chat
     build: ./chat/
     networks:
-      - vault-network
+      - app-network
     ports:
       - 3000:3000
     depends_on:
-      - vault-server
+      - server
     environment:
       - VITE_FRONTMATTER_VALS=${VITE_FRONTMATTER_VALS}
       - VITE_LINES_BEFORE_SHOW_MORE=${VITE_LINES_BEFORE_SHOW_MORE}
@@ -151,15 +151,15 @@ services:
       - VITE_YOUTUBE_EMBED_URL=${VITE_YOUTUBE_EMBED_URL}
       - VITE_PLAUSIBLE_HOST=${VITE_PLAUSIBLE_HOST}
 
-  vault-search:
-    image: arguflow/vault-search
+  search:
+    image: arguflow/search
     build: ./search/
     networks:
-      - vault-network
+      - app-network
     ports:
       - 3001:3000
     depends_on:
-      - vault-server
+      - server
     environment:
       - API_HOST=${PUBLIC_API_HOST}
       - PUBLIC_HOST=${PUBLIC_SEARCH_URL}
@@ -179,7 +179,7 @@ services:
       - PUBLIC_ALWAYS_REQUIRE_AUTH=${PUBLIC_ALWAYS_REQUIRE_AUTH}
 
 networks:
-  vault-network:
+  app-network:
     driver: bridge
 
 volumes:
