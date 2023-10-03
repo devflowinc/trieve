@@ -99,10 +99,7 @@ pub async fn create_openai_embedding(message: &str) -> Result<Vec<f32>, actix_we
 }
 
 pub async fn create_server_embedding(message: &str) -> Result<Vec<f32>, actix_web::Error> {
-    let embedding_server_call = get_env!(
-        "EMBEDDING_SERVER_CALL",
-        "EMBEDDING_SERVER_CALL should be set"
-    );
+    let embedding_server_call = std::env::var("EMBEDDING_SERVER_CALL").expect("EMBEDDING_SERVER_CALL should be set if this is called");
 
     let client = reqwest::Client::new();
     let resp = client
