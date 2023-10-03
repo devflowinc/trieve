@@ -124,6 +124,7 @@ services:
       - EMBEDDING_SERVER_CALL=${EMBEDDING_SERVER_CALL}
       - EMBEDDING_SIZE=${EMBEDDING_SIZE}
       - N_RETRIEVALS_TO_INCLUDE=${N_RETRIEVALS_TO_INCLUDE}
+      - ALWAYS_REQUIRE_AUTH=${ALWAYS_REQUIRE_AUTH}
     depends_on:
       - s3
       - qdrant-database

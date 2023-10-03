@@ -24,9 +24,6 @@ pub struct AuthData {
     pub email: String,
     pub password: String,
 }
-
-// we need the same data
-// simple aliasing makes the intentions clear and its more readable
 pub type LoggedUser = SlimUser;
 
 impl FromRequest for LoggedUser {
@@ -47,6 +44,40 @@ impl FromRequest for LoggedUser {
                 if let Some(pool) = req.app_data::<web::Data<Pool>>() {
                     if let Ok(user) = get_user_from_api_key_query(authen_header, pool) {
                         return ready(Ok(user));
+                    }
+                }
+            }
+        }
+
+        ready(Err(ServiceError::Unauthorized.into()))
+    }
+}
+
+pub struct RequireAuth {}
+
+impl FromRequest for RequireAuth {
+    type Error = Error;
+    type Future = Ready<Result<RequireAuth, Error>>;
+
+    fn from_request(req: &HttpRequest, pl: &mut Payload) -> Self::Future {
+        let always_require_auth = std::env::var("ALWAYS_REQUIRE_AUTH").unwrap_or_default();
+        if always_require_auth != "on" {
+            return ready(Ok(RequireAuth {}));
+        }
+
+        if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
+            if let Ok(user_json) = identity.id() {
+                if let Ok(_user) = serde_json::from_str::<LoggedUser>(&user_json) {
+                    return ready(Ok(RequireAuth {}));
+                }
+            }
+        }
+
+        if let Some(authen_header) = req.headers().get("Authorization") {
+            if let Ok(authen_header) = authen_header.to_str() {
+                if let Some(pool) = req.app_data::<web::Data<Pool>>() {
+                    if let Ok(_user) = get_user_from_api_key_query(authen_header, pool) {
+                        return ready(Ok(RequireAuth {}));
                     }
                 }
             }

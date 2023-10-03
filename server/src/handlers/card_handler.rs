@@ -23,7 +23,7 @@ use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use super::auth_handler::LoggedUser;
+use super::auth_handler::{LoggedUser, RequireAuth};
 
 pub async fn user_owns_card(
     user_id: uuid::Uuid,
@@ -575,6 +575,7 @@ pub async fn search_card(
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
     mutex_store: web::Data<AppMutexStore>,
+    _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_user_id = user.map(|user| user.id);
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
@@ -670,6 +671,7 @@ pub async fn search_full_text_card(
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
+    _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
@@ -755,6 +757,7 @@ pub async fn search_collections(
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
     mutex_store: web::Data<AppMutexStore>,
+    _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
@@ -879,6 +882,7 @@ pub async fn search_full_text_collections(
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
+    _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
@@ -957,6 +961,7 @@ pub async fn search_full_text_collections(
 pub async fn get_top_cards(
     page: Option<web::Path<u64>>,
     pool: web::Data<Pool>,
+    _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
 
@@ -971,6 +976,7 @@ pub async fn get_card_by_id(
     card_id: web::Path<uuid::Uuid>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
+    _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_user_id = user.map(|user| user.id);
     let card = web::block(move || {
@@ -1001,7 +1007,10 @@ pub async fn get_card_by_id(
     Ok(HttpResponse::Ok().json(card))
 }
 
-pub async fn get_total_card_count(pool: web::Data<Pool>) -> Result<HttpResponse, actix_web::Error> {
+pub async fn get_total_card_count(
+    pool: web::Data<Pool>,
+    _required_user: RequireAuth,
+) -> Result<HttpResponse, actix_web::Error> {
     let total_count = web::block(move || get_card_count_query(pool))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;

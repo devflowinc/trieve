@@ -12,6 +12,8 @@ use crate::{
     operators::user_operator::get_user_by_email_query,
 };
 
+use super::auth_handler::RequireAuth;
+
 #[derive(Deserialize, Serialize)]
 pub struct InvitationResponse {
     pub registration_url: String,
@@ -27,6 +29,7 @@ pub async fn post_invitation(
     request: HttpRequest,
     invitation_data: web::Json<InvitationData>,
     pool: web::Data<Pool>,
+    _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let invitation_data = invitation_data.into_inner();
     let email = invitation_data.email;
