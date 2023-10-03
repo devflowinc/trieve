@@ -8,15 +8,17 @@ import {
 } from "../../../../utils/apiTypes";
 import { EditCardPageForm } from "../../../components/EditCardPageForm";
 
-const { cardId } = Astro.params;
-const requestParams = Astro.request.url.split("?")[1];
-const params = new URLSearchParams(requestParams);
-const collisions = params.get("collisions") ?? "";
-
 const apiHost = import.meta.env.API_HOST as string;
+const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
+
+const { cardId } = Astro.params;
 let specificCard: SingleCardDTO;
 
 try {
+  if (alwaysRequireAuth === "on") {
+    throw new Error("Auth always required");
+  }
+
   const specificCardResult = await fetch(`${apiHost}/card/${cardId ?? ""}`, {
     method: "GET",
   });
@@ -45,7 +47,6 @@ try {
       metadata: CardMetadataWithVotes;
       status: number;
     }}
-    collisions={collisions}
     client:load
   />
   <div class="flex-1"></div>

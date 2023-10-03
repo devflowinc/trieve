@@ -9,8 +9,9 @@ import type {
 } from "../../../utils/apiTypes";
 import type { Filters } from "../../components/ResultsPage";
 
-let { collectionID } = Astro.params;
-collectionID = collectionID ?? "";
+const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
+
+const collectionID = Astro.params.collectionID ?? "";
 const requestParams = Astro.request.url.split("?")[1];
 const params = new URLSearchParams(requestParams);
 const page = Number(params.get("page")) || 1;
@@ -26,7 +27,7 @@ let collectionCards: CardCollectionBookmarksWithStatusDTO = {
   metadata: {
     bookmarks: [],
     collection: {
-      id: "",
+      id: collectionID,
       name: "",
       description: "",
       is_public: false,
@@ -41,7 +42,12 @@ let collectionCards: CardCollectionBookmarksWithStatusDTO = {
 
 let title = "Arguflow Search";
 let description = "";
+
 try {
+  if (alwaysRequireAuth === "on") {
+    throw new Error("Always require auth is on");
+  }
+
   if (query === "") {
     const collectionCardResponse = await fetch(
       `${apiHost}/card_collection/${collectionID}/${page}`,

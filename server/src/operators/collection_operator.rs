@@ -378,15 +378,23 @@ pub fn get_bookmarks_for_collection_query(
             .load::<(CardMetadataWithCount, Option<uuid::Uuid>, CardCollection)>(&mut conn)
             .map_err(|_err| ServiceError::BadRequest("Error getting bookmarks".to_string()))?;
 
-    if !bookmark_metadata.get(0).unwrap().2.is_public && current_user_id.is_none() {
+    let card_collection = if let Some(bookmark) = bookmark_metadata.get(0) {
+        bookmark.2.clone()
+    } else {
+        card_collection_columns::card_collection
+            .filter(card_collection_columns::id.eq(collection))
+            .first::<CardCollection>(&mut conn)
+            .map_err(|_err| ServiceError::BadRequest("Error getting collection".to_string()))?
+    };
+
+    if !card_collection.is_public && current_user_id.is_none() {
         Err(ServiceError::Unauthorized)?;
     }
 
-    if !bookmark_metadata.get(0).unwrap().2.is_public
-        && Some(bookmark_metadata.get(0).unwrap().2.author_id) != current_user_id
-    {
+    if !card_collection.is_public && Some(card_collection.author_id) != current_user_id {
         Err(ServiceError::Forbidden)?;
     }
+
     let converted_cards: Vec<FullTextSearchResult> = bookmark_metadata
         .iter()
         .map(|(card, collided_id, _card_collection)| match collided_id {
@@ -410,7 +418,7 @@ pub fn get_bookmarks_for_collection_query(
 
     Ok(CollectionsBookmarkQueryResult {
         metadata: card_metadata_with_upvotes_and_file_id,
-        collection: bookmark_metadata.get(0).unwrap().2.clone(),
+        collection: card_collection,
         total_pages,
     })
 }

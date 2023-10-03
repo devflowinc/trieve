@@ -17,7 +17,7 @@ import { ConfirmModal } from "./Atoms/ConfirmModal";
 export interface UserCardDisplayProps {
   id: string;
   page: number;
-  initialUser?: UserDTOWithVotesAndCards;
+  initialUser?: UserDTOWithVotesAndCards | null;
   initialUserCollections?: CardCollectionDTO[];
   initialUserCollectionPageCount?: number;
 }
@@ -69,9 +69,9 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
       if (response.ok) {
         void response.json().then((data) => {
           setUser(data as UserDTOWithVotesAndCards);
-          setClientSideRequestFinished(true);
         });
       }
+      setClientSideRequestFinished(true);
     });
   });
 
@@ -121,7 +121,28 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
 
   return (
     <>
+      <Show when={user() == null && !clientSideRequestFinished()}>
+        <div class="flex w-full flex-col items-center justify-center space-y-4">
+          <div class="animate-pulse text-xl">Loading user...</div>
+          <div
+            class="text-primary inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-magenta border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+            role="status"
+          >
+            <span class="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+              Loading...
+            </span>
+          </div>
+        </div>
+      </Show>
+      <Show when={user() == null && clientSideRequestFinished()}>
+        <div class="flex w-full flex-col items-center justify-center space-y-4">
+          <div class="text-xl">User not found</div>
+        </div>
+      </Show>
       <Show when={user() != null}>
+        <h1 class="line-clamp-1 break-all py-8 text-center text-lg font-bold min-[320px]:text-xl sm:text-4xl">
+          {user()?.username ?? user()?.email ?? "User not found"}
+        </h1>
         <div class="mx-auto grid w-fit grid-cols-[3fr,4fr] items-center justify-items-end gap-x-2 gap-y-2 text-end align-middle sm:grid-cols-[4fr,5fr] sm:gap-x-4">
           {user()?.website && (
             <>
@@ -175,40 +196,42 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
             setShowConfirmModal={setShowConfirmCollectionmDeleteModal}
           />
         </div>
-        <div class="mb-4 mt-4 flex flex-col border-t border-neutral-500 pt-4 text-xl">
-          <span>Cards:</span>
-        </div>
-        <div class="flex w-full flex-col space-y-4">
-          <div class="flex w-full flex-col space-y-4">
-            <For each={user()?.cards}>
-              {(card) => (
-                <div class="w-full">
-                  <CardMetadataDisplay
-                    totalCollectionPages={totalCollectionPages()}
-                    setShowConfirmModal={setShowConfirmModal}
-                    signedInUserId={loggedUser()?.id}
-                    viewingUserId={props.id}
-                    card={card}
-                    setShowModal={setShowNeedLoginModal}
-                    cardCollections={cardCollections()}
-                    fetchCardCollections={fetchCardCollections}
-                    setOnDelete={setOnDelete}
-                    bookmarks={bookmarks()}
-                    showExpand={clientSideRequestFinished()}
-                  />
-                </div>
-              )}
-            </For>
+        <Show when={(user()?.cards.length ?? 0) > 0}>
+          <div class="mb-4 mt-4 flex flex-col border-t border-neutral-500 pt-4 text-xl">
+            <span>Cards:</span>
           </div>
-        </div>
-        <div class="mx-auto my-12 flex items-center justify-center space-x-2">
-          <PaginationController
-            prefix="?"
-            query={`/user/${user()?.id ?? ""}`}
-            page={props.page}
-            totalPages={Math.ceil((user()?.total_cards_created ?? 0) / 25)}
-          />
-        </div>
+          <div class="flex w-full flex-col space-y-4">
+            <div class="flex w-full flex-col space-y-4">
+              <For each={user()?.cards}>
+                {(card) => (
+                  <div class="w-full">
+                    <CardMetadataDisplay
+                      totalCollectionPages={totalCollectionPages()}
+                      setShowConfirmModal={setShowConfirmModal}
+                      signedInUserId={loggedUser()?.id}
+                      viewingUserId={props.id}
+                      card={card}
+                      setShowModal={setShowNeedLoginModal}
+                      cardCollections={cardCollections()}
+                      fetchCardCollections={fetchCardCollections}
+                      setOnDelete={setOnDelete}
+                      bookmarks={bookmarks()}
+                      showExpand={clientSideRequestFinished()}
+                    />
+                  </div>
+                )}
+              </For>
+            </div>
+          </div>
+          <div class="mx-auto my-12 flex items-center justify-center space-x-2">
+            <PaginationController
+              prefix="?"
+              query={`/user/${user()?.id ?? ""}`}
+              page={props.page}
+              totalPages={Math.ceil((user()?.total_cards_created ?? 0) / 25)}
+            />
+          </div>
+        </Show>
       </Show>
       <Show when={showNeedLoginModal()}>
         <FullScreenModal

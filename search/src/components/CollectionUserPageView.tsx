@@ -8,6 +8,7 @@ import {
 import { For, Setter, Show, createEffect, createSignal } from "solid-js";
 import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
 import { getLocalTime } from "./CardMetadataDisplay";
+import { Transition } from "solid-headless";
 
 export interface CollectionUserPageViewProps {
   user: UserDTOWithVotesAndCards | undefined;
@@ -87,7 +88,15 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
     props.setShowConfirmModal(true);
   };
   return (
-    <Show when={props.user !== undefined}>
+    <Transition
+      show={props.user !== undefined && collections().length > 0}
+      enter="transition duration-200"
+      enterFrom="opacity-0"
+      enterTo="opacity-100"
+      leave="transition duration-150"
+      leaveFrom="opacity-100"
+      leaveTo="opacity-0"
+    >
       <div>
         <div class="mx-auto w-full text-center text-2xl font-bold">
           {props.user?.username ?? props.user?.email}'s Collections
@@ -226,6 +235,6 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
           </div>
         </div>
       </div>
-    </Show>
+    </Transition>
   );
 };

@@ -1,6 +1,5 @@
 import { Accessor, Show, createSignal } from "solid-js";
 import {
-  FileUploadCompleteNotificationDTO,
   NotificationDTO,
   isFileUploadCompleteNotificationDTO,
 } from "../../utils/apiTypes";
@@ -60,18 +59,16 @@ export const SingleNotification = (props: NotificationProps) => {
               <span class="text-left">
                 <a
                   // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-                  href={`/collection/${
-                    (props.notification as FileUploadCompleteNotificationDTO)
-                      .collection_uuid
-                  }`}
+                  href={`/collection/${props.notification.collection_uuid}`}
                   onClick={() => {
                     markNotificationAsRead();
                   }}
                 >
                   <span class="underline dark:text-acid-500">
-                    {(
-                      props.notification as FileUploadCompleteNotificationDTO
-                    ).collection_name.replace("Collection for file ", "")}
+                    {props.notification.collection_name.replace(
+                      "Collection for file ",
+                      "",
+                    )}
                   </span>{" "}
                   has been uploaded and processed
                 </a>

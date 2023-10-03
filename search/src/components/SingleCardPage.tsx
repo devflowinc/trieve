@@ -187,6 +187,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
     if (!curCardMetadata) {
       return null;
     }
+
     return (
       <ScoreCard
         totalCollectionPages={totalCollectionPages()}
@@ -200,6 +201,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
         setShowConfirmModal={setShowConfirmDeleteModal}
         initialExpanded={true}
         showExpand={clientSideRequestFinished()}
+        setCardCollections={setCardCollections}
       />
     );
   });
@@ -211,6 +213,19 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
           <Show when={error().length > 0 && !fetching()}>
             <div class="flex w-full flex-col items-center rounded-md p-2">
               <div class="text-xl font-bold text-red-500">{error()}</div>
+            </div>
+          </Show>
+          <Show when={!cardMetadata() && fetching()}>
+            <div class="flex w-full flex-col items-center justify-center space-y-4">
+              <div class="animate-pulse text-xl">Loading document chunk...</div>
+              <div
+                class="text-primary inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-magenta border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+                role="status"
+              >
+                <span class="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+                  Loading...
+                </span>
+              </div>
             </div>
           </Show>
           {getCard()}
