@@ -19,7 +19,7 @@ use crate::{
     operators::{card_operator::get_collided_cards_query, collection_operator::*},
 };
 
-use super::auth_handler::LoggedUser;
+use super::auth_handler::{LoggedUser, RequireAuth};
 //new handler and operator to get collections a card is in
 
 pub async fn user_owns_collection(
@@ -82,6 +82,7 @@ pub async fn get_specific_user_card_collections(
     user: Option<LoggedUser>,
     user_and_page: web::Path<UserCollectionQuery>,
     pool: web::Data<Pool>,
+    _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let accessing_user_id = user.map(|user| user.id);
     let collections = web::block(move || {
@@ -253,6 +254,7 @@ pub async fn get_all_bookmarks(
     path_data: web::Path<GetAllBookmarksData>,
     pool: web::Data<Pool>,
     user: Option<LoggedUser>,
+    _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let collection_id = path_data.collection_id;
     let page = path_data.page.unwrap_or(1);
@@ -323,6 +325,7 @@ pub async fn get_collections_card_is_in(
     data: web::Json<GetCollectionsForCardsData>,
     pool: web::Data<Pool>,
     user: Option<LoggedUser>,
+    _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let card_ids = data.card_ids.clone();
 

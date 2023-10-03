@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-use super::auth_handler::LoggedUser;
+use super::auth_handler::{LoggedUser, RequireAuth};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UpdateUserData {
@@ -30,6 +30,7 @@ pub async fn get_user_with_votes_and_cards_by_id(
     path_data: web::Path<GetUserWithVotesAndCardsData>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
+    _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_query_id = path_data.user_id;
     let accessing_user_id = user.map(|user| user.id);
@@ -78,6 +79,7 @@ pub struct TopUserData {
 pub async fn get_top_users(
     page: web::Path<i64>,
     pool: web::Data<Pool>,
+    _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = page.into_inner();
 
