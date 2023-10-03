@@ -159,23 +159,21 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
           }
 
           setCardMetadata(data);
-          setClientSideRequestFinished(true);
           setError("");
-          setFetching(false);
         });
       }
       if (response.status == 403) {
         setError("You are not authorized to view this card.");
-        setFetching(false);
       }
       if (response.status == 404) {
         setError("This card could not be found.");
-        setFetching(false);
       }
       if (response.status == 401) {
         setError("Sign in to view this card.");
         setShowNeedLoginModal(true);
       }
+      setClientSideRequestFinished(true);
+      setFetching(false);
     });
   });
 

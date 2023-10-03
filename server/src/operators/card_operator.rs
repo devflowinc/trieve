@@ -16,7 +16,6 @@ use crate::{
 };
 use actix_web::web;
 use diesel::dsl::sql;
-use diesel::result::Error::NotFound;
 use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;
 use diesel::sql_types::{BigInt, Int8};
@@ -1022,87 +1021,6 @@ pub fn search_full_text_collection_query(
         search_results: card_metadata_with_upvotes_and_files,
         total_card_pages: total_count,
     })
-}
-
-pub fn global_top_full_text_card_query(
-    user_query: String,
-    pool: web::Data<Pool>,
-) -> Result<Option<CardMetadataWithVotesAndFiles>, DefaultError> {
-    use crate::data::schema::card_collisions::dsl as card_collisions_columns;
-    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
-
-    let mut conn = pool.get().unwrap();
-
-    let mut query = card_metadata_columns::card_metadata
-        .filter(card_metadata_columns::private.eq(false))
-        .inner_join(
-            card_collisions_columns::card_collisions
-                .on(card_collisions_columns::card_id.eq(card_metadata_columns::id)),
-        )
-        .select((
-            (
-                card_metadata_columns::id,
-                card_metadata_columns::content,
-                card_metadata_columns::link,
-                card_metadata_columns::author_id,
-                card_metadata_columns::qdrant_point_id,
-                card_metadata_columns::created_at,
-                card_metadata_columns::updated_at,
-                card_metadata_columns::tag_set,
-                card_metadata_columns::card_html,
-                card_metadata_columns::private,
-                card_metadata_columns::metadata,
-                sql::<Nullable<Double>>(
-                    "(ts_rank(card_metadata_tsvector, plainto_tsquery('english', ",
-                )
-                .bind::<Text, _>(user_query.clone())
-                .sql(") , 32) * 10) AS rank"),
-                sql::<Int8>("count(*) OVER() AS full_count"),
-            ),
-            (card_collisions_columns::collision_qdrant_id.assume_not_null()),
-        ))
-        .distinct()
-        .limit(5)
-        .into_boxed();
-
-    query = query.filter(
-        sql::<Bool>("card_metadata.card_metadata_tsvector @@ plainto_tsquery('english', ")
-            .bind::<Text, _>(user_query)
-            .sql(")"),
-    );
-
-    query = query.order((sql::<Text>("rank DESC"),));
-
-    let searched_card: (FullTextSearchResult, uuid::Uuid) = match query.first(&mut conn) {
-        Ok(card) => Ok(card),
-        Err(e) => match e {
-            NotFound => {
-                return Ok(None);
-            }
-            _ => Err(DefaultError {
-                message: "Failed to load top trigram searched card",
-            }),
-        },
-    }?;
-
-    let card_metadata_with_upvotes_and_files =
-        get_metadata_query(vec![searched_card.0], None, conn).map_err(|_| DefaultError {
-            message: "Failed to load metadata for top trigram searched card",
-        })?;
-
-    // This is a hack to replace qdrant_point_id with collision_qdrant_point_id if it is not set
-    let mut top_card = match card_metadata_with_upvotes_and_files.get(0) {
-        Some(card) => card.clone(),
-        None => {
-            return Ok(None);
-        }
-    };
-
-    if top_card.qdrant_point_id == uuid::Uuid::default() {
-        top_card.qdrant_point_id = searched_card.1;
-    }
-
-    Ok(Some(top_card))
 }
 
 #[derive(Serialize, Deserialize)]
