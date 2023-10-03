@@ -33,7 +33,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: search/
-          file: ./Dockerfile
+          file: ./search/Dockerfile
           push: true
           tags: arguflow/vault-search:latest
           labels: ${{ steps.meta.outputs.labels }}
