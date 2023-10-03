@@ -28,6 +28,19 @@ jobs:
       - name: Checkout the repo
         uses: actions/checkout@v4
 
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            arguflow/search
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha
+
       - name: Setup buildx
         uses: docker/setup-buildx-action@v3
 
@@ -46,7 +59,7 @@ jobs:
           context: search/
           file: ./search/Dockerfile
           push: true
-          tags: arguflow/search:latest
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
   build_chat:
@@ -70,6 +83,19 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            arguflow/search
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -78,7 +104,7 @@ jobs:
           context: chat/
           file: ./chat/Dockerfile
           push: true
-          tags: arguflow/chat:latest
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
   build_server:
@@ -102,6 +128,20 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            arguflow/search
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha
+
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -110,5 +150,5 @@ jobs:
           context: server/
           file: ./server/Dockerfile
           push: true
-          tags: arguflow/server:latest
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
