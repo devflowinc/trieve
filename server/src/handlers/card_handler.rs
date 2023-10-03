@@ -107,11 +107,9 @@ pub async fn create_card(
 
     let private = card.private.unwrap_or(false);
     let mut collision: Option<uuid::Uuid> = None;
-    let mut embedding_vector: Option<Vec<f32>> = None;
 
     let pool1 = pool.clone();
     let pool2 = pool.clone();
-    let pool3 = pool.clone();
 
     let content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
     // Card content can be at least 470 characters long
@@ -160,149 +158,53 @@ pub async fn create_card(
         })));
     }
 
-    // // text based similarity check to avoid paying for openai api call if not necessary
-    let card_content_1 = content.clone();
-    let first_text_result =
-        web::block(move || global_top_full_text_card_query(card_content_1, pool))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let embedding_vector = create_embedding(&content, mutex_store).await?;
 
-    if let Some(score_card) = first_text_result {
-        if score_card.score >= Some(4.99) {
-            //Sets collision to collided card id
-            collision = Some(score_card.qdrant_point_id);
+    let first_semantic_result = global_unfiltered_top_match_query(embedding_vector.clone())
+        .await
+        .map_err(|err| {
+            ServiceError::BadRequest(format!(
+                "Could not get semantic similarity for collision check: {}",
+                err.message
+            ))
+        })?;
 
-            if score_card.card_html.is_none() {
-                let score_card_1 = score_card.clone();
-                let card_metadata = CardMetadata::from_details_with_id(
-                    score_card_1.id,
-                    &content,
-                    &card.card_html,
-                    &card.link,
-                    &card.link,
-                    score_card_1
-                        .author
-                        .clone()
-                        .unwrap_or(UserDTO {
-                            id: uuid::Uuid::default(),
-                            email: None,
-                            website: None,
-                            username: None,
-                            visible_email: false,
-                            created_at: chrono::NaiveDateTime::default(),
-                        })
-                        .id,
-                    Some(score_card_1.qdrant_point_id),
-                    card.private.unwrap_or(score_card_1.private),
-                    card.metadata.clone(),
-                );
-                let metadata_1 = card_metadata.clone();
-                web::block(move || {
-                    update_card_metadata_query(card_metadata, card.file_uuid, pool3)
-                })
-                .await?
-                .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let duplicate_distance_threshold = std::env::var("DUPLICATE_DISTANCE_THRESHOLD")
+        .unwrap_or("0.95".to_string())
+        .parse::<f32>()
+        .unwrap_or(0.95);
 
-                return Ok(HttpResponse::Ok().json(ReturnCreatedCard {
-                    card_metadata: metadata_1,
-                    duplicate: true,
-                }));
-            }
-        }
-    }
+    if first_semantic_result.score >= duplicate_distance_threshold {
+        //Sets collision to collided card id
+        collision = Some(first_semantic_result.point_id);
 
-    // only check for embedding similarity if no text based collision was found
-    if collision.is_none() {
-        let openai_embedding_vector = create_embedding(&content, mutex_store).await?;
-        embedding_vector = Some(openai_embedding_vector.clone());
+        let score_card_result = web::block(move || {
+            get_metadata_from_point_ids(vec![first_semantic_result.point_id], Some(user.id), pool2)
+        })
+        .await?;
 
-        let first_semantic_result =
-            global_unfiltered_top_match_query(openai_embedding_vector.clone())
-                .await
-                .map_err(|err| {
-                    ServiceError::BadRequest(format!(
-                        "Could not get semantic similarity for collision check: {}",
-                        err.message
-                    ))
-                })?;
+        match score_card_result {
+            Ok(card_results) => {
+                if card_results.is_empty() {
+                    delete_qdrant_point_id_query(first_semantic_result.point_id)
+                        .await
+                        .map_err(|_| {
+                            ServiceError::BadRequest(
+                                "Could not delete qdrant point id. Please try again.".into(),
+                            )
+                        })?;
 
-        let mut similarity_threshold = 0.95;
-        if content.len() < 200 {
-            similarity_threshold = 0.92;
-        }
-
-        if first_semantic_result.score >= similarity_threshold {
-            //Sets collision to collided card id
-            collision = Some(first_semantic_result.point_id);
-
-            let score_card_result = web::block(move || {
-                get_metadata_from_point_ids(
-                    vec![first_semantic_result.point_id],
-                    Some(user.id),
-                    pool2,
-                )
-            })
-            .await?;
-
-            let top_score_card = match score_card_result {
-                Ok(card_results) => {
-                    if card_results.is_empty() {
-                        delete_qdrant_point_id_query(first_semantic_result.point_id)
-                            .await
-                            .map_err(|_| {
-                                ServiceError::BadRequest(
-                                    "Could not delete qdrant point id. Please try again.".into(),
-                                )
-                            })?;
-
-                        return Err(ServiceError::BadRequest(
-                            "There was a data inconsistency issue. Please try again.".into(),
-                        )
-                        .into());
-                    }
-                    card_results.get(0).unwrap().clone()
-                }
-                Err(err) => {
-                    return Err(ServiceError::BadRequest(err.message.into()).into());
-                }
-            };
-
-            let top_score_card_author_id = match top_score_card.author.clone() {
-                Some(author) => author.id,
-                None => {
                     return Err(ServiceError::BadRequest(
-                        "Could not find card with matching point id".into(),
+                        "There was a data inconsistency issue. Please try again.".into(),
                     )
-                    .into())
+                    .into());
                 }
-            };
-
-            if top_score_card.card_html.is_none() {
-                let card_metadata = CardMetadata::from_details_with_id(
-                    top_score_card.id,
-                    &content,
-                    &card.card_html,
-                    &card.link,
-                    &card.tag_set,
-                    top_score_card_author_id,
-                    Some(top_score_card.qdrant_point_id),
-                    top_score_card.private,
-                    card.metadata.clone(),
-                );
-                let metadata_1 = card_metadata.clone();
-
-                web::block(move || {
-                    update_card_metadata_query(card_metadata, card.file_uuid, pool3)
-                })
-                .await?
-                .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-                return Ok(HttpResponse::Ok().json(ReturnCreatedCard {
-                    card_metadata: metadata_1,
-                    duplicate: true,
-                }));
+                card_results.get(0).unwrap().clone()
             }
-        }
+            Err(err) => {
+                return Err(ServiceError::BadRequest(err.message.into()).into());
+            }
+        };
     }
 
     let mut card_metadata: CardMetadata;
@@ -342,16 +244,6 @@ pub async fn create_card(
     }
     //if collision is nil and embedding vector is some, insert card with no collision
     else {
-        // if this statement is reached, the embedding vector must be some
-        let ensured_embedding_vector = match embedding_vector {
-            Some(embedding_vector) => embedding_vector,
-            None => {
-                return Ok(HttpResponse::BadRequest().json(json!({
-                    "message": "Could not create embedding vector",
-                })))
-            }
-        };
-
         let qdrant_point_id = uuid::Uuid::new_v4();
         card_metadata = CardMetadata::from_details(
             &content,
@@ -368,13 +260,8 @@ pub async fn create_card(
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-        create_new_qdrant_point_query(
-            qdrant_point_id,
-            ensured_embedding_vector,
-            private,
-            Some(user.id),
-        )
-        .await?;
+        create_new_qdrant_point_query(qdrant_point_id, embedding_vector, private, Some(user.id))
+            .await?;
     }
 
     Ok(HttpResponse::Ok().json(ReturnCreatedCard {
