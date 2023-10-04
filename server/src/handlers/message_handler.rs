@@ -351,7 +351,9 @@ pub async fn stream_response(
         .map(|message| ChatMessage::from(message.clone()))
         .collect();
 
-    let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+    let openai_api_key = option_env!("OPENAI_BASE_URL")
+        .unwrap_or("https://api.openai.com/v1")
+        .into();
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
