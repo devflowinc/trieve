@@ -248,6 +248,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
                           setShowModal={setShowNeedLoginModal}
                           setShowConfirmModal={setShowConfirmDeleteModal}
                           fetchCardCollections={fetchCardCollections}
+                          setCardCollections={setCardCollections}
                           setOnDelete={setOnDelete}
                           showExpand={true}
                         />

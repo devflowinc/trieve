@@ -725,6 +725,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
                           setShowModal={setShowNeedLoginModal}
                           setShowConfirmModal={setShowConfirmDeleteModal}
                           fetchCardCollections={fetchCardCollections}
+                          setCardCollections={setCardCollections}
                           setOnDelete={setOnDelete}
                           showExpand={true}
                         />

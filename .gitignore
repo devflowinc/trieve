@@ -22,6 +22,7 @@ server-python/application.zip
 server-python/arguflow-dataset.zip
 server-python/arguflow-dataset
 server/target
+server/images
 *.icloud
 chat/src/.root 2.css.icloud
 server/server-python/test.ipynb

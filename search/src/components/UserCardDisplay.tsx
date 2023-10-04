@@ -214,6 +214,7 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
                       setShowModal={setShowNeedLoginModal}
                       cardCollections={cardCollections()}
                       fetchCardCollections={fetchCardCollections}
+                      setCardCollections={setCardCollections}
                       setOnDelete={setOnDelete}
                       bookmarks={bookmarks()}
                       showExpand={clientSideRequestFinished()}
