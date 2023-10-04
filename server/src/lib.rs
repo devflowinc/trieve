@@ -20,7 +20,9 @@ use qdrant_client::{
 };
 use tokio::sync::Semaphore;
 
-use crate::{operators::card_operator::get_qdrant_connection, handlers::auth_handler::create_admin_account};
+use crate::{
+    handlers::auth_handler::create_admin_account, operators::card_operator::get_qdrant_connection,
+};
 
 mod data;
 mod errors;
@@ -370,9 +372,8 @@ pub async fn main() -> std::io::Result<()> {
                                 web::get().to(handlers::collection_handler::get_all_bookmarks),
                             )),
                     )
-                    
                     .service(
-                        web::scope("/file")
+                web::scope("/file")
                             .service(
                                 web::resource("")
                                     .route(web::put().to(handlers::file_handler::update_file_handler))
@@ -382,13 +383,12 @@ pub async fn main() -> std::io::Result<()> {
                                 web::resource("/{file_id}")
                                     .route(web::get().to(handlers::file_handler::get_file_handler))
                                     .route(web::delete().to(handlers::file_handler::delete_file_handler)),
-                            )
-                            .service(
+                            ),
+                    )
+                    .service(
                         web::resource("/image/{file_name}").route(
                             web::get().to(handlers::file_handler::get_image_file),
                         ),
-                    )
-
                     )
                     .service(
                         web::scope("/notifications")
