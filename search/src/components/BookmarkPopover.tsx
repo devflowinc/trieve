@@ -254,7 +254,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
             >
               <Menu class=" flex w-full flex-col justify-end space-y-2 overflow-hidden rounded bg-white py-4 shadow-2xl dark:bg-shark-700">
                 <div class="mb-3 w-full px-4 text-center text-lg font-bold">
-                  Manage Collections For This Card
+                  Manage Themes For This Card
                 </div>
                 <MenuItem as="button" aria-label="Empty" />
                 <div class="max-w-screen mx-1 max-h-[20vh] transform justify-end space-y-2 overflow-y-auto rounded px-4 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-600 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-400">
@@ -407,7 +407,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                       class="flex w-full items-center justify-center rounded-full border border-green-500 bg-transparent px-2 text-lg text-green-500"
                     >
                       <RiSystemAddFill class="h-5 w-5 fill-current" />
-                      <p> Create New Collection </p>
+                      <p> Create New Theme </p>
                     </MenuItem>
                   </div>
                 )}

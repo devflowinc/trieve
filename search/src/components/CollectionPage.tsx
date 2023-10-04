@@ -170,14 +170,14 @@ export const CollectionPage = (props: CollectionPageProps) => {
           });
         }
         if (response.status == 403) {
-          setError("You are not authorized to view this collection");
+          setError("You are not authorized to view this theme");
         }
         if (response.status == 404) {
-          setError("Collection not found, it never existed or was deleted");
+          setError("Theme not found, it never existed or was deleted");
         }
         if (response.status == 401) {
           setError(
-            "You must be logged in and authorized to view this collection",
+            "You must be logged in and authorized to view this theme",
           );
           setShowNeedLoginModal(true);
         }
@@ -212,7 +212,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
           });
         }
         if (response.status == 403) {
-          setError("You are not authorized to view this collection");
+          setError("You are not authorized to view this theme");
         }
         if (response.status == 401) {
           setShowNeedLoginModal(true);
@@ -770,7 +770,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
             >
               <div class="flex w-full flex-col items-center rounded-md p-2">
                 <div class="text-xl font-semibold">
-                  This collection is currently empty
+                  This theme is currently empty
                 </div>
               </div>
             </Show>
@@ -785,7 +785,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
               <BiRegularXCircle class="mx-auto h-8 w-8 fill-current  !text-red-500" />
               <div class="mb-4 text-center text-xl font-bold">
                 Login or register to bookmark cards, vote, or view private
-                collections
+                themes
               </div>
               <div class="mx-auto flex w-fit flex-col space-y-3">
                 <a
@@ -809,7 +809,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
           showConfirmModal={showConfirmCollectionDeleteModal}
           setShowConfirmModal={setShowConfirmCollectionmDeleteModal}
           onConfirm={onCollectionDelete}
-          message="Are you sure you want to delete this collection?"
+          message="Are you sure you want to delete this theme?"
         />
       </Show>
     </>
