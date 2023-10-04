@@ -48,7 +48,7 @@ export const TopCardsTable = (props: TopCardsTableProps) => {
     });
 
     onCleanup(() => {
-      -abortController.abort();
+      abortController.abort();
     });
   });
 

@@ -3,13 +3,11 @@
 # Function to reset the Qdrant database
 reset_qdrant_database() {
     echo "Resetting the Qdrant database..."
-    docker compose stop vault-server
     docker compose stop qdrant-database
     docker compose rm -f qdrant-database
-    docker volume rm vault-server_qdrant_data
+    docker volume rm arguflow_qdrant_data
     docker compose up -d qdrant-database
     diesel db reset
-    docker compose up -d vault-server
 }
 
 reset_s3_service() {
