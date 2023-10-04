@@ -314,7 +314,9 @@ pub async fn get_topic_string(prompt: String) -> Result<String, DefaultError> {
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
-        base_url: get_env!("OPENAI_BASE_URL", "OPENAI_BASE_URL should be set").into(),
+        base_url: option_env!("OPENAI_BASE_URL")
+            .unwrap_or("https://api.openai.com/v1")
+            .into(),
     };
 
     let query = client
