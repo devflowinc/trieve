@@ -351,13 +351,13 @@ pub async fn stream_response(
         .map(|message| ChatMessage::from(message.clone()))
         .collect();
 
-    let openai_api_key = option_env!("OPENAI_BASE_URL")
-        .unwrap_or("https://api.openai.com/v1")
-        .into();
+    let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
-        base_url: get_env!("OPENAI_BASE_URL", "OPENAI_BASE_URL should be set").into(),
+        base_url: option_env!("OPENAI_BASE_URL")
+            .unwrap_or("https://api.openai.com/v1")
+            .into(),
     };
     let next_message_order = move || {
         let messages_len = messages.len();
