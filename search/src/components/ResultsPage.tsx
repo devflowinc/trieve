@@ -33,12 +33,12 @@ const ResultsPage = (props: ResultsPageProps) => {
   const linkFilters = encodeURIComponent(props.filters.links.join(","));
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const initialResultCards = props.defaultResultCards.score_cards;
-  const totalPages = props.defaultResultCards.total_card_pages;
+  const initialTotalPages = props.defaultResultCards.total_card_pages;
+
   const [cardCollections, setCardCollections] = createSignal<
     CardCollectionDTO[]
   >([]);
   const [user, setUser] = createSignal<UserDTO | undefined>();
-
   const [resultCards, setResultCards] =
     createSignal<ScoreCardDTO[]>(initialResultCards);
   const [clientSideRequestFinished, setClientSideRequestFinished] =
@@ -50,6 +50,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const [onDelete, setOnDelete] = createSignal(() => {});
   const [bookmarks, setBookmarks] = createSignal<CardBookmarksDTO[]>([]);
+  const [totalPages, setTotalPages] = createSignal(initialTotalPages);
 
   const fetchCardCollections = () => {
     if (!user()) return;
@@ -127,6 +128,8 @@ const ResultsPage = (props: ResultsPageProps) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           const result = data.score_cards as ScoreCardDTO[];
           setResultCards(result);
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          setTotalPages(data.total_card_pages);
         });
       }
       setClientSideRequestFinished(true);
@@ -201,7 +204,7 @@ const ResultsPage = (props: ResultsPageProps) => {
           }
           prefix="&"
           page={props.page}
-          totalPages={totalPages}
+          totalPages={totalPages()}
         />
       </div>
       <Show when={showNeedLoginModal()}>
