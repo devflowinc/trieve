@@ -267,7 +267,7 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
         showConfirmModal={showConfirmCollectionDeleteModal}
         setShowConfirmModal={setShowConfirmCollectionmDeleteModal}
         onConfirm={onCollectionDelete}
-        message={"Are you sure you want to delete this collection?"}
+        message={"Are you sure you want to delete this theme?"}
       />
     </>
   );
