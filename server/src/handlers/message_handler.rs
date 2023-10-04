@@ -311,7 +311,12 @@ pub async fn get_topic_string(prompt: String) -> Result<String, DefaultError> {
     };
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
-    let client = Client::new(openai_api_key);
+    let client = Client {
+        api_key: openai_api_key,
+        http_client: reqwest::Client::new(),
+        base_url: get_env!("OPENAI_BASE_URL", "OPENAI_BASE_URL should be set").into(),
+    };
+
     let query = client
         .chat()
         .create(parameters)
@@ -345,7 +350,11 @@ pub async fn stream_response(
         .collect();
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
-    let client = Client::new(openai_api_key);
+    let client = Client {
+        api_key: openai_api_key,
+        http_client: reqwest::Client::new(),
+        base_url: get_env!("OPENAI_BASE_URL", "OPENAI_BASE_URL should be set").into(),
+    };
     let next_message_order = move || {
         let messages_len = messages.len();
         if messages_len == 0 {
