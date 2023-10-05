@@ -18,7 +18,7 @@ export const ScoreCardArray = (props: ScoreCardAraryProps) => {
   const [beginTime, setBeginTime] = createSignal(Date.now());
   const [endTime, setEndTime] = createSignal(0);
   const dateValue =
-    (import.meta.env.VITE_DATE_VALUE as string | undefined) ?? "Date";
+    (import.meta.env.PUBLIC_DATE_RANGE_VALUE as string | undefined) ?? "Date";
   onMount(() => {
     props.cards.forEach((card) => {
       const dateObject = new Date(card.metadata[dateValue]);
