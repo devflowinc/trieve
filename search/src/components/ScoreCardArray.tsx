@@ -17,10 +17,11 @@ export const ScoreCardArray = (props: ScoreCardAraryProps) => {
   const [curCard, setCurCard] = createSignal(0);
   const [beginTime, setBeginTime] = createSignal(Date.now());
   const [endTime, setEndTime] = createSignal(0);
-
+  const dateValue =
+    (import.meta.env.VITE_DATE_VALUE as string | undefined) ?? "Date";
   onMount(() => {
     props.cards.forEach((card) => {
-      const dateObject = new Date((card.metadata as { Date: string }).Date);
+      const dateObject = new Date(card.metadata[dateValue]);
       if (dateObject.getTime()) {
         setBeginTime((prev) => Math.min(prev, dateObject.getTime()));
         setEndTime((prev) => Math.max(prev, dateObject.getTime()));
