@@ -21,10 +21,12 @@ export const ScoreCardArray = (props: ScoreCardAraryProps) => {
     (import.meta.env.PUBLIC_DATE_RANGE_VALUE as string | undefined) ?? "Date";
   onMount(() => {
     props.cards.forEach((card) => {
-      const dateObject = new Date(card.metadata[dateValue]);
-      if (dateObject.getTime()) {
-        setBeginTime((prev) => Math.min(prev, dateObject.getTime()));
-        setEndTime((prev) => Math.max(prev, dateObject.getTime()));
+      if (card.metadata) {
+        const dateObject = new Date(card.metadata[dateValue]);
+        if (dateObject.getTime()) {
+          setBeginTime((prev) => Math.min(prev, dateObject.getTime()));
+          setEndTime((prev) => Math.max(prev, dateObject.getTime()));
+        }
       }
     });
   });

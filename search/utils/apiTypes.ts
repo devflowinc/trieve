@@ -9,7 +9,7 @@ export interface CardMetadata {
   tag_set: string | null;
   file_id: string | null;
   file_name: string | null;
-  metadata: object | null;
+  metadata: Record<string, never> | null;
   private?: boolean;
   total_upvotes?: number;
   total_downvotes?: number;
