@@ -114,48 +114,132 @@ const SearchForm = (props: {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const metadataFilters = filters.metadataFilters;
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+    const savedCustomFilters: any = JSON.parse(
+      window.localStorage.getItem("savedCustomFilters") ??
+        JSON.stringify({
+          tagSet: [],
+          link: [],
+          metadataFilters: {},
+        }),
+    );
+
     setComboBoxSections((prev) => {
       return prev.map((section) => {
         if (section.name === "link") {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+          const savedLinkFilters = savedCustomFilters.link;
           return {
             ...section,
-            comboboxItems: section.comboboxItems.map((item) => {
-              return {
-                ...item,
-                selected: linkFilters.includes(item.name),
-              };
-            }),
+            comboboxItems: [
+              ...section.comboboxItems.map((item) => {
+                return {
+                  ...item,
+                  selected: linkFilters.includes(item.name),
+                };
+              }),
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
+              ...savedLinkFilters.map((item: any) => {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+                return {
+                  ...item,
+                  custom: true,
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
+                  selected: linkFilters.includes(item.name),
+                };
+              }),
+            ],
           };
         } else if (section.name === "Tag Set") {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+          const savedTagSetFilters = savedCustomFilters.tagSet;
           return {
             ...section,
-            comboboxItems: section.comboboxItems.map((item) => {
-              return {
-                ...item,
-                selected: tagSetFilters.includes(item.name),
-              };
-            }),
+            comboboxItems: [
+              ...section.comboboxItems.map((item) => {
+                return {
+                  ...item,
+                  selected: tagSetFilters.includes(item.name),
+                };
+              }),
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
+              ...savedTagSetFilters.map((item: any) => {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+                return {
+                  ...item,
+                  custom: true,
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+                  selected: tagSetFilters.includes(item.name),
+                };
+              }),
+            ],
           };
         }
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        const metadataSection = metadataFilters[section.name];
-        if (metadataSection) {
-          return {
-            ...section,
-            comboboxItems: section.comboboxItems.map((item) => {
+        const metadataSection = metadataFilters[section.name] ?? [];
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const savedMetadataSection =
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          savedCustomFilters.metadataFilters[section.name] ?? [];
+        console.log("savedMetadataSection", section.name, savedMetadataSection);
+
+        return {
+          ...section,
+          comboboxItems: [
+            ...section.comboboxItems.map((item) => {
               return {
                 ...item,
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
                 selected: metadataSection.includes(item.name),
               };
             }),
-          };
-        }
-
-        return section;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
+            ...savedMetadataSection.map((item: any) => {
+              console.log("item", section.name, item);
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+              return {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+                ...item,
+                custom: true,
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+                selected: metadataSection.includes(item.name),
+              };
+            }),
+          ],
+        };
       });
     });
+  });
+
+  createEffect(() => {
+    const comboBoxSet = comboBoxSections();
+
+    const tagSetFilters = comboBoxSet
+      .find((section) => section.name === "Tag Set")
+      ?.comboboxItems.filter((item) => item.custom);
+
+    const linkFilters = comboBoxSet
+      .find((section) => section.name === "link")
+      ?.comboboxItems.filter((item) => item.custom);
+
+    let metadataFilters = {};
+    comboBoxSet.forEach((section) => {
+      if (section.name !== "Tag Set" && section.name !== "link") {
+        metadataFilters = {
+          ...metadataFilters,
+          [section.name]: section.comboboxItems.filter((item) => item.custom),
+        };
+      }
+    });
+
+    const filters = {
+      tagSet: tagSetFilters,
+      link: linkFilters,
+      metadataFilters: metadataFilters,
+    };
+
+    window.localStorage.setItem("savedCustomFilters", JSON.stringify(filters));
   });
 
   createEffect(() => {
