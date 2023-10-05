@@ -174,9 +174,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
           setError("Theme not found, it never existed or was deleted");
         }
         if (response.status == 401) {
-          setError(
-            "You must be logged in and authorized to view this theme",
-          );
+          setError("You must be logged in and authorized to view this theme");
           setShowNeedLoginModal(true);
         }
         setClientSideRequestFinished(true);
@@ -195,6 +193,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
             content: props.query,
             tag_set: props.filters.tagSet,
             link: props.filters.link,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             filters: props.filters.metadataFilters,
             collection_id: props.collectionID,
           }),
@@ -697,8 +696,11 @@ export const CollectionPage = (props: CollectionPageProps) => {
                   (props.filters.link.length
                     ? `&link=${props.filters.link.join(",")}`
                     : "") +
+                  // eslint-disable-next-line @typescript-eslint/restrict-plus-operands, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
                   props.filters.metadataFilters
-                    .flatMap((f) => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    .flatMap((f: { key: any; value: any }) => {
+                      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions, @typescript-eslint/no-unsafe-member-access
                       return `${f.key}=${f.value}`;
                     })
                     .join("&") +

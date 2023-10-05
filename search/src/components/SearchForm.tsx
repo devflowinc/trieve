@@ -1,5 +1,12 @@
 import { BiRegularSearch, BiRegularX } from "solid-icons/bi";
-import { For, Show, createEffect, createSignal, onCleanup } from "solid-js";
+import {
+  For,
+  Show,
+  createEffect,
+  createSignal,
+  onCleanup,
+  onMount,
+} from "solid-js";
 import { Combobox, ComboboxSection } from "./Atoms/ComboboxChecklist";
 import {
   Menu,
@@ -99,6 +106,57 @@ const SearchForm = (props: {
         (filters ? `&${filters}` : "") +
         (searchTypes()[0].isSelected ? `&searchType=fulltextsearch` : "");
   };
+
+  onMount(() => {
+    const filters = props.filters;
+    const linkFilters = filters.link;
+    const tagSetFilters = filters.tagSet;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const metadataFilters = filters.metadataFilters;
+
+    setComboBoxSections((prev) => {
+      return prev.map((section) => {
+        if (section.name === "link") {
+          return {
+            ...section,
+            comboboxItems: section.comboboxItems.map((item) => {
+              return {
+                ...item,
+                selected: linkFilters.includes(item.name),
+              };
+            }),
+          };
+        } else if (section.name === "Tag Set") {
+          return {
+            ...section,
+            comboboxItems: section.comboboxItems.map((item) => {
+              return {
+                ...item,
+                selected: tagSetFilters.includes(item.name),
+              };
+            }),
+          };
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        const metadataSection = metadataFilters[section.name];
+        if (metadataSection) {
+          return {
+            ...section,
+            comboboxItems: section.comboboxItems.map((item) => {
+              return {
+                ...item,
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+                selected: metadataSection.includes(item.name),
+              };
+            }),
+          };
+        }
+
+        return section;
+      });
+    });
+  });
 
   createEffect(() => {
     resizeTextarea(
