@@ -14,9 +14,14 @@ import { PaginationController } from "./Atoms/PaginationController";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
 import { ScoreCardArray } from "./ScoreCardArray";
 
+export interface MetadataFilter {
+  key: string;
+  value: string;
+}
 export interface Filters {
-  dataTypes: string[];
-  links: string[];
+  tagSet: string[];
+  link: string[];
+  metadataFilters: MetadataFilter[];
 }
 export interface ResultsPageProps {
   query: string;
@@ -28,9 +33,9 @@ export interface ResultsPageProps {
 
 const ResultsPage = (props: ResultsPageProps) => {
   // eslint-disable-next-line solid/reactivity
-  const dataTypeFilters = encodeURIComponent(props.filters.dataTypes.join(","));
+  const dataTypeFilters = encodeURIComponent(props.filters.tagSet.join(","));
   // eslint-disable-next-line solid/reactivity
-  const linkFilters = encodeURIComponent(props.filters.links.join(","));
+  const linkFilters = encodeURIComponent(props.filters.link.join(","));
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const initialResultCards = props.defaultResultCards.score_cards;
   const initialTotalPages = props.defaultResultCards.total_card_pages;
@@ -119,8 +124,9 @@ const ResultsPage = (props: ResultsPageProps) => {
       signal: abortController.signal,
       body: JSON.stringify({
         content: props.query,
-        tag_set: props.filters.dataTypes,
-        link: props.filters.links,
+        tag_set: props.filters.tagSet,
+        link: props.filters.link,
+        filters: props.filters.metadataFilters,
       }),
     }).then((response) => {
       if (response.ok) {
@@ -197,7 +203,7 @@ const ResultsPage = (props: ResultsPageProps) => {
           query={
             `/search?q=${props.query}` +
             (dataTypeFilters ? `&datatypes=${dataTypeFilters}` : "") +
-            (linkFilters ? `&links=${linkFilters}` : "") +
+            (linkFilters ? `&.link=${linkFilters}` : "") +
             (props.searchType == "fulltextsearch"
               ? `&searchType=fulltextsearch`
               : "")

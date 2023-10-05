@@ -7,7 +7,7 @@ import type {
   CardCollectionBookmarksWithStatusDTO,
   CardCollectionSearchDTO,
 } from "../../../utils/apiTypes";
-import type { Filters } from "../../components/ResultsPage";
+import type { Filters, MetadataFilter } from "../../components/ResultsPage";
 
 const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
 
@@ -16,11 +16,32 @@ const requestParams = Astro.request.url.split("?")[1];
 const params = new URLSearchParams(requestParams);
 const page = Number(params.get("page")) || 1;
 const query = params.get("q") ?? "";
-const dataTypeFilters: Filters = {
-  dataTypes: params.get("datatypes")?.split(",") ?? [],
-  links: params.get("links")?.split(",") ?? [],
-};
 const searchType: string = params.get("searchType") ?? "search";
+
+let metadataFilters: MetadataFilter[] = [];
+
+params.forEach((value, key) => {
+  if (
+    key === "q" ||
+    key === "page" ||
+    key === "searchType" ||
+    key === "tag set" ||
+    key === "link"
+  ) {
+    return;
+  }
+
+  metadataFilters.push({
+    key,
+    value,
+  });
+});
+
+const dataTypeFilters: Filters = {
+  tagSet: params.get("tag set")?.split(",") ?? [],
+  link: params.get("link")?.split(",") ?? [],
+  metadataFilters,
+};
 
 const apiHost = import.meta.env.API_HOST as string;
 let collectionCards: CardCollectionBookmarksWithStatusDTO = {
@@ -83,8 +104,9 @@ try {
         credentials: "include",
         body: JSON.stringify({
           content: query,
-          tag_set: dataTypeFilters.dataTypes,
-          link: dataTypeFilters.links,
+          tag_set: dataTypeFilters.tagSet,
+          link: dataTypeFilters.link,
+          metadata: metadataFilters,
           collection_id: collectionID,
         }),
       },
@@ -115,7 +137,7 @@ try {
     page={page}
     defaultCollectionCards={collectionCards}
     query={query}
-    dataTypeFilters={dataTypeFilters}
+    filters={dataTypeFilters}
     searchType={searchType}
     client:load
   />

@@ -37,19 +37,13 @@ export interface CollectionPageProps {
   page: number;
   query: string;
   searchType: string;
-  dataTypeFilters: Filters;
+  filters: Filters;
 }
 
 export const CollectionPage = (props: CollectionPageProps) => {
   const apiHost: string = import.meta.env.PUBLIC_API_HOST as string;
   const cardMetadatasWithVotes: BookmarkDTO[] = [];
   const searchCardMetadatasWithVotes: ScoreCardDTO[] = [];
-  const dataTypeFilters = encodeURIComponent(
-    // eslint-disable-next-line solid/reactivity
-    props.dataTypeFilters.dataTypes.join(","),
-  );
-  // eslint-disable-next-line solid/reactivity
-  const linkFilters = encodeURIComponent(props.dataTypeFilters.links.join(","));
 
   // Sometimes this will error server-side if the collection is private so we have to handle it
   try {
@@ -121,6 +115,10 @@ export const CollectionPage = (props: CollectionPageProps) => {
   const [streamingCollectionInference, setStreamingCollectionInference] =
     createSignal(false);
   const [collectionInference, setCollectionInference] = createSignal("");
+
+  onMount(() => {
+    fetchBookmarks();
+  });
 
   // Fetch the user info for the auth'ed user
   createEffect(() => {
@@ -195,8 +193,9 @@ export const CollectionPage = (props: CollectionPageProps) => {
           credentials: "include",
           body: JSON.stringify({
             content: props.query,
-            tag_set: props.dataTypeFilters.dataTypes,
-            link: props.dataTypeFilters.links,
+            tag_set: props.filters.tagSet,
+            link: props.filters.link,
+            filters: props.filters.metadataFilters,
             collection_id: props.collectionID,
           }),
         },
@@ -256,8 +255,12 @@ export const CollectionPage = (props: CollectionPageProps) => {
     });
   });
 
-  onMount(() => {
-    fetchBookmarks();
+  createEffect(() => {
+    resizeTextarea(
+      document.getElementById(
+        "collection-query-textarea",
+      ) as HTMLTextAreaElement | null,
+    );
   });
 
   // Fetch the card collections for the auth'ed user
@@ -408,14 +411,6 @@ export const CollectionPage = (props: CollectionPageProps) => {
     textarea.style.height = `${textarea.scrollHeight}px`;
     setCollectionQuery(textarea.value);
   };
-
-  createEffect(() => {
-    resizeTextarea(
-      document.getElementById(
-        "collection-query-textarea",
-      ) as HTMLTextAreaElement | null,
-    );
-  });
 
   return (
     <>
@@ -650,7 +645,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
                 >
                   <SearchForm
                     query={props.query}
-                    filters={props.dataTypeFilters}
+                    filters={props.filters}
                     searchType={props.searchType}
                     collectionID={props.collectionID}
                   />
@@ -696,8 +691,17 @@ export const CollectionPage = (props: CollectionPageProps) => {
                 query={
                   `/collection/${props.collectionID}` +
                   (props.query ? `?q=${props.query}` : "") +
-                  (dataTypeFilters ? `&datatypes=${dataTypeFilters}` : "") +
-                  (linkFilters ? `&links=${linkFilters}` : "") +
+                  (props.filters.tagSet.length
+                    ? `&tag%20set=${props.filters.tagSet.join(",")}`
+                    : "") +
+                  (props.filters.link.length
+                    ? `&link=${props.filters.link.join(",")}`
+                    : "") +
+                  props.filters.metadataFilters
+                    .flatMap((f) => {
+                      return `${f.key}=${f.value}`;
+                    })
+                    .join("&") +
                   (props.searchType == "fulltextsearch"
                     ? `&searchType=fulltextsearch`
                     : "")

@@ -1,10 +1,6 @@
 import { BiRegularSearch, BiRegularX } from "solid-icons/bi";
 import { For, Show, createEffect, createSignal, onCleanup } from "solid-js";
-import {
-  Combobox,
-  ComboboxItem,
-  ComboboxSection,
-} from "./Atoms/ComboboxChecklist";
+import { Combobox, ComboboxSection } from "./Atoms/ComboboxChecklist";
 import {
   Menu,
   MenuItem,
@@ -16,49 +12,27 @@ import {
 import { FaSolidCheck } from "solid-icons/fa";
 import type { Filters } from "./ResultsPage";
 
-const parseEnvComboboxItems = (data: string | undefined): ComboboxItem[] => {
-  const names = data?.split(",");
-  if (!names) return [];
-  return names
-    .filter((name) => name && name !== "")
-    .map((name) => {
-      return {
-        name: name,
-      };
-    });
-};
-
 const SearchForm = (props: {
   query?: string;
   filters: Filters;
   searchType: string;
   collectionID?: string;
 }) => {
-  const tagSetItems = parseEnvComboboxItems(
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    import.meta.env.PUBLIC_TAG_SET_ITEMS,
+  const stringifiedComboboxSections = import.meta.env
+    .PUBLIC_FILTER_ITEMS as string;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const comboboxSections: ComboboxSection[] = JSON.parse(
+    stringifiedComboboxSections,
   );
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  const linksItems = parseEnvComboboxItems(import.meta.env.PUBLIC_LINK_ITEMS);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const customComboBoxFilterVals: ComboboxSection[] = comboboxSections;
+
   const createEvidenceFeature =
     import.meta.env.PUBLIC_CREATE_EVIDENCE_FEATURE !== "off";
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
   const feelingSuffixes: string[] = (
     import.meta.env.PUBLIC_LUCKY_ITEMS || "Happy,Sad,Excited,Who the hell knows"
   ).split(",");
-
-  const filterDataTypeComboboxSections: ComboboxSection[] = [
-    {
-      name: "Tag Set",
-      comboboxItems: tagSetItems,
-    },
-  ];
-  const filterLinkComboboxSections: ComboboxSection[] = [
-    {
-      name: "Links",
-      comboboxItems: linksItems,
-    },
-  ];
 
   const [searchTypes, setSearchTypes] = createSignal([
     { name: "Full Text", isSelected: false, route: "fulltextsearch" },
@@ -68,72 +42,9 @@ const SearchForm = (props: {
   const [textareaInput, setTextareaInput] = createSignal(props.query ?? "");
   const [typewriterEffect, setTypewriterEffect] = createSignal("");
   const [textareaFocused, setTextareaFocused] = createSignal(false);
-
-  const [filterDataTypes, setFilterDataTypes] = createSignal<ComboboxSection[]>(
-    filterDataTypeComboboxSections,
-  );
-
-  const [filterLinks, setFilterLinks] = createSignal<ComboboxSection[]>(
-    filterLinkComboboxSections,
-  );
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const customDataTypeFilters = JSON.parse(
-    localStorage.getItem("customDatasetFilters") ?? "[]",
-  );
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const customLinkFilters = JSON.parse(
-    localStorage.getItem("customLinksFilters") ?? "[]",
-  );
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  if (Object.keys(customDataTypeFilters).length > 0) {
-    setFilterDataTypes((prev) => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      customDataTypeFilters.custom = true;
-      const newComboboxItems = [
-        ...prev[0].comboboxItems,
-        customDataTypeFilters,
-      ];
-      return [
-        {
-          name: prev[0].name,
-          comboboxItems: newComboboxItems,
-        },
-      ];
-    });
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  if (Object.keys(customLinkFilters).length > 0) {
-    setFilterLinks((prev) => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      customLinkFilters.custom = true;
-      const newComboboxItems = [...prev[0].comboboxItems, customLinkFilters];
-      return [
-        {
-          name: prev[0].name,
-          comboboxItems: newComboboxItems,
-        },
-      ];
-    });
-  }
-
-  // eslint-disable-next-line solid/reactivity
-  const initialDataTypeFilters = filterDataTypes().flatMap((section) =>
-    section.comboboxItems.filter((item) =>
-      // eslint-disable-next-line solid/reactivity
-      props.filters.dataTypes.includes(item.name),
-    ),
-  );
-  // eslint-disable-next-line solid/reactivity
-  const initialLinkFilters = filterLinks().flatMap((section) =>
-    section.comboboxItems.filter((item) =>
-      // eslint-disable-next-line solid/reactivity
-      props.filters.links.includes(item.name),
-    ),
-  );
-  const [selectedDataTypeComboboxItems, setDataTypeSelectedComboboxItems] =
-    createSignal<ComboboxItem[]>(initialDataTypeFilters);
-  const [selectedLinkComboboxItems, setLinkSelectedComboboxItems] =
-    createSignal<ComboboxItem[]>(initialLinkFilters);
+  const [comboBoxSections, setComboBoxSections] = createSignal<
+    ComboboxSection[]
+  >(customComboBoxFilterVals);
   const [feelingLuckyText, setFeelingLuckyText] = createSignal(feelingSuffixes);
   const [feelingLuckySpinning, setFeelingLuckySpinning] = createSignal(false);
 
@@ -158,25 +69,29 @@ const SearchForm = (props: {
         ? textAreaValue.slice(0, 3800)
         : textAreaValue,
     );
-    const dataTypeFilters = encodeURIComponent(
-      selectedDataTypeComboboxItems()
-        .map((item) => item.name)
-        .join(","),
-    );
-    const linkFilters = encodeURIComponent(
-      selectedLinkComboboxItems()
-        .map((item) => item.name)
-        .join(","),
-    );
+
+    const activeComboBoxFilters = comboBoxSections().flatMap((section) => {
+      return {
+        name: section.name,
+        items: section.comboboxItems.filter((item) => item.selected),
+      };
+    });
+
+    // Create an array of strings in the format "name=item,item,item"
+    const filterStrings = activeComboBoxFilters.map((filter) => {
+      const itemString = filter.items.map((item) => item.name).join(",");
+      return `${filter.name.toLowerCase()}=${itemString}`;
+    });
+
+    // Join the filter strings with commas
+    const filters = filterStrings.join("&");
 
     window.location.href = props.collectionID
       ? `/collection/${props.collectionID}?q=${searchQuery}` +
-        (dataTypeFilters ? `&datatypes=${dataTypeFilters}` : "") +
-        (linkFilters ? `&links=${linkFilters}` : "") +
+        (filters ? `&${filters}` : "") +
         (searchTypes()[0].isSelected ? `&searchType=fulltextsearch` : "")
       : `/search?q=${searchQuery}` +
-        (dataTypeFilters ? `&datatypes=${dataTypeFilters}` : "") +
-        (linkFilters ? `&links=${linkFilters}` : "") +
+        (filters ? `&${filters}` : "") +
         (searchTypes()[0].isSelected ? `&searchType=fulltextsearch` : "");
   };
 
@@ -358,10 +273,9 @@ const SearchForm = (props: {
         </div>
         <div class="flex space-x-2">
           <Show
-            when={
-              filterDataTypes()[0].comboboxItems.length > 0 ||
-              filterLinks()[0].comboboxItems.length > 0
-            }
+            when={comboBoxSections().find(
+              (comboboxSection) => comboboxSection.comboboxItems.length > 0,
+            )}
           >
             <Popover defaultOpen={false} class="relative">
               {({ isOpen, setState }) => (
@@ -402,35 +316,16 @@ const SearchForm = (props: {
                         <MenuItem class="h-0" as="button" aria-label="Empty" />
                       </Menu>
                       <div class="flex w-full min-w-full space-x-2">
-                        <Show
-                          when={
-                            !props.collectionID &&
-                            filterDataTypes()[0].comboboxItems.length > 0
-                          }
-                        >
-                          <Combobox
-                            selectedComboboxItems={
-                              selectedDataTypeComboboxItems
-                            }
-                            setSelectedComboboxItems={
-                              setDataTypeSelectedComboboxItems
-                            }
-                            comboboxSections={filterDataTypes}
-                            setComboboxSections={setFilterDataTypes}
-                            setPopoverOpen={setState}
-                          />
-                        </Show>
-                        <Show when={filterLinks()[0].comboboxItems.length > 0}>
-                          <Combobox
-                            selectedComboboxItems={selectedLinkComboboxItems}
-                            setSelectedComboboxItems={
-                              setLinkSelectedComboboxItems
-                            }
-                            comboboxSections={filterLinks}
-                            setComboboxSections={setFilterLinks}
-                            setPopoverOpen={setState}
-                          />
-                        </Show>
+                        <For each={comboBoxSections()}>
+                          {(comboBoxSection) => (
+                            <Combobox
+                              sectionName={comboBoxSection.name}
+                              comboBoxSections={comboBoxSections}
+                              setComboboxSections={setComboBoxSections}
+                              setPopoverOpen={setState}
+                            />
+                          )}
+                        </For>
                       </div>
                     </PopoverPanel>
                   </Transition>
