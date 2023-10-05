@@ -57,7 +57,7 @@
 
 We have a full self-hosting guide available on our [documentation page here](https://docs.arguflow.ai/self_hosting).
 
-## Local development
+## Local development with Linux
 
 ### Install apt packages
 ```
@@ -115,6 +115,96 @@ cat .env.chat .env.search .env.server .env.docker-compose > .env
 ### Start services for local dev
 
 We know this is bad. Currently, We recommend managing this through tmux or VSCode terminal tabs.
+
+```
+cd server
+cargo watch -x run
+```
+
+```
+cd search
+yarn
+yarn dev
+```
+
+```
+cd chat
+yarn
+yarn dev
+```
+
+## Local development with Windows
+
+### Install NodeJS and Yarn
+
+You can download the latest version NodeJS from [here](https://nodejs.org/en/download). Open the downloaded file and follow the steps from the installer.
+
+After completing the installation, open a powershell with administrator permissions.
+
+```
+npm install -g yarn
+```
+
+After installation, yarn might throw an error when used due to Window's execution policy. Change the execution policy to allow scripts to be executed by applications that are signed by a trusted publisher by putting this command in an admin powershell.
+
+```
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
+```
+
+### Install Rust
+
+You can download the latest version of Rust from [here](https://www.rust-lang.org/tools/install). Follow the installer's directions and install the prerequisites.
+
+After installation, open a new powershell window with administrator permissions.
+
+```
+cargo install cargo-watch
+```
+
+### Install Docker
+
+Follow the instructions to download Docker Desktop for Windows from [here](https://docs.docker.com/desktop/install/windows-install/). You may need to follow the instructions to enable WSL 2.
+
+### Install Postgres dependencies for building
+
+Download PostgreSQL 13 from [here](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads). You should not use any other version of PostgreSQL due to there being an [issue](https://github.com/diesel-rs/diesel/discussions/2947) with diesel on other versions.
+
+When installing, ensure that the PostgreSQL server is set to a port other than 5432 to prevent it from interfering with the docker container.
+
+Add Postgres to PATH
+```
+[Environment]::SetEnvironmentVariable("PATH", $Env:PATH + ";C:\Program Files\PostgreSQL\13\lib;C:\Program Files\PostgreSQL\13\bin", [EnvironmentVariableTarget]::Machine)
+```
+
+### Setup env's
+
+```
+cp .env.chat ./chat/.env
+cp .env.search ./search/.env
+cp .env.server ./server/.env
+```
+
+### Add your `OPENAI_API_KEY` to `./server/.env`
+
+[Here is a guide for acquiring that](https://blog.streamlit.io/beginners-guide-to-openai-api/#get-your-own-openai-api-key).
+
+#### Steps once you have the key
+
+1. Open the `./server/.env` file
+2. Replace the value for `OPENAI_API_KEY` to be your own OpenAI API key.
+
+### Start Docker containers
+
+Start the docker containers using the batch script.
+
+```
+Get-Content .env.chat, .env.search, .env.server, .env.docker-compose | Set-Content .env
+./convenience.bat l
+```
+
+### Start services for local dev
+
+You need 3 different windows of powershell or use something like VSCode terminal tabs to manage it.
 
 ```
 cd server
