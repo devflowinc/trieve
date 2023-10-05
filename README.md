@@ -88,6 +88,12 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
 
 `yarn --cwd ./server/server-nodejs`
 
+### Install cargo-watch
+
+```
+cargo install cargo-watch
+```
+
 ### Setup env's
 
 ```
