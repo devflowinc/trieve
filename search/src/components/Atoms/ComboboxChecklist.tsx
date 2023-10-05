@@ -27,28 +27,19 @@ export const Combobox = (props: ComboboxProps) => {
     const currentSection = props
       .comboBoxSections()
       .find((section) => section.name === props.sectionName);
-    if (!currentSection)
-      return [
-        {
-          name: "+ Add custom filter",
-          selected: false,
-        },
-      ];
+    if (!currentSection) return [];
 
     const matchingItems = currentSection.comboboxItems.filter((option) => {
       return option.name.toLowerCase().includes(inputValue().toLowerCase());
     });
 
-    if (!matchingItems.length) {
-      return [
-        {
-          name: "+ Add custom filter",
-          selected: false,
-        },
-      ];
-    }
-
-    return matchingItems;
+    return [
+      ...matchingItems,
+      {
+        name: "+ Add custom filter",
+        selected: false,
+      },
+    ];
   });
 
   const handleClick = (name: string, selected: boolean | undefined) => {
