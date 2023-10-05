@@ -75,18 +75,24 @@ libreoffice
 ```
 ### Install NodeJS and Yarn
 
-You can use the following, but we recommend using [NVM](https://github.com/nvm-sh/nvm) and then running `yarn --cwd ./server-nodejs install` .
+You can install [NVM](https://github.com/nvm-sh/nvm) using its install script.
 
 ```
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs && \
-    npm install -g yarn && \
-    yarn --cwd ./server-nodejs install
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+```
+
+You should restart the terminal to update bash profile with NVM. Then, you can install NodeJS LTS release and Yarn.
+
+```
+nvm install --lts
+npm install -g yarn
 ```
 
 ### Install node requirements
 
-`yarn --cwd ./server/server-nodejs`
+```
+yarn --cwd ./server/server-nodejs
+```
 
 ### Install cargo-watch
 
