@@ -91,7 +91,7 @@ const SearchForm = (props: {
 
         if (!itemString) return;
 
-        return `${filter.name.toLowerCase()}=${itemString}`;
+        return `${filter.name}=${itemString}`;
       })
       .filter((item) => item);
 

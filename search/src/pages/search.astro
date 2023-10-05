@@ -22,7 +22,7 @@ params.forEach((value, key) => {
     key === "q" ||
     key === "page" ||
     key === "searchType" ||
-    key === "tag set" ||
+    key === "Tag Set" ||
     key === "link"
   ) {
     return;
@@ -33,7 +33,7 @@ params.forEach((value, key) => {
 });
 
 const dataTypeFilters: Filters = {
-  tagSet: params.get("tag set")?.split(",") ?? [],
+  tagSet: params.get("Tag Set")?.split(",") ?? [],
   link: params.get("link")?.split(",") ?? [],
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   metadataFilters,
