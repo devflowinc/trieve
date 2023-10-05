@@ -1,5 +1,5 @@
 import type { Setter } from "solid-js";
-import { Show, createSignal } from "solid-js";
+import { Show, createSignal, onMount } from "solid-js";
 import type {
   CardMetadataWithVotes,
   CardCollectionDTO,
@@ -15,7 +15,18 @@ export type ScoreCardAraryProps = Omit<ScoreCardProps, "card"> & {
 
 export const ScoreCardArray = (props: ScoreCardAraryProps) => {
   const [curCard, setCurCard] = createSignal(0);
+  const [beginTime, setBeginTime] = createSignal(Date.now());
+  const [endTime, setEndTime] = createSignal(0);
 
+  onMount(() => {
+    props.cards.forEach((card) => {
+      const dateObject = new Date((card.metadata as { Date: string }).Date);
+      if (dateObject.getTime()) {
+        setBeginTime((prev) => Math.min(prev, dateObject.getTime()));
+        setEndTime((prev) => Math.max(prev, dateObject.getTime()));
+      }
+    });
+  });
   return (
     <div class="mx-auto flex max-w-[calc(100vw-32px)] items-center">
       <div class="w-[16px] min-[360px]:w-[32px]">
@@ -28,7 +39,14 @@ export const ScoreCardArray = (props: ScoreCardAraryProps) => {
           <FiChevronLeft class="h-4 w-4 text-transparent min-[360px]:h-8 min-[360px]:w-8" />
         </Show>
       </div>
-      <ScoreCard {...props} card={props.cards[curCard()]} />
+      <ScoreCard
+        {...props}
+        card={props.cards[curCard()]}
+        counter={curCard() + 1}
+        total={props.cards.length}
+        begin={beginTime()}
+        end={endTime()}
+      />
       <div class="w-[16px] min-[360px]:w-[32px]">
         <Show when={curCard() < props.cards.length - 1}>
           <button onClick={() => setCurCard((prev) => prev + 1)}>

@@ -51,6 +51,10 @@ export interface ScoreCardProps {
   bookmarks: CardBookmarksDTO[];
   showExpand?: boolean;
   setCardCollections: Setter<CardCollectionDTO[]>;
+  counter: number;
+  total: number;
+  begin: number;
+  end: number;
 }
 
 const ScoreCard = (props: ScoreCardProps) => {
@@ -240,6 +244,13 @@ const ScoreCard = (props: ScoreCardProps) => {
                   body={<FiGlobe class="h-5 w-5 text-green-500" />}
                   tooltipText="Publicly visible"
                 />
+              </Show>
+              <Show when={props.total > 1}>
+                <span class="font-semibold">
+                  {props.counter} of {props.total} between{" "}
+                  {new Date(props.begin).toLocaleString()} and{" "}
+                  {new Date(props.end).toLocaleString()}
+                </span>
               </Show>
               <div class="flex-1" />
               <Show when={imgInformation()}>
