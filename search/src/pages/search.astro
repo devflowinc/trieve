@@ -17,7 +17,7 @@ const query = params.get("q") ?? "";
 const page = Number(params.get("page")) || 1;
 const searchType: string = params.get("searchType") ?? "search";
 
-let metadataFilters: MetadataFilter[] = [];
+const metadataFilters: any = {};
 
 params.forEach((value, key) => {
   if (
@@ -30,10 +30,7 @@ params.forEach((value, key) => {
     return;
   }
 
-  metadataFilters.push({
-    key,
-    value,
-  });
+  metadataFilters[key] = value.split(",");
 });
 
 const dataTypeFilters: Filters = {
