@@ -38,7 +38,7 @@ const CommunityBookmarkPopover = (props: CommunityBookmarkPopoverProps) => {
                   Community Themes With This Card
                 </div>
                 <MenuItem as="button" aria-label="Empty" />
-                <div class="scrollbar-track-rounded-md scrollbar-thumb-rounded-md max-w-screen mx-1 max-h-[20vh] transform justify-end space-y-2 overflow-y-auto rounded px-4 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-600 dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-400">
+                <div class="max-w-screen mx-1 max-h-[20vh] transform justify-end space-y-2 overflow-y-auto rounded px-4 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-600 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-400">
                   <For
                     each={props.bookmarks.flatMap((b) => b.slim_collections)}
                   >
