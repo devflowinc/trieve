@@ -1,7 +1,10 @@
 ---
 import SearchLayout from "../layouts/SearchLayout.astro";
 import Footer from "../components/Footer.astro";
-import ResultsPage, { Filters } from "../components/ResultsPage";
+import ResultsPage, {
+  Filters,
+  MetadataFilter,
+} from "../components/ResultsPage";
 import type { CardsWithTotalPagesDTO } from "../../utils/apiTypes";
 import SearchForm from "../components/SearchForm";
 
@@ -12,11 +15,33 @@ const requestParams = Astro.request.url.split("?")[1];
 const params = new URLSearchParams(requestParams);
 const query = params.get("q") ?? "";
 const page = Number(params.get("page")) || 1;
-const dataTypeFilters: Filters = {
-  dataTypes: params.get("datatypes")?.split(",") ?? [],
-  links: params.get("links")?.split(",") ?? [],
-};
 const searchType: string = params.get("searchType") ?? "search";
+
+let metadataFilters: MetadataFilter[] = [];
+
+params.forEach((value, key) => {
+  if (
+    key === "q" ||
+    key === "page" ||
+    key === "searchType" ||
+    key === "tag set" ||
+    key === "link"
+  ) {
+    return;
+  }
+
+  metadataFilters.push({
+    key,
+    value,
+  });
+});
+
+const dataTypeFilters: Filters = {
+  tagSet: params.get("tag set")?.split(",") ?? [],
+  link: params.get("link")?.split(",") ?? [],
+  metadataFilters,
+};
+
 let initialScoreCards: CardsWithTotalPagesDTO = {
   score_cards: [],
   total_card_pages: 0,
@@ -37,8 +62,9 @@ try {
       credentials: "include",
       body: JSON.stringify({
         content: query,
-        tag_set: dataTypeFilters.dataTypes,
-        link: dataTypeFilters.links,
+        tag_set: dataTypeFilters.tagSet,
+        link: dataTypeFilters.link,
+        metadata: dataTypeFilters.metadataFilters,
       }),
     },
   );
