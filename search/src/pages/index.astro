@@ -2,7 +2,7 @@
 import SearchForm from "../components/SearchForm";
 import Footer from "../components/Footer.astro";
 import type { CardMetadataWithVotes } from "../../utils/apiTypes";
-import type { Filters, MetadataFilter } from "../components/ResultsPage";
+import type { Filters } from "../components/ResultsPage";
 import HomeLayout from "../layouts/HomeLayout.astro";
 import { TopCardsTable } from "../components/TopCardsTable";
 
@@ -15,14 +15,14 @@ const params = new URLSearchParams(requestParams);
 const page = Number(params.get("page")) || 1;
 const searchType: string = params.get("searchType") ?? "search";
 
-let metadataFilters: MetadataFilter[] = [];
+let metadataFilters: any[] = [];
 
 params.forEach((value, key) => {
   if (
     key === "q" ||
     key === "page" ||
     key === "searchType" ||
-    key === "tag set" ||
+    key === "Tag Set" ||
     key === "link"
   ) {
     return;
@@ -35,7 +35,7 @@ params.forEach((value, key) => {
 });
 
 const dataTypeFilters: Filters = {
-  tagSet: params.get("tag set")?.split(",") ?? [],
+  tagSet: params.get("Tag Set")?.split(",") ?? [],
   link: params.get("link")?.split(",") ?? [],
   metadataFilters,
 };
