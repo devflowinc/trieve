@@ -14,14 +14,11 @@ import { PaginationController } from "./Atoms/PaginationController";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
 import { ScoreCardArray } from "./ScoreCardArray";
 
-export interface MetadataFilter {
-  key: string;
-  value: string;
-}
 export interface Filters {
   tagSet: string[];
   link: string[];
-  metadataFilters: MetadataFilter[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  metadataFilters: any;
 }
 export interface ResultsPageProps {
   query: string;
@@ -126,6 +123,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         content: props.query,
         tag_set: props.filters.tagSet,
         link: props.filters.link,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         filters: props.filters.metadataFilters,
       }),
     }).then((response) => {

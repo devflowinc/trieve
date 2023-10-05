@@ -8,7 +8,10 @@ import type { ScoreCardProps } from "./ScoreCard";
 import { FiChevronLeft, FiChevronRight } from "solid-icons/fi";
 import ScoreCard from "./ScoreCard";
 
-export type ScoreCardAraryProps = Omit<ScoreCardProps, "card"> & {
+export type ScoreCardAraryProps = Omit<
+  ScoreCardProps,
+  "card" | "counter" | "total" | "begin" | "end"
+> & {
   cards: CardMetadataWithVotes[];
   setCardCollections: Setter<CardCollectionDTO[]>;
 };
@@ -22,6 +25,7 @@ export const ScoreCardArray = (props: ScoreCardAraryProps) => {
   onMount(() => {
     props.cards.forEach((card) => {
       if (card.metadata) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         const dateObject = new Date(card.metadata[dateValue]);
         if (dateObject.getTime()) {
           setBeginTime((prev) => Math.min(prev, dateObject.getTime()));
