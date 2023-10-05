@@ -158,6 +158,13 @@ pub async fn get_file_handler(
     user: Option<LoggedUser>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let download_enabled = std::env::var("DOCUMENT_DOWNLOAD_FEATURE").unwrap_or("off".to_string());
+    if download_enabled != "on" {
+        return Err(
+            ServiceError::BadRequest("Document download feature is disabled".to_string()).into(),
+        );
+    }
+
     let user_id = user.map(|user| user.id);
 
     let file = get_file_query(file_id.into_inner(), user_id, pool).await?;
