@@ -78,10 +78,15 @@ const SearchForm = (props: {
     });
 
     // Create an array of strings in the format "name=item,item,item"
-    const filterStrings = activeComboBoxFilters.map((filter) => {
-      const itemString = filter.items.map((item) => item.name).join(",");
-      return `${filter.name.toLowerCase()}=${itemString}`;
-    });
+    const filterStrings = activeComboBoxFilters
+      .map((filter) => {
+        const itemString = filter.items.map((item) => item.name).join(",");
+
+        if (!itemString) return;
+
+        return `${filter.name.toLowerCase()}=${itemString}`;
+      })
+      .filter((item) => item);
 
     // Join the filter strings with commas
     const filters = filterStrings.join("&");
