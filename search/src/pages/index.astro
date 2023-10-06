@@ -1,14 +1,10 @@
 ---
 import SearchForm from "../components/SearchForm";
 import Footer from "../components/Footer.astro";
-import type { CardMetadataWithVotes } from "../../utils/apiTypes";
 import type { Filters } from "../components/ResultsPage";
 import HomeLayout from "../layouts/HomeLayout.astro";
-import { TopCardsTable } from "../components/TopCardsTable";
 
-const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 const dataset = import.meta.env.DATASET as string;
-const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
 
 const requestParams = Astro.request.url.split("?")[1];
 const params = new URLSearchParams(requestParams);
@@ -39,19 +35,6 @@ const dataTypeFilters: Filters = {
   link: params.get("link")?.split(",") ?? [],
   metadataFilters,
 };
-
-let recentCards: CardMetadataWithVotes[] = [];
-
-try {
-  alwaysRequireAuth !== "on" &&
-    (await fetch(`${apiHost}/top_cards/${page}`)
-      .then((response) => response.json())
-      .then((recentCardsResult) => {
-        recentCards = recentCardsResult as CardMetadataWithVotes[];
-      }));
-} catch (e) {
-  console.error(e);
-}
 ---
 
 <HomeLayout>
@@ -86,13 +69,6 @@ try {
       />
     </div>
   </div>
-  {
-    alwaysRequireAuth !== "on" && (
-      <div class="my-16 sm:my-24">
-        <TopCardsTable topCards={recentCards} client:load />
-      </div>
-    )
-  }
   <div class="flex-1"></div>
   <Footer />
 </HomeLayout>

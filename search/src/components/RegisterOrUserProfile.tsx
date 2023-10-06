@@ -20,6 +20,7 @@ export interface RegisterOrUserProfileProps {
 
 const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const showGithubStars = import.meta.env.PUBLIC_SHOW_GITHUB_STARS as string;
 
   const [isLoadingUser, setIsLoadingUser] = createSignal(true);
   const [currentUser, setCurrentUser] = createSignal<UserDTO | null>(null);
@@ -74,7 +75,7 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
               </a>
             </div>
           </Show>
-          <Show when={props.stars}>
+          <Show when={showGithubStars !== "off" && props.stars}>
             <a href="https://github.com/arguflow/arguflow">
               <div class="flex items-center justify-center rounded border border-black px-2 py-1 hover:border-gray-300 hover:bg-gray-300 dark:border-white dark:hover:border-neutral-700 dark:hover:bg-neutral-700">
                 <AiFillGithub class="mr-2 h-[26px] w-[26px] fill-current" />

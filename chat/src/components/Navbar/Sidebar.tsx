@@ -34,8 +34,10 @@ export interface SidebarProps {
 }
 
 export const Sidebar = (props: SidebarProps) => {
-  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+  const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
   const dataset = import.meta.env.VITE_DATASET as unknown as string;
+  const showGithubStars = import.meta.env
+    .VITE_SHOW_GITHUB_STARS as unknown as string;
 
   const [editingIndex, setEditingIndex] = createSignal(-1);
   const [editingTopic, setEditingTopic] = createSignal("");
@@ -46,7 +48,7 @@ export const Sidebar = (props: SidebarProps) => {
     const topics = props.topics();
     const topic = topics[editingIndex()];
 
-    const res = await fetch(`${api_host}/topic`, {
+    const res = await fetch(`${apiHost}/topic`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -69,7 +71,7 @@ export const Sidebar = (props: SidebarProps) => {
   };
 
   const deleteSelected = async () => {
-    const res = await fetch(`${api_host}/topic`, {
+    const res = await fetch(`${apiHost}/topic`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -87,7 +89,7 @@ export const Sidebar = (props: SidebarProps) => {
   };
 
   const logout = () => {
-    void fetch(`${api_host}/auth`, {
+    void fetch(`${apiHost}/auth`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -257,17 +259,19 @@ export const Sidebar = (props: SidebarProps) => {
             <FiSettings class="h-6 w-6" />
             <div>Settings</div>
           </button>
-          <a
-            href="https://github.com/arguflow/arguflow"
-            class="flex w-full items-center space-x-4 rounded-md px-3 py-2 hover:bg-neutral-200 dark:hover:bg-neutral-700"
-          >
-            <AiFillGithub class="h-6 w-6 fill-current" />
-            <div class="flex">
-              <p>STAR US</p>
-              <TbMinusVertical class="h-6 w-6" />
-              <p>{starCount()}</p>
-            </div>
-          </a>
+          <Show when={showGithubStars !== "off"}>
+            <a
+              href="https://github.com/arguflow/arguflow"
+              class="flex w-full items-center space-x-4 rounded-md px-3 py-2 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+            >
+              <AiFillGithub class="h-6 w-6 fill-current" />
+              <div class="flex">
+                <p>STAR US</p>
+                <TbMinusVertical class="h-6 w-6" />
+                <p>{starCount()}</p>
+              </div>
+            </a>
+          </Show>
           <a
             href="https://github.com/arguflow/arguflow"
             class="flex items-center space-x-1 px-3 py-2"
