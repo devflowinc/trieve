@@ -142,18 +142,20 @@ export default function Home() {
           </A>
         </div>
       </div>
-      <div class="py-4" />
-      <div class="flex w-full justify-center">
-        <div class="w-fit px-4">
-          <iframe
-            class="h-[169px] w-[300px] md:h-[315px] md:w-[560px]"
-            src={youtubeEmbedURL}
-            title="YouTube video player"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowfullscreen
-          />
+      <Show when={youtubeEmbedURL}>
+        <div class="py-4" />
+        <div class="flex w-full justify-center">
+          <div class="w-fit px-4">
+            <iframe
+              class="h-[169px] w-[300px] md:h-[315px] md:w-[560px]"
+              src={youtubeEmbedURL}
+              title="YouTube video player"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen
+            />
+          </div>
         </div>
-      </div>
+      </Show>
       <div class="flex-1" />
       <footer class="mt-14 flex flex-col items-center bg-gradient-radial-b from-magenta pb-4 pt-20">
         <div class="flex items-center">
