@@ -314,9 +314,15 @@ pub async fn get_topic_string(prompt: String) -> Result<String, DefaultError> {
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
-        base_url: option_env!("OPENAI_BASE_URL")
-            .unwrap_or("https://api.openai.com/v1")
-            .into(),
+        base_url: std::env::var("OPENAI_BASE_URL")
+            .map(|url| {
+                if url.is_empty() {
+                    "https://api.openai.com/v1".to_string()
+                } else {
+                    url
+                }
+            })
+            .unwrap_or("https://api.openai.com/v1".into()),
     };
 
     let query = client
@@ -355,9 +361,15 @@ pub async fn stream_response(
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
-        base_url: option_env!("OPENAI_BASE_URL")
-            .unwrap_or("https://api.openai.com/v1")
-            .into(),
+        base_url: std::env::var("OPENAI_BASE_URL")
+            .map(|url| {
+                if url.is_empty() {
+                    "https://api.openai.com/v1".to_string()
+                } else {
+                    url
+                }
+            })
+            .unwrap_or("https://api.openai.com/v1".into()),
     };
     let next_message_order = move || {
         let messages_len = messages.len();
