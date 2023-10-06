@@ -14,7 +14,7 @@ use crate::{
         self,
         user_operator::{get_user_by_id_query, get_user_from_api_key_query},
     },
-    AppMutexStore, handlers::register_handler::hash_password,
+    handlers::register_handler::hash_password,
 };
 
 use crate::handlers::register_handler;
@@ -203,9 +203,8 @@ fn find_user_match(auth_data: AuthData, pool: web::Data<Pool>) -> Result<SlimUse
 }
 
 pub async fn health_check(
-    mutex_store: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let result = operators::card_operator::create_embedding("health check", mutex_store).await;
+    let result = operators::card_operator::create_embedding("health check").await;
 
     result?;
     Ok(HttpResponse::Ok().finish())

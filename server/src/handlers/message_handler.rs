@@ -14,7 +14,6 @@ use crate::{
             get_messages_for_topic_query, get_topic_messages, user_owns_topic_query,
         },
     },
-    AppMutexStore,
 };
 use actix::Arbiter;
 use actix_web::{
@@ -43,7 +42,6 @@ pub async fn create_message_completion_handler(
     data: web::Json<CreateMessageData>,
     user: LoggedUser,
     pool: web::Data<Pool>,
-    mutex_store: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let create_message_data = data.into_inner();
     let pool1 = pool.clone();
@@ -107,8 +105,7 @@ pub async fn create_message_completion_handler(
         previous_messages,
         user.id,
         topic_id,
-        pool4,
-        mutex_store,
+        pool4
     )
     .await
 }
@@ -154,7 +151,6 @@ pub async fn edit_message_handler(
     data: web::Json<EditMessageData>,
     user: LoggedUser,
     pool: web::Data<Pool>,
-    mutex_store: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
     let message_sort_order = data.message_sort_order;
@@ -184,7 +180,6 @@ pub async fn edit_message_handler(
         }),
         user,
         third_pool,
-        mutex_store,
     )
     .await
 }
@@ -193,7 +188,6 @@ pub async fn regenerate_message_handler(
     data: web::Json<RegenerateMessageData>,
     user: LoggedUser,
     pool: web::Data<Pool>,
-    mutex_store: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
     let pool1 = pool.clone();
@@ -225,8 +219,7 @@ pub async fn regenerate_message_handler(
             previous_messages,
             user.id,
             topic_id,
-            pool3,
-            mutex_store,
+            pool3
         )
         .await;
     }
@@ -280,8 +273,7 @@ pub async fn regenerate_message_handler(
         previous_messages_to_regenerate,
         user.id,
         topic_id,
-        pool3,
-        mutex_store,
+        pool3
     )
     .await
 }
@@ -347,7 +339,6 @@ pub async fn stream_response(
     user_id: uuid::Uuid,
     topic_id: uuid::Uuid,
     pool: web::Data<Pool>,
-    mutex_store: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
     let pool2 = pool.clone();
@@ -431,7 +422,6 @@ pub async fn stream_response(
                 .message
                 .content
                 .as_str(),
-            mutex_store,
         )
         .await?;
 

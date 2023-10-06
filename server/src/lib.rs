@@ -18,7 +18,6 @@ use qdrant_client::{
     prelude::*,
     qdrant::{VectorParams, VectorsConfig},
 };
-use tokio::sync::Semaphore;
 
 use crate::{
     handlers::auth_handler::create_admin_account, operators::card_operator::get_qdrant_connection,
@@ -40,7 +39,6 @@ fn run_migrations(conn: &mut impl MigrationHarness<diesel::pg::Pg>) {
 
 pub struct AppMutexStore {
     pub libreoffice: Mutex<()>,
-    pub embedding_semaphore: Semaphore,
 }
 
 #[macro_export]
@@ -85,12 +83,6 @@ pub async fn main() -> std::io::Result<()> {
 
     let app_mutex_store = web::Data::new(AppMutexStore {
         libreoffice: Mutex::new(()),
-        embedding_semaphore: Semaphore::new(
-            std::env::var("EMBEDDING_SEMAPHORE_SIZE")
-                .unwrap_or_else(|_| "10".to_string())
-                .parse()
-                .expect("Failed to parse EMBEDDING_SEMAPHORE_SIZE"),
-        ),
     });
 
     let redis_store = RedisSessionStore::new(redis_url).await.unwrap();

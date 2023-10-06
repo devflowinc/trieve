@@ -9,7 +9,6 @@ use crate::data::schema;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::errors::ServiceError;
 use crate::operators::qdrant_operator::search_qdrant_query;
-use crate::AppMutexStore;
 use crate::{
     data::models::{CardMetadata, Pool},
     errors::DefaultError,
@@ -46,7 +45,6 @@ pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
 
 pub async fn create_embedding(
     message: &str,
-    mutex_store: web::Data<AppMutexStore>,
 ) -> Result<Vec<f32>, actix_web::Error> {
     let use_custom: u8 = std::env::var("USE_CUSTOM_EMBEDDINGS")
         .unwrap_or("1".to_string())
@@ -54,12 +52,6 @@ pub async fn create_embedding(
         .unwrap_or(1);
 
     if use_custom == 0 {
-        let _ = mutex_store
-            .embedding_semaphore
-            .acquire()
-            .await
-            .map_err(|_| ServiceError::BadRequest("Failed to acquire semaphore".to_string()))?;
-
         create_server_embedding(message).await
     } else {
         create_openai_embedding(message).await
