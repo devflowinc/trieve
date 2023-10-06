@@ -28,9 +28,9 @@ const SearchForm = (props: {
   const stringifiedComboboxSections = import.meta.env
     .PUBLIC_FILTER_ITEMS as string;
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const comboboxSections: ComboboxSection[] = JSON.parse(
-    stringifiedComboboxSections,
-  );
+  const comboboxSections: ComboboxSection[] = stringifiedComboboxSections
+    ? JSON.parse(stringifiedComboboxSections)
+    : [];
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const customComboBoxFilterVals: ComboboxSection[] = comboboxSections;
 
