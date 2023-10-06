@@ -397,7 +397,7 @@ pub async fn generate_off_collection(
     let collection_id = request_data.collection_id;
     let page = request_data.page.unwrap_or(1);
     let collection_bookmarks = web::block(move || {
-        get_bookmarks_for_collection_query(collection_id, page, Some(25), Some(user.id), pool)
+        get_bookmarks_for_collection_query(collection_id, page, Some(10), Some(user.id), pool)
     })
     .await??
     .metadata;
@@ -437,7 +437,7 @@ pub async fn generate_off_collection(
     });
 
     let summary_completion_param = ChatCompletionParameters {
-        model: "gpt-3.5-turbo-16k".into(),
+        model: "gpt-3.5-turbo".into(),
         messages,
         temperature: None,
         top_p: None,
