@@ -18,6 +18,7 @@ const page = Number(params.get("page")) || 1;
 const query = params.get("q") ?? "";
 const searchType: string = params.get("searchType") ?? "search";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let metadataFilters: any[] = [];
 
 params.forEach((value, key) => {
