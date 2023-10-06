@@ -460,17 +460,22 @@ pub async fn stream_response(
             })
             .collect();
 
-        citation_cards_stringified =
-            serde_json::to_string(&citation_cards).expect("Failed to serialize citation cards");
-        citation_cards_stringified1 = citation_cards_stringified.clone();
-
-        let rag_content = citation_cards
+        let highlighted_citation_cards = citation_cards
             .iter()
             .map(|card| {
                 let highlighted_sentence =
                     find_relevant_sentence(card.clone(), query.to_string()).unwrap_or(card.clone());
-                highlighted_sentence.content.clone()
+                highlighted_sentence
             })
+            .collect::<Vec<CardMetadataWithVotesWithScore>>();
+
+        citation_cards_stringified = serde_json::to_string(&highlighted_citation_cards)
+            .expect("Failed to serialize citation cards");
+        citation_cards_stringified1 = citation_cards_stringified.clone();
+
+        let rag_content = citation_cards
+            .iter()
+            .map(|card| card.content.clone())
             .collect::<Vec<String>>()
             .join("\n\n");
 
