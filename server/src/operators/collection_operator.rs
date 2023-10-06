@@ -1,7 +1,7 @@
 use crate::{
     data::models::{
         CardCollectionAndFileWithCount, CardCollectionBookmark, CardMetadataWithCount,
-        CardMetadataWithVotesAndFiles, FileCollection, FullTextSearchResult, SlimCollection,
+        CardMetadataWithVotesWithScore, FileCollection, FullTextSearchResult, SlimCollection,
     },
     diesel::{Connection, ExpressionMethods, QueryDsl, RunQueryDsl},
     errors::ServiceError,
@@ -306,7 +306,7 @@ pub fn create_card_bookmark_query(
     Ok(())
 }
 pub struct CollectionsBookmarkQueryResult {
-    pub metadata: Vec<CardMetadataWithVotesAndFiles>,
+    pub metadata: Vec<CardMetadataWithVotesWithScore>,
     pub collection: CardCollection,
     pub total_pages: i64,
 }

@@ -616,7 +616,7 @@ pub struct UserDTOWithVotesAndCards {
     pub visible_email: bool,
     pub created_at: chrono::NaiveDateTime,
     pub total_cards_created: i64,
-    pub cards: Vec<CardMetadataWithVotesAndFiles>,
+    pub cards: Vec<CardMetadataWithVotesWithScore>,
     pub total_upvotes_received: i32,
     pub total_downvotes_received: i32,
     pub total_votes_cast: i32,
@@ -692,30 +692,6 @@ impl From<CardMetadataWithCount> for FullTextSearchResult {
             private: card.private,
             metadata: card.metadata,
             count: card.count,
-        }
-    }
-}
-
-impl From<CardMetadataWithVotesAndFiles> for CardMetadataWithVotesWithScore {
-    fn from(cards: CardMetadataWithVotesAndFiles) -> Self {
-        CardMetadataWithVotesWithScore {
-            id: cards.id,
-            author: cards.author,
-            content: cards.content,
-            link: cards.link,
-            qdrant_point_id: cards.qdrant_point_id,
-            total_upvotes: cards.total_upvotes,
-            total_downvotes: cards.total_downvotes,
-            vote_by_current_user: cards.vote_by_current_user,
-            created_at: cards.created_at,
-            updated_at: cards.updated_at,
-            card_html: cards.card_html,
-            tag_set: cards.tag_set,
-            file_id: cards.file_id,
-            file_name: cards.file_name,
-            private: cards.private,
-            metadata: cards.metadata,
-            score: cards.score,
         }
     }
 }
@@ -815,30 +791,9 @@ pub struct CardFileWithName {
     pub file_name: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub struct CardMetadataWithVotesAndFiles {
-    pub id: uuid::Uuid,
-    pub author: Option<UserDTO>,
-    pub content: String,
-    pub card_html: Option<String>,
-    pub link: Option<String>,
-    pub qdrant_point_id: uuid::Uuid,
-    pub total_upvotes: i64,
-    pub total_downvotes: i64,
-    pub vote_by_current_user: Option<bool>,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-    pub tag_set: Option<String>,
-    pub private: bool,
-    pub score: Option<f64>,
-    pub metadata: Option<serde_json::Value>,
-    pub file_id: Option<uuid::Uuid>,
-    pub file_name: Option<String>,
-}
-
-impl From<CardMetadataWithVotes> for CardMetadataWithVotesAndFiles {
+impl From<CardMetadataWithVotes> for CardMetadataWithVotesWithScore {
     fn from(card: CardMetadataWithVotes) -> Self {
-        CardMetadataWithVotesAndFiles {
+        CardMetadataWithVotesWithScore {
             id: card.id,
             author: card.author,
             content: card.content,

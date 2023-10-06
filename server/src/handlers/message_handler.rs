@@ -1,12 +1,12 @@
 use crate::{
     data::models,
-    data::models::{CardMetadataWithVotesAndFiles, Pool},
+    data::models::{CardMetadataWithVotesWithScore, Pool},
     errors::{DefaultError, ServiceError},
     get_env,
     operators::{
         card_operator::{
-            create_embedding, get_metadata_and_collided_cards_from_point_ids_query,
-            search_card_query,
+            create_embedding, find_relevant_sentence,
+            get_metadata_and_collided_cards_from_point_ids_query, search_card_query,
         },
         message_operator::{
             create_cut_card, create_message_query, create_topic_message_query,
@@ -105,7 +105,7 @@ pub async fn create_message_completion_handler(
         previous_messages,
         user.id,
         topic_id,
-        pool4
+        pool4,
     )
     .await
 }
@@ -219,7 +219,7 @@ pub async fn regenerate_message_handler(
             previous_messages,
             user.id,
             topic_id,
-            pool3
+            pool3,
         )
         .await;
     }
@@ -273,7 +273,7 @@ pub async fn regenerate_message_handler(
         previous_messages_to_regenerate,
         user.id,
         topic_id,
-        pool3
+        pool3,
     )
     .await
 }
@@ -414,16 +414,13 @@ pub async fn stream_response(
             .create(counter_arg_parameters)
             .await
             .expect("No OpenAI Completion for evidence search");
-        let embedding_vector = create_embedding(
-            evidence_search_query
-                .choices
-                .first()
-                .expect("No response")
-                .message
-                .content
-                .as_str(),
-        )
-        .await?;
+        let query = &evidence_search_query
+            .choices
+            .first()
+            .expect("No response for OpenAI completion")
+            .message
+            .content;
+        let embedding_vector = create_embedding(query.as_str()).await?;
 
         let search_card_query_results =
             search_card_query(embedding_vector, 1, pool1, None, None, None, None)
@@ -447,7 +444,7 @@ pub async fn stream_response(
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-        let citation_cards: Vec<CardMetadataWithVotesAndFiles> = metadata_cards
+        let citation_cards: Vec<CardMetadataWithVotesWithScore> = metadata_cards
             .iter()
             .map(|card| {
                 if card.private {
@@ -469,7 +466,11 @@ pub async fn stream_response(
 
         let rag_content = citation_cards
             .iter()
-            .map(|card| card.content.clone())
+            .map(|card| {
+                let highlighted_sentence =
+                    find_relevant_sentence(card.clone(), query.to_string()).unwrap_or(card.clone());
+                highlighted_sentence.content.clone()
+            })
             .collect::<Vec<String>>()
             .join("\n\n");
 
