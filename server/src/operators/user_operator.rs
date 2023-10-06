@@ -1,5 +1,5 @@
 use crate::data::models::{
-    CardFileWithName, CardMetadata, CardMetadataWithVotesAndFiles, CardVote, SlimUser,
+    CardFileWithName, CardMetadata, CardMetadataWithVotesWithScore, CardVote, SlimUser,
     UserDTOWithScore, UserDTOWithVotesAndCards, UserScore,
 };
 use crate::diesel::prelude::*;
@@ -200,7 +200,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
             message: "Failed to load metadata",
         })?;
 
-    let card_metadata_with_upvotes: Vec<CardMetadataWithVotesAndFiles> = (user_card_metadatas)
+    let card_metadata_with_upvotes: Vec<CardMetadataWithVotesWithScore> = (user_card_metadatas)
         .iter()
         .map(|metadata| {
             let votes = card_votes
@@ -214,7 +214,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
             let author = None;
             let card_with_file_name = file_ids.iter().find(|file| file.card_id == metadata.id);
 
-            CardMetadataWithVotesAndFiles {
+            CardMetadataWithVotesWithScore {
                 id: metadata.id,
                 content: metadata.content.clone(),
                 link: metadata.link.clone(),

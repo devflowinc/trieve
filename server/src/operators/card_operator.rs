@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use crate::get_env;
 use crate::data::models::{
     CardCollisions, CardFile, CardFileWithName, CardMetadataWithVotes,
-    CardMetadataWithVotesAndFiles, CardMetadataWithVotesWithScore, CardVote,
+    CardMetadataWithVotesWithScore, CardVote,
     FullTextSearchResult, User, UserDTO,
 };
 use crate::data::schema;
@@ -467,7 +467,7 @@ pub fn get_metadata_query(
     card_metadata: Vec<FullTextSearchResult>,
     current_user_id: Option<uuid::Uuid>,
     mut conn: r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::PgConnection>>,
-) -> Result<Vec<CardMetadataWithVotesAndFiles>, DefaultError> {
+) -> Result<Vec<CardMetadataWithVotesWithScore>, DefaultError> {
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
@@ -553,7 +553,7 @@ pub fn get_metadata_query(
         Vec<(uuid::Uuid, Option<uuid::Uuid>)>,
     ) = itertools::multiunzip(all_datas);
 
-    let card_metadata_with_upvotes_and_file_id: Vec<CardMetadataWithVotesAndFiles> = card_metadata
+    let card_metadata_with_upvotes_and_file_id: Vec<CardMetadataWithVotesWithScore> = card_metadata
         .into_iter()
         .map(|metadata| {
             let votes = card_votes
@@ -605,7 +605,7 @@ pub fn get_metadata_query(
                 },
             };
 
-            CardMetadataWithVotesAndFiles {
+            CardMetadataWithVotesWithScore {
                 id: metadata.id,
                 content: metadata.content,
                 link: metadata.link,
@@ -631,7 +631,7 @@ pub fn get_metadata_query(
 
 #[derive(Serialize, Deserialize)]
 pub struct FullTextSearchCardQueryResult {
-    pub search_results: Vec<CardMetadataWithVotesAndFiles>,
+    pub search_results: Vec<CardMetadataWithVotesWithScore>,
     pub total_card_pages: i64,
 }
 
@@ -1025,7 +1025,7 @@ pub fn get_metadata_from_point_ids(
     point_ids: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<Vec<CardMetadataWithVotesAndFiles>, DefaultError> {
+) -> Result<Vec<CardMetadataWithVotesWithScore>, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
     let mut conn = pool.get().unwrap();
@@ -1066,7 +1066,7 @@ pub fn get_metadata_from_point_ids(
 }
 
 pub struct CardMetadataWithQdrantId {
-    pub metadata: CardMetadataWithVotesAndFiles,
+    pub metadata: CardMetadataWithVotesWithScore,
     pub qdrant_id: uuid::Uuid,
 }
 
@@ -1076,7 +1076,7 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
     pool: web::Data<Pool>,
 ) -> Result<
     (
-        Vec<CardMetadataWithVotesAndFiles>,
+        Vec<CardMetadataWithVotesWithScore>,
         Vec<CardMetadataWithQdrantId>,
     ),
     DefaultError,
@@ -1183,13 +1183,13 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
             .iter()
             .take(split_index)
             .cloned()
-            .collect::<Vec<CardMetadataWithVotesAndFiles>>();
+            .collect::<Vec<CardMetadataWithVotesWithScore>>();
 
         let meta_collided = all_metadata
             .iter()
             .skip(split_index)
             .cloned()
-            .collect::<Vec<CardMetadataWithVotesAndFiles>>();
+            .collect::<Vec<CardMetadataWithVotesWithScore>>();
 
         (meta_cards, meta_collided)
     };
@@ -1213,7 +1213,7 @@ pub fn get_collided_cards_query(
     point_ids: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<Vec<(CardMetadataWithVotesAndFiles, uuid::Uuid)>, DefaultError> {
+) -> Result<Vec<(CardMetadataWithVotesWithScore, uuid::Uuid)>, DefaultError> {
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
@@ -1267,7 +1267,7 @@ pub fn get_collided_cards_query(
     let card_metadatas_with_collided_qdrant_ids = card_metadata_with_upvotes_and_file_id
         .iter()
         .map(|card| (card.clone(), card.qdrant_point_id))
-        .collect::<Vec<(CardMetadataWithVotesAndFiles, uuid::Uuid)>>();
+        .collect::<Vec<(CardMetadataWithVotesWithScore, uuid::Uuid)>>();
 
     Ok(card_metadatas_with_collided_qdrant_ids)
 }
@@ -1305,7 +1305,7 @@ pub fn get_metadata_and_votes_from_id_query(
     card_id: uuid::Uuid,
     current_user_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<CardMetadataWithVotesAndFiles, DefaultError> {
+) -> Result<CardMetadataWithVotesWithScore, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
     let mut conn = pool.get().unwrap();

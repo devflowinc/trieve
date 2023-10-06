@@ -2,8 +2,7 @@ use std::collections::HashSet;
 use std::process::Command;
 
 use crate::data::models::{
-    CardCollection, CardMetadata, CardMetadataWithVotesAndFiles, CardMetadataWithVotesWithScore,
-    Pool, UserDTO,
+    CardCollection, CardMetadata, CardMetadataWithVotesWithScore, Pool, UserDTO,
 };
 use crate::errors::ServiceError;
 use crate::operators::card_operator::*;
@@ -434,7 +433,7 @@ pub async fn update_card(
 
     Ok(HttpResponse::NoContent().finish())
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct SearchCardData {
     content: String,
     link: Option<Vec<String>>,
@@ -494,33 +493,32 @@ pub async fn search_card(
         .search_results
         .iter()
         .map(|search_result| {
-            let mut card: CardMetadataWithVotesWithScore =
-                <CardMetadataWithVotesAndFiles as Into<CardMetadataWithVotesWithScore>>::into(
-                    match metadata_cards.iter().find(|metadata_card| {
-                        metadata_card.qdrant_point_id == search_result.point_id
-                    }) {
-                        Some(metadata_card) => metadata_card.clone(),
-                        None => CardMetadataWithVotesAndFiles {
-                            id: uuid::Uuid::default(),
-                            author: None,
-                            qdrant_point_id: uuid::Uuid::default(),
-                            total_upvotes: 0,
-                            total_downvotes: 0,
-                            vote_by_current_user: None,
-                            created_at: chrono::Utc::now().naive_local(),
-                            updated_at: chrono::Utc::now().naive_local(),
-                            private: false,
-                            score: Some(0.0),
-                            file_id: None,
-                            file_name: None,
-                            content: "".to_string(),
-                            card_html: Some("".to_string()),
-                            link: Some("".to_string()),
-                            tag_set: Some("".to_string()),
-                            metadata: None,
-                        },
-                    },
-                );
+            let mut card: CardMetadataWithVotesWithScore = match metadata_cards
+                .iter()
+                .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
+            {
+                Some(metadata_card) => metadata_card.clone(),
+                None => CardMetadataWithVotesWithScore {
+                    id: uuid::Uuid::default(),
+                    author: None,
+                    qdrant_point_id: uuid::Uuid::default(),
+                    total_upvotes: 0,
+                    total_downvotes: 0,
+                    vote_by_current_user: None,
+                    created_at: chrono::Utc::now().naive_local(),
+                    updated_at: chrono::Utc::now().naive_local(),
+                    private: false,
+                    score: Some(0.0),
+                    file_id: None,
+                    file_name: None,
+                    content: "".to_string(),
+                    card_html: Some("".to_string()),
+                    link: Some("".to_string()),
+                    tag_set: Some("".to_string()),
+                    metadata: None,
+                },
+            };
+
             card = find_relevant_sentence(card.clone(), data.content.clone()).unwrap_or(card);
             let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
                 .iter()
@@ -562,15 +560,16 @@ pub async fn search_full_text_card(
     let current_user_id = user.map(|user| user.id);
     let pool1 = pool.clone();
     let pool2 = pool.clone();
+    let data_inner = data.clone();
     let search_card_query_results = web::block(move || {
         search_full_text_card_query(
-            data.content.clone(),
+            data_inner.content.clone(),
             page,
             pool1,
             current_user_id,
-            data.filters.clone(),
-            data.link.clone(),
-            data.tag_set.clone(),
+            data_inner.filters.clone(),
+            data_inner.link.clone(),
+            data_inner.tag_set.clone(),
         )
     })
     .await?
@@ -590,7 +589,7 @@ pub async fn search_full_text_card(
     let mut full_text_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
         .iter()
-        .map(|search_result| {
+        .map(|search_result: &CardMetadataWithVotesWithScore| {
             let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
                 .iter()
                 .filter(|card| {
@@ -612,8 +611,10 @@ pub async fn search_full_text_card(
                     i += 1;
                 }
             }
-
-            collided_cards.insert(0, search_result.clone().into());
+            let highlighted_sentence =
+                &find_relevant_sentence(search_result.clone(), data.content.clone())
+                    .unwrap_or(search_result.clone());
+            collided_cards.insert(0, highlighted_sentence.clone().into());
 
             ScoreCardDTO {
                 metadata: collided_cards,
@@ -635,7 +636,7 @@ pub async fn search_full_text_card(
     }))
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct SearchCollectionsData {
     content: String,
     link: Option<Vec<String>>,
@@ -713,33 +714,32 @@ pub async fn search_collections(
         .search_results
         .iter()
         .map(|search_result| {
-            let card: CardMetadataWithVotesWithScore =
-                <CardMetadataWithVotesAndFiles as Into<CardMetadataWithVotesWithScore>>::into(
-                    match metadata_cards.iter().find(|metadata_card| {
-                        metadata_card.qdrant_point_id == search_result.point_id
-                    }) {
-                        Some(metadata_card) => metadata_card.clone(),
-                        None => CardMetadataWithVotesAndFiles {
-                            id: uuid::Uuid::default(),
-                            author: None,
-                            qdrant_point_id: uuid::Uuid::default(),
-                            total_upvotes: 0,
-                            total_downvotes: 0,
-                            vote_by_current_user: None,
-                            created_at: chrono::Utc::now().naive_local(),
-                            updated_at: chrono::Utc::now().naive_local(),
-                            private: false,
-                            score: Some(0.0),
-                            file_id: None,
-                            file_name: None,
-                            content: "".to_string(),
-                            card_html: Some("".to_string()),
-                            link: Some("".to_string()),
-                            tag_set: Some("".to_string()),
-                            metadata: None,
-                        },
-                    },
-                );
+            let mut card: CardMetadataWithVotesWithScore = match metadata_cards
+                .iter()
+                .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
+            {
+                Some(metadata_card) => metadata_card.clone(),
+                None => CardMetadataWithVotesWithScore {
+                    id: uuid::Uuid::default(),
+                    author: None,
+                    qdrant_point_id: uuid::Uuid::default(),
+                    total_upvotes: 0,
+                    total_downvotes: 0,
+                    vote_by_current_user: None,
+                    created_at: chrono::Utc::now().naive_local(),
+                    updated_at: chrono::Utc::now().naive_local(),
+                    private: false,
+                    score: Some(0.0),
+                    file_id: None,
+                    file_name: None,
+                    content: "".to_string(),
+                    card_html: Some("".to_string()),
+                    link: Some("".to_string()),
+                    tag_set: Some("".to_string()),
+                    metadata: None,
+                },
+            };
+            card = find_relevant_sentence(card.clone(), data.content.clone()).unwrap_or(card);
 
             let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
                 .iter()
@@ -787,7 +787,7 @@ pub async fn search_full_text_collections(
     let pool1 = pool.clone();
     let pool3 = pool.clone();
     let current_user_id = user.map(|user| user.id);
-
+    let data_inner = data.clone();
     let collection = web::block(move || get_collection_by_id_query(collection_id, pool))
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?
@@ -803,14 +803,14 @@ pub async fn search_full_text_collections(
 
     let search_card_query_results = web::block(move || {
         search_full_text_collection_query(
-            data.content.clone(),
+            data_inner.content.clone(),
             page,
             pool3,
             current_user_id,
-            data.filters.clone(),
-            data.link.clone(),
-            data.tag_set.clone(),
-            data.collection_id,
+            data_inner.filters.clone(),
+            data_inner.link.clone(),
+            data_inner.tag_set.clone(),
+            data_inner.collection_id,
         )
     })
     .await?
@@ -852,8 +852,11 @@ pub async fn search_full_text_collections(
                     i += 1;
                 }
             }
+            let highlighted_sentence =
+                &find_relevant_sentence(search_result.clone(), data.content.clone())
+                    .unwrap_or(search_result.clone());
 
-            collided_cards.insert(0, search_result.clone().into());
+            collided_cards.insert(0, highlighted_sentence.clone().into());
 
             ScoreCardDTO {
                 metadata: collided_cards,
