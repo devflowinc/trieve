@@ -15,7 +15,6 @@ use crate::operators::qdrant_operator::{
     create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
     update_qdrant_point_private_query,
 };
-use crate::AppMutexStore;
 use actix_web::{web, HttpResponse};
 use difference::{Changeset, Difference};
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
@@ -93,7 +92,6 @@ pub struct ReturnCreatedCard {
 pub async fn create_card(
     card: web::Json<CreateCardData>,
     pool: web::Data<Pool>,
-    mutex_store: web::Data<AppMutexStore>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let only_admin_can_create_cards =
@@ -158,7 +156,7 @@ pub async fn create_card(
         })));
     }
 
-    let embedding_vector = create_embedding(&content, mutex_store).await?;
+    let embedding_vector = create_embedding(&content).await?;
 
     let first_semantic_result = global_unfiltered_top_match_query(embedding_vector.clone())
         .await
@@ -461,12 +459,11 @@ pub async fn search_card(
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
-    mutex_store: web::Data<AppMutexStore>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_user_id = user.map(|user| user.id);
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
-    let embedding_vector = create_embedding(&data.content, mutex_store).await?;
+    let embedding_vector = create_embedding(&data.content).await?;
     let pool1 = pool.clone();
 
     let search_card_query_results = search_card_query(
@@ -643,12 +640,11 @@ pub async fn search_collections(
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
-    mutex_store: web::Data<AppMutexStore>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
-    let embedding_vector = create_embedding(&data.content, mutex_store).await?;
+    let embedding_vector = create_embedding(&data.content).await?;
     let collection_id = data.collection_id;
     let pool1 = pool.clone();
     let pool2 = pool.clone();

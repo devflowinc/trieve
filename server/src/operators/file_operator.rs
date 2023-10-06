@@ -265,7 +265,6 @@ pub async fn convert_doc_to_html_query(
             temp_html_file_path_buf,
             glob_string,
             pool,
-            mutex_store,
         )
         .await;
 
@@ -299,7 +298,6 @@ pub async fn create_cards_with_handler(
     temp_html_file_path_buf: PathBuf,
     glob_string: String,
     pool: web::Data<Pool>,
-    mutex_store: web::Data<AppMutexStore>,
 ) -> Result<(), DefaultError> {
     let parser_command = std::env::var("PARSER_COMMAND")
         .unwrap_or("./server-nodejs/scripts/card_parser.js".to_string());
@@ -376,7 +374,6 @@ pub async fn create_cards_with_handler(
         match create_card(
             web_json_create_card_data,
             pool.clone(),
-            mutex_store.clone(),
             user.clone(),
         )
         .await
