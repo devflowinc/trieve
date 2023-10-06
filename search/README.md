@@ -21,13 +21,11 @@
 ### Set your .env
 
 ```
-API_HOST=http://127.0.0.1:8090/api
 PUBLIC_API_HOST=http://localhost:8090/api
 
 # API_HOST=https://api.arguflow.ai/api
 # PUBLIC_API_HOST=https://api.arguflow.ai/api
 
-PUBLIC_HOST=http://localhost:8090
 PLAUSIBLE_HOST=**********
 ```
 

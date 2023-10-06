@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use actix_web::{
     web::{self, Bytes},
     HttpResponse,
@@ -290,6 +292,20 @@ pub async fn get_all_bookmarks(
                 })
                 .map(|card| card.0.clone().into())
                 .collect();
+
+            // de-duplicate collided cards by removing cards with the same metadata: Option<serde_json::Value>
+            let mut seen_metadata = HashSet::new();
+            let mut i = 0;
+            while i < collided_cards.len() {
+                let metadata_string = serde_json::to_string(&collided_cards[i].metadata).unwrap();
+
+                if seen_metadata.contains(&metadata_string) {
+                    collided_cards.remove(i);
+                } else {
+                    seen_metadata.insert(metadata_string);
+                    i += 1;
+                }
+            }
 
             collided_cards.insert(0, search_result.clone().into());
 

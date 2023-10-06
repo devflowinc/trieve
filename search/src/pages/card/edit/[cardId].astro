@@ -8,7 +8,7 @@ import {
 } from "../../../../utils/apiTypes";
 import { EditCardPageForm } from "../../../components/EditCardPageForm";
 
-const apiHost = import.meta.env.API_HOST as string;
+const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
 
 const { cardId } = Astro.params;

@@ -164,8 +164,6 @@ services:
     depends_on:
       - server
     environment:
-      - API_HOST=${PUBLIC_API_HOST}
-      - PUBLIC_HOST=${PUBLIC_SEARCH_URL}
       - PUBLIC_API_HOST=${API_HOST}
       - PUBLIC_FILTER_ITEMS=${PUBLIC_FILTER_ITEMS}
       - PUBLIC_CREATE_EVIDENCE_FEATURE=${PUBLIC_CREATE_EVIDENCE_FEATURE}
