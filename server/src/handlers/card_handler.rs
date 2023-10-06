@@ -99,7 +99,7 @@ pub async fn create_card(
     let only_admin_can_create_cards =
         std::env::var("ONLY_ADMIN_CAN_CREATE_CARDS").unwrap_or("off".to_string());
     if only_admin_can_create_cards == "on" {
-        let admin_email = std::env::var("ADMIN_EMAIL").unwrap_or("".to_string());
+        let admin_email = std::env::var("ADMIN_USER_EMAIL").unwrap_or("".to_string());
         if admin_email != user.email {
             return Err(ServiceError::Forbidden.into());
         }
