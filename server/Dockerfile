@@ -26,6 +26,7 @@ COPY ./server-nodejs/package.json /app/server-nodejs/package.json
 # Install yarn
 RUN yarn --cwd ./server-nodejs install
 COPY ./server-nodejs/ /app/server-nodejs
+COPY ./migrations/ /app/migrations
 
 RUN mkdir tmp
 
