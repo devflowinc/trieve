@@ -130,9 +130,11 @@ const ResultsPage = (props: ResultsPageProps) => {
           setResultCards(result);
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           setTotalPages(data.total_card_pages);
+          setClientSideRequestFinished(true);
         });
+      } else {
+        setClientSideRequestFinished(true);
       }
-      setClientSideRequestFinished(true);
     });
 
     fetchCardCollections();

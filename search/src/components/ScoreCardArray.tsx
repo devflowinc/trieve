@@ -17,19 +17,31 @@ export type ScoreCardAraryProps = Omit<
 };
 
 export const ScoreCardArray = (props: ScoreCardAraryProps) => {
-  const [curCard, setCurCard] = createSignal(0);
-  const [beginTime, setBeginTime] = createSignal(Date.now());
-  const [endTime, setEndTime] = createSignal(0);
   const dateValue =
     (import.meta.env.PUBLIC_DATE_RANGE_VALUE as string | undefined) ?? "Date";
+
+  const [curCard, setCurCard] = createSignal(0);
+  const [beginTime, setBeginTime] = createSignal<number | undefined>();
+  const [endTime, setEndTime] = createSignal<number | undefined>();
+
   onMount(() => {
     props.cards.forEach((card) => {
-      if (card.metadata) {
+      if (card.metadata && dateValue in card.metadata) {
+        // regex to select only valid dates
+        // (\d{1,4}([.\-/])\d{1,2}([.\-/])\d{1,4})
+        const dateString = card.metadata[dateValue] as string;
+        const dateRegex = /(\d{1,4}([.\-/])\d{1,2}([.\-/])\d{1,4})/;
+        // extract the first match from the string
+        const dateMatch = dateString.match(dateRegex)?.[0];
+        if (!dateMatch) return;
+
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        const dateObject = new Date(card.metadata[dateValue]);
+        const dateObject = new Date(dateMatch);
         if (dateObject.getTime()) {
-          setBeginTime((prev) => Math.min(prev, dateObject.getTime()));
-          setEndTime((prev) => Math.max(prev, dateObject.getTime()));
+          setBeginTime((prev) =>
+            Math.min(prev ?? Infinity, dateObject.getTime()),
+          );
+          setEndTime((prev) => Math.max(prev ?? 0, dateObject.getTime()));
         }
       }
     });

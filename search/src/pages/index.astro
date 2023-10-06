@@ -6,7 +6,7 @@ import type { Filters } from "../components/ResultsPage";
 import HomeLayout from "../layouts/HomeLayout.astro";
 import { TopCardsTable } from "../components/TopCardsTable";
 
-const apiHost = import.meta.env.API_HOST as string;
+const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 const dataset = import.meta.env.DATASET as string;
 const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
 

@@ -43,7 +43,7 @@ const dataTypeFilters: Filters = {
   metadataFilters,
 };
 
-const apiHost = import.meta.env.API_HOST as string;
+const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 let collectionCards: CardCollectionBookmarksWithStatusDTO = {
   metadata: {
     bookmarks: [],

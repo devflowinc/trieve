@@ -37,6 +37,17 @@ export const sanitzerOptions = {
   },
 };
 
+export const formatDate = (date: Date) => {
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const year = date.getFullYear();
+
+  const formattedMonth = month < 10 ? `0${month}` : month;
+  const formattedDay = day < 10 ? `0${day}` : day;
+
+  return `${formattedMonth}/${formattedDay}/${year}`;
+};
+
 export interface ScoreCardProps {
   signedInUserId?: string;
   cardCollections: CardCollectionDTO[];
@@ -53,8 +64,8 @@ export interface ScoreCardProps {
   setCardCollections: Setter<CardCollectionDTO[]>;
   counter: number;
   total: number;
-  begin: number;
-  end: number;
+  begin: number | undefined;
+  end: number | undefined;
 }
 
 const ScoreCard = (props: ScoreCardProps) => {
@@ -247,9 +258,13 @@ const ScoreCard = (props: ScoreCardProps) => {
               </Show>
               <Show when={props.total > 1}>
                 <span class="font-semibold">
-                  {props.counter} of {props.total} between{" "}
-                  {new Date(props.begin).toLocaleString()} and{" "}
-                  {new Date(props.end).toLocaleString()}
+                  {props.counter} of {props.total}{" "}
+                  <Show when={props.begin && props.end}>
+                    {props.begin != props.end ? "between" : "on"}{" "}
+                    {formatDate(new Date(props.begin ?? 0))}
+                    {props.begin != props.end &&
+                      ` and ${formatDate(new Date(props.end ?? 0))}`}
+                  </Show>
                 </span>
               </Show>
               <div class="flex-1" />

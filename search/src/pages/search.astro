@@ -5,7 +5,7 @@ import ResultsPage, { Filters } from "../components/ResultsPage";
 import type { CardsWithTotalPagesDTO } from "../../utils/apiTypes";
 import SearchForm from "../components/SearchForm";
 
-const apiHost = import.meta.env.API_HOST as string;
+const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
 
 const requestParams = Astro.request.url.split("?")[1];
