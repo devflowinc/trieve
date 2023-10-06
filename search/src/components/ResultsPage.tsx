@@ -29,10 +29,6 @@ export interface ResultsPageProps {
 }
 
 const ResultsPage = (props: ResultsPageProps) => {
-  // eslint-disable-next-line solid/reactivity
-  const dataTypeFilters = encodeURIComponent(props.filters.tagSet.join(","));
-  // eslint-disable-next-line solid/reactivity
-  const linkFilters = encodeURIComponent(props.filters.link.join(","));
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const initialResultCards = props.defaultResultCards.score_cards;
   const initialTotalPages = props.defaultResultCards.total_card_pages;
@@ -197,19 +193,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         </div>
       </div>
       <div class="mx-auto my-12 flex items-center space-x-2">
-        <PaginationController
-          query={
-            `/search?q=${props.query}` +
-            (dataTypeFilters ? `&datatypes=${dataTypeFilters}` : "") +
-            (linkFilters ? `&.link=${linkFilters}` : "") +
-            (props.searchType == "fulltextsearch"
-              ? `&searchType=fulltextsearch`
-              : "")
-          }
-          prefix="&"
-          page={props.page}
-          totalPages={totalPages()}
-        />
+        <PaginationController page={props.page} totalPages={totalPages()} />
       </div>
       <Show when={showNeedLoginModal()}>
         <FullScreenModal

@@ -226,8 +226,6 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
           </div>
           <div class="mx-auto my-12 flex items-center justify-center space-x-2">
             <PaginationController
-              prefix="?"
-              query={`/user/${user()?.id ?? ""}`}
               page={props.page}
               totalPages={Math.ceil((user()?.total_cards_created ?? 0) / 25)}
             />

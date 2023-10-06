@@ -686,28 +686,6 @@ export const CollectionPage = (props: CollectionPageProps) => {
             </For>
             <div class="mx-auto my-12 flex items-center justify-center space-x-2">
               <PaginationController
-                prefix={props.query ? "&" : "?"}
-                query={
-                  `/collection/${props.collectionID}` +
-                  (props.query ? `?q=${props.query}` : "") +
-                  (props.filters.tagSet.length
-                    ? `&tag%20set=${props.filters.tagSet.join(",")}`
-                    : "") +
-                  (props.filters.link.length
-                    ? `&link=${props.filters.link.join(",")}`
-                    : "") +
-                  // eslint-disable-next-line @typescript-eslint/restrict-plus-operands, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-                  props.filters.metadataFilters
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    .flatMap((f: { key: any; value: any }) => {
-                      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions, @typescript-eslint/no-unsafe-member-access
-                      return `${f.key}=${f.value}`;
-                    })
-                    .join("&") +
-                  (props.searchType == "fulltextsearch"
-                    ? `&searchType=fulltextsearch`
-                    : "")
-                }
                 page={props.page}
                 totalPages={totalPages()}
               />
