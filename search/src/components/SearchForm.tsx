@@ -37,9 +37,9 @@ const SearchForm = (props: {
   const createEvidenceFeature =
     import.meta.env.PUBLIC_CREATE_EVIDENCE_FEATURE !== "off";
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-  const feelingSuffixes: string[] = (
-    import.meta.env.PUBLIC_LUCKY_ITEMS || "Happy,Sad,Excited,Who the hell knows"
-  ).split(",");
+  const feelingSuffixes: string[] = (import.meta.env.PUBLIC_LUCKY_ITEMS || "")
+    .split(",")
+    .filter((item: string) => item);
 
   const [searchTypes, setSearchTypes] = createSignal([
     { name: "Full Text", isSelected: false, route: "fulltextsearch" },
@@ -566,41 +566,43 @@ const SearchForm = (props: {
               class="w-fit rounded bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700"
               type="submit"
             >
-              Search for Evidence
+              Search
             </button>
             <Show when={createEvidenceFeature}>
               <a
                 class="w-fit rounded bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700"
                 href="/create"
               >
-                Create Evidence Card
+                Create
               </a>
             </Show>
-            <a
-              class="relative hidden h-[40px] overflow-hidden rounded bg-neutral-100 p-2 text-center transition-width duration-1000 hover:bg-neutral-100 dark:bg-neutral-700 sm:block"
-              href={`/search?q=I'm feeling ${
-                feelingLuckyText().findLast(() => true) ?? ""
-              }`}
-              onMouseEnter={() => {
-                setFeelingLuckySpinning(true);
-              }}
-              onMouseLeave={() => {
-                setFeelingLuckySpinning(false);
-              }}
-            >
-              <Show when={feelingLuckySpinning()}>
-                <span class="block h-[40px] animate-scrollup overflow-hidden">
-                  <For each={feelingLuckyText()}>
-                    {(text) => <p>I'm Feeling {text}</p>}
-                  </For>
-                </span>
-              </Show>
-              <Show when={!feelingLuckySpinning()}>
-                <span>
-                  I'm Feeling {feelingLuckyText().findLast(() => true)}
-                </span>
-              </Show>
-            </a>
+            <Show when={feelingSuffixes.length > 0}>
+              <a
+                class="relative hidden h-[40px] overflow-hidden rounded bg-neutral-100 p-2 text-center transition-width duration-1000 hover:bg-neutral-100 dark:bg-neutral-700 sm:block"
+                href={`/search?q=I'm feeling ${
+                  feelingLuckyText().findLast(() => true) ?? ""
+                }`}
+                onMouseEnter={() => {
+                  setFeelingLuckySpinning(true);
+                }}
+                onMouseLeave={() => {
+                  setFeelingLuckySpinning(false);
+                }}
+              >
+                <Show when={feelingLuckySpinning()}>
+                  <span class="block h-[40px] animate-scrollup overflow-hidden">
+                    <For each={feelingLuckyText()}>
+                      {(text) => <p>I'm Feeling {text}</p>}
+                    </For>
+                  </span>
+                </Show>
+                <Show when={!feelingLuckySpinning()}>
+                  <span>
+                    I'm Feeling {feelingLuckyText().findLast(() => true)}
+                  </span>
+                </Show>
+              </a>
+            </Show>
           </div>
         </Show>
       </form>
