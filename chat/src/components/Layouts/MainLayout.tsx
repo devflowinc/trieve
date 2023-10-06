@@ -199,7 +199,6 @@ const MainLayout = (props: LayoutProps) => {
       requestMethod = "DELETE";
       setMessages((prev): Message[] => {
         const newMessages = [{ content: "" }];
-        console.log([...prev.slice(0, -1), ...newMessages]);
         return [...prev.slice(0, -1), ...newMessages];
       });
     } else {

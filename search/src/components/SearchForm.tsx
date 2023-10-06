@@ -182,7 +182,6 @@ const SearchForm = (props: {
         const savedMetadataSection =
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           savedCustomFilters.metadataFilters[section.name] ?? [];
-        console.log("savedMetadataSection", section.name, savedMetadataSection);
 
         return {
           ...section,
@@ -196,7 +195,6 @@ const SearchForm = (props: {
             }),
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
             ...savedMetadataSection.map((item: any) => {
-              console.log("item", section.name, item);
               // eslint-disable-next-line @typescript-eslint/no-unsafe-return
               return {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
