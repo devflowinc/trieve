@@ -463,9 +463,7 @@ pub async fn stream_response(
         let highlighted_citation_cards = citation_cards
             .iter()
             .map(|card| {
-                let highlighted_sentence =
-                    find_relevant_sentence(card.clone(), query.to_string()).unwrap_or(card.clone());
-                highlighted_sentence
+                find_relevant_sentence(card.clone(), query.to_string()).unwrap_or(card.clone())
             })
             .collect::<Vec<CardMetadataWithVotesWithScore>>();
 

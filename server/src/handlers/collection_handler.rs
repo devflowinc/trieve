@@ -290,7 +290,7 @@ pub async fn get_all_bookmarks(
                 .filter(|card| {
                     card.1 == search_result.qdrant_point_id && card.0.id != search_result.id
                 })
-                .map(|card| card.0.clone().into())
+                .map(|card| card.0.clone())
                 .collect();
 
             // de-duplicate collided cards by removing cards with the same metadata: Option<serde_json::Value>
@@ -307,7 +307,7 @@ pub async fn get_all_bookmarks(
                 }
             }
 
-            collided_cards.insert(0, search_result.clone().into());
+            collided_cards.insert(0, search_result.clone());
 
             // Move the card that was searched for to the front of the list
             let (matching, others): (Vec<_>, Vec<_>) = collided_cards

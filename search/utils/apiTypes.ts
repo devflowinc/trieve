@@ -19,6 +19,10 @@ export const indirectHasOwnProperty = (obj: unknown, prop: string): boolean => {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 };
 
+export interface APIRequest {
+  api_key: string;
+}
+
 export const isCardMetadata = (card: unknown): card is CardMetadata => {
   if (typeof card !== "object" || card === null) return false;
 

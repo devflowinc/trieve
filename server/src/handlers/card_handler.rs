@@ -523,7 +523,7 @@ pub async fn search_card(
             let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
                 .iter()
                 .filter(|card| card.qdrant_id == search_result.point_id)
-                .map(|card| card.metadata.clone().into())
+                .map(|card| card.metadata.clone())
                 .collect();
 
             if !card.private
@@ -569,7 +569,7 @@ pub async fn search_full_text_card(
             current_user_id,
             data_inner.filters.clone(),
             data_inner.link.clone(),
-            data_inner.tag_set.clone(),
+            data_inner.tag_set,
         )
     })
     .await?
@@ -595,7 +595,7 @@ pub async fn search_full_text_card(
                 .filter(|card| {
                     card.1 == search_result.qdrant_point_id && card.0.id != search_result.id
                 })
-                .map(|card| card.0.clone().into())
+                .map(|card| card.0.clone())
                 .collect();
 
             // de-duplicate collided cards by removing cards with the same metadata: Option<serde_json::Value>
@@ -614,7 +614,7 @@ pub async fn search_full_text_card(
             let highlighted_sentence =
                 &find_relevant_sentence(search_result.clone(), data.content.clone())
                     .unwrap_or(search_result.clone());
-            collided_cards.insert(0, highlighted_sentence.clone().into());
+            collided_cards.insert(0, highlighted_sentence.clone());
 
             ScoreCardDTO {
                 metadata: collided_cards,
@@ -744,7 +744,7 @@ pub async fn search_collections(
             let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
                 .iter()
                 .filter(|card| card.1 == search_result.point_id)
-                .map(|card| card.0.clone().into())
+                .map(|card| card.0.clone())
                 .collect();
 
             collided_cards.insert(0, card);
@@ -836,7 +836,7 @@ pub async fn search_full_text_collections(
                 .filter(|card| {
                     card.1 == search_result.qdrant_point_id && card.0.id != search_result.id
                 })
-                .map(|card| card.0.clone().into())
+                .map(|card| card.0.clone())
                 .collect();
 
             // de-duplicate collided cards by removing cards with the same metadata: Option<serde_json::Value>
@@ -856,7 +856,7 @@ pub async fn search_full_text_collections(
                 &find_relevant_sentence(search_result.clone(), data.content.clone())
                     .unwrap_or(search_result.clone());
 
-            collided_cards.insert(0, highlighted_sentence.clone().into());
+            collided_cards.insert(0, highlighted_sentence.clone());
 
             ScoreCardDTO {
                 metadata: collided_cards,
