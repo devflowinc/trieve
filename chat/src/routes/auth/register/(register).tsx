@@ -10,7 +10,7 @@ const Register = () => {
   const [searchParams] = useSearchParams();
   detectReferralToken(searchParams.t);
 
-  const api_host: string = import.meta.env.VITE_API_HOST as unknown as string;
+  const apiHost: string = import.meta.env.VITE_API_HOST as unknown as string;
 
   const [getErrorMessage, setErrorMessage] = createSignal("");
   const [getEmail, setEmail] = createSignal("");
@@ -69,7 +69,7 @@ const Register = () => {
                   setIsLoading(true);
                   setErrorMessage("");
                   const email = getEmail();
-                  void fetch(`${api_host}/invitation`, {
+                  void fetch(`${apiHost}/invitation`, {
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",

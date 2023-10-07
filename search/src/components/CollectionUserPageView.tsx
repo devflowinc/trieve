@@ -20,7 +20,7 @@ export interface CollectionUserPageViewProps {
 }
 
 export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
-  const api_host = import.meta.env.PUBLIC_API_HOST as string;
+  const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const [collections, setCollections] = createSignal<CardCollectionDTO[]>([]);
   const [collectionPage, setCollectionPage] = createSignal(1);
   const [collectionPageCount, setCollectionPageCount] = createSignal(1);
@@ -34,7 +34,7 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
     const userId = props.user?.id;
     if (userId === undefined) return;
 
-    void fetch(`${api_host}/user/collections/${userId}/${collectionPage()}`, {
+    void fetch(`${apiHost}/user/collections/${userId}/${collectionPage()}`, {
       method: "GET",
       credentials: "include",
     }).then((response) => {
@@ -59,7 +59,7 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
     props.setOnDelete(() => {
       return () => {
         setDeleting(true);
-        void fetch(`${api_host}/card_collection`, {
+        void fetch(`${apiHost}/card_collection`, {
           method: "DELETE",
           credentials: "include",
           headers: {

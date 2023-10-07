@@ -2,7 +2,7 @@ import { Show, createSignal } from "solid-js";
 import { isActixApiDefaultError } from "../../utils/apiTypes";
 
 const PasswordResetForm = () => {
-  const api_host: string = import.meta.env.PUBLIC_API_HOST as unknown as string;
+  const apiHost: string = import.meta.env.PUBLIC_API_HOST as unknown as string;
 
   const [getErrorMessage, setErrorMessage] = createSignal("");
   const [getEmail, setEmail] = createSignal("");
@@ -48,11 +48,12 @@ const PasswordResetForm = () => {
                     setErrorMessage("Email is required");
                     return;
                   }
-                  void fetch(`${api_host}/password/${email}`, {
+                  void fetch(`${apiHost}/password/${email}`, {
                     method: "GET",
                     headers: {
                       "Content-Type": "application/json",
                     },
+                    credentials: "include",
                   }).then((response) => {
                     setIsLoading(false);
                     if (!response.ok) {

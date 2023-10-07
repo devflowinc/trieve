@@ -13,7 +13,7 @@ import ThemeModeController from "~/components/Navbar/ThemeModeController";
 import { detectReferralToken } from "~/types/actix-api";
 
 export default function Home() {
-  const api_host: string = import.meta.env.VITE_API_HOST as unknown as string;
+  const apiHost: string = import.meta.env.VITE_API_HOST as unknown as string;
   const searchURL = import.meta.env.VITE_SEARCH_URL as string;
   const dataset = import.meta.env.VITE_DATASET as unknown as string;
   const youtubeEmbedURL = import.meta.env.VITE_YOUTUBE_EMBED_URL as string;
@@ -29,7 +29,7 @@ export default function Home() {
   createEffect(() => {
     const abort_controller = new AbortController();
 
-    void fetch(`${api_host}/auth`, {
+    void fetch(`${apiHost}/auth`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

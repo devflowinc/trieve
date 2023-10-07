@@ -2,7 +2,7 @@ import { Show, createSignal } from "solid-js";
 import { isActixApiDefaultError } from "../../utils/apiTypes";
 
 const RegisterForm = () => {
-  const api_host: string = import.meta.env.PUBLIC_API_HOST as unknown as string;
+  const apiHost: string = import.meta.env.PUBLIC_API_HOST as unknown as string;
 
   const [getErrorMessage, setErrorMessage] = createSignal("");
   const [getEmail, setEmail] = createSignal("");
@@ -52,11 +52,12 @@ const RegisterForm = () => {
                   setIsLoading(true);
                   setErrorMessage("");
                   const email = getEmail();
-                  void fetch(`${api_host}/invitation`, {
+                  void fetch(`${apiHost}/invitation`, {
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",
                     },
+                    credentials: "include",
                     body: JSON.stringify({
                       email: email,
                       referral_tokens: [],

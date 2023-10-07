@@ -38,7 +38,7 @@ const scrollToBottomOfMessages = () => {
 };
 
 const MainLayout = (props: LayoutProps) => {
-  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+  const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
   const resizeTextarea = (textarea: HTMLTextAreaElement) => {
     textarea.style.height = "auto";
@@ -159,7 +159,7 @@ const MainLayout = (props: LayoutProps) => {
         };
       }
 
-      const topicResponse = await fetch(`${api_host}/topic`, {
+      const topicResponse = await fetch(`${apiHost}/topic`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -222,7 +222,7 @@ const MainLayout = (props: LayoutProps) => {
     }
 
     try {
-      const res = await fetch(`${api_host}/message`, {
+      const res = await fetch(`${apiHost}/message`, {
         method: requestMethod,
         headers: {
           "Content-Type": "application/json",
@@ -255,7 +255,7 @@ const MainLayout = (props: LayoutProps) => {
     }
 
     setLoadingMessages(true);
-    const res = await fetch(`${api_host}/messages/${topicId}`, {
+    const res = await fetch(`${apiHost}/messages/${topicId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -333,7 +333,7 @@ const MainLayout = (props: LayoutProps) => {
                       });
                       completionAbortController().abort();
                       setCompletionAbortController(new AbortController());
-                      fetch(`${api_host}/message`, {
+                      fetch(`${apiHost}/message`, {
                         method: "PUT",
                         headers: {
                           "Content-Type": "application/json",

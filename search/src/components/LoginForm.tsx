@@ -7,7 +7,7 @@ const LoginForm = () => {
   const [getErrorMessage, setErrorMessage] = createSignal("");
   const [getIsLoading, setIsLoading] = createSignal(false);
 
-  const api_host: string = import.meta.env.PUBLIC_API_HOST as unknown as string;
+  const apiHost: string = import.meta.env.PUBLIC_API_HOST as unknown as string;
 
   return (
     <>
@@ -57,7 +57,7 @@ const LoginForm = () => {
               onClick={(e) => {
                 e.preventDefault();
                 setIsLoading(true);
-                void fetch(`${api_host}/auth`, {
+                void fetch(`${apiHost}/auth`, {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",

@@ -7,7 +7,7 @@ const SetPassword = () => {
   const [searchParams] = useSearchParams();
   detectReferralToken(searchParams.t);
 
-  const api_host: string = import.meta.env.VITE_API_HOST as unknown as string;
+  const apiHost: string = import.meta.env.VITE_API_HOST as unknown as string;
 
   const params = useParams();
   const [getErrorMessage, setErrorMessage] = createSignal("");
@@ -53,7 +53,7 @@ const SetPassword = () => {
               class="w-full rounded bg-neutral-200 p-2  dark:bg-neutral-700"
               onClick={(e) => {
                 e.preventDefault();
-                void fetch(`${api_host}/register/${params.id}`, {
+                void fetch(`${apiHost}/register/${params.id}`, {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
