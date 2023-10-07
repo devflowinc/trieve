@@ -1,5 +1,6 @@
 import { Show, createEffect, createSignal } from "solid-js";
 import {
+  APIRequest,
   UserDTO,
   isActixApiDefaultError,
   isUserDTO,
@@ -15,6 +16,34 @@ const SearchForm = () => {
   const [errorText, setErrorText] = createSignal("");
   const [errorFields, setErrorFields] = createSignal<string[]>([]);
   const [isSubmitting, setIsSubmitting] = createSignal(false);
+  const [apiKey, setApiKey] = createSignal("");
+  const [isGenerating, setIsGenerating] = createSignal(false);
+
+  const generateAPIKey = () => (e: Event) => {
+    e.preventDefault();
+    setIsGenerating(true);
+    void fetch(`${apiHost}/user/set_api_key`, {
+      method: "GET",
+      credentials: "include",
+    }).then((response) => {
+      if (response.ok) {
+        void response.json().then((data) => {
+          setApiKey((data as APIRequest).api_key);
+          setIsGenerating(false);
+        });
+        return;
+      }
+
+      void response.json().then((data) => {
+        if (!isActixApiDefaultError(data)) {
+          setErrorText("An unknown error occurred.");
+          return;
+        }
+        setIsGenerating(false);
+        setErrorText(data.message);
+      });
+    });
+  };
 
   const updateUser = (e: Event) => {
     e.preventDefault();
@@ -139,6 +168,24 @@ const SearchForm = () => {
                     errorFields().includes("hideEmail"),
                 }}
               />
+            </div>
+            <div>API Key</div>
+            <div class="flex w-full justify-start">
+              <Show when={!apiKey()}>
+                <button
+                  classList={{
+                    "rounded bg-neutral-100 p-2 hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800":
+                      true,
+                    "animate-pulse": isGenerating(),
+                  }}
+                  onClick={generateAPIKey()}
+                >
+                  Generate
+                </button>
+              </Show>
+              <Show when={apiKey()}>
+                <div>{apiKey()}</div>
+              </Show>
             </div>
           </div>
 
