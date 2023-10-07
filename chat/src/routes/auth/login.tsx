@@ -10,7 +10,7 @@ const login = () => {
   const [getPassword, setPassword] = createSignal("");
   const [getErrorMessage, setErrorMessage] = createSignal("");
 
-  const api_host: string = import.meta.env.VITE_API_HOST as unknown as string;
+  const apiHost: string = import.meta.env.VITE_API_HOST as unknown as string;
 
   return (
     <div class="flex h-screen w-screen items-center justify-center bg-neutral-50 px-10 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-50">
@@ -59,7 +59,7 @@ const login = () => {
               class="w-full rounded bg-neutral-200 p-2  dark:bg-neutral-700"
               onClick={(e) => {
                 e.preventDefault();
-                void fetch(`${api_host}/auth`, {
+                void fetch(`${apiHost}/auth`, {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",

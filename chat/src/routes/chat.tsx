@@ -7,7 +7,7 @@ import { detectReferralToken, isTopic } from "~/types/actix-api";
 import { Topic } from "~/types/topics";
 
 export const chat = () => {
-  const api_host: string = import.meta.env.VITE_API_HOST as unknown as string;
+  const apiHost: string = import.meta.env.VITE_API_HOST as unknown as string;
 
   const [searchParams] = useSearchParams();
   const [selectedTopic, setSelectedTopic] = createSignal<Topic | undefined>(
@@ -23,7 +23,7 @@ export const chat = () => {
   detectReferralToken(searchParams.t);
 
   createEffect(() => {
-    void fetch(`${api_host}/auth`, {
+    void fetch(`${apiHost}/auth`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -45,7 +45,7 @@ export const chat = () => {
   });
 
   const refetchTopics = async (): Promise<Topic[]> => {
-    const response = await fetch(`${api_host}/topic`, {
+    const response = await fetch(`${apiHost}/topic`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

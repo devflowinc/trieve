@@ -54,7 +54,7 @@ export const getLocalTime = (strDate: string | Date) => {
 };
 
 const ScoreCard = (props: ScoreCardProps) => {
-  const api_host = import.meta.env.VITE_API_HOST as string;
+  const apiHost = import.meta.env.VITE_API_HOST as string;
   const frontMatterVals = (
     (import.meta.env.VITE_FRONTMATTER_VALS as string | undefined) ??
     "link,tag_set"
@@ -92,7 +92,7 @@ const ScoreCard = (props: ScoreCardProps) => {
   });
 
   const deleteVote = (prev_vote: number) => {
-    void fetch(`${api_host}/vote/${props.card.id}`, {
+    void fetch(`${apiHost}/vote/${props.card.id}`, {
       method: "DELETE",
       credentials: "include",
     }).then((response) => {
@@ -108,7 +108,7 @@ const ScoreCard = (props: ScoreCardProps) => {
       return;
     }
 
-    void fetch(`${api_host}/vote`, {
+    void fetch(`${apiHost}/vote`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

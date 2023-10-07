@@ -6,7 +6,7 @@ const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   detectReferralToken(searchParams.t);
 
-  const api_host: string = import.meta.env.VITE_API_HOST as unknown as string;
+  const apiHost: string = import.meta.env.VITE_API_HOST as unknown as string;
 
   const [getErrorMessage, setErrorMessage] = createSignal("");
   const [getEmail, setEmail] = createSignal("");
@@ -49,7 +49,7 @@ const ResetPassword = () => {
                     setErrorMessage("Email is required");
                     return;
                   }
-                  void fetch(`${api_host}/password/${email}`, {
+                  void fetch(`${apiHost}/password/${email}`, {
                     method: "GET",
                     headers: {
                       "Content-Type": "application/json",

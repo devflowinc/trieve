@@ -2,7 +2,7 @@ import { createSignal } from "solid-js";
 import { isActixApiDefaultError } from "../../utils/apiTypes";
 
 const SetPasswordForm = (params: { id: string }) => {
-  const api_host: string = import.meta.env.PUBLIC_API_HOST as unknown as string;
+  const apiHost: string = import.meta.env.PUBLIC_API_HOST as unknown as string;
 
   const [getErrorMessage, setErrorMessage] = createSignal("");
   const [getPassword, setPassword] = createSignal("");
@@ -49,11 +49,12 @@ const SetPasswordForm = (params: { id: string }) => {
               onClick={(e) => {
                 e.preventDefault();
                 setIsLoading(true);
-                void fetch(`${api_host}/register/${params.id}`, {
+                void fetch(`${apiHost}/register/${params.id}`, {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
                   },
+                  credentials: "include",
                   body: JSON.stringify({
                     password: getPassword(),
                     password_confirmation: getPasswordConfirmation(),
