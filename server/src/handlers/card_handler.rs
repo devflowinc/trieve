@@ -23,6 +23,7 @@ use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
+use simple_server_timing_header::Timer;
 use super::auth_handler::{LoggedUser, RequireAuth};
 
 pub async fn user_owns_card(
@@ -464,9 +465,11 @@ pub async fn search_card(
     mutex_store: web::Data<AppMutexStore>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let mut timer = Timer::new();
     let current_user_id = user.map(|user| user.id);
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_embedding(&data.content, mutex_store).await?;
+    timer.add("Created Embedding");
     let pool1 = pool.clone();
 
     let search_card_query_results = search_card_query(
@@ -480,6 +483,7 @@ pub async fn search_card(
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    timer.add("Search Card Query");
 
     let point_ids = search_card_query_results
         .search_results
@@ -492,6 +496,7 @@ pub async fn search_card(
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    timer.add("Get Metadata and Collided Cards");
 
     let score_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
@@ -546,11 +551,15 @@ pub async fn search_card(
             }
         })
         .collect();
+    timer.add("Link Metadata and Collided Cards");
 
-    Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
-        score_cards,
-        total_card_pages: search_card_query_results.total_card_pages,
-    }))
+    Ok(HttpResponse::Ok()
+        .insert_header((Timer::header_key(), timer.header_value()))
+        .json(SearchCardQueryResponseBody {
+            score_cards,
+            total_card_pages: search_card_query_results.total_card_pages,
+        })
+        )
 }
 
 pub async fn search_full_text_card(
