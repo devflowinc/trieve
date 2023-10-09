@@ -65,6 +65,7 @@ export const ScoreCardArray = (props: ScoreCardAraryProps) => {
         total={props.cards.length}
         begin={beginTime()}
         end={endTime()}
+        showExpand={props.showExpand}
       />
       <div class="w-[16px] min-[360px]:w-[32px]">
         <Show when={curCard() < props.cards.length - 1}>
