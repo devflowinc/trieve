@@ -3,8 +3,12 @@ import SearchForm from "../components/SearchForm";
 import Footer from "../components/Footer.astro";
 import type { Filters } from "../components/ResultsPage";
 import HomeLayout from "../layouts/HomeLayout.astro";
+import { Show } from "solid-js";
 
 const dataset = import.meta.env.DATASET as string;
+const suggestedQueries = (
+  (import.meta.env.SUGGESTED_QUERIES ?? "") as string
+).split(",");
 
 const requestParams = Astro.request.url.split("?")[1];
 const params = new URLSearchParams(requestParams);
@@ -69,6 +73,23 @@ const dataTypeFilters: Filters = {
       />
     </div>
   </div>
+  <Show when={suggestedQueries}>
+    <div class="max-w-4xl px-4 sm:px-8 md:px-20 pt-20 w-full mx-auto">
+      <div class="text-lg font-bold">Suggested Queries</div>
+      <div class="flex flex-col gap-y-2">
+        {
+          suggestedQueries.map((query) => (
+            <a
+              class="text-blue-500 underline"
+              href={`/?q=${encodeURIComponent(query)}`}
+            >
+              {query}
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </Show>
   <div class="flex-1"></div>
   <Footer />
 </HomeLayout>
