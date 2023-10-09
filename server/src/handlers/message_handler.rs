@@ -439,7 +439,7 @@ pub async fn stream_response(
             .map(|card| card.point_id)
             .collect::<Vec<uuid::Uuid>>();
 
-        let (metadata_cards, collided_cards) = web::block(move || {
+        let (metadata_cards, collided_cards, _) = web::block(move || {
             get_metadata_and_collided_cards_from_point_ids_query(retrieval_card_ids, None, pool2)
         })
         .await?

@@ -32,6 +32,7 @@ use qdrant_client::{
     qdrant::{point_id::PointIdOptions, Condition, Filter, HasIdCondition, PointId, SearchPoints},
 };
 use serde::{Deserialize, Serialize};
+use simple_server_timing_header::Timer;
 use simsearch::SimSearch;
 
 pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
@@ -1086,11 +1087,14 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
     (
         Vec<CardMetadataWithVotesAndFiles>,
         Vec<CardMetadataWithQdrantId>,
+        Option<Timer>
     ),
     DefaultError,
 > {
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+
+    let mut timer = Timer::new();
 
     let card_search_result = {
         let mut conn = pool.get().unwrap();
@@ -1120,6 +1124,7 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
             .map(|card| <CardMetadata as Into<FullTextSearchResult>>::into(card.clone()))
             .collect::<Vec<FullTextSearchResult>>()
     };
+    timer.add("card_search_result");
 
     let (collided_search_result, collided_qdrant_ids) = {
         let mut conn = pool.get().unwrap();
@@ -1171,6 +1176,7 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
 
         (converted_cards, collided_qdrant_ids)
     };
+    timer.add("getting collided cards");
 
     let (card_metadata_with_upvotes_and_file_id, collided_card_metadata_with_upvotes_and_file_id) = {
         let conn = pool.get().unwrap();
@@ -1201,6 +1207,7 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
 
         (meta_cards, meta_collided)
     };
+    timer.add("getting metadata for all cards");
 
     let card_metadatas_with_collided_qdrant_ids = collided_card_metadata_with_upvotes_and_file_id
         .iter()
@@ -1214,6 +1221,7 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
     Ok((
         card_metadata_with_upvotes_and_file_id,
         card_metadatas_with_collided_qdrant_ids,
+        timer.into()
     ))
 }
 

@@ -465,11 +465,9 @@ pub async fn search_card(
     mutex_store: web::Data<AppMutexStore>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let mut timer = Timer::new();
     let current_user_id = user.map(|user| user.id);
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_embedding(&data.content, mutex_store).await?;
-    timer.add("Created Embedding");
     let pool1 = pool.clone();
 
     let search_card_query_results = search_card_query(
@@ -483,7 +481,6 @@ pub async fn search_card(
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    timer.add("Search Card Query");
 
     let point_ids = search_card_query_results
         .search_results
@@ -491,12 +488,11 @@ pub async fn search_card(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
-    let (metadata_cards, collided_cards) = web::block(move || {
+    let (metadata_cards, collided_cards, timer2) = web::block(move || {
         get_metadata_and_collided_cards_from_point_ids_query(point_ids, current_user_id, pool)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    timer.add("Get Metadata and Collided Cards");
 
     let score_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
@@ -551,10 +547,9 @@ pub async fn search_card(
             }
         })
         .collect();
-    timer.add("Link Metadata and Collided Cards");
 
     Ok(HttpResponse::Ok()
-        .insert_header((Timer::header_key(), timer.header_value()))
+        .insert_header((Timer::header_key(), timer2.expect("thing").header_value()))
         .json(SearchCardQueryResponseBody {
             score_cards,
             total_card_pages: search_card_query_results.total_card_pages,
