@@ -25,7 +25,7 @@ services:
       - redis-data:/data
     networks:
       - app-network
-
+ 
   script-redis:
     image: redis
     container_name: my-script-redis
@@ -181,6 +181,7 @@ services:
       - PUBLIC_IMAGE_RANGE_END_KEY=${PUBLIC_IMAGE_RANGE_END_KEY}
       - PUBLIC_DATE_RANGE_VALUE=${PUBLIC_DATE_RANGE_VALUE}
       - PUBLIC_SHOW_GITHUB_STARS=${PUBLIC_SHOW_GITHUB_STARS}
+      - SUGGESTED_QUERIES=${SUGGESTED_QUERIES}
 
 networks:
   app-network:
