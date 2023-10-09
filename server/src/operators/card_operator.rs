@@ -1095,6 +1095,7 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
     let mut timer = Timer::new();
+    timer.add("presearch1");
 
     let card_search_result = {
         let mut conn = pool.get().unwrap();
@@ -1217,6 +1218,7 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
             qdrant_id: *qdrant_id,
         })
         .collect::<Vec<CardMetadataWithQdrantId>>();
+    timer.add("final zip");
 
     Ok((
         card_metadata_with_upvotes_and_file_id,
