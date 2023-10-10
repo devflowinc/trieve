@@ -81,7 +81,7 @@ const dataTypeFilters: Filters = {
           suggestedQueries.map((query) => (
             <a
               class="text-blue-500 underline"
-              href={`/?q=${encodeURIComponent(query)}`}
+              href={`/search?q=${encodeURIComponent(query)}`}
             >
               {query}
             </a>
