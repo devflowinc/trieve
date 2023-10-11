@@ -3,3 +3,4 @@ target
 Dockerfile
 tmp
 images
+server-nodejs/node_modules
