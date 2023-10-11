@@ -293,8 +293,8 @@ pub async fn global_unfiltered_top_match_query(
             ..Default::default()
         })
         .await
-        .map_err(|_e| {
-            log::error!("Failed to search points on Qdrant {:?}", _e);
+        .map_err(|e| {
+            log::error!("Failed to search points on Qdrant {:?}", e);
             DefaultError {
                 message: "Failed to search points on Qdrant",
             }
