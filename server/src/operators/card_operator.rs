@@ -623,6 +623,7 @@ pub fn get_metadata_query(
                 file_id: card_with_file_name.map(|file| file.file_id),
                 file_name: card_with_file_name.map(|file| file.file_name.to_string()),
                 metadata: metadata.metadata,
+                tracking_id: metadata.tracking_id,
             }
         })
         .collect();
@@ -702,6 +703,7 @@ pub fn search_full_text_card_query(
                 card_metadata_columns::card_html,
                 card_metadata_columns::private,
                 card_metadata_columns::metadata,
+                card_metadata_columns::tracking_id,
                 sql::<Nullable<Double>>(
                     "(ts_rank(card_metadata.card_metadata_tsvector, plainto_tsquery('english', ",
                 )
@@ -894,6 +896,7 @@ pub fn search_full_text_collection_query(
                 card_metadata_columns::card_html,
                 card_metadata_columns::private,
                 card_metadata_columns::metadata,
+                card_metadata_columns::tracking_id,
                 sql::<Nullable<Double>>(
                     "(ts_rank(card_metadata.card_metadata_tsvector, plainto_tsquery('english', ",
                 )
@@ -1044,6 +1047,7 @@ pub fn get_metadata_from_point_ids(
             card_metadata_columns::card_html,
             card_metadata_columns::private,
             card_metadata_columns::metadata,
+            card_metadata_columns::tracking_id,
         ))
         .load::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
@@ -1100,6 +1104,7 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
                 card_metadata_columns::card_html,
                 card_metadata_columns::private,
                 card_metadata_columns::metadata,
+                card_metadata_columns::tracking_id,
             ))
             .limit(500)
             .load::<CardMetadata>(&mut conn)
@@ -1134,6 +1139,7 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
                         card_metadata_columns::card_html,
                         card_metadata_columns::private,
                         card_metadata_columns::metadata,
+                        card_metadata_columns::tracking_id,
                     ),
                     (card_collisions_columns::collision_qdrant_id.assume_not_null()),
                 ))
@@ -1236,6 +1242,7 @@ pub fn get_collided_cards_query(
             card_metadata_columns::card_html,
             card_metadata_columns::private,
             card_metadata_columns::metadata,
+            card_metadata_columns::tracking_id,
         ))
         .filter(
             card_collisions_columns::collision_qdrant_id
@@ -1294,6 +1301,7 @@ pub fn get_metadata_from_id_query(
             card_metadata_columns::card_html,
             card_metadata_columns::private,
             card_metadata_columns::metadata,
+            card_metadata_columns::tracking_id,
         ))
         .first::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
@@ -1324,6 +1332,7 @@ pub fn get_metadata_and_votes_from_id_query(
             card_metadata_columns::card_html,
             card_metadata_columns::private,
             card_metadata_columns::metadata,
+            card_metadata_columns::tracking_id,
         ))
         .first::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {

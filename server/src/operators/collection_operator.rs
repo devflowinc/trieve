@@ -360,6 +360,7 @@ pub fn get_bookmarks_for_collection_query(
                     card_metadata_columns::card_html,
                     card_metadata_columns::private,
                     card_metadata_columns::metadata,
+                    card_metadata_columns::tracking_id,
                     sql::<Int8>("count(*) OVER() AS full_count"),
                 ),
                 card_collisions_columns::collision_qdrant_id.nullable(),

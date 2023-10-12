@@ -156,6 +156,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
             card_metadata_columns::card_html,
             card_metadata_columns::private,
             card_metadata_columns::metadata,
+            card_metadata_columns::tracking_id,
         ))
         .limit(10)
         .offset((page - 1) * 10)
@@ -232,6 +233,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
                 file_name: card_with_file_name.map(|file| file.file_name.clone()),
                 file_id: card_with_file_name.map(|file| file.file_id),
                 metadata: metadata.metadata.clone(),
+                tracking_id: metadata.tracking_id.clone(),
             }
         })
         .collect();

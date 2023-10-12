@@ -65,6 +65,7 @@ diesel::table! {
         card_metadata_tsvector -> Nullable<Tsvector>,
         private -> Bool,
         metadata -> Nullable<Jsonb>,
+        tracking_id -> Nullable<Text>,
     }
 }
 

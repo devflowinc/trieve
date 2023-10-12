@@ -159,9 +159,9 @@ pub async fn search_qdrant_query(
         .await
         .map_err(|e| {
             log::error!("Failed to search points on Qdrant {:?}", e);
-            return DefaultError {
+            DefaultError {
                 message: "Failed to search points on Qdrant",
-            };
+            }
         })?;
 
     let point_ids: Vec<SearchResult> = data

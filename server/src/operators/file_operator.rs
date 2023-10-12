@@ -1,6 +1,6 @@
 use crate::{
-    data::models::FileUploadCompletedNotification, diesel::Connection,
-    handlers::card_handler::convert_html, AppMutexStore, get_env,
+    data::models::FileUploadCompletedNotification, diesel::Connection, get_env,
+    handlers::card_handler::convert_html, AppMutexStore,
 };
 use actix_web::{body::MessageBody, web};
 use base64::{
@@ -199,15 +199,17 @@ pub async fn convert_doc_to_html_query(
                     });
                 }
 
-                let conversion_command_output =
-                    Command::new(get_env!("LIBREOFFICE_PATH", "LIBREOFFICE_PATH should be set"))
-                        .arg("--headless")
-                        .arg("--convert-to")
-                        .arg("html")
-                        .arg("--outdir")
-                        .arg("./tmp")
-                        .arg(&temp_docx_file_path)
-                        .output();
+                let conversion_command_output = Command::new(get_env!(
+                    "LIBREOFFICE_PATH",
+                    "LIBREOFFICE_PATH should be set"
+                ))
+                .arg("--headless")
+                .arg("--convert-to")
+                .arg("html")
+                .arg("--outdir")
+                .arg("./tmp")
+                .arg(&temp_docx_file_path)
+                .output();
 
                 drop(libreoffice_lock_result);
 
@@ -368,16 +370,11 @@ pub async fn create_cards_with_handler(
             private: Some(private),
             file_uuid: Some(created_file_id),
             metadata: None,
+            tracking_id: None,
         };
         let web_json_create_card_data = web::Json(create_card_data);
 
-        match create_card(
-            web_json_create_card_data,
-            pool.clone(),
-            user.clone(),
-        )
-        .await
-        {
+        match create_card(web_json_create_card_data, pool.clone(), user.clone()).await {
             Ok(response) => {
                 if response.status().is_success() {
                     let card_metadata: ReturnCreatedCard = serde_json::from_slice(
