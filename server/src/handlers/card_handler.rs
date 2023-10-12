@@ -15,7 +15,6 @@ use crate::operators::qdrant_operator::{
     update_qdrant_point_private_query,
 };
 use actix_web::{web, HttpResponse};
-use difference::{Changeset, Difference};
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
 use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
 use serde::{Deserialize, Serialize};
@@ -104,6 +103,16 @@ pub async fn create_card(
     }
 
     let private = card.private.unwrap_or(false);
+    let card_tracking_id = if let Some(card_tracking) = card.tracking_id.clone() {
+        if card_tracking.is_empty() {
+            None
+        } else {
+            Some(card_tracking)
+        }
+    } else {
+        None
+    };
+
     let mut collision: Option<uuid::Uuid> = None;
 
     let pool1 = pool.clone();
@@ -226,7 +235,7 @@ pub async fn create_card(
             None,
             private,
             card.metadata.clone(),
-            card.tracking_id.clone(),
+            card_tracking_id,
         );
         card_metadata = web::block(move || {
             insert_duplicate_card_metadata_query(
@@ -244,6 +253,7 @@ pub async fn create_card(
     //if collision is nil and embedding vector is some, insert card with no collision
     else {
         let qdrant_point_id = uuid::Uuid::new_v4();
+
         card_metadata = CardMetadata::from_details(
             &content,
             &card.card_html,
@@ -253,7 +263,7 @@ pub async fn create_card(
             Some(qdrant_point_id),
             private,
             card.metadata.clone(),
-            card.tracking_id.clone(),
+            card_tracking_id,
         );
         card_metadata =
             web::block(move || insert_card_metadata_query(card_metadata, card.file_uuid, pool1))
@@ -334,6 +344,15 @@ pub async fn update_card(
         .link
         .clone()
         .unwrap_or_else(|| card_metadata.link.clone().unwrap_or_default());
+    let card_tracking_id = if let Some(card_tracking) = card.tracking_id.clone() {
+        if card_tracking.is_empty() {
+            None
+        } else {
+            Some(card_tracking)
+        }
+    } else {
+        None
+    };
 
     let html_parse_result = Command::new("node")
         .arg("./server-nodejs/scripts/html-converter.js")
@@ -377,31 +396,6 @@ pub async fn update_card(
         }
     };
 
-    if new_content.replace(' ', "") != card_metadata.content.replace(' ', "")
-        && !new_content.is_empty()
-    {
-        let Changeset { diffs, .. } = Changeset::new(&card_metadata.content, &new_content, " ");
-        let mut ret: String = Default::default();
-        for diff in diffs {
-            match diff {
-                Difference::Same(ref x) => {
-                    ret += format!(" {}", x).as_str();
-                }
-                Difference::Add(ref x) => {
-                    ret += format!("++++{}", x).as_str();
-                }
-                Difference::Rem(ref x) => {
-                    ret += format!("----{}", x).as_str();
-                }
-            }
-        }
-
-        return Ok(HttpResponse::BadRequest().json(CardHtmlUpdateError {
-            message: "Card content has changed".to_string(),
-            changed_content: ret,
-        }));
-    }
-
     let card_html = match card.card_html.clone() {
         Some(card_html) => Some(card_html),
         None => card_metadata.card_html,
@@ -419,7 +413,7 @@ pub async fn update_card(
         update_card_metadata_query(
             CardMetadata::from_details_with_id(
                 card.card_uuid,
-                &card_metadata.content,
+                &new_content,
                 &card_html,
                 &Some(link),
                 &card_metadata.tag_set,
@@ -427,7 +421,7 @@ pub async fn update_card(
                 card_metadata.qdrant_point_id,
                 private,
                 card.json_metadata.clone(),
-                card.tracking_id.clone(),
+                card_tracking_id,
             ),
             None,
             pool2,
