@@ -47,6 +47,7 @@ pub struct CreateCardData {
     pub private: Option<bool>,
     pub file_uuid: Option<uuid::Uuid>,
     pub metadata: Option<serde_json::Value>,
+    pub tracking_id: Option<String>,
 }
 
 pub fn convert_html(html: &str) -> String {
@@ -225,6 +226,7 @@ pub async fn create_card(
             None,
             private,
             card.metadata.clone(),
+            card.tracking_id.clone(),
         );
         card_metadata = web::block(move || {
             insert_duplicate_card_metadata_query(
@@ -251,6 +253,7 @@ pub async fn create_card(
             Some(qdrant_point_id),
             private,
             card.metadata.clone(),
+            card.tracking_id.clone(),
         );
         card_metadata =
             web::block(move || insert_card_metadata_query(card_metadata, card.file_uuid, pool1))
@@ -311,6 +314,7 @@ pub struct UpdateCardData {
     card_html: Option<String>,
     private: Option<bool>,
     json_metadata: Option<serde_json::Value>,
+    tracking_id: Option<String>,
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct CardHtmlUpdateError {
@@ -423,6 +427,7 @@ pub async fn update_card(
                 card_metadata.qdrant_point_id,
                 private,
                 card.json_metadata.clone(),
+                card.tracking_id.clone(),
             ),
             None,
             pool2,
@@ -516,6 +521,7 @@ pub async fn search_card(
                     link: Some("".to_string()),
                     tag_set: Some("".to_string()),
                     metadata: None,
+                    tracking_id: None,
                 },
             };
 
@@ -737,6 +743,7 @@ pub async fn search_collections(
                     link: Some("".to_string()),
                     tag_set: Some("".to_string()),
                     metadata: None,
+                    tracking_id: None,
                 },
             };
             card = find_relevant_sentence(card.clone(), data.content.clone()).unwrap_or(card);

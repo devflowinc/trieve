@@ -246,6 +246,7 @@ pub struct CardMetadataWithCount {
     pub card_html: Option<String>,
     pub private: bool,
     pub metadata: Option<serde_json::Value>,
+    pub tracking_id: Option<String>,
     pub count: i64,
 }
 
@@ -263,6 +264,7 @@ pub struct CardMetadata {
     pub card_html: Option<String>,
     pub private: bool,
     pub metadata: Option<serde_json::Value>,
+    pub tracking_id: Option<String>,
 }
 
 impl CardMetadata {
@@ -276,6 +278,7 @@ impl CardMetadata {
         qdrant_point_id: Option<uuid::Uuid>,
         private: bool,
         metadata: Option<serde_json::Value>,
+        tracking_id: Option<String>,
     ) -> Self {
         CardMetadata {
             id: uuid::Uuid::new_v4(),
@@ -289,6 +292,7 @@ impl CardMetadata {
             tag_set: tag_set.clone(),
             private,
             metadata,
+            tracking_id,
         }
     }
 }
@@ -305,6 +309,7 @@ impl CardMetadata {
         qdrant_point_id: Option<uuid::Uuid>,
         private: bool,
         metadata: Option<serde_json::Value>,
+        tracking_id: Option<String>,
     ) -> Self {
         CardMetadata {
             id: id.into(),
@@ -318,6 +323,7 @@ impl CardMetadata {
             tag_set: tag_set.clone(),
             private,
             metadata,
+            tracking_id,
         }
     }
 }
@@ -390,6 +396,7 @@ pub struct CardMetadataWithVotes {
     pub tag_set: Option<String>,
     pub private: bool,
     pub metadata: Option<serde_json::Value>,
+    pub tracking_id: Option<String>,
     pub score: Option<f64>,
 }
 
@@ -410,6 +417,7 @@ impl From<(CardMetadata, i64)> for CardMetadataWithVotes {
             tag_set: x.0.tag_set,
             private: x.0.private,
             metadata: x.0.metadata,
+            tracking_id: x.0.tracking_id,
             score: None,
         }
     }
@@ -433,6 +441,7 @@ pub struct CardMetadataWithVotesWithScore {
     pub file_name: Option<String>,
     pub private: bool,
     pub metadata: Option<serde_json::Value>,
+    pub tracking_id: Option<String>,
     pub score: Option<f64>,
 }
 
@@ -652,6 +661,7 @@ pub struct FullTextSearchResult {
     pub card_html: Option<String>,
     pub private: bool,
     pub metadata: Option<serde_json::Value>,
+    pub tracking_id: Option<String>,
     pub score: Option<f64>,
     pub count: i64,
 }
@@ -671,6 +681,7 @@ impl From<CardMetadata> for FullTextSearchResult {
             score: None,
             private: card.private,
             metadata: card.metadata,
+            tracking_id: card.tracking_id,
             count: 0,
         }
     }
@@ -691,6 +702,7 @@ impl From<CardMetadataWithCount> for FullTextSearchResult {
             score: None,
             private: card.private,
             metadata: card.metadata,
+            tracking_id: card.tracking_id,
             count: card.count,
         }
     }
@@ -810,6 +822,7 @@ impl From<CardMetadataWithVotes> for CardMetadataWithVotesWithScore {
             score: card.score,
             file_id: None,
             metadata: card.metadata,
+            tracking_id: card.tracking_id,
             file_name: None,
         }
     }
