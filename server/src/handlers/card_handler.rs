@@ -5,6 +5,7 @@ use crate::data::models::{
     CardCollection, CardMetadata, CardMetadataWithVotesWithScore, Pool, UserDTO,
 };
 use crate::errors::ServiceError;
+use crate::get_env;
 use crate::operators::card_operator::*;
 use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
@@ -14,11 +15,16 @@ use crate::operators::qdrant_operator::{
     create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
     update_qdrant_point_private_query,
 };
+use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
+use futures_util::stream;
+use openai_dive::v1::api::Client;
+use openai_dive::v1::resources::chat_completion::{ChatCompletionParameters, ChatMessage};
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
 use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use tokio_stream::StreamExt;
 
 use super::auth_handler::{LoggedUser, RequireAuth};
 
@@ -963,4 +969,100 @@ pub async fn get_recommended_cards(
             })?;
 
     Ok(HttpResponse::Ok().json(recommended_card_metadatas))
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct GenerateCardsRequest {
+    pub prev_messages: Vec<ChatMessage>,
+    pub card_ids: Vec<uuid::Uuid>,
+}
+pub async fn generate_off_cards(
+    data: web::Json<GenerateCardsRequest>,
+    pool: web::Data<Pool>,
+    _user: LoggedUser,
+) -> Result<HttpResponse, actix_web::Error> {
+    let prev_messages = data.prev_messages.clone();
+    let card_ids = data.card_ids.clone();
+    let cards = web::block(move || get_metadata_from_ids_query(card_ids, pool))
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+
+    let client = Client {
+        api_key: openai_api_key,
+        http_client: reqwest::Client::new(),
+        base_url: std::env::var("OPENAI_BASE_URL")
+            .map(|url| {
+                if url.is_empty() {
+                    "https://api.openai.com/v1".to_string()
+                } else {
+                    url
+                }
+            })
+            .unwrap_or("https://api.openai.com/v1".into()),
+    };
+
+    let mut messages: Vec<ChatMessage> = Vec::new();
+    messages.extend(prev_messages.clone());
+
+    let rag_content = cards
+        .iter()
+        .map(|card| card.content.clone())
+        .collect::<Vec<String>>()
+        .join("\n\n");
+    let mut cards_stringified =
+        serde_json::to_string(&rag_content).expect("Failed to serialize cards");
+
+    let last_message = format!(
+            "Here's my prompt: {} \n\n Pretending you found it, use the following retrieved information as the basis of your response: {}",
+            prev_messages.last().expect("There needs to be at least 1 prior message").content,
+            rag_content,
+    );
+
+    let open_ai_messages: Vec<ChatMessage> = messages
+        .clone()
+        .into_iter()
+        .enumerate()
+        .map(|(index, message)| {
+            if index == messages.len() - 1 {
+                ChatMessage {
+                    role: message.role,
+                    content: last_message.clone(),
+                    name: message.name,
+                }
+            } else {
+                message
+            }
+        })
+        .collect();
+
+    let parameters = ChatCompletionParameters {
+        model: "gpt-3.5-turbo".into(),
+        messages: open_ai_messages,
+        temperature: None,
+        top_p: None,
+        n: None,
+        stop: None,
+        max_tokens: None,
+        presence_penalty: Some(0.8),
+        frequency_penalty: Some(0.8),
+        logit_bias: None,
+        user: None,
+    };
+    if !cards_stringified.is_empty() {
+        cards_stringified = format!("{}||", cards_stringified);
+    }
+    let stream = client.chat().create_stream(parameters).await.unwrap();
+    let new_stream = stream::iter(vec![Ok(Bytes::from(cards_stringified))]);
+
+    Ok(HttpResponse::Ok().streaming(new_stream.chain(stream.map(
+        move |response| -> Result<Bytes, actix_web::Error> {
+            if let Ok(response) = response {
+                let chat_content = response.choices[0].delta.content.clone();
+                return Ok(Bytes::from(chat_content.unwrap_or("".to_string())));
+            }
+            Err(ServiceError::InternalServerError.into())
+        },
+    ))))
 }
