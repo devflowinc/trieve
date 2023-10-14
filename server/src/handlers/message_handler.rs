@@ -423,7 +423,7 @@ pub async fn stream_response(
         let embedding_vector = create_embedding(query.as_str()).await?;
 
         let search_card_query_results =
-            search_card_query(embedding_vector, 1, pool1, None, None, None, None)
+            search_card_query(embedding_vector, 1, pool1, None, None, None, Some(user_id))
                 .await
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
         let n_retrievals_to_include = std::env::var("N_RETRIEVALS_TO_INCLUDE")
@@ -447,7 +447,12 @@ pub async fn stream_response(
         let citation_cards: Vec<CardMetadataWithVotesWithScore> = metadata_cards
             .iter()
             .map(|card| {
-                if card.private {
+                if card.private
+                    && card
+                        .author
+                        .as_ref()
+                        .is_some_and(|author| author.id != user_id)
+                {
                     let matching_collided_card = collided_cards
                         .iter()
                         .find(|card| !card.metadata.private)

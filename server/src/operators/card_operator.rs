@@ -1,13 +1,11 @@
-use std::collections::HashSet;
-use crate::get_env;
 use crate::data::models::{
     CardCollisions, CardFile, CardFileWithName, CardMetadataWithVotes,
-    CardMetadataWithVotesWithScore, CardVote,
-    FullTextSearchResult, User, UserDTO,
+    CardMetadataWithVotesWithScore, CardVote, FullTextSearchResult, User, UserDTO,
 };
 use crate::data::schema;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::errors::ServiceError;
+use crate::get_env;
 use crate::operators::qdrant_operator::search_qdrant_query;
 use crate::{
     data::models::{CardMetadata, Pool},
@@ -24,6 +22,7 @@ use diesel::{
     PgTextExpressionMethods, SelectableHelper,
 };
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
+use std::collections::HashSet;
 
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::{
@@ -43,9 +42,7 @@ pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
     })
 }
 
-pub async fn create_embedding(
-    message: &str,
-) -> Result<Vec<f32>, actix_web::Error> {
+pub async fn create_embedding(message: &str) -> Result<Vec<f32>, actix_web::Error> {
     let use_custom: u8 = std::env::var("USE_CUSTOM_EMBEDDINGS")
         .unwrap_or("1".to_string())
         .parse::<u8>()
@@ -90,7 +87,8 @@ pub async fn create_openai_embedding(message: &str) -> Result<Vec<f32>, actix_we
 }
 
 pub async fn create_server_embedding(message: &str) -> Result<Vec<f32>, actix_web::Error> {
-    let embedding_server_call = std::env::var("EMBEDDING_SERVER_CALL").expect("EMBEDDING_SERVER_CALL should be set if this is called");
+    let embedding_server_call = std::env::var("EMBEDDING_SERVER_CALL")
+        .expect("EMBEDDING_SERVER_CALL should be set if this is called");
 
     let client = reqwest::Client::new();
     let resp = client
@@ -1309,6 +1307,34 @@ pub fn get_metadata_from_id_query(
         })
 }
 
+pub fn get_metadata_from_ids_query(
+    card_ids: Vec<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<Vec<CardMetadata>, DefaultError> {
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    card_metadata_columns::card_metadata
+        .filter(card_metadata_columns::id.eq_any(card_ids))
+        .select((
+            card_metadata_columns::id,
+            card_metadata_columns::content,
+            card_metadata_columns::link,
+            card_metadata_columns::author_id,
+            card_metadata_columns::qdrant_point_id,
+            card_metadata_columns::created_at,
+            card_metadata_columns::updated_at,
+            card_metadata_columns::tag_set,
+            card_metadata_columns::card_html,
+            card_metadata_columns::private,
+            card_metadata_columns::metadata,
+        ))
+        .load::<CardMetadata>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })
+}
 pub fn get_metadata_and_votes_from_id_query(
     card_id: uuid::Uuid,
     current_user_id: Option<uuid::Uuid>,
@@ -1734,7 +1760,6 @@ pub fn get_top_cards_query(
         .load::<(CardMetadata, i64)>(&mut conn)
         .map_err(|err| {
             log::info!("Failed to get recently created cards: {:?}", err);
-            
             DefaultError {
             message: "Failed to get recently created cards",
         }})?;

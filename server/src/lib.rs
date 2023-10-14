@@ -256,10 +256,14 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(web::post().to(handlers::card_handler::search_full_text_card)),
                             )
                             .service(
+                                web::resource("/generate")
+                                .route(web::post().to(handlers::card_handler::generate_off_cards)),
+                            )
+                            .service(
                                 web::resource("/{card_id}")
                                     .route(web::get().to(handlers::card_handler::get_card_by_id))
                                     .route(web::delete().to(handlers::card_handler::delete_card)),
-                            ),
+                            )
                     )
                     .service(
                         web::scope("/vote")

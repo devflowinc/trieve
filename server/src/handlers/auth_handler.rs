@@ -10,11 +10,11 @@ use serde::Deserialize;
 use crate::{
     data::models::{Pool, SlimUser, User},
     errors::{DefaultError, ServiceError},
+    handlers::register_handler::hash_password,
     operators::{
         self,
         user_operator::{get_user_by_id_query, get_user_from_api_key_query},
     },
-    handlers::register_handler::hash_password,
 };
 
 use crate::handlers::register_handler;
@@ -126,7 +126,8 @@ pub async fn create_admin_account(email: String, password: String, pool: Pool) {
     let mut conn = pool.get().unwrap();
     match diesel::insert_into(users_columns::users)
         .values(&user)
-        .execute(&mut conn) {
+        .execute(&mut conn)
+    {
         Ok(_) => log::info!("Admin account created"),
         Err(e) => log::error!("Failed to create admin account: {}", e),
     }
@@ -202,8 +203,7 @@ fn find_user_match(auth_data: AuthData, pool: web::Data<Pool>) -> Result<SlimUse
     })
 }
 
-pub async fn health_check(
-) -> Result<HttpResponse, actix_web::Error> {
+pub async fn health_check() -> Result<HttpResponse, actix_web::Error> {
     let result = operators::card_operator::create_embedding("health check").await;
 
     result?;
