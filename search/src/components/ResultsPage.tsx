@@ -53,10 +53,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   const [bookmarks, setBookmarks] = createSignal<CardBookmarksDTO[]>([]);
   const [totalPages, setTotalPages] = createSignal(initialTotalPages);
   const [openChat, setOpenChat] = createSignal(false);
-  const [selectedIds, setSelectedIds] = createSignal<string[]>([
-    "10daa0c8-d9c7-4888-812a-9884c09c119f",
-    "a7622a3a-7462-4964-80c2-e42ca8d6b44e",
-  ]);
+  const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
 
   const fetchCardCollections = () => {
     if (!user()) return;
@@ -156,13 +153,23 @@ const ResultsPage = (props: ResultsPageProps) => {
     fetchBookmarks();
   });
 
+  createEffect(() => {
+    if (!openChat()) {
+      setSelectedIds([]);
+    }
+  });
+
   return (
     <>
       <Show when={openChat()}>
         <Portal>
           <FullScreenModal isOpen={openChat} setIsOpen={setOpenChat}>
-            <div class="max-h-[800px] min-h-[400px] min-w-[400px] overflow-y-auto">
-              <ChatPopup selectedIds={selectedIds} />
+            <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto scrollbar-thin">
+              <ChatPopup
+                selectedIds={selectedIds}
+                setShowNeedLoginModal={setShowNeedLoginModal}
+                setOpenChat={setOpenChat}
+              />
             </div>
           </FullScreenModal>
         </Portal>
@@ -205,6 +212,8 @@ const ResultsPage = (props: ResultsPageProps) => {
                   setShowConfirmModal={setShowConfirmDeleteModal}
                   showExpand={clientSideRequestFinished()}
                   setCardCollections={setCardCollections}
+                  setSelectedIds={setSelectedIds}
+                  selectedIds={selectedIds}
                 />
               </div>
             )}
@@ -237,10 +246,17 @@ const ResultsPage = (props: ResultsPageProps) => {
               type="button"
               class="relative h-[52px] w-[52px] items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
               onClick={() => {
+                setSelectedIds(
+                  resultCards()
+                    .flatMap((c) => {
+                      return c.metadata.map((m) => m.id);
+                    })
+                    .slice(0, 10),
+                );
                 setOpenChat(true);
               }}
             >
-              <IoDocumentsOutline class="h-7 w-7 pl-4" />
+              <IoDocumentsOutline class="mx-auto h-7 w-7" />
               <span class="font-sm absolute -left-[10.5rem] top-1/2 mb-px block -translate-y-1/2 break-words text-sm">
                 Chat with all documents
               </span>
@@ -252,7 +268,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                 setOpenChat(true);
               }}
             >
-              <IoDocumentOutline class="left-1 h-7 w-7" />
+              <IoDocumentOutline class="mx-auto h-7 w-7" />
               <span class="font-sm absolute -left-[12.85rem] top-1/2 mb-px block -translate-y-1/2 text-sm">
                 Chat with selected documents
               </span>
@@ -275,7 +291,7 @@ const ResultsPage = (props: ResultsPageProps) => {
           <div class="min-w-[250px] sm:min-w-[300px]">
             <BiRegularXCircle class="mx-auto h-8 w-8 fill-current !text-red-500" />
             <div class="mb-4 text-center text-xl font-bold">
-              Cannot vote or use bookmarks without an account
+              Cannot use this feature without an account
             </div>
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
