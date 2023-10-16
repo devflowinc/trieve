@@ -18,7 +18,8 @@ export const AfMessage = (props: AfMessageProps) => {
       <Show when={props.role !== "system"}>
         <div
           classList={{
-            "dark:text-white md:px-6 w-full px-4 py-4 flex items-start": true,
+            "dark:text-white md:px-6 w-full px-4 py-4 flex items-start rounded-md":
+              true,
             "bg-neutral-200 dark:bg-zinc-700": props.role === "assistant",
             "bg-neutral-50 dark:bg-zinc-800": props.role === "user",
           }}

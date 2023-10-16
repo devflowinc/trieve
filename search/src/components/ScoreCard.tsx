@@ -23,7 +23,7 @@ import {
 import BookmarkPopover from "./BookmarkPopover";
 import { VsFileSymlinkFile } from "solid-icons/vs";
 import sanitizeHtml from "sanitize-html";
-import { FiEdit, FiGlobe, FiLock, FiTrash, FiCheck } from "solid-icons/fi";
+import { FiEdit, FiLock, FiTrash, FiCheck } from "solid-icons/fi";
 import { FaRegularFileImage } from "solid-icons/fa";
 import { Tooltip } from "./Atoms/Tooltip";
 import { AiOutlineCopy } from "solid-icons/ai";
@@ -257,11 +257,12 @@ const ScoreCard = (props: ScoreCardProps) => {
                 id="default-checkbox"
                 type="checkbox"
                 onClick={() => {
+                  const cardId = props.card.id;
                   props.setSelectedIds((prev) => {
-                    if (prev.includes(props.card.id)) {
-                      return prev.filter((id) => id !== props.card.id);
+                    if (prev.includes(cardId)) {
+                      return prev.filter((id) => id !== cardId);
                     }
-                    return [...prev, props.card.id];
+                    return [...prev, cardId];
                   });
                 }}
                 checked={props.selectedIds().includes(props.card.id)}
