@@ -17,9 +17,8 @@ use crate::operators::qdrant_operator::{
 };
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
-use futures_util::stream;
 use openai_dive::v1::api::Client;
-use openai_dive::v1::resources::chat_completion::{ChatCompletionParameters, ChatMessage};
+use openai_dive::v1::resources::chat_completion::{ChatCompletionParameters, ChatMessage, Role};
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
 use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
 use serde::{Deserialize, Serialize};
@@ -979,11 +978,12 @@ pub struct GenerateCardsRequest {
 pub async fn generate_off_cards(
     data: web::Json<GenerateCardsRequest>,
     pool: web::Data<Pool>,
-    _user: LoggedUser,
+    user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let prev_messages = data.prev_messages.clone();
     let card_ids = data.card_ids.clone();
-    let cards = web::block(move || get_metadata_from_ids_query(card_ids, pool))
+    let user_id = user.id;
+    let cards = web::block(move || get_metadata_from_ids_query(card_ids, user_id, pool))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -1006,40 +1006,42 @@ pub async fn generate_off_cards(
     let mut messages: Vec<ChatMessage> = Vec::new();
     messages.extend(prev_messages.clone());
 
-    let rag_content = cards
-        .iter()
-        .map(|card| card.content.clone())
-        .collect::<Vec<String>>()
-        .join("\n\n");
-    let mut cards_stringified =
-        serde_json::to_string(&rag_content).expect("Failed to serialize cards");
-
-    let last_message = format!(
-            "Here's my prompt: {} \n\n Pretending you found it, use the following retrieved information as the basis of your response: {}",
-            prev_messages.last().expect("There needs to be at least 1 prior message").content,
-            rag_content,
-    );
-
-    let open_ai_messages: Vec<ChatMessage> = messages
-        .clone()
-        .into_iter()
-        .enumerate()
-        .map(|(index, message)| {
-            if index == messages.len() - 1 {
-                ChatMessage {
-                    role: message.role,
-                    content: last_message.clone(),
-                    name: message.name,
-                }
-            } else {
-                message
-            }
-        })
-        .collect();
+    messages.push(ChatMessage {
+        role: Role::User,
+        content: "I am going to provide several pieces of information for you to use in response to a request or question. You will not respond until I ask you to.".to_string(),
+        name: None,
+    });
+    messages.push(ChatMessage {
+        role: Role::Assistant,
+        content: "Understood, I will not reply until I receive a direct request or question."
+            .to_string(),
+        name: None,
+    });
+    cards.iter().for_each(|bookmark| {
+        messages.push(ChatMessage {
+            role: Role::User,
+            content: bookmark.content.clone(),
+            name: None,
+        });
+        messages.push(ChatMessage {
+            role: Role::Assistant,
+            content: "".to_string(),
+            name: None,
+        });
+    });
+    messages.push(ChatMessage {
+        role: Role::User,
+        content: prev_messages
+            .last()
+            .expect("There needs to be at least 1 prior message")
+            .content
+            .clone(),
+        name: None,
+    });
 
     let parameters = ChatCompletionParameters {
         model: "gpt-3.5-turbo".into(),
-        messages: open_ai_messages,
+        messages,
         temperature: None,
         top_p: None,
         n: None,
@@ -1050,13 +1052,10 @@ pub async fn generate_off_cards(
         logit_bias: None,
         user: None,
     };
-    if !cards_stringified.is_empty() {
-        cards_stringified = format!("{}||", cards_stringified);
-    }
-    let stream = client.chat().create_stream(parameters).await.unwrap();
-    let new_stream = stream::iter(vec![Ok(Bytes::from(cards_stringified))]);
 
-    Ok(HttpResponse::Ok().streaming(new_stream.chain(stream.map(
+    let stream = client.chat().create_stream(parameters).await.unwrap();
+
+    Ok(HttpResponse::Ok().streaming(stream.map(
         move |response| -> Result<Bytes, actix_web::Error> {
             if let Ok(response) = response {
                 let chat_content = response.choices[0].delta.content.clone();
@@ -1064,5 +1063,5 @@ pub async fn generate_off_cards(
             }
             Err(ServiceError::InternalServerError.into())
         },
-    ))))
+    )))
 }

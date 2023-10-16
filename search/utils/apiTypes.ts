@@ -430,3 +430,18 @@ export interface NotificationWithPagesDTO {
   total_pages: number;
   full_count: number;
 }
+
+export interface Message {
+  role: "assistant" | "user";
+  content: string;
+}
+
+export const messageRoleFromIndex = (idx: number) => {
+  if (idx == 0) {
+    return "system";
+  }
+  if (idx % 2 == 0) {
+    return "assistant";
+  }
+  return "user";
+};

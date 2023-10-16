@@ -687,6 +687,26 @@ impl From<CardMetadata> for FullTextSearchResult {
     }
 }
 
+impl From<&CardMetadata> for FullTextSearchResult {
+    fn from(card: &CardMetadata) -> Self {
+        FullTextSearchResult {
+            id: card.id,
+            content: card.content.clone(),
+            link: card.link.clone(),
+            author_id: card.author_id,
+            qdrant_point_id: card.qdrant_point_id,
+            created_at: card.created_at,
+            updated_at: card.updated_at,
+            tag_set: card.tag_set.clone(),
+            card_html: card.card_html.clone(),
+            score: None,
+            private: card.private,
+            metadata: card.metadata.clone(),
+            count: 0,
+        }
+    }
+}
+
 impl From<CardMetadataWithCount> for FullTextSearchResult {
     fn from(card: CardMetadataWithCount) -> Self {
         FullTextSearchResult {

@@ -13,7 +13,10 @@ import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { PaginationController } from "./Atoms/PaginationController";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
 import { ScoreCardArray } from "./ScoreCardArray";
-
+import { Portal } from "solid-js/web";
+import { AiOutlineRobot } from "solid-icons/ai";
+import ChatPopup from "./ChatPopup";
+import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
 export interface Filters {
   tagSet: string[];
   link: string[];
@@ -49,6 +52,11 @@ const ResultsPage = (props: ResultsPageProps) => {
   const [onDelete, setOnDelete] = createSignal(() => {});
   const [bookmarks, setBookmarks] = createSignal<CardBookmarksDTO[]>([]);
   const [totalPages, setTotalPages] = createSignal(initialTotalPages);
+  const [openChat, setOpenChat] = createSignal(false);
+  const [selectedIds, setSelectedIds] = createSignal<string[]>([
+    "10daa0c8-d9c7-4888-812a-9884c09c119f",
+    "a7622a3a-7462-4964-80c2-e42ca8d6b44e",
+  ]);
 
   const fetchCardCollections = () => {
     if (!user()) return;
@@ -150,6 +158,15 @@ const ResultsPage = (props: ResultsPageProps) => {
 
   return (
     <>
+      <Show when={openChat()}>
+        <Portal>
+          <FullScreenModal isOpen={openChat} setIsOpen={setOpenChat}>
+            <div class="max-h-[800px] min-h-[400px] min-w-[400px] overflow-y-auto">
+              <ChatPopup selectedIds={selectedIds} />
+            </div>
+          </FullScreenModal>
+        </Portal>
+      </Show>
       <div class="mt-12 flex w-full flex-col items-center space-y-4">
         <Show when={resultCards().length === 0 && !clientSideRequestFinished()}>
           <div
@@ -196,6 +213,59 @@ const ResultsPage = (props: ResultsPageProps) => {
       </div>
       <div class="mx-auto my-12 flex items-center space-x-2">
         <PaginationController page={props.page} totalPages={totalPages()} />
+      </div>
+      <div>
+        <div
+          data-dial-init
+          class="group fixed bottom-6 right-6"
+          onMouseEnter={() => {
+            document
+              .getElementById("speed-dial-menu-text-outside-button")
+              ?.classList.remove("hidden");
+          }}
+          onMouseLeave={() => {
+            document
+              .getElementById("speed-dial-menu-text-outside-button")
+              ?.classList.add("hidden");
+          }}
+        >
+          <div
+            id="speed-dial-menu-text-outside-button"
+            class="mb-4 flex hidden flex-col items-center space-y-2"
+          >
+            <button
+              type="button"
+              class="relative h-[52px] w-[52px] items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
+              onClick={() => {
+                setOpenChat(true);
+              }}
+            >
+              <IoDocumentsOutline class="h-7 w-7 pl-4" />
+              <span class="font-sm absolute -left-[10.5rem] top-1/2 mb-px block -translate-y-1/2 break-words text-sm">
+                Chat with all documents
+              </span>
+            </button>
+            <button
+              type="button"
+              class="relative h-[52px] w-[52px] items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
+              onClick={() => {
+                setOpenChat(true);
+              }}
+            >
+              <IoDocumentOutline class="left-1 h-7 w-7" />
+              <span class="font-sm absolute -left-[12.85rem] top-1/2 mb-px block -translate-y-1/2 text-sm">
+                Chat with selected documents
+              </span>
+            </button>
+          </div>
+          <button
+            type="button"
+            class="flex h-14 w-14 items-center justify-center rounded-lg bg-magenta-500 text-white hover:bg-magenta-400 focus:outline-none focus:ring-4 focus:ring-magenta-300 dark:bg-magenta-500 dark:hover:bg-magenta-400 dark:focus:ring-magenta-600"
+          >
+            <AiOutlineRobot class="h-7 w-7" />
+            <span class="sr-only">Open actions menu</span>
+          </button>
+        </div>
       </div>
       <Show when={showNeedLoginModal()}>
         <FullScreenModal
