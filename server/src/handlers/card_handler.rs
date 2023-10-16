@@ -108,15 +108,10 @@ pub async fn create_card(
     }
 
     let private = card.private.unwrap_or(false);
-    let card_tracking_id = if let Some(card_tracking) = card.tracking_id.clone() {
-        if card_tracking.is_empty() {
-            None
-        } else {
-            Some(card_tracking)
-        }
-    } else {
-        None
-    };
+    let card_tracking_id = card
+        .tracking_id
+        .clone()
+        .filter(|card_tracking| !card_tracking.is_empty());
 
     let mut collision: Option<uuid::Uuid> = None;
 
@@ -349,15 +344,10 @@ pub async fn update_card(
         .link
         .clone()
         .unwrap_or_else(|| card_metadata.link.clone().unwrap_or_default());
-    let card_tracking_id = if let Some(card_tracking) = card.tracking_id.clone() {
-        if card_tracking.is_empty() {
-            None
-        } else {
-            Some(card_tracking)
-        }
-    } else {
-        None
-    };
+    let card_tracking_id = card
+        .tracking_id
+        .clone()
+        .filter(|card_tracking| !card_tracking.is_empty());
 
     let html_parse_result = Command::new("node")
         .arg("./server-nodejs/scripts/html-converter.js")
