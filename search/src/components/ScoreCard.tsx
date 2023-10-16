@@ -1,4 +1,5 @@
 import {
+  Accessor,
   For,
   Setter,
   Show,
@@ -66,6 +67,8 @@ export interface ScoreCardProps {
   total: number;
   begin: number | undefined;
   end: number | undefined;
+  setSelectedIds: Setter<string[]>;
+  selectedIds: Accessor<string[]>;
 }
 
 const ScoreCard = (props: ScoreCardProps) => {
@@ -250,12 +253,21 @@ const ScoreCard = (props: ScoreCardProps) => {
                   tooltipText="Private. Only you can see this card."
                 />
               </Show>
-              <Show when={!props.card.private}>
-                <Tooltip
-                  body={<FiGlobe class="h-5 w-5 text-green-500" />}
-                  tooltipText="Publicly visible"
-                />
-              </Show>
+              <input
+                id="default-checkbox"
+                type="checkbox"
+                onClick={() => {
+                  props.setSelectedIds((prev) => {
+                    if (prev.includes(props.card.id)) {
+                      return prev.filter((id) => id !== props.card.id);
+                    }
+                    return [...prev, props.card.id];
+                  });
+                }}
+                checked={props.selectedIds().includes(props.card.id)}
+                class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-green-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
+              />
+
               <Show when={props.total > 1}>
                 <span class="font-semibold">
                   {props.counter} of {props.total}{" "}

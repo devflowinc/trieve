@@ -993,9 +993,8 @@ pub async fn generate_off_cards(
             .unwrap_or("https://api.openai.com/v1".into()),
     };
 
-    let mut messages: Vec<ChatMessage> = Vec::new();
-    messages.extend(prev_messages.clone());
-
+    let mut messages: Vec<ChatMessage> = prev_messages.clone();
+    messages.truncate(prev_messages.len() - 1);
     messages.push(ChatMessage {
         role: Role::User,
         content: "I am going to provide several pieces of information for you to use in response to a request or question. You will not respond until I ask you to.".to_string(),
@@ -1007,10 +1006,10 @@ pub async fn generate_off_cards(
             .to_string(),
         name: None,
     });
-    cards.iter().for_each(|bookmark| {
+    cards.iter().enumerate().for_each(|(idx, bookmark)| {
         messages.push(ChatMessage {
             role: Role::User,
-            content: bookmark.content.clone(),
+            content: format!("Doc {}: {}", idx + 1, bookmark.content.clone()),
             name: None,
         });
         messages.push(ChatMessage {
@@ -1042,6 +1041,11 @@ pub async fn generate_off_cards(
         logit_bias: None,
         user: None,
     };
+
+    log::info!(
+        "Calling openai chat api with parameters: {:?}",
+        parameters.clone()
+    );
 
     let stream = client.chat().create_stream(parameters).await.unwrap();
 

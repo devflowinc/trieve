@@ -4,10 +4,10 @@
 import {
   Accessor,
   For,
+  Setter,
   Show,
   createEffect,
   createSignal,
-  onCleanup,
 } from "solid-js";
 import { FiSend, FiStopCircle } from "solid-icons/fi";
 import { type Message, messageRoleFromIndex } from "../../utils/apiTypes";
@@ -15,9 +15,11 @@ import { AfMessage } from "./Atoms/AfMessage";
 
 export interface LayoutProps {
   selectedIds: Accessor<string[]>;
+  setShowNeedLoginModal: Setter<boolean>;
+  setOpenChat: Setter<boolean>;
 }
 
-const MainLayout = (props: LayoutProps) => {
+const ChatPopup = (props: LayoutProps) => {
   const api_host = import.meta.env.PUBLIC_API_HOST as unknown as string;
 
   const resizeTextarea = (textarea: HTMLTextAreaElement) => {
@@ -29,7 +31,6 @@ const MainLayout = (props: LayoutProps) => {
   const [loadingMessages, setLoadingMessages] = createSignal<boolean>(true);
   const [messages, setMessages] = createSignal<Message[]>([]);
   const [newMessageContent, setNewMessageContent] = createSignal<string>("");
-  const [atMessageBottom, setAtMessageBottom] = createSignal<boolean>(true);
   const [streamingCompletion, setStreamingCompletion] =
     createSignal<boolean>(false);
   const [completionAbortController, setCompletionAbortController] =
@@ -46,31 +47,6 @@ const MainLayout = (props: LayoutProps) => {
     }
     element.scrollIntoView({ block: "end" });
   };
-  createEffect(() => {
-    const element = document.getElementById("topic-layout");
-    if (!element) {
-      console.error("Could not find element with id 'topic-layout'");
-      return;
-    }
-
-    setAtMessageBottom(
-      element.scrollHeight - element.scrollTop === element.clientHeight,
-    );
-
-    element.addEventListener("scroll", () => {
-      setAtMessageBottom(
-        element.scrollHeight - element.scrollTop === element.clientHeight,
-      );
-    });
-
-    onCleanup(() => {
-      element.removeEventListener("scroll", () => {
-        setAtMessageBottom(
-          element.scrollHeight - element.scrollTop === element.clientHeight,
-        );
-      });
-    });
-  });
 
   createEffect(() => {
     window.addEventListener("wheel", (event) => {
@@ -162,8 +138,8 @@ const MainLayout = (props: LayoutProps) => {
           content: message.content.split("||")[1] ?? message.content,
         };
       })
-      .filter((item) => item);
-    console.log(messages_no_cards);
+      .filter((item) => item.content !== "");
+
     const body: object = {
       prev_messages: messages_no_cards,
       card_ids: props.selectedIds(),
@@ -178,6 +154,12 @@ const MainLayout = (props: LayoutProps) => {
         body: JSON.stringify(body),
         signal: completionAbortController().signal,
       });
+
+      if (res.status === 401) {
+        props.setOpenChat(false);
+        props.setShowNeedLoginModal(true);
+        return;
+      }
       // get the response as a stream
       const reader = res.body?.getReader();
       if (!reader) {
@@ -225,7 +207,7 @@ const MainLayout = (props: LayoutProps) => {
       </Show>
       <Show when={!loadingMessages()}>
         <div class="relative flex w-full flex-col justify-between">
-          <div class="flex flex-col items-center pb-32" id="topic-messages">
+          <div class="flex flex-col items-center pb-24" id="topic-messages">
             <For each={messages()}>
               {(message, idx) => {
                 return (
@@ -247,7 +229,6 @@ const MainLayout = (props: LayoutProps) => {
                     classList={{
                       "flex w-fit items-center justify-center space-x-4 rounded-xl bg-neutral-50 px-4 py-2 text-sm dark:bg-neutral-700 dark:text-white":
                         true,
-                      "ml-auto": !atMessageBottom(),
                     }}
                     onClick={() => {
                       completionAbortController().abort();
@@ -309,4 +290,4 @@ const MainLayout = (props: LayoutProps) => {
   );
 };
 
-export default MainLayout;
+export default ChatPopup;
