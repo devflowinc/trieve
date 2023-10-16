@@ -37,7 +37,7 @@ export const FullScreenModal = (props: FullScreenModalProps) => {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <DialogPanel class="inline-block w-full transform overflow-hidden rounded-2xl bg-neutral-50 p-6 text-left align-middle shadow-md transition-all dark:bg-neutral-800">
+            <DialogPanel class="inline-block w-full transform overflow-hidden rounded-2xl bg-neutral-100 p-6 text-left align-middle shadow-md transition-all dark:bg-neutral-800">
               {props.children}
             </DialogPanel>
           </TransitionChild>

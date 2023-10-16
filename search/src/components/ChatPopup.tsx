@@ -35,37 +35,6 @@ const ChatPopup = (props: LayoutProps) => {
     createSignal<boolean>(false);
   const [completionAbortController, setCompletionAbortController] =
     createSignal<AbortController>(new AbortController());
-  const [disableAutoScroll, setDisableAutoScroll] =
-    createSignal<boolean>(false);
-  const [triggerScrollToBottom, setTriggerScrollToBottom] =
-    createSignal<boolean>(false);
-  const scrollToBottomOfMessages = () => {
-    const element = document.getElementById("topic-messages");
-    if (!element) {
-      console.error("Could not find element with id 'topic-messages'");
-      return;
-    }
-    element.scrollIntoView({ block: "end" });
-  };
-
-  createEffect(() => {
-    window.addEventListener("wheel", (event) => {
-      const delta = Math.sign(event.deltaY);
-      7;
-
-      if (delta === -1) {
-        setDisableAutoScroll(true);
-      }
-    });
-  });
-
-  createEffect(() => {
-    const triggerScrollToBottomVal = triggerScrollToBottom();
-    const disableAutoScrollVal = disableAutoScroll();
-    if (triggerScrollToBottomVal && !disableAutoScrollVal) {
-      setTriggerScrollToBottom(false);
-    }
-  });
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
@@ -90,9 +59,6 @@ const ChatPopup = (props: LayoutProps) => {
           };
           return [...prev.slice(0, prev.length - 1), newMessage];
         });
-
-        setTriggerScrollToBottom(true);
-        scrollToBottomOfMessages();
       }
     }
   };
@@ -103,7 +69,6 @@ const ChatPopup = (props: LayoutProps) => {
     new_message_content: string;
   }) => {
     setStreamingCompletion(true);
-    scrollToBottomOfMessages();
     setNewMessageContent("");
     const prevMessages = JSON.parse(
       localStorage.getItem("prevMessages") ?? "[]",
@@ -207,7 +172,10 @@ const ChatPopup = (props: LayoutProps) => {
       </Show>
       <Show when={!loadingMessages()}>
         <div class="relative flex w-full flex-col justify-between">
-          <div class="flex flex-col items-center pb-24" id="topic-messages">
+          <div
+            class="flex flex-col items-center rounded-md pb-24"
+            id="topic-messages"
+          >
             <For each={messages()}>
               {(message, idx) => {
                 return (
@@ -221,7 +189,7 @@ const ChatPopup = (props: LayoutProps) => {
             </For>
           </div>
 
-          <div class="fixed bottom-0 right-0 flex w-full flex-col items-center space-y-4 bg-gradient-to-b from-transparent via-zinc-200 to-zinc-100 p-4 dark:via-zinc-800 dark:to-zinc-900">
+          <div class="fixed bottom-0 right-0 flex w-full flex-col items-center space-y-4 bg-transparent p-4">
             <Show when={messages().length > 0}>
               <div class="flex w-full justify-center">
                 <Show when={streamingCompletion()}>

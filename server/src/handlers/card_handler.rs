@@ -1042,11 +1042,6 @@ pub async fn generate_off_cards(
         user: None,
     };
 
-    log::info!(
-        "Calling openai chat api with parameters: {:?}",
-        parameters.clone()
-    );
-
     let stream = client.chat().create_stream(parameters).await.unwrap();
 
     Ok(HttpResponse::Ok().streaming(stream.map(

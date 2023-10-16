@@ -164,7 +164,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       <Show when={openChat()}>
         <Portal>
           <FullScreenModal isOpen={openChat} setIsOpen={setOpenChat}>
-            <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto scrollbar-thin">
+            <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto rounded-md scrollbar-thin">
               <ChatPopup
                 selectedIds={selectedIds}
                 setShowNeedLoginModal={setShowNeedLoginModal}
@@ -240,7 +240,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         >
           <div
             id="speed-dial-menu-text-outside-button"
-            class="mb-4 flex hidden flex-col items-center space-y-2"
+            class="mb-4 flex flex-col items-center space-y-2"
           >
             <button
               type="button"
@@ -257,8 +257,8 @@ const ResultsPage = (props: ResultsPageProps) => {
               }}
             >
               <IoDocumentsOutline class="mx-auto h-7 w-7" />
-              <span class="font-sm absolute -left-[10.5rem] top-1/2 mb-px block -translate-y-1/2 break-words text-sm">
-                Chat with all documents
+              <span class="font-sm absolute -left-[8.5rem] top-1/2 mb-px block -translate-y-1/2 break-words text-sm">
+                Chat with all results
               </span>
             </button>
             <button
@@ -269,8 +269,8 @@ const ResultsPage = (props: ResultsPageProps) => {
               }}
             >
               <IoDocumentOutline class="mx-auto h-7 w-7" />
-              <span class="font-sm absolute -left-[12.85rem] top-1/2 mb-px block -translate-y-1/2 text-sm">
-                Chat with selected documents
+              <span class="font-sm absolute -left-[10.85rem] top-1/2 mb-px block -translate-y-1/2 text-sm">
+                Chat with selected results
               </span>
             </button>
           </div>
