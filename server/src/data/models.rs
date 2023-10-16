@@ -701,6 +701,7 @@ impl From<&CardMetadata> for FullTextSearchResult {
             card_html: card.card_html.clone(),
             score: None,
             private: card.private,
+            tracking_id: card.tracking_id.clone(),
             metadata: card.metadata.clone(),
             count: 0,
         }

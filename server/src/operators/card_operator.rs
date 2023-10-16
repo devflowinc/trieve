@@ -1331,6 +1331,7 @@ pub fn get_metadata_from_ids_query(
             card_metadata_columns::card_html,
             card_metadata_columns::private,
             card_metadata_columns::metadata,
+            card_metadata_columns::tracking_id,
         ))
         .load::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
