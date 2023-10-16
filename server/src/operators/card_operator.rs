@@ -21,6 +21,7 @@ use diesel::{
     BoolExpressionMethods, Connection, JoinOnDsl, NullableExpressionMethods,
     PgTextExpressionMethods, SelectableHelper,
 };
+use itertools::Itertools;
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use std::collections::HashSet;
 
@@ -1309,13 +1310,14 @@ pub fn get_metadata_from_id_query(
 
 pub fn get_metadata_from_ids_query(
     card_ids: Vec<uuid::Uuid>,
+    user_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<CardMetadata>, DefaultError> {
+) -> Result<Vec<CardMetadataWithVotesWithScore>, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
     let mut conn = pool.get().unwrap();
 
-    card_metadata_columns::card_metadata
+    let metadatas: Vec<CardMetadata> = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::id.eq_any(card_ids))
         .select((
             card_metadata_columns::id,
@@ -1333,7 +1335,13 @@ pub fn get_metadata_from_ids_query(
         .load::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to load metadata",
-        })
+        })?;
+    let full_text_metadatas = metadatas
+        .iter()
+        .map_into::<FullTextSearchResult>()
+        .collect_vec();
+
+    Ok(get_metadata_query(full_text_metadatas, Some(user_id), conn).unwrap_or_default())
 }
 pub fn get_metadata_and_votes_from_id_query(
     card_id: uuid::Uuid,
