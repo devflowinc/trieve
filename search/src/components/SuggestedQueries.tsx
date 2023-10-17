@@ -2,31 +2,40 @@ import { createSignal, createEffect, For, Show } from "solid-js";
 
 function SuggestedQueries(props: { query: string }) {
   const [suggestedQueries, setSuggestedQueries] = createSignal<string[]>([]);
-  const [authed, setAuthed] = createSignal<boolean>(true);
+  const [authed, setAuthed] = createSignal<boolean>(false);
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 
   createEffect(() => {
-    fetch(apiHost + "/card/gen_suggestions", {
+    void fetch(apiHost + "/auth", {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    }).then((response) => {
+      if (response.status != 401) {
+        setAuthed(true);
+      }
+    });
+
+    void fetch(`${apiHost}/card/gen_suggestions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       credentials: "include",
       body: JSON.stringify({ query: props.query }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          setAuthed(false);
-          return;
-        }
-        response
-          .json()
-          .then((data: { queries: string[] }) =>
-            setSuggestedQueries(data.queries),
-          )
-          .catch((err) => console.log(err));
-      })
-      .catch((err) => console.log(err));
+    }).then((response) => {
+      if (!response.ok) {
+        setAuthed(false);
+        return;
+      }
+      response
+        .json()
+        .then((data: { queries: string[] }) =>
+          setSuggestedQueries(data.queries),
+        )
+        .catch((err) => console.log(err));
+    });
   });
 
   return (
