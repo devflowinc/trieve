@@ -271,7 +271,7 @@ const ScoreCard = (props: ScoreCardProps) => {
 
               <Show when={props.total > 1}>
                 <span class="font-semibold">
-                  {props.counter} of {props.total}{" "}
+                  {props.counter} of {props.total} duplicates{" "}
                   <Show when={props.begin && props.end}>
                     {props.begin != props.end ? "between" : "on"}{" "}
                     {formatDate(new Date(props.begin ?? 0))}
