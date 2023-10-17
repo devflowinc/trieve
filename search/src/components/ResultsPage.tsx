@@ -155,7 +155,7 @@ const ResultsPage = (props: ResultsPageProps) => {
 
   createEffect(() => {
     if (!openChat()) {
-      setSelectedIds([]);
+      setSelectedIds((prev) => (prev.length < 10 ? prev : []));
     }
   });
 

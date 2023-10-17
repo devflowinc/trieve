@@ -13,12 +13,7 @@ import {
   CardMetadata,
 } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
-import {
-  BiRegularLogInCircle,
-  BiRegularQuestionMark,
-  BiRegularX,
-  BiRegularXCircle,
-} from "solid-icons/bi";
+import { BiRegularLogInCircle, BiRegularXCircle } from "solid-icons/bi";
 import { FiEdit, FiLock, FiTrash } from "solid-icons/fi";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
 import { PaginationController } from "./Atoms/PaginationController";
@@ -26,7 +21,10 @@ import { ScoreCardArray } from "./ScoreCardArray";
 import SearchForm from "./SearchForm";
 import type { Filters } from "./ResultsPage";
 import CardMetadataDisplay from "./CardMetadataDisplay";
-import { TbRobot } from "solid-icons/tb";
+import { Portal } from "solid-js/web";
+import ChatPopup from "./ChatPopup";
+import { AiOutlineRobot } from "solid-icons/ai";
+import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
 
 export interface CollectionPageProps {
   collectionID: string;
@@ -111,13 +109,18 @@ export const CollectionPage = (props: CollectionPageProps) => {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const [onCollectionDelete, setOnCollectionDelete] = createSignal(() => {});
 
-  const [collectionQuery, setCollectionQuery] = createSignal("");
-  const [streamingCollectionInference, setStreamingCollectionInference] =
-    createSignal(false);
-  const [collectionInference, setCollectionInference] = createSignal("");
+  const [openChat, setOpenChat] = createSignal(false);
+  const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
 
   onMount(() => {
     fetchBookmarks();
+  });
+
+  createEffect(() => {
+    const resultsLength = metadatasWithVotes().length;
+    if (!openChat()) {
+      setSelectedIds((prev) => (prev.length < resultsLength ? prev : []));
+    }
   });
 
   // Fetch the user info for the auth'ed user
@@ -364,59 +367,27 @@ export const CollectionPage = (props: CollectionPageProps) => {
     });
   };
 
-  const fetchCollectionInference = async (
-    collection_id: string,
-    page: number,
-  ) => {
-    setCollectionInference("");
-
-    try {
-      const response = await fetch(`${apiHost}/card_collection/generate`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          collection_id: collection_id,
-          page: page,
-          query: collectionQuery(),
-        }),
-      });
-
-      const reader = response.body?.getReader();
-      setStreamingCollectionInference(true);
-
-      if (!reader) return;
-
-      let done = false;
-      while (!done) {
-        const { value, done: readerDone } = await reader.read();
-        if (readerDone) {
-          done = readerDone;
-          setStreamingCollectionInference(false);
-          continue;
-        }
-
-        const decoder = new TextDecoder();
-        const chunk = decoder.decode(value);
-        setCollectionInference((prev) => prev + chunk);
-      }
-    } catch (e) {
-      console.error(e);
-      setStreamingCollectionInference(false);
-    }
-  };
-
   const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
     if (!textarea) return;
 
     textarea.style.height = `${textarea.scrollHeight}px`;
-    setCollectionQuery(textarea.value);
   };
 
   return (
     <>
+      <Show when={openChat()}>
+        <Portal>
+          <FullScreenModal isOpen={openChat} setIsOpen={setOpenChat}>
+            <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto rounded-md scrollbar-thin">
+              <ChatPopup
+                selectedIds={selectedIds}
+                setShowNeedLoginModal={setShowNeedLoginModal}
+                setOpenChat={setOpenChat}
+              />
+            </div>
+          </FullScreenModal>
+        </Portal>
+      </Show>
       <Show
         when={
           !props.defaultCollectionCards.metadata.collection.is_public &&
@@ -488,78 +459,6 @@ export const CollectionPage = (props: CollectionPageProps) => {
                   </div>
                 </div>
               </Show>
-              <div class="flex w-full max-w-6xl flex-col items-center justify-end space-x-2 px-4 pb-10 sm:px-8 md:px-20">
-                <div class="mt-4 flex w-full max-w-[calc(100%-32px)] justify-center space-x-2 rounded-md bg-neutral-100 px-4 py-1 pr-[10px] dark:bg-neutral-700 min-[360px]:max-w-[calc(100%-64px)]">
-                  <Show when={!props.query}>
-                    <TbRobot class="mt-1 h-6 w-6" />
-                  </Show>
-                  <textarea
-                    id="collection-query-textarea"
-                    class="mr-2 h-fit max-h-[240px] w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
-                    placeholder="Prompt the AI to generate text based on the cards in this collection..."
-                    value={collectionQuery()}
-                    onInput={(e) => {
-                      resizeTextarea(e.target);
-                    }}
-                    onKeyDown={(e) => {
-                      if (
-                        ((e.ctrlKey || e.metaKey) && e.key === "Enter") ||
-                        (!e.shiftKey && e.key === "Enter")
-                      ) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        void fetchCollectionInference(
-                          props.collectionID,
-                          props.page,
-                        );
-                      }
-                    }}
-                    rows="1"
-                  />
-                  <Show when={collectionQuery()}>
-                    <button
-                      classList={{
-                        "pt-[2px]": !!props.query,
-                      }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setCollectionQuery("");
-                      }}
-                    >
-                      <BiRegularX class="h-7 w-7 fill-current" />
-                    </button>
-                  </Show>
-                  <Show when={props.query}>
-                    <button
-                      classList={{
-                        "border-l border-neutral-600 pl-[10px] dark:border-neutral-200":
-                          !!collectionQuery(),
-                      }}
-                      type="submit"
-                    >
-                      <BiRegularQuestionMark class="mt-1 h-6 w-6 fill-current" />
-                    </button>
-                  </Show>
-                </div>
-                <Show
-                  when={streamingCollectionInference() || collectionInference()}
-                >
-                  <div class="my-4 h-2 bg-neutral-500" />
-                  <Show when={!collectionInference()}>
-                    <img
-                      src="/cooking-crab.gif"
-                      class="aspect-square w-[128px]"
-                      alt="cooking crab loading animation"
-                    />
-                  </Show>
-                  <Show when={collectionInference()}>
-                    <div
-                      class="mx-auto w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]"
-                      innerText={collectionInference()}
-                    />
-                  </Show>
-                </Show>
-              </div>
             </Show>
 
             <Show when={editing()}>
@@ -684,6 +583,8 @@ export const CollectionPage = (props: CollectionPageProps) => {
                     setShowConfirmModal={setShowConfirmDeleteModal}
                     showExpand={clientSideRequestFinished()}
                     setCardCollections={setCardCollections}
+                    setSelectedIds={setSelectedIds}
+                    selectedIds={selectedIds}
                   />
                 </div>
               )}
@@ -763,6 +664,84 @@ export const CollectionPage = (props: CollectionPageProps) => {
                 </div>
               </div>
             </Show>
+          </div>
+        </div>
+        <div>
+          <div
+            data-dial-init
+            class="group fixed bottom-6 right-6"
+            onMouseEnter={() => {
+              document
+                .getElementById("speed-dial-menu-text-outside-button")
+                ?.classList.remove("hidden");
+              document
+                .getElementById("speed-dial-menu-text-outside-button")
+                ?.classList.add("flex");
+            }}
+            onMouseLeave={() => {
+              document
+                .getElementById("speed-dial-menu-text-outside-button")
+                ?.classList.add("hidden");
+              document
+                .getElementById("speed-dial-menu-text-outside-button")
+                ?.classList.remove("flex");
+            }}
+          >
+            <div
+              id="speed-dial-menu-text-outside-button"
+              class="mb-4 hidden flex-col items-center space-y-2"
+            >
+              <button
+                type="button"
+                class="relative h-[52px] w-[52px] items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
+                onClick={() => {
+                  const searchResults = searchMetadatasWithVotes();
+                  if (searchResults.length > 0) {
+                    setSelectedIds(
+                      searchResults
+                        .flatMap((c) => {
+                          return c.metadata.map((m) => m.id);
+                        })
+                        .slice(0, 10),
+                    );
+                    setOpenChat(true);
+                  } else {
+                    setSelectedIds(
+                      metadatasWithVotes()
+                        .flatMap((c) => {
+                          return c.metadata.map((m) => m.id);
+                        })
+                        .slice(0, 10),
+                    );
+                  }
+                  setOpenChat(true);
+                }}
+              >
+                <IoDocumentsOutline class="mx-auto h-7 w-7" />
+                <span class="font-sm absolute -left-[8.5rem] top-1/2 mb-px block -translate-y-1/2 break-words text-sm">
+                  Chat with all results
+                </span>
+              </button>
+              <button
+                type="button"
+                class="relative h-[52px] w-[52px] items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
+                onClick={() => {
+                  setOpenChat(true);
+                }}
+              >
+                <IoDocumentOutline class="mx-auto h-7 w-7" />
+                <span class="font-sm absolute -left-[10.85rem] top-1/2 mb-px block -translate-y-1/2 text-sm">
+                  Chat with selected results
+                </span>
+              </button>
+            </div>
+            <button
+              type="button"
+              class="flex h-14 w-14 items-center justify-center rounded-lg bg-magenta-500 text-white hover:bg-magenta-400 focus:outline-none focus:ring-4 focus:ring-magenta-300 dark:bg-magenta-500 dark:hover:bg-magenta-400 dark:focus:ring-magenta-600"
+            >
+              <AiOutlineRobot class="h-7 w-7" />
+              <span class="sr-only">Open actions menu</span>
+            </button>
           </div>
         </div>
         <Show when={showNeedLoginModal()}>

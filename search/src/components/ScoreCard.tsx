@@ -281,23 +281,35 @@ const ScoreCard = (props: ScoreCardProps) => {
                 </span>
               </Show>
               <div class="flex-1" />
-              <Show when={imgInformation()}>
-                <button
-                  class="h-fit"
-                  onClick={() => setShowImageModal(true)}
-                  title="View Images"
-                >
-                  <FaRegularFileImage class="h-5 w-5 fill-current" />
-                </button>
-              </Show>
-              <Show when={!copied()}>
-                <button class="h-fit" onClick={() => copyCard()}>
-                  <AiOutlineCopy class="h-5 w-5 fill-current" />
-                </button>
-              </Show>
-              <Show when={copied()}>
-                <FiCheck class="text-green-500" />
-              </Show>
+              <Tooltip
+                body={
+                  <Show when={imgInformation()}>
+                    <button
+                      class="h-fit"
+                      onClick={() => setShowImageModal(true)}
+                      title="View Images"
+                    >
+                      <FaRegularFileImage class="h-5 w-5 fill-current" />
+                    </button>
+                  </Show>
+                }
+                tooltipText="View Full Document"
+              />
+              <Tooltip
+                body={
+                  <>
+                    <Show when={!copied()}>
+                      <button class="h-fit" onClick={() => copyCard()}>
+                        <AiOutlineCopy class="h-5 w-5 fill-current" />
+                      </button>
+                    </Show>
+                    <Show when={copied()}>
+                      <FiCheck class="text-green-500" />
+                    </Show>
+                  </>
+                }
+                tooltipText="Copy to clipboard"
+              />
               <Show when={props.signedInUserId == props.card.author?.id}>
                 <button
                   classList={{
@@ -315,9 +327,14 @@ const ScoreCard = (props: ScoreCardProps) => {
                   <FiEdit class="h-5 w-5" />
                 </a>
               </Show>
-              <a title="Open" href={`/card/${props.card.id}`}>
-                <VsFileSymlinkFile class="h-5 w-5 fill-current" />
-              </a>
+              <Tooltip
+                body={
+                  <a title="Open" href={`/card/${props.card.id}`}>
+                    <VsFileSymlinkFile class="h-5 w-5 fill-current" />
+                  </a>
+                }
+                tooltipText="Open in new tab"
+              />
               <CommunityBookmarkPopover
                 bookmarks={props.bookmarks.filter(
                   (bookmark) => bookmark.card_uuid === props.card.id,

@@ -15,6 +15,10 @@ import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { BiRegularLogIn, BiRegularXCircle } from "solid-icons/bi";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
 import CardMetadataDisplay from "./CardMetadataDisplay";
+import { Portal } from "solid-js/web";
+import ChatPopup from "./ChatPopup";
+import { AiOutlineRobot } from "solid-icons/ai";
+import { IoDocumentOutline } from "solid-icons/io";
 
 export interface SingleCardPageProps {
   cardId: string | undefined;
@@ -46,6 +50,8 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
   const [recommendedCards, setRecommendedCards] = createSignal<CardMetadata[]>(
     [],
   );
+  const [openChat, setOpenChat] = createSignal(false);
+  const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
 
   if (props.defaultResultCard.status == 401) {
     setError("You are not authorized to view this card.");
@@ -208,12 +214,27 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
         total={1}
         begin={0}
         end={0}
+        selectedIds={selectedIds}
+        setSelectedIds={setSelectedIds}
       />
     );
   });
 
   return (
     <>
+      <Show when={openChat()}>
+        <Portal>
+          <FullScreenModal isOpen={openChat} setIsOpen={setOpenChat}>
+            <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto rounded-md scrollbar-thin">
+              <ChatPopup
+                selectedIds={selectedIds}
+                setShowNeedLoginModal={setShowNeedLoginModal}
+                setOpenChat={setOpenChat}
+              />
+            </div>
+          </FullScreenModal>
+        </Portal>
+      </Show>
       <div class="mt-2 flex w-full flex-col items-center justify-center">
         <div class="flex w-full max-w-6xl flex-col justify-center px-4 sm:px-8 md:px-20">
           <Show when={error().length > 0 && !fetching()}>
@@ -285,6 +306,54 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
               </button>
             </div>
           </Show>
+        </div>
+      </div>
+      <div>
+        <div
+          data-dial-init
+          class="group fixed bottom-6 right-6"
+          onMouseEnter={() => {
+            document
+              .getElementById("speed-dial-menu-text-outside-button")
+              ?.classList.remove("hidden");
+            document
+              .getElementById("speed-dial-menu-text-outside-button")
+              ?.classList.add("flex");
+          }}
+          onMouseLeave={() => {
+            document
+              .getElementById("speed-dial-menu-text-outside-button")
+              ?.classList.add("hidden");
+            document
+              .getElementById("speed-dial-menu-text-outside-button")
+              ?.classList.remove("flex");
+          }}
+        >
+          <div
+            id="speed-dial-menu-text-outside-button"
+            class="mb-4 hidden flex-col items-center space-y-2"
+          >
+            <button
+              type="button"
+              class="relative h-[52px] w-[52px] items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
+              onClick={() => {
+                setSelectedIds([cardMetadata()?.id ?? ""]);
+                setOpenChat(true);
+              }}
+            >
+              <IoDocumentOutline class="mx-auto h-7 w-7" />
+              <span class="font-sm absolute -left-[8.5rem] top-1/2 mb-px block -translate-y-1/2 break-words text-sm">
+                Chat with document
+              </span>
+            </button>
+          </div>
+          <button
+            type="button"
+            class="flex h-14 w-14 items-center justify-center rounded-lg bg-magenta-500 text-white hover:bg-magenta-400 focus:outline-none focus:ring-4 focus:ring-magenta-300 dark:bg-magenta-500 dark:hover:bg-magenta-400 dark:focus:ring-magenta-600"
+          >
+            <AiOutlineRobot class="h-7 w-7" />
+            <span class="sr-only">Open actions menu</span>
+          </button>
         </div>
       </div>
       <Show when={showNeedLoginModal()}>

@@ -146,15 +146,20 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                 />
               </Show>
               <div class="flex-1" />
-              <Show when={imgInformation()}>
-                <button
-                  class="h-fit"
-                  onClick={() => setShowImageModal(true)}
-                  title="View Images"
-                >
-                  <FaRegularFileImage class="h-5 w-5 fill-current" />
-                </button>
-              </Show>
+              <Tooltip
+                body={
+                  <Show when={imgInformation()}>
+                    <button
+                      class="h-fit"
+                      onClick={() => setShowImageModal(true)}
+                      title="View Images"
+                    >
+                      <FaRegularFileImage class="h-5 w-5 fill-current" />
+                    </button>
+                  </Show>
+                }
+                tooltipText="View Full Document"
+              />
               <Show when={props.signedInUserId == props.viewingUserId}>
                 <button
                   classList={{
@@ -172,9 +177,14 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                   <FiEdit class="h-5 w-5" />
                 </a>
               </Show>
-              <a title="Open" href={`/card/${props.card.id}`}>
-                <VsFileSymlinkFile class="h-5 w-5 fill-current" />
-              </a>
+              <Tooltip
+                body={
+                  <a title="Open" href={`/card/${props.card.id}`}>
+                    <VsFileSymlinkFile class="h-5 w-5 fill-current" />
+                  </a>
+                }
+                tooltipText="Open in new tab"
+              />
               <CommunityBookmarkPopover
                 bookmarks={props.bookmarks.filter(
                   (bookmark) => bookmark.card_uuid == props.card.id,
