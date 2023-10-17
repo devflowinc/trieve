@@ -11,3 +11,7 @@
 ::-webkit-scrollbar-track {
   border-radius: 1rem;
 }
+
+.dark mark > p {
+  color: white;
+}

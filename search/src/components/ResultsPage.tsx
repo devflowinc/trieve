@@ -231,16 +231,22 @@ const ResultsPage = (props: ResultsPageProps) => {
             document
               .getElementById("speed-dial-menu-text-outside-button")
               ?.classList.remove("hidden");
+            document
+              .getElementById("speed-dial-menu-text-outside-button")
+              ?.classList.add("flex");
           }}
           onMouseLeave={() => {
             document
               .getElementById("speed-dial-menu-text-outside-button")
               ?.classList.add("hidden");
+            document
+              .getElementById("speed-dial-menu-text-outside-button")
+              ?.classList.remove("flex");
           }}
         >
           <div
             id="speed-dial-menu-text-outside-button"
-            class="mb-4 flex flex-col items-center space-y-2"
+            class="mb-4 hidden flex-col items-center space-y-2"
           >
             <button
               type="button"
