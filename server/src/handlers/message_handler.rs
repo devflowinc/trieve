@@ -30,7 +30,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio_stream::StreamExt;
 
-use super::auth_handler::LoggedUser;
+use super::auth_handler::{LoggedUser, RequireAuth};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CreateMessageData {
@@ -624,7 +624,7 @@ pub struct SuggestedQueriesRequest {
 
 pub async fn create_suggested_queries_handler(
     data: web::Json<SuggestedQueriesRequest>,
-    _user: LoggedUser,
+    _required_user: RequireAuth,
 ) -> Result<HttpResponse, ServiceError> {
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let client = Client {
