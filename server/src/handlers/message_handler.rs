@@ -422,10 +422,18 @@ pub async fn stream_response(
             .content;
         let embedding_vector = create_embedding(query.as_str()).await?;
 
-        let search_card_query_results =
-            search_card_query(embedding_vector, 1, pool1, None, None, None, Some(user_id))
-                .await
-                .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        let search_card_query_results = search_card_query(
+            embedding_vector,
+            1,
+            pool1,
+            None,
+            None,
+            None,
+            Some(user_id),
+            None,
+        )
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
         let n_retrievals_to_include = std::env::var("N_RETRIEVALS_TO_INCLUDE")
             .unwrap_or("3".to_string())
             .parse::<usize>()
