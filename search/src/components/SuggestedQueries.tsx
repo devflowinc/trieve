@@ -30,21 +30,30 @@ function SuggestedQueries(props: { query: string }) {
   });
 
   return (
-    <div class="flex w-full flex-col space-y-1 pt-2">
+    <div class="flex w-full flex-col space-y-1 pt-6">
       <Show when={authed()}>
         <h2>Suggested Queries:</h2>
-        <div class="flex flex-col space-y-1">
-          <For each={suggestedQueries()}>
-            {(query) => (
-              <a
-                href={`/search?q=${encodeURIComponent(query)}`}
-                class="text-acid-500 underline"
-              >
-                {query}
-              </a>
-            )}
-          </For>
-        </div>
+        <Show when={suggestedQueries().length}>
+          <div class="flex flex-col space-y-1">
+            <For each={suggestedQueries()}>
+              {(query) => (
+                <a
+                  href={`/search?q=${encodeURIComponent(query)}`}
+                  class="text-blue-500 underline"
+                >
+                  {query}
+                </a>
+              )}
+            </For>
+          </div>
+        </Show>
+        <Show when={!suggestedQueries().length}>
+          <div class="flex flex-col space-y-1">
+            <span class="h-6 w-1/2 animate-pulse rounded-full bg-blue-500/50" />
+            <span class="h-6 w-1/3 animate-pulse rounded-full bg-blue-600/50" />
+            <span class="h-6 w-1/2 animate-pulse rounded-full bg-blue-500/50" />
+          </div>
+        </Show>
       </Show>
     </div>
   );
