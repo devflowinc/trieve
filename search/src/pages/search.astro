@@ -4,6 +4,7 @@ import Footer from "../components/Footer.astro";
 import ResultsPage, { Filters } from "../components/ResultsPage";
 import type { CardsWithTotalPagesDTO } from "../../utils/apiTypes";
 import SearchForm from "../components/SearchForm";
+import SuggestedQueries from "../components/SuggestedQueries";
 
 const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
@@ -98,8 +99,10 @@ try {
         searchType={searchType}
         client:load
       />
+      <SuggestedQueries query={query} client:only/>
     </div>
   </div>
+  
   <ResultsPage
     page={page}
     query={query}

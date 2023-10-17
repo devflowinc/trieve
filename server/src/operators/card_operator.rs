@@ -127,6 +127,7 @@ pub struct SearchCardQueryResult {
     pub total_card_pages: i64,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn search_card_query(
     embedding_vector: Vec<f32>,
     page: u64,
