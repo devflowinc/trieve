@@ -248,6 +248,10 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(web::post().to(handlers::card_handler::search_card)),
                             )
                             .service(
+                                web::resource("/gen_suggestions")
+                                    .route(web::post().to(handlers::message_handler::create_suggested_queries_handler)),
+                            )
+                            .service(
                                 web::resource("/search/{page}")
                                     .route(web::post().to(handlers::card_handler::search_card)),
                             )

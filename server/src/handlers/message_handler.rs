@@ -616,3 +616,75 @@ pub async fn create_cut_card_handler(
         }))),
     }
 }
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct SuggestedQueriesRequest {
+    pub query: String,
+}
+
+pub async fn create_suggested_queries_handler(
+    data: web::Json<SuggestedQueriesRequest>,
+    _user: LoggedUser,
+) -> Result<HttpResponse, ServiceError> {
+    let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+    let client = Client {
+        api_key: openai_api_key,
+        http_client: reqwest::Client::new(),
+        base_url: std::env::var("OPENAI_BASE_URL")
+            .map(|url| {
+                if url.is_empty() {
+                    "https://api.openai.com/v1".to_string()
+                } else {
+                    url
+                }
+            })
+            .unwrap_or("https://api.openai.com/v1".into()),
+    };
+    let query = format!("generate 3 suggested queries based off this query a user made. Your only response should be the 3 queries which are comma seperated and are just text and you do not add any other context or information about the queries.  Here is the query: {}", data.query);
+    let message = ChatMessage {
+        role: Role::User,
+        content: query,
+        name: None,
+    };
+    let parameters = ChatCompletionParameters {
+        model: "gpt-3.5-turbo".into(),
+        messages: vec![message],
+        temperature: None,
+        top_p: None,
+        n: None,
+        stop: None,
+        max_tokens: None,
+        presence_penalty: Some(0.8),
+        frequency_penalty: Some(0.8),
+        logit_bias: None,
+        user: None,
+    };
+
+    let mut query = client
+        .chat()
+        .create(parameters.clone())
+        .await
+        .expect("No OpenAI Completion for topic");
+    let mut queries: Vec<String> = query.choices[0]
+        .message
+        .content
+        .split(',')
+        .map(|query| query.to_string().trim().trim_matches('\n').to_string())
+        .collect();
+    while queries.len() < 3 {
+        query = client
+            .chat()
+            .create(parameters.clone())
+            .await
+            .expect("No OpenAI Completion for topic");
+        queries = query.choices[0]
+            .message
+            .content
+            .split(',')
+            .map(|query| query.to_string().trim().trim_matches('\n').to_string())
+            .collect();
+    }
+    Ok(HttpResponse::Ok().json(json!({
+        "queries": queries,
+    })))
+}
