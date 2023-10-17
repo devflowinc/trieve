@@ -21,6 +21,7 @@ use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat_completion::{ChatCompletionParameters, ChatMessage, Role};
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
 use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio_stream::StreamExt;
@@ -458,6 +459,15 @@ pub async fn search_card(
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_embedding(&data.content).await?;
     let pool1 = pool.clone();
+    let re = Regex::new(r#""(.*?)""#).unwrap();
+
+    let quote_words: Vec<String> = re
+        .captures_iter(&data.content.replace('\\', ""))
+        .map(|capture| {
+            log::info!("{:?}", capture);
+            capture[1].to_string()
+        })
+        .collect();
 
     let search_card_query_results = search_card_query(
         embedding_vector,
@@ -467,6 +477,7 @@ pub async fn search_card(
         data.tag_set.clone(),
         data.filters.clone(),
         current_user_id,
+        Some(quote_words),
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
