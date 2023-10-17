@@ -461,13 +461,11 @@ pub async fn search_card(
     let pool1 = pool.clone();
     let re = Regex::new(r#""(.*?)""#).unwrap();
 
-    let quote_words: Vec<String> = re
+    let quote_words: String = re
         .captures_iter(&data.content.replace('\\', ""))
-        .map(|capture| {
-            log::info!("{:?}", capture);
-            capture[1].to_string()
-        })
-        .collect();
+        .map(|capture| capture[1].to_string())
+        .collect::<Vec<String>>()
+        .join(" ");
 
     let search_card_query_results = search_card_query(
         embedding_vector,

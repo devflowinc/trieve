@@ -135,14 +135,17 @@ pub async fn search_card_query(
     tag_set: Option<Vec<String>>,
     filters: Option<serde_json::Value>,
     current_user_id: Option<uuid::Uuid>,
-    quote_words: Option<Vec<String>>,
+    quote_words: Option<String>,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
 
     let link_tag_set_present = link.clone().is_some_and(|links| !links.is_empty())
         || tag_set.clone().is_some_and(|tags| !tags.is_empty());
 
-    if filters.is_none() && !link_tag_set_present && quote_words.is_none() {
+    if filters.is_none()
+        && !link_tag_set_present
+        && !quote_words.as_ref().is_some_and(|words| !words.is_empty())
+    {
         let mut filter = Filter::default();
         filter.should.push(Condition::is_empty("private"));
         filter.should.push(Condition::is_null("private"));
@@ -242,12 +245,11 @@ pub async fn search_card_query(
         }
     }
 
-    if quote_words.is_some() {
-        query = query.filter(
-            sql::<Bool>("card_metadata.card_metadata_tsvector @@ to_tsquery('english', ")
-                .bind::<Text, _>(quote_words.unwrap().join(" & "))
-                .sql(")"),
-        );
+    if quote_words.as_ref().is_some_and(|words| !words.is_empty()) {
+        query = query.filter(sql::<Bool>(&format!(
+            "card_metadata.content ILIKE '%{}%'",
+            quote_words.expect("Quote words should exist")
+        )));
     }
 
     let filtered_option_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
