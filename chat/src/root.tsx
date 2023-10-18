@@ -20,12 +20,7 @@ export default function Root() {
   const plausibleHost = import.meta.env.VITE_PLAUSIBLE_HOST as string;
   const dataset = import.meta.env.VITE_DATASET as unknown as string;
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-  let title: string | null | undefined;
-
-  if (title == null) {
-    title = "Arguflow Chat - " + dataset;
-  }
+  const title = `Arguflow Chat - ${dataset}`;
 
   const theme = (() => {
     if (typeof localStorage !== "undefined" && localStorage.getItem("theme")) {
