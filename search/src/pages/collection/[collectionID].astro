@@ -90,7 +90,7 @@ try {
       metadata: collectionCardJson,
       status: collectionCardResponse.status,
     };
-    title = `${collectionCards.metadata.collection.name} |` + title;
+    title = `${collectionCards.metadata.collection.name} | ` + title;
     if (collectionCards.metadata.collection.description !== "") {
       description = collectionCards.metadata.collection.description;
     }
@@ -126,7 +126,7 @@ try {
       metadata: collectionCardJson,
       status: collectionCardResponse.status,
     };
-    title = `🔍${query} |` + title;
+    title = `🔍${query} | ` + title;
   }
 } catch (e) {
   console.error(e);

@@ -7,11 +7,11 @@ const dataset = import.meta.env.DATASET as string;
 const ogDescription = import.meta.env.OG_DESCRIPTION as string;
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-let title: string | null | undefined = Astro.props.title;
+let title = Astro.props.title + " - " + dataset;
 if (title == null) {
   title = "Arguflow Search - " + dataset;
-}else{
-  title = title + ' - ' + dataset;
+} else {
+  title = title + " - " + dataset;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
@@ -44,40 +44,40 @@ try {
 <html lang="en">
   <head>
     <script is:inline>
-      const theme = (() => {
-        if (
-          typeof localStorage !== "undefined" &&
-          localStorage.getItem("theme")
-        ) {
-          return localStorage.getItem("theme");
-        }
-        if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-          return "dark";
-        }
-        return "light";
-      })();
-
-      if (theme === "light") {
-        document.documentElement.classList.remove("dark");
-      } else {
-        document.documentElement.classList.add("dark");
+    const theme = (() => {
+      if (
+        typeof localStorage !== "undefined" &&
+        localStorage.getItem("theme")
+      ) {
+        return localStorage.getItem("theme");
       }
-
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", function () {
-          navigator.serviceWorker.register("/sw.js").then(
-            function (registration) {
-              console.log(
-                "Service Worker registered with scope:",
-                registration.scope,
-              );
-            },
-            function (error) {
-              console.log("Service Worker registration failed:", error);
-            },
-          );
-        });
+      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        return "dark";
       }
+      return "light";
+    })();
+
+    if (theme === "light") {
+      document.documentElement.classList.remove("dark");
+    } else {
+      document.documentElement.classList.add("dark");
+    }
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("/sw.js").then(
+          function (registration) {
+            console.log(
+              "Service Worker registered with scope:",
+              registration.scope,
+            );
+          },
+          function (error) {
+            console.log("Service Worker registration failed:", error);
+          },
+        );
+      });
+    }
     </script>
     <meta charset="UTF-8" />
     <link rel="manifest" href="/manifest.json" />

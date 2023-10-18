@@ -33,7 +33,7 @@ try {
   specificCards = { metadata: specificCardJson, status: specificCard.status };
 
   title = `${(specificCards.metadata?.content ?? "")
-    .split(" ")
+    .split(/ +/)
     .slice(0, 5)
     .join(" ")} | Arguflow Search`;
 } catch (e) {
