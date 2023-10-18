@@ -1016,9 +1016,16 @@ pub async fn generate_off_cards(
         name: None,
     });
     cards.iter().enumerate().for_each(|(idx, bookmark)| {
+        let first_240_words = bookmark
+            .content
+            .split_whitespace()
+            .take(240)
+            .collect::<Vec<_>>()
+            .join(" ");
+
         messages.push(ChatMessage {
             role: Role::User,
-            content: format!("Doc {}: {}", idx + 1, bookmark.content.clone()),
+            content: format!("Doc {}: {}", idx + 1, first_240_words),
             name: None,
         });
         messages.push(ChatMessage {
