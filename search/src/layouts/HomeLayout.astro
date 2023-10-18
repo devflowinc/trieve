@@ -5,6 +5,14 @@ const plausibleHost = import.meta.env.PLAUSIBLE_HOST as string;
 const dataset = import.meta.env.DATASET as string;
 const ogDescription = import.meta.env.OG_DESCRIPTION as string;
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+let title: string | null | undefined = Astro.props.title;
+if (title == null) {
+  title = "Arguflow Search - " + dataset;
+}else{
+  title = title + ' - ' + dataset;
+}
+
 let stars = 0;
 try {
   const ghStarResponse = await fetch(
@@ -71,13 +79,13 @@ try {
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <meta name="viewport" content="width=device-width" />
-    <title>Arguflow Search</title>
+    <title>{title}</title>
     <meta name="description" content={ogDescription} />
 
     <!-- Facebook Meta Tags -->
     <meta property="og:url" content="https://search.arguflow.ai/" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Arguflow Search" />
+    <meta property="og:title" content={title} />
     <meta property="og:description" content={ogDescription} />
     <meta
       property="og:image"
@@ -88,7 +96,7 @@ try {
     <meta name="twitter:card" content="summary_large_image" />
     <meta property="twitter:domain" content="search.arguflow.ai" />
     <meta property="twitter:url" content="https://search.arguflow.ai/" />
-    <meta name="twitter:title" content="Arguflow Search" />
+    <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={ogDescription} />
     <meta
       name="twitter:image"

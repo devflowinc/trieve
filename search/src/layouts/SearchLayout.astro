@@ -9,7 +9,9 @@ const ogDescription = import.meta.env.OG_DESCRIPTION as string;
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
 let title: string | null | undefined = Astro.props.title;
 if (title == null) {
-  title = "Arguflow Search";
+  title = "Arguflow Search - " + dataset;
+}else{
+  title = title + ' - ' + dataset;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
@@ -101,7 +103,7 @@ try {
     <meta name="twitter:card" content="summary_large_image" />
     <meta property="twitter:domain" content="search.arguflow.ai" />
     <meta property="twitter:url" content="https://search.arguflow.ai/" />
-    <meta name="twitter:title" content="Arguflow Search" />
+    <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={ogDescription} />
     <meta
       name="twitter:image"
