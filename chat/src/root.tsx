@@ -18,6 +18,14 @@ import ShowToast from "./components/ShowToast";
 
 export default function Root() {
   const plausibleHost = import.meta.env.VITE_PLAUSIBLE_HOST as string;
+  const dataset = import.meta.env.VITE_DATASET as unknown as string;
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  let title: string | null | undefined;
+
+  if (title == null) {
+    title = "Arguflow Chat - " + dataset;
+  }
 
   const theme = (() => {
     if (typeof localStorage !== "undefined" && localStorage.getItem("theme")) {
@@ -66,7 +74,7 @@ export default function Root() {
   return (
     <Html lang="en">
       <Head>
-        <Title>Arguflow Chat</Title>
+        <Title>{title}</Title>
         <Meta charset="utf-8" />
         <Meta name="viewport" content="width=device-width, initial-scale=1" />
         <Link rel="manifest" href="/manifest.json" />
@@ -80,7 +88,7 @@ export default function Root() {
 
         <Meta property="og:url" content="https://arguflow.ai/" />
         <Meta property="og:type" content="website/" />
-        <Meta property="og:title" content="Arguflow Chat" />
+        <Meta property="og:title" content={title} />
         <Meta
           property="og:description"
           content="Demo of Arguflow's LLM-chat infrastructure - Retrieval Augmented Chat"
@@ -93,7 +101,7 @@ export default function Root() {
         <Meta name="twitter:card" content="summary_large_image" />
         <Meta property="twitter:domain" content="chat.arguflow.ai" />
         <Meta property="twitter:url" content="https://chat.arguflow.ai" />
-        <Meta name="twitter:title" content="Arguflow Chat" />
+        <Meta name="twitter:title" content={title} />
         <Meta
           name="twitter:description"
           content="Demo of Arguflow's LLM-chat infrastructure - Retrieval Augmented Chat"
