@@ -37,8 +37,8 @@
 
 ## Live Demos
 
-- [OpenCaselist search](https://search.arguflow.ai)
-- [OpenCaselist RAG](https://chat.arguflow.ai)
+- [CVE security vulnerability search](https://search.arguflow.ai)
+- [CVE security vulnerability RAG](https://chat.arguflow.ai)
 - [Enron Corpus search](https://enron-search.arguflow.ai)
 - [Enron Corpus RAG](https://enron-chat.arguflow.ai)
 
