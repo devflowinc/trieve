@@ -55,10 +55,10 @@ const SearchForm = (props: {
   >(customComboBoxFilterVals);
   const [feelingLuckyText, setFeelingLuckyText] = createSignal(feelingSuffixes);
   const [feelingLuckySpinning, setFeelingLuckySpinning] = createSignal(false);
-  const [searchQueriesFromStorage, setSearchQueriesFromStorage] = createSignal(
-    [],
-  );
-  const [searchHistoryList, setSearchHistoryList] = createSignal([]);
+  const [searchQueriesFromStorage, setSearchQueriesFromStorage] = createSignal<
+    string[]
+  >([]);
+  const [searchHistoryList, setSearchHistoryList] = createSignal<string[]>([]);
 
   createEffect(() => {
     // get the previous searched queries from localStorage and set them into the state;
@@ -78,32 +78,34 @@ const SearchForm = (props: {
     if (searchQueriesFromStorage.includes(query)) {
       return;
     }
-    const queriesArray = [...searchQueriesFromStorage, query];
+    const queriesArray = [
+      ...searchQueriesFromStorage,
+      query,
+    ] as unknown as string[];
     setSearchQueriesFromStorage(queriesArray);
     localStorage.setItem("searchQueries", JSON.stringify(queriesArray));
   };
 
   const updateSearchHistory = (query: string, searchQueries: string[]) => {
-    const storedQueries = searchQueries || [];
-
-    if (typeof query === "string" && query.length > 0 && storedQueries.length) {
-      const filteredQueries = storedQueries.filter((storedQuery: string) => {
-        return storedQuery.toLowerCase().startsWith(query.toLowerCase());
-      });
-
-      filteredQueries.sort((a: string, b: string) => {
-        const aLower = a.toLowerCase();
-        const bLower = b.toLowerCase();
-
-        if (aLower < bLower) return -1;
-        if (aLower > bLower) return 1;
-        return 0;
-      });
-
-      setSearchHistoryList(filteredQueries.slice(0, 3));
-    } else {
-      setSearchHistoryList(searchQueries.slice(0, 3));
+    const storedQueries = searchQueries;
+    if (!query) {
+      return;
     }
+
+    const filteredQueries = storedQueries.filter((storedQuery: string) => {
+      return storedQuery.toLowerCase().startsWith(query.toLowerCase());
+    });
+
+    filteredQueries.sort((a: string, b: string) => {
+      const aLower = a.toLowerCase();
+      const bLower = b.toLowerCase();
+
+      if (aLower < bLower) return -1;
+      if (aLower > bLower) return 1;
+      return 0;
+    });
+
+    setSearchHistoryList(filteredQueries.slice(0, 5));
   };
 
   const resizeTextarea = (
@@ -491,10 +493,10 @@ const SearchForm = (props: {
               <For each={searchHistoryList()}>
                 {(title) => (
                   <div
-                    class="flex w-full cursor-pointer items-center justify-start space-x-2 rounded px-4 py-[6px] pr-[10px] font-bold text-[#c58af9] hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                    class="flex w-full cursor-pointer items-center justify-start space-x-2 rounded px-4 py-[6px] pr-[10px] font-bold text-magenta-500 hover:bg-neutral-200 dark:hover:bg-neutral-800"
                     onClick={(e) => handleHistoryClick(e, title)}
                   >
-                    <AiOutlineClockCircle class="mr-3 h-5 w-5 fill-[#9aa0a6]" />
+                    <AiOutlineClockCircle class="mr-3 h-5 w-5 fill-black dark:fill-white" />
                     {title}
                   </div>
                 )}
