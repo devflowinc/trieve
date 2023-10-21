@@ -9,12 +9,15 @@ use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
 };
 use crate::operators::collection_operator::get_collection_by_id_query;
+use crate::operators::message_operator::{find_relevant_card, FindCardResponse};
 use crate::operators::qdrant_operator::{
     create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
     update_qdrant_point_private_query,
 };
+use actix::Arbiter;
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
+use crossbeam_channel::unbounded;
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat_completion::{ChatCompletionParameters, ChatMessage, Role};
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
@@ -1182,11 +1185,11 @@ pub async fn generate_off_cards(
     });
     messages.push(ChatMessage {
         role: Role::User,
-        content: prev_messages
+        content: format!("Respond to this question and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for.: {}",prev_messages
             .last()
             .expect("There needs to be at least 1 prior message")
             .content
-            .clone(),
+            .clone()),
         name: None,
     });
 
@@ -1204,12 +1207,29 @@ pub async fn generate_off_cards(
         user: None,
     };
 
+    let (s, r) = unbounded::<FindCardResponse>();
+
     let stream = client.chat().create_stream(parameters).await.unwrap();
+    let r1 = r.clone();
+    let s1 = s.clone();
+    Arbiter::new().spawn(async move {
+        let chunk_v: FindCardResponse = r.recv().unwrap();
+        let res = find_relevant_card(chunk_v.chat, cards).unwrap();
+        let _ = s1.send(res);
+    });
 
     Ok(HttpResponse::Ok().streaming(stream.map(
         move |response| -> Result<Bytes, actix_web::Error> {
             if let Ok(response) = response {
                 let chat_content = response.choices[0].delta.content.clone();
+                if let Some(message) = chat_content.clone() {
+                    s.send(FindCardResponse {
+                        cards: vec![],
+                        chat: message,
+                    })
+                    .unwrap();
+                }
+                let cards: FindCardResponse = r1.recv().unwrap();
                 return Ok(Bytes::from(chat_content.unwrap_or("".to_string())));
             }
             Err(ServiceError::InternalServerError.into())
