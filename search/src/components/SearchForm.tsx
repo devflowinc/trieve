@@ -28,6 +28,7 @@ const SearchForm = (props: {
 }) => {
   const stringifiedComboboxSections = import.meta.env
     .PUBLIC_FILTER_ITEMS as string;
+
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const comboboxSections: ComboboxSection[] = stringifiedComboboxSections
     ? JSON.parse(stringifiedComboboxSections)
@@ -181,6 +182,17 @@ const SearchForm = (props: {
         }),
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    if (!("tagSet" in Object.keys(savedCustomFilters))) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      savedCustomFilters.tagSet = [];
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    if (!("link" in Object.keys(savedCustomFilters))) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      savedCustomFilters.link = [];
+    }
+
     setComboBoxSections((prev) => {
       return prev.map((section) => {
         if (section.name === "link") {
@@ -289,8 +301,8 @@ const SearchForm = (props: {
     });
 
     const filters = {
-      tagSet: tagSetFilters,
-      link: linkFilters,
+      tagSet: tagSetFilters ?? [],
+      link: linkFilters ?? [],
       metadataFilters: metadataFilters,
     };
 

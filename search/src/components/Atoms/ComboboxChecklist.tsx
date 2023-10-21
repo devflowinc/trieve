@@ -123,7 +123,7 @@ export const Combobox = (props: ComboboxProps) => {
               <button
                 type="button"
                 classList={{
-                  "flex w-full items-center justify-between rounded p-1 focus:text-black focus:outline-none dark:hover:text-white dark:focus:text-white":
+                  "flex w-full items-center justify-between rounded p-1 hover:bg-neutral-100 dark:hover:bg-neutral-700":
                     true,
                   "bg-neutral-300 dark:bg-neutral-900": selected,
                 }}
