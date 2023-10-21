@@ -217,9 +217,22 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                       </a>
                     </Show>
                     <Show
+                      when={props.card.tag_set && frontMatterVal == "tag_set"}
+                    >
+                      <div class="flex space-x-2">
+                        <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                          Tag Set:{" "}
+                        </span>
+                        <span class="line-clamp-1 break-all">
+                          {props.card.tag_set}
+                        </span>
+                      </div>
+                    </Show>
+                    <Show
                       when={
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                         frontMatterVal !== "link" &&
+                        frontMatterVal !== "tag_set" &&
                         props.card.metadata &&
                         indirectHasOwnProperty(
                           props.card.metadata,
