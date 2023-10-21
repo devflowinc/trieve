@@ -15,8 +15,6 @@ use crate::operators::qdrant_operator::{
 };
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
-use futures_util::stream;
-use itertools::Itertools;
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat_completion::{ChatCompletionParameters, ChatMessage, Role};
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
@@ -1208,16 +1206,7 @@ pub async fn generate_off_cards(
 
     let stream = client.chat().create_stream(parameters).await.unwrap();
 
-    let mut citation_cards_stringified =
-        serde_json::to_string(&cards).expect("Failed to serialize citation cards");
-
-    if !citation_cards_stringified.is_empty() {
-        citation_cards_stringified = format!("{}||", citation_cards_stringified);
-    }
-
-    let new_stream = stream::iter(vec![Ok(Bytes::from(citation_cards_stringified))]);
-
-    Ok(HttpResponse::Ok().streaming(new_stream.chain(stream.map(
+    Ok(HttpResponse::Ok().streaming(stream.map(
         move |response| -> Result<Bytes, actix_web::Error> {
             if let Ok(response) = response {
                 let chat_content = response.choices[0].delta.content.clone();
@@ -1225,37 +1214,5 @@ pub async fn generate_off_cards(
             }
             Err(ServiceError::InternalServerError.into())
         },
-    ))))
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct FindCardResponse {
-    pub cards: Vec<CardMetadataWithVotesWithScore>,
-    pub chat: String,
-}
-
-pub async fn get_rag_cards(
-    data: web::Json<FindCardResponse>,
-    _user: RequireAuth,
-) -> Result<HttpResponse, actix_web::Error> {
-    let bracket_re = Regex::new(r"\[(.*?)\]").unwrap();
-    let num_re = Regex::new(r"\d+").unwrap();
-
-    let used_cards = bracket_re
-        .find_iter(data.chat.as_str())
-        .map(|card_index| -> CardMetadataWithVotesWithScore {
-            let card_num: usize = num_re
-                .find(card_index.as_str())
-                .unwrap()
-                .as_str()
-                .parse::<usize>()
-                .unwrap();
-            log::info!("card index: {}", card_num);
-            data.cards[card_num - 1].clone()
-        })
-        .collect_vec();
-
-    Ok(HttpResponse::Ok().json(json!( {
-        "cards": used_cards,
-    })))
+    )))
 }

@@ -10,13 +10,20 @@ import {
   createSignal,
 } from "solid-js";
 import { FiSend, FiStopCircle } from "solid-icons/fi";
-import { type Message, messageRoleFromIndex } from "../../utils/apiTypes";
+import {
+  type Message,
+  messageRoleFromIndex,
+  ScoreCardDTO,
+  UserDTO,
+} from "../../utils/apiTypes";
 import { AfMessage } from "./Atoms/AfMessage";
 
 export interface LayoutProps {
   selectedIds: Accessor<string[]>;
+  cards: Accessor<ScoreCardDTO[]>;
   setShowNeedLoginModal: Setter<boolean>;
   setOpenChat: Setter<boolean>;
+  user: Accessor<UserDTO | undefined>;
 }
 
 const ChatPopup = (props: LayoutProps) => {
@@ -35,6 +42,7 @@ const ChatPopup = (props: LayoutProps) => {
     createSignal<boolean>(false);
   const [completionAbortController, setCompletionAbortController] =
     createSignal<AbortController>(new AbortController());
+  const [usedCards, setUsedCards] = createSignal<ScoreCardDTO[]>([]);
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
@@ -59,10 +67,38 @@ const ChatPopup = (props: LayoutProps) => {
           };
           return [...prev.slice(0, prev.length - 1), newMessage];
         });
+        getUsedCards();
       }
     }
   };
 
+  const getUsedCards = () => {
+    const bracketRe = /\[(.*?)\]/g;
+    const numRe = /\d+/g;
+    let match;
+    let cardNums;
+
+    while (
+      (match = bracketRe.exec(messages()[messages().length - 1].content)) !==
+      null
+    ) {
+      const cardIndex = match[0];
+      while ((cardNums = numRe.exec(cardIndex)) !== null) {
+        for (const num1 of cardNums) {
+          const cardNum = parseInt(num1);
+          console.log("card index:", cardNum);
+          const card = props.cards()[cardNum - 1];
+          if (!card) {
+            continue;
+          }
+          card.score = cardNum;
+          if (!usedCards().includes(card)) {
+            setUsedCards((prev) => [...prev, card]);
+          }
+        }
+      }
+    }
+  };
   const fetchCompletion = async ({
     new_message_content,
   }: {
@@ -70,6 +106,7 @@ const ChatPopup = (props: LayoutProps) => {
   }) => {
     setStreamingCompletion(true);
     setNewMessageContent("");
+    setUsedCards([]);
     const prevMessages = JSON.parse(
       localStorage.getItem("prevMessages") ?? "[]",
     ) as Message[];
@@ -180,6 +217,8 @@ const ChatPopup = (props: LayoutProps) => {
               {(message, idx) => {
                 return (
                   <AfMessage
+                    user={props.user}
+                    cards={usedCards}
                     role={messageRoleFromIndex(idx())}
                     content={message.content}
                     streamingCompletion={streamingCompletion}
