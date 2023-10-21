@@ -169,6 +169,8 @@ const ResultsPage = (props: ResultsPageProps) => {
           <FullScreenModal isOpen={openChat} setIsOpen={setOpenChat}>
             <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto rounded-md scrollbar-thin">
               <ChatPopup
+                user={user}
+                cards={resultCards}
                 selectedIds={selectedIds}
                 setShowNeedLoginModal={setShowNeedLoginModal}
                 setOpenChat={setOpenChat}
