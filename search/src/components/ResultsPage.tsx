@@ -138,6 +138,9 @@ const ResultsPage = (props: ResultsPageProps) => {
           setClientSideRequestFinished(true);
         });
       } else {
+        if (response.status === 401 || response.status === 403) {
+          setShowNeedLoginModal(true);
+        }
         setClientSideRequestFinished(true);
       }
     });
@@ -306,6 +309,9 @@ const ResultsPage = (props: ResultsPageProps) => {
               >
                 Register
                 <BiRegularLogIn class="h-6 w-6 fill-current" />
+              </a>
+              <a class="text-center font-semibold underline" href="/auth/login">
+                Login
               </a>
             </div>
           </div>
