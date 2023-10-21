@@ -1,4 +1,4 @@
-use crate::data::models::{CutCard, Topic};
+use crate::data::models::{CardMetadataWithVotesWithScore, CutCard, Topic};
 use crate::diesel::prelude::*;
 use crate::operators::topic_operator::get_topic_query;
 use crate::{
@@ -6,7 +6,10 @@ use crate::{
     errors::DefaultError,
 };
 use actix_web::web;
+use itertools::Itertools;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
+use simsearch::{SearchOptions, SimSearch};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ChatCompletionDTO {
@@ -233,4 +236,37 @@ pub fn create_cut_card(
         })?;
 
     Ok(())
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FindCardResponse {
+    pub cards: Vec<CardMetadataWithVotesWithScore>,
+    pub chat: String,
+}
+
+pub fn find_relevant_card(
+    chat: String,
+    cards: Vec<CardMetadataWithVotesWithScore>,
+) -> Result<FindCardResponse, DefaultError> {
+    let bracket_re = Regex::new(r"\[(.*?)\]").unwrap();
+    let num_re = Regex::new(r"\d+").unwrap();
+
+    let used_cards = bracket_re
+        .find_iter(chat.as_str())
+        .map(|card_index| -> CardMetadataWithVotesWithScore {
+            let card_num: usize = num_re
+                .find(card_index.as_str())
+                .unwrap()
+                .as_str()
+                .parse::<usize>()
+                .unwrap();
+            log::info!("card index: {}", card_num);
+            cards[card_num - 1].clone()
+        })
+        .collect_vec();
+
+    Ok(FindCardResponse {
+        cards: used_cards,
+        chat: chat,
+    })
 }
