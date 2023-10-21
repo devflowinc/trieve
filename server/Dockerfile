@@ -16,14 +16,14 @@ RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
 RUN cargo build --release --features "runtime-env"
 
-FROM node:alpine as node-builder
+FROM node:18.18.2-alpine as node-builder
 WORKDIR /app
 COPY ./server-nodejs/yarn.lock /app/server-nodejs/yarn.lock
 COPY ./server-nodejs/package.json /app/server-nodejs/package.json
 RUN yarn --cwd ./server-nodejs install
 
 # Use Ubuntu 22.04 as the base image
-FROM node:18-bookworm as runtime
+FROM node:18.18.2-bookworm as runtime
 
 WORKDIR /app
 COPY --from=builder /app/target/release/vault-server /app/vault-server
