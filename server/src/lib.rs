@@ -259,7 +259,10 @@ pub async fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/tracking_id/{tracking_id}")
                                     .route(web::get().to(handlers::card_handler::get_card_by_tracking_id))
-                                    .route(web::delete().to(handlers::card_handler::delete_card_by_tracking_id)),
+                                    .route(web::delete().to(handlers::card_handler::delete_card_by_tracking_id)))
+                            .service(
+                                web::resource("/get_rag_cards")
+                                .route(web::post().to(handlers::card_handler::get_rag_cards)),
                             )
                             .service(
                                 web::resource("/{card_id}")

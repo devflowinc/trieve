@@ -9,15 +9,14 @@ use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
 };
 use crate::operators::collection_operator::get_collection_by_id_query;
-use crate::operators::message_operator::{find_relevant_card, FindCardResponse};
 use crate::operators::qdrant_operator::{
     create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
     update_qdrant_point_private_query,
 };
-use actix::Arbiter;
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
-use crossbeam_channel::unbounded;
+use futures_util::stream;
+use itertools::Itertools;
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat_completion::{ChatCompletionParameters, ChatMessage, Role};
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
@@ -1207,32 +1206,56 @@ pub async fn generate_off_cards(
         user: None,
     };
 
-    let (s, r) = unbounded::<FindCardResponse>();
-
     let stream = client.chat().create_stream(parameters).await.unwrap();
-    let r1 = r.clone();
-    let s1 = s.clone();
-    Arbiter::new().spawn(async move {
-        let chunk_v: FindCardResponse = r.recv().unwrap();
-        let res = find_relevant_card(chunk_v.chat, cards).unwrap();
-        let _ = s1.send(res);
-    });
 
-    Ok(HttpResponse::Ok().streaming(stream.map(
+    let mut citation_cards_stringified =
+        serde_json::to_string(&cards).expect("Failed to serialize citation cards");
+
+    if !citation_cards_stringified.is_empty() {
+        citation_cards_stringified = format!("{}||", citation_cards_stringified);
+    }
+
+    let new_stream = stream::iter(vec![Ok(Bytes::from(citation_cards_stringified))]);
+
+    Ok(HttpResponse::Ok().streaming(new_stream.chain(stream.map(
         move |response| -> Result<Bytes, actix_web::Error> {
             if let Ok(response) = response {
                 let chat_content = response.choices[0].delta.content.clone();
-                if let Some(message) = chat_content.clone() {
-                    s.send(FindCardResponse {
-                        cards: vec![],
-                        chat: message,
-                    })
-                    .unwrap();
-                }
-                let cards: FindCardResponse = r1.recv().unwrap();
                 return Ok(Bytes::from(chat_content.unwrap_or("".to_string())));
             }
             Err(ServiceError::InternalServerError.into())
         },
-    )))
+    ))))
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FindCardResponse {
+    pub cards: Vec<CardMetadataWithVotesWithScore>,
+    pub chat: String,
+}
+
+pub async fn get_rag_cards(
+    data: web::Json<FindCardResponse>,
+    _user: RequireAuth,
+) -> Result<HttpResponse, actix_web::Error> {
+    let bracket_re = Regex::new(r"\[(.*?)\]").unwrap();
+    let num_re = Regex::new(r"\d+").unwrap();
+
+    let used_cards = bracket_re
+        .find_iter(data.chat.as_str())
+        .map(|card_index| -> CardMetadataWithVotesWithScore {
+            let card_num: usize = num_re
+                .find(card_index.as_str())
+                .unwrap()
+                .as_str()
+                .parse::<usize>()
+                .unwrap();
+            log::info!("card index: {}", card_num);
+            data.cards[card_num - 1].clone()
+        })
+        .collect_vec();
+
+    Ok(HttpResponse::Ok().json(json!( {
+        "cards": used_cards,
+    })))
 }
