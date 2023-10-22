@@ -92,6 +92,11 @@ services:
       exit 0;
       "
 
+  tika:
+    image: apache/tika:2.9.1.0-full
+    ports:
+      - 9998:9998
+
   server:
     image: arguflow/server
     build: ./server/
