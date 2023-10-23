@@ -51,7 +51,7 @@ class Chunk:
         inner_content = re.sub(r"^\n+", "", inner_content)
         inner_content = re.sub(r"\n+$", "", inner_content)
 
-        if not inner_content or len(inner_content.split(" ")) < 10:
+        if not inner_content or len(inner_content.split(" ")) < 20:
             return []
 
         heading_content = self.heading
@@ -128,7 +128,7 @@ def parse_html(html_content):
 
         if child.name in ["h1", "h2", "h3", "h4", "h5", "h6"]:
             cur_heading = child.contents
-        elif child.name in ["table", "ul", "ol"]:
+        elif child.name in ["ul", "ol"]:
             temp_chunk = Chunk(cur_heading, str(child))
             chunks.append(temp_chunk)
             cur_heading = ""
@@ -160,15 +160,18 @@ def parse_html(html_content):
 
 
 def main(html_file_path):
-    html_content = ""
-    with open(html_file_path, "r") as f:
-        html_content = f.read()
+    try:
+        html_content = ""
+        with open(html_file_path, "r") as f:
+            html_content = f.read()
 
-    chunks = parse_html(bs4.BeautifulSoup(html_content, "html.parser").body)
-    results = []
-    for chunk in chunks:
-        results += chunk.output()
-    print(json.dumps(results))
+        chunks = parse_html(bs4.BeautifulSoup(html_content, "html.parser").body)
+        results = []
+        for chunk in chunks:
+            results += chunk.output()
+        print(json.dumps(results))
+    except:
+        print(json.dumps([]))
 
 
 if __name__ == "__main__":
