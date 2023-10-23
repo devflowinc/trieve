@@ -1,22 +1,12 @@
-use crate::{
-    data::models::FileUploadCompletedNotification, diesel::Connection, get_env,
-    handlers::card_handler::convert_html,
-};
-use actix_web::{body::MessageBody, web};
-use base64::{
-    alphabet,
-    engine::{self, general_purpose},
-    Engine as _,
-};
-use diesel::RunQueryDsl;
-use s3::{creds::Credentials, Bucket, Region};
-use std::{path::PathBuf, process::Command};
-
 use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
 use crate::{
     data::models::FileDTO,
     diesel::{ExpressionMethods, QueryDsl},
     errors::ServiceError,
+};
+use crate::{
+    data::models::FileUploadCompletedNotification, diesel::Connection, get_env,
+    handlers::card_handler::convert_html,
 };
 use crate::{
     data::models::{File, Pool},
@@ -27,6 +17,15 @@ use crate::{
         file_handler::UploadFileResult,
     },
 };
+use actix_web::{body::MessageBody, web};
+use base64::{
+    alphabet,
+    engine::{self, general_purpose},
+    Engine as _,
+};
+use diesel::RunQueryDsl;
+use s3::{creds::Credentials, Bucket, Region};
+use std::{path::PathBuf, process::Command};
 
 use super::collection_operator::create_collection_and_add_bookmarks_query;
 use super::notification_operator::add_collection_created_notification_query;
