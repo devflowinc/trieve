@@ -7,11 +7,11 @@ const dataset = import.meta.env.DATASET as string;
 const ogDescription = import.meta.env.OG_DESCRIPTION as string;
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-let title = Astro.props.title + " - " + dataset;
-if (title == null) {
+let title = Astro.props.title;
+if (!title) {
   title = "Arguflow Search - " + dataset;
 } else {
-  title = title + " - " + dataset;
+  title = (title as unknown as string) + " - " + dataset;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
@@ -44,40 +44,40 @@ try {
 <html lang="en">
   <head>
     <script is:inline>
-    const theme = (() => {
-      if (
-        typeof localStorage !== "undefined" &&
-        localStorage.getItem("theme")
-      ) {
-        return localStorage.getItem("theme");
-      }
-      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        return "dark";
-      }
-      return "light";
-    })();
+      const theme = (() => {
+        if (
+          typeof localStorage !== "undefined" &&
+          localStorage.getItem("theme")
+        ) {
+          return localStorage.getItem("theme");
+        }
+        if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+          return "dark";
+        }
+        return "light";
+      })();
 
-    if (theme === "light") {
-      document.documentElement.classList.remove("dark");
-    } else {
-      document.documentElement.classList.add("dark");
-    }
+      if (theme === "light") {
+        document.documentElement.classList.remove("dark");
+      } else {
+        document.documentElement.classList.add("dark");
+      }
 
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", function () {
-        navigator.serviceWorker.register("/sw.js").then(
-          function (registration) {
-            console.log(
-              "Service Worker registered with scope:",
-              registration.scope,
-            );
-          },
-          function (error) {
-            console.log("Service Worker registration failed:", error);
-          },
-        );
-      });
-    }
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("/sw.js").then(
+            function (registration) {
+              console.log(
+                "Service Worker registered with scope:",
+                registration.scope,
+              );
+            },
+            function (error) {
+              console.log("Service Worker registration failed:", error);
+            },
+          );
+        });
+      }
     </script>
     <meta charset="UTF-8" />
     <link rel="manifest" href="/manifest.json" />
@@ -92,7 +92,7 @@ try {
     <!-- Facebook Meta Tags -->
     <meta property="og:url" content="https://search.arguflow.ai/" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content={title} />
+    <meta property="og:title" content={title as unknown as string} />
     <meta property="og:description" content={description} />
     <meta
       property="og:image"
@@ -103,7 +103,7 @@ try {
     <meta name="twitter:card" content="summary_large_image" />
     <meta property="twitter:domain" content="search.arguflow.ai" />
     <meta property="twitter:url" content="https://search.arguflow.ai/" />
-    <meta name="twitter:title" content={title} />
+    <meta name="twitter:title" content={title as unknown as string} />
     <meta name="twitter:description" content={ogDescription} />
     <meta
       name="twitter:image"
