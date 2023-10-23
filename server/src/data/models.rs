@@ -735,33 +735,33 @@ pub struct File {
     pub id: uuid::Uuid,
     pub user_id: uuid::Uuid,
     pub file_name: String,
-    pub mime_type: String,
     pub private: bool,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub size: i64,
     pub tag_set: Option<String>,
+    pub metadata: Option<serde_json::Value>,
 }
 
 impl File {
     pub fn from_details(
         user_id: uuid::Uuid,
         file_name: &str,
-        mime_type: &str,
         private: bool,
         size: i64,
         tag_set: Option<String>,
+        metadata: Option<serde_json::Value>,
     ) -> Self {
         File {
             id: uuid::Uuid::new_v4(),
             user_id,
             file_name: file_name.to_string(),
-            mime_type: mime_type.to_string(),
             private,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             size,
             tag_set,
+            metadata,
         }
     }
 }
@@ -771,12 +771,12 @@ pub struct FileDTO {
     pub id: uuid::Uuid,
     pub user_id: uuid::Uuid,
     pub file_name: String,
-    pub mime_type: String,
     pub private: bool,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub size: i64,
     pub base64url_content: String,
+    pub metadata: Option<serde_json::Value>,
 }
 
 impl From<File> for FileDTO {
@@ -785,12 +785,12 @@ impl From<File> for FileDTO {
             id: file.id,
             user_id: file.user_id,
             file_name: file.file_name,
-            mime_type: file.mime_type,
             private: file.private,
             created_at: file.created_at,
             updated_at: file.updated_at,
             size: file.size,
             base64url_content: "".to_string(),
+            metadata: file.metadata,
         }
     }
 }
