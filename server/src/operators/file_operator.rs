@@ -1,6 +1,6 @@
 use crate::{
     data::models::FileUploadCompletedNotification, diesel::Connection, get_env,
-    handlers::card_handler::convert_html, AppMutexStore,
+    handlers::card_handler::convert_html,
 };
 use actix_web::{body::MessageBody, web};
 use base64::{
@@ -140,7 +140,6 @@ pub async fn convert_doc_to_html_query(
     private: bool,
     user: LoggedUser,
     pool: web::Data<Pool>,
-    mutex_store: web::Data<AppMutexStore>,
 ) -> Result<UploadFileResult, DefaultError> {
     let user1 = user.clone();
     let file_name1 = file_name.clone();
@@ -151,18 +150,19 @@ pub async fn convert_doc_to_html_query(
     tokio::spawn(async move {
         let new_id = uuid::Uuid::new_v4();
         let uuid_file_name = format!("{}-{}", new_id, file_name.replace('/', ""));
-        let temp_docx_file_path = format!("./tmp/{}", uuid_file_name);
+        let temp_html_file_path = format!("./tmp/{}", uuid_file_name);
         let glob_string = format!("./tmp/{}*", new_id);
-        std::fs::write(&temp_docx_file_path, file_data.clone()).map_err(|err| {
+
+        std::fs::write(&temp_html_file_path, file_data.clone()).map_err(|err| {
             log::error!("Could not write file to disk {:?}", err);
-            log::error!("Temp file directory {:?}", temp_docx_file_path);
+            log::error!("Temp file directory {:?}", temp_html_file_path);
             DefaultError {
                 message: "Could not write file to disk",
             }
         })?;
 
-        let delete_docx_file = || {
-            std::fs::remove_file(temp_docx_file_path.clone()).map_err(|err| {
+        let delete_temp_file = || {
+            std::fs::remove_file(temp_html_file_path.clone()).map_err(|err| {
                 log::error!("Could not delete temp docx file {:?}", err);
                 DefaultError {
                     message: "Could not delete temp docx file",
@@ -190,36 +190,46 @@ pub async fn convert_doc_to_html_query(
                 })?;
             }
             _ => {
-                let libreoffice_lock_result = mutex_store.libreoffice.lock();
+                let tika_url = std::env::var("TIKA_URL")
+                    .expect("TIKA_URL must be set")
+                    .to_string();
 
-                if libreoffice_lock_result.is_err() {
-                    delete_docx_file()?;
-                    return Err(DefaultError {
-                        message: "Could not lock libreoffice",
-                    });
-                }
+                let tika_client = reqwest::Client::new();
+                let tika_response = tika_client
+                    .post(&tika_url)
+                    .header("Accept", "text/html")
+                    .body(file_data.clone())
+                    .send()
+                    .await
+                    .map_err(|err| {
+                        log::error!("Could not send file to tika {:?}", err);
+                        DefaultError {
+                            message: "Could not send file to tika",
+                        }
+                    })?;
 
-                let conversion_command_output = Command::new(get_env!(
-                    "LIBREOFFICE_PATH",
-                    "LIBREOFFICE_PATH should be set"
-                ))
-                .arg("--headless")
-                .arg("--convert-to")
-                .arg("html")
-                .arg("--outdir")
-                .arg("./tmp")
-                .arg(&temp_docx_file_path)
-                .output();
+                let tika_response_bytes = tika_response
+                    .bytes()
+                    .await
+                    .map_err(|err| {
+                        log::error!("Could not get tika response bytes {:?}", err);
+                        DefaultError {
+                            message: "Could not get tika response bytes",
+                        }
+                    })?
+                    .to_vec();
 
-                drop(libreoffice_lock_result);
+                std::fs::write(&temp_html_file_path, tika_response_bytes.clone()).map_err(
+                    |err| {
+                        log::error!("Could not write tika response to disk {:?}", err);
+                        log::error!("Temp file directory {:?}", temp_html_file_path);
+                        DefaultError {
+                            message: "Could not write tika response to disk",
+                        }
+                    },
+                )?;
 
-                delete_docx_file()?;
-
-                if conversion_command_output.is_err() {
-                    return Err(DefaultError {
-                        message: "Could not convert file",
-                    });
-                }
+                delete_temp_file()?;
             }
         };
 
