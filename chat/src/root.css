@@ -15,3 +15,7 @@
 .dark mark > p {
   color: white;
 }
+
+.dark mark > div {
+  color: white;
+}
