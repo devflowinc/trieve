@@ -212,6 +212,28 @@ pub async fn convert_doc_to_html_query(
             }
         })?;
 
+        // get file metadata from tika
+        let tika_metadata_response = tika_client
+            .put(&format!("{}/meta", tika_url))
+            .header("Accept", "application/json")
+            .body(tika_response_bytes.clone())
+            .send()
+            .await
+            .map_err(|err| {
+                log::error!("Could not send file to tika {:?}", err);
+                DefaultError {
+                    message: "Could not send file to tika",
+                }
+            })?;
+
+        let tika_metadata_response_json: serde_json::Value =
+            tika_metadata_response.json().await.map_err(|err| {
+                log::error!("Could not get tika metadata response json {:?}", err);
+                DefaultError {
+                    message: "Could not get tika metadata response json",
+                }
+            })?;
+
         delete_temp_file()?;
 
         let file_size = match file_data.len().try_into() {
@@ -229,7 +251,7 @@ pub async fn convert_doc_to_html_query(
             file_size,
             private,
             tag_set.clone(),
-            None,
+            Some(tika_metadata_response_json),
             pool.clone(),
         )?;
 
