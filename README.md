@@ -87,6 +87,12 @@ nvm install --lts
 npm install -g yarn
 ```
 
+### Install python requirements
+
+```
+pip install -r ./server/server-python/requirements.txt 
+```
+
 ### Install cargo-watch
 
 ```
