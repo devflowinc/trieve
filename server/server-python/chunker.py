@@ -5,9 +5,11 @@ import json
 import bs4
 import re
 
+
 def get_sentences(text):
     split_regex = r"(?<=[.|!|?|…])"
     return re.split(split_regex, text)
+
 
 def loop_split_single_sentence(sentences, word_limit):
     max_single_sentence_word_count = len(sentences[0].split(" "))
@@ -22,12 +24,12 @@ def loop_split_single_sentence(sentences, word_limit):
         while remainder > 0:
             word_lengths[remainder - 1] += 1
             remainder -= 1
-        
+
         new_sentences = []
         for word_length in word_lengths:
             new_sentences.append(" ".join(words[:word_length]))
             words = words[word_length:]
-        
+
         max_single_sentence_word_count = 0
         for new_sentence in new_sentences:
             if len(new_sentence.split(" ")) > max_single_sentence_word_count:
@@ -43,11 +45,11 @@ class Chunk:
 
     def output(self):
         inner_content = bs4.BeautifulSoup(self.content_items[0], "html.parser").text
-        inner_content = re.sub(r'\n+', '\n', inner_content)
-        inner_content = re.sub(r'\t+', '', inner_content)
-        inner_content = re.sub(r'\s+', ' ', inner_content)
-        inner_content = re.sub(r'^\n+', '', inner_content)
-        inner_content = re.sub(r'\n+$', '', inner_content)
+        inner_content = re.sub(r"\n+", "\n", inner_content)
+        inner_content = re.sub(r"\t+", "", inner_content)
+        inner_content = re.sub(r"\s+", " ", inner_content)
+        inner_content = re.sub(r"^\n+", "", inner_content)
+        inner_content = re.sub(r"\n+$", "", inner_content)
 
         if not inner_content or len(inner_content.split(" ")) < 10:
             return []
@@ -80,7 +82,9 @@ class Chunk:
                 temp_sentences = sentences[:length]
                 new_sentences = [temp_sentences]
                 if length == 1:
-                    new_sentences = loop_split_single_sentence(temp_sentences, word_limit-heading_word_count)
+                    new_sentences = loop_split_single_sentence(
+                        temp_sentences, word_limit - heading_word_count
+                    )
 
                 for group in new_sentences:
                     new_p_bodies.append("".join(group))
@@ -102,25 +106,26 @@ class Chunk:
             html_chunks.append(cur_html)
 
         return html_chunks
-    
+
+
 def parse_html(html_content):
     cur_heading = ""
     chunks = []
 
     for child in html_content.children:
         text = child.text
-        raw_words = re.split(r'\s+', text)
+        raw_words = re.split(r"\s+", text)
         words = []
         for word in raw_words:
-            word = re.sub(r'\n+', '', word)
-            word = re.sub(r'\t+', '', word)
-            word = re.sub(r'\s+', '', word)
+            word = re.sub(r"\n+", "", word)
+            word = re.sub(r"\t+", "", word)
+            word = re.sub(r"\s+", "", word)
             if word:
                 words.append(word)
                 break
         if len(words) < 1:
             continue
-        
+
         if child.name in ["h1", "h2", "h3", "h4", "h5", "h6"]:
             cur_heading = child.contents
         elif child.name in ["table", "ul", "ol"]:
@@ -129,8 +134,17 @@ def parse_html(html_content):
             cur_heading = ""
         elif child.name in ["p", "div"]:
             sub_children = list(child.children)
-            sub_children = [sub_child for sub_child in sub_children if sub_child != "\n" and sub_child != " "]
-            if len(sub_children) == 1 and sub_children[0].name in ["b", "i", "em", "strong"]:
+            sub_children = [
+                sub_child
+                for sub_child in sub_children
+                if sub_child != "\n" and sub_child != " "
+            ]
+            if len(sub_children) == 1 and sub_children[0].name in [
+                "b",
+                "i",
+                "em",
+                "strong",
+            ]:
                 cur_heading = sub_children[0].text
                 continue
 
@@ -141,7 +155,6 @@ def parse_html(html_content):
             temp_chunk = Chunk(cur_heading, str(child))
             chunks.append(temp_chunk)
             cur_heading = ""
-            
 
     return chunks
 
@@ -150,7 +163,7 @@ def main(html_file_path):
     html_content = ""
     with open(html_file_path, "r") as f:
         html_content = f.read()
-    
+
     chunks = parse_html(bs4.BeautifulSoup(html_content, "html.parser").body)
     results = []
     for chunk in chunks:
