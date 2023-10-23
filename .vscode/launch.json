@@ -8,6 +8,7 @@
           "cargo": {
               "args": [
                   "build",
+                  "--manifest-path=./server/Cargo.toml",
                   "--bin=vault-server",
                   "--package=vault-server"
               ],
@@ -17,7 +18,7 @@
               }
           },
           "args": [],
-          "cwd": "${workspaceFolder}"
+          "cwd": "${workspaceFolder}/server"
       },
       {
           "type": "lldb",
@@ -26,6 +27,7 @@
           "cargo": {
               "args": [
                   "test",
+                  "--manifest-path=./server/Cargo.toml",
                   "--no-run",
                   "--bin=vault-server",
                   "--package=vault-server"
@@ -36,7 +38,7 @@
               }
           },
           "args": [],
-          "cwd": "${workspaceFolder}"
+          "cwd": "${workspaceFolder}/server"
       }
   ]
 }

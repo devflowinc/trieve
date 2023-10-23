@@ -139,19 +139,19 @@ pub async fn convert_doc_to_html_query(
     tokio::spawn(async move {
         let new_id = uuid::Uuid::new_v4();
         let uuid_file_name = format!("{}-{}", new_id, file_name.replace('/', ""));
-        let temp_html_file_path = format!("./tmp/{}", uuid_file_name);
+        let temp_uploaded_file_path = format!("./tmp/{}", uuid_file_name);
         let glob_string = format!("./tmp/{}*", new_id);
 
-        std::fs::write(&temp_html_file_path, file_data.clone()).map_err(|err| {
+        std::fs::write(&temp_uploaded_file_path, file_data.clone()).map_err(|err| {
             log::error!("Could not write file to disk {:?}", err);
-            log::error!("Temp file directory {:?}", temp_html_file_path);
+            log::error!("Temp file directory {:?}", temp_uploaded_file_path);
             DefaultError {
                 message: "Could not write file to disk",
             }
         })?;
 
         let delete_temp_file = || {
-            std::fs::remove_file(temp_html_file_path.clone()).map_err(|err| {
+            std::fs::remove_file(temp_uploaded_file_path.clone()).map_err(|err| {
                 log::error!("Could not delete temp docx file {:?}", err);
                 DefaultError {
                     message: "Could not delete temp docx file",
@@ -164,7 +164,7 @@ pub async fn convert_doc_to_html_query(
             uuid_file_name
                 .rsplit_once('.')
                 .map(|x| x.0)
-                .unwrap_or_default()
+                .unwrap_or(&new_id.to_string())
         ));
         let tika_url = std::env::var("TIKA_URL")
             .expect("TIKA_URL must be set")
@@ -172,7 +172,7 @@ pub async fn convert_doc_to_html_query(
 
         let tika_client = reqwest::Client::new();
         let tika_response = tika_client
-            .post(&format!("{}/tika", tika_url))
+            .put(&format!("{}/tika", tika_url))
             .header("Accept", "text/html")
             .body(file_data.clone())
             .send()
@@ -195,9 +195,9 @@ pub async fn convert_doc_to_html_query(
             })?
             .to_vec();
 
-        std::fs::write(&temp_html_file_path, tika_response_bytes.clone()).map_err(|err| {
+        std::fs::write(&temp_html_file_path_buf, tika_response_bytes.clone()).map_err(|err| {
             log::error!("Could not write tika response to disk {:?}", err);
-            log::error!("Temp file directory {:?}", temp_html_file_path);
+            log::error!("Temp file directory {:?}", temp_html_file_path_buf);
             DefaultError {
                 message: "Could not write tika response to disk",
             }
@@ -207,7 +207,7 @@ pub async fn convert_doc_to_html_query(
         let tika_metadata_response = tika_client
             .put(&format!("{}/meta", tika_url))
             .header("Accept", "application/json")
-            .body(tika_response_bytes.clone())
+            .body(file_data.clone())
             .send()
             .await
             .map_err(|err| {
@@ -349,9 +349,9 @@ pub async fn create_cards_with_handler(
     let card_htmls: Vec<String> = match serde_json::from_slice(&raw_parsed_cards) {
         Ok(card_htmls) => card_htmls,
         Err(err) => {
-            log::error!("HANDLER Could not deserialize cards {:?}", err);
+            log::error!("HANDLER Could not deserialize card_htmls {:?}", err);
             return Err(DefaultError {
-                message: "Could not deserialize cards",
+                message: "Could not deserialize card_htmls",
             });
         }
     };
