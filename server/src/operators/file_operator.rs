@@ -251,7 +251,7 @@ pub async fn convert_doc_to_html_query(
             file_size,
             private,
             tag_set.clone(),
-            Some(tika_metadata_response_json),
+            Some(tika_metadata_response_json.clone()),
             pool.clone(),
         )?;
 
@@ -260,7 +260,7 @@ pub async fn convert_doc_to_html_query(
             .put_object(created_file.id.to_string(), file_data.as_slice())
             .await
             .map_err(|e| {
-                log::info!("Could not upload file to S3 {:?}", e);
+                log::error!("Could not upload file to S3 {:?}", e);
                 DefaultError {
                     message: "Could not upload file to S3",
                 }
@@ -272,6 +272,7 @@ pub async fn convert_doc_to_html_query(
             file_name,
             created_file.id,
             description,
+            Some(tika_metadata_response_json.clone()),
             user,
             temp_html_file_path_buf,
             glob_string,
@@ -305,6 +306,7 @@ pub async fn create_cards_with_handler(
     file_name: String,
     created_file_id: uuid::Uuid,
     description: Option<String>,
+    metadata: Option<serde_json::Value>,
     user: LoggedUser,
     temp_html_file_path_buf: PathBuf,
     glob_string: String,
@@ -337,7 +339,7 @@ pub async fn create_cards_with_handler(
             });
         }
     };
-    log::info!("HANDLER command {} {}", parser_command, file_path_str,);
+
     let parsed_cards_command_output = Command::new(parser_command).arg(file_path_str).output();
 
     delete_html_file()?;
@@ -378,7 +380,7 @@ pub async fn create_cards_with_handler(
             tag_set: tag_set.clone(),
             private: Some(private),
             file_uuid: Some(created_file_id),
-            metadata: None,
+            metadata: metadata.clone(),
             tracking_id: None,
         };
         let web_json_create_card_data = web::Json(create_card_data);
