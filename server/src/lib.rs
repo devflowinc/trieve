@@ -81,10 +81,6 @@ pub async fn main() -> std::io::Result<()> {
         .build(manager)
         .expect("Failed to create pool.");
 
-    let app_mutex_store = web::Data::new(AppMutexStore {
-        libreoffice: Mutex::new(()),
-    });
-
     let redis_store = RedisSessionStore::new(redis_url).await.unwrap();
 
     let qdrant_client = get_qdrant_connection().await.unwrap();
@@ -135,7 +131,6 @@ pub async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(PayloadConfig::new(250000000))
             .app_data(web::Data::new(pool.clone()))
-            .app_data(app_mutex_store.clone())
             .wrap(
                 IdentityMiddleware::builder()
                     .login_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))

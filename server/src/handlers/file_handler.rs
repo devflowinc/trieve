@@ -7,7 +7,6 @@ use crate::{
         convert_doc_to_html_query, delete_file_query, get_file_query, get_user_file_query,
         get_user_id_of_file_query, update_file_query,
     },
-    AppMutexStore,
 };
 use actix_files::NamedFile;
 use actix_web::{web, HttpResponse};
@@ -51,7 +50,6 @@ pub struct UploadFileResult {
 pub async fn upload_file_handler(
     data: web::Json<UploadFileData>,
     pool: web::Data<Pool>,
-    mutex_store: web::Data<AppMutexStore>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let document_upload_feature =
@@ -66,23 +64,9 @@ pub async fn upload_file_handler(
     let upload_file_data = data.into_inner();
     let pool_inner = pool.clone();
 
-    let valid_file_suffixes = ["docx", "doc", "odt", "pdf", "html"];
-    let file_suffix = upload_file_data
-        .file_name
-        .split('.')
-        .last()
-        .ok_or_else(|| ServiceError::BadRequest("Could not get file suffix".to_string()))?;
-    if !valid_file_suffixes.contains(&file_suffix) {
-        return Err(ServiceError::BadRequest(
-            "Invalid file suffix. You may only upload docx, doc, odt, html or pdf files."
-                .to_string(),
-        )
-        .into());
-    }
-
     let base64_engine = engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
 
-    let decoded_cardhtml_file_data = base64_engine
+    let decoded_file_data = base64_engine
         .decode(upload_file_data.base64_docx_file)
         .map_err(|_e| ServiceError::BadRequest("Could not decode base64 file".to_string()))?;
     let decoded_description_file_data = if upload_file_data.description.is_some() {
@@ -106,14 +90,13 @@ pub async fn upload_file_handler(
 
     let conversion_result = convert_doc_to_html_query(
         upload_file_data.file_name,
-        decoded_cardhtml_file_data,
+        decoded_file_data,
         file_mime,
         upload_file_data.tag_set,
         decoded_description_file_data,
         private,
         user,
         pool_inner,
-        mutex_store,
     )
     .await
     .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
