@@ -63,10 +63,10 @@ pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
 pub fn create_file_query(
     user_id: uuid::Uuid,
     file_name: &str,
-    mime_type: &str,
     file_size: i64,
     private: bool,
     tag_set: Option<String>,
+    metadata: Option<serde_json::Value>,
     pool: web::Data<Pool>,
 ) -> Result<File, DefaultError> {
     use crate::data::schema::files::dsl as files_columns;
@@ -75,7 +75,7 @@ pub fn create_file_query(
         message: "Could not get database connection",
     })?;
 
-    let new_file = File::from_details(user_id, file_name, mime_type, private, file_size, tag_set);
+    let new_file = File::from_details(user_id, file_name, private, file_size, tag_set, metadata);
 
     let created_file: File = diesel::insert_into(files_columns::files)
         .values(&new_file)
@@ -134,7 +134,6 @@ pub struct CoreCard {
 pub async fn convert_doc_to_html_query(
     file_name: String,
     file_data: Vec<u8>,
-    file_mime: String,
     tag_set: Option<String>,
     description: Option<String>,
     private: bool,
@@ -143,7 +142,6 @@ pub async fn convert_doc_to_html_query(
 ) -> Result<UploadFileResult, DefaultError> {
     let user1 = user.clone();
     let file_name1 = file_name.clone();
-    let file_mime1 = file_mime.clone();
     let file_data1 = file_data.clone();
     let tag_set1 = tag_set.clone();
 
@@ -177,61 +175,44 @@ pub async fn convert_doc_to_html_query(
                 .map(|x| x.0)
                 .unwrap_or_default()
         ));
+        let tika_url = std::env::var("TIKA_URL")
+            .expect("TIKA_URL must be set")
+            .to_string();
 
-        match file_mime.as_str() {
-            "text/html" => {
-                let temp_html_file_path = temp_html_file_path_buf.to_str().unwrap();
-                std::fs::write(temp_html_file_path, file_data.clone()).map_err(|err| {
-                    log::error!("Could not write file to disk {:?}", err);
-                    log::error!("Temp file directory {:?}", temp_html_file_path);
-                    DefaultError {
-                        message: "Could not write file to disk",
-                    }
-                })?;
+        let tika_client = reqwest::Client::new();
+        let tika_response = tika_client
+            .post(&tika_url)
+            .header("Accept", "text/html")
+            .body(file_data.clone())
+            .send()
+            .await
+            .map_err(|err| {
+                log::error!("Could not send file to tika {:?}", err);
+                DefaultError {
+                    message: "Could not send file to tika",
+                }
+            })?;
+
+        let tika_response_bytes = tika_response
+            .bytes()
+            .await
+            .map_err(|err| {
+                log::error!("Could not get tika response bytes {:?}", err);
+                DefaultError {
+                    message: "Could not get tika response bytes",
+                }
+            })?
+            .to_vec();
+
+        std::fs::write(&temp_html_file_path, tika_response_bytes.clone()).map_err(|err| {
+            log::error!("Could not write tika response to disk {:?}", err);
+            log::error!("Temp file directory {:?}", temp_html_file_path);
+            DefaultError {
+                message: "Could not write tika response to disk",
             }
-            _ => {
-                let tika_url = std::env::var("TIKA_URL")
-                    .expect("TIKA_URL must be set")
-                    .to_string();
+        })?;
 
-                let tika_client = reqwest::Client::new();
-                let tika_response = tika_client
-                    .post(&tika_url)
-                    .header("Accept", "text/html")
-                    .body(file_data.clone())
-                    .send()
-                    .await
-                    .map_err(|err| {
-                        log::error!("Could not send file to tika {:?}", err);
-                        DefaultError {
-                            message: "Could not send file to tika",
-                        }
-                    })?;
-
-                let tika_response_bytes = tika_response
-                    .bytes()
-                    .await
-                    .map_err(|err| {
-                        log::error!("Could not get tika response bytes {:?}", err);
-                        DefaultError {
-                            message: "Could not get tika response bytes",
-                        }
-                    })?
-                    .to_vec();
-
-                std::fs::write(&temp_html_file_path, tika_response_bytes.clone()).map_err(
-                    |err| {
-                        log::error!("Could not write tika response to disk {:?}", err);
-                        log::error!("Temp file directory {:?}", temp_html_file_path);
-                        DefaultError {
-                            message: "Could not write tika response to disk",
-                        }
-                    },
-                )?;
-
-                delete_temp_file()?;
-            }
-        };
+        delete_temp_file()?;
 
         let file_size = match file_data.len().try_into() {
             Ok(file_size) => file_size,
@@ -245,20 +226,16 @@ pub async fn convert_doc_to_html_query(
         let created_file = create_file_query(
             user.id,
             &file_name,
-            &file_mime,
             file_size,
             private,
             tag_set.clone(),
+            None,
             pool.clone(),
         )?;
 
         let bucket = get_aws_bucket()?;
         bucket
-            .put_object_with_content_type(
-                created_file.id.to_string(),
-                file_data.as_slice(),
-                &file_mime,
-            )
+            .put_object(created_file.id.to_string(), file_data.as_slice())
             .await
             .map_err(|e| {
                 log::info!("Could not upload file to S3 {:?}", e);
@@ -291,10 +268,10 @@ pub async fn convert_doc_to_html_query(
         file_metadata: File::from_details(
             user1.id,
             &file_name1,
-            &file_mime1,
             private,
             file_data1.len().try_into().unwrap(),
             tag_set1,
+            None,
         ),
     })
 }

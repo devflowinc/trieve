@@ -124,12 +124,12 @@ diesel::table! {
         id -> Uuid,
         user_id -> Uuid,
         file_name -> Text,
-        mime_type -> Text,
         private -> Bool,
         created_at -> Timestamp,
         updated_at -> Timestamp,
         size -> Int8,
         tag_set -> Nullable<Text>,
+        metadata -> Nullable<Jsonb>,
     }
 }
 

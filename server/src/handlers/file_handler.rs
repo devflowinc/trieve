@@ -86,12 +86,9 @@ pub async fn upload_file_handler(
 
     let private = upload_file_data.private;
 
-    let file_mime = upload_file_data.file_mime_type;
-
     let conversion_result = convert_doc_to_html_query(
         upload_file_data.file_name,
         decoded_file_data,
-        file_mime,
         upload_file_data.tag_set,
         decoded_description_file_data,
         private,
