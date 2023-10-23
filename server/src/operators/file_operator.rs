@@ -312,8 +312,8 @@ pub async fn create_cards_with_handler(
     glob_string: String,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
-    let parser_command = std::env::var("PARSER_COMMAND")
-        .unwrap_or("./server-nodejs/scripts/card_parser.js".to_string());
+    let parser_command =
+        std::env::var("PARSER_COMMAND").unwrap_or("./server-python/chunker.py".to_string());
     let delete_html_file = || {
         let files = glob::glob(glob_string.as_str()).expect("Failed to read glob pattern");
 
@@ -354,8 +354,9 @@ pub async fn create_cards_with_handler(
         }
     };
 
-    let cards: Vec<CoreCard> = match serde_json::from_slice(&raw_parsed_cards) {
-        Ok(cards) => cards,
+    // raw_parsed_cards can be serialized to a vector of Strings
+    let card_htmls: Vec<String> = match serde_json::from_slice(&raw_parsed_cards) {
+        Ok(card_htmls) => card_htmls,
         Err(err) => {
             log::error!("HANDLER Could not deserialize cards {:?}", err);
             return Err(DefaultError {
@@ -368,15 +369,10 @@ pub async fn create_cards_with_handler(
 
     let pool1 = pool.clone();
 
-    for card in cards {
-        let replaced_card_html = card
-            .card_html
-            .replace("<em", "<u><b")
-            .replace("</em>", "</b></u>");
-
+    for card_html in card_htmls {
         let create_card_data = CreateCardData {
-            card_html: Some(replaced_card_html.clone()),
-            link: Some(card.link.clone()),
+            card_html: Some(card_html.clone()),
+            link: None,
             tag_set: tag_set.clone(),
             private: Some(private),
             file_uuid: Some(created_file_id),

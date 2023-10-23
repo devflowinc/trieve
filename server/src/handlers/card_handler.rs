@@ -56,9 +56,7 @@ pub struct CreateCardData {
 }
 
 pub fn convert_html(html: &str) -> String {
-    let html_parse_result = Command::new("node")
-        .arg("./server-nodejs/scripts/html-converter.js")
-        .arg("-html")
+    let html_parse_result = Command::new("./server-python/html-converter.py")
         .arg(html)
         .output();
 
@@ -350,47 +348,7 @@ pub async fn update_card(
         .clone()
         .filter(|card_tracking| !card_tracking.is_empty());
 
-    let html_parse_result = Command::new("node")
-        .arg("./server-nodejs/scripts/html-converter.js")
-        .arg("-html")
-        .arg(card.card_html.as_ref().unwrap_or(&"".to_string()))
-        .output();
-
-    let content = match html_parse_result {
-        Ok(result) => {
-            if result.status.success() {
-                Some(
-                    String::from_utf8(result.stdout)
-                        .unwrap()
-                        .lines()
-                        .collect::<Vec<&str>>()
-                        .join(" ")
-                        .trim_end()
-                        .to_string(),
-                )
-            } else {
-                return Err(ServiceError::BadRequest(format!(
-                    "Could not run html-converter.js: {:?}",
-                    String::from_utf8(result.stderr).unwrap()
-                ))
-                .into());
-            }
-        }
-        Err(_) => {
-            return Ok(HttpResponse::BadRequest().json(json!({
-                "message": "Could not parse html",
-            })))
-        }
-    };
-
-    let new_content = match content {
-        Some(content) => content,
-        None => {
-            return Ok(HttpResponse::BadRequest().json(json!({
-                "message": "Could not parse html",
-            })))
-        }
-    };
+    let new_content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
 
     let card_html = match card.card_html.clone() {
         Some(card_html) => Some(card_html),
