@@ -93,6 +93,12 @@ npm install -g yarn
 pip install -r ./server/server-python/requirements.txt 
 ```
 
+### Make server tmp dir
+
+```
+mkdir server/tmp
+```
+
 ### Install cargo-watch
 
 ```

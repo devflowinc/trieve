@@ -10,7 +10,6 @@ use base64::{
 };
 use diesel::RunQueryDsl;
 use s3::{creds::Credentials, Bucket, Region};
-use serde::{Deserialize, Serialize};
 use std::{path::PathBuf, process::Command};
 
 use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
@@ -122,12 +121,6 @@ pub fn update_file_query(
             message: "Could not update file, try again",
         })?;
     Ok(())
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct CoreCard {
-    pub card_html: String,
-    pub link: String,
 }
 
 #[allow(clippy::too_many_arguments)]
