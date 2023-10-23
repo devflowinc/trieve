@@ -181,7 +181,7 @@ pub async fn convert_doc_to_html_query(
 
         let tika_client = reqwest::Client::new();
         let tika_response = tika_client
-            .post(&tika_url)
+            .post(&format!("{}/tika", tika_url))
             .header("Accept", "text/html")
             .body(file_data.clone())
             .send()
