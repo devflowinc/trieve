@@ -1,8 +1,4 @@
-import {
-  BiRegularLogIn,
-  BiRegularXCircle,
-  BiSolidFolder,
-} from "solid-icons/bi";
+import { BiRegularLogIn, BiRegularXCircle, BiSolidFile } from "solid-icons/bi";
 import { Show, createSignal } from "solid-js";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 
@@ -127,7 +123,7 @@ export const UploadFile = () => {
             </Show>
             <Show when={file() != undefined}>
               <div class="flex items-center">
-                <BiSolidFolder
+                <BiSolidFile
                   classList={{ "mr-1 mb-2": true }}
                   color="#6b7280"
                   fill="#6b7280"
@@ -142,7 +138,6 @@ export const UploadFile = () => {
             id="dropzone-file"
             type="file"
             class="hidden"
-            accept="application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/html,application/pdf"
             onChange={handleDirectUpload}
           />
         </label>

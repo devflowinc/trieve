@@ -94,6 +94,8 @@ services:
 
   tika:
     image: apache/tika:2.9.1.0-full
+    networks:
+      - app-network
     ports:
       - 9998:9998
 
@@ -135,7 +137,7 @@ services:
       - DUPLICATE_DISTANCE_THRESHOLD=${DUPLICATE_DISTANCE_THRESHOLD}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL}
       - DOCUMENT_DOWNLOAD_FEATURE=${DOCUMENT_DOWNLOAD_FEATURE}
-      - TIKA_SERVER_URL=${TIKA_SERVER_URL}
+      - TIKA_URL=${TIKA_URL}
 
   chat:
     image: arguflow/chat
