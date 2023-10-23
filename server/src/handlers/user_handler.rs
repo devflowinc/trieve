@@ -1,7 +1,3 @@
-use actix_web::{web, HttpResponse};
-use serde::{Deserialize, Serialize};
-use serde_json::json;
-
 use crate::{
     data::models::{Pool, UserDTOWithScore},
     errors::{DefaultError, ServiceError},
@@ -10,6 +6,9 @@ use crate::{
         set_user_api_key_query, update_user_query,
     },
 };
+use actix_web::{web, HttpResponse};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use super::auth_handler::{LoggedUser, RequireAuth};
 

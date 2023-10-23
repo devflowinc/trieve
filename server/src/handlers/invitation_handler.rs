@@ -1,8 +1,4 @@
-use actix_web::{web, HttpRequest, HttpResponse};
-use diesel::prelude::*;
-use serde::{Deserialize, Serialize};
-use serde_json::to_string;
-
+use super::auth_handler::RequireAuth;
 use crate::{
     data::{
         models::{Invitation, Pool},
@@ -11,8 +7,10 @@ use crate::{
     errors::{DefaultError, ServiceError},
     operators::user_operator::get_user_by_email_query,
 };
-
-use super::auth_handler::RequireAuth;
+use actix_web::{web, HttpRequest, HttpResponse};
+use diesel::prelude::*;
+use serde::{Deserialize, Serialize};
+use serde_json::to_string;
 
 #[derive(Deserialize, Serialize)]
 pub struct InvitationResponse {

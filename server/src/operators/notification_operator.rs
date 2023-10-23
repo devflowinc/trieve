@@ -1,10 +1,3 @@
-use actix_web::web;
-use diesel::{
-    ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl, RunQueryDsl,
-    SelectableHelper,
-};
-use serde::{Deserialize, Serialize};
-
 use crate::{
     data::models::{
         FileUploadCompletedNotification, FileUploadCompletedNotificationWithName, Pool,
@@ -12,6 +5,12 @@ use crate::{
     errors::DefaultError,
     handlers::notification_handler::Notification,
 };
+use actix_web::web;
+use diesel::{
+    ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl, RunQueryDsl,
+    SelectableHelper,
+};
+use serde::{Deserialize, Serialize};
 
 pub fn add_collection_created_notification_query(
     collection: FileUploadCompletedNotification,

@@ -1,11 +1,9 @@
-use actix_web::web;
-
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
-
 use crate::{
     data::models::{CardVote, Pool},
     errors::DefaultError,
 };
+use actix_web::web;
 
 pub fn create_vote_query(
     voted_user_id: &uuid::Uuid,

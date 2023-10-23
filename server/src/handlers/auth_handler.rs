@@ -1,12 +1,4 @@
-use std::future::{ready, Ready};
-
-use actix_identity::Identity;
-use actix_web::{
-    dev::Payload, web, Error, FromRequest, HttpMessage as _, HttpRequest, HttpResponse,
-};
-use diesel::prelude::*;
-use serde::Deserialize;
-
+use crate::handlers::register_handler;
 use crate::{
     data::models::{Pool, SlimUser, User},
     errors::{DefaultError, ServiceError},
@@ -16,8 +8,13 @@ use crate::{
         user_operator::{get_user_by_id_query, get_user_from_api_key_query},
     },
 };
-
-use crate::handlers::register_handler;
+use actix_identity::Identity;
+use actix_web::{
+    dev::Payload, web, Error, FromRequest, HttpMessage as _, HttpRequest, HttpResponse,
+};
+use diesel::prelude::*;
+use serde::Deserialize;
+use std::future::{ready, Ready};
 
 #[derive(Debug, Deserialize)]
 pub struct AuthData {

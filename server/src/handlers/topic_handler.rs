@@ -1,3 +1,4 @@
+use super::message_handler::get_topic_string;
 use crate::{
     data::models::{Pool, Topic},
     errors::{DefaultError, ServiceError},
@@ -9,8 +10,6 @@ use crate::{
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
-
-use super::message_handler::get_topic_string;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateTopicData {

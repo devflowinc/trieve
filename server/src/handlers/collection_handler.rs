@@ -1,5 +1,12 @@
-use std::collections::HashSet;
-
+use super::auth_handler::{LoggedUser, RequireAuth};
+use crate::{
+    data::models::{
+        CardCollection, CardCollectionAndFile, CardCollectionBookmark,
+        CardMetadataWithVotesWithScore, Pool,
+    },
+    errors::ServiceError,
+    operators::{card_operator::get_collided_cards_query, collection_operator::*},
+};
 use actix_web::{
     web::{self, Bytes},
     HttpResponse,
@@ -11,18 +18,7 @@ use openai_dive::v1::{
     resources::chat_completion::{ChatCompletionParameters, ChatMessage, Role},
 };
 use serde::{Deserialize, Serialize};
-
-use crate::{
-    data::models::{
-        CardCollection, CardCollectionAndFile, CardCollectionBookmark,
-        CardMetadataWithVotesWithScore, Pool,
-    },
-    errors::ServiceError,
-    operators::{card_operator::get_collided_cards_query, collection_operator::*},
-};
-
-use super::auth_handler::{LoggedUser, RequireAuth};
-//new handler and operator to get collections a card is in
+use std::collections::HashSet;
 
 pub async fn user_owns_collection(
     user_id: uuid::Uuid,

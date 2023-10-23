@@ -1,14 +1,13 @@
+use crate::{
+    data::models::{Invitation, Pool, SlimUser, User},
+    errors::DefaultError,
+};
 use actix_web::{web, HttpResponse};
 use argon2::{self, Config};
 use diesel::prelude::*;
 use once_cell::sync::Lazy;
 use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
-
-use crate::{
-    data::models::{Invitation, Pool, SlimUser, User},
-    errors::DefaultError,
-};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SetPasswordData {
