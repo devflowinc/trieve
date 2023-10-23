@@ -1,4 +1,8 @@
 use crate::{
+    data::models::{CardCollection, Pool},
+    errors::DefaultError,
+};
+use crate::{
     data::models::{
         CardCollectionAndFileWithCount, CardCollectionBookmark, CardMetadataWithCount,
         CardMetadataWithVotesWithScore, FileCollection, FullTextSearchResult, SlimCollection,
@@ -7,17 +11,11 @@ use crate::{
     errors::ServiceError,
     operators::card_operator::get_metadata_query,
 };
-
 use actix_web::web;
 use diesel::{
     dsl::sql, sql_types::Int8, BoolExpressionMethods, JoinOnDsl, NullableExpressionMethods,
 };
 use serde::{Deserialize, Serialize};
-
-use crate::{
-    data::models::{CardCollection, Pool},
-    errors::DefaultError,
-};
 
 pub fn create_collection_query(
     new_collection: CardCollection,

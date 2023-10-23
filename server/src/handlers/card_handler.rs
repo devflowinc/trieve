@@ -1,6 +1,4 @@
-use std::collections::HashSet;
-use std::process::Command;
-
+use super::auth_handler::{LoggedUser, RequireAuth};
 use crate::data::models::{
     CardCollection, CardMetadata, CardMetadataWithVotesWithScore, Pool, UserDTO,
 };
@@ -24,9 +22,9 @@ use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::collections::HashSet;
+use std::process::Command;
 use tokio_stream::StreamExt;
-
-use super::auth_handler::{LoggedUser, RequireAuth};
 
 pub async fn user_owns_card(
     user_id: uuid::Uuid,

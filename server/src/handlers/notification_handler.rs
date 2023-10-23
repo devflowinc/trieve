@@ -1,3 +1,4 @@
+use super::auth_handler::LoggedUser;
 use crate::{
     data::models::{FileUploadCompletedNotificationWithName, Pool},
     errors::ServiceError,
@@ -8,8 +9,6 @@ use crate::{
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
-
-use super::auth_handler::LoggedUser;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(untagged)]

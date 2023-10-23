@@ -1,3 +1,5 @@
+use super::collection_operator::create_collection_and_add_bookmarks_query;
+use super::notification_operator::add_collection_created_notification_query;
 use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
 use crate::{
     data::models::FileDTO,
@@ -26,9 +28,6 @@ use base64::{
 use diesel::RunQueryDsl;
 use s3::{creds::Credentials, Bucket, Region};
 use std::{path::PathBuf, process::Command};
-
-use super::collection_operator::create_collection_and_add_bookmarks_query;
-use super::notification_operator::add_collection_created_notification_query;
 
 pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
     let s3_access_key = get_env!("S3_ACCESS_KEY", "S3_ACCESS_KEY should be set").into();

@@ -1,3 +1,4 @@
+use super::auth_handler::{LoggedUser, RequireAuth};
 use crate::{
     data::models,
     data::models::{CardMetadataWithVotesWithScore, Pool},
@@ -29,8 +30,6 @@ use openai_dive::v1::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio_stream::StreamExt;
-
-use super::auth_handler::{LoggedUser, RequireAuth};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CreateMessageData {

@@ -1,11 +1,9 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
+use super::schema::*;
 use diesel::{expression::ValidGrouping, r2d2::ConnectionManager, PgConnection};
-
 use openai_dive::v1::resources::chat_completion::{ChatMessage, Role};
 use serde::{Deserialize, Serialize};
-
-use super::schema::*;
 
 // type alias to use in multiple places
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;

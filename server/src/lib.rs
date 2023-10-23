@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate diesel;
 
+use crate::{
+    handlers::auth_handler::create_admin_account, operators::card_operator::get_qdrant_connection,
+};
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
@@ -15,10 +18,6 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use qdrant_client::{
     prelude::*,
     qdrant::{VectorParams, VectorsConfig},
-};
-
-use crate::{
-    handlers::auth_handler::create_admin_account, operators::card_operator::get_qdrant_connection,
 };
 
 mod data;

@@ -1,6 +1,4 @@
-use actix_web::{web, HttpResponse};
-use serde::{Deserialize, Serialize};
-
+use super::auth_handler::LoggedUser;
 use crate::{
     data::models::Pool,
     operators::{
@@ -8,8 +6,8 @@ use crate::{
         vote_operator::{create_vote_query, delete_vote_query},
     },
 };
-
-use super::auth_handler::LoggedUser;
+use actix_web::{web, HttpResponse};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateVoteData {

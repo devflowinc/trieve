@@ -1,13 +1,11 @@
-use std::str::FromStr;
-
+use super::card_operator::{get_qdrant_connection, SearchResult};
+use crate::errors::{DefaultError, ServiceError};
 use qdrant_client::qdrant::{
     point_id::PointIdOptions, with_payload_selector::SelectorOptions, Filter, PointId, PointStruct,
     RecommendPoints, SearchPoints, WithPayloadSelector,
 };
 use serde_json::json;
-
-use super::card_operator::{get_qdrant_connection, SearchResult};
-use crate::errors::{DefaultError, ServiceError};
+use std::str::FromStr;
 
 pub async fn create_new_qdrant_point_query(
     point_id: uuid::Uuid,

@@ -23,8 +23,6 @@ use diesel::{
 };
 use itertools::Itertools;
 use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
-use std::collections::HashSet;
-
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::{
     prelude::{QdrantClient, QdrantClientConfig},
@@ -32,6 +30,7 @@ use qdrant_client::{
 };
 use serde::{Deserialize, Serialize};
 use simsearch::SimSearch;
+use std::collections::HashSet;
 
 pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
     let qdrant_url = get_env!("QDRANT_URL", "QDRANT_URL should be set");

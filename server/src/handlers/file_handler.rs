@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use crate::{
     data::models::{File, Pool},
     errors::ServiceError,
@@ -16,6 +14,7 @@ use base64::{
     Engine as _,
 };
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 use super::auth_handler::{LoggedUser, RequireAuth};
 pub async fn user_owns_file(
