@@ -139,25 +139,7 @@ pub async fn convert_doc_to_html_query(
     tokio::spawn(async move {
         let new_id = uuid::Uuid::new_v4();
         let uuid_file_name = format!("{}-{}", new_id, file_name.replace('/', ""));
-        let temp_uploaded_file_path = format!("./tmp/{}", uuid_file_name);
         let glob_string = format!("./tmp/{}*", new_id);
-
-        std::fs::write(&temp_uploaded_file_path, file_data.clone()).map_err(|err| {
-            log::error!("Could not write file to disk {:?}", err);
-            log::error!("Temp file directory {:?}", temp_uploaded_file_path);
-            DefaultError {
-                message: "Could not write file to disk",
-            }
-        })?;
-
-        let delete_temp_file = || {
-            std::fs::remove_file(temp_uploaded_file_path.clone()).map_err(|err| {
-                log::error!("Could not delete temp docx file {:?}", err);
-                DefaultError {
-                    message: "Could not delete temp docx file",
-                }
-            })
-        };
 
         let temp_html_file_path_buf = std::path::PathBuf::from(&format!(
             "./tmp/{}.html",
@@ -224,8 +206,6 @@ pub async fn convert_doc_to_html_query(
                     message: "Could not get tika metadata response json",
                 }
             })?;
-
-        delete_temp_file()?;
 
         let file_size = match file_data.len().try_into() {
             Ok(file_size) => file_size,

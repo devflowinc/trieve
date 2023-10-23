@@ -73,6 +73,7 @@ export interface ScoreCardProps {
 
 const ScoreCard = (props: ScoreCardProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const voteFeature = import.meta.env.PUBLIC_SEARCH_VOTE_FEATURE as string;
 
   const frontMatterVals = (
     (import.meta.env.PUBLIC_FRONTMATTER_VALS as string | undefined) ??
@@ -354,7 +355,7 @@ const ScoreCard = (props: ScoreCardProps) => {
             </div>
             <div class="flex w-full items-start">
               <div class="flex flex-col items-center pr-2">
-                <Show when={!props.card.private}>
+                <Show when={voteFeature != "off" && !props.card.private}>
                   <button
                     onClick={(e) => {
                       e.preventDefault();

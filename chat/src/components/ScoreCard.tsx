@@ -55,6 +55,8 @@ export const getLocalTime = (strDate: string | Date) => {
 
 const ScoreCard = (props: ScoreCardProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
+  const voteFeature = import.meta.env.VITE_CHAT_VOTE_FEATURE as string;
+
   const frontMatterVals = (
     (import.meta.env.VITE_FRONTMATTER_VALS as string | undefined) ??
     "link,tag_set"
@@ -171,7 +173,7 @@ const ScoreCard = (props: ScoreCardProps) => {
         </div>
         <div class="flex w-full items-start">
           <div class="flex flex-col items-center pr-2">
-            <Show when={!props.card.private}>
+            <Show when={voteFeature !== "off" && !props.card.private}>
               <button
                 onClick={(e) => {
                   e.preventDefault();
