@@ -106,6 +106,8 @@ services:
       - app-network
     ports:
       - 8090:8090
+    links:
+      - tika:tika
     environment:
       - REDIS_URL=${REDIS_URL}
       - QDRANT_URL=${QDRANT_URL}
@@ -146,8 +148,8 @@ services:
       - app-network
     ports:
       - 3000:3000
-    depends_on:
-      - server
+    links:
+      - server:server
     environment:
       - VITE_FRONTMATTER_VALS=${VITE_FRONTMATTER_VALS}
       - VITE_LINES_BEFORE_SHOW_MORE=${VITE_LINES_BEFORE_SHOW_MORE}
@@ -157,6 +159,7 @@ services:
       - VITE_YOUTUBE_EMBED_URL=${VITE_YOUTUBE_EMBED_URL}
       - VITE_PLAUSIBLE_HOST=${VITE_PLAUSIBLE_HOST}
       - VITE_SHOW_GITHUB_STARS=${VITE_SHOW_GITHUB_STARS}
+      - VITE_CHAT_VOTE_FEATURE=${VITE_CHAT_VOTE_FEATURE}
 
   search:
     image: arguflow/search
@@ -165,8 +168,8 @@ services:
       - app-network
     ports:
       - 3001:3000
-    depends_on:
-      - server
+    links:
+      - server:server
     environment:
       - PUBLIC_API_HOST=${PUBLIC_API_HOST}
       - PUBLIC_FILTER_ITEMS=${PUBLIC_FILTER_ITEMS}
@@ -186,6 +189,7 @@ services:
       - PUBLIC_DATE_RANGE_VALUE=${PUBLIC_DATE_RANGE_VALUE}
       - PUBLIC_SHOW_GITHUB_STARS=${PUBLIC_SHOW_GITHUB_STARS}
       - SUGGESTED_QUERIES=${SUGGESTED_QUERIES}
+      - PUBLIC_SEARCH_VOTE_FEATURE=${PUBLIC_SEARCH_VOTE_FEATURE}
 
 networks:
   app-network:
