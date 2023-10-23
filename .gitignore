@@ -17,10 +17,6 @@ testing.ipynb
 server-python/testing.ipynb
 output.json
 temp.json
-server-nodejs/scripts/clean_training_data1.json
-server-python/application.zip
-server-python/arguflow-dataset.zip
-server-python/arguflow-dataset
 server/target
 server/images
 *.icloud

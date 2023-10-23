@@ -1,8 +1,6 @@
 #[macro_use]
 extern crate diesel;
 
-use std::sync::Mutex;
-
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
@@ -35,10 +33,6 @@ pub const SECONDS_IN_DAY: u64 = 24 * SECONDS_IN_HOUR;
 
 fn run_migrations(conn: &mut impl MigrationHarness<diesel::pg::Pg>) {
     conn.run_pending_migrations(MIGRATIONS).unwrap();
-}
-
-pub struct AppMutexStore {
-    pub libreoffice: Mutex<()>,
 }
 
 #[macro_export]

@@ -70,8 +70,7 @@ python3 \
 python3-pip \
 libpq-dev \
 libssl-dev \
-openssl \
-libreoffice
+openssl
 ```
 ### Install NodeJS and Yarn
 
@@ -86,12 +85,6 @@ You should restart the terminal to update bash profile with NVM. Then, you can i
 ```
 nvm install --lts
 npm install -g yarn
-```
-
-### Install node requirements
-
-```
-yarn --cwd ./server/server-nodejs
 ```
 
 ### Install cargo-watch
