@@ -4,18 +4,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { BiSolidUserRectangle } from "solid-icons/bi";
 import { AiFillRobot } from "solid-icons/ai";
-import {
-  Accessor,
-  For,
-  Show,
-  createEffect,
-  createMemo,
-  createSignal,
-} from "solid-js";
+import { Accessor, For, Show, createEffect, createSignal } from "solid-js";
 import {
   CardBookmarksDTO,
   isCardCollectionPageDTO,
-  type CardMetadataWithVotes,
   UserDTO,
   CardCollectionDTO,
   ScoreCardDTO,
@@ -45,6 +37,8 @@ export const AfMessage = (props: AfMessageProps) => {
 
   const [bookmarks, setBookmarks] = createSignal<CardBookmarksDTO[]>([]);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
+  const [metadata, setMetadata] = createSignal<ScoreCardDTO[]>([]);
+
   const fetchCardCollections = () => {
     if (!user()) return;
 
@@ -70,7 +64,7 @@ export const AfMessage = (props: AfMessageProps) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        card_ids: props.cards().flatMap((c) => {
+        card_ids: metadata().flatMap((c) => {
           return c.metadata[0].id;
         }),
       }),
@@ -94,6 +88,36 @@ export const AfMessage = (props: AfMessageProps) => {
     fetchBookmarks();
   });
 
+  createEffect(() => {
+    if (!props.streamingCompletion()) return;
+    const bracketRe = /\[(.*?)\]/g;
+    const numRe = /\d+/g;
+    let match;
+    let cardNums;
+    const cardNumList = [];
+
+    while ((match = bracketRe.exec(props.content)) !== null) {
+      const cardIndex = match[0];
+      while ((cardNums = numRe.exec(cardIndex)) !== null) {
+        for (const num1 of cardNums) {
+          const cardNum = parseInt(num1);
+          cardNumList.push(cardNum);
+        }
+      }
+    }
+    cardNumList.sort((a, b) => a - b);
+    for (const num of cardNumList) {
+      const card = props.cards()[num - 1];
+      if (!card) {
+        continue;
+      }
+      card.score = num;
+      if (!metadata().includes(card)) {
+        setMetadata((prev) => [...prev, card]);
+      }
+    }
+  });
+
   return (
     <>
       <Show when={props.role !== "system"}>
@@ -114,7 +138,7 @@ export const AfMessage = (props: AfMessageProps) => {
               classList={{
                 "w-full": true,
                 "flex flex-col gap-y-8 items-start lg:gap-4 lg:grid lg:grid-cols-3 flex-col-reverse lg:flex-row":
-                  !!props.cards(),
+                  !!metadata(),
               }}
             >
               <div class="col-span-2 whitespace-pre-line text-neutral-800 dark:text-neutral-50">
@@ -128,9 +152,9 @@ export const AfMessage = (props: AfMessageProps) => {
                   />
                 </div>
               </Show>
-              <Show when={props.cards() && props.role == "assistant"}>
-                <div class="max-h-[600px] w-full flex-col space-y-3 overflow-scroll overflow-x-hidden scrollbar-thin scrollbar-track-inherit">
-                  <For each={props.cards()}>
+              <Show when={props.role == "assistant" && metadata().length > 0}>
+                <div class="max-h-[600px] w-full flex-col space-y-3 overflow-scroll overflow-x-hidden scrollbar-thin scrollbar-track-neutral-200 dark:scrollbar-track-zinc-700">
+                  <For each={metadata()}>
                     {(card) => (
                       <ScoreCard
                         signedInUserId={props.user()?.id}

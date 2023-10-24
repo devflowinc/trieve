@@ -256,28 +256,28 @@ const ScoreCard = (props: ScoreCardProps) => {
                   tooltipText="Private. Only you can see this card."
                 />
               </Show>
-              <input
-                id="default-checkbox"
-                type="checkbox"
-                onClick={() => {
-                  const cardId = props.card.id;
-                  props.setSelectedIds((prev) => {
-                    if (prev.includes(cardId)) {
-                      return prev.filter((id) => id !== cardId);
-                    }
-                    return [...prev, cardId];
-                  });
-                }}
-                checked={props.selectedIds().includes(props.card.id)}
-                class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-green-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
-              />
-
+              <Show when={!props.chat}>
+                <input
+                  id="default-checkbox"
+                  type="checkbox"
+                  onClick={() => {
+                    const cardId = props.card.id;
+                    props.setSelectedIds((prev) => {
+                      if (prev.includes(cardId)) {
+                        return prev.filter((id) => id !== cardId);
+                      }
+                      return [...prev, cardId];
+                    });
+                  }}
+                  checked={props.selectedIds().includes(props.card.id)}
+                  class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-green-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
+                />
+              </Show>
               <Show when={props.total > 1}>
                 <span class="font-semibold">
-                  {props.counter} of {props.total}
-                  duplicates
+                  {props.counter} of {props.total} duplicates
                   <Show when={props.begin && props.end}>
-                    {props.begin != props.end ? "between" : "on"}{" "}
+                    {props.begin != props.end ? " between" : " on"}{" "}
                     {formatDate(new Date(props.begin ?? 0))}
                     {props.begin != props.end &&
                       ` and ${formatDate(new Date(props.end ?? 0))}`}

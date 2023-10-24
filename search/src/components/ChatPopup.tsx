@@ -42,7 +42,6 @@ const ChatPopup = (props: LayoutProps) => {
     createSignal<boolean>(false);
   const [completionAbortController, setCompletionAbortController] =
     createSignal<AbortController>(new AbortController());
-  const [usedCards, setUsedCards] = createSignal<ScoreCardDTO[]>([]);
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
@@ -67,38 +66,10 @@ const ChatPopup = (props: LayoutProps) => {
           };
           return [...prev.slice(0, prev.length - 1), newMessage];
         });
-        getUsedCards();
       }
     }
   };
 
-  const getUsedCards = () => {
-    const bracketRe = /\[(.*?)\]/g;
-    const numRe = /\d+/g;
-    let match;
-    let cardNums;
-
-    while (
-      (match = bracketRe.exec(messages()[messages().length - 1].content)) !==
-      null
-    ) {
-      const cardIndex = match[0];
-      while ((cardNums = numRe.exec(cardIndex)) !== null) {
-        for (const num1 of cardNums) {
-          const cardNum = parseInt(num1);
-          console.log("card index:", cardNum);
-          const card = props.cards()[cardNum - 1];
-          if (!card) {
-            continue;
-          }
-          card.score = cardNum;
-          if (!usedCards().includes(card)) {
-            setUsedCards((prev) => [...prev, card]);
-          }
-        }
-      }
-    }
-  };
   const fetchCompletion = async ({
     new_message_content,
   }: {
@@ -106,7 +77,6 @@ const ChatPopup = (props: LayoutProps) => {
   }) => {
     setStreamingCompletion(true);
     setNewMessageContent("");
-    setUsedCards([]);
     const prevMessages = JSON.parse(
       localStorage.getItem("prevMessages") ?? "[]",
     ) as Message[];
@@ -218,7 +188,7 @@ const ChatPopup = (props: LayoutProps) => {
                 return (
                   <AfMessage
                     user={props.user}
-                    cards={usedCards}
+                    cards={props.cards}
                     role={messageRoleFromIndex(idx())}
                     content={message.content}
                     streamingCompletion={streamingCompletion}
