@@ -103,7 +103,7 @@ pub async fn main() -> std::io::Result<()> {
         })
         .await
         .map_err(|err| {
-            println!("Failed to create collection: {:?}", err);
+            log::info!("Failed to create collection: {:?}", err);
         });
 
     run_migrations(&mut pool.get().unwrap());

@@ -739,6 +739,7 @@ pub struct File {
     pub size: i64,
     pub tag_set: Option<String>,
     pub metadata: Option<serde_json::Value>,
+    pub link: Option<String>,
 }
 
 impl File {
@@ -749,6 +750,7 @@ impl File {
         size: i64,
         tag_set: Option<String>,
         metadata: Option<serde_json::Value>,
+        link: Option<String>,
     ) -> Self {
         File {
             id: uuid::Uuid::new_v4(),
@@ -760,6 +762,7 @@ impl File {
             size,
             tag_set,
             metadata,
+            link,
         }
     }
 }
@@ -775,6 +778,7 @@ pub struct FileDTO {
     pub size: i64,
     pub base64url_content: String,
     pub metadata: Option<serde_json::Value>,
+    pub link: Option<String>,
 }
 
 impl From<File> for FileDTO {
@@ -789,6 +793,7 @@ impl From<File> for FileDTO {
             size: file.size,
             base64url_content: "".to_string(),
             metadata: file.metadata,
+            link: file.link,
         }
     }
 }

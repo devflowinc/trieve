@@ -6,6 +6,8 @@ export const UploadFile = () => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const [file, setFile] = createSignal<File | undefined>();
   const [_private, setPrivate] = createSignal(false);
+  const [link, setLink] = createSignal("");
+  const [tagSet, setTagSet] = createSignal("");
   const [isSubmitting, setIsSubmitting] = createSignal(false);
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
   const [errorText, setErrorText] = createSignal("");
@@ -51,6 +53,8 @@ export const UploadFile = () => {
       file_name: file_name,
       file_mime_type: file_mime_type,
       private: _private(),
+      link: link(),
+      tag_set: tagSet(),
     });
     void fetch(`${apiHost}/file`, {
       method: "POST",
@@ -71,6 +75,10 @@ export const UploadFile = () => {
         return;
       }
       void response.json().then(() => {
+        setFile(undefined);
+        setPrivate(false);
+        setLink("");
+        setTagSet("");
         setIsSubmitting(false);
         setSubmitted(true);
       });
@@ -86,6 +94,26 @@ export const UploadFile = () => {
         </div>
       </Show>
       <div class="my-4 flex w-full flex-col gap-y-3">
+        <div class="flex flex-col space-y-2">
+          <div>Link to file</div>
+          <input
+            type="url"
+            placeholder="optional"
+            value={link()}
+            onInput={(e) => setLink(e.target.value)}
+            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+          />
+        </div>
+        <div class="flex flex-col space-y-2">
+          <div>Tag Set</div>
+          <input
+            type="text"
+            placeholder="optional - separate with commas"
+            value={tagSet()}
+            onInput={(e) => setTagSet(e.target.value)}
+            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+          />
+        </div>
         <label
           for="dropzone-file"
           class="dark:hover:bg-bray-800 flex h-64 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-neutral-100 hover:bg-neutral-200 dark:border-gray-600 dark:bg-neutral-700 dark:hover:border-gray-500 dark:hover:bg-gray-600"

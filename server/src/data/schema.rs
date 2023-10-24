@@ -130,6 +130,7 @@ diesel::table! {
         size -> Int8,
         tag_set -> Nullable<Text>,
         metadata -> Nullable<Jsonb>,
+        link -> Nullable<Text>,
     }
 }
 

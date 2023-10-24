@@ -64,6 +64,7 @@ pub fn create_file_query(
     private: bool,
     tag_set: Option<String>,
     metadata: Option<serde_json::Value>,
+    link: Option<String>,
     pool: web::Data<Pool>,
 ) -> Result<File, DefaultError> {
     use crate::data::schema::files::dsl as files_columns;
@@ -72,7 +73,9 @@ pub fn create_file_query(
         message: "Could not get database connection",
     })?;
 
-    let new_file = File::from_details(user_id, file_name, private, file_size, tag_set, metadata);
+    let new_file = File::from_details(
+        user_id, file_name, private, file_size, tag_set, metadata, link,
+    );
 
     let created_file: File = diesel::insert_into(files_columns::files)
         .values(&new_file)
@@ -127,6 +130,7 @@ pub async fn convert_doc_to_html_query(
     file_data: Vec<u8>,
     tag_set: Option<String>,
     description: Option<String>,
+    link: Option<String>,
     private: bool,
     user: LoggedUser,
     pool: web::Data<Pool>,
@@ -223,6 +227,7 @@ pub async fn convert_doc_to_html_query(
             private,
             tag_set.clone(),
             Some(tika_metadata_response_json.clone()),
+            link.clone(),
             pool.clone(),
         )?;
 
@@ -244,6 +249,7 @@ pub async fn convert_doc_to_html_query(
             created_file.id,
             description,
             Some(tika_metadata_response_json.clone()),
+            link.clone(),
             user,
             temp_html_file_path_buf,
             glob_string,
@@ -266,6 +272,7 @@ pub async fn convert_doc_to_html_query(
             file_data1.len().try_into().unwrap(),
             tag_set1,
             None,
+            None,
         ),
     })
 }
@@ -278,6 +285,7 @@ pub async fn create_cards_with_handler(
     created_file_id: uuid::Uuid,
     description: Option<String>,
     metadata: Option<serde_json::Value>,
+    link: Option<String>,
     user: LoggedUser,
     temp_html_file_path_buf: PathBuf,
     glob_string: String,
@@ -343,7 +351,7 @@ pub async fn create_cards_with_handler(
     for card_html in card_htmls {
         let create_card_data = CreateCardData {
             card_html: Some(card_html.clone()),
-            link: None,
+            link: link.clone(),
             tag_set: tag_set.clone(),
             private: Some(private),
             file_uuid: Some(created_file_id),

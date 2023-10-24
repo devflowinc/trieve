@@ -213,7 +213,7 @@ const SearchForm = () => {
             value={evidenceLink()}
             onInput={(e) => setEvidenceLink(e.target.value)}
             classList={{
-              "w-full bg-neutral-100 rounded-md px-4 py-1 dark:bg-neutral-700":
+              "w-full bg-neutral-100 border border-gray-300 rounded-md px-4 py-1 dark:bg-neutral-700":
                 true,
               "border border-red-500": errorFields().includes("evidenceLink"),
             }}

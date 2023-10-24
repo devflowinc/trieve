@@ -39,6 +39,7 @@ pub struct UploadFileData {
     pub private: bool,
     pub tag_set: Option<String>,
     pub description: Option<String>,
+    pub link: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -90,6 +91,7 @@ pub async fn upload_file_handler(
         decoded_file_data,
         upload_file_data.tag_set,
         decoded_description_file_data,
+        upload_file_data.link,
         private,
         user,
         pool_inner,
