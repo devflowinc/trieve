@@ -24,7 +24,7 @@ import BookmarkPopover from "./BookmarkPopover";
 import { VsFileSymlinkFile } from "solid-icons/vs";
 import sanitizeHtml from "sanitize-html";
 import { FiEdit, FiLock, FiTrash, FiCheck } from "solid-icons/fi";
-import { FaRegularFileImage } from "solid-icons/fa";
+import { FaRegularFileCode, FaRegularFileImage } from "solid-icons/fa";
 import { Tooltip } from "./Atoms/Tooltip";
 import { AiOutlineCopy } from "solid-icons/ai";
 import CommunityBookmarkPopover from "./CommunityBookmarkPopover";
@@ -102,6 +102,7 @@ const ScoreCard = (props: ScoreCardProps) => {
   const [deleted, setDeleted] = createSignal(false);
   const [copied, setCopied] = createSignal(false);
   const [showImageModal, setShowImageModal] = createSignal(false);
+  const [showMetadata, setShowMetadata] = createSignal(false);
 
   const imgInformation = createMemo(() => {
     const imgRangeStartKey = import.meta.env
@@ -282,6 +283,22 @@ const ScoreCard = (props: ScoreCardProps) => {
                 </span>
               </Show>
               <div class="flex-1" />
+              <Tooltip
+                body={
+                  <Show when={Object.keys(props.card.metadata ?? {})}>
+                    <div class="-mr-1 flex items-center">
+                      <button
+                        class="h-fit"
+                        onClick={() => setShowMetadata(true)}
+                        title="View Images"
+                      >
+                        <FaRegularFileCode class="h-5 w-5 fill-current" />
+                      </button>
+                    </div>
+                  </Show>
+                }
+                tooltipText="View Full Metadata"
+              />
               <Tooltip
                 body={
                   <Show when={imgInformation()}>
@@ -523,6 +540,23 @@ const ScoreCard = (props: ScoreCardProps) => {
                     imgInformation()?.imgRangePrefix ?? ""
                   }${(imgInformation()?.imgRangeStart ?? 0) + i()}.png`}
                 />
+              )}
+            </For>
+          </div>
+        </FullScreenModal>
+      </Show>
+      <Show when={showMetadata()}>
+        <FullScreenModal isOpen={showMetadata} setIsOpen={setShowMetadata}>
+          <div class="flex max-h-[60vh] max-w-[75vw] flex-col space-y-2 overflow-auto scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600">
+            <For each={Object.keys(props.card.metadata ?? {})}>
+              {(metadataKey) => (
+                <div class="flex flex-wrap space-x-2">
+                  <span>{`"${metadataKey}":`}</span>
+                  <span>{`"${
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/restrict-template-expressions
+                    (props.card.metadata as any)[metadataKey]
+                  }"`}</span>
+                </div>
               )}
             </For>
           </div>
