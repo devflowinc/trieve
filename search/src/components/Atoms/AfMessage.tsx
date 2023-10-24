@@ -89,7 +89,7 @@ export const AfMessage = (props: AfMessageProps) => {
   });
 
   createEffect(() => {
-    if (!props.streamingCompletion()) return;
+    if (props.streamingCompletion()) return;
     const bracketRe = /\[(.*?)\]/g;
     const numRe = /\d+/g;
     let match;
