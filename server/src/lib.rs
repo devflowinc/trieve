@@ -122,7 +122,8 @@ pub async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            .app_data(PayloadConfig::new(2500000000000))
+            .app_data(PayloadConfig::new(134200000))
+            .app_data( web::JsonConfig::default().limit(134200000))
             .app_data(web::Data::new(pool.clone()))
             .wrap(
                 IdentityMiddleware::builder()
