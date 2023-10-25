@@ -485,12 +485,13 @@ pub async fn stream_response(
 
         let rag_content = citation_cards
             .iter()
-            .map(|card| card.content.clone())
+            .enumerate()
+            .map(|(idx, card)| format!("Doc {}: {}", idx + 1, card.content.clone()))
             .collect::<Vec<String>>()
             .join("\n\n");
 
         last_message = format!(
-            "Here's my prompt: {} \n\n Pretending you found it, base your tone on and use the following retrieved information as the basis of your response: {}",
+            "Here's my prompt. Include the document numbers that you used in square brackets at the end of the sentences that you used the docs for: {} \n\n Pretending you found it, base your tone on and use the following retrieved information as the basis of your response.: {}",
             openai_messages.last().expect("There needs to be at least 1 prior message").content,
             rag_content,
         );
