@@ -285,22 +285,6 @@ const ScoreCard = (props: ScoreCardProps) => {
               <div class="flex-1" />
               <Tooltip
                 body={
-                  <Show when={Object.keys(props.card.metadata ?? {})}>
-                    <div class="-mr-1 flex items-center">
-                      <button
-                        class="h-fit"
-                        onClick={() => setShowMetadata(true)}
-                        title="View Images"
-                      >
-                        <FaRegularFileCode class="h-5 w-5 fill-current" />
-                      </button>
-                    </div>
-                  </Show>
-                }
-                tooltipText="View Full Metadata"
-              />
-              <Tooltip
-                body={
                   <Show when={imgInformation()}>
                     <button
                       class="h-fit"
@@ -312,6 +296,20 @@ const ScoreCard = (props: ScoreCardProps) => {
                   </Show>
                 }
                 tooltipText="View Full Document"
+              />
+              <Tooltip
+                body={
+                  <Show when={Object.keys(props.card.metadata ?? {}).length}>
+                    <button
+                      class="h-fit"
+                      onClick={() => setShowMetadata(true)}
+                      title="View Images"
+                    >
+                      <FaRegularFileCode class="h-5 w-5 fill-current" />
+                    </button>
+                  </Show>
+                }
+                tooltipText="View Full Metadata"
               />
               <Tooltip
                 body={
