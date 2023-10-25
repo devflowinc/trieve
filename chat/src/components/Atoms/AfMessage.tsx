@@ -29,6 +29,7 @@ export const AfMessage = (props: AfMessageProps) => {
   const [cardMetadatas, setCardMetadatas] = createSignal<
     CardMetadataWithVotes[]
   >([]);
+  const [metadata, setMetadata] = createSignal<CardMetadataWithVotes[]>([]);
 
   createEffect(() => {
     setEditingMessageContent(props.content);
@@ -60,6 +61,35 @@ export const AfMessage = (props: AfMessageProps) => {
     textarea.style.height = `${textarea.scrollHeight}px`;
     setEditingMessageContent(textarea.value);
   };
+  createEffect(() => {
+    if (props.streamingCompletion()) return;
+    const bracketRe = /\[(.*?)\]/g;
+    const numRe = /\d+/g;
+    let match;
+    let cardNums;
+    const cardNumList = [];
+
+    while ((match = bracketRe.exec(displayMessage().content)) !== null) {
+      const cardIndex = match[0];
+      while ((cardNums = numRe.exec(cardIndex)) !== null) {
+        for (const num1 of cardNums) {
+          const cardNum = parseInt(num1);
+          console.log(cardNum);
+          cardNumList.push(cardNum);
+        }
+      }
+    }
+    cardNumList.sort((a, b) => a - b);
+    for (const num of cardNumList) {
+      const card = cardMetadatas()[num - 1];
+      if (!card) {
+        continue;
+      }
+      if (!metadata().includes(card)) {
+        setMetadata((prev) => [...prev, card]);
+      }
+    }
+  });
 
   return (
     <>
@@ -103,17 +133,17 @@ export const AfMessage = (props: AfMessageProps) => {
                     />
                   </div>
                 </Show>
-                <Show when={cardMetadatas()}>
+                <Show when={metadata()}>
                   <div class="w-full flex-col space-y-3">
-                    <For each={cardMetadatas()}>
-                      {(card) => (
+                    <For each={metadata()}>
+                      {(card, i) => (
                         <ScoreCard
                           signedInUserId={undefined}
                           cardCollections={[]}
                           totalCollectionPages={1}
                           collection={undefined}
                           card={card}
-                          score={0}
+                          counter={i() + 1}
                           initialExpanded={false}
                           bookmarks={[]}
                           showExpand={!props.streamingCompletion()}
