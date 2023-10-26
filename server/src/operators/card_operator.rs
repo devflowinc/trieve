@@ -751,14 +751,16 @@ pub fn search_full_text_card_query(
     }
 
     if !link_inner.is_empty() {
-        query = query
-            .filter(card_metadata_columns::link.ilike(format!("%{}%", link_inner.get(0).unwrap())));
+        query = query.filter(card_metadata_columns::link.ilike(format!(
+            "%{}%",
+            link_inner.get(0).unwrap_or(&"".to_string())
+        )));
     }
     for link_url in link_inner.iter().skip(1) {
         query = query.or_filter(card_metadata_columns::link.ilike(format!("%{}%", link_url)));
     }
 
-    if let serde_json::Value::Object(obj) = &filters.unwrap() {
+    if let Some(serde_json::Value::Object(obj)) = &filters {
         for key in obj.keys() {
             let value = obj.get(key).unwrap();
             match value {
