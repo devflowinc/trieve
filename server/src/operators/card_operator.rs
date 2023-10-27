@@ -1455,7 +1455,7 @@ pub fn insert_card_metadata_query(
         Ok(_) => (),
         Err(_) => {
             return Err(DefaultError {
-                message: "Failed to insert card metadata",
+                message: "Failed to insert card metadata, likely due to duplicate tracking_id",
             })
         }
     };
