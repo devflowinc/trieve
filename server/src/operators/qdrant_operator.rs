@@ -43,6 +43,7 @@ pub async fn update_qdrant_point_private_query(
     point_id: uuid::Uuid,
     private: bool,
     author_id: Option<uuid::Uuid>,
+    updated_vector: Option<Vec<f32>>,
 ) -> Result<(), actix_web::Error> {
     if private && author_id.is_none() {
         return Err(ServiceError::BadRequest("Private card must have an author".into()).into());
@@ -117,6 +118,23 @@ pub async fn update_qdrant_point_private_query(
     };
 
     let points_selector = qdrant_point_id.into();
+
+    if let Some(embedding_vector) = updated_vector {
+        let point = PointStruct::new(
+            point_id.clone().to_string(),
+            embedding_vector,
+            payload
+                .try_into()
+                .expect("A json! value must always be a valid Payload"),
+        );
+
+        qdrant
+            .upsert_points(qdrant_collection, vec![point], None)
+            .await
+            .map_err(|_err| ServiceError::BadRequest("Failed upserting card in qdrant".into()))?;
+
+        return Ok(());
+    }
 
     qdrant
         .overwrite_payload(
