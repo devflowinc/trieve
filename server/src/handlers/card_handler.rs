@@ -557,13 +557,13 @@ pub async fn search_card(
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_embedding(&data.content).await?;
     let pool1 = pool.clone();
-    let re = Regex::new(r#""(.*?)""#).unwrap();
 
-    let quote_words: String = re
+    let re = Regex::new(r#""(.*?)""#).unwrap();
+    let quote_words: Vec<String> = re
         .captures_iter(&data.content.replace('\\', ""))
         .map(|capture| capture[1].to_string())
-        .collect::<Vec<String>>()
-        .join(" ");
+        .filter(|word| !word.is_empty())
+        .collect::<Vec<String>>();
 
     let search_card_query_results = search_card_query(
         embedding_vector,
@@ -663,6 +663,14 @@ pub async fn search_full_text_card(
     let pool1 = pool.clone();
     let pool2 = pool.clone();
     let data_inner = data.clone();
+
+    let re = Regex::new(r#""(.*?)""#).unwrap();
+    let quote_words: Vec<String> = re
+        .captures_iter(&data.content.replace('\\', ""))
+        .map(|capture| capture[1].to_string())
+        .filter(|word| !word.is_empty())
+        .collect::<Vec<String>>();
+
     let search_card_query_results = web::block(move || {
         search_full_text_card_query(
             data_inner.content.clone(),
@@ -672,6 +680,7 @@ pub async fn search_full_text_card(
             data_inner.filters.clone(),
             data_inner.link.clone(),
             data_inner.tag_set,
+            Some(quote_words),
         )
     })
     .await?
