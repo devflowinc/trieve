@@ -297,7 +297,7 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
                 <div>Tag Set</div>
                 <input
                   type="text"
-                  placeholder="(Optional)"
+                  placeholder="(Optional) tag1,tag2,tag3"
                   value={tagSet()}
                   onInput={(e) => setTagSet(e.target.value)}
                   classList={{
