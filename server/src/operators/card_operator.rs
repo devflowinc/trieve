@@ -1301,20 +1301,24 @@ pub fn get_metadata_from_id_query(
 
     card_metadata_columns::card_metadata
         .filter(card_metadata_columns::id.eq(card_id))
-        .select((
-            card_metadata_columns::id,
-            card_metadata_columns::content,
-            card_metadata_columns::link,
-            card_metadata_columns::author_id,
-            card_metadata_columns::qdrant_point_id,
-            card_metadata_columns::created_at,
-            card_metadata_columns::updated_at,
-            card_metadata_columns::tag_set,
-            card_metadata_columns::card_html,
-            card_metadata_columns::private,
-            card_metadata_columns::metadata,
-            card_metadata_columns::tracking_id,
-        ))
+        .select(CardMetadata::as_select())
+        .first::<CardMetadata>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })
+}
+
+pub fn get_metadata_from_tracking_id_query(
+    tracking_id: String,
+    pool: web::Data<Pool>,
+) -> Result<CardMetadata, DefaultError> {
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    card_metadata_columns::card_metadata
+        .filter(card_metadata_columns::tracking_id.eq(tracking_id))
+        .select(CardMetadata::as_select())
         .first::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to load metadata",
@@ -1357,6 +1361,7 @@ pub fn get_metadata_from_ids_query(
 
     Ok(get_metadata_query(full_text_metadatas, Some(user_id), conn).unwrap_or_default())
 }
+
 pub fn get_metadata_and_votes_from_id_query(
     card_id: uuid::Uuid,
     current_user_id: Option<uuid::Uuid>,
@@ -1368,20 +1373,38 @@ pub fn get_metadata_and_votes_from_id_query(
 
     let card_metadata = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::id.eq(card_id))
-        .select((
-            card_metadata_columns::id,
-            card_metadata_columns::content,
-            card_metadata_columns::link,
-            card_metadata_columns::author_id,
-            card_metadata_columns::qdrant_point_id,
-            card_metadata_columns::created_at,
-            card_metadata_columns::updated_at,
-            card_metadata_columns::tag_set,
-            card_metadata_columns::card_html,
-            card_metadata_columns::private,
-            card_metadata_columns::metadata,
-            card_metadata_columns::tracking_id,
-        ))
+        .select(CardMetadata::as_select())
+        .first::<CardMetadata>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to load metadata",
+        })?;
+    let converted_card: FullTextSearchResult =
+        <CardMetadata as Into<FullTextSearchResult>>::into(card_metadata);
+
+    let card_metadata_with_upvotes_and_file_id =
+        get_metadata_query(vec![converted_card], current_user_id, conn).map_err(|_| {
+            DefaultError {
+                message: "Failed to load metadata",
+            }
+        })?;
+    Ok(card_metadata_with_upvotes_and_file_id
+        .first()
+        .expect("card_metadata_with_upvotes_and_file_id should have at least one element")
+        .clone())
+}
+
+pub fn get_metadata_and_votes_from_tracking_id_query(
+    tracking_id: String,
+    current_user_id: Option<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<CardMetadataWithVotesWithScore, DefaultError> {
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    let card_metadata = card_metadata_columns::card_metadata
+        .filter(card_metadata_columns::tracking_id.eq(tracking_id))
+        .select(CardMetadata::as_select())
         .first::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to load metadata",

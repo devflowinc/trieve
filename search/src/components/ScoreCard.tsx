@@ -552,7 +552,14 @@ const ScoreCard = (props: ScoreCardProps) => {
                   <span>{`"${metadataKey}":`}</span>
                   <span>{`"${
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/restrict-template-expressions
-                    (props.card.metadata as any)[metadataKey]
+                    typeof (props.card.metadata as any)[metadataKey] ===
+                    "object"
+                      ? JSON.stringify(
+                          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+                          (props.card.metadata as any)[metadataKey],
+                        )
+                      : // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+                        (props.card.metadata as any)[metadataKey]
                   }"`}</span>
                 </div>
               )}

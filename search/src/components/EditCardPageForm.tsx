@@ -32,6 +32,13 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
   const [evidenceLink, setEvidenceLink] = createSignal<string>(
     initialCardMetadata?.link ?? "",
   );
+  const [tagSet, setTagSet] = createSignal<string>(
+    initialCardMetadata?.tag_set ?? "",
+  );
+  const [metadata, setMetadata] = createSignal(initialCardMetadata?.metadata);
+  const [trackingId, setTrackingId] = createSignal(
+    initialCardMetadata?.tracking_id,
+  );
   const [fetching, setFetching] = createSignal(true);
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
 
@@ -49,18 +56,10 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
     const evidenceLinkValue = evidenceLink();
     const curCardId = props.cardId;
 
-    if (!cardHTMLContentValue || !evidenceLinkValue) {
+    if (!cardHTMLContentValue) {
       const errors: string[] = [];
-      let errorMessage = "";
-      if (!cardHTMLContentValue) {
-        errorMessage += "Card content cannot be empty";
-        errors.push("cardContent");
-      }
-      if (!evidenceLinkValue) {
-        errorMessage += errorMessage ? " and " : "";
-        errorMessage += "Evidence link cannot be empty";
-        errors.push("evidenceLink");
-      }
+      const errorMessage = "Card content cannot be empty";
+      errors.push("cardContent");
       setFormErrorText(errorMessage);
       setFormErrorFields(errors);
       return;
@@ -78,6 +77,9 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
       body: JSON.stringify({
         card_uuid: curCardId,
         link: evidenceLinkValue,
+        tag_set: tagSet(),
+        tracking_id: trackingId(),
+        metadata: metadata(),
         card_html: cardHTMLContentValue,
         private: _private(),
       }),
@@ -138,6 +140,9 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
           }
 
           setEvidenceLink(data.link ?? "");
+          setTagSet(data.tag_set ?? "");
+          setMetadata(data.metadata);
+          setTrackingId(data.tracking_id);
           setPrivate(data.private);
           setCardHtml(data.card_html ?? "");
           setTopLevelError("");
@@ -276,9 +281,10 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
             >
               <div class="text-center text-red-500">{formErrorText()}</div>
               <div class="flex flex-col space-y-2">
-                <div>Link to evidence*</div>
+                <div>Link</div>
                 <input
                   type="url"
+                  placeholder="(Optional) https://example.com"
                   value={evidenceLink()}
                   onInput={(e) => setEvidenceLink(e.target.value)}
                   classList={{
@@ -286,6 +292,19 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
                       true,
                     "border border-red-500":
                       formErrorFields().includes("evidenceLink"),
+                  }}
+                />
+                <div>Tag Set</div>
+                <input
+                  type="text"
+                  placeholder="(Optional)"
+                  value={tagSet()}
+                  onInput={(e) => setTagSet(e.target.value)}
+                  classList={{
+                    "w-full bg-neutral-100 rounded-md px-4 py-1 dark:bg-neutral-700":
+                      true,
+                    "border border-red-500":
+                      formErrorFields().includes("tagset"),
                   }}
                 />
               </div>
@@ -318,7 +337,7 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
                   type="submit"
                   disabled={isUpdating()}
                 >
-                  <Show when={!isUpdating()}>Update Evidence</Show>
+                  <Show when={!isUpdating()}>Update</Show>
                   <Show when={isUpdating()}>
                     <div class="animate-pulse">Updating...</div>
                   </Show>

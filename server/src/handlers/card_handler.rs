@@ -42,6 +42,22 @@ pub async fn user_owns_card(
     Ok(cards)
 }
 
+pub async fn user_owns_card_tracking_id(
+    user_id: uuid::Uuid,
+    tracking_id: String,
+    pool: web::Data<Pool>,
+) -> Result<CardMetadata, actix_web::Error> {
+    let cards = web::block(move || get_metadata_from_tracking_id_query(tracking_id, pool))
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    if cards.author_id != user_id {
+        return Err(ServiceError::Forbidden.into());
+    }
+
+    Ok(cards)
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct CreateCardData {
     pub card_html: Option<String>,
@@ -220,6 +236,7 @@ pub async fn create_card(
             collision.expect("Collision must be some"),
             private,
             Some(user.id),
+            None,
         )
         .await?;
 
@@ -314,13 +331,50 @@ pub async fn delete_card(
     Ok(HttpResponse::NoContent().finish())
 }
 
+pub async fn delete_card_by_tracking_id(
+    tracking_id: web::Path<String>,
+    pool: web::Data<Pool>,
+    user: LoggedUser,
+) -> Result<HttpResponse, actix_web::Error> {
+    let tracking_id_inner = tracking_id.into_inner();
+    let pool1 = pool.clone();
+
+    let card_metadata = user_owns_card_tracking_id(user.id, tracking_id_inner, pool).await?;
+
+    let qdrant = get_qdrant_connection()
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let deleted_values = PointsSelector {
+        points_selector_one_of: Some(PointsSelectorOneOf::Points(PointsIdsList {
+            ids: vec![card_metadata
+                .qdrant_point_id
+                .unwrap_or(uuid::Uuid::nil())
+                .to_string()
+                .into()],
+        })),
+    };
+
+    web::block(move || delete_card_metadata_query(card_metadata.id, pool1))
+        .await?
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
+    qdrant
+        .delete_points_blocking(qdrant_collection, &deleted_values, None)
+        .await
+        .map_err(|_err| ServiceError::BadRequest("Failed deleting card from qdrant".into()))?;
+    Ok(HttpResponse::NoContent().finish())
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct UpdateCardData {
     card_uuid: uuid::Uuid,
     link: Option<String>,
     card_html: Option<String>,
     private: Option<bool>,
-    json_metadata: Option<serde_json::Value>,
+    metadata: Option<serde_json::Value>,
     tracking_id: Option<String>,
 }
 #[derive(Serialize, Deserialize, Clone)]
@@ -348,6 +402,8 @@ pub async fn update_card(
 
     let new_content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
 
+    let embedding_vector = create_embedding(&new_content).await?;
+
     let card_html = match card.card_html.clone() {
         Some(card_html) => Some(card_html),
         None => card_metadata.card_html,
@@ -359,7 +415,13 @@ pub async fn update_card(
         .await?
         .map_err(|_| ServiceError::BadRequest("Card not found".into()))?;
 
-    update_qdrant_point_private_query(qdrant_point_id, private, Some(user.id)).await?;
+    update_qdrant_point_private_query(
+        qdrant_point_id,
+        private,
+        Some(user.id),
+        Some(embedding_vector),
+    )
+    .await?;
 
     web::block(move || {
         update_card_metadata_query(
@@ -372,7 +434,7 @@ pub async fn update_card(
                 user.id,
                 card_metadata.qdrant_point_id,
                 private,
-                card.json_metadata.clone(),
+                card.metadata.clone(),
                 card_tracking_id,
             ),
             None,
@@ -384,6 +446,81 @@ pub async fn update_card(
 
     Ok(HttpResponse::NoContent().finish())
 }
+
+pub async fn update_card_by_tracking_id(
+    card: web::Json<UpdateCardData>,
+    pool: web::Data<Pool>,
+    user: LoggedUser,
+) -> Result<HttpResponse, actix_web::Error> {
+    if !card
+        .tracking_id
+        .clone()
+        .is_some_and(|tracking_id| !tracking_id.is_empty())
+    {
+        return Err(ServiceError::BadRequest(
+            "Tracking id must be provided to update by tracking_id".into(),
+        )
+        .into());
+    }
+    let tracking_id = card.tracking_id.clone().expect("Tracking id must be some");
+    let tracking_id1 = tracking_id.clone();
+
+    let pool1 = pool.clone();
+    let pool2 = pool.clone();
+    let card_metadata = user_owns_card_tracking_id(user.id, tracking_id, pool).await?;
+
+    let link = card
+        .link
+        .clone()
+        .unwrap_or_else(|| card_metadata.link.clone().unwrap_or_default());
+
+    let new_content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
+
+    let embedding_vector = create_embedding(&new_content).await?;
+
+    let card_html = match card.card_html.clone() {
+        Some(card_html) => Some(card_html),
+        None => card_metadata.card_html,
+    };
+
+    let private = card.private.unwrap_or(card_metadata.private);
+    let card_id1 = card.card_uuid;
+    let qdrant_point_id = web::block(move || get_qdrant_id_from_card_id_query(card_id1, pool1))
+        .await?
+        .map_err(|_| ServiceError::BadRequest("Card not found".into()))?;
+
+    update_qdrant_point_private_query(
+        qdrant_point_id,
+        private,
+        Some(user.id),
+        Some(embedding_vector),
+    )
+    .await?;
+
+    web::block(move || {
+        update_card_metadata_query(
+            CardMetadata::from_details_with_id(
+                card.card_uuid,
+                &new_content,
+                &card_html,
+                &Some(link),
+                &card_metadata.tag_set,
+                user.id,
+                card_metadata.qdrant_point_id,
+                private,
+                card.metadata.clone(),
+                Some(tracking_id1),
+            ),
+            None,
+            pool2,
+        )
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct SearchCardData {
     content: String,
@@ -856,6 +993,45 @@ pub async fn get_card_by_id(
     let current_user_id = user.map(|user| user.id);
     let card = web::block(move || {
         get_metadata_and_votes_from_id_query(card_id.into_inner(), current_user_id, pool)
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    if card.private && current_user_id.is_none() {
+        return Err(ServiceError::Unauthorized.into());
+    }
+    if card.private
+        && Some(
+            card.clone()
+                .author
+                .unwrap_or(UserDTO {
+                    id: uuid::Uuid::default(),
+                    email: None,
+                    website: None,
+                    username: None,
+                    visible_email: false,
+                    created_at: chrono::NaiveDateTime::default(),
+                })
+                .id,
+        ) != current_user_id
+    {
+        return Err(ServiceError::Forbidden.into());
+    }
+    Ok(HttpResponse::Ok().json(card))
+}
+
+pub async fn get_card_by_tracking_id(
+    tracking_id: web::Path<String>,
+    user: Option<LoggedUser>,
+    pool: web::Data<Pool>,
+    _required_user: RequireAuth,
+) -> Result<HttpResponse, actix_web::Error> {
+    let current_user_id = user.map(|user| user.id);
+    let card = web::block(move || {
+        get_metadata_and_votes_from_tracking_id_query(
+            tracking_id.into_inner(),
+            current_user_id,
+            pool,
+        )
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;

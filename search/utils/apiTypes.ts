@@ -7,6 +7,7 @@ export interface CardMetadata {
   created_at: string;
   updated_at: string;
   tag_set: string | null;
+  tracking_id: string | null;
   file_id: string | null;
   file_name: string | null;
   metadata: Record<string, never> | null;
