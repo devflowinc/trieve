@@ -447,22 +447,27 @@ pub async fn update_card(
     Ok(HttpResponse::NoContent().finish())
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+pub struct UpdateCardByTrackingIdData {
+    card_uuid: Option<uuid::Uuid>,
+    link: Option<String>,
+    card_html: Option<String>,
+    private: Option<bool>,
+    metadata: Option<serde_json::Value>,
+    tracking_id: String,
+}
 pub async fn update_card_by_tracking_id(
-    card: web::Json<UpdateCardData>,
+    card: web::Json<UpdateCardByTrackingIdData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if !card
-        .tracking_id
-        .clone()
-        .is_some_and(|tracking_id| !tracking_id.is_empty())
-    {
+    if card.tracking_id.is_empty() {
         return Err(ServiceError::BadRequest(
             "Tracking id must be provided to update by tracking_id".into(),
         )
         .into());
     }
-    let tracking_id = card.tracking_id.clone().expect("Tracking id must be some");
+    let tracking_id = card.tracking_id.clone();
     let tracking_id1 = tracking_id.clone();
 
     let pool1 = pool.clone();
@@ -484,7 +489,7 @@ pub async fn update_card_by_tracking_id(
     };
 
     let private = card.private.unwrap_or(card_metadata.private);
-    let card_id1 = card.card_uuid;
+    let card_id1 = card_metadata.id;
     let qdrant_point_id = web::block(move || get_qdrant_id_from_card_id_query(card_id1, pool1))
         .await?
         .map_err(|_| ServiceError::BadRequest("Card not found".into()))?;
@@ -500,7 +505,7 @@ pub async fn update_card_by_tracking_id(
     web::block(move || {
         update_card_metadata_query(
             CardMetadata::from_details_with_id(
-                card.card_uuid,
+                card_metadata.id,
                 &new_content,
                 &card_html,
                 &Some(link),
