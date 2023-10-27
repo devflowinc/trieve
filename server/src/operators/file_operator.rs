@@ -57,6 +57,7 @@ pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
     Ok(aws_bucket)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn create_file_query(
     user_id: uuid::Uuid,
     file_name: &str,

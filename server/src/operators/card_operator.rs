@@ -135,7 +135,7 @@ pub async fn search_card_query(
     tag_set: Option<Vec<String>>,
     filters: Option<serde_json::Value>,
     current_user_id: Option<uuid::Uuid>,
-    quote_words: Option<String>,
+    quote_words: Option<Vec<String>>,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
 
@@ -245,11 +245,10 @@ pub async fn search_card_query(
         }
     }
 
-    if quote_words.as_ref().is_some_and(|words| !words.is_empty()) {
-        query = query.filter(sql::<Bool>(&format!(
-            "card_metadata.content ILIKE '%{}%'",
-            quote_words.expect("Quote words should exist")
-        )));
+    if let Some(quote_words) = quote_words {
+        for word in quote_words.iter() {
+            query = query.filter(card_metadata_columns::content.ilike(format!("%{}%", word)));
+        }
     }
 
     let filtered_option_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
@@ -646,6 +645,7 @@ pub struct FullTextSearchCardQueryResult {
     pub total_card_pages: i64,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn search_full_text_card_query(
     user_query: String,
     page: u64,
@@ -654,6 +654,7 @@ pub fn search_full_text_card_query(
     filters: Option<serde_json::Value>,
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
+    quote_words: Option<Vec<String>>,
 ) -> Result<FullTextSearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
@@ -741,9 +742,10 @@ pub fn search_full_text_card_query(
     let tag_set_inner = tag_set.unwrap_or_default();
     let link_inner = link.unwrap_or_default();
     if !tag_set_inner.is_empty() {
-        query = query.filter(
-            card_metadata_columns::tag_set.ilike(format!("%{}%", tag_set_inner.get(0).unwrap())),
-        );
+        query = query.filter(card_metadata_columns::tag_set.ilike(format!(
+            "%{}%",
+            tag_set_inner.get(0).unwrap_or(&String::new())
+        )));
     }
 
     for tag in tag_set_inner.iter().skip(1) {
@@ -753,7 +755,7 @@ pub fn search_full_text_card_query(
     if !link_inner.is_empty() {
         query = query.filter(card_metadata_columns::link.ilike(format!(
             "%{}%",
-            link_inner.get(0).unwrap_or(&"".to_string())
+            link_inner.get(0).unwrap_or(&String::new())
         )));
     }
     for link_url in link_inner.iter().skip(1) {
@@ -762,29 +764,38 @@ pub fn search_full_text_card_query(
 
     if let Some(serde_json::Value::Object(obj)) = &filters {
         for key in obj.keys() {
-            let value = obj.get(key).unwrap();
+            let value = obj.get(key).expect("Value should exist");
             match value {
                 serde_json::Value::Array(arr) => {
                     query = query.filter(
-                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                            .ilike(format!("%{}%", arr.get(0).unwrap().as_str().unwrap())),
+                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key)).ilike(format!(
+                            "%{}%",
+                            arr.get(0).unwrap().as_str().unwrap_or("")
+                        )),
                     );
                     for item in arr.iter().skip(1) {
                         query = query.or_filter(
                             sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                                .ilike(format!("%{}%", item.as_str().unwrap())),
+                                .ilike(format!("%{}%", item.as_str().unwrap_or(""))),
                         );
                     }
                 }
                 _ => {
                     query = query.filter(
                         sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                            .ilike(format!("%{}%", value.as_str().unwrap())),
+                            .ilike(format!("%{}%", value.as_str().unwrap_or(""))),
                     );
                 }
             }
         }
     }
+
+    if let Some(quote_words) = quote_words {
+        for word in quote_words.iter() {
+            query = query.filter(card_metadata_columns::content.ilike(format!("%{}%", word)));
+        }
+    }
+
     query = query.order((
         card_metadata_columns::qdrant_point_id,
         second_join.field(schema::card_metadata::qdrant_point_id),
