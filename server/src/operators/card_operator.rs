@@ -753,10 +753,10 @@ pub fn search_full_text_card_query(
     }
 
     if !link_inner.is_empty() {
-        query = query.filter(card_metadata_columns::link.ilike(format!(
-            "%{}%",
-            link_inner.get(0).unwrap_or(&String::new())
-        )));
+        query = query.filter(
+            card_metadata_columns::link
+                .ilike(format!("%{}%", link_inner.get(0).unwrap_or(&String::new()))),
+        );
     }
     for link_url in link_inner.iter().skip(1) {
         query = query.or_filter(card_metadata_columns::link.ilike(format!("%{}%", link_url)));
@@ -768,10 +768,8 @@ pub fn search_full_text_card_query(
             match value {
                 serde_json::Value::Array(arr) => {
                     query = query.filter(
-                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key)).ilike(format!(
-                            "%{}%",
-                            arr.get(0).unwrap().as_str().unwrap_or("")
-                        )),
+                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                            .ilike(format!("%{}%", arr.get(0).unwrap().as_str().unwrap_or(""))),
                     );
                     for item in arr.iter().skip(1) {
                         query = query.or_filter(
