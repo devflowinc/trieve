@@ -38,6 +38,7 @@ export const AfMessage = (props: AfMessageProps) => {
   const [bookmarks, setBookmarks] = createSignal<CardBookmarksDTO[]>([]);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
   const [metadata, setMetadata] = createSignal<ScoreCardDTO[]>([]);
+  const [content, setContent] = createSignal<string>("");
 
   const fetchCardCollections = () => {
     if (!user()) return;
@@ -84,6 +85,9 @@ export const AfMessage = (props: AfMessageProps) => {
   });
 
   createEffect(() => {
+    setContent(props.content);
+  });
+  createEffect(() => {
     if (!user()) return;
     fetchBookmarks();
   });
@@ -116,6 +120,15 @@ export const AfMessage = (props: AfMessageProps) => {
         setMetadata((prev) => [...prev, card]);
       }
     }
+    setContent(
+      props.content.replace(/\[([^,\]]+)/g, (_, content: string) => {
+        const match = content.match(/\d+\.\d+|\d+/);
+        if (match) {
+          return `<button onclick='document.getElementById("doc_${match[0]}").scrollIntoView({"behavior": "smooth", "block": "center"});'>[${content}</button>`;
+        }
+        return `[${content}]`;
+      }),
+    );
   });
 
   return (
@@ -142,7 +155,10 @@ export const AfMessage = (props: AfMessageProps) => {
               }}
             >
               <div class="col-span-2 whitespace-pre-line text-neutral-800 dark:text-neutral-50">
-                {props.content.trimStart()}
+                <div
+                  // eslint-disable-next-line solid/no-innerhtml
+                  innerHTML={content()}
+                />
               </div>
               <Show when={!props.content}>
                 <div class="col-span-2 w-full whitespace-pre-line">
