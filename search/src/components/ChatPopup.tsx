@@ -77,13 +77,6 @@ const ChatPopup = (props: LayoutProps) => {
   }) => {
     setStreamingCompletion(true);
     setNewMessageContent("");
-    const prevMessages = JSON.parse(
-      localStorage.getItem("prevMessages") ?? "[]",
-    ) as Message[];
-
-    setMessages(prevMessages);
-
-    setNewMessageContent("");
     const newMessageTextarea = document.querySelector(
       "#new-message-content-textarea",
     ) as HTMLTextAreaElement | undefined;
