@@ -247,7 +247,10 @@ const ScoreCard = (props: ScoreCardProps) => {
   return (
     <>
       <Show when={!deleted()}>
-        <div class="mx-auto flex w-full max-w-[calc(100%-32px)] flex-col items-center rounded-md bg-neutral-100 p-2 dark:!bg-neutral-800 min-[360px]:max-w-[calc(100%-64px)]">
+        <div
+          class="mx-auto flex w-full max-w-[calc(100%-32px)] flex-col items-center rounded-md bg-neutral-100 p-2 dark:!bg-neutral-800 min-[360px]:max-w-[calc(100%-64px)]"
+          id={"doc_" + props.counter.toString()}
+        >
           <div class="flex w-full flex-col space-y-2">
             <div class="flex h-fit items-center space-x-1">
               <Show when={props.card.private}>
