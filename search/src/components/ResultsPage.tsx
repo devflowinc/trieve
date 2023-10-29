@@ -268,7 +268,7 @@ const ResultsPage = (props: ResultsPageProps) => {
               }}
             >
               <IoDocumentsOutline class="mx-auto h-7 w-7" />
-              <span class="font-sm absolute -left-[8.5rem] top-1/2 mb-px block -translate-y-1/2 break-words text-sm">
+              <span class="font-sm absolute -left-[8.5rem] top-1/2 mb-px block -translate-y-1/2 break-words bg-white/30 text-sm backdrop-blur-xl dark:bg-black/30">
                 Chat with all results
               </span>
             </button>
@@ -280,7 +280,7 @@ const ResultsPage = (props: ResultsPageProps) => {
               }}
             >
               <IoDocumentOutline class="mx-auto h-7 w-7" />
-              <span class="font-sm absolute -left-[10.85rem] top-1/2 mb-px block -translate-y-1/2 text-sm">
+              <span class="font-sm absolute -left-[10.85rem] top-1/2 mb-px block -translate-y-1/2 bg-white/30 text-sm backdrop-blur-xl dark:bg-black/30">
                 Chat with selected results
               </span>
             </button>

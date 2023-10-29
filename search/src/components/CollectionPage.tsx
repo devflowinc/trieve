@@ -40,6 +40,8 @@ export interface CollectionPageProps {
 
 export const CollectionPage = (props: CollectionPageProps) => {
   const apiHost: string = import.meta.env.PUBLIC_API_HOST as string;
+  const alwaysRequireAuth: string = import.meta.env
+    .PUBLIC_ALWAYS_REQUIRE_AUTH as string;
   const cardMetadatasWithVotes: BookmarkDTO[] = [];
   const searchCardMetadatasWithVotes: ScoreCardDTO[] = [];
 
@@ -380,6 +382,8 @@ export const CollectionPage = (props: CollectionPageProps) => {
           <FullScreenModal isOpen={openChat} setIsOpen={setOpenChat}>
             <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto rounded-md scrollbar-thin">
               <ChatPopup
+                user={user}
+                cards={() => metadatasWithVotes() as unknown as ScoreCardDTO[]}
                 selectedIds={selectedIds}
                 setShowNeedLoginModal={setShowNeedLoginModal}
                 setOpenChat={setOpenChat}
@@ -417,7 +421,8 @@ export const CollectionPage = (props: CollectionPageProps) => {
             <div class="flex w-full max-w-6xl items-center justify-end space-x-2 px-4 sm:px-8 md:px-20">
               <Show
                 when={
-                  !props.defaultCollectionCards.metadata.collection.is_public
+                  !props.defaultCollectionCards.metadata.collection.is_public &&
+                  alwaysRequireAuth !== "on"
                 }
               >
                 <FiLock class="text-green-500" />
@@ -718,7 +723,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
                 }}
               >
                 <IoDocumentsOutline class="mx-auto h-7 w-7" />
-                <span class="font-sm absolute -left-[8.5rem] top-1/2 mb-px block -translate-y-1/2 break-words text-sm">
+                <span class="font-sm absolute -left-[8.5rem] top-1/2 mb-px block -translate-y-1/2 break-words bg-white/30 text-sm backdrop-blur-xl dark:bg-black/30">
                   Chat with all results
                 </span>
               </button>
@@ -730,7 +735,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
                 }}
               >
                 <IoDocumentOutline class="mx-auto h-7 w-7" />
-                <span class="font-sm absolute -left-[10.85rem] top-1/2 mb-px block -translate-y-1/2 text-sm">
+                <span class="font-sm absolute -left-[10.85rem] top-1/2 mb-px block -translate-y-1/2 bg-white/30 text-sm backdrop-blur-xl dark:bg-black/30">
                   Chat with selected results
                 </span>
               </button>
