@@ -9,6 +9,7 @@ import {
   CardBookmarksDTO,
   isCardCollectionPageDTO,
   CardMetadata,
+  ScoreCardDTO,
 } from "../../utils/apiTypes";
 import ScoreCard from "./ScoreCard";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
@@ -225,13 +226,19 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
       <Show when={openChat()}>
         <Portal>
           <FullScreenModal isOpen={openChat} setIsOpen={setOpenChat}>
-            <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto rounded-md scrollbar-thin">
-              <ChatPopup
-                selectedIds={selectedIds}
-                setShowNeedLoginModal={setShowNeedLoginModal}
-                setOpenChat={setOpenChat}
-              />
-            </div>
+            <Show when={cardMetadata()}>
+              {(card) => (
+                <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto rounded-md scrollbar-thin">
+                  <ChatPopup
+                    user={user}
+                    cards={() => [card() as unknown as ScoreCardDTO]}
+                    selectedIds={selectedIds}
+                    setShowNeedLoginModal={setShowNeedLoginModal}
+                    setOpenChat={setOpenChat}
+                  />
+                </div>
+              )}
+            </Show>
           </FullScreenModal>
         </Portal>
       </Show>
