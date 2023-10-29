@@ -51,18 +51,18 @@ export const formatDate = (date: Date) => {
 
 export interface ScoreCardProps {
   signedInUserId?: string;
-  cardCollections: CardCollectionDTO[];
-  totalCollectionPages: number;
+  cardCollections?: CardCollectionDTO[];
+  totalCollectionPages?: number;
   collection?: boolean;
   card: CardMetadataWithVotes;
   score: number;
-  setShowModal: Setter<boolean>;
-  setOnDelete: Setter<() => void>;
-  setShowConfirmModal: Setter<boolean>;
+  setShowModal?: Setter<boolean>;
+  setOnDelete?: Setter<() => void>;
+  setShowConfirmModal?: Setter<boolean>;
   initialExpanded?: boolean;
-  bookmarks: CardBookmarksDTO[];
+  bookmarks?: CardBookmarksDTO[];
   showExpand?: boolean;
-  setCardCollections: Setter<CardCollectionDTO[]>;
+  setCardCollections?: Setter<CardCollectionDTO[]>;
   counter: number;
   total: number;
   begin: number | undefined;
@@ -142,7 +142,7 @@ const ScoreCard = (props: ScoreCardProps) => {
   });
 
   createEffect(() => {
-    if (!showPropsModal()) return;
+    if (!showPropsModal() || !props.setShowModal) return;
 
     props.setShowModal(true);
     setShowPropsModal(false);
@@ -196,6 +196,8 @@ const ScoreCard = (props: ScoreCardProps) => {
   };
 
   const deleteCard = () => {
+    if (!props.setOnDelete) return;
+
     if (props.signedInUserId !== props.card.author?.id) return;
 
     const curCardMetadataId = props.card.id;
@@ -218,7 +220,7 @@ const ScoreCard = (props: ScoreCardProps) => {
       };
     });
 
-    props.setShowConfirmModal(true);
+    props.setShowConfirmModal?.(true);
   };
 
   const copyCard = () => {
@@ -334,7 +336,12 @@ const ScoreCard = (props: ScoreCardProps) => {
                 }
                 tooltipText="Copy to clipboard"
               />
-              <Show when={props.signedInUserId == props.card.author?.id}>
+              <Show
+                when={
+                  props.setOnDelete &&
+                  props.signedInUserId == props.card.author?.id
+                }
+              >
                 <button
                   classList={{
                     "h-fit text-red-700 dark:text-red-400": true,
@@ -359,22 +366,32 @@ const ScoreCard = (props: ScoreCardProps) => {
                 }
                 tooltipText="Open in new tab"
               />
-              <CommunityBookmarkPopover
-                bookmarks={props.bookmarks.filter(
-                  (bookmark) => bookmark.card_uuid === props.card.id,
+              <Show when={props.bookmarks}>
+                {(bookmarks) => (
+                  <CommunityBookmarkPopover
+                    bookmarks={bookmarks().filter(
+                      (bookmark) => bookmark.card_uuid === props.card.id,
+                    )}
+                  />
                 )}
-              />
-              <BookmarkPopover
-                signedInUserId={props.signedInUserId}
-                totalCollectionPages={props.totalCollectionPages}
-                cardCollections={props.cardCollections}
-                cardMetadata={props.card}
-                setLoginModal={props.setShowModal}
-                bookmarks={props.bookmarks.filter(
-                  (bookmark) => bookmark.card_uuid === props.card.id,
+              </Show>
+              <Show when={props.cardCollections}>
+                {(cardCollections) => (
+                  <BookmarkPopover
+                    signedInUserId={props.signedInUserId}
+                    totalCollectionPages={props.totalCollectionPages ?? 0}
+                    cardCollections={cardCollections()}
+                    cardMetadata={props.card}
+                    setLoginModal={props.setShowModal}
+                    bookmarks={
+                      props.bookmarks?.filter(
+                        (bookmark) => bookmark.card_uuid === props.card.id,
+                      ) ?? []
+                    }
+                    setCardCollections={props.setCardCollections}
+                  />
                 )}
-                setCardCollections={props.setCardCollections}
-              />
+              </Show>
             </div>
             <div class="flex w-full items-start">
               <div class="flex flex-col items-center pr-2">
