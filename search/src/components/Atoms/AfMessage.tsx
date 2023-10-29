@@ -6,7 +6,8 @@ import { BiSolidUserRectangle } from "solid-icons/bi";
 import { AiFillRobot } from "solid-icons/ai";
 import { Accessor, For, Show, createEffect, createSignal } from "solid-js";
 import type { UserDTO, ScoreCardDTO } from "../../../utils/apiTypes";
-import ScoreCard from "../ScoreCard";
+import ScoreCard, { sanitzerOptions } from "../ScoreCard";
+import sanitizeHtml from "sanitize-html";
 
 export interface AfMessageProps {
   role: "user" | "assistant" | "system";
@@ -47,6 +48,9 @@ export const AfMessage = (props: AfMessageProps) => {
       const card = props.cards()[num - 1];
       card.score = num;
       if (!metadata().includes(card)) {
+        // the linter does not understand that the card can sometimes be undefined or null
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        if (!card) return;
         setMetadata((prev) => [...prev, card]);
       }
     }
@@ -87,7 +91,7 @@ export const AfMessage = (props: AfMessageProps) => {
               <div class="col-span-2 whitespace-pre-line text-neutral-800 dark:text-neutral-50">
                 <div
                   // eslint-disable-next-line solid/no-innerhtml
-                  innerHTML={content()}
+                  innerHTML={sanitizeHtml(content(), sanitzerOptions)}
                 />
               </div>
               <Show when={!props.content}>

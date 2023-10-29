@@ -9,7 +9,8 @@ import {
   createSignal,
 } from "solid-js";
 import { CardMetadataWithVotes } from "~/utils/apiTypes";
-import ScoreCard from "../ScoreCard";
+import ScoreCard, { sanitzerOptions } from "../ScoreCard";
+import sanitizeHtml from "sanitize-html";
 
 export interface AfMessageProps {
   normalChat: boolean;
@@ -43,7 +44,16 @@ export const AfMessage = (props: AfMessageProps) => {
     let content = props.content;
     if (split_content.length > 1) {
       setCardMetadatas(JSON.parse(split_content[0]));
-      content = split_content[1];
+      content = split_content[1].replace(
+        /\[([^,\]]+)/g,
+        (_, content: string) => {
+          const match = content.match(/\d+\.\d+|\d+/);
+          if (match) {
+            return `<span>[<button onclick='document.getElementById("doc_${match[0]}").scrollIntoView({"behavior": "smooth", "block": "center"});' style='color: #3b82f6; text-decoration: underline;'>${content}</button></span>`;
+          }
+          return `[${content}]`;
+        },
+      );
     } else if (props.content.length > 25) {
       return {
         content:
@@ -74,7 +84,6 @@ export const AfMessage = (props: AfMessageProps) => {
       while ((cardNums = numRe.exec(cardIndex)) !== null) {
         for (const num1 of cardNums) {
           const cardNum = parseInt(num1);
-          console.log(cardNum);
           cardNumList.push(cardNum);
         }
       }
@@ -82,10 +91,10 @@ export const AfMessage = (props: AfMessageProps) => {
     cardNumList.sort((a, b) => a - b);
     for (const num of cardNumList) {
       const card = cardMetadatas()[num - 1];
-      if (!card) {
-        continue;
-      }
       if (!metadata().includes(card)) {
+        // the linter does not understand that the card can sometimes be undefined or null
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        if (!card) return;
         setMetadata((prev) => [...prev, card]);
       }
     }
@@ -123,7 +132,13 @@ export const AfMessage = (props: AfMessageProps) => {
                 }}
               >
                 <div class="col-span-2 whitespace-pre-line text-neutral-800 dark:text-neutral-50">
-                  {editedContent() || displayMessage().content.trimStart()}
+                  <div
+                    // eslint-disable-next-line solid/no-innerhtml
+                    innerHTML={sanitizeHtml(
+                      editedContent() || displayMessage().content.trimStart(),
+                      sanitzerOptions,
+                    )}
+                  />
                 </div>
                 <Show when={!displayMessage().content}>
                   <div class="col-span-2 w-full whitespace-pre-line">
@@ -134,7 +149,7 @@ export const AfMessage = (props: AfMessageProps) => {
                   </div>
                 </Show>
                 <Show when={metadata()}>
-                  <div class="w-full flex-col space-y-3">
+                  <div class="max-h-[600px] w-full flex-col space-y-3 overflow-scroll overflow-x-hidden scrollbar-thin scrollbar-track-neutral-200 dark:scrollbar-track-zinc-700">
                     <For each={metadata()}>
                       {(card, i) => (
                         <ScoreCard
@@ -178,7 +193,7 @@ export const AfMessage = (props: AfMessageProps) => {
             <form class="w-full">
               <textarea
                 id="new-message-content-textarea"
-                class="max-h-[180px] w-full resize-none whitespace-pre-wrap rounded bg-transparent p-2 py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
+                class="max-h-[180px] w-full resize-none whitespace-pre-wrap rounded bg-neutral-100 bg-transparent p-2 py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
                 placeholder="Write a question or prompt for the assistant..."
                 value={editingMessageContent()}
                 onInput={(e) => resizeTextarea(e.target)}
