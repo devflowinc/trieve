@@ -53,6 +53,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
   );
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
+  const [scoreCard, setScoreCard] = createSignal<ScoreCardDTO[]>([]);
 
   if (props.defaultResultCard.status == 401) {
     setError("You are not authorized to view this card.");
@@ -170,6 +171,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
           }
 
           setCardMetadata(data);
+          setScoreCard([{ metadata: [data], score: 0 }]);
           setError("");
         });
       }
@@ -227,17 +229,15 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
         <Portal>
           <FullScreenModal isOpen={openChat} setIsOpen={setOpenChat}>
             <Show when={cardMetadata()}>
-              {(card) => (
-                <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto rounded-md scrollbar-thin">
-                  <ChatPopup
-                    user={user}
-                    cards={() => [card() as unknown as ScoreCardDTO]}
-                    selectedIds={selectedIds}
-                    setShowNeedLoginModal={setShowNeedLoginModal}
-                    setOpenChat={setOpenChat}
-                  />
-                </div>
-              )}
+              <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto rounded-md scrollbar-thin">
+                <ChatPopup
+                  user={user}
+                  cards={scoreCard}
+                  selectedIds={selectedIds}
+                  setShowNeedLoginModal={setShowNeedLoginModal}
+                  setOpenChat={setOpenChat}
+                />
+              </div>
             </Show>
           </FullScreenModal>
         </Portal>
