@@ -31,10 +31,11 @@ import CommunityBookmarkPopover from "./CommunityBookmarkPopover";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 
 export const sanitzerOptions = {
-  allowedTags: [...sanitizeHtml.defaults.allowedTags, "font"],
+  allowedTags: [...sanitizeHtml.defaults.allowedTags, "font", "button", "span"],
   allowedAttributes: {
     ...sanitizeHtml.defaults.allowedAttributes,
     "*": ["style"],
+    button: ["onclick"],
   },
 };
 

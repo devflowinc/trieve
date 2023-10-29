@@ -20,12 +20,13 @@ import { FiCheck, FiGlobe } from "solid-icons/fi";
 
 export const sanitzerOptions = {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-  allowedTags: [...sanitizeHtml.defaults.allowedTags, "font"],
+  allowedTags: [...sanitizeHtml.defaults.allowedTags, "font", "button", "span"],
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   allowedAttributes: {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     ...sanitizeHtml.defaults.allowedAttributes,
     "*": ["style"],
+    button: ["onclick"],
   },
 };
 
@@ -151,7 +152,10 @@ const ScoreCard = (props: ScoreCardProps) => {
   };
 
   return (
-    <div class="flex w-full flex-col items-center rounded-md bg-neutral-100 p-2 dark:!bg-neutral-800 lg:ml-2">
+    <div
+      class="flex w-full flex-col items-center rounded-md bg-neutral-100 p-2 dark:!bg-neutral-800 lg:ml-2"
+      id={"doc_" + props.counter.toString()}
+    >
       <div class="flex w-full flex-col space-y-2">
         <div class="flex h-fit items-center space-x-1">
           <Tooltip
