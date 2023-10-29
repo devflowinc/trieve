@@ -5,13 +5,7 @@
 import { BiSolidUserRectangle } from "solid-icons/bi";
 import { AiFillRobot } from "solid-icons/ai";
 import { Accessor, For, Show, createEffect, createSignal } from "solid-js";
-import {
-  CardBookmarksDTO,
-  isCardCollectionPageDTO,
-  UserDTO,
-  CardCollectionDTO,
-  ScoreCardDTO,
-} from "../../../utils/apiTypes";
+import type { UserDTO, ScoreCardDTO } from "../../../utils/apiTypes";
 import ScoreCard from "../ScoreCard";
 
 export interface AfMessageProps {
@@ -23,73 +17,12 @@ export interface AfMessageProps {
 }
 
 export const AfMessage = (props: AfMessageProps) => {
-  const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const [user, setUser] = createSignal<UserDTO | undefined>();
-  const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
-  const [cardCollections, setCardCollections] = createSignal<
-    CardCollectionDTO[]
-  >([]);
-  const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
-  const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
-    createSignal(false);
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onDelete, setOnDelete] = createSignal(() => {});
-
-  const [bookmarks, setBookmarks] = createSignal<CardBookmarksDTO[]>([]);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
   const [metadata, setMetadata] = createSignal<ScoreCardDTO[]>([]);
   const [content, setContent] = createSignal<string>("");
 
-  const fetchCardCollections = () => {
-    if (!user()) return;
-
-    void fetch(`${apiHost}/card_collection/1`, {
-      method: "GET",
-      credentials: "include",
-    }).then((response) => {
-      if (response.ok) {
-        void response.json().then((data) => {
-          if (isCardCollectionPageDTO(data)) {
-            setCardCollections(data.collections);
-            setTotalCollectionPages(data.total_pages);
-          }
-        });
-      }
-    });
-  };
-  const fetchBookmarks = () => {
-    void fetch(`${apiHost}/card_collection/bookmark`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        card_ids: metadata().flatMap((c) => {
-          return c.metadata[0].id;
-        }),
-      }),
-    }).then((response) => {
-      if (response.ok) {
-        void response.json().then((data) => {
-          const cardBookmarks = data as CardBookmarksDTO[];
-          setBookmarks(cardBookmarks);
-        });
-      }
-    });
-  };
-
-  createEffect(() => {
-    if (!user()) return;
-    fetchCardCollections();
-  });
-
   createEffect(() => {
     setContent(props.content);
-  });
-  createEffect(() => {
-    if (!user()) return;
-    fetchBookmarks();
   });
 
   createEffect(() => {
@@ -112,9 +45,6 @@ export const AfMessage = (props: AfMessageProps) => {
     cardNumList.sort((a, b) => a - b);
     for (const num of cardNumList) {
       const card = props.cards()[num - 1];
-      if (!card) {
-        continue;
-      }
       card.score = num;
       if (!metadata().includes(card)) {
         setMetadata((prev) => [...prev, card]);
@@ -124,7 +54,7 @@ export const AfMessage = (props: AfMessageProps) => {
       props.content.replace(/\[([^,\]]+)/g, (_, content: string) => {
         const match = content.match(/\d+\.\d+|\d+/);
         if (match) {
-          return `<button onclick='document.getElementById("doc_${match[0]}").scrollIntoView({"behavior": "smooth", "block": "center"});'>[${content}</button>`;
+          return `<span>[<button onclick='document.getElementById("doc_${match[0]}").scrollIntoView({"behavior": "smooth", "block": "center"});' style='color: #3b82f6; text-decoration: underline;'>${content}</button></span>`;
         }
         return `[${content}]`;
       }),
@@ -173,19 +103,10 @@ export const AfMessage = (props: AfMessageProps) => {
                   <For each={metadata()}>
                     {(card) => (
                       <ScoreCard
-                        signedInUserId={props.user()?.id}
-                        cardCollections={cardCollections()}
-                        totalCollectionPages={totalCollectionPages()}
                         collection={undefined}
                         card={card.metadata[0]}
                         score={0}
-                        initialExpanded={false}
-                        bookmarks={bookmarks()}
                         showExpand={!props.streamingCompletion()}
-                        setCardCollections={setCardCollections}
-                        setOnDelete={setOnDelete}
-                        setShowConfirmModal={setShowConfirmDeleteModal}
-                        setShowModal={setShowNeedLoginModal}
                         counter={card.score}
                         begin={undefined}
                         end={undefined}

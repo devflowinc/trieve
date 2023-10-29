@@ -22,9 +22,9 @@ export interface BookmarkPopoverProps {
   cardMetadata: CardMetadata;
   cardCollections: CardCollectionDTO[];
   totalCollectionPages: number;
-  setLoginModal: Setter<boolean>;
+  setLoginModal?: Setter<boolean>;
   bookmarks: CardBookmarksDTO[];
-  setCardCollections: Setter<CardCollectionDTO[]>;
+  setCardCollections?: Setter<CardCollectionDTO[]>;
 }
 
 const BookmarkPopover = (props: BookmarkPopoverProps) => {
@@ -108,12 +108,14 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
   const refetchCollections = (
     curPage: number,
     cardBookmarks: CardBookmarksDTO[],
-    setCardCollections: Setter<CardCollectionDTO[]>,
+    setCardCollections: Setter<CardCollectionDTO[]> | undefined,
   ) => {
     void fetch(`${apiHost}/card_collection/${localCollectionPage()}`, {
       method: "GET",
       credentials: "include",
     }).then((response) => {
+      if (!setCardCollections) return;
+
       if (response.ok) {
         void response.json().then((data) => {
           if (isCardCollectionPageDTO(data)) {
@@ -229,7 +231,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
               title="Bookmark"
               onClick={() => {
                 if (notLoggedIn() || props.signedInUserId === undefined) {
-                  props.setLoginModal(true);
+                  props.setLoginModal?.(true);
                   return;
                 }
                 refetchBookmarks(localCollectionPage());
