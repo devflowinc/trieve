@@ -28,7 +28,6 @@ export interface LayoutProps {
 
 const ChatPopup = (props: LayoutProps) => {
   const api_host = import.meta.env.PUBLIC_API_HOST as unknown as string;
-
   const resizeTextarea = (textarea: HTMLTextAreaElement) => {
     textarea.style.height = "auto";
     textarea.style.height = `${textarea.scrollHeight}px`;
