@@ -40,6 +40,7 @@ pub struct UploadFileData {
     pub tag_set: Option<String>,
     pub description: Option<String>,
     pub link: Option<String>,
+    pub metadata: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -84,15 +85,14 @@ pub async fn upload_file_handler(
         None
     };
 
-    let private = upload_file_data.private;
-
     let conversion_result = convert_doc_to_html_query(
         upload_file_data.file_name,
         decoded_file_data,
         upload_file_data.tag_set,
         decoded_description_file_data,
         upload_file_data.link,
-        private,
+        upload_file_data.private,
+        upload_file_data.metadata,
         user,
         pool_inner,
     )

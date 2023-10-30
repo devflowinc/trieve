@@ -133,6 +133,7 @@ pub async fn convert_doc_to_html_query(
     description: Option<String>,
     link: Option<String>,
     private: bool,
+    metadata: Option<serde_json::Value>,
     user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<UploadFileResult, DefaultError> {
@@ -204,13 +205,19 @@ pub async fn convert_doc_to_html_query(
                 }
             })?;
 
-        let tika_metadata_response_json: serde_json::Value =
+        let mut tika_metadata_response_json: serde_json::Value =
             tika_metadata_response.json().await.map_err(|err| {
                 log::error!("Could not get tika metadata response json {:?}", err);
                 DefaultError {
                     message: "Could not get tika metadata response json",
                 }
             })?;
+
+        if let Some(metadata) = metadata {
+            for (key, value) in metadata.as_object().unwrap() {
+                tika_metadata_response_json[key] = value.clone();
+            }
+        }
 
         let file_size = match file_data.len().try_into() {
             Ok(file_size) => file_size,
