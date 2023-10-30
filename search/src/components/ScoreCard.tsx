@@ -248,6 +248,10 @@ const ScoreCard = (props: ScoreCardProps) => {
       });
   };
 
+  const useExpand = createMemo(() => {
+    return props.card.content.split(" ").length > 15 * linesBeforeShowMore;
+  });
+
   return (
     <>
       <Show when={!deleted()}>
@@ -511,12 +515,14 @@ const ScoreCard = (props: ScoreCardProps) => {
           <div class="mb-1 h-1 w-full border-b border-neutral-300 dark:border-neutral-600" />
           <div
             classList={{
-              "line-clamp-4 gradient-mask-b-0": !expanded(),
+              "line-clamp-4 gradient-mask-b-0": useExpand() && !expanded(),
               "text-ellipsis max-w-[100%] break-words space-y-5 leading-normal !text-black dark:!text-white":
                 true,
             }}
             style={
-              !expanded() ? { "-webkit-line-clamp": linesBeforeShowMore } : {}
+              useExpand() && !expanded()
+                ? { "-webkit-line-clamp": linesBeforeShowMore }
+                : {}
             }
             // eslint-disable-next-line solid/no-innerhtml
             innerHTML={sanitizeHtml(
@@ -530,26 +536,28 @@ const ScoreCard = (props: ScoreCardProps) => {
               sanitzerOptions,
             )}
           />
-          <button
-            classList={{
-              "ml-2 font-semibold": true,
-              "animate-pulse": !props.showExpand,
-            }}
-            disabled={!props.showExpand}
-            onClick={() => setExpanded((prev) => !prev)}
-          >
-            {expanded() ? (
-              <div class="flex flex-row items-center">
-                <div>Show Less</div>{" "}
-                <BiRegularChevronUp class="h-8 w-8 fill-current" />
-              </div>
-            ) : (
-              <div class="flex flex-row items-center">
-                <div>Show More</div>{" "}
-                <BiRegularChevronDown class="h-8 w-8 fill-current" />
-              </div>
-            )}
-          </button>
+          <Show when={useExpand()}>
+            <button
+              classList={{
+                "ml-2 font-semibold": true,
+                "animate-pulse": !props.showExpand,
+              }}
+              disabled={!props.showExpand}
+              onClick={() => setExpanded((prev) => !prev)}
+            >
+              {expanded() ? (
+                <div class="flex flex-row items-center">
+                  <div>Show Less</div>{" "}
+                  <BiRegularChevronUp class="h-8 w-8 fill-current" />
+                </div>
+              ) : (
+                <div class="flex flex-row items-center">
+                  <div>Show More</div>{" "}
+                  <BiRegularChevronDown class="h-8 w-8 fill-current" />
+                </div>
+              )}
+            </button>
+          </Show>
         </div>
       </Show>
       <Show when={showImageModal()}>
