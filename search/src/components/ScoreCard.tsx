@@ -300,7 +300,7 @@ const ScoreCard = (props: ScoreCardProps) => {
               </Show>
               <Show when={props.chat}>
                 <span class="font-semibold">
-                  Doc: {props.counter.toString().slice(-1)}
+                  Doc: {props.counter.toString()}
                 </span>
               </Show>
               <div class="flex-1" />
