@@ -1,4 +1,11 @@
-import { Show, createEffect, createSignal, For, onMount } from "solid-js";
+import {
+  Show,
+  createEffect,
+  createSignal,
+  For,
+  onMount,
+  onCleanup,
+} from "solid-js";
 import {
   isUserDTO,
   type CardCollectionDTO,
@@ -95,7 +102,6 @@ const ResultsPage = (props: ResultsPageProps) => {
     });
   };
 
-  // Fetch the user info for the auth'ed user
   createEffect(() => {
     void fetch(`${apiHost}/auth`, {
       method: "GET",
@@ -147,9 +153,9 @@ const ResultsPage = (props: ResultsPageProps) => {
 
     fetchCardCollections();
 
-    return () => {
+    onCleanup(() => {
       abortController.abort();
-    };
+    });
   });
 
   onMount(() => {

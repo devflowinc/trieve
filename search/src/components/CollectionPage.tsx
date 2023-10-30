@@ -1,4 +1,11 @@
-import { Show, createEffect, createSignal, For, onMount } from "solid-js";
+import {
+  Show,
+  createEffect,
+  createSignal,
+  For,
+  onMount,
+  onCleanup,
+} from "solid-js";
 import {
   isUserDTO,
   type CardCollectionDTO,
@@ -145,9 +152,9 @@ export const CollectionPage = (props: CollectionPageProps) => {
       }
     });
 
-    return () => {
+    onCleanup(() => {
       abortController.abort();
-    };
+    });
   });
 
   createEffect(() => {
@@ -223,9 +230,9 @@ export const CollectionPage = (props: CollectionPageProps) => {
         setClientSideRequestFinished(true);
       });
 
-      return () => {
+      onCleanup(() => {
         abortController.abort();
-      };
+      });
     }
 
     fetchCardCollections();
