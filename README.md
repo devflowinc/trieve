@@ -37,8 +37,8 @@
 
 ## Live Demos
 
-- [CVE security vulnerability search](https://search.arguflow.ai)
-- [CVE security vulnerability RAG](https://chat.arguflow.ai)
+- [CVE security vulnerability search](https://cve-search.arguflow.ai)
+- [CVE security vulnerability RAG](https://cve-chat.arguflow.ai)
 - [Enron Corpus search](https://enron-search.arguflow.ai)
 - [Enron Corpus RAG](https://enron-chat.arguflow.ai)
 
