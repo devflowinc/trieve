@@ -421,8 +421,12 @@ export const CollectionPage = (props: CollectionPageProps) => {
             <div class="flex w-full max-w-6xl items-center justify-end space-x-2 px-4 sm:px-8 md:px-20">
               <Show
                 when={
-                  !props.defaultCollectionCards.metadata.collection.is_public &&
-                  alwaysRequireAuth !== "on"
+                  !cardCollections().find(
+                    (collection) => collection.id == collectionInfo().id,
+                  )?.is_public ||
+                  (!props.defaultCollectionCards.metadata.collection
+                    .is_public &&
+                    alwaysRequireAuth !== "on")
                 }
               >
                 <FiLock class="text-green-500" />
