@@ -15,6 +15,7 @@ export interface AfMessageProps {
   streamingCompletion: Accessor<boolean>;
   user: Accessor<UserDTO | undefined>;
   cards: Accessor<ScoreCardDTO[]>;
+  order: number;
 }
 
 export const AfMessage = (props: AfMessageProps) => {
@@ -28,6 +29,7 @@ export const AfMessage = (props: AfMessageProps) => {
 
   createEffect(() => {
     if (props.streamingCompletion()) return;
+    const curOrder = props.order;
     const bracketRe = /\[(.*?)\]/g;
     const numRe = /\d+/g;
     let match;
@@ -58,7 +60,7 @@ export const AfMessage = (props: AfMessageProps) => {
       props.content.replace(/\[([^,\]]+)/g, (_, content: string) => {
         const match = content.match(/\d+\.\d+|\d+/);
         if (match) {
-          return `<span>[<button onclick='document.getElementById("doc_${match[0]}").scrollIntoView({"behavior": "smooth", "block": "center"});' style='color: #3b82f6; text-decoration: underline;'>${content}</button></span>`;
+          return `<span>[<button onclick='document.getElementById("doc_${curOrder}${match[0]}").scrollIntoView({"behavior": "smooth", "block": "center"});' style='color: #3b82f6; text-decoration: underline;'>${content}</button></span>`;
         }
         return `[${content}]`;
       }),
@@ -111,7 +113,8 @@ export const AfMessage = (props: AfMessageProps) => {
                         card={card.metadata[0]}
                         score={0}
                         showExpand={!props.streamingCompletion()}
-                        counter={card.score}
+                        counter={card.score.toString()}
+                        order={props.order.toString()}
                         begin={undefined}
                         end={undefined}
                         total={0}

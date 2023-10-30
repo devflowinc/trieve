@@ -6,7 +6,6 @@ use crate::{
     errors::DefaultError,
 };
 use actix_web::web;
-
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -367,6 +367,7 @@ const MainLayout = (props: LayoutProps) => {
                           );
                         });
                     }}
+                    order={idx()}
                   />
                 );
               }}

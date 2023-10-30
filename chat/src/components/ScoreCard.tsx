@@ -36,7 +36,8 @@ export interface ScoreCardProps {
   totalCollectionPages: number;
   collection?: boolean;
   card: CardMetadataWithVotes;
-  counter: number;
+  counter: string;
+  order?: string;
   initialExpanded?: boolean;
   bookmarks: CardBookmarksDTO[];
   showExpand?: boolean;
@@ -154,7 +155,7 @@ const ScoreCard = (props: ScoreCardProps) => {
   return (
     <div
       class="flex w-full flex-col items-center rounded-md bg-neutral-100 p-2 dark:!bg-neutral-800 lg:ml-2"
-      id={"doc_" + props.counter.toString()}
+      id={"doc_" + (props.order ?? "") + props.counter}
     >
       <div class="flex w-full flex-col space-y-2">
         <div class="flex h-fit items-center space-x-1">
@@ -162,7 +163,7 @@ const ScoreCard = (props: ScoreCardProps) => {
             body={<FiGlobe class="h-5 w-5 text-green-500" />}
             tooltipText="Publicly visible"
           />
-          <span class="font-semibold">Doc: {props.counter}</span>
+          <span class="font-semibold">Doc: {props.counter.slice(-1)}</span>
           <div class="flex-1" />
           <Show when={!copied()}>
             <button class="h-fit" onClick={() => copyCard()}>

@@ -213,7 +213,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
         initialExpanded={true}
         showExpand={clientSideRequestFinished()}
         setCardCollections={setCardCollections}
-        counter={0}
+        counter={"0"}
         total={1}
         begin={0}
         end={0}

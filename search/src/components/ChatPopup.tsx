@@ -184,6 +184,7 @@ const ChatPopup = (props: LayoutProps) => {
                     role={messageRoleFromIndex(idx())}
                     content={message.content}
                     streamingCompletion={streamingCompletion}
+                    order={idx()}
                   />
                 );
               }}
