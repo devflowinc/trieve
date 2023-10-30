@@ -18,6 +18,7 @@ export interface AfMessageProps {
   content: string;
   onEdit: (content: string) => void;
   streamingCompletion: Accessor<boolean>;
+  order: number;
 }
 
 export const AfMessage = (props: AfMessageProps) => {
@@ -40,6 +41,7 @@ export const AfMessage = (props: AfMessageProps) => {
     if (props.normalChat || props.role !== "assistant")
       return { content: props.content };
 
+    const curOrder = props.order;
     const split_content = props.content.split("||");
     let content = props.content;
     if (split_content.length > 1) {
@@ -49,7 +51,7 @@ export const AfMessage = (props: AfMessageProps) => {
         (_, content: string) => {
           const match = content.match(/\d+\.\d+|\d+/);
           if (match) {
-            return `<span>[<button onclick='document.getElementById("doc_${match[0]}").scrollIntoView({"behavior": "smooth", "block": "center"});' style='color: #3b82f6; text-decoration: underline;'>${content}</button></span>`;
+            return `<span>[<button onclick='document.getElementById("doc_${curOrder}${match[0]}").scrollIntoView({"behavior": "smooth", "block": "center"});' style='color: #3b82f6; text-decoration: underline;'>${content}</button></span>`;
           }
           return `[${content}]`;
         },
@@ -158,10 +160,11 @@ export const AfMessage = (props: AfMessageProps) => {
                           totalCollectionPages={1}
                           collection={undefined}
                           card={card}
-                          counter={i() + 1}
+                          counter={(i() + 1).toString()}
                           initialExpanded={false}
                           bookmarks={[]}
                           showExpand={!props.streamingCompletion()}
+                          order={props.order.toString()}
                         />
                       )}
                     </For>

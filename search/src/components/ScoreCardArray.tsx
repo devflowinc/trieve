@@ -61,7 +61,7 @@ export const ScoreCardArray = (props: ScoreCardAraryProps) => {
       <ScoreCard
         {...props}
         card={props.cards[curCard()]}
-        counter={curCard() + 1}
+        counter={(curCard() + 1).toString()}
         total={props.cards.length}
         begin={beginTime()}
         end={endTime()}

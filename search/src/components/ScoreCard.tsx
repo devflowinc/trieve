@@ -64,7 +64,8 @@ export interface ScoreCardProps {
   bookmarks?: CardBookmarksDTO[];
   showExpand?: boolean;
   setCardCollections?: Setter<CardCollectionDTO[]>;
-  counter: number;
+  counter: string;
+  order?: string;
   total: number;
   begin: number | undefined;
   end: number | undefined;
@@ -252,7 +253,10 @@ const ScoreCard = (props: ScoreCardProps) => {
       <Show when={!deleted()}>
         <div
           class="mx-auto flex w-full max-w-[calc(100%-32px)] flex-col items-center rounded-md bg-neutral-100 p-2 dark:!bg-neutral-800 min-[360px]:max-w-[calc(100%-64px)]"
-          id={"doc_" + props.counter.toString()}
+          id={
+            "doc_" +
+            (props.chat ? (props.order ?? "") + props.counter : props.card.id)
+          }
         >
           <div class="flex w-full flex-col space-y-2">
             <div class="flex h-fit items-center space-x-1">
@@ -291,7 +295,9 @@ const ScoreCard = (props: ScoreCardProps) => {
                 </span>
               </Show>
               <Show when={props.chat}>
-                <span class="font-semibold">Doc: {props.counter}</span>
+                <span class="font-semibold">
+                  Doc: {props.counter.toString().slice(-1)}
+                </span>
               </Show>
               <div class="flex-1" />
               <Tooltip
