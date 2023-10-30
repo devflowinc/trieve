@@ -249,7 +249,7 @@ const ScoreCard = (props: ScoreCardProps) => {
   };
 
   const useExpand = createMemo(() => {
-    return props.card.content.split(" ").length > 15 * linesBeforeShowMore;
+    return props.card.content.split(" ").length > 20 * linesBeforeShowMore;
   });
 
   return (
