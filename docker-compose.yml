@@ -16,7 +16,7 @@ services:
       - app-network
 
   redis:
-    image: redis
+    image: redis:7.2.2
     container_name: my-redis
     restart: always
     ports:
@@ -28,7 +28,7 @@ services:
     command: redis-server --requirepass ${REDIS_PASSWORD}
  
   script-redis:
-    image: redis
+    image: redis:7.2.2
     container_name: my-script-redis
     restart: always
     ports:
