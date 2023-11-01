@@ -1,7 +1,7 @@
 use super::auth_handler::{LoggedUser, RequireAuth};
 use crate::data::models::{
-    CardCollection, CardCollectionBookmark, CardMetadata, CardMetadataWithVotesWithScore, Pool,
-    UserDTO,
+    CardCollection, CardCollectionBookmark, CardMetadata, CardMetadataWithVotesWithScore,
+    ChatMessageProxy, Pool, UserDTO,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -26,10 +26,10 @@ use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use utoipa::ToSchema;
 use std::collections::HashSet;
 use std::process::Command;
 use tokio_stream::StreamExt;
+use utoipa::ToSchema;
 
 pub async fn user_owns_card(
     user_id: uuid::Uuid,
@@ -488,7 +488,7 @@ pub async fn update_card(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct UpdateCardByTrackingIdData {
     card_uuid: Option<uuid::Uuid>,
     link: Option<String>,
@@ -497,6 +497,18 @@ pub struct UpdateCardByTrackingIdData {
     metadata: Option<serde_json::Value>,
     tracking_id: String,
 }
+
+#[utoipa::path(
+    put,
+    path = "/card/tracking_id/update",
+    context_path = "/api",
+    tag = "card",
+    request_body(content = UpdateCardByTrackingIdData, description = "JSON request payload to update a card by tracking_id (chunks)", content_type = "application/json"),
+    responses(
+        (status = 204, description = "Confirmation that the card has been updated as per your request",),
+        (status = 400, description = "Service error relating to to updating card", body = [DefaultError]),
+    ),
+)]
 pub async fn update_card_by_tracking_id(
     card: web::Json<UpdateCardByTrackingIdData>,
     pool: web::Data<Pool>,
@@ -567,7 +579,7 @@ pub async fn update_card_by_tracking_id(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct SearchCardData {
     content: String,
     link: Option<Vec<String>>,
@@ -575,18 +587,32 @@ pub struct SearchCardData {
     filters: Option<serde_json::Value>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct ScoreCardDTO {
     metadata: Vec<CardMetadataWithVotesWithScore>,
     score: f64,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchCardQueryResponseBody {
     score_cards: Vec<ScoreCardDTO>,
     total_card_pages: i64,
 }
 
+#[utoipa::path(
+    post,
+    path = "/card/search",
+    context_path = "/api",
+    tag = "card",
+    request_body(content = SearchCardData, description = "JSON request payload to semantically search for cards (chunks)", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Cards which are similar to the embedding vector of the search query", body = [SearchCardQueryResponseBody]),
+        (status = 400, description = "Service error relating to searching", body = [DefaultError]),
+    ),
+    params(
+        ("page" = Option<u64>, Path, description = "Page number of the search results")
+    ),
+)]
 pub async fn search_card(
     data: web::Json<SearchCardData>,
     page: Option<web::Path<u64>>,
@@ -691,6 +717,20 @@ pub async fn search_card(
     }))
 }
 
+#[utoipa::path(
+    post,
+    path = "/card/fulltextsearch",
+    context_path = "/api",
+    tag = "card",
+    request_body(content = SearchCardData, description = "JSON request payload to full text search for cards (chunks)", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Cards which have text with a postgres ts_vector similar to the ts_vector of the search query", body = [SearchCardQueryResponseBody]),
+        (status = 400, description = "Service error relating to to searcing for the card", body = [DefaultError]),
+    ),
+    params(
+        ("page" = Option<u64>, Path, description = "Page number of the search results")
+    ),
+)]
 pub async fn search_full_text_card(
     data: web::Json<SearchCardData>,
     page: Option<web::Path<u64>>,
@@ -1113,12 +1153,7 @@ pub async fn get_card_by_tracking_id(
     Ok(HttpResponse::Ok().json(card))
 }
 
-#[utoipa::path(
-    get,
-    path = "/card/count",
-    context_path = "/api",
-    tag = "card",
-)]
+#[utoipa::path(get, path = "/card/count", context_path = "/api", tag = "card")]
 pub async fn get_total_card_count(
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
@@ -1173,11 +1208,23 @@ pub async fn get_recommended_cards(
     Ok(HttpResponse::Ok().json(recommended_card_metadatas))
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct GenerateCardsRequest {
-    pub prev_messages: Vec<ChatMessage>,
+    pub prev_messages: Vec<ChatMessageProxy>,
     pub card_ids: Vec<uuid::Uuid>,
 }
+
+#[utoipa::path(
+    post,
+    path = "/card/generate",
+    context_path = "/api",
+    tag = "card",
+    request_body(content = GenerateCardsRequest, description = "JSON request payload to perform RAG on some cards (chunks)", content_type = "application/json"),
+    responses(
+        (status = 200, description = "This will be a HTTP stream, check the chat or search UI for an example how to process this",),
+        (status = 400, description = "Service error relating to to updating card, likely due to conflicting tracking_id", body = [DefaultError]),
+    ),
+)]
 pub async fn generate_off_cards(
     data: web::Json<GenerateCardsRequest>,
     pool: web::Data<Pool>,
@@ -1206,7 +1253,10 @@ pub async fn generate_off_cards(
             .unwrap_or("https://api.openai.com/v1".into()),
     };
 
-    let mut messages: Vec<ChatMessage> = prev_messages.clone();
+    let mut messages: Vec<ChatMessage> = prev_messages
+        .iter()
+        .map(|message| ChatMessage::from(message.clone()))
+        .collect();
     messages.truncate(prev_messages.len() - 1);
     messages.push(ChatMessage {
         role: Role::User,

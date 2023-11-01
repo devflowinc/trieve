@@ -28,7 +28,6 @@ use openai_dive::v1::{
     resources::chat_completion::{ChatCompletionParameters, ChatMessage, Role},
 };
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use tokio_stream::StreamExt;
 use utoipa::ToSchema;
 
@@ -609,11 +608,27 @@ pub async fn stream_response(
     ))))
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct SuggestedQueriesRequest {
     pub query: String,
 }
 
+#[derive(Deserialize, Serialize, Debug, ToSchema)]
+pub struct SuggestedQueriesResponse {
+    pub queries: Vec<String>,
+}
+
+#[utoipa::path(
+    post,
+    path = "/card/fulltextsearch/{page}",
+    context_path = "/api",
+    tag = "card",
+    request_body(content = SuggestedQueriesRequest, description = "JSON request payload to get alternative suggested queries", content_type = "application/json"),
+    responses(
+        (status = 200, description = "A JSON object containing a list of alternative suggested queries", body = [SuggestedQueriesResponse]),
+        (status = 400, description = "Service error relating to to updating card, likely due to conflicting tracking_id", body = [DefaultError]),
+    )
+)]
 pub async fn create_suggested_queries_handler(
     data: web::Json<SuggestedQueriesRequest>,
     _required_user: RequireAuth,
@@ -676,7 +691,5 @@ pub async fn create_suggested_queries_handler(
             .map(|query| query.to_string().trim().trim_matches('\n').to_string())
             .collect();
     }
-    Ok(HttpResponse::Ok().json(json!({
-        "queries": queries,
-    })))
+    Ok(HttpResponse::Ok().json(SuggestedQueriesResponse { queries }))
 }
