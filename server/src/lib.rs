@@ -73,6 +73,10 @@ pub async fn main() -> std::io::Result<()> {
             handlers::topic_handler::delete_topic,
             handlers::topic_handler::update_topic,
             handlers::topic_handler::get_all_topics,
+            handlers::message_handler::create_message_completion_handler,
+            handlers::message_handler::get_all_topic_messages,
+            handlers::message_handler::edit_message_handler,
+            handlers::message_handler::regenerate_message_handler,
         ),
         components(
             schemas(
@@ -85,8 +89,12 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::topic_handler::CreateTopicData,
                 handlers::topic_handler::DeleteTopicData,
                 handlers::topic_handler::UpdateTopicData,
+                handlers::message_handler::CreateMessageData,
+                handlers::message_handler::RegenerateMessageData,
+                handlers::message_handler::EditMessageData,
                 data::models::SlimUser,
                 data::models::Topic,
+                data::models::Message,
                 errors::DefaultError,
             )
         ),
@@ -96,6 +104,7 @@ pub async fn main() -> std::io::Result<()> {
             (name = "auth", description = "Authentication endpoint"),
             (name = "password", description = "Password reset endpoint"),
             (name = "topic", description = "Topic chat endpoint"),
+            (name = "message", description = "Message chat endpoint"),
         ),
     )]
     struct ApiDoc;

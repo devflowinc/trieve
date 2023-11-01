@@ -30,13 +30,25 @@ use openai_dive::v1::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio_stream::StreamExt;
+use utoipa::ToSchema;
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct CreateMessageData {
     pub new_message_content: String,
     pub topic_id: uuid::Uuid,
 }
 
+#[utoipa::path(
+    post,
+    path = "/message",
+    context_path = "/api",
+    tag = "message",
+    request_body(content = CreateMessageData, description = "JSON request payload to create a message completion", content_type = "application/json"),
+    responses(
+        (status = 200, description = "This will be a HTTP stream, check the chat or search UI for an example how to process this"),
+        (status = 400, description = "Service error relating to getting a chat completion", body = [DefaultError]),
+    )
+)]
 pub async fn create_message_completion_handler(
     data: web::Json<CreateMessageData>,
     user: LoggedUser,
@@ -109,11 +121,17 @@ pub async fn create_message_completion_handler(
     .await
 }
 
-// get_all_topic_messages_handler
-// verify that the user owns the topic for the topic_id they are requesting
-// get all the messages for the topic_id
-// filter out deleted messages
-// return the messages
+#[utoipa::path(
+    get,
+    path = "/messages/{messages_topic_id}",
+    context_path = "/api",
+    tag = "message",
+    responses(
+        (status = 200, description = "All messages relating to the topic with the given ID", body = [Vec<Message>]),
+        (status = 400, description = "Service error relating to getting the messages", body = [DefaultError]),
+    ),
+    params(("messages_topic_id" = uuid, description = "The ID of the topic to get messages for"))
+)]
 pub async fn get_all_topic_messages(
     user: LoggedUser,
     messages_topic_id: web::Path<uuid::Uuid>,
@@ -134,18 +152,29 @@ pub async fn get_all_topic_messages(
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct RegenerateMessageData {
     topic_id: uuid::Uuid,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct EditMessageData {
     topic_id: uuid::Uuid,
     message_sort_order: i32,
     new_message_content: String,
 }
 
+#[utoipa::path(
+    put,
+    path = "/message",
+    context_path = "/api",
+    tag = "message",
+    request_body(content = EditMessageData, description = "JSON request payload to edit a message and get a new stream", content_type = "application/json"),
+    responses(
+        (status = 200, description = "This will be a HTTP stream, check the chat or search UI for an example how to process this"),
+        (status = 400, description = "Service error relating to getting a chat completion", body = [DefaultError]),
+    )
+)]
 pub async fn edit_message_handler(
     data: web::Json<EditMessageData>,
     user: LoggedUser,
@@ -183,6 +212,17 @@ pub async fn edit_message_handler(
     .await
 }
 
+#[utoipa::path(
+    delete,
+    path = "/message",
+    context_path = "/api",
+    tag = "message",
+    request_body(content = RegenerateMessageData, description = "JSON request payload to delete an agent message then regenerate it in a strem", content_type = "application/json"),
+    responses(
+        (status = 200, description = "This will be a HTTP stream, check the chat or search UI for an example how to process this"),
+        (status = 400, description = "Service error relating to getting a chat completion", body = [DefaultError]),
+    )
+)]
 pub async fn regenerate_message_handler(
     data: web::Json<RegenerateMessageData>,
     user: LoggedUser,
