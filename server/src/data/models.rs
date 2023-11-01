@@ -156,6 +156,30 @@ impl From<Message> for ChatMessage {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct ChatMessageProxy {
+    pub role: String,
+    pub content: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+}
+
+impl From<ChatMessageProxy> for ChatMessage {
+    fn from(message: ChatMessageProxy) -> Self {
+        let role = match message.role.as_str() {
+            "system" => Role::System,
+            "user" => Role::User,
+            _ => Role::Assistant,
+        };
+
+        ChatMessage {
+            role,
+            content: message.content,
+            name: message.name,
+        }
+    }
+}
+
 impl Message {
     pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(
         content: S,
