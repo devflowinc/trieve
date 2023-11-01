@@ -134,6 +134,7 @@ pub async fn convert_doc_to_html_query(
     link: Option<String>,
     private: bool,
     metadata: Option<serde_json::Value>,
+    create_cards: Option<bool>,
     user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<UploadFileResult, DefaultError> {
@@ -250,6 +251,10 @@ pub async fn convert_doc_to_html_query(
                 }
             })?;
 
+        if create_cards.is_some_and(|create_cards_bool| !create_cards_bool) {
+            return Ok(());
+        }
+
         let resp = create_cards_with_handler(
             tag_set,
             private,
@@ -364,6 +369,7 @@ pub async fn create_cards_with_handler(
             private: Some(private),
             file_uuid: Some(created_file_id),
             metadata: metadata.clone(),
+            collection_id: None,
             tracking_id: None,
         };
         let web_json_create_card_data = web::Json(create_card_data);

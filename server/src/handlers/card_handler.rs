@@ -1,6 +1,7 @@
 use super::auth_handler::{LoggedUser, RequireAuth};
 use crate::data::models::{
-    CardCollection, CardMetadata, CardMetadataWithVotesWithScore, Pool, UserDTO,
+    CardCollection, CardCollectionBookmark, CardMetadata, CardMetadataWithVotesWithScore, Pool,
+    UserDTO,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -8,11 +9,14 @@ use crate::operators::card_operator::*;
 use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
 };
-use crate::operators::collection_operator::get_collection_by_id_query;
+use crate::operators::collection_operator::{
+    create_card_bookmark_query, get_collection_by_id_query,
+};
 use crate::operators::qdrant_operator::{
     create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
     update_qdrant_point_private_query,
 };
+use actix::Arbiter;
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
 use openai_dive::v1::api::Client;
@@ -67,6 +71,7 @@ pub struct CreateCardData {
     pub file_uuid: Option<uuid::Uuid>,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
+    pub collection_id: Option<uuid::Uuid>,
 }
 
 pub fn convert_html(html: &str) -> String {
@@ -125,11 +130,13 @@ pub async fn create_card(
         .tracking_id
         .clone()
         .filter(|card_tracking| !card_tracking.is_empty());
+    let card_collection_id = card.collection_id.clone();
 
     let mut collision: Option<uuid::Uuid> = None;
 
     let pool1 = pool.clone();
     let pool2 = pool.clone();
+    let pool3 = pool.clone();
 
     let content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
     // Card content can be at least 470 characters long
@@ -288,6 +295,15 @@ pub async fn create_card(
             .await?;
     }
 
+    if let Some(collection_id_to_bookmark) = card_collection_id {
+        let card_collection_bookmark =
+            CardCollectionBookmark::from_details(collection_id_to_bookmark, card_metadata.id);
+        Arbiter::new().spawn(async move {
+            let _ = web::block(move || create_card_bookmark_query(pool3, card_collection_bookmark))
+                .await;
+        });
+    }
+
     Ok(HttpResponse::Ok().json(ReturnCreatedCard {
         card_metadata,
         duplicate,
@@ -328,6 +344,7 @@ pub async fn delete_card(
         .delete_points_blocking(qdrant_collection, &deleted_values, None)
         .await
         .map_err(|_err| ServiceError::BadRequest("Failed deleting card from qdrant".into()))?;
+
     Ok(HttpResponse::NoContent().finish())
 }
 
