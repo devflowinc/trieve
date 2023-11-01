@@ -77,6 +77,10 @@ pub async fn main() -> std::io::Result<()> {
             handlers::message_handler::get_all_topic_messages,
             handlers::message_handler::edit_message_handler,
             handlers::message_handler::regenerate_message_handler,
+            handlers::card_handler::create_card,
+            handlers::card_handler::update_card,
+            handlers::card_handler::get_recommended_cards,
+            handlers::card_handler::get_total_card_count,
         ),
         components(
             schemas(
@@ -92,9 +96,16 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::message_handler::CreateMessageData,
                 handlers::message_handler::RegenerateMessageData,
                 handlers::message_handler::EditMessageData,
+                handlers::card_handler::CreateCardData,
+                handlers::card_handler::ReturnCreatedCard,
+                handlers::card_handler::UpdateCardData,
+                handlers::card_handler::RecommendCardsRequest,
                 data::models::SlimUser,
+                data::models::UserDTO,
                 data::models::Topic,
                 data::models::Message,
+                data::models::CardMetadata,
+                data::models::CardMetadataWithVotesWithScore,
                 errors::DefaultError,
             )
         ),
@@ -280,10 +291,6 @@ pub async fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/count")
                                     .route(web::get().to(handlers::card_handler::get_total_card_count)),
-                            )
-                            .service(
-                                web::resource("/cut")
-                                    .route(web::post().to(handlers::message_handler::create_cut_card_handler)),
                             )
                             .service(
                                 web::resource("/search")
