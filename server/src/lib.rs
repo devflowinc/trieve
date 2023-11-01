@@ -69,6 +69,10 @@ pub async fn main() -> std::io::Result<()> {
             handlers::auth_handler::get_me,
             handlers::password_reset_handler::reset_user_password_handler,
             handlers::password_reset_handler::send_password_reset_email_handler,
+            handlers::topic_handler::create_topic,
+            handlers::topic_handler::delete_topic,
+            handlers::topic_handler::update_topic,
+            handlers::topic_handler::get_all_topics,
         ),
         components(
             schemas(
@@ -78,7 +82,11 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::auth_handler::AuthData,
                 handlers::password_reset_handler::PasswordResetData,
                 handlers::password_reset_handler::PasswordResetEmailData,
+                handlers::topic_handler::CreateTopicData,
+                handlers::topic_handler::DeleteTopicData,
+                handlers::topic_handler::UpdateTopicData,
                 data::models::SlimUser,
+                data::models::Topic,
                 errors::DefaultError,
             )
         ),
@@ -87,6 +95,7 @@ pub async fn main() -> std::io::Result<()> {
             (name = "register", description = "Register new users endpoint"),
             (name = "auth", description = "Authentication endpoint"),
             (name = "password", description = "Password reset endpoint"),
+            (name = "topic", description = "Topic chat endpoint"),
         ),
     )]
     struct ApiDoc;

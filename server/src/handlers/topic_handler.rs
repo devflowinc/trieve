@@ -10,13 +10,25 @@ use crate::{
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct CreateTopicData {
     pub resolution: String,
     pub normal_chat: Option<bool>,
 }
 
+#[utoipa::path(
+    post,
+    path = "/topic",
+    context_path = "/api",
+    tag = "topic",
+    request_body(content = CreateTopicData, description = "JSON request payload to create chat topic", content_type = "application/json"),
+    responses(
+        (status = 200, description = "The JSON response payload containing the created topic", body = [Topic]),
+        (status = 400, description = "Topic resolution empty or a service error", body = [DefaultError]),
+    )
+)]
 pub async fn create_topic(
     data: web::Json<CreateTopicData>,
     user: LoggedUser,
@@ -47,11 +59,22 @@ pub async fn create_topic(
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct DeleteTopicData {
     pub topic_id: uuid::Uuid,
 }
 
+#[utoipa::path(
+    delete,
+    path = "/topic",
+    context_path = "/api",
+    tag = "topic",
+    request_body(content = DeleteTopicData, description = "JSON request payload to delete a chat topic", content_type = "application/json"),
+    responses(
+        (status = 204, description = "Confirmation that the topic was deleted"),
+        (status = 400, description = "Service error relating to topic deletion", body = [DefaultError]),
+    )
+)]
 pub async fn delete_topic(
     data: web::Json<DeleteTopicData>,
     user: LoggedUser,
@@ -78,13 +101,24 @@ pub async fn delete_topic(
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct UpdateTopicData {
     pub topic_id: uuid::Uuid,
     pub resolution: String,
     pub side: bool,
 }
 
+#[utoipa::path(
+    put,
+    path = "/topic",
+    context_path = "/api",
+    tag = "topic",
+    request_body(content = UpdateTopicData, description = "JSON request payload to update a chat topic", content_type = "application/json"),
+    responses(
+        (status = 204, description = "Confirmation that the topic was updated"),
+        (status = 400, description = "Service error relating to topic update", body = [DefaultError]),
+    )
+)]
 pub async fn update_topic(
     data: web::Json<UpdateTopicData>,
     user: LoggedUser,
@@ -119,6 +153,16 @@ pub async fn update_topic(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/topic",
+    context_path = "/api",
+    tag = "topic",
+    responses(
+        (status = 200, description = "All topics belonging to a given user", body = [Vec<Topic>]),
+        (status = 400, description = "Service error relating to topic get", body = [DefaultError]),
+    )
+)]
 pub async fn get_all_topics(
     user: LoggedUser,
     pool: web::Data<Pool>,
