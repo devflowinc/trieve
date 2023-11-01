@@ -26,6 +26,7 @@ use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use utoipa::ToSchema;
 use std::collections::HashSet;
 use std::process::Command;
 use tokio_stream::StreamExt;
@@ -62,7 +63,7 @@ pub async fn user_owns_card_tracking_id(
     Ok(cards)
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct CreateCardData {
     pub card_html: Option<String>,
     pub link: Option<String>,
@@ -105,12 +106,23 @@ pub fn convert_html(html: &str) -> String {
         None => "".to_string(),
     }
 }
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct ReturnCreatedCard {
     pub card_metadata: CardMetadata,
     pub duplicate: bool,
 }
 
+#[utoipa::path(
+    post,
+    path = "/card",
+    context_path = "/api",
+    tag = "card",
+    request_body(content = CreateCardData, description = "JSON request payload to create a new card (chunk)", content_type = "application/json"),
+    responses(
+        (status = 200, description = "JSON response payload containing the created card", body = [ReturnCreatedCard]),
+        (status = 400, description = "Service error relating to to creating a card, likely due to conflicting tracking_id", body = [DefaultError]),
+    )
+)]
 pub async fn create_card(
     card: web::Json<CreateCardData>,
     pool: web::Data<Pool>,
@@ -385,7 +397,7 @@ pub async fn delete_card_by_tracking_id(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct UpdateCardData {
     card_uuid: uuid::Uuid,
     link: Option<String>,
@@ -394,11 +406,23 @@ pub struct UpdateCardData {
     metadata: Option<serde_json::Value>,
     tracking_id: Option<String>,
 }
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct CardHtmlUpdateError {
     pub message: String,
     changed_content: String,
 }
+
+#[utoipa::path(
+    put,
+    path = "/card/update",
+    context_path = "/api",
+    tag = "card",
+    request_body(content = UpdateCardData, description = "JSON request payload to update a card (chunk)", content_type = "application/json"),
+    responses(
+        (status = 204, description = "No content Ok response indicating the card was updated as requested",),
+        (status = 400, description = "Service error relating to to updating card, likely due to conflicting tracking_id", body = [DefaultError]),
+    )
+)]
 pub async fn update_card(
     card: web::Json<UpdateCardData>,
     pool: web::Data<Pool>,
@@ -1089,6 +1113,12 @@ pub async fn get_card_by_tracking_id(
     Ok(HttpResponse::Ok().json(card))
 }
 
+#[utoipa::path(
+    get,
+    path = "/card/count",
+    context_path = "/api",
+    tag = "card",
+)]
 pub async fn get_total_card_count(
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
@@ -1100,11 +1130,22 @@ pub async fn get_total_card_count(
     Ok(HttpResponse::Ok().json(json!({ "total_count": total_count })))
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct RecommendCardsRequest {
     pub positive_card_ids: Vec<uuid::Uuid>,
 }
 
+#[utoipa::path(
+    post,
+    path = "/card/recommend",
+    context_path = "/api",
+    tag = "card",
+    request_body(content = RecommendCardsRequest, description = "JSON request payload to get recommendations of cards similar to the cards in the request", content_type = "application/json"),
+    responses(
+        (status = 200, description = "JSON response payload containing cards with scores which are similar to those in the request body", body = [Vec<CardMetadataWithVotesWithScore>]),
+        (status = 400, description = "Service error relating to to getting similar cards", body = [DefaultError]),
+    )
+)]
 pub async fn get_recommended_cards(
     data: web::Json<RecommendCardsRequest>,
     pool: web::Data<Pool>,

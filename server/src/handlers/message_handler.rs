@@ -10,9 +10,9 @@ use crate::{
             get_metadata_and_collided_cards_from_point_ids_query, search_card_query,
         },
         message_operator::{
-            create_cut_card, create_message_query, create_topic_message_query,
-            delete_message_query, get_message_by_sort_for_topic_query,
-            get_messages_for_topic_query, get_topic_messages, user_owns_topic_query,
+            create_message_query, create_topic_message_query, delete_message_query,
+            get_message_by_sort_for_topic_query, get_messages_for_topic_query, get_topic_messages,
+            user_owns_topic_query,
         },
     },
 };
@@ -607,54 +607,6 @@ pub async fn stream_response(
             Err(ServiceError::InternalServerError.into())
         },
     ))))
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct CutCardData {
-    pub uncut_card: String,
-    pub num_sentences: Option<i32>,
-    pub model: Option<String>,
-}
-
-pub async fn create_cut_card_handler(
-    data: web::Json<CutCardData>,
-    user: LoggedUser,
-    pool: web::Data<Pool>,
-) -> Result<HttpResponse, actix_web::Error> {
-    let uncut_card_data = data.into_inner();
-
-    let client = reqwest::Client::new();
-    let json = json!({
-        "input": uncut_card_data.uncut_card,
-        "num_sentences": uncut_card_data.num_sentences,
-        "model": uncut_card_data.model
-    });
-    let res = client
-        .post("http://3.142.75.154/cut")
-        .json(&json)
-        .send()
-        .await
-        .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
-
-    match res.error_for_status() {
-        Ok(res) => {
-            let completion_string = res.text().await.map_err(|e| {
-                ServiceError::BadRequest(format!("Failed to get text from response: {}", e))
-            })?;
-            let completion_string1 = completion_string.clone();
-
-            web::block(move || create_cut_card(user.id, completion_string, pool))
-                .await?
-                .map_err(|e| ServiceError::BadRequest(e.message.into()))?;
-
-            Ok(HttpResponse::Ok().json(json!({
-                "completion": completion_string1,
-            })))
-        }
-        Err(e) => Ok(HttpResponse::BadRequest().json(json!({
-            "error": e.to_string(),
-        }))),
-    }
 }
 
 #[derive(Deserialize, Serialize, Debug)]

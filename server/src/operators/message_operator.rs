@@ -1,4 +1,4 @@
-use crate::data::models::{CutCard, Topic};
+use crate::data::models::Topic;
 use crate::diesel::prelude::*;
 use crate::operators::topic_operator::get_topic_query;
 use crate::{
@@ -208,29 +208,6 @@ pub fn delete_message_query(
     .map_err(|_| DefaultError {
         message: "Error deleting message",
     })?;
-
-    Ok(())
-}
-
-pub fn create_cut_card(
-    user_id: uuid::Uuid,
-    cut_card_content: String,
-    pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
-    use crate::data::schema::cut_cards::dsl as cut_cards_columns;
-
-    let mut conn = pool.get().map_err(|_| DefaultError {
-        message: "Error connecting to database",
-    })?;
-
-    let new_cut_card = CutCard::from_details(user_id, cut_card_content);
-
-    diesel::insert_into(cut_cards_columns::cut_cards)
-        .values(&new_cut_card)
-        .execute(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Error creating cut card",
-        })?;
 
     Ok(())
 }

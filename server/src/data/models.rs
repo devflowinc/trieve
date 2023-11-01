@@ -249,7 +249,7 @@ pub struct CardMetadataWithCount {
     pub count: i64,
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[diesel(table_name = card_metadata)]
 pub struct CardMetadata {
     pub id: uuid::Uuid,
@@ -422,7 +422,7 @@ impl From<(CardMetadata, i64)> for CardMetadataWithVotes {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct CardMetadataWithVotesWithScore {
     pub id: uuid::Uuid,
     pub author: Option<UserDTO>,
@@ -465,7 +465,7 @@ impl From<User> for SlimUser {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct UserDTO {
     pub id: uuid::Uuid,
     pub email: Option<String>,
