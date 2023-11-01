@@ -93,7 +93,7 @@ where
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping, Clone)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping, Clone, ToSchema)]
 #[diesel(table_name = topics)]
 pub struct Topic {
     pub id: uuid::Uuid,
