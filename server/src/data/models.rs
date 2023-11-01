@@ -125,7 +125,7 @@ impl Topic {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Clone)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Clone, ToSchema)]
 #[diesel(table_name = messages)]
 pub struct Message {
     pub id: uuid::Uuid,
