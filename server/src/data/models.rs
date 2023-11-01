@@ -4,6 +4,7 @@ use super::schema::*;
 use diesel::{expression::ValidGrouping, r2d2::ConnectionManager, PgConnection};
 use openai_dive::v1::resources::chat_completion::{ChatMessage, Role};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 // type alias to use in multiple places
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
@@ -443,7 +444,7 @@ pub struct CardMetadataWithVotesWithScore {
     pub score: Option<f64>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct SlimUser {
     pub id: uuid::Uuid,
     pub email: String,

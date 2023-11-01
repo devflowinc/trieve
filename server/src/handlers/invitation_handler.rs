@@ -11,18 +11,30 @@ use actix_web::{web, HttpRequest, HttpResponse};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::to_string;
+use utoipa::ToSchema;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct InvitationResponse {
     pub registration_url: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct InvitationData {
     pub email: String,
     pub referral_tokens: Vec<String>,
 }
 
+#[utoipa::path(
+    post,
+    path = "/invitation",
+    context_path = "/api",
+    tag = "invitation",
+    request_body(content = InvitationData, description = "JSON request payload to send an invitation", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Get a registration URL to set password for a given email", body = [InvitationResponse]),
+        (status = 400, description = "Invalid email", body = [DefaultError]),
+    )
+)]
 pub async fn post_invitation(
     request: HttpRequest,
     invitation_data: web::Json<InvitationData>,
