@@ -15,8 +15,9 @@ use actix_web::{
 use diesel::prelude::*;
 use serde::Deserialize;
 use std::future::{ready, Ready};
+use utoipa::ToSchema;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct AuthData {
     pub email: String,
     pub password: String,
@@ -130,11 +131,31 @@ pub async fn create_admin_account(email: String, password: String, pool: Pool) {
     }
 }
 
+#[utoipa::path(
+    delete,
+    path = "/auth",
+    context_path = "/api",
+    tag = "auth",
+    responses(
+        (status = 204, description = "Confirmation that your current auth credentials have been cleared"),
+    )
+)]
 pub async fn logout(id: Identity) -> HttpResponse {
     id.logout();
     HttpResponse::NoContent().finish()
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth",
+    context_path = "/api",
+    tag = "auth",
+    request_body(content = AuthData, description = "JSON request payload to sign in", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Response that returns with set-cookie header", body = [SlimUser]),
+        (status = 400, description = "Email or password empty or incorrect", body = [DefaultError]),
+    )
+)]
 pub async fn login(
     req: HttpRequest,
     auth_data: web::Json<AuthData>,
@@ -164,6 +185,16 @@ pub async fn login(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/auth",
+    context_path = "/api",
+    tag = "auth",
+    responses(
+        (status = 200, description = "The user corresponding to your current auth credentials", body = [SlimUser]),
+        (status = 400, description = "Error message indicitating you are not currently signed in", body = [DefaultError]),
+    )
+)]
 pub async fn get_me(
     logged_user: LoggedUser,
     pool: web::Data<Pool>,

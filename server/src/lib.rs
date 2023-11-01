@@ -63,20 +63,30 @@ pub async fn main() -> std::io::Result<()> {
         info(description = "Arguflow REST API OpenAPI Documentation"),
         paths(
             handlers::invitation_handler::post_invitation,
-            handlers::register_handler::register_user
+            handlers::register_handler::register_user,
+            handlers::auth_handler::login,
+            handlers::auth_handler::logout,
+            handlers::auth_handler::get_me,
+            handlers::password_reset_handler::reset_user_password_handler,
+            handlers::password_reset_handler::send_password_reset_email_handler,
         ),
         components(
             schemas(
-                handlers::invitation_handler::InvitationResponse, 
+                handlers::invitation_handler::InvitationResponse,
                 handlers::invitation_handler::InvitationData, 
-                handlers::register_handler::SetPasswordData, 
+                handlers::register_handler::SetPasswordData,
+                handlers::auth_handler::AuthData,
+                handlers::password_reset_handler::PasswordResetData,
+                handlers::password_reset_handler::PasswordResetEmailData,
                 data::models::SlimUser,
                 errors::DefaultError,
             )
         ),
         tags(
             (name = "invitation", description = "Invitations for new users endpoint"),
-            (name = "register", description = "Register new users endpoint")
+            (name = "register", description = "Register new users endpoint"),
+            (name = "auth", description = "Authentication endpoint"),
+            (name = "password", description = "Password reset endpoint"),
         ),
     )]
     struct ApiDoc;
