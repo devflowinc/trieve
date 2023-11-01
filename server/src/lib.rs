@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate diesel;
-
 use crate::{
     handlers::auth_handler::create_admin_account, operators::card_operator::get_qdrant_connection,
 };
@@ -19,6 +18,8 @@ use qdrant_client::{
     prelude::*,
     qdrant::{VectorParams, VectorsConfig},
 };
+use utoipa::OpenApi;
+use utoipa_redoc::{Redoc, Servable};
 
 mod data;
 mod errors;
@@ -57,6 +58,29 @@ macro_rules! get_env {
 
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
+    #[derive(OpenApi)]
+    #[openapi(
+        info(description = "Arguflow REST API OpenAPI Documentation"),
+        paths(
+            handlers::invitation_handler::post_invitation,
+            handlers::register_handler::register_user
+        ),
+        components(
+            schemas(
+                handlers::invitation_handler::InvitationResponse, 
+                handlers::invitation_handler::InvitationData, 
+                handlers::register_handler::SetPasswordData, 
+                data::models::SlimUser,
+                errors::DefaultError,
+            )
+        ),
+        tags(
+            (name = "invitation", description = "Invitations for new users endpoint"),
+            (name = "register", description = "Register new users endpoint")
+        ),
+    )]
+    struct ApiDoc;
+
     dotenvy::dotenv().ok();
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
@@ -152,6 +176,7 @@ pub async fn main() -> std::io::Result<()> {
             )
             // enable logger
             .wrap(middleware::Logger::default())
+            .service(Redoc::with_url("/redoc", ApiDoc::openapi()))
             // everything under '/api/' route
             .service(
                 web::scope("/api")

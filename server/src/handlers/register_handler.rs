@@ -8,8 +8,9 @@ use diesel::prelude::*;
 use once_cell::sync::Lazy;
 use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct SetPasswordData {
     pub password: String,
     pub password_confirmation: String,
@@ -33,6 +34,20 @@ pub fn hash_password(password: &str) -> Result<String, DefaultError> {
     })
 }
 
+#[utoipa::path(
+    post,
+    path = "/register/{invitation_id}",
+    context_path = "/api",
+    tag = "register",
+    request_body(content = SetPasswordData, description = "JSON request payload to set password", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Get a registration URL to set password for a given email", body = [SlimUser]),
+        (status = 400, description = "Password too short or confirmation does not match", body = [DefaultError]),
+    ),
+    params(
+        ("invitation_id" = uuid, Path, description = "Unique uuid of the invitation you received")
+    ),
+)]
 pub async fn register_user(
     invitation_id: web::Path<String>,
     password_data: web::Json<SetPasswordData>,
