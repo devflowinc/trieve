@@ -516,7 +516,7 @@ impl From<User> for UserDTO {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone)]
+#[derive(Debug, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema)]
 #[diesel(table_name = card_collection)]
 pub struct CardCollection {
     pub id: uuid::Uuid,
