@@ -108,6 +108,10 @@ pub async fn main() -> std::io::Result<()> {
             handlers::card_handler::search_collections,
             handlers::card_handler::search_full_text_collections,
             handlers::collection_handler::get_all_bookmarks,
+            handlers::file_handler::update_file_handler,
+            handlers::file_handler::upload_file_handler,
+            handlers::file_handler::get_file_handler,
+            handlers::file_handler::delete_file_handler,
         ),
         components(
             schemas(
@@ -154,6 +158,9 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::collection_handler::BookmarkCards,
                 handlers::collection_handler::BookmarkData,
                 operators::collection_operator::BookmarkCollectionResult,
+                handlers::file_handler::UploadFileData,
+                handlers::file_handler::UploadFileResult,
+                handlers::file_handler::UpdateFileData,
                 data::models::SlimUser,
                 data::models::UserDTO,
                 data::models::Topic,
@@ -168,6 +175,7 @@ pub async fn main() -> std::io::Result<()> {
                 data::models::File,
                 data::models::CardCollectionAndFile,
                 data::models::CardCollection,
+                data::models::FileDTO,
                 errors::DefaultError,
             )
         ),
@@ -184,6 +192,7 @@ pub async fn main() -> std::io::Result<()> {
             (name = "top_cards", description = "Top cards endpoint"),
             (name = "user", description = "User endpoint"),
             (name = "card_collection", description = "Card collection endpoint"),
+            (name = "file", description = "File endpoint"),
         ),
     )]
     struct ApiDoc;

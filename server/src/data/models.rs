@@ -794,7 +794,7 @@ impl File {
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, ToSchema)]
 pub struct FileDTO {
     pub id: uuid::Uuid,
     pub user_id: uuid::Uuid,

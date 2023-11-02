@@ -14,6 +14,7 @@ use base64::{
     Engine as _,
 };
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use std::path::PathBuf;
 
 use super::auth_handler::{LoggedUser, RequireAuth};
@@ -31,7 +32,7 @@ pub async fn user_owns_file(
     }
     Ok(())
 }
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct UploadFileData {
     pub base64_docx_file: String,
     pub file_name: String,
@@ -44,11 +45,22 @@ pub struct UploadFileData {
     pub create_cards: Option<bool>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct UploadFileResult {
     pub file_metadata: File,
 }
 
+#[utoipa::path(
+    post,
+    path = "/file",
+    context_path = "/api",
+    tag = "file",
+    request_body(content = UploadFileData, description = "JSON request payload to upload a file", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Confirmation that the file is uploading", body = [UploadFileResult]),
+        (status = 400, description = "Service error relating to uploading the file", body = [DefaultError]),
+    ),
+)]
 pub async fn upload_file_handler(
     data: web::Json<UploadFileData>,
     pool: web::Data<Pool>,
@@ -104,12 +116,23 @@ pub async fn upload_file_handler(
     Ok(HttpResponse::Ok().json(conversion_result))
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct UpdateFileData {
     pub file_id: uuid::Uuid,
     pub private: bool,
 }
 
+#[utoipa::path(
+    put,
+    path = "/file",
+    context_path = "/api",
+    tag = "file",
+    request_body(content = UpdateFileData, description = "JSON request payload to update a file", content_type = "application/json"),
+    responses(
+        (status = 204, description = "Confirmation that the file is updated"),
+        (status = 400, description = "Service error relating to initially processing the file", body = [DefaultError]),
+    ),
+)]
 pub async fn update_file_handler(
     data: web::Json<UpdateFileData>,
     pool: web::Data<Pool>,
@@ -135,6 +158,19 @@ pub async fn update_file_handler(
     Ok(HttpResponse::NoContent().finish())
 }
 
+#[utoipa::path(
+    get,
+    path = "/file/{file_id}",
+    context_path = "/api",
+    tag = "file",
+    responses(
+        (status = 200, description = "The file corresponding to the file_id requested", body = [FileDTO]),
+        (status = 400, description = "Service error relating to finding the file", body = [DefaultError]),
+    ),
+    params(
+        ("file_id" = uuid::Uuid, description = "The id of the file to fetch"),
+    ),
+)]
 pub async fn get_file_handler(
     file_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -182,6 +218,19 @@ pub async fn get_user_files_handler(
     Ok(HttpResponse::Ok().json(files))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/file/{file_id}",
+    context_path = "/api",
+    tag = "file",
+    responses(
+        (status = 204, description = "Confirmation that the file has been deleted"),
+        (status = 400, description = "Service error relating to finding or deleting the file", body = [DefaultError]),
+    ),
+    params(
+        ("file_id" = uuid::Uuid, description = "The id of the file to delete"),
+    ),
+)]
 pub async fn delete_file_handler(
     file_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
