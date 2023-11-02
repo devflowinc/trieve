@@ -231,6 +231,16 @@ fn find_user_match(auth_data: AuthData, pool: web::Data<Pool>) -> Result<SlimUse
     })
 }
 
+#[utoipa::path(
+    get,
+    path = "/health",
+    context_path = "/api",
+    tag = "health",
+    responses(
+        (status = 200, description = "Confirmation that the service is healthy and can make embedding vectors"),
+        (status = 400, description = "Service error relating to making an embedding or overall service health", body = [DefaultError]),
+    ),
+)]
 pub async fn health_check() -> Result<HttpResponse, actix_web::Error> {
     let result = operators::card_operator::create_embedding("health check").await;
 
