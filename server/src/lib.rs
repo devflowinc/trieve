@@ -90,8 +90,10 @@ pub async fn main() -> std::io::Result<()> {
             handlers::card_handler::delete_card_by_tracking_id,
             handlers::card_handler::get_card_by_id,
             handlers::card_handler::delete_card,
+            handlers::card_handler::get_top_cards,
             handlers::vote_handler::create_vote,
             handlers::vote_handler::delete_vote,
+            handlers::user_handler::get_top_users,
         ),
         components(
             schemas(
@@ -119,14 +121,17 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::card_handler::SearchCardData,
                 handlers::card_handler::ScoreCardDTO,
                 handlers::vote_handler::CreateVoteData,
+                handlers::user_handler::TopUserData,
                 data::models::SlimUser,
                 data::models::UserDTO,
                 data::models::Topic,
                 data::models::Message,
                 data::models::CardMetadata,
+                data::models::CardMetadataWithVotes,
                 data::models::CardMetadataWithVotesWithScore,
                 data::models::ChatMessageProxy,
                 data::models::CardVote,
+                data::models::UserDTOWithScore,
                 errors::DefaultError,
             )
         ),
@@ -138,6 +143,8 @@ pub async fn main() -> std::io::Result<()> {
             (name = "topic", description = "Topic chat endpoint"),
             (name = "message", description = "Message chat endpoint"),
             (name = "vote", description = "Vote endpoint"),
+            (name = "card", description = "Card endpoint"),
+            (name = "top_users", description = "Top users endpoint"),
         ),
     )]
     struct ApiDoc;

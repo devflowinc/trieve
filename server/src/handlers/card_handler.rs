@@ -1091,6 +1091,19 @@ pub async fn search_full_text_collections(
     }))
 }
 
+#[utoipa::path(
+    get,
+    path = "/top_cards",
+    context_path = "/api",
+    tag = "top_cards",
+    responses(
+        (status = 200, description = "JSON body representing the top cards by collected votes", body = [Vec<CardMetadataWithVotes>]),
+        (status = 400, description = "Service error relating to fetching the top cards by collected votes", body = [DefaultError]),
+    ),
+    params(
+        ("page" = u64, description = "The page of top cards to fetch"),
+    ),
+)]
 pub async fn get_top_cards(
     page: Option<web::Path<u64>>,
     pool: web::Data<Pool>,
