@@ -112,6 +112,7 @@ pub async fn main() -> std::io::Result<()> {
             handlers::file_handler::upload_file_handler,
             handlers::file_handler::get_file_handler,
             handlers::file_handler::delete_file_handler,
+            handlers::file_handler::get_image_file,
         ),
         components(
             schemas(

@@ -14,8 +14,8 @@ use base64::{
     Engine as _,
 };
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 use std::path::PathBuf;
+use utoipa::ToSchema;
 
 use super::auth_handler::{LoggedUser, RequireAuth};
 pub async fn user_owns_file(
@@ -241,6 +241,19 @@ pub async fn delete_file_handler(
     Ok(HttpResponse::NoContent().finish())
 }
 
+#[utoipa::path(
+    get,
+    path = "/image/{file_name}",
+    context_path = "/api",
+    tag = "file",
+    responses(
+        (status = 200, description = "The raw image file corresponding to the file_name requested such that it can be a src for an img tag"),
+        (status = 400, description = "Service error relating to finding the file", body = [DefaultError]),
+    ),
+    params(
+        ("file_name" = string, description = "The name of the image file to return"),
+    ),
+)]
 pub async fn get_image_file(
     file_name: web::Path<String>,
     _user: LoggedUser,
