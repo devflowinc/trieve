@@ -99,6 +99,9 @@ pub async fn main() -> std::io::Result<()> {
             handlers::user_handler::get_user_with_votes_and_cards_by_id,
             handlers::file_handler::get_user_files_handler,
             handlers::collection_handler::get_specific_user_card_collections,
+            handlers::collection_handler::create_card_collection,
+            handlers::collection_handler::delete_card_collection,
+            handlers::collection_handler::update_card_collection,
         ),
         components(
             schemas(
@@ -132,6 +135,9 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::user_handler::SetUserApiKeyResponse,
                 handlers::collection_handler::CollectionData,
                 handlers::collection_handler::UserCollectionQuery,
+                handlers::collection_handler::CreateCardCollectionData,
+                handlers::collection_handler::DeleteCollectionData,
+                handlers::collection_handler::UpdateCardCollectionData,
                 data::models::SlimUser,
                 data::models::UserDTO,
                 data::models::Topic,
@@ -158,6 +164,9 @@ pub async fn main() -> std::io::Result<()> {
             (name = "vote", description = "Vote endpoint"),
             (name = "card", description = "Card endpoint"),
             (name = "top_users", description = "Top users endpoint"),
+            (name = "top_cards", description = "Top cards endpoint"),
+            (name = "user", description = "User endpoint"),
+            (name = "card_collection", description = "Card collection endpoint"),
         ),
     )]
     struct ApiDoc;

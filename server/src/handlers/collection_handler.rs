@@ -37,13 +37,24 @@ pub async fn user_owns_collection(
     Ok(collection)
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct CreateCardCollectionData {
     pub name: String,
     pub description: String,
     pub is_public: bool,
 }
 
+#[utoipa::path(
+    post,
+    path = "/card_collection",
+    context_path = "/api",
+    tag = "card_collection",
+    request_body(content = CreateCardCollectionData, description = "JSON request payload to cretea a CardCollection", content_type = "application/json"),
+    responses(
+        (status = 204, description = "Confirmation that the CardCollection was created"),
+        (status = 400, description = "Service error relating to creating the CardCollection", body = [DefaultError]),
+    ),
+)]
 pub async fn create_card_collection(
     body: web::Json<CreateCardCollectionData>,
     user: LoggedUser,
@@ -164,11 +175,22 @@ pub async fn get_logged_in_user_card_collections(
     }))
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct DeleteCollectionData {
     pub collection_id: uuid::Uuid,
 }
 
+#[utoipa::path(
+    delete,
+    path = "/card_collection",
+    context_path = "/api",
+    tag = "card_collection",
+    request_body(content = DeleteCollectionData, description = "JSON request payload to delete a CardCollection", content_type = "application/json"),
+    responses(
+        (status = 204, description = "Confirmation that the CardCollection was deleted"),
+        (status = 400, description = "Service error relating to deleting the CardCollection", body = [DefaultError]),
+    ),
+)]
 pub async fn delete_card_collection(
     data: web::Json<DeleteCollectionData>,
     pool: web::Data<Pool>,
@@ -186,7 +208,7 @@ pub async fn delete_card_collection(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct UpdateCardCollectionData {
     pub collection_id: uuid::Uuid,
     pub name: Option<String>,
@@ -194,6 +216,17 @@ pub struct UpdateCardCollectionData {
     pub is_public: Option<bool>,
 }
 
+#[utoipa::path(
+    put,
+    path = "/card_collection",
+    context_path = "/api",
+    tag = "card_collection",
+    request_body(content = UpdateCardCollectionData, description = "JSON request payload to update a CardCollection", content_type = "application/json"),
+    responses(
+        (status = 204, description = "Confirmation that the CardCollection was updated"),
+        (status = 400, description = "Service error relating to updating the CardCollection", body = [DefaultError]),
+    ),
+)]
 pub async fn update_card_collection(
     body: web::Json<UpdateCardCollectionData>,
     pool: web::Data<Pool>,
