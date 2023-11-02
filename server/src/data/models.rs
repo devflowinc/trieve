@@ -903,7 +903,7 @@ impl FileUploadCompletedNotification {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct FileUploadCompletedNotificationWithName {
     pub id: uuid::Uuid,
     pub user_uuid: uuid::Uuid,

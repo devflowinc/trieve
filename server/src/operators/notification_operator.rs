@@ -11,6 +11,7 @@ use diesel::{
     SelectableHelper,
 };
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 pub fn add_collection_created_notification_query(
     collection: FileUploadCompletedNotification,
@@ -34,7 +35,7 @@ pub fn add_collection_created_notification_query(
 
     Ok(())
 }
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, ToSchema)]
 pub struct NotificationReturn {
     pub notifications: Vec<Notification>,
     pub full_count: i32,
