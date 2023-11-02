@@ -94,6 +94,11 @@ pub async fn main() -> std::io::Result<()> {
             handlers::vote_handler::create_vote,
             handlers::vote_handler::delete_vote,
             handlers::user_handler::get_top_users,
+            handlers::user_handler::update_user,
+            handlers::user_handler::set_user_api_key,
+            handlers::user_handler::get_user_with_votes_and_cards_by_id,
+            handlers::file_handler::get_user_files_handler,
+            handlers::collection_handler::get_specific_user_card_collections,
         ),
         components(
             schemas(
@@ -122,6 +127,11 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::card_handler::ScoreCardDTO,
                 handlers::vote_handler::CreateVoteData,
                 handlers::user_handler::TopUserData,
+                handlers::user_handler::UpdateUserData,
+                handlers::user_handler::GetUserWithVotesAndCardsData,
+                handlers::user_handler::SetUserApiKeyResponse,
+                handlers::collection_handler::CollectionData,
+                handlers::collection_handler::UserCollectionQuery,
                 data::models::SlimUser,
                 data::models::UserDTO,
                 data::models::Topic,
@@ -132,6 +142,9 @@ pub async fn main() -> std::io::Result<()> {
                 data::models::ChatMessageProxy,
                 data::models::CardVote,
                 data::models::UserDTOWithScore,
+                data::models::UserDTOWithVotesAndCards,
+                data::models::File,
+                data::models::CardCollectionAndFile,
                 errors::DefaultError,
             )
         ),
