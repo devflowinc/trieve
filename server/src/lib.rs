@@ -89,7 +89,9 @@ pub async fn main() -> std::io::Result<()> {
             handlers::card_handler::get_card_by_tracking_id,
             handlers::card_handler::delete_card_by_tracking_id,
             handlers::card_handler::get_card_by_id,
-            handlers::card_handler::delete_card
+            handlers::card_handler::delete_card,
+            handlers::vote_handler::create_vote,
+            handlers::vote_handler::delete_vote,
         ),
         components(
             schemas(
@@ -116,6 +118,7 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::card_handler::GenerateCardsRequest,
                 handlers::card_handler::SearchCardData,
                 handlers::card_handler::ScoreCardDTO,
+                handlers::vote_handler::CreateVoteData,
                 data::models::SlimUser,
                 data::models::UserDTO,
                 data::models::Topic,
@@ -123,6 +126,7 @@ pub async fn main() -> std::io::Result<()> {
                 data::models::CardMetadata,
                 data::models::CardMetadataWithVotesWithScore,
                 data::models::ChatMessageProxy,
+                data::models::CardVote,
                 errors::DefaultError,
             )
         ),
@@ -133,6 +137,7 @@ pub async fn main() -> std::io::Result<()> {
             (name = "password", description = "Password reset endpoint"),
             (name = "topic", description = "Topic chat endpoint"),
             (name = "message", description = "Message chat endpoint"),
+            (name = "vote", description = "Vote endpoint"),
         ),
     )]
     struct ApiDoc;
