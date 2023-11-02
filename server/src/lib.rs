@@ -113,6 +113,9 @@ pub async fn main() -> std::io::Result<()> {
             handlers::file_handler::get_file_handler,
             handlers::file_handler::delete_file_handler,
             handlers::file_handler::get_image_file,
+            handlers::notification_handler::mark_notification_as_read,
+            handlers::notification_handler::get_notifications,
+            handlers::notification_handler::mark_all_notifications_as_read,
         ),
         components(
             schemas(
@@ -162,6 +165,9 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::file_handler::UploadFileData,
                 handlers::file_handler::UploadFileResult,
                 handlers::file_handler::UpdateFileData,
+                handlers::notification_handler::NotificationId,
+                handlers::notification_handler::Notification,
+                operators::notification_operator::NotificationReturn,
                 data::models::SlimUser,
                 data::models::UserDTO,
                 data::models::Topic,
@@ -177,6 +183,7 @@ pub async fn main() -> std::io::Result<()> {
                 data::models::CardCollectionAndFile,
                 data::models::CardCollection,
                 data::models::FileDTO,
+                data::models::FileUploadCompletedNotificationWithName,
                 errors::DefaultError,
             )
         ),
@@ -194,6 +201,7 @@ pub async fn main() -> std::io::Result<()> {
             (name = "user", description = "User endpoint"),
             (name = "card_collection", description = "Card collection endpoint"),
             (name = "file", description = "File endpoint"),
+            (name = "notifications", description = "Notifications endpoint"),
         ),
     )]
     struct ApiDoc;
