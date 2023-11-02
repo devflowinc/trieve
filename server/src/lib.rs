@@ -102,6 +102,9 @@ pub async fn main() -> std::io::Result<()> {
             handlers::collection_handler::create_card_collection,
             handlers::collection_handler::delete_card_collection,
             handlers::collection_handler::update_card_collection,
+            handlers::collection_handler::add_bookmark,
+            handlers::collection_handler::delete_bookmark,
+            handlers::collection_handler::get_logged_in_user_card_collections,
         ),
         components(
             schemas(
@@ -138,6 +141,11 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::collection_handler::CreateCardCollectionData,
                 handlers::collection_handler::DeleteCollectionData,
                 handlers::collection_handler::UpdateCardCollectionData,
+                handlers::collection_handler::AddCardToCollectionData,
+                handlers::collection_handler::GetCollectionsForCardsData,
+                handlers::collection_handler::RemoveBookmarkData,
+                handlers::collection_handler::GenerateOffCollectionData,
+                operators::collection_operator::BookmarkCollectionResult,
                 data::models::SlimUser,
                 data::models::UserDTO,
                 data::models::Topic,

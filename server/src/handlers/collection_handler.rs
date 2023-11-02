@@ -143,6 +143,19 @@ pub async fn get_specific_user_card_collections(
     }))
 }
 
+#[utoipa::path(
+    get,
+    path = "/card_collection/{page_or_card_collection_id}",
+    context_path = "/api",
+    tag = "card_collection",
+    responses(
+        (status = 200, description = "The page of collections for the auth'ed user", body = [CollectionData]),
+        (status = 400, description = "Service error relating to getting the collections for the auth'ed user", body = [DefaultError]),
+    ),
+    params(
+        ("page_or_card_collection_id" = u64, description = "The page of collections to fetch"),
+    ),
+)]
 pub async fn get_logged_in_user_card_collections(
     user: LoggedUser,
     page: web::Path<u64>,
@@ -250,11 +263,25 @@ pub async fn update_card_collection(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct AddCardToCollectionData {
     pub card_metadata_id: uuid::Uuid,
 }
 
+#[utoipa::path(
+    post,
+    path = "/card_collection/{page_or_card_collection_id}",
+    context_path = "/api",
+    tag = "card_collection",
+    request_body(content = AddCardToCollectionData, description = "JSON request payload to add a card to a collection (bookmark it)", content_type = "application/json"),
+    responses(
+        (status = 204, description = "Confirmation that the card was added to the collection"),
+        (status = 400, description = "Service error relating to getting the collections that the card is in", body = [DefaultError]),
+    ),
+    params(
+        ("page_or_card_collection_id" = uuid::Uuid, description = "The id of the collection to add the card to"),
+    ),
+)]
 pub async fn add_bookmark(
     body: web::Json<AddCardToCollectionData>,
     collection_id: web::Path<uuid::Uuid>,
@@ -376,11 +403,22 @@ pub async fn get_all_bookmarks(
     }))
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct GetCollectionsForCardsData {
     pub card_ids: Vec<uuid::Uuid>,
 }
 
+#[utoipa::path(
+    post,
+    path = "/card_collection/bookmark",
+    context_path = "/api",
+    tag = "card_collection",
+    request_body(content = GetCollectionsForCardsData, description = "JSON request payload to get the collections that a card is in", content_type = "application/json"),
+    responses(
+        (status = 200, description = "JSON body representing the collections that the card is in", body = [Vec<BookmarkCollectionResult>]),
+        (status = 400, description = "Service error relating to getting the collections that the card is in", body = [DefaultError]),
+    ),
+)]
 pub async fn get_collections_card_is_in(
     data: web::Json<GetCollectionsForCardsData>,
     pool: web::Data<Pool>,
@@ -399,11 +437,25 @@ pub async fn get_collections_card_is_in(
     Ok(HttpResponse::Ok().json(collections))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct RemoveBookmarkData {
     pub card_metadata_id: uuid::Uuid,
 }
 
+#[utoipa::path(
+    delete,
+    path = "/card_collection/{page_or_card_collection_id}",
+    context_path = "/api",
+    tag = "card_collection",
+    request_body(content = RemoveBookmarkData, description = "JSON request payload to remove a card to a collection (un-bookmark it)", content_type = "application/json"),
+    responses(
+        (status = 204, description = "Confirmation that the card was removed to the collection"),
+        (status = 400, description = "Service error relating to removing the card from the collection", body = [DefaultError]),
+    ),
+    params(
+        ("page_or_card_collection_id" = uuid::Uuid, description = "The id of the collection to remove the bookmark'ed card from"),
+    ),
+)]
 pub async fn delete_bookmark(
     collection_id: web::Path<uuid::Uuid>,
     body: web::Json<RemoveBookmarkData>,
@@ -424,14 +476,24 @@ pub async fn delete_bookmark(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct GenerateOffCollectionData {
     pub collection_id: uuid::Uuid,
     pub page: Option<u64>,
     pub query: Option<String>,
 }
 
+#[utoipa::path(
+    post,
+    path = "/card_collection/generate",
+    context_path = "/api",
+    tag = "card_collection",
+    request_body(content = GenerateOffCollectionData, description = "JSON request payload to generate off of a CardCollection", content_type = "application/json"),
+    responses(
+        (status = 200, description = "This will be a HTTP stream, check the chat or search UI for an example how to process this"),
+        (status = 400, description = "Service error relating to generating off the CardCollection", body = [DefaultError]),
+    ),
+)]
 pub async fn generate_off_collection(
     body: web::Json<GenerateOffCollectionData>,
     pool: web::Data<Pool>,
