@@ -555,7 +555,7 @@ pub struct SlimCollection {
     pub of_current_user: bool,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, Queryable)]
+#[derive(Debug, Default, Serialize, Deserialize, Queryable, ToSchema)]
 pub struct CardCollectionAndFile {
     pub id: uuid::Uuid,
     pub author_id: uuid::Uuid,
@@ -639,7 +639,7 @@ impl FileCollection {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct UserDTOWithVotesAndCards {
     pub id: uuid::Uuid,
     pub email: Option<String>,
@@ -752,7 +752,9 @@ impl From<CardMetadataWithCount> for FullTextSearchResult {
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone)]
+#[derive(
+    Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema,
+)]
 #[diesel(table_name = files)]
 pub struct File {
     pub id: uuid::Uuid,

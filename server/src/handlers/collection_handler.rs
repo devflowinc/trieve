@@ -19,6 +19,7 @@ use openai_dive::v1::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use utoipa::ToSchema;
 
 pub async fn user_owns_collection(
     user_id: uuid::Uuid,
@@ -64,18 +65,32 @@ pub async fn create_card_collection(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct CollectionData {
     pub collections: Vec<CardCollectionAndFile>,
     pub total_pages: i64,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct UserCollectionQuery {
     pub user_id: uuid::Uuid,
     pub page: u64,
 }
 
+#[utoipa::path(
+    get,
+    path = "/user/collections/{user_id}/{page}",
+    context_path = "/api",
+    tag = "user",
+    responses(
+        (status = 200, description = "JSON body representing the collections created by the given user", body = [CollectionData]),
+        (status = 400, description = "Service error relating to getting the collections created by the given user", body = [DefaultError]),
+    ),
+    params(
+        ("user_id" = uuid::Uuid, description = "The id of the user to fetch collections for"),
+        ("page" = i64, description = "The page of collections to fetch"),
+    ),
+)]
 pub async fn get_specific_user_card_collections(
     user: Option<LoggedUser>,
     user_and_page: web::Path<UserCollectionQuery>,
