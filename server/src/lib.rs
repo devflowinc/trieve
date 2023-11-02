@@ -86,6 +86,10 @@ pub async fn main() -> std::io::Result<()> {
             handlers::card_handler::search_card,
             handlers::card_handler::search_full_text_card,
             handlers::card_handler::generate_off_cards,
+            handlers::card_handler::get_card_by_tracking_id,
+            handlers::card_handler::delete_card_by_tracking_id,
+            handlers::card_handler::get_card_by_id,
+            handlers::card_handler::delete_card
         ),
         components(
             schemas(
