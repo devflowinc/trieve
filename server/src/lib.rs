@@ -105,6 +105,9 @@ pub async fn main() -> std::io::Result<()> {
             handlers::collection_handler::add_bookmark,
             handlers::collection_handler::delete_bookmark,
             handlers::collection_handler::get_logged_in_user_card_collections,
+            handlers::card_handler::search_collections,
+            handlers::card_handler::search_full_text_collections,
+            handlers::collection_handler::get_all_bookmarks,
         ),
         components(
             schemas(
@@ -131,6 +134,8 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::card_handler::GenerateCardsRequest,
                 handlers::card_handler::SearchCardData,
                 handlers::card_handler::ScoreCardDTO,
+                handlers::card_handler::SearchCollectionsData,
+                handlers::card_handler::SearchCollectionsResult,
                 handlers::vote_handler::CreateVoteData,
                 handlers::user_handler::TopUserData,
                 handlers::user_handler::UpdateUserData,
@@ -145,6 +150,9 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::collection_handler::GetCollectionsForCardsData,
                 handlers::collection_handler::RemoveBookmarkData,
                 handlers::collection_handler::GenerateOffCollectionData,
+                handlers::collection_handler::GetAllBookmarksData,
+                handlers::collection_handler::BookmarkCards,
+                handlers::collection_handler::BookmarkData,
                 operators::collection_operator::BookmarkCollectionResult,
                 data::models::SlimUser,
                 data::models::UserDTO,
@@ -159,6 +167,7 @@ pub async fn main() -> std::io::Result<()> {
                 data::models::UserDTOWithVotesAndCards,
                 data::models::File,
                 data::models::CardCollectionAndFile,
+                data::models::CardCollection,
                 errors::DefaultError,
             )
         ),

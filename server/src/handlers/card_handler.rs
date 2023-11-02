@@ -854,7 +854,7 @@ pub async fn search_full_text_card(
     }))
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct SearchCollectionsData {
     content: String,
     link: Option<Vec<String>>,
@@ -862,12 +862,27 @@ pub struct SearchCollectionsData {
     filters: Option<serde_json::Value>,
     collection_id: uuid::Uuid,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchCollectionsResult {
     pub bookmarks: Vec<ScoreCardDTO>,
     pub collection: CardCollection,
     pub total_pages: i64,
 }
+
+#[utoipa::path(
+    post,
+    path = "/card_collection/search",
+    context_path = "/api",
+    tag = "card_collection",
+    request_body(content = SearchCollectionsData, description = "JSON request payload to semantically search a collection", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Collection cards which are similar to the embedding vector of the search query", body = [SearchCollectionsResult]),
+        (status = 400, description = "Service error relating to getting the collections that the card is in", body = [DefaultError]),
+    ),
+    params(
+        ("page" = u64, description = "The page of search results to get"),
+    ),
+)]
 pub async fn search_collections(
     data: web::Json<SearchCollectionsData>,
     page: Option<web::Path<u64>>,
@@ -993,6 +1008,20 @@ pub async fn search_collections(
     }))
 }
 
+#[utoipa::path(
+    post,
+    path = "/card_collection/fulltextsearch",
+    context_path = "/api",
+    tag = "card_collection",
+    request_body(content = SearchCollectionsData, description = "JSON request payload to full_text search a collection", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Collection cards which are similar to the postgres ts_vector of the search query", body = [SearchCollectionsResult]),
+        (status = 400, description = "Service error relating to getting the collections that the card is in", body = [DefaultError]),
+    ),
+    params(
+        ("page" = u64, description = "The page of search results to get"),
+    ),
+)]
 pub async fn search_full_text_collections(
     data: web::Json<SearchCollectionsData>,
     page: Option<web::Path<u64>>,

@@ -305,24 +305,38 @@ pub async fn add_bookmark(
 
     Ok(HttpResponse::NoContent().finish())
 }
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct BookmarkData {
     pub bookmarks: Vec<BookmarkCards>,
     pub collection: CardCollection,
     pub total_pages: i64,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct GetAllBookmarksData {
     pub collection_id: uuid::Uuid,
     pub page: Option<u64>,
 }
-#[derive(Deserialize, Serialize)]
+
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct BookmarkCards {
     pub metadata: Vec<CardMetadataWithVotesWithScore>,
 }
 
+#[utoipa::path(
+    get,
+    path = "/card_collection/{collection_id}/{page}",
+    context_path = "/api",
+    tag = "card_collection",
+    responses(
+        (status = 200, description = "Bookmark'ed cards present within the specified collection", body = [BookmarkData]),
+        (status = 400, description = "Service error relating to getting the collections that the card is in", body = [DefaultError]),
+    ),
+    params(
+        ("collection_id" = uuid::Uuid, description = "The id of the collection to get the cards from"),
+        ("page" = u64, description = "The page of cards to get from the collection"),
+    ),
+)]
 pub async fn get_all_bookmarks(
     path_data: web::Path<GetAllBookmarksData>,
     pool: web::Data<Pool>,
