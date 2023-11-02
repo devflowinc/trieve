@@ -403,7 +403,7 @@ impl CardVote {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct CardMetadataWithVotes {
     pub id: uuid::Uuid,
     pub author: Option<UserDTO>,
@@ -654,7 +654,7 @@ pub struct UserDTOWithVotesAndCards {
     pub total_votes_cast: i32,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable, ToSchema)]
 pub struct UserDTOWithScore {
     pub id: uuid::Uuid,
     pub email: Option<String>,

@@ -9,6 +9,7 @@ use crate::{
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use utoipa::ToSchema;
 
 use super::auth_handler::{LoggedUser, RequireAuth};
 
@@ -69,12 +70,25 @@ pub async fn update_user(
         Err(e) => Ok(HttpResponse::BadRequest().json(e)),
     }
 }
-#[derive(Serialize, Deserialize)]
-
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct TopUserData {
     users: Vec<UserDTOWithScore>,
     total_user_pages: i64,
 }
+
+#[utoipa::path(
+    get,
+    path = "/top_users/{page}",
+    context_path = "/api",
+    tag = "top_users",
+    responses(
+        (status = 200, description = "JSON body representing the top users by collected votes", body = [TopUserData]),
+        (status = 400, description = "Service error relating to fetching the top users by collected votes", body = [DefaultError]),
+    ),
+    params(
+        ("page" = i64, description = "The page of users to fetch"),
+    ),
+)]
 pub async fn get_top_users(
     page: web::Path<i64>,
     pool: web::Data<Pool>,
