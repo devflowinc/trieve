@@ -8,13 +8,25 @@ use crate::{
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct CreateVoteData {
     card_metadata_id: uuid::Uuid,
     vote: bool,
 }
 
+#[utoipa::path(
+    post,
+    path = "/vote",
+    context_path = "/api",
+    tag = "vote",
+    request_body(content = CreateVoteData, description = "JSON request payload to create a vote for the auth'ed user", content_type = "application/json"),
+    responses(
+        (status = 200, description = "JSON body representing the vote created for the auth'ed user", body = [CardVote]),
+        (status = 400, description = "Service error relating to creating the vote", body = [DefaultError]),
+    ),
+)]
 pub async fn create_vote(
     data: web::Json<CreateVoteData>,
     user: LoggedUser,
@@ -42,6 +54,19 @@ pub async fn create_vote(
     }
 }
 
+#[utoipa::path(
+    delete,
+    path = "/vote/{card_metadata_id}",
+    context_path = "/api",
+    tag = "vote",
+    responses(
+        (status = 204, description = "Confirmation that the auth'ed user's vote was deleted for the given card metadata ID"),
+        (status = 400, description = "Service error relating to creating the vote", body = [DefaultError]),
+    ),
+    params(
+        ("card_metadata_id" = uuid, description = "The card metadata ID to delete the auth'ed user's vote for"),
+    ),
+)]
 pub async fn delete_vote(
     card_metadata_id: web::Path<uuid::Uuid>,
     user: LoggedUser,

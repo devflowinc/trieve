@@ -373,7 +373,7 @@ impl CardCollisions {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping, ToSchema)]
 #[diesel(table_name = card_votes)]
 pub struct CardVote {
     pub id: uuid::Uuid,
