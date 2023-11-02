@@ -322,6 +322,19 @@ pub async fn create_card(
     }))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/card/{card_id}}",
+    context_path = "/api",
+    tag = "card",
+    responses(
+        (status = 204, description = "Confirmation that the card with the id specified was deleted", body = [CardMetadataWithVotesWithScore]),
+        (status = 400, description = "Service error relating to finding a card by tracking_id", body = [DefaultError]),
+    ),
+    params(
+        ("card_id" = Option<uuid>, Path, description = "id of the card you want to delete")
+    ),
+)]
 pub async fn delete_card(
     card_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -360,6 +373,19 @@ pub async fn delete_card(
     Ok(HttpResponse::NoContent().finish())
 }
 
+#[utoipa::path(
+    delete,
+    path = "/card/tracking_id/{tracking_id}",
+    context_path = "/api",
+    tag = "card",
+    responses(
+        (status = 204, description = "Confirmation that the card with the tracking_id specified was deleted", body = [CardMetadataWithVotesWithScore]),
+        (status = 400, description = "Service error relating to finding a card by tracking_id", body = [DefaultError]),
+    ),
+    params(
+        ("tracking_id" = Option<String>, Path, description = "tracking_id of the card you want to delete")
+    ),
+)]
 pub async fn delete_card_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
@@ -1079,6 +1105,19 @@ pub async fn get_top_cards(
     Ok(HttpResponse::Ok().json(top_cards))
 }
 
+#[utoipa::path(
+    get,
+    path = "/card/{card_id}",
+    context_path = "/api",
+    tag = "card",
+    responses(
+        (status = 200, description = "Card with the id that you were searching for", body = [CardMetadataWithVotesWithScore]),
+        (status = 400, description = "Service error relating to fidning a card by tracking_id", body = [DefaultError]),
+    ),
+    params(
+        ("card_id" = Option<uuid>, Path, description = "id of the card you want to fetch")
+    ),
+)]
 pub async fn get_card_by_id(
     card_id: web::Path<uuid::Uuid>,
     user: Option<LoggedUser>,
@@ -1114,6 +1153,19 @@ pub async fn get_card_by_id(
     Ok(HttpResponse::Ok().json(card))
 }
 
+#[utoipa::path(
+    get,
+    path = "/card/tracking_id/{tracking_id}",
+    context_path = "/api",
+    tag = "card",
+    responses(
+        (status = 200, description = "Card with the tracking_id that you were searching for", body = [CardMetadataWithVotesWithScore]),
+        (status = 400, description = "Service error relating to fidning a card by tracking_id", body = [DefaultError]),
+    ),
+    params(
+        ("tracking_id" = Option<String>, Path, description = "tracking_id of the card you want to fetch")
+    ),
+)]
 pub async fn get_card_by_tracking_id(
     tracking_id: web::Path<String>,
     user: Option<LoggedUser>,
