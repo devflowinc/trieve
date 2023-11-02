@@ -116,6 +116,7 @@ pub async fn main() -> std::io::Result<()> {
             handlers::notification_handler::mark_notification_as_read,
             handlers::notification_handler::get_notifications,
             handlers::notification_handler::mark_all_notifications_as_read,
+            handlers::auth_handler::health_check,
         ),
         components(
             schemas(
@@ -202,6 +203,7 @@ pub async fn main() -> std::io::Result<()> {
             (name = "card_collection", description = "Card collection endpoint"),
             (name = "file", description = "File endpoint"),
             (name = "notifications", description = "Notifications endpoint"),
+            (name = "health", description = "Health check endpoint"),
         ),
     )]
     struct ApiDoc;
