@@ -16,6 +16,7 @@ use diesel::{
     dsl::sql, sql_types::Int8, BoolExpressionMethods, JoinOnDsl, NullableExpressionMethods,
 };
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 pub fn create_collection_query(
     new_collection: CardCollection,
@@ -421,7 +422,7 @@ pub fn get_bookmarks_for_collection_query(
         total_pages,
     })
 }
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct BookmarkCollectionResult {
     pub card_uuid: uuid::Uuid,
     pub slim_collections: Vec<SlimCollection>,
