@@ -51,7 +51,7 @@ pub struct CreateCardCollectionData {
     tag = "card_collection",
     request_body(content = CreateCardCollectionData, description = "JSON request payload to cretea a CardCollection", content_type = "application/json"),
     responses(
-        (status = 204, description = "Confirmation that the CardCollection was created"),
+        (status = 200, description = "Returns the created CardCollection", body = [CardCollection]),
         (status = 400, description = "Service error relating to creating the CardCollection", body = [DefaultError]),
     ),
 )]
@@ -64,16 +64,20 @@ pub async fn create_card_collection(
     let description = body.description.clone();
     let is_public = body.is_public;
 
-    web::block(move || {
-        create_collection_query(
-            CardCollection::from_details(user.id, name, is_public, description),
-            pool,
-        )
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let card = CardCollection::from_details(user.id, name, is_public, description);
+    { 
+        let card = card.clone();
+        web::block(move || {
+            create_collection_query(
+                card,
+                pool,
+            )
+        })
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    }
 
-    Ok(HttpResponse::NoContent().finish())
+    Ok(HttpResponse::Ok().json(card))
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
