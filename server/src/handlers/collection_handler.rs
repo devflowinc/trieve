@@ -64,12 +64,12 @@ pub async fn create_card_collection(
     let description = body.description.clone();
     let is_public = body.is_public;
 
-    let card = CardCollection::from_details(user.id, name, is_public, description);
+    let collection = CardCollection::from_details(user.id, name, is_public, description);
     { 
-        let card = card.clone();
+        let collection = collection.clone();
         web::block(move || {
             create_collection_query(
-                card,
+                collection,
                 pool,
             )
         })
@@ -77,7 +77,7 @@ pub async fn create_card_collection(
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
     }
 
-    Ok(HttpResponse::Ok().json(card))
+    Ok(HttpResponse::Ok().json(collection))
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
