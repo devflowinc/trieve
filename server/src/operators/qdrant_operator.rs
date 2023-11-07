@@ -12,6 +12,7 @@ pub async fn create_new_qdrant_point_query(
     embedding_vector: Vec<f32>,
     private: bool,
     author_id: Option<uuid::Uuid>,
+    text: Option<String>,
 ) -> Result<(), actix_web::Error> {
     let qdrant = get_qdrant_connection()
         .await
@@ -19,11 +20,11 @@ pub async fn create_new_qdrant_point_query(
 
     let payload = match private {
         true => {
-            json!({"private": true, "authors": vec![author_id.unwrap_or_default().to_string()]})
+            json!({"private": true, "authors": vec![author_id.unwrap_or_default().to_string()], "text": text.unwrap()})
                 .try_into()
                 .expect("A json! Value must always be a valid Payload")
         }
-        false => json!({})
+        false => json!({"text": text.unwrap()})
             .try_into()
             .expect("A json! Value must always be a valid Payload"),
     };

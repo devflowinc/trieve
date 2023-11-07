@@ -26,7 +26,7 @@ services:
     networks:
       - app-network
     command: redis-server --requirepass ${REDIS_PASSWORD}
- 
+
   script-redis:
     image: redis:7.2.2
     container_name: my-script-redis
@@ -188,6 +188,17 @@ services:
       - PUBLIC_SHOW_GITHUB_STARS=${PUBLIC_SHOW_GITHUB_STARS}
       - SUGGESTED_QUERIES=${SUGGESTED_QUERIES}
       - PUBLIC_SEARCH_VOTE_FEATURE=${PUBLIC_SEARCH_VOTE_FEATURE}
+
+  key-cloak:
+    image: quay.io/keycloak/keycloak:22.0.5
+    ports:
+      - "8080:8080"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: ${DATABASE_URL}
+    command: ["start"]
 
 networks:
   app-network:
