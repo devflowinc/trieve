@@ -16,7 +16,7 @@ use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use qdrant_client::{
     prelude::*,
-    qdrant::{VectorParams, VectorsConfig},
+    qdrant::{PayloadIndexParams, TextIndexParams, VectorParams, VectorsConfig},
 };
 use utoipa::OpenApi;
 use utoipa_redoc::{Redoc, Servable};
@@ -238,7 +238,7 @@ pub async fn main() -> std::io::Result<()> {
     );
     let _ = qdrant_client
         .create_collection(&CreateCollection {
-            collection_name: qdrant_collection,
+            collection_name: qdrant_collection.clone(),
             vectors_config: Some(VectorsConfig {
                 config: Some(qdrant_client::qdrant::vectors_config::Config::Params(
                     VectorParams {
@@ -255,6 +255,31 @@ pub async fn main() -> std::io::Result<()> {
         .await
         .map_err(|err| {
             log::info!("Failed to create collection: {:?}", err);
+        });
+
+    let _ = qdrant_client
+        ._create_field_index(
+            qdrant_collection,
+            "text",
+            qdrant_client::qdrant::FieldType::Text,
+            Some(&PayloadIndexParams {
+                index_params: Some(
+                    qdrant_client::qdrant::payload_index_params::IndexParams::TextIndexParams(
+                        TextIndexParams {
+                            tokenizer: 1,
+                            lowercase: Some(true),
+                            min_token_len: Some(2),
+                            max_token_len: Some(20),
+                        },
+                    ),
+                ),
+            }),
+            false,
+            None,
+        )
+        .await
+        .map_err(|err| {
+            log::info!("Failed to create text field index: {:?}", err);
         });
 
     run_migrations(&mut pool.get().unwrap());
