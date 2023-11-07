@@ -465,6 +465,7 @@ pub async fn stream_response(
 
         let search_card_query_results = search_card_query(
             embedding_vector,
+            query.clone(),
             1,
             pool1,
             None,
