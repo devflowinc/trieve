@@ -129,6 +129,7 @@ pub struct SearchCardQueryResult {
 #[allow(clippy::too_many_arguments)]
 pub async fn search_card_query(
     embedding_vector: Vec<f32>,
+    query_string: String,
     page: u64,
     pool: web::Data<Pool>,
     link: Option<Vec<String>>,
@@ -154,6 +155,9 @@ pub async fn search_card_query(
             "authors",
             current_user_id.unwrap_or_default().to_string(),
         ));
+        filter
+            .should
+            .push(Condition::matches("text", query_string.clone()));
 
         let point_ids = search_qdrant_query(page, filter, embedding_vector.clone()).await?;
 
@@ -278,6 +282,9 @@ pub async fn search_card_query(
             has_id: (filtered_point_ids).to_vec(),
         })),
     });
+    filter
+        .should
+        .push(Condition::matches("text", query_string.clone()));
 
     let point_ids = search_qdrant_query(page, filter, embedding_vector).await?;
 
