@@ -60,6 +60,7 @@ utoipa = { version = "4", features = [
     "debug",
 ] }
 utoipa-redoc = { version = "1.0", features = ["actix-web"] }
+magick_rust = "0.19.1"
 
 [build-dependencies]
 dotenvy = "0.15.7"

@@ -537,6 +537,11 @@ pub async fn main() -> std::io::Result<()> {
                         ),
                     )
                     .service(
+                        web::resource("/pdf_from_range/{file_start}/{file_end}/{prefix}/{name}").route(
+                            web::get().to(handlers::file_handler::get_pdf_from_range),
+                        ),
+                    )
+                    .service(
                         web::scope("/notifications")
                             .service(web::resource("").route(
                                 web::put().to(handlers::notification_handler::mark_notification_as_read),
