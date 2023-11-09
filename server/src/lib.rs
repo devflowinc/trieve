@@ -537,7 +537,7 @@ pub async fn main() -> std::io::Result<()> {
                         ),
                     )
                     .service(
-                        web::resource("/pdf_from_range/{file_start}/{file_end}/{prefix}/{name}").route(
+                        web::resource("/pdf_from_range/{file_start}/{file_end}/{prefix}/{file_name}").route(
                             web::get().to(handlers::file_handler::get_pdf_from_range),
                         ),
                     )

@@ -24,7 +24,11 @@ import BookmarkPopover from "./BookmarkPopover";
 import { VsFileSymlinkFile } from "solid-icons/vs";
 import sanitizeHtml from "sanitize-html";
 import { FiEdit, FiLock, FiTrash, FiCheck } from "solid-icons/fi";
-import { FaRegularFileCode, FaRegularFileImage } from "solid-icons/fa";
+import {
+  FaRegularFileCode,
+  FaRegularFileImage,
+  FaRegularFilePdf,
+} from "solid-icons/fa";
 import { Tooltip } from "./Atoms/Tooltip";
 import { AiOutlineCopy } from "solid-icons/ai";
 import CommunityBookmarkPopover from "./CommunityBookmarkPopover";
@@ -317,6 +321,28 @@ const ScoreCard = (props: ScoreCardProps) => {
                   </Show>
                 }
                 tooltipText="View Full Document"
+              />
+              <Tooltip
+                body={
+                  <Show when={imgInformation()}>
+                    <a
+                      class="h-fit"
+                      href={`${apiHost}/pdf_from_range/${
+                        imgInformation()?.imgRangeStart ?? 0
+                      }/${imgInformation()?.imgRangeEnd ?? 0}/${
+                        imgInformation()?.imgRangePrefix ?? ""
+                      }/${
+                        (props.card.metadata?.file_name ||
+                          imgInformation()?.imgRangeStart) ??
+                        "Arguflow PDF From Range"
+                      }`}
+                      title="Open PDF"
+                    >
+                      <FaRegularFilePdf class="h-5 w-5 fill-current" />
+                    </a>
+                  </Show>
+                }
+                tooltipText="View Standalone Pdf"
               />
               <Tooltip
                 body={
