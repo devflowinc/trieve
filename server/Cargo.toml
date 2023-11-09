@@ -60,6 +60,7 @@ utoipa = { version = "4", features = [
     "debug",
 ] }
 utoipa-redoc = { version = "1.0", features = ["actix-web"] }
+lopdf = { version = "0.31.0", features = ["chrono", "image", "embed_image"] }
 
 [build-dependencies]
 dotenvy = "0.15.7"

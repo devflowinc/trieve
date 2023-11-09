@@ -1,3 +1,4 @@
+use super::auth_handler::{LoggedUser, RequireAuth};
 use crate::{
     data::models::{File, Pool},
     errors::ServiceError,
@@ -13,11 +14,25 @@ use base64::{
     engine::{self, general_purpose},
     Engine as _,
 };
+use lopdf::{dictionary, Document};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use utoipa::ToSchema;
 
-use super::auth_handler::{LoggedUser, RequireAuth};
+pub fn validate_file_name(s: String) -> Result<String, actix_web::Error> {
+    let split_s = s.split('/').last();
+
+    if let Some(name) = split_s {
+        if name.contains("..") {
+            return Err(ServiceError::BadRequest("Invalid file name".to_string()).into());
+        }
+
+        return Ok(name.to_string());
+    }
+
+    Err(ServiceError::BadRequest("Invalid file name".to_string()).into())
+}
+
 pub async fn user_owns_file(
     user_id: uuid::Uuid,
     file_id: uuid::Uuid,
@@ -259,18 +274,53 @@ pub async fn get_image_file(
     _user: LoggedUser,
 ) -> Result<NamedFile, actix_web::Error> {
     let root_dir = "./images";
-    // split the path by slashes and make surer there are no .. in the path
-    if let Some(name) = file_name.to_string().split('/').last() {
-        if name.contains("..") {
-            return Err(ServiceError::BadRequest("Invalid file name".to_string()).into());
-        }
 
-        let file_path: PathBuf = format!("{}/{}", root_dir, name).into();
+    let validated_file_name = validate_file_name(file_name.into_inner())?;
 
-        if file_path.exists() {
-            return Ok(NamedFile::open(file_path)?);
-        }
+    let file_path: PathBuf = format!("{}/{}", root_dir, validated_file_name).into();
+
+    if file_path.exists() {
+        return Ok(NamedFile::open(file_path)?);
     }
 
     Err(ServiceError::BadRequest("Invalid file name, not found".to_string()).into())
+}
+
+pub async fn get_pdf_from_range(
+    file_start: web::Path<u64>,
+    file_end: web::Path<u64>,
+    prefix: web::Path<String>,
+    _user: LoggedUser,
+) -> Result<NamedFile, actix_web::Error> {
+    let root_dir = "./images";
+    let validated_prefix = validate_file_name(prefix.into_inner())?;
+
+    let mut images = Vec::new();
+    for i in file_start.into_inner()..=file_end.into_inner() {
+        let file_path: PathBuf = format!("{}/{}{}.pdf", root_dir, validated_prefix, i).into();
+
+        if file_path.exists() {
+            images.push(file_path);
+        }
+    }
+
+    // make each image into a page of a pdf using lopdf
+    let mut doc = Document::with_version("1.5");
+    let pages_id = doc.new_object_id();
+    let font_id = doc.add_object(dictionary! {
+        "Type" => "Font",
+        "Subtype" => "Type1",
+        "BaseFont" => "Courier"
+    });
+    let resources_id = doc.add_object(dictionary! {
+        "Font" => dictionary! {
+            "F1" => font_id,
+        },
+    });
+
+    // loop thru images, make content for each image, content_id thru add_object, page_id thru add_object, 
+
+
+
+    Ok(NamedFile::open("")?)
 }
