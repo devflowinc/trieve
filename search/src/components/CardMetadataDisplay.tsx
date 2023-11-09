@@ -14,7 +14,7 @@ import { FiEdit, FiGlobe, FiLock, FiTrash } from "solid-icons/fi";
 import { sanitzerOptions } from "./ScoreCard";
 import { Tooltip } from "./Atoms/Tooltip";
 import CommunityBookmarkPopover from "./CommunityBookmarkPopover";
-import { FaRegularFileImage } from "solid-icons/fa";
+import { FaRegularFileImage, FaRegularFilePdf } from "solid-icons/fa";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 
 export const getLocalTime = (strDate: string | Date) => {
@@ -159,6 +159,28 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                   </Show>
                 }
                 tooltipText="View Full Document"
+              />
+              <Tooltip
+                body={
+                  <Show when={imgInformation()}>
+                    <a
+                      class="h-fit"
+                      href={`${apiHost}/pdf_from_range/${
+                        imgInformation()?.imgRangeStart ?? 0
+                      }/${imgInformation()?.imgRangeEnd ?? 0}/${
+                        imgInformation()?.imgRangePrefix ?? ""
+                      }/${
+                        (props.card.metadata?.file_name ||
+                          imgInformation()?.imgRangeStart) ??
+                        "Arguflow PDF From Range"
+                      }`}
+                      title="Open PDF"
+                    >
+                      <FaRegularFilePdf class="h-5 w-5 fill-current" />
+                    </a>
+                  </Show>
+                }
+                tooltipText="View Standalone Pdf"
               />
               <Show when={props.signedInUserId == props.viewingUserId}>
                 <button

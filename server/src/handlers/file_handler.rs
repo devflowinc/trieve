@@ -285,23 +285,32 @@ pub async fn get_image_file(
     Err(ServiceError::BadRequest("Invalid file name, not found".to_string()).into())
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct GetPdfFromRangeData {
+    pub file_start: u32,
+    pub file_end: u32,
+    pub prefix: String,
+    pub file_name: String,
+}
+
 pub async fn get_pdf_from_range(
-    file_start: web::Path<u64>,
-    file_end: web::Path<u64>,
-    prefix: web::Path<String>,
-    file_name: web::Path<String>,
+    path_data: web::Path<GetPdfFromRangeData>,
     _user: LoggedUser,
 ) -> Result<NamedFile, actix_web::Error> {
     let root_dir = "./images";
-    let validated_prefix = validate_file_name(prefix.into_inner())?;
+
+    let validated_prefix = validate_file_name(path_data.prefix.clone())?;
 
     let mut wand = MagickWand::new();
 
-    let mut images = Vec::new();
-    for i in file_start.into_inner()..=file_end.into_inner() {
+    for i in path_data.file_start..=path_data.file_end {
         let file_path: PathBuf = format!("{}/{}{}.png", root_dir, validated_prefix, i).into();
 
         if file_path.exists() {
+            log::info!(
+                "{}",
+                file_path.to_str().expect("Could not convert path to str")
+            );
             wand.read_image(file_path.to_str().expect("Could not convert path to str"))
                 .map_err(|e| {
                     ServiceError::BadRequest(format!(
@@ -309,11 +318,10 @@ pub async fn get_pdf_from_range(
                         e.to_string()
                     ))
                 })?;
-            images.push(file_path);
         }
     }
 
-    let mut pdf_file_name = file_name.into_inner();
+    let mut pdf_file_name = path_data.file_name.clone();
     if !pdf_file_name.ends_with(".pdf") {
         pdf_file_name.push_str(".pdf");
     }
