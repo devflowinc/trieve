@@ -1,3 +1,4 @@
+use super::auth_handler::{LoggedUser, RequireAuth};
 use crate::{
     data::models::{File, Pool},
     errors::ServiceError,
@@ -13,11 +14,25 @@ use base64::{
     engine::{self, general_purpose},
     Engine as _,
 };
+use magick_rust::MagickWand;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use utoipa::ToSchema;
 
-use super::auth_handler::{LoggedUser, RequireAuth};
+pub fn validate_file_name(s: String) -> Result<String, actix_web::Error> {
+    let split_s = s.split('/').last();
+
+    if let Some(name) = split_s {
+        if name.contains("..") {
+            return Err(ServiceError::BadRequest("Invalid file name".to_string()).into());
+        }
+
+        return Ok(name.to_string());
+    }
+
+    Err(ServiceError::BadRequest("Invalid file name".to_string()).into())
+}
+
 pub async fn user_owns_file(
     user_id: uuid::Uuid,
     file_id: uuid::Uuid,
@@ -259,18 +274,78 @@ pub async fn get_image_file(
     _user: LoggedUser,
 ) -> Result<NamedFile, actix_web::Error> {
     let root_dir = "./images";
-    // split the path by slashes and make surer there are no .. in the path
-    if let Some(name) = file_name.to_string().split('/').last() {
-        if name.contains("..") {
-            return Err(ServiceError::BadRequest("Invalid file name".to_string()).into());
-        }
+    let validated_file_name = validate_file_name(file_name.into_inner())?;
 
-        let file_path: PathBuf = format!("{}/{}", root_dir, name).into();
+    let file_path: PathBuf = format!("{}/{}", root_dir, validated_file_name).into();
 
-        if file_path.exists() {
-            return Ok(NamedFile::open(file_path)?);
-        }
+    if file_path.exists() {
+        return Ok(NamedFile::open(file_path)?);
     }
 
     Err(ServiceError::BadRequest("Invalid file name, not found".to_string()).into())
+}
+
+pub async fn get_pdf_from_range(
+    file_start: web::Path<u64>,
+    file_end: web::Path<u64>,
+    prefix: web::Path<String>,
+    file_name: web::Path<String>,
+    _user: LoggedUser,
+) -> Result<NamedFile, actix_web::Error> {
+    let root_dir = "./images";
+    let validated_prefix = validate_file_name(prefix.into_inner())?;
+
+    let mut wand = MagickWand::new();
+
+    let mut images = Vec::new();
+    for i in file_start.into_inner()..=file_end.into_inner() {
+        let file_path: PathBuf = format!("{}/{}{}.png", root_dir, validated_prefix, i).into();
+
+        if file_path.exists() {
+            wand.read_image(file_path.to_str().expect("Could not convert path to str"))
+                .map_err(|e| {
+                    ServiceError::BadRequest(format!(
+                        "Could not read image to wand: {}",
+                        e.to_string()
+                    ))
+                })?;
+            images.push(file_path);
+        }
+    }
+
+    let mut pdf_file_name = file_name.into_inner();
+    if !pdf_file_name.ends_with(".pdf") {
+        pdf_file_name.push_str(".pdf");
+    }
+
+    wand.set_filename(pdf_file_name.as_str()).map_err(|e| {
+        ServiceError::BadRequest(format!(
+            "Could not set filename for wand: {}",
+            e.to_string()
+        ))
+    })?;
+
+    let file_path = format!(
+        "./tmp/{}-{}",
+        uuid::Uuid::new_v4().to_string(),
+        pdf_file_name
+    );
+
+    wand.write_images(file_path.as_str(), true).map_err(|e| {
+        ServiceError::BadRequest(format!(
+            "Could not write images to pdf with wand: {}",
+            e.to_string()
+        ))
+    })?;
+
+    let response_file = NamedFile::open(file_path.clone())?;
+
+    std::fs::remove_file(file_path).map_err(|e| {
+        ServiceError::BadRequest(format!(
+            "Could not remove temporary file: {}",
+            e.to_string()
+        ))
+    })?;
+
+    Ok(response_file)
 }
