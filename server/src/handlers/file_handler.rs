@@ -8,7 +8,7 @@ use crate::{
     },
 };
 use actix_files::NamedFile;
-use actix_web::{web, HttpResponse};
+use actix_web::{http::header::ContentDisposition, web, HttpResponse};
 use base64::{
     alphabet,
     engine::{self, general_purpose},
@@ -307,15 +307,12 @@ pub async fn get_pdf_from_range(
         let file_path: PathBuf = format!("{}/{}{}.png", root_dir, validated_prefix, i).into();
 
         if file_path.exists() {
-            log::info!(
-                "{}",
-                file_path.to_str().expect("Could not convert path to str")
-            );
             wand.read_image(file_path.to_str().expect("Could not convert path to str"))
                 .map_err(|e| {
                     ServiceError::BadRequest(format!(
-                        "Could not read image to wand: {}",
-                        e.to_string()
+                        "Could not read image to wand: {} - {}",
+                        e.to_string(),
+                        file_path.to_str().expect("Could not convert path to str")
                     ))
                 })?;
         }
@@ -346,7 +343,11 @@ pub async fn get_pdf_from_range(
         ))
     })?;
 
-    let response_file = NamedFile::open(file_path.clone())?;
+    let mut response_file = NamedFile::open(file_path.clone())?;
+    let parameters = NamedFile::open(file_path.clone())?
+        .content_disposition()
+        .parameters
+        .clone();
 
     std::fs::remove_file(file_path).map_err(|e| {
         ServiceError::BadRequest(format!(
@@ -354,6 +355,11 @@ pub async fn get_pdf_from_range(
             e.to_string()
         ))
     })?;
+
+    response_file = response_file.set_content_disposition(ContentDisposition {
+        disposition: actix_web::http::header::DispositionType::Inline,
+        parameters,
+    });
 
     Ok(response_file)
 }
