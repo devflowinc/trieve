@@ -292,6 +292,7 @@ pub struct GetPdfFromRangeData {
     pub file_end: u32,
     pub prefix: String,
     pub file_name: String,
+    pub ocr: Option<bool>,
 }
 
 pub async fn get_pdf_from_range(
@@ -324,53 +325,41 @@ pub async fn get_pdf_from_range(
         pdf_file_name.push_str(".pdf");
     }
 
-    wand.set_filename(pdf_file_name.as_str()).map_err(|e| {
-        ServiceError::BadRequest(format!(
-            "Could not set filename for wand: {}",
-            e
-        ))
-    })?;
+    wand.set_filename(pdf_file_name.as_str())
+        .map_err(|e| ServiceError::BadRequest(format!("Could not set filename for wand: {}", e)))?;
 
-    let file_path = format!(
-        "./tmp/{}-{}",
-        uuid::Uuid::new_v4(),
-        pdf_file_name
-    );
+    let file_path = format!("./tmp/{}-{}", uuid::Uuid::new_v4(), pdf_file_name);
 
     wand.write_images(file_path.as_str(), true).map_err(|e| {
-        ServiceError::BadRequest(format!(
-            "Could not write images to pdf with wand: {}",
-            e
-        ))
+        ServiceError::BadRequest(format!("Could not write images to pdf with wand: {}", e))
     })?;
 
-    Python::with_gil(|sys| -> Result<(), actix_web::Error> {
-        let ocrmypdf = sys.import("ocrmypdf").map_err(|e| {
-            ServiceError::BadRequest(format!(
-                "Could not import ocrmypdf module: {}",
-                e
-            ))
-        })?;
+    if path_data.ocr.unwrap_or(false) {
+        Python::with_gil(|sys| -> Result<(), actix_web::Error> {
+            let ocrmypdf = sys.import("ocrmypdf").map_err(|e| {
+                ServiceError::BadRequest(format!("Could not import ocrmypdf module: {}", e))
+            })?;
 
-        let kwargs = PyDict::new(sys);
-        kwargs.set_item("deskew", true).map_err(|e| {
-            ServiceError::BadRequest(format!(
-                "Could not set deskew argument for ocrmypdf: {}",
-                e
-            ))
-        })?;
-
-        ocrmypdf
-            .call_method("ocr", (file_path.clone(), file_path.clone()), Some(kwargs))
-            .map_err(|e| {
+            let kwargs = PyDict::new(sys);
+            kwargs.set_item("deskew", true).map_err(|e| {
                 ServiceError::BadRequest(format!(
-                    "Could not call ocr method for ocrmypdf: {}",
+                    "Could not set deskew argument for ocrmypdf: {}",
                     e
                 ))
             })?;
 
-        Ok(())
-    })?;
+            ocrmypdf
+                .call_method("ocr", (file_path.clone(), file_path.clone()), Some(kwargs))
+                .map_err(|e| {
+                    ServiceError::BadRequest(format!(
+                        "Could not call ocr method for ocrmypdf: {}",
+                        e
+                    ))
+                })?;
+
+            Ok(())
+        })?;
+    }
 
     let mut response_file = NamedFile::open(file_path.clone())?;
     let parameters = NamedFile::open(file_path.clone())?
@@ -378,12 +367,8 @@ pub async fn get_pdf_from_range(
         .parameters
         .clone();
 
-    std::fs::remove_file(file_path).map_err(|e| {
-        ServiceError::BadRequest(format!(
-            "Could not remove temporary file: {}",
-            e
-        ))
-    })?;
+    std::fs::remove_file(file_path)
+        .map_err(|e| ServiceError::BadRequest(format!("Could not remove temporary file: {}", e)))?;
 
     response_file = response_file.set_content_disposition(ContentDisposition {
         disposition: actix_web::http::header::DispositionType::Inline,

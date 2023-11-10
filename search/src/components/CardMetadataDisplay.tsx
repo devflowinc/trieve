@@ -16,6 +16,7 @@ import { Tooltip } from "./Atoms/Tooltip";
 import CommunityBookmarkPopover from "./CommunityBookmarkPopover";
 import { FaRegularFileImage, FaRegularFilePdf } from "solid-icons/fa";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
+import { RiOthersCharacterRecognitionLine } from "solid-icons/ri";
 
 export const getLocalTime = (strDate: string | Date) => {
   const utcDate = new Date(strDate);
@@ -174,7 +175,7 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                         props.card.metadata?.file_name ??
                         imgInformation()?.imgRangeStart ??
                         "Arguflow PDF From Range"
-                      }`}
+                      }/false`}
                       target="_blank"
                       title="Open PDF"
                     >
@@ -182,7 +183,31 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                     </a>
                   </Show>
                 }
-                tooltipText="View Standalone Pdf"
+                tooltipText="View PDF"
+              />
+              <Tooltip
+                body={
+                  <Show when={imgInformation()}>
+                    <a
+                      class="h-fit"
+                      href={`${apiHost}/pdf_from_range/${
+                        imgInformation()?.imgRangeStart ?? 0
+                      }/${imgInformation()?.imgRangeEnd ?? 0}/${
+                        imgInformation()?.imgRangePrefix ?? ""
+                      }/${
+                        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                        props.card.metadata?.file_name ??
+                        imgInformation()?.imgRangeStart ??
+                        "Arguflow PDF From Range"
+                      }/true`}
+                      target="_blank"
+                      title="Open PDF"
+                    >
+                      <RiOthersCharacterRecognitionLine class="h-5 w-5 fill-current" />
+                    </a>
+                  </Show>
+                }
+                tooltipText="View PDF With OCR"
               />
               <Show when={props.signedInUserId == props.viewingUserId}>
                 <button

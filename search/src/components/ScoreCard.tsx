@@ -19,6 +19,7 @@ import {
   RiArrowsArrowDownCircleLine,
   RiArrowsArrowUpCircleFill,
   RiArrowsArrowUpCircleLine,
+  RiOthersCharacterRecognitionLine,
 } from "solid-icons/ri";
 import BookmarkPopover from "./BookmarkPopover";
 import { VsFileSymlinkFile } from "solid-icons/vs";
@@ -336,7 +337,7 @@ const ScoreCard = (props: ScoreCardProps) => {
                         props.card.metadata?.file_name ??
                         imgInformation()?.imgRangeStart ??
                         "Arguflow PDF From Range"
-                      }`}
+                      }/false`}
                       target="_blank"
                       title="Open PDF"
                     >
@@ -344,7 +345,31 @@ const ScoreCard = (props: ScoreCardProps) => {
                     </a>
                   </Show>
                 }
-                tooltipText="View Standalone Pdf"
+                tooltipText="View PDF"
+              />
+              <Tooltip
+                body={
+                  <Show when={imgInformation()}>
+                    <a
+                      class="h-fit"
+                      href={`${apiHost}/pdf_from_range/${
+                        imgInformation()?.imgRangeStart ?? 0
+                      }/${imgInformation()?.imgRangeEnd ?? 0}/${
+                        imgInformation()?.imgRangePrefix ?? ""
+                      }/${
+                        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                        props.card.metadata?.file_name ??
+                        imgInformation()?.imgRangeStart ??
+                        "Arguflow PDF From Range"
+                      }/true`}
+                      target="_blank"
+                      title="Open PDF"
+                    >
+                      <RiOthersCharacterRecognitionLine class="h-5 w-5 fill-current" />
+                    </a>
+                  </Show>
+                }
+                tooltipText="View PDF With OCR"
               />
               <Tooltip
                 body={
