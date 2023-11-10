@@ -15,6 +15,7 @@ use base64::{
     Engine as _,
 };
 use magick_rust::MagickWand;
+use pyo3::{types::PyDict, Python};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use utoipa::ToSchema;
@@ -341,6 +342,34 @@ pub async fn get_pdf_from_range(
             "Could not write images to pdf with wand: {}",
             e.to_string()
         ))
+    })?;
+
+    Python::with_gil(|sys| -> Result<(), actix_web::Error> {
+        let ocrmypdf = sys.import("ocrmypdf").map_err(|e| {
+            ServiceError::BadRequest(format!(
+                "Could not import ocrmypdf module: {}",
+                e.to_string()
+            ))
+        })?;
+
+        let kwargs = PyDict::new(sys);
+        kwargs.set_item("deskew", true).map_err(|e| {
+            ServiceError::BadRequest(format!(
+                "Could not set deskew argument for ocrmypdf: {}",
+                e.to_string()
+            ))
+        })?;
+
+        ocrmypdf
+            .call_method("ocr", (file_path.clone(), file_path.clone()), Some(kwargs))
+            .map_err(|e| {
+                ServiceError::BadRequest(format!(
+                    "Could not call ocr method for ocrmypdf: {}",
+                    e.to_string()
+                ))
+            })?;
+
+        Ok(())
     })?;
 
     let mut response_file = NamedFile::open(file_path.clone())?;
