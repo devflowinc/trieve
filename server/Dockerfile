@@ -104,7 +104,7 @@ ARG LIBJXL_VERSION=0.8.2
 
 RUN apt-get -y update && \
     apt-get -y upgrade && \
-    apt-get install -y --no-install-recommends git make pkg-config autoconf curl cmake build-essential clang libomp-dev ca-certificates automake python3.11-dev tesseract-ocr \
+    apt-get install -y --no-install-recommends git make pkg-config autoconf curl cmake build-essential clang libomp-dev ca-certificates automake python3.11-dev \
     # libaom
     yasm \
     # libheif
