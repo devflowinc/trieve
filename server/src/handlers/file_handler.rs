@@ -312,7 +312,7 @@ pub async fn get_pdf_from_range(
                 .map_err(|e| {
                     ServiceError::BadRequest(format!(
                         "Could not read image to wand: {} - {}",
-                        e.to_string(),
+                        e,
                         file_path.to_str().expect("Could not convert path to str")
                     ))
                 })?;
@@ -327,20 +327,20 @@ pub async fn get_pdf_from_range(
     wand.set_filename(pdf_file_name.as_str()).map_err(|e| {
         ServiceError::BadRequest(format!(
             "Could not set filename for wand: {}",
-            e.to_string()
+            e
         ))
     })?;
 
     let file_path = format!(
         "./tmp/{}-{}",
-        uuid::Uuid::new_v4().to_string(),
+        uuid::Uuid::new_v4(),
         pdf_file_name
     );
 
     wand.write_images(file_path.as_str(), true).map_err(|e| {
         ServiceError::BadRequest(format!(
             "Could not write images to pdf with wand: {}",
-            e.to_string()
+            e
         ))
     })?;
 
@@ -348,7 +348,7 @@ pub async fn get_pdf_from_range(
         let ocrmypdf = sys.import("ocrmypdf").map_err(|e| {
             ServiceError::BadRequest(format!(
                 "Could not import ocrmypdf module: {}",
-                e.to_string()
+                e
             ))
         })?;
 
@@ -356,7 +356,7 @@ pub async fn get_pdf_from_range(
         kwargs.set_item("deskew", true).map_err(|e| {
             ServiceError::BadRequest(format!(
                 "Could not set deskew argument for ocrmypdf: {}",
-                e.to_string()
+                e
             ))
         })?;
 
@@ -365,7 +365,7 @@ pub async fn get_pdf_from_range(
             .map_err(|e| {
                 ServiceError::BadRequest(format!(
                     "Could not call ocr method for ocrmypdf: {}",
-                    e.to_string()
+                    e
                 ))
             })?;
 
@@ -381,7 +381,7 @@ pub async fn get_pdf_from_range(
     std::fs::remove_file(file_path).map_err(|e| {
         ServiceError::BadRequest(format!(
             "Could not remove temporary file: {}",
-            e.to_string()
+            e
         ))
     })?;
 
