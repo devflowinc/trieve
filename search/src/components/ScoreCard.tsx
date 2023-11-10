@@ -332,10 +332,12 @@ const ScoreCard = (props: ScoreCardProps) => {
                       }/${imgInformation()?.imgRangeEnd ?? 0}/${
                         imgInformation()?.imgRangePrefix ?? ""
                       }/${
-                        (props.card.metadata?.file_name ||
-                          imgInformation()?.imgRangeStart) ??
+                        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                        props.card.metadata?.file_name ??
+                        imgInformation()?.imgRangeStart ??
                         "Arguflow PDF From Range"
                       }`}
+                      target="_blank"
                       title="Open PDF"
                     >
                       <FaRegularFilePdf class="h-5 w-5 fill-current" />

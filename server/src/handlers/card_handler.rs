@@ -142,7 +142,7 @@ pub async fn create_card(
         .tracking_id
         .clone()
         .filter(|card_tracking| !card_tracking.is_empty());
-    let card_collection_id = card.collection_id.clone();
+    let card_collection_id = card.collection_id;
 
     let mut collision: Option<uuid::Uuid> = None;
 
