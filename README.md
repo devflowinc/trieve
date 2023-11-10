@@ -240,12 +240,11 @@ yarn
 yarn dev
 ```
 
-### Install ImageMagic (Linux) - only needed if you want to use pdf_from_range route
+## Install ImageMagick (Linux) - only needed if you want to use pdf_from_range route
 
 apt install libjpeg-dev
 apt install libpng-dev
 apt install libtiff-dev
-
 
 curl https://imagemagick.org/archive/ImageMagick.tar.gz | tar xz
 cd ImageMagick

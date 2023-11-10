@@ -106,6 +106,8 @@ services:
       - app-network
     ports:
       - 8090:8090
+    volumes:
+      - ./server/images:/app/images
     links:
       - tika:tika
     environment:
