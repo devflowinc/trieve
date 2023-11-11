@@ -804,7 +804,7 @@ pub async fn search_full_text_card_query(
         .into_boxed();
 
     query = query.filter(sql::<Bool>(
-        format!("card_metadata @@@ '{}:::fuzzy_fields=cardHtml'", user_query).as_str(),
+        format!("card_metadata @@@ '{}'", user_query).as_str(),
     ));
     let tag_set_inner = tag_set.unwrap_or_default();
     let link_inner = link.unwrap_or_default();
@@ -912,8 +912,8 @@ pub async fn search_full_text_card_query(
     ));
 
     query = query
-        .limit(10)
-        .offset(((page - 1) * 10).try_into().unwrap_or(0));
+        .limit(20)
+        .offset(((page - 1) * 20).try_into().unwrap_or(0));
 
     let searched_cards: Vec<(FullTextSearchResult, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
