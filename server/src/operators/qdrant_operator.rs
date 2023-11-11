@@ -20,7 +20,7 @@ pub async fn create_new_qdrant_point_query(
 
     let payload = match private {
         true => {
-            json!({"private": true, "authors": vec![author_id.unwrap_or_default().to_string()], "text": text.unwrap()})
+            json!({"private": true, "authors": vec![author_id.unwrap_or_default().to_string()]})
                 .try_into()
                 .expect("A json! Value must always be a valid Payload")
         }
