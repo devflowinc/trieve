@@ -65,7 +65,7 @@ pub async fn user_owns_card_tracking_id(
     Ok(cards)
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
 pub struct CreateCardData {
     pub card_html: Option<String>,
     pub link: Option<String>,
