@@ -167,8 +167,8 @@ pub async fn search_qdrant_query(
         .search_points(&SearchPoints {
             collection_name: qdrant_collection.to_string(),
             vector: embedding_vector,
-            limit: 10,
-            offset: Some((page - 1) * 10),
+            limit: 20,
+            offset: Some((page - 1) * 20),
             with_payload: None,
             filter: Some(filter),
             ..Default::default()
