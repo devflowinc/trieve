@@ -843,7 +843,7 @@ pub async fn search_card(
         let entry = scorecard_map
             .entry(score_card.metadata[0].id)
             .or_insert(score_card.clone());
-        entry.score += score_card.score;
+        entry.score += 1.0 / score_card.score * 0.5;
     });
 
     let mut score_cards: Vec<ScoreCardDTO> = scorecard_map.into_values().collect();
