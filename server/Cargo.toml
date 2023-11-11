@@ -20,7 +20,6 @@ diesel = { version = "2", features = [
     "uuid",
     "chrono",
     "serde_json",
-    "numeric",
 ] }
 env_logger = { version = "0.10" }
 log = "0.4"
