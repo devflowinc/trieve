@@ -2,7 +2,7 @@ use crate::data::models::{
     CardCollisions, CardFile, CardFileWithName, CardMetadataWithVotes,
     CardMetadataWithVotesWithScore, CardVote, FullTextSearchResult, User, UserDTO,
 };
-use crate::data::schema;
+use crate::data::schema::{self};
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -13,10 +13,10 @@ use crate::{
 };
 use actix_web::web;
 use diesel::dsl::sql;
-use diesel::sql_types::Nullable;
-use diesel::sql_types::Text;
 use diesel::sql_types::{BigInt, Int8};
 use diesel::sql_types::{Bool, Double};
+use diesel::sql_types::{Float, Nullable};
+use diesel::sql_types::{Numeric, Text};
 use diesel::{
     BoolExpressionMethods, Connection, JoinOnDsl, NullableExpressionMethods,
     PgTextExpressionMethods, SelectableHelper,
@@ -653,7 +653,7 @@ pub struct FullTextSearchCardQueryResult {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn search_full_text_card_query(
+pub async fn search_full_text_card_query(
     user_query: String,
     page: u64,
     pool: web::Data<Pool>,
@@ -723,10 +723,8 @@ pub fn search_full_text_card_query(
                 card_metadata_columns::metadata,
                 card_metadata_columns::tracking_id,
                 sql::<Nullable<Double>>(
-                    "(ts_rank(card_metadata.card_metadata_tsvector, plainto_tsquery('english', ",
-                )
-                .bind::<Text, _>(user_query.clone())
-                .sql(") , 32) * 10) AS rank"),
+                    "paradedb.rank_bm25(card_metadata.ctid)::double precision as rank",
+                ),
                 sql::<Int8>("count(*) OVER() AS full_count"),
             ),
             second_join
@@ -741,11 +739,9 @@ pub fn search_full_text_card_query(
         ))
         .into_boxed();
 
-    query = query.filter(
-        sql::<Bool>("card_metadata.card_metadata_tsvector @@ plainto_tsquery('english', ")
-            .bind::<Text, _>(user_query)
-            .sql(")"),
-    );
+    query = query.filter(sql::<Bool>(
+        format!("card_metadata @@@ '{}:::fuzzy_fields=cardHtml'", user_query).as_str(),
+    ));
     let tag_set_inner = tag_set.unwrap_or_default();
     let link_inner = link.unwrap_or_default();
     if !tag_set_inner.is_empty() {
