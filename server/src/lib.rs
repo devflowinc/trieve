@@ -257,31 +257,6 @@ pub async fn main() -> std::io::Result<()> {
             log::info!("Failed to create collection: {:?}", err);
         });
 
-    let _ = qdrant_client
-        ._create_field_index(
-            qdrant_collection,
-            "text",
-            qdrant_client::qdrant::FieldType::Text,
-            Some(&PayloadIndexParams {
-                index_params: Some(
-                    qdrant_client::qdrant::payload_index_params::IndexParams::TextIndexParams(
-                        TextIndexParams {
-                            tokenizer: 1,
-                            lowercase: Some(true),
-                            min_token_len: Some(2),
-                            max_token_len: Some(20),
-                        },
-                    ),
-                ),
-            }),
-            false,
-            None,
-        )
-        .await
-        .map_err(|err| {
-            log::info!("Failed to create text field index: {:?}", err);
-        });
-
     run_migrations(&mut pool.get().unwrap());
 
     let email = std::env::var("ADMIN_USER_EMAIL");

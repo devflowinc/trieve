@@ -737,7 +737,6 @@ pub async fn search_card(
 
     let search_card_query_results = search_card_query(
         embedding_vector,
-        data.content.clone(),
         page,
         pool1,
         data.link.clone(),
