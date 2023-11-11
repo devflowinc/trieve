@@ -17,9 +17,11 @@ use crate::operators::qdrant_operator::{
     update_qdrant_point_private_query,
 };
 use actix::Arbiter;
+use actix_web::body::MessageBody;
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
 use chrono::NaiveDateTime;
+use futures_util::TryFutureExt;
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat_completion::{ChatCompletionParameters, ChatMessage, Role};
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
@@ -27,7 +29,7 @@ use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::process::Command;
 use tokio_stream::StreamExt;
 use utoipa::ToSchema;
@@ -644,7 +646,7 @@ pub struct SearchCardData {
     filters: Option<serde_json::Value>,
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct ScoreCardDTO {
     metadata: Vec<CardMetadataWithVotesWithScore>,
     score: f64,
@@ -713,7 +715,7 @@ pub async fn search_card(
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let current_user_id = user.map(|user| user.id);
+    let current_user_id = user.clone().map(|user| user.id);
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_embedding(&data.content).await?;
     let pool1 = pool.clone();
@@ -735,6 +737,31 @@ pub async fn search_card(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
+    let full_text_handler_results = search_full_text_card(
+        web::Json(data.clone()),
+        Some(web::Path::from(page)),
+        user.clone(),
+        pool.clone(),
+        _required_user,
+    );
+
+    let (search_card_query_results, full_text_handler_results) =
+        futures::join!(search_card_query_results, full_text_handler_results);
+
+    let search_card_query_results =
+        search_card_query_results.map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let mut full_text_query_results = vec![];
+    if let Ok(response) = full_text_handler_results {
+        if response.status().is_success() {
+            let full_text_results: SearchCardQueryResponseBody =
+                serde_json::from_slice(response.into_body().try_into_bytes().unwrap().as_ref())
+                    .map_err(|_err| {
+                        ServiceError::BadRequest("Error getting full text results".to_string())
+                    })?;
+            full_text_query_results = full_text_results.score_cards;
+        }
+    }
     let point_ids = search_card_query_results
         .search_results
         .iter()
@@ -747,7 +774,7 @@ pub async fn search_card(
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let score_cards: Vec<ScoreCardDTO> = search_card_query_results
+    let semantic_score_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
         .iter()
         .map(|search_result| {
@@ -797,10 +824,34 @@ pub async fn search_card(
 
             ScoreCardDTO {
                 metadata: collided_cards,
-                score: search_result.score.into(),
+                score: search_result.score as f64 * 0.5,
             }
         })
         .collect();
+
+    let combined_cards = semantic_score_cards
+        .into_iter()
+        .chain(full_text_query_results.into_iter())
+        .collect::<Vec<ScoreCardDTO>>();
+
+    let mut scorecard_map: HashMap<uuid::Uuid, ScoreCardDTO> = HashMap::new();
+    combined_cards.into_iter().for_each(|score_card| {
+        let entry = scorecard_map
+            .entry(score_card.metadata[0].id)
+            .or_insert(score_card.clone());
+        entry.score += score_card.score;
+    });
+
+    let mut score_cards: Vec<ScoreCardDTO> = scorecard_map.into_values().collect();
+
+    score_cards.sort_by(|a, b| {
+        b.score
+            .partial_cmp(&a.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    // Take the top 10
+    score_cards.truncate(10);
 
     Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
         score_cards,
@@ -852,7 +903,8 @@ pub async fn search_full_text_card(
         )
     })
     .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))
+    .await?;
 
     let point_ids = search_card_query_results
         .search_results
