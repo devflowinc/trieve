@@ -2,7 +2,7 @@ version: "3"
 
 services:
   db:
-    image: postgres:15
+    image: paradedb/paradedb:latest
     restart: always
     environment:
       POSTGRES_USER: postgres
