@@ -614,6 +614,19 @@ pub async fn update_card_by_tracking_id(
     Ok(HttpResponse::NoContent().finish())
 }
 
+pub fn normalize_scores(score_cards: Vec<ScoreCardDTO>) -> Vec<ScoreCardDTO> {
+    let scores = score_cards
+        .iter()
+        .map(|score| score.score)
+        .collect::<Vec<f64>>();
+    let max_score = scores.clone().into_iter().reduce(f64::max).unwrap_or(0.0);
+    let min_score = scores.into_iter().reduce(f64::min).unwrap_or(0.0);
+    let mut score_cards = score_cards;
+    score_cards.iter_mut().for_each(|score| {
+        score.score = (score.score - min_score) / (max_score - min_score);
+    });
+    score_cards
+}
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct SearchCardData {
     content: String,
@@ -701,9 +714,10 @@ pub async fn search_card(
                     .map_err(|_err| {
                         ServiceError::BadRequest("Error getting full text results".to_string())
                     })?;
-            full_text_query_results = full_text_results.score_cards;
+            full_text_query_results = normalize_scores(full_text_results.score_cards);
         }
     }
+
     let point_ids = search_card_query_results
         .search_results
         .iter()
