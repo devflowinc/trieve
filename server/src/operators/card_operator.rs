@@ -16,10 +16,10 @@ use actix_web::web;
 
 use chrono::NaiveDateTime;
 use diesel::dsl::sql;
+use diesel::sql_types::Nullable;
+use diesel::sql_types::Text;
 use diesel::sql_types::{BigInt, Int8};
 use diesel::sql_types::{Bool, Double};
-use diesel::sql_types::{Float, Nullable};
-use diesel::sql_types::{Numeric, Text};
 use diesel::{
     BoolExpressionMethods, Connection, JoinOnDsl, NullableExpressionMethods,
     PgTextExpressionMethods, SelectableHelper,
