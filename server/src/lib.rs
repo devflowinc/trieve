@@ -16,7 +16,7 @@ use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use qdrant_client::{
     prelude::*,
-    qdrant::{PayloadIndexParams, TextIndexParams, VectorParams, VectorsConfig},
+    qdrant::{VectorParams, VectorsConfig},
 };
 use tokio::sync::Semaphore;
 use utoipa::OpenApi;
@@ -410,6 +410,10 @@ pub async fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/fulltextsearch/{page}")
                                     .route(web::post().to(handlers::card_handler::search_full_text_card)),
+                            )
+                            .service(
+                                web::resource("/hybrid_search/{page}")
+                                    .route(web::post().to(handlers::card_handler::search_hybrid_card)),
                             )
                             .service(
                                 web::resource("/generate")
