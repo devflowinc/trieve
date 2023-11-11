@@ -239,6 +239,9 @@ pub async fn recommend_qdrant_query(
         with_vectors: None,
         lookup_from: None,
         read_consistency: None,
+        positive_vectors: vec![],
+        negative_vectors: vec![],
+        strategy: None,
     };
 
     let qdrant_client = get_qdrant_connection().await?;
