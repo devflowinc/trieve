@@ -19,10 +19,6 @@ assignees: ''
 
 <please describe what is required to close this issue here>
 
-### PR commit requirements for a bounty claim
-
-<N/A if not a bounty PR; otherwise please describe the number of commits expected and messages expected >
-
 ### Community channels
 
 Matrix is preferred. Reach out on discord or Matrix for further assistance. 
