@@ -112,7 +112,7 @@ export default function Home() {
             </Show>
             <ThemeModeController />
             <A
-              class="rounded-lg bg-turquoise px-4 py-2 font-semibold dark:text-neutral-900"
+              class="rounded-lg bg-turquoise px-4 py-2 text-center font-semibold dark:text-neutral-900"
               href={isLogin() ? "/chat" : "/register"}
             >
               Chat Now
@@ -135,7 +135,7 @@ export default function Home() {
             <span class="text-turquoise"> {dataset}</span>
           </p>
           <A
-            class="rounded-lg bg-turquoise px-4 py-2 font-semibold text-black shadow-md"
+            class="rounded-lg bg-turquoise px-4 py-2 text-center font-semibold text-black shadow-md"
             href={"https://arguflow.ai/meet"}
           >
             Get a Custom Solution
