@@ -695,6 +695,7 @@ fn cross_encoder(
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
+    sorted_corpus.truncate(10);
     Ok(sorted_corpus)
 }
 
