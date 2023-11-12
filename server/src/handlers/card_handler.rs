@@ -21,6 +21,7 @@ use actix_web::body::MessageBody;
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
 use futures_util::TryFutureExt;
+use itertools::Itertools;
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat_completion::{ChatCompletionParameters, ChatMessage, Role};
 use pyo3::types::PyTuple;
@@ -909,8 +910,14 @@ pub async fn search_hybrid_card(
         Some(quote_words),
     );
 
+    let mut full_text_data = data.clone();
+    full_text_data.content = full_text_data
+        .content
+        .split_ascii_whitespace()
+        .join(" AND ");
+
     let full_text_handler_results = search_full_text_card(
-        web::Json(data.clone()),
+        web::Json(full_text_data),
         Some(web::Path::from(page)),
         user.clone(),
         pool.clone(),
