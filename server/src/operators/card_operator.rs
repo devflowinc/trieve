@@ -803,6 +803,7 @@ pub async fn search_full_text_card_query(
         ))
         .into_boxed();
 
+    //escape special characters
     query = query.filter(sql::<Bool>(
         format!("card_metadata @@@ '{}'", user_query).as_str(),
     ));
