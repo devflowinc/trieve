@@ -12,3 +12,4 @@
 ### Docker
 
 - version tag Redis containers to redis:7.2.2
+- Optimized Dockerfiles to compile faster
