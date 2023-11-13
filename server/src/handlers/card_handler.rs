@@ -699,58 +699,58 @@ fn cross_encoder(
     Ok(sorted_corpus)
 }
 
-// fn reciprocal_rank_fusion(
-//     semantic_results: Vec<ScoreCardDTO>,
-//     full_text_results: Vec<ScoreCardDTO>,
-//     weights: Option<(f64, f64)>,
-// ) -> Vec<ScoreCardDTO> {
-//     let mut fused_ranking: Vec<ScoreCardDTO> = Vec::new();
-//     let weights = weights.unwrap_or((1.0, 1.0));
-//     // Iterate through the union of the two result sets
-//     for mut document in full_text_results
-//         .clone()
-//         .into_iter()
-//         .chain(semantic_results.clone().into_iter())
-//         .dedup_by(|a, b| a.metadata[0].id == b.metadata[0].id)
-//     {
-//         // Find the rank of the document in each result set
-//         let rank_semantic = semantic_results
-//             .iter()
-//             .position(|doc| doc.metadata[0].id == document.metadata[0].id);
-//         let rank_full_text = full_text_results
-//             .iter()
-//             .position(|doc| doc.metadata[0].id == document.metadata[0].id);
+fn reciprocal_rank_fusion(
+    semantic_results: Vec<ScoreCardDTO>,
+    full_text_results: Vec<ScoreCardDTO>,
+    weights: Option<(f64, f64)>,
+) -> Vec<ScoreCardDTO> {
+    let mut fused_ranking: Vec<ScoreCardDTO> = Vec::new();
+    let weights = weights.unwrap_or((1.0, 1.0));
+    // Iterate through the union of the two result sets
+    for mut document in full_text_results
+        .clone()
+        .into_iter()
+        .chain(semantic_results.clone().into_iter())
+        .dedup_by(|a, b| a.metadata[0].id == b.metadata[0].id)
+    {
+        // Find the rank of the document in each result set
+        let rank_semantic = semantic_results
+            .iter()
+            .position(|doc| doc.metadata[0].id == document.metadata[0].id);
+        let rank_full_text = full_text_results
+            .iter()
+            .position(|doc| doc.metadata[0].id == document.metadata[0].id);
 
-//         // Calculate Reciprocal Rank for each result set
-//         let reciprocal_rank_semantic = match rank_semantic {
-//             Some(rank) => 1.0 / (rank as f64 + weights.0),
-//             None => 0.0,
-//         };
+        // Calculate Reciprocal Rank for each result set
+        let reciprocal_rank_semantic = match rank_semantic {
+            Some(rank) => 1.0 / (rank as f64 + weights.0),
+            None => 0.0,
+        };
 
-//         let reciprocal_rank_full_text = match rank_full_text {
-//             Some(rank) => 1.0 / (rank as f64 + weights.1),
-//             None => 0.0,
-//         };
+        let reciprocal_rank_full_text = match rank_full_text {
+            Some(rank) => 1.0 / (rank as f64 + weights.1),
+            None => 0.0,
+        };
 
-//         // Combine Reciprocal Ranks using average or another strategy
-//         let combined_rank = reciprocal_rank_semantic + reciprocal_rank_full_text;
-//         document.score = combined_rank;
+        // Combine Reciprocal Ranks using average or another strategy
+        let combined_rank = reciprocal_rank_semantic + reciprocal_rank_full_text;
+        document.score = combined_rank;
 
-//         // Add the document ID and combined rank to the fused ranking
-//         fused_ranking.push(document.clone());
-//     }
+        // Add the document ID and combined rank to the fused ranking
+        fused_ranking.push(document.clone());
+    }
 
-//     // Sort the fused ranking by combined rank in descending order
-//     fused_ranking.sort_by(|a, b| {
-//         b.score
-//             .partial_cmp(&a.score)
-//             .unwrap_or(std::cmp::Ordering::Equal)
-//     });
+    // Sort the fused ranking by combined rank in descending order
+    fused_ranking.sort_by(|a, b| {
+        b.score
+            .partial_cmp(&a.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
-//     fused_ranking.truncate(10);
+    fused_ranking.truncate(10);
 
-//     fused_ranking
-// }
+    fused_ranking
+}
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct SearchCardData {
@@ -927,12 +927,32 @@ pub async fn search_card(
     }))
 }
 
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
+pub struct HybridSearchCardData {
+    content: String,
+    link: Option<Vec<String>>,
+    tag_set: Option<Vec<String>>,
+    filters: Option<serde_json::Value>,
+    cross_encoder: Option<bool>,
+    weights: Option<(f64, f64)>,
+}
+
+impl From<HybridSearchCardData> for SearchCardData {
+    fn from(hybrid_search_card_data: HybridSearchCardData) -> Self {
+        SearchCardData {
+            content: hybrid_search_card_data.content,
+            link: hybrid_search_card_data.link,
+            tag_set: hybrid_search_card_data.tag_set,
+            filters: hybrid_search_card_data.filters,
+        }
+    }
+}
 #[utoipa::path(
     post,
     path = "/card/hybrid_search",
     context_path = "/api",
     tag = "card",
-    request_body(content = SearchCardData, description = "JSON request payload to semantically search for cards (chunks)", content_type = "application/json"),
+    request_body(content = HybridSearchCardData, description = "JSON request payload to semantically search for cards (chunks)", content_type = "application/json"),
     responses(
         (status = 200, description = "Cards which are similar to the embedding vector of the search query", body = [SearchCardQueryResponseBody]),
         (status = 400, description = "Service error relating to searching", body = [DefaultError]),
@@ -942,7 +962,7 @@ pub async fn search_card(
     ),
 )]
 pub async fn search_hybrid_card(
-    data: web::Json<SearchCardData>,
+    data: web::Json<HybridSearchCardData>,
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
@@ -976,7 +996,7 @@ pub async fn search_hybrid_card(
         .join(" AND ");
 
     let full_text_handler_results = search_full_text_card(
-        web::Json(full_text_data),
+        web::Json(full_text_data.into()),
         Some(web::Path::from(page)),
         user.clone(),
         pool.clone(),
@@ -1067,11 +1087,16 @@ pub async fn search_hybrid_card(
         })
         .collect();
     let combined_results = semantic_score_cards
+        .clone()
         .into_iter()
         .chain(full_text_query_results.clone().into_iter())
         .collect::<Vec<ScoreCardDTO>>();
 
-    let score_cards = cross_encoder(combined_results, data.content.clone())?;
+    let score_cards = if data.cross_encoder.unwrap_or(false) {
+        cross_encoder(combined_results, data.content.clone())?
+    } else {
+        reciprocal_rank_fusion(semantic_score_cards, full_text_query_results, data.weights)
+    };
 
     Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
         score_cards,
