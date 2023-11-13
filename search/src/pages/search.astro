@@ -14,6 +14,7 @@ const params = new URLSearchParams(requestParams);
 const query = params.get("q") ?? "";
 const page = Number(params.get("page")) || 1;
 const searchType: string = params.get("searchType") ?? "search";
+const weight = params.get("weight") ?? "0.5";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const metadataFilters: any = {};
@@ -24,7 +25,8 @@ params.forEach((value, key) => {
     key === "page" ||
     key === "searchType" ||
     key === "Tag Set" ||
-    key === "link"
+    key === "link" ||
+    key === "weight"
   ) {
     return;
   }
@@ -50,6 +52,26 @@ try {
     throw new Error("Always require auth is on");
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const requestBody: any = {
+    content: query,
+    tag_set: dataTypeFilters.tagSet,
+    link: dataTypeFilters.link,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    filters: dataTypeFilters.metadataFilters,
+  };
+
+  if (searchType === "hybrid_search") {
+    const semanticWeight = parseFloat(weight ?? "0.5");
+    if (semanticWeight != 0.5) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      requestBody.weights = [semanticWeight, 1 - semanticWeight];
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      requestBody.cross_encoder = true;
+    }
+  }
+
   const initialScoreCardsResult = await fetch(
     `${apiHost}/card/${searchType}/${page}`,
     {
@@ -58,13 +80,7 @@ try {
         "Content-Type": "application/json",
       },
       credentials: "include",
-      body: JSON.stringify({
-        content: query,
-        tag_set: dataTypeFilters.tagSet,
-        link: dataTypeFilters.link,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        filters: dataTypeFilters.metadataFilters,
-      }),
+      body: JSON.stringify(requestBody),
     },
   );
 
@@ -113,6 +129,7 @@ try {
     filters={dataTypeFilters}
     defaultResultCards={initialScoreCards}
     searchType={searchType}
+    weight={weight}
     client:load
   />
   <div class="flex-1"></div>
