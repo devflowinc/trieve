@@ -12,7 +12,6 @@ pub async fn create_new_qdrant_point_query(
     embedding_vector: Vec<f32>,
     private: bool,
     author_id: Option<uuid::Uuid>,
-    text: Option<String>,
 ) -> Result<(), actix_web::Error> {
     let qdrant = get_qdrant_connection()
         .await
@@ -24,7 +23,7 @@ pub async fn create_new_qdrant_point_query(
                 .try_into()
                 .expect("A json! Value must always be a valid Payload")
         }
-        false => json!({"text": text.unwrap()})
+        false => json!({})
             .try_into()
             .expect("A json! Value must always be a valid Payload"),
     };
@@ -167,8 +166,8 @@ pub async fn search_qdrant_query(
         .search_points(&SearchPoints {
             collection_name: qdrant_collection.to_string(),
             vector: embedding_vector,
-            limit: 20,
-            offset: Some((page - 1) * 20),
+            limit: 10,
+            offset: Some((page - 1) * 10),
             with_payload: None,
             filter: Some(filter),
             ..Default::default()
