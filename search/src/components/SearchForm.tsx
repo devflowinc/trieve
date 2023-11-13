@@ -49,6 +49,7 @@ const SearchForm = (props: {
   const [searchTypes, setSearchTypes] = createSignal([
     { name: "Full Text", isSelected: false, route: "fulltextsearch" },
     { name: "Semantic", isSelected: true, route: "search" },
+    { name: "Hybrid Search", isSelected: false, route: "hybrid_search" },
   ]);
   // eslint-disable-next-line solid/reactivity
   const [textareaInput, setTextareaInput] = createSignal(props.query ?? "");
