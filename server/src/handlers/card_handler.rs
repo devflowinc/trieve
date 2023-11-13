@@ -698,19 +698,9 @@ fn reciprocal_rank_fusion(
             .iter()
             .position(|doc| doc.metadata[0].id == document.metadata[0].id);
 
-        // Calculate Reciprocal Rank for each result set
-        let reciprocal_rank_semantic = match rank_semantic {
-            Some(rank) => 1.0 / (rank as f64 + weights.0),
-            None => 0.0,
-        };
-
-        let reciprocal_rank_full_text = match rank_full_text {
-            Some(rank) => 1.0 / (rank as f64 + weights.1),
-            None => 0.0,
-        };
-
         // Combine Reciprocal Ranks using average or another strategy
-        let combined_rank = reciprocal_rank_semantic + reciprocal_rank_full_text;
+        let combined_rank = weights.0 * (rank_semantic.unwrap_or(0) as f64)
+            + weights.1 * (rank_full_text.unwrap_or(0) as f64);
         document.score = combined_rank;
 
         // Add the document ID and combined rank to the fused ranking
