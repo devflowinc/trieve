@@ -46,6 +46,7 @@ const SearchForm = (props: {
   const [searchTypes, setSearchTypes] = createSignal([
     { name: "Full Text", isSelected: false, route: "fulltextsearch" },
     { name: "Semantic", isSelected: true, route: "search" },
+    { name: "Hybrid Search", isSelected: false, route: "hybrid_search" },
   ]);
   // eslint-disable-next-line solid/reactivity
   const [textareaInput, setTextareaInput] = createSignal(props.query ?? "");
@@ -159,10 +160,14 @@ const SearchForm = (props: {
     window.location.href = props.collectionID
       ? `/collection/${props.collectionID}?q=${searchQuery}` +
         (filters ? `&${filters}` : "") +
-        (searchTypes()[0].isSelected ? `&searchType=fulltextsearch` : "")
+        `&searchType=${
+          searchTypes().filter((type) => type.isSelected)[0].route
+        }`
       : `/search?q=${searchQuery}` +
         (filters ? `&${filters}` : "") +
-        (searchTypes()[0].isSelected ? `&searchType=fulltextsearch` : "");
+        `&searchType=${
+          searchTypes().filter((type) => type.isSelected)[0].route
+        }`;
   };
 
   onMount(() => {
