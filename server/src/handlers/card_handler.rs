@@ -1100,18 +1100,16 @@ pub async fn search_hybrid_card(
             .collect::<Vec<ScoreCardDTO>>();
 
         cross_encoder(combined_results, data.content.clone())?
-    } else {
-        if let Some(weights) = data.weights {
-            if weights.0 == 1.0 {
-                semantic_score_cards
-            } else if weights.1 == 1.0 {
-                full_text_query_results
-            } else {
-                reciprocal_rank_fusion(semantic_score_cards, full_text_query_results, data.weights)
-            }
+    } else if let Some(weights) = data.weights {
+        if weights.0 == 1.0 {
+            semantic_score_cards
+        } else if weights.1 == 1.0 {
+            full_text_query_results
         } else {
             reciprocal_rank_fusion(semantic_score_cards, full_text_query_results, data.weights)
         }
+    } else {
+        reciprocal_rank_fusion(semantic_score_cards, full_text_query_results, data.weights)
     };
 
     Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
