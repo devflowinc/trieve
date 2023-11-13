@@ -17,7 +17,6 @@ import {
   Popover,
   PopoverButton,
   PopoverPanel,
-  Transition,
 } from "solid-headless";
 import { FaSolidCheck } from "solid-icons/fa";
 import type { Filters } from "./ResultsPage";
@@ -64,11 +63,15 @@ const SearchForm = (props: {
     string[]
   >([]);
   const [searchHistoryList, setSearchHistoryList] = createSignal<string[]>([]);
+<<<<<<< HEAD
   const [showFilters, setShowFilters] = createSignal(false);
   const [timeRange, setTimeRange] = createSignal({
     start: props.filters.start,
     end: props.filters.end,
   });
+=======
+  const [semanticWeight, setSemanticWeight] = createSignal("0.5");
+>>>>>>> 0c8dfaf (feature: UI for hybrid weights, bugfix: 0/1 vals for semantic/full-text weights)
 
   createEffect(() => {
     // get the previous searched queries from localStorage and set them into the state;
@@ -535,6 +538,7 @@ const SearchForm = (props: {
               (comboboxSection) => comboboxSection.name,
             )}
           >
+<<<<<<< HEAD
             <button
               classList={{
                 "flex items-center space-x-1 text-sm p-1 rounded": true,
@@ -547,6 +551,55 @@ const SearchForm = (props: {
             >
               <span>Filters</span>
             </button>
+=======
+            <Popover defaultOpen={false} class="relative">
+              {({ isOpen, setState }) => (
+                <>
+                  <PopoverButton
+                    aria-label="Toggle filters"
+                    type="button"
+                    class="flex items-center space-x-1 text-sm "
+                  >
+                    <span>Filters</span>{" "}
+                    <svg
+                      fill="currentColor"
+                      stroke-width="0"
+                      style={{ overflow: "visible", color: "currentColor" }}
+                      viewBox="0 0 16 16"
+                      class="h-3.5 w-3.5 "
+                      height="1em"
+                      width="1em"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />
+                    </svg>
+                  </PopoverButton>
+                  <Show when={isOpen()}>
+                    <PopoverPanel
+                      unmount={false}
+                      class="absolute z-10 mt-2 h-fit w-fit rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-800"
+                    >
+                      <Menu class="h-0">
+                        <MenuItem class="h-0" as="button" aria-label="Empty" />
+                      </Menu>
+                      <div class="flex w-full min-w-full space-x-2">
+                        <For each={comboBoxSections()}>
+                          {(comboBoxSection) => (
+                            <Combobox
+                              sectionName={comboBoxSection.name}
+                              comboBoxSections={comboBoxSections}
+                              setComboboxSections={setComboBoxSections}
+                              setPopoverOpen={setState}
+                            />
+                          )}
+                        </For>
+                      </div>
+                    </PopoverPanel>
+                  </Show>
+                </>
+              )}
+            </Popover>
+>>>>>>> 0c8dfaf (feature: UI for hybrid weights, bugfix: 0/1 vals for semantic/full-text weights)
           </Show>
           <Popover defaultOpen={false} class="relative">
             {({ isOpen, setState }) => (
@@ -570,15 +623,7 @@ const SearchForm = (props: {
                     <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />
                   </svg>
                 </PopoverButton>
-                <Transition
-                  show={isOpen()}
-                  enter="transition duration-200"
-                  enterFrom="opacity-0"
-                  enterTo="opacity-100"
-                  leave="transition duration-150"
-                  leaveFrom="opacity-100"
-                  leaveTo="opacity-0"
-                >
+                <Show when={isOpen()}>
                   <PopoverPanel
                     unmount={false}
                     class="absolute z-10 mt-2 h-fit w-[180px]  rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-800"
@@ -586,6 +631,13 @@ const SearchForm = (props: {
                     <Menu class="ml-1 space-y-1">
                       <For each={searchTypes()}>
                         {(option) => {
+                          if (
+                            props.collectionID &&
+                            option.route === "hybrid_search"
+                          ) {
+                            return <></>;
+                          }
+
                           const onClick = (e: Event) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -625,10 +677,67 @@ const SearchForm = (props: {
                       </For>
                     </Menu>
                   </PopoverPanel>
-                </Transition>
+                </Show>
               </>
             )}
           </Popover>
+          <Show
+            when={
+              searchTypes().find((type) => type.isSelected)?.route ===
+              "hybrid_search"
+            }
+          >
+            <Popover defaultOpen={false} class="relative">
+              {({ isOpen }) => (
+                <>
+                  <PopoverButton
+                    aria-label="Toggle filters"
+                    type="button"
+                    class="flex items-center space-x-1 text-sm"
+                  >
+                    <span>Weight</span>{" "}
+                    <svg
+                      fill="currentColor"
+                      stroke-width="0"
+                      style={{ overflow: "visible", color: "currentColor" }}
+                      viewBox="0 0 16 16"
+                      class="h-3.5 w-3.5 "
+                      height="1em"
+                      width="1em"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />
+                    </svg>
+                  </PopoverButton>
+                  <Show when={isOpen()}>
+                    <PopoverPanel
+                      unmount={false}
+                      class="absolute z-10 mt-2 h-fit w-[180px]  rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-800"
+                    >
+                      <label
+                        for="minmax-range"
+                        class="mb-2 block space-y-1 text-sm font-medium"
+                      >
+                        <div>Semantic Weight {semanticWeight()}</div>
+                      </label>
+                      <input
+                        id="minmax-range"
+                        type="range"
+                        min="0"
+                        max="1"
+                        value={semanticWeight()}
+                        step="0.1"
+                        class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-neutral-100 dark:bg-neutral-700"
+                        onInput={(e) =>
+                          setSemanticWeight(e.currentTarget.value)
+                        }
+                      />
+                    </PopoverPanel>
+                  </Show>
+                </>
+              )}
+            </Popover>
+          </Show>
         </div>
         <Show when={showFilters()}>
           <div class="flex gap-x-2">
