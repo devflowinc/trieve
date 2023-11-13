@@ -38,6 +38,7 @@ export interface ResultsPageProps {
   defaultResultCards: CardsWithTotalPagesDTO;
   filters: Filters;
   searchType: string;
+  weight?: string;
 }
 
 const ResultsPage = (props: ResultsPageProps) => {
@@ -120,6 +121,26 @@ const ResultsPage = (props: ResultsPageProps) => {
 
   createEffect(() => {
     const abortController = new AbortController();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const requestBody: any = {
+      content: props.query,
+      tag_set: props.filters.tagSet,
+      link: props.filters.link,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      filters: props.filters.metadataFilters,
+    };
+
+    if (props.searchType === "hybrid_search") {
+      const semanticWeight = parseFloat(props.weight ?? "0.5");
+      if (semanticWeight != 0.5) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        requestBody.weights = [semanticWeight, 1 - semanticWeight];
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        requestBody.cross_encoder = true;
+      }
+    }
 
     void fetch(`${apiHost}/card/${props.searchType}/${props.page}`, {
       method: "POST",

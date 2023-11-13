@@ -711,7 +711,7 @@ fn reciprocal_rank_fusion(
         .clone()
         .into_iter()
         .chain(semantic_results.clone().into_iter())
-        .dedup_by(|a, b| a.metadata[0].id == b.metadata[0].id)
+        .unique_by(|card| card.metadata[0].id)
     {
         // Find the rank of the document in each result set
         let rank_semantic = semantic_results
@@ -1086,16 +1086,28 @@ pub async fn search_hybrid_card(
             }
         })
         .collect();
-    let combined_results = semantic_score_cards
-        .clone()
-        .into_iter()
-        .chain(full_text_query_results.clone().into_iter())
-        .collect::<Vec<ScoreCardDTO>>();
 
     let score_cards = if data.cross_encoder.unwrap_or(false) {
+        let combined_results = semantic_score_cards
+            .clone()
+            .into_iter()
+            .chain(full_text_query_results.clone().into_iter())
+            .unique_by(|score_card| score_card.metadata[0].id)
+            .collect::<Vec<ScoreCardDTO>>();
+
         cross_encoder(combined_results, data.content.clone())?
     } else {
-        reciprocal_rank_fusion(semantic_score_cards, full_text_query_results, data.weights)
+        if let Some(weights) = data.weights {
+            if weights.0 == 1.0 {
+                semantic_score_cards
+            } else if weights.1 == 1.0 {
+                full_text_query_results
+            } else {
+                reciprocal_rank_fusion(semantic_score_cards, full_text_query_results, data.weights)
+            }
+        } else {
+            reciprocal_rank_fusion(semantic_score_cards, full_text_query_results, data.weights)
+        }
     };
 
     Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
