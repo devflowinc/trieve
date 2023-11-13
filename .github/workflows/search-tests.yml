@@ -3,10 +3,12 @@ name: search test suite
 on: 
   pull_request:
     paths:
-      'search/**'
+    - 'search/**'
+    - '.github/workflows/**'
   push:
     paths:
-      'search/**'
+    - 'search/**'
+    - '.github/workflows/**'
 jobs:
   eslint:
     runs-on: ubuntu-latest
