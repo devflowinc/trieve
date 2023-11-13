@@ -11,14 +11,59 @@ on:
     - '.github/workflows/**'
 jobs:
   clippy_check:
-    runs-on: ubuntu-latest
+    runs-on: debian
     steps:
       - uses: actions/checkout@v1
       - run: rustup component add clippy
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: imagemagick
-          version: 1.0
+      # - uses: awalsh128/cache-apt-pkgs-action@latest
+      #   with:
+      #     packages: imagemagick
+      #     version: 1.0
+      - run: sudo apt-get install -y --no-install-recommends git make pkg-config autoconf curl cmake clang libomp-dev ca-certificates automake \
+            yasm \
+            libde265-0 libde265-dev libjpeg62-turbo libjpeg62-turbo-dev x265 libx265-dev libtool \
+            libsdl1.2-dev libgif-dev \
+            libbrotli-dev \
+            libpng16-16 libpng-dev libjpeg62-turbo libjpeg62-turbo-dev libgomp1 ghostscript libxml2-dev libxml2-utils libtiff-dev libfontconfig1-dev libfreetype6-dev fonts-dejavu liblcms2-2 liblcms2-dev libtcmalloc-minimal4 \
+            libxext6 libbrotli1 && \
+            export CC=clang CXX=clang++ && \
+            git clone -b v0.8.2 https://github.com/libjxl/libjxl.git --depth 1 --recursive --shallow-submodules && \
+            cd libjxl && \
+            mkdir build && \
+            cd build && \
+            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF .. && \
+            cmake --build . -- -j$(nproc) && \
+            cmake --install . && \
+            cd ../../ && \
+            rm -rf libjxl && \
+            ldconfig /usr/local/lib && \
+            git clone -b v1.3.2 --depth 1 https://chromium.googlesource.com/webm/libwebp && \
+            cd libwebp && \
+            mkdir build && cd build && cmake ../ && make && make install && \
+            make && make install && \
+            ldconfig /usr/local/lib && \
+            cd ../../ && rm -rf libwebp && \
+            git clone -b v3.7.0 --depth 1 https://aomedia.googlesource.com/aom && \
+            mkdir build_aom && \
+            cd build_aom && \
+            cmake ../aom/ -DENABLE_TESTS=0 -DBUILD_SHARED_LIBS=1 && make && make install && \
+            ldconfig /usr/local/lib && \
+            cd .. && \
+            rm -rf aom && \
+            rm -rf build_aom && \
+            curl -L https://github.com/strukturag/libheif/releases/download/v1.17.3/libheif-1.17.3.tar.gz -o libheif.tar.gz && \
+            tar -xzvf libheif.tar.gz && cd libheif-1.17.3/ && mkdir build && cd build && cmake --preset=release .. && make && make install && cd ../../ \
+            ldconfig /usr/local/lib && \
+            rm -rf libheif-1.17.3 && rm libheif.tar.gz && \
+            git clone -b 7.1.1-21 --depth 1 https://github.com/ImageMagick/ImageMagick.git && \
+            cd ImageMagick && \
+            ./configure --without-magick-plus-plus --disable-docs --disable-static --with-tiff --with-jxl --with-tcmalloc && \
+            make && make install && \
+            ldconfig /usr/local/lib && \
+            sudo apt-get remove --autoremove --purge -y make cmake clang clang-14 curl yasm git autoconf automake pkg-config libpng-dev libjpeg62-turbo-dev libde265-dev libx265-dev libxml2-dev libtiff-dev libfontconfig1-dev libfreetype6-dev liblcms2-dev libsdl1.2-dev libgif-dev libbrotli-dev && \
+            rm -rf /var/lib/apt/lists/* && \
+            rm -rf /ImageMagick
+
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
