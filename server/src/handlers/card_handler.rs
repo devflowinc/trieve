@@ -31,6 +31,7 @@ use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::cmp::min;
 use std::collections::HashSet;
 use std::process::Command;
 use tokio_stream::StreamExt;
@@ -915,11 +916,7 @@ pub async fn search_hybrid_card(
         Some(quote_words),
     );
 
-    let mut full_text_data = data.clone();
-    full_text_data.content = full_text_data
-        .content
-        .split_ascii_whitespace()
-        .join(" AND ");
+    let full_text_data = data.clone();
 
     let full_text_handler_results = search_full_text_card(
         web::Json(full_text_data.into()),
@@ -936,6 +933,7 @@ pub async fn search_hybrid_card(
         search_card_query_results.map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let mut full_text_query_results = vec![];
+    let mut full_text_page_count = 1;
     if let Ok(response) = full_text_handler_results {
         if response.status().is_success() {
             let full_text_results: SearchCardQueryResponseBody =
@@ -944,6 +942,7 @@ pub async fn search_hybrid_card(
                         ServiceError::BadRequest("Error getting full text results".to_string())
                     })?;
             full_text_query_results = full_text_results.score_cards;
+            full_text_page_count = full_text_results.total_card_pages;
         }
     }
     let point_ids = search_card_query_results
@@ -1033,9 +1032,14 @@ pub async fn search_hybrid_card(
         reciprocal_rank_fusion(semantic_score_cards, full_text_query_results, data.weights)
     };
 
+    let total_card_pages = min(
+        search_card_query_results.total_card_pages,
+        full_text_page_count,
+    );
+
     Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
         score_cards,
-        total_card_pages: search_card_query_results.total_card_pages,
+        total_card_pages,
     }))
 }
 
@@ -1074,9 +1078,11 @@ pub async fn search_full_text_card(
         .filter(|word| !word.is_empty())
         .collect::<Vec<String>>();
 
+    let user_query = data_inner.content.split_whitespace().join(" AND ");
+
     let search_card_query_results = web::block(move || {
         search_full_text_card_query(
-            data_inner.content.clone(),
+            user_query,
             page,
             pool1,
             current_user_id,
