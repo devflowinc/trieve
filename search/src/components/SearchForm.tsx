@@ -24,6 +24,7 @@ const SearchForm = (props: {
   filters: Filters;
   searchType: string;
   collectionID?: string;
+  weight?: string;
 }) => {
   const stringifiedComboboxSections = import.meta.env
     .PUBLIC_FILTER_ITEMS as string;
@@ -60,7 +61,10 @@ const SearchForm = (props: {
     string[]
   >([]);
   const [searchHistoryList, setSearchHistoryList] = createSignal<string[]>([]);
-  const [semanticWeight, setSemanticWeight] = createSignal("0.5");
+  const [semanticWeight, setSemanticWeight] = createSignal(
+    // eslint-disable-next-line solid/reactivity
+    props.weight ?? "0.5",
+  );
 
   createEffect(() => {
     // get the previous searched queries from localStorage and set them into the state;
