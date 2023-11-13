@@ -913,8 +913,8 @@ pub async fn search_full_text_card_query(
     ));
 
     query = query
-        .limit(20)
-        .offset(((page - 1) * 20).try_into().unwrap_or(0));
+        .limit(10)
+        .offset(((page - 1) * 10).try_into().unwrap_or(0));
 
     let searched_cards: Vec<(FullTextSearchResult, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {

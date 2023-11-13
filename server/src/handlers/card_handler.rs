@@ -321,20 +321,14 @@ pub async fn create_card(
                 })
                 .transpose()?,
         );
-        let inner_card = card.clone();
+
         card_metadata =
             web::block(move || insert_card_metadata_query(card_metadata, card.file_uuid, pool1))
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-        create_new_qdrant_point_query(
-            qdrant_point_id,
-            embedding_vector,
-            private,
-            Some(user.id),
-            inner_card.card_html,
-        )
-        .await?;
+        create_new_qdrant_point_query(qdrant_point_id, embedding_vector, private, Some(user.id))
+            .await?;
     }
 
     if let Some(collection_id_to_bookmark) = card_collection_id {
