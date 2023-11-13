@@ -37,7 +37,7 @@ function SuggestedQueries(props: { query: string }) {
               {(query) => (
                 <a
                   href={`/search?q=${encodeURIComponent(query)}`}
-                  class="text-blue-500 underline"
+                  class="w-fit text-blue-500 underline"
                 >
                   {query}
                 </a>
