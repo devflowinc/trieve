@@ -3,10 +3,12 @@ name: chat test suite
 on: 
   push:
     paths:
-      'chat/**'
+    - 'chat/**'
+    - '.github/workflows/**'
   pull_request:
     paths:
-      'chat/**'
+    - 'chat/**'
+    - '.github/workflows/**'
 jobs:
   eslint:
     runs-on: ubuntu-latest
