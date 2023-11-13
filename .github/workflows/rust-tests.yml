@@ -9,7 +9,7 @@ on:
       'server/**.rs'
 jobs:
   clippy_check:
-    runs-on: ubuntu-latest
+    runs-on: dpokidov/imagemagick
     steps:
       - uses: actions/checkout@v1
       - run: rustup component add clippy
