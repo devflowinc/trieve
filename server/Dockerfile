@@ -90,8 +90,10 @@ COPY ./server-python/requirements.txt /app/requirements.txt
 RUN pip install --break-system-packages -r /app/requirements.txt; \
     mkdir /app/tmp
 
+COPY ./server-python /app/server-python
+
 WORKDIR /app
-COPY ./server-python/ /app/server-python
+COPY --from=builder /imgs/app/target/release/vault-server /app/vault-server
 COPY ./migrations/ /app/migrations
 COPY --from=builder /imgs/app/target/release/vault-server /app/vault-server
 
