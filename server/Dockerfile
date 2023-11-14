@@ -86,12 +86,14 @@ RUN apt-get update; \
         python-is-python3 \
         ;
 
-COPY ./server-python/requirements.txt /app/server-python/requirements.txt
+COPY ./server-python/requirements.txt /app/requirements.txt
 RUN pip install -r /app/requirements.txt; \
     mkdir tmp
 
+COPY ./server-python /app/server-python
+
 WORKDIR /app
-COPY ./server-python/ /app/server-python
+COPY --from=builder /imgs/app/target/release/vault-server /app/vault-server
 COPY ./migrations/ /app/migrations
 COPY --from=builder /imgs/app/target/release/vault-server /app/vault-server
 
