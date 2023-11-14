@@ -84,13 +84,16 @@ RUN apt-get update; \
         liblcms2-dev \
         libtcmalloc-minimal4 \
         python-is-python3 \
-        ;\
-    pip install -r /app/server-python/requirements.txt; \
+        ;
+
+COPY ./server-python/requirements.txt /app/requirements.txt
+RUN pip install -r /app/requirements.txt; \
     mkdir tmp
+
+COPY ./server-python /app/server-python
 
 WORKDIR /app
 COPY --from=builder /imgs/app/target/release/vault-server /app/vault-server
-COPY ./server-python/ /app/server-python
 COPY ./migrations/ /app/migrations
 
 
