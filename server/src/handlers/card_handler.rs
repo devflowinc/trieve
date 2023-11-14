@@ -73,6 +73,7 @@ pub struct CreateCardData {
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub collection_id: Option<uuid::Uuid>,
+    pub dataset: Option<String>,
 }
 
 pub fn convert_html(html: &str) -> String {
@@ -269,6 +270,7 @@ pub async fn create_card(
             private,
             card.metadata.clone(),
             card_tracking_id,
+            card.dataset.clone()
         );
         card_metadata = web::block(move || {
             insert_duplicate_card_metadata_query(
@@ -297,6 +299,7 @@ pub async fn create_card(
             private,
             card.metadata.clone(),
             card_tracking_id,
+            card.dataset.clone()
         );
         card_metadata =
             web::block(move || insert_card_metadata_query(card_metadata, card.file_uuid, pool1))
@@ -431,6 +434,7 @@ pub struct UpdateCardData {
     private: Option<bool>,
     metadata: Option<serde_json::Value>,
     tracking_id: Option<String>,
+    dataset: Option<String>,
 }
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct CardHtmlUpdateError {
@@ -503,6 +507,7 @@ pub async fn update_card(
                 private,
                 card.metadata.clone(),
                 card_tracking_id,
+                card.dataset.clone()
             ),
             None,
             pool2,
@@ -594,7 +599,7 @@ pub async fn update_card_by_tracking_id(
                 private,
                 card.metadata.clone(),
                 Some(tracking_id1),
-            ),
+                None,),
             None,
             pool2,
         )

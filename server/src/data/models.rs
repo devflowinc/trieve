@@ -288,6 +288,7 @@ pub struct CardMetadata {
     pub private: bool,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
+    pub dataset: String,
 }
 
 impl CardMetadata {
@@ -302,6 +303,7 @@ impl CardMetadata {
         private: bool,
         metadata: Option<serde_json::Value>,
         tracking_id: Option<String>,
+        dataset: Option<String>,
     ) -> Self {
         CardMetadata {
             id: uuid::Uuid::new_v4(),
@@ -316,11 +318,10 @@ impl CardMetadata {
             private,
             metadata,
             tracking_id,
+            dataset: dataset.unwrap_or("DEFAULT".to_string())
         }
     }
-}
 
-impl CardMetadata {
     #[allow(clippy::too_many_arguments)]
     pub fn from_details_with_id<S: Into<String>, T: Into<uuid::Uuid>>(
         id: T,
@@ -333,6 +334,7 @@ impl CardMetadata {
         private: bool,
         metadata: Option<serde_json::Value>,
         tracking_id: Option<String>,
+        dataset: Option<String>,
     ) -> Self {
         CardMetadata {
             id: id.into(),
@@ -347,6 +349,7 @@ impl CardMetadata {
             private,
             metadata,
             tracking_id,
+            dataset: dataset.unwrap_or("DEFAULT".to_string())
         }
     }
 }

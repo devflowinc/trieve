@@ -59,6 +59,7 @@ pub struct UploadFileData {
     pub link: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub create_cards: Option<bool>,
+    pub dataset: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -124,6 +125,7 @@ pub async fn upload_file_handler(
         upload_file_data.metadata,
         upload_file_data.create_cards,
         user,
+        upload_file_data.dataset,
         pool_inner,
     )
     .await

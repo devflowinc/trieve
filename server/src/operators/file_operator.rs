@@ -136,6 +136,7 @@ pub async fn convert_doc_to_html_query(
     metadata: Option<serde_json::Value>,
     create_cards: Option<bool>,
     user: LoggedUser,
+    dataset: Option<String>,
     pool: web::Data<Pool>,
 ) -> Result<UploadFileResult, DefaultError> {
     let user1 = user.clone();
@@ -266,6 +267,7 @@ pub async fn convert_doc_to_html_query(
             user,
             temp_html_file_path_buf,
             glob_string,
+            dataset,
             pool,
         )
         .await;
@@ -302,6 +304,7 @@ pub async fn create_cards_with_handler(
     user: LoggedUser,
     temp_html_file_path_buf: PathBuf,
     glob_string: String,
+    datset: Option<String>,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     let parser_command =
@@ -371,6 +374,7 @@ pub async fn create_cards_with_handler(
             metadata: metadata.clone(),
             collection_id: None,
             tracking_id: None,
+            dataset: datset.clone(),
         };
         let web_json_create_card_data = web::Json(create_card_data);
 
