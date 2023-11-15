@@ -366,7 +366,7 @@ pub async fn get_all_bookmarks(
         .collect::<Vec<uuid::Uuid>>();
 
     let collided_cards =
-        web::block(move || get_collided_cards_query(point_ids, current_user_id, pool1))
+        web::block(move || get_collided_cards_query(point_ids, current_user_id, None, pool1))
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 

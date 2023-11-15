@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate diesel;
 use crate::{
-    handlers::auth_handler::create_admin_account, operators::card_operator::get_qdrant_connection,
+    handlers::auth_handler::create_admin_account, operators::qdrant_operator::create_new_qdrant_collection_query,
 };
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
@@ -14,10 +14,6 @@ use actix_web::{
 };
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use qdrant_client::{
-    prelude::*,
-    qdrant::{VectorParams, VectorsConfig},
-};
 use utoipa::OpenApi;
 use utoipa_redoc::{Redoc, Servable};
 
@@ -227,35 +223,9 @@ pub async fn main() -> std::io::Result<()> {
 
     let redis_store = RedisSessionStore::new(redis_url).await.unwrap();
 
-    let qdrant_client = get_qdrant_connection().await.unwrap();
     let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
-    let embedding_size = std::env::var("EMBEDDING_SIZE").unwrap_or("1536".to_owned());
-    let embedding_size = embedding_size.parse::<u64>().unwrap_or(1536);
-    log::info!(
-        "Qdrant collection: {} size {}",
-        qdrant_collection,
-        embedding_size
-    );
-    let _ = qdrant_client
-        .create_collection(&CreateCollection {
-            collection_name: qdrant_collection,
-            vectors_config: Some(VectorsConfig {
-                config: Some(qdrant_client::qdrant::vectors_config::Config::Params(
-                    VectorParams {
-                        size: embedding_size,
-                        distance: Distance::Cosine.into(),
-                        hnsw_config: None,
-                        quantization_config: None,
-                        on_disk: None,
-                    },
-                )),
-            }),
-            ..Default::default()
-        })
-        .await
-        .map_err(|err| {
-            log::info!("Failed to create collection: {:?}", err);
-        });
+    let _ = create_new_qdrant_collection_query(qdrant_collection)
+        .await;
 
     run_migrations(&mut pool.get().unwrap());
 
@@ -405,12 +375,12 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(web::put().to(handlers::card_handler::update_card_by_tracking_id)),
                             )
                             .service(
-                                web::resource("/tracking_id/{tracking_id}")
+                                web::resource("/tracking_id/{dataset}/{tracking_id}")
                                     .route(web::get().to(handlers::card_handler::get_card_by_tracking_id))
                                     .route(web::delete().to(handlers::card_handler::delete_card_by_tracking_id))
                             )
                             .service(
-                                web::resource("/{card_id}")
+                                web::resource("/{dataset}/{card_id}")
                                     .route(web::get().to(handlers::card_handler::get_card_by_id))
                                     .route(web::delete().to(handlers::card_handler::delete_card)),
                             )

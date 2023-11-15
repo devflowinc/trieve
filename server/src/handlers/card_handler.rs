@@ -138,6 +138,7 @@ pub async fn create_card(
         }
     }
 
+    let dataset = card.dataset.clone();
     let private = card.private.unwrap_or(false);
     let card_tracking_id = card
         .tracking_id
@@ -200,7 +201,7 @@ pub async fn create_card(
 
     let embedding_vector = create_embedding(&content).await?;
 
-    let first_semantic_result = global_unfiltered_top_match_query(embedding_vector.clone())
+    let first_semantic_result = global_unfiltered_top_match_query(embedding_vector.clone(), card.dataset.clone())
         .await
         .map_err(|err| {
             ServiceError::BadRequest(format!(
@@ -219,14 +220,14 @@ pub async fn create_card(
         collision = Some(first_semantic_result.point_id);
 
         let score_card_result = web::block(move || {
-            get_metadata_from_point_ids(vec![first_semantic_result.point_id], Some(user.id), pool2)
+            get_metadata_from_point_ids(vec![first_semantic_result.point_id], Some(user.id), dataset ,pool2)
         })
         .await?;
 
         match score_card_result {
             Ok(card_results) => {
                 if card_results.is_empty() {
-                    delete_qdrant_point_id_query(first_semantic_result.point_id)
+                    delete_qdrant_point_id_query(first_semantic_result.point_id, card.dataset.clone())
                         .await
                         .map_err(|_| {
                             ServiceError::BadRequest(
@@ -327,7 +328,7 @@ pub async fn create_card(
 
 #[utoipa::path(
     delete,
-    path = "/card/{card_id}}",
+    path = "/card/{card_id}",
     context_path = "/api",
     tag = "card",
     responses(
@@ -376,9 +377,15 @@ pub async fn delete_card(
     Ok(HttpResponse::NoContent().finish())
 }
 
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct DatasetandTrackingId {
+    pub tracking_id: String,
+    pub dataset: Option<String>,
+}
+
 #[utoipa::path(
     delete,
-    path = "/card/tracking_id/{tracking_id}",
+    path = "/card/tracking_id/{dataset}/{tracking_id}",
     context_path = "/api",
     tag = "card",
     responses(
@@ -386,18 +393,21 @@ pub async fn delete_card(
         (status = 400, description = "Service error relating to finding a card by tracking_id", body = [DefaultError]),
     ),
     params(
-        ("tracking_id" = Option<String>, Path, description = "tracking_id of the card you want to delete")
+        ("tracking_id" = Option<String>, Path, description = "tracking_id of the card you want to delete"),
+        ("dataset" = Option<String>, Query, description = "dataset of the card you want to delete"),
     ),
 )]
 pub async fn delete_card_by_tracking_id(
-    tracking_id: web::Path<String>,
+    params: web::Path<DatasetandTrackingId>,
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let tracking_id_inner = tracking_id.into_inner();
+    let params = params.into_inner();
+    let tracking_id = params.tracking_id;
+    let dataset = params.dataset;
     let pool1 = pool.clone();
 
-    let card_metadata = user_owns_card_tracking_id(user.id, tracking_id_inner, pool).await?;
+    let card_metadata = user_owns_card_tracking_id(user.id, tracking_id, pool).await?;
 
     let qdrant = get_qdrant_connection()
         .await
@@ -418,7 +428,7 @@ pub async fn delete_card_by_tracking_id(
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
+    let qdrant_collection = dataset.unwrap_or(std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned()));
     qdrant
         .delete_points_blocking(qdrant_collection, &deleted_values, None)
         .await
@@ -616,6 +626,7 @@ pub struct SearchCardData {
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
     filters: Option<serde_json::Value>,
+    dataset: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
@@ -770,6 +781,7 @@ pub async fn search_full_text_card(
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
+    let dataset = data.dataset.clone();
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let current_user_id = user.map(|user| user.id);
     let pool1 = pool.clone();
@@ -804,10 +816,12 @@ pub async fn search_full_text_card(
         .map(|point| point.qdrant_point_id)
         .collect::<Vec<uuid::Uuid>>();
 
-    let collided_cards =
-        web::block(move || get_collided_cards_query(point_ids, current_user_id, pool2))
+    let collided_cards = {
+        let dataset = dataset.clone();
+        web::block(move || get_collided_cards_query(point_ids, current_user_id, dataset, pool2))
             .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+    };
 
     let mut full_text_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
@@ -866,6 +880,7 @@ pub struct SearchCollectionsData {
     tag_set: Option<Vec<String>>,
     filters: Option<serde_json::Value>,
     collection_id: uuid::Uuid,
+    dataset: Option<String>,
 }
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchCollectionsResult {
@@ -897,6 +912,7 @@ pub async fn search_collections(
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
+    let dataset = data.dataset.clone();
     let embedding_vector = create_embedding(&data.content).await?;
     let collection_id = data.collection_id;
     let pool1 = pool.clone();
@@ -938,15 +954,19 @@ pub async fn search_collections(
 
     let point_ids_1 = point_ids.clone();
 
-    let metadata_cards =
-        web::block(move || get_metadata_from_point_ids(point_ids, current_user_id, pool3))
+    let metadata_cards = {
+        let dataset = dataset.clone();
+        web::block(move || get_metadata_from_point_ids(point_ids, current_user_id, dataset, pool3))
             .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+    };
 
-    let collided_cards =
-        web::block(move || get_collided_cards_query(point_ids_1, current_user_id, pool1))
+    let collided_cards = {
+        let dataset = dataset.clone();
+        web::block(move || get_collided_cards_query(point_ids_1, current_user_id, dataset, pool1))
             .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+    };
 
     let score_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
@@ -1035,6 +1055,7 @@ pub async fn search_full_text_collections(
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
+    let dataset = data.dataset.clone();
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let collection_id = data.collection_id;
     let pool1 = pool.clone();
@@ -1075,10 +1096,12 @@ pub async fn search_full_text_collections(
         .map(|point| point.qdrant_point_id)
         .collect::<Vec<uuid::Uuid>>();
 
-    let collided_cards =
-        web::block(move || get_collided_cards_query(point_ids, current_user_id, pool1))
+    let collided_cards = {
+        let dataset = dataset.clone();
+        web::block(move || get_collided_cards_query(point_ids, current_user_id, dataset, pool1))
             .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+    };
 
     let full_text_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
@@ -1202,7 +1225,7 @@ pub async fn get_card_by_id(
 
 #[utoipa::path(
     get,
-    path = "/card/tracking_id/{tracking_id}",
+    path = "/card/tracking_id/{dataset}/{tracking_id}",
     context_path = "/api",
     tag = "card",
     responses(
@@ -1210,19 +1233,22 @@ pub async fn get_card_by_id(
         (status = 400, description = "Service error relating to fidning a card by tracking_id", body = [DefaultError]),
     ),
     params(
-        ("tracking_id" = Option<String>, Path, description = "tracking_id of the card you want to fetch")
+        ("tracking_id" = Option<String>, Path, description = "tracking_id of the card you want to fetch"),
+        ("dataset" = Option<String>, Path, description = "tracking_id of the card you want to fetch"),
     ),
 )]
 pub async fn get_card_by_tracking_id(
-    tracking_id: web::Path<String>,
+    path: web::Path<DatasetandTrackingId>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let path = path.into_inner();
     let current_user_id = user.map(|user| user.id);
     let card = web::block(move || {
         get_metadata_and_votes_from_tracking_id_query(
-            tracking_id.into_inner(),
+            path.tracking_id,
+            path.dataset,
             current_user_id,
             pool,
         )
@@ -1252,7 +1278,7 @@ pub async fn get_card_by_tracking_id(
     Ok(HttpResponse::Ok().json(card))
 }
 
-#[utoipa::path(get, path = "/card/count", context_path = "/api", tag = "card")]
+#[utoipa::path(get, path = "/card/count", context_path = "/api", tag = "card", params(("dataset" = Option<String>, Path, description = "The dataset to get the total card count for")))]
 pub async fn get_total_card_count(
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
@@ -1267,6 +1293,7 @@ pub async fn get_total_card_count(
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct RecommendCardsRequest {
     pub positive_card_ids: Vec<uuid::Uuid>,
+    pub dataset: Option<String>,
 }
 
 #[utoipa::path(
@@ -1288,14 +1315,14 @@ pub async fn get_recommended_cards(
     let positive_card_ids = data.positive_card_ids.clone();
 
     let recommended_qdrant_point_ids =
-        recommend_qdrant_query(positive_card_ids)
+        recommend_qdrant_query(positive_card_ids, data.dataset.clone())
             .await
             .map_err(|err| {
                 ServiceError::BadRequest(format!("Could not get recommended cards: {}", err))
             })?;
 
     let recommended_card_metadatas =
-        web::block(move || get_metadata_from_point_ids(recommended_qdrant_point_ids, None, pool))
+        web::block(move || get_metadata_from_point_ids(recommended_qdrant_point_ids, None, None, pool))
             .await?
             .map_err(|err| {
                 ServiceError::BadRequest(format!(

@@ -289,10 +289,11 @@ pub async fn search_card_query(
 
 pub async fn global_unfiltered_top_match_query(
     embedding_vector: Vec<f32>,
+    dataset: Option<String>,
 ) -> Result<SearchResult, DefaultError> {
     let qdrant = get_qdrant_connection().await?;
 
-    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
+    let qdrant_collection = dataset.unwrap_or(std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned()));
     let data = qdrant
         .search_points(&SearchPoints {
             collection_name: qdrant_collection,
@@ -305,7 +306,7 @@ pub async fn global_unfiltered_top_match_query(
         .map_err(|e| {
             log::error!("Failed to search points on Qdrant {:?}", e);
             DefaultError {
-                message: "Failed to search points on Qdrant",
+                message: "Failed to search points on Qdrant or DATASET does not exist",
             }
         })?;
 
@@ -1048,14 +1049,17 @@ pub struct ScoredCardDTO {
 pub fn get_metadata_from_point_ids(
     point_ids: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
+    dataset: Option<String>,
     pool: web::Data<Pool>,
 ) -> Result<Vec<CardMetadataWithVotesWithScore>, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+    let dataset = dataset.unwrap_or_else(|| "DEFAULT".to_string());
 
     let mut conn = pool.get().unwrap();
 
     let card_metadata: Vec<CardMetadata> = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::qdrant_point_id.eq_any(&point_ids))
+        .filter(card_metadata_columns::dataset.eq(dataset))
         .select((
             card_metadata_columns::id,
             card_metadata_columns::content,
@@ -1242,14 +1246,17 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
 pub fn get_collided_cards_query(
     point_ids: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
+    dataset: Option<String>,
     pool: web::Data<Pool>,
 ) -> Result<Vec<(CardMetadataWithVotesWithScore, uuid::Uuid)>, DefaultError> {
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
-
+    
+    let dataset = dataset.unwrap_or_else(|| "DEFAULT".to_string());
     let mut conn = pool.get().unwrap();
 
     let card_metadata: Vec<CardMetadata> = card_metadata_columns::card_metadata
+        .filter(card_metadata_columns::dataset.eq(dataset))
         .left_outer_join(
             card_collisions_columns::card_collisions
                 .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
@@ -1409,15 +1416,18 @@ pub fn get_metadata_and_votes_from_id_query(
 
 pub fn get_metadata_and_votes_from_tracking_id_query(
     tracking_id: String,
+    dataset: Option<String>,
     current_user_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<CardMetadataWithVotesWithScore, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
+    let dataset = dataset.unwrap_or_else(|| "DEFAULT".to_string());
     let mut conn = pool.get().unwrap();
 
     let card_metadata = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::tracking_id.eq(tracking_id))
+        .filter(card_metadata_columns::dataset.eq(dataset))
         .select(CardMetadata::as_select())
         .first::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
