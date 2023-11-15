@@ -1,4 +1,4 @@
-use super::auth_handler::{LoggedUser, RequireAuth};
+use super::{auth_handler::{LoggedUser, RequireAuth}, dataset_handler::Dataset};
 use crate::{
     data::models::{File, Pool},
     errors::ServiceError,
@@ -59,7 +59,6 @@ pub struct UploadFileData {
     pub link: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub create_cards: Option<bool>,
-    pub dataset: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -80,6 +79,7 @@ pub struct UploadFileResult {
 )]
 pub async fn upload_file_handler(
     data: web::Json<UploadFileData>,
+    dataset: Dataset,
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -125,7 +125,7 @@ pub async fn upload_file_handler(
         upload_file_data.metadata,
         upload_file_data.create_cards,
         user,
-        upload_file_data.dataset,
+        dataset.name.clone(),
         pool_inner,
     )
     .await

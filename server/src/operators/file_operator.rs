@@ -1,5 +1,6 @@
 use super::collection_operator::create_collection_and_add_bookmarks_query;
 use super::notification_operator::add_collection_created_notification_query;
+use crate::handlers::dataset_handler::Dataset;
 use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
 use crate::{
     data::models::FileDTO,
@@ -304,7 +305,7 @@ pub async fn create_cards_with_handler(
     user: LoggedUser,
     temp_html_file_path_buf: PathBuf,
     glob_string: String,
-    datset: Option<String>,
+    dataset: Option<String>,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     let parser_command =
@@ -374,11 +375,11 @@ pub async fn create_cards_with_handler(
             metadata: metadata.clone(),
             collection_id: None,
             tracking_id: None,
-            dataset: datset.clone(),
         };
+
         let web_json_create_card_data = web::Json(create_card_data);
 
-        match create_card(web_json_create_card_data, pool.clone(), user.clone()).await {
+        match create_card(web_json_create_card_data, pool.clone(), Dataset { name: dataset.clone() }, user.clone()).await {
             Ok(response) => {
                 if response.status().is_success() {
                     let card_metadata: ReturnCreatedCard = serde_json::from_slice(

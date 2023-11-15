@@ -375,12 +375,12 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(web::put().to(handlers::card_handler::update_card_by_tracking_id)),
                             )
                             .service(
-                                web::resource("/tracking_id/{dataset}/{tracking_id}")
+                                web::resource("/tracking_id/{tracking_id}")
                                     .route(web::get().to(handlers::card_handler::get_card_by_tracking_id))
                                     .route(web::delete().to(handlers::card_handler::delete_card_by_tracking_id))
                             )
                             .service(
-                                web::resource("/{dataset}/{card_id}")
+                                web::resource("/{card_id}")
                                     .route(web::get().to(handlers::card_handler::get_card_by_id))
                                     .route(web::delete().to(handlers::card_handler::delete_card)),
                             )

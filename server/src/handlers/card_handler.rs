@@ -1,4 +1,5 @@
 use super::auth_handler::{LoggedUser, RequireAuth};
+use super::dataset_handler::Dataset;
 use crate::data::models::{
     CardCollection, CardCollectionBookmark, CardMetadata, CardMetadataWithVotesWithScore,
     ChatMessageProxy, Pool, UserDTO,
@@ -73,7 +74,6 @@ pub struct CreateCardData {
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub collection_id: Option<uuid::Uuid>,
-    pub dataset: Option<String>,
 }
 
 pub fn convert_html(html: &str) -> String {
@@ -127,6 +127,7 @@ pub struct ReturnCreatedCard {
 pub async fn create_card(
     card: web::Json<CreateCardData>,
     pool: web::Data<Pool>,
+    dataset: Dataset,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let only_admin_can_create_cards =
@@ -138,7 +139,7 @@ pub async fn create_card(
         }
     }
 
-    let dataset = card.dataset.clone();
+    let dataset_name = dataset.name.clone();
     let private = card.private.unwrap_or(false);
     let card_tracking_id = card
         .tracking_id
@@ -201,7 +202,7 @@ pub async fn create_card(
 
     let embedding_vector = create_embedding(&content).await?;
 
-    let first_semantic_result = global_unfiltered_top_match_query(embedding_vector.clone(), card.dataset.clone())
+    let first_semantic_result = global_unfiltered_top_match_query(embedding_vector.clone(), dataset.name.clone())
         .await
         .map_err(|err| {
             ServiceError::BadRequest(format!(
@@ -219,15 +220,18 @@ pub async fn create_card(
         //Sets collision to collided card id
         collision = Some(first_semantic_result.point_id);
 
-        let score_card_result = web::block(move || {
-            get_metadata_from_point_ids(vec![first_semantic_result.point_id], Some(user.id), dataset ,pool2)
-        })
-        .await?;
+        let score_card_result = {
+            let dataset_name = dataset_name.clone();
+            web::block(move || {
+                get_metadata_from_point_ids(vec![first_semantic_result.point_id], Some(user.id), dataset_name.clone(), pool2)
+            })
+            .await?
+        };
 
         match score_card_result {
             Ok(card_results) => {
                 if card_results.is_empty() {
-                    delete_qdrant_point_id_query(first_semantic_result.point_id, card.dataset.clone())
+                    delete_qdrant_point_id_query(first_semantic_result.point_id, dataset.name.clone())
                         .await
                         .map_err(|_| {
                             ServiceError::BadRequest(
@@ -271,7 +275,7 @@ pub async fn create_card(
             private,
             card.metadata.clone(),
             card_tracking_id,
-            card.dataset.clone()
+            dataset_name.clone()
         );
         card_metadata = web::block(move || {
             insert_duplicate_card_metadata_query(
@@ -300,7 +304,7 @@ pub async fn create_card(
             private,
             card.metadata.clone(),
             card_tracking_id,
-            card.dataset.clone()
+            dataset_name.clone()
         );
         card_metadata =
             web::block(move || insert_card_metadata_query(card_metadata, card.file_uuid, pool1))
@@ -326,12 +330,6 @@ pub async fn create_card(
     }))
 }
 
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
-pub struct DatasetAndCardId {
-    pub datset: Option<String>,
-    pub card_id: uuid::Uuid,
-}
-
 #[utoipa::path(
     delete,
     path = "/card/{dataset}/{card_id}",
@@ -347,13 +345,12 @@ pub struct DatasetAndCardId {
     ),
 )]
 pub async fn delete_card(
-    params: web::Path<DatasetAndCardId>,
+    card_id: web::Path<uuid::Uuid>,
+    dataset: Dataset,
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let params = params.into_inner();
-    let card_id_inner = params.card_id;
-    let dataset = params.datset;
+    let card_id_inner = card_id.into_inner();
     let pool1 = pool.clone();
 
     let card_metadata = user_owns_card(user.id, card_id_inner, pool).await?;
@@ -373,14 +370,14 @@ pub async fn delete_card(
     };
 
     {
-        let dataset = dataset.clone();
+        let dataset = dataset.name.clone();
         web::block(move || delete_card_metadata_query(card_id_inner, dataset, pool1))
             .await?
             .await
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
     }
 
-    let qdrant_collection = dataset.unwrap_or(std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned()));
+    let qdrant_collection = dataset.name.unwrap_or(std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned()));
     qdrant
         .delete_points_blocking(qdrant_collection, &deleted_values, None)
         .await
@@ -389,15 +386,9 @@ pub async fn delete_card(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct DatasetandTrackingId {
-    pub tracking_id: String,
-    pub dataset: Option<String>,
-}
-
 #[utoipa::path(
     delete,
-    path = "/card/tracking_id/{dataset}/{tracking_id}",
+    path = "/card/tracking_id/{tracking_id}",
     context_path = "/api",
     tag = "card",
     responses(
@@ -405,21 +396,18 @@ pub struct DatasetandTrackingId {
         (status = 400, description = "Service error relating to finding a card by tracking_id", body = [DefaultError]),
     ),
     params(
-        ("tracking_id" = Option<String>, Path, description = "tracking_id of the card you want to delete"),
-        ("dataset" = Option<String>, Query, description = "dataset of the card you want to delete"),
+        ("tracking_id" = String, Path, description = "tracking_id of the card you want to delete"),
     ),
 )]
 pub async fn delete_card_by_tracking_id(
-    params: web::Path<DatasetandTrackingId>,
+    tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
+    dataset: Dataset,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let params = params.into_inner();
-    let tracking_id = params.tracking_id;
-    let dataset = params.dataset;
     let pool1 = pool.clone();
 
-    let card_metadata = user_owns_card_tracking_id(user.id, tracking_id, pool).await?;
+    let card_metadata = user_owns_card_tracking_id(user.id, tracking_id.into_inner(), pool).await?;
 
     let qdrant = get_qdrant_connection()
         .await
@@ -436,14 +424,14 @@ pub async fn delete_card_by_tracking_id(
     };
 
     {
-        let dataset = dataset.clone();
+        let dataset = dataset.name.clone();
         web::block(move || delete_card_metadata_query(card_metadata.id, dataset, pool1))
             .await?
             .await
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
     }
 
-    let qdrant_collection = dataset.unwrap_or(std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned()));
+    let qdrant_collection = dataset.name.unwrap_or(std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned()));
     qdrant
         .delete_points_blocking(qdrant_collection, &deleted_values, None)
         .await
@@ -459,7 +447,6 @@ pub struct UpdateCardData {
     private: Option<bool>,
     metadata: Option<serde_json::Value>,
     tracking_id: Option<String>,
-    dataset: Option<String>,
 }
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct CardHtmlUpdateError {
@@ -481,6 +468,7 @@ pub struct CardHtmlUpdateError {
 pub async fn update_card(
     card: web::Json<UpdateCardData>,
     pool: web::Data<Pool>,
+    dataset: Dataset,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
@@ -532,7 +520,7 @@ pub async fn update_card(
                 private,
                 card.metadata.clone(),
                 card_tracking_id,
-                card.dataset.clone()
+                dataset.name.clone()
             ),
             None,
             pool2,
@@ -641,7 +629,6 @@ pub struct SearchCardData {
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
     filters: Option<serde_json::Value>,
-    dataset: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
@@ -790,13 +777,14 @@ pub async fn search_card(
 )]
 pub async fn search_full_text_card(
     data: web::Json<SearchCardData>,
+    dataset: Dataset,
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
-    let dataset = data.dataset.clone();
+    let dataset_name = dataset.name.clone();
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let current_user_id = user.map(|user| user.id);
     let pool1 = pool.clone();
@@ -832,7 +820,7 @@ pub async fn search_full_text_card(
         .collect::<Vec<uuid::Uuid>>();
 
     let collided_cards = {
-        let dataset = dataset.clone();
+        let dataset = dataset_name.clone();
         web::block(move || get_collided_cards_query(point_ids, current_user_id, dataset, pool2))
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?
@@ -895,7 +883,6 @@ pub struct SearchCollectionsData {
     tag_set: Option<Vec<String>>,
     filters: Option<serde_json::Value>,
     collection_id: uuid::Uuid,
-    dataset: Option<String>,
 }
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchCollectionsResult {
@@ -922,12 +909,13 @@ pub async fn search_collections(
     data: web::Json<SearchCollectionsData>,
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
+    dataset: Dataset,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
-    let dataset = data.dataset.clone();
+    let dataset_name = dataset.name.clone();
     let embedding_vector = create_embedding(&data.content).await?;
     let collection_id = data.collection_id;
     let pool1 = pool.clone();
@@ -970,14 +958,14 @@ pub async fn search_collections(
     let point_ids_1 = point_ids.clone();
 
     let metadata_cards = {
-        let dataset = dataset.clone();
+        let dataset = dataset_name.clone();
         web::block(move || get_metadata_from_point_ids(point_ids, current_user_id, dataset, pool3))
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?
     };
 
     let collided_cards = {
-        let dataset = dataset.clone();
+        let dataset = dataset_name.clone();
         web::block(move || get_collided_cards_query(point_ids_1, current_user_id, dataset, pool1))
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?
@@ -1066,11 +1054,12 @@ pub async fn search_full_text_collections(
     data: web::Json<SearchCollectionsData>,
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
+    dataset: Dataset,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
-    let dataset = data.dataset.clone();
+    let dataset_name = dataset.name.clone();
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let collection_id = data.collection_id;
     let pool1 = pool.clone();
@@ -1112,7 +1101,7 @@ pub async fn search_full_text_collections(
         .collect::<Vec<uuid::Uuid>>();
 
     let collided_cards = {
-        let dataset = dataset.clone();
+        let dataset = dataset_name.clone();
         web::block(move || get_collided_cards_query(point_ids, current_user_id, dataset, pool1))
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?
@@ -1192,7 +1181,7 @@ pub async fn get_top_cards(
 
 #[utoipa::path(
     get,
-    path = "/card/{dataset}/{card_id}",
+    path = "/card/{card_id}",
     context_path = "/api",
     tag = "card",
     responses(
@@ -1204,13 +1193,13 @@ pub async fn get_top_cards(
     ),
 )]
 pub async fn get_card_by_id(
-    params: web::Path<DatasetAndCardId>,
+    card_id: web::Path<uuid::Uuid>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_user_id = user.map(|user| user.id);
-    let card_id = params.into_inner().card_id;
+    let card_id = card_id.into_inner();
     let card = web::block(move || {
         get_metadata_and_votes_from_id_query(card_id, current_user_id, pool)
     })
@@ -1241,7 +1230,7 @@ pub async fn get_card_by_id(
 
 #[utoipa::path(
     get,
-    path = "/card/tracking_id/{dataset}/{tracking_id}",
+    path = "/card/tracking_id/{tracking_id}",
     context_path = "/api",
     tag = "card",
     responses(
@@ -1254,17 +1243,17 @@ pub async fn get_card_by_id(
     ),
 )]
 pub async fn get_card_by_tracking_id(
-    path: web::Path<DatasetandTrackingId>,
+    tracking_id: web::Path<String>,
+    dataset: Dataset,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let path = path.into_inner();
     let current_user_id = user.map(|user| user.id);
     let card = web::block(move || {
         get_metadata_and_votes_from_tracking_id_query(
-            path.tracking_id,
-            path.dataset,
+            tracking_id.into_inner(),
+            dataset.name,
             current_user_id,
             pool,
         )
