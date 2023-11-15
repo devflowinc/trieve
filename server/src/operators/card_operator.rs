@@ -1591,12 +1591,15 @@ enum TransactionResult {
 
 pub async fn delete_card_metadata_query(
     card_uuid: uuid::Uuid,
+    dataset: Option<String>,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+
+    let dataset = dataset.unwrap_or_else(|| "DEFAULT".to_string());
     let mut conn = pool.get().unwrap();
 
     let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
@@ -1622,6 +1625,7 @@ pub async fn delete_card_metadata_query(
                 // there cannot be collisions for a collision, just delete the card_metadata without issue
                 diesel::delete(
                     card_metadata_columns::card_metadata
+                        .filter(card_metadata_columns::dataset.eq(dataset))
                         .filter(card_metadata_columns::id.eq(card_uuid)),
                 )
                 .execute(conn)?;

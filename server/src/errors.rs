@@ -12,7 +12,7 @@ pub struct DefaultError {
     pub message: &'static str,
 }
 
-#[derive(Serialize, Deserialize, Debug, Display)]
+#[derive(Serialize, Deserialize, Debug, Display, ToSchema)]
 pub struct BadRequestBody {
     pub message: String,
 }

@@ -530,6 +530,9 @@ pub async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::resource("/health").route(web::get().to(handlers::auth_handler::health_check)),
+                    )
+                    .service(
+                        web::resource("/login").route(web::post().to(handlers::dataset_handler::create_dataset)),
                     ),
             )
     })

@@ -326,9 +326,15 @@ pub async fn create_card(
     }))
 }
 
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
+pub struct DatasetAndCardId {
+    pub datset: Option<String>,
+    pub card_id: uuid::Uuid,
+}
+
 #[utoipa::path(
     delete,
-    path = "/card/{card_id}",
+    path = "/card/{dataset}/{card_id}",
     context_path = "/api",
     tag = "card",
     responses(
@@ -336,15 +342,18 @@ pub async fn create_card(
         (status = 400, description = "Service error relating to finding a card by tracking_id", body = [DefaultError]),
     ),
     params(
-        ("card_id" = Option<uuid>, Path, description = "id of the card you want to delete")
+        ("card_id" = uuid, Path, description = "id of the card you want to delete"),
+        ("dataset" = Option<String>, Path, description = "id of the card you want to delete")
     ),
 )]
 pub async fn delete_card(
-    card_id: web::Path<uuid::Uuid>,
+    params: web::Path<DatasetAndCardId>,
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let card_id_inner = card_id.into_inner();
+    let params = params.into_inner();
+    let card_id_inner = params.card_id;
+    let dataset = params.datset;
     let pool1 = pool.clone();
 
     let card_metadata = user_owns_card(user.id, card_id_inner, pool).await?;
@@ -363,12 +372,15 @@ pub async fn delete_card(
         })),
     };
 
-    web::block(move || delete_card_metadata_query(card_id_inner, pool1))
-        .await?
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    {
+        let dataset = dataset.clone();
+        web::block(move || delete_card_metadata_query(card_id_inner, dataset, pool1))
+            .await?
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    }
 
-    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
+    let qdrant_collection = dataset.unwrap_or(std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned()));
     qdrant
         .delete_points_blocking(qdrant_collection, &deleted_values, None)
         .await
@@ -423,10 +435,13 @@ pub async fn delete_card_by_tracking_id(
         })),
     };
 
-    web::block(move || delete_card_metadata_query(card_metadata.id, pool1))
-        .await?
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    {
+        let dataset = dataset.clone();
+        web::block(move || delete_card_metadata_query(card_metadata.id, dataset, pool1))
+            .await?
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    }
 
     let qdrant_collection = dataset.unwrap_or(std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned()));
     qdrant
@@ -1177,7 +1192,7 @@ pub async fn get_top_cards(
 
 #[utoipa::path(
     get,
-    path = "/card/{card_id}",
+    path = "/card/{dataset}/{card_id}",
     context_path = "/api",
     tag = "card",
     responses(
@@ -1189,14 +1204,15 @@ pub async fn get_top_cards(
     ),
 )]
 pub async fn get_card_by_id(
-    card_id: web::Path<uuid::Uuid>,
+    params: web::Path<DatasetAndCardId>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_user_id = user.map(|user| user.id);
+    let card_id = params.into_inner().card_id;
     let card = web::block(move || {
-        get_metadata_and_votes_from_id_query(card_id.into_inner(), current_user_id, pool)
+        get_metadata_and_votes_from_id_query(card_id, current_user_id, pool)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
