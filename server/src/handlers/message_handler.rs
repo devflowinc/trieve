@@ -1,4 +1,4 @@
-use super::auth_handler::{LoggedUser, RequireAuth};
+use super::{auth_handler::{LoggedUser, RequireAuth}, dataset_handler::Dataset};
 use crate::{
     data::models,
     data::models::{CardMetadataWithVotesWithScore, Pool},
@@ -51,6 +51,7 @@ pub struct CreateMessageData {
 pub async fn create_message_completion_handler(
     data: web::Json<CreateMessageData>,
     user: LoggedUser,
+    dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let create_message_data = data.into_inner();
@@ -115,6 +116,7 @@ pub async fn create_message_completion_handler(
         previous_messages,
         user.id,
         topic_id,
+        dataset.name.clone(),
         pool4,
     )
     .await
@@ -177,6 +179,7 @@ pub struct EditMessageData {
 pub async fn edit_message_handler(
     data: web::Json<EditMessageData>,
     user: LoggedUser,
+    dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
@@ -206,6 +209,7 @@ pub async fn edit_message_handler(
             topic_id,
         }),
         user,
+        dataset,
         third_pool,
     )
     .await
@@ -225,6 +229,7 @@ pub async fn edit_message_handler(
 pub async fn regenerate_message_handler(
     data: web::Json<RegenerateMessageData>,
     user: LoggedUser,
+    dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
@@ -257,6 +262,7 @@ pub async fn regenerate_message_handler(
             previous_messages,
             user.id,
             topic_id,
+            dataset.name.clone(),
             pool3,
         )
         .await;
@@ -311,6 +317,7 @@ pub async fn regenerate_message_handler(
         previous_messages_to_regenerate,
         user.id,
         topic_id,
+        dataset.name.clone(),
         pool3,
     )
     .await
@@ -376,6 +383,7 @@ pub async fn stream_response(
     messages: Vec<models::Message>,
     user_id: uuid::Uuid,
     topic_id: uuid::Uuid,
+    dataset: Option<String>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
@@ -469,6 +477,7 @@ pub async fn stream_response(
             None,
             Some(user_id),
             None,
+            dataset
         )
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;

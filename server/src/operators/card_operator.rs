@@ -136,6 +136,7 @@ pub async fn search_card_query(
     filters: Option<serde_json::Value>,
     current_user_id: Option<uuid::Uuid>,
     quote_words: Option<Vec<String>>,
+    dataset: Option<String>,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
 
@@ -155,7 +156,7 @@ pub async fn search_card_query(
             current_user_id.unwrap_or_default().to_string(),
         ));
 
-        let point_ids = search_qdrant_query(page, filter, embedding_vector.clone()).await?;
+        let point_ids = search_qdrant_query(page, filter, embedding_vector.clone(), dataset).await?;
 
         return Ok(SearchCardQueryResult {
             search_results: point_ids,
@@ -279,7 +280,7 @@ pub async fn search_card_query(
         })),
     });
 
-    let point_ids = search_qdrant_query(page, filter, embedding_vector).await?;
+    let point_ids = search_qdrant_query(page, filter, embedding_vector, dataset).await?;
 
     Ok(SearchCardQueryResult {
         search_results: point_ids,
@@ -356,6 +357,7 @@ pub async fn search_card_collections_query(
     filters: Option<serde_json::Value>,
     collection_id: uuid::Uuid,
     user_id: Option<uuid::Uuid>,
+    dataset: Option<String>,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
@@ -465,7 +467,7 @@ pub async fn search_card_collections_query(
         })),
     });
 
-    let point_ids: Vec<SearchResult> = search_qdrant_query(page, filter, embedding_vector).await?;
+    let point_ids: Vec<SearchResult> = search_qdrant_query(page, filter, embedding_vector, dataset).await?;
 
     Ok(SearchCardQueryResult {
         search_results: point_ids,

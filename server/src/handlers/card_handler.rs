@@ -262,6 +262,7 @@ pub async fn create_card(
             private,
             Some(user.id),
             None,
+            dataset_name.clone()
         )
         .await?;
 
@@ -311,7 +312,7 @@ pub async fn create_card(
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-        create_new_qdrant_point_query(qdrant_point_id, embedding_vector, private, Some(user.id))
+        create_new_qdrant_point_query(qdrant_point_id, embedding_vector, private, Some(user.id), dataset_name.clone())
             .await?;
     }
 
@@ -504,6 +505,7 @@ pub async fn update_card(
         private,
         Some(user.id),
         Some(embedding_vector),
+        dataset.name.clone(),
     )
     .await?;
 
@@ -555,6 +557,7 @@ pub struct UpdateCardByTrackingIdData {
 )]
 pub async fn update_card_by_tracking_id(
     card: web::Json<UpdateCardByTrackingIdData>,
+    dataset: Dataset,
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -596,6 +599,7 @@ pub async fn update_card_by_tracking_id(
         private,
         Some(user.id),
         Some(embedding_vector),
+        dataset.name.clone(),
     )
     .await?;
 
@@ -662,11 +666,13 @@ pub async fn search_card(
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
+    dataset: Dataset,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_user_id = user.map(|user| user.id);
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_embedding(&data.content).await?;
+    let dataset_name = dataset.name.clone();
     let pool1 = pool.clone();
 
     let re = Regex::new(r#""(.*?)""#).unwrap();
@@ -685,6 +691,7 @@ pub async fn search_card(
         data.filters.clone(),
         current_user_id,
         Some(quote_words),
+        dataset_name,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -945,6 +952,7 @@ pub async fn search_collections(
         data.filters.clone(),
         data.collection_id,
         current_user_id,
+        dataset_name.clone(),
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;

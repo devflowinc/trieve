@@ -7,11 +7,22 @@ use qdrant_client::qdrant::{
 use serde_json::json;
 use std::str::FromStr;
 
+pub fn get_collection_name_from_dataset(dataset: Option<String>) -> String {
+    let default_collection_name = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
+    let mut dataset = dataset.unwrap_or(default_collection_name.clone());
+    // dataset could be DEFAULT becasue it is stored that way in Postgres
+    if dataset == "DEFAULT" {
+        dataset = default_collection_name;
+    }
+    dataset
+}
+
 pub async fn create_new_qdrant_point_query(
     point_id: uuid::Uuid,
     embedding_vector: Vec<f32>,
     private: bool,
     author_id: Option<uuid::Uuid>,
+    dataset: Option<String>,
 ) -> Result<(), actix_web::Error> {
     let qdrant = get_qdrant_connection()
         .await
@@ -30,7 +41,7 @@ pub async fn create_new_qdrant_point_query(
 
     let point = PointStruct::new(point_id.clone().to_string(), embedding_vector, payload);
 
-    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
+    let qdrant_collection = get_collection_name_from_dataset(dataset);
     qdrant
         .upsert_points_blocking(qdrant_collection, vec![point], None)
         .await
@@ -79,6 +90,7 @@ pub async fn update_qdrant_point_private_query(
     private: bool,
     author_id: Option<uuid::Uuid>,
     updated_vector: Option<Vec<f32>>,
+    dataset: Option<String>,
 ) -> Result<(), actix_web::Error> {
     if private && author_id.is_none() {
         return Err(ServiceError::BadRequest("Private card must have an author".into()).into());
@@ -90,7 +102,7 @@ pub async fn update_qdrant_point_private_query(
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
+    let qdrant_collection = get_collection_name_from_dataset(dataset);
     let current_point_vec = qdrant
         .get_points(
             qdrant_collection.clone(),
@@ -192,10 +204,11 @@ pub async fn search_qdrant_query(
     page: u64,
     filter: Filter,
     embedding_vector: Vec<f32>,
+    dataset: Option<String>,
 ) -> Result<Vec<SearchResult>, DefaultError> {
     let qdrant = get_qdrant_connection().await?;
 
-    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
+    let qdrant_collection = get_collection_name_from_dataset(dataset);
 
     let data = qdrant
         .search_points(&SearchPoints {
@@ -235,7 +248,7 @@ pub async fn delete_qdrant_point_id_query(point_id: uuid::Uuid, dataset: Option<
 
     let qdrant_point_id: Vec<PointId> = vec![point_id.to_string().into()];
     let points_selector = qdrant_point_id.into();
-    let qdrant_collection = dataset.unwrap_or(std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned()));
+    let qdrant_collection = get_collection_name_from_dataset(dataset);
 
     qdrant
         .delete_points(qdrant_collection, &points_selector, None)
