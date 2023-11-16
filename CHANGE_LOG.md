@@ -7,6 +7,8 @@
 
 ### Search
 
+- styling: slightly improved filters modal UI with distinguished button colors
+
 ### Chat
 
 ### Docker
