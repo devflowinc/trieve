@@ -1,7 +1,8 @@
 #[macro_use]
 extern crate diesel;
 use crate::{
-    handlers::auth_handler::create_admin_account, operators::qdrant_operator::create_new_qdrant_collection_query,
+    handlers::auth_handler::create_admin_account,
+    operators::qdrant_operator::create_new_qdrant_collection_query,
 };
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
@@ -117,7 +118,7 @@ pub async fn main() -> std::io::Result<()> {
         components(
             schemas(
                 handlers::invitation_handler::InvitationResponse,
-                handlers::invitation_handler::InvitationData, 
+                handlers::invitation_handler::InvitationData,
                 handlers::register_handler::SetPasswordData,
                 handlers::auth_handler::AuthData,
                 handlers::password_reset_handler::PasswordResetData,
@@ -224,8 +225,7 @@ pub async fn main() -> std::io::Result<()> {
     let redis_store = RedisSessionStore::new(redis_url).await.unwrap();
 
     let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
-    let _ = create_new_qdrant_collection_query(qdrant_collection)
-        .await;
+    let _ = create_new_qdrant_collection_query(qdrant_collection).await;
 
     run_migrations(&mut pool.get().unwrap());
 

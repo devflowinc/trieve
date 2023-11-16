@@ -2,8 +2,8 @@ use actix_web::{error::ResponseError, HttpResponse};
 use derive_more::Display;
 use diesel::result::{DatabaseErrorKind, Error as DBError};
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 use std::convert::From;
+use utoipa::ToSchema;
 use uuid::Error as ParseError;
 
 #[derive(Serialize, Deserialize, Debug, Display, derive_more::Error, ToSchema)]

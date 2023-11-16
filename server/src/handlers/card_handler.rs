@@ -202,14 +202,15 @@ pub async fn create_card(
 
     let embedding_vector = create_embedding(&content).await?;
 
-    let first_semantic_result = global_unfiltered_top_match_query(embedding_vector.clone(), dataset.name.clone())
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!(
-                "Could not get semantic similarity for collision check: {}",
-                err.message
-            ))
-        })?;
+    let first_semantic_result =
+        global_unfiltered_top_match_query(embedding_vector.clone(), dataset.name.clone())
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!(
+                    "Could not get semantic similarity for collision check: {}",
+                    err.message
+                ))
+            })?;
 
     let duplicate_distance_threshold = std::env::var("DUPLICATE_DISTANCE_THRESHOLD")
         .unwrap_or("0.95".to_string())
@@ -223,7 +224,12 @@ pub async fn create_card(
         let score_card_result = {
             let dataset_name = dataset_name.clone();
             web::block(move || {
-                get_metadata_from_point_ids(vec![first_semantic_result.point_id], Some(user.id), dataset_name.clone(), pool2)
+                get_metadata_from_point_ids(
+                    vec![first_semantic_result.point_id],
+                    Some(user.id),
+                    dataset_name.clone(),
+                    pool2,
+                )
             })
             .await?
         };
@@ -231,13 +237,16 @@ pub async fn create_card(
         match score_card_result {
             Ok(card_results) => {
                 if card_results.is_empty() {
-                    delete_qdrant_point_id_query(first_semantic_result.point_id, dataset.name.clone())
-                        .await
-                        .map_err(|_| {
-                            ServiceError::BadRequest(
-                                "Could not delete qdrant point id. Please try again.".into(),
-                            )
-                        })?;
+                    delete_qdrant_point_id_query(
+                        first_semantic_result.point_id,
+                        dataset.name.clone(),
+                    )
+                    .await
+                    .map_err(|_| {
+                        ServiceError::BadRequest(
+                            "Could not delete qdrant point id. Please try again.".into(),
+                        )
+                    })?;
 
                     return Err(ServiceError::BadRequest(
                         "There was a data inconsistency issue. Please try again.".into(),
@@ -262,7 +271,7 @@ pub async fn create_card(
             private,
             Some(user.id),
             None,
-            dataset_name.clone()
+            dataset_name.clone(),
         )
         .await?;
 
@@ -276,7 +285,7 @@ pub async fn create_card(
             private,
             card.metadata.clone(),
             card_tracking_id,
-            dataset_name.clone()
+            dataset_name.clone(),
         );
         card_metadata = web::block(move || {
             insert_duplicate_card_metadata_query(
@@ -305,15 +314,21 @@ pub async fn create_card(
             private,
             card.metadata.clone(),
             card_tracking_id,
-            dataset_name.clone()
+            dataset_name.clone(),
         );
         card_metadata =
             web::block(move || insert_card_metadata_query(card_metadata, card.file_uuid, pool1))
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-        create_new_qdrant_point_query(qdrant_point_id, embedding_vector, private, Some(user.id), dataset_name.clone())
-            .await?;
+        create_new_qdrant_point_query(
+            qdrant_point_id,
+            embedding_vector,
+            private,
+            Some(user.id),
+            dataset_name.clone(),
+        )
+        .await?;
     }
 
     if let Some(collection_id_to_bookmark) = card_collection_id {
@@ -378,7 +393,9 @@ pub async fn delete_card(
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
     }
 
-    let qdrant_collection = dataset.name.unwrap_or(std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned()));
+    let qdrant_collection = dataset
+        .name
+        .unwrap_or(std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned()));
     qdrant
         .delete_points_blocking(qdrant_collection, &deleted_values, None)
         .await
@@ -432,7 +449,9 @@ pub async fn delete_card_by_tracking_id(
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
     }
 
-    let qdrant_collection = dataset.name.unwrap_or(std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned()));
+    let qdrant_collection = dataset
+        .name
+        .unwrap_or(std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned()));
     qdrant
         .delete_points_blocking(qdrant_collection, &deleted_values, None)
         .await
@@ -522,7 +541,7 @@ pub async fn update_card(
                 private,
                 card.metadata.clone(),
                 card_tracking_id,
-                dataset.name.clone()
+                dataset.name.clone(),
             ),
             None,
             pool2,
@@ -616,7 +635,8 @@ pub async fn update_card_by_tracking_id(
                 private,
                 card.metadata.clone(),
                 Some(tracking_id1),
-                None,),
+                None,
+            ),
             None,
             pool2,
         )
@@ -1336,15 +1356,16 @@ pub async fn get_recommended_cards(
                 ServiceError::BadRequest(format!("Could not get recommended cards: {}", err))
             })?;
 
-    let recommended_card_metadatas =
-        web::block(move || get_metadata_from_point_ids(recommended_qdrant_point_ids, None, None, pool))
-            .await?
-            .map_err(|err| {
-                ServiceError::BadRequest(format!(
-                    "Could not get recommended card_metadas from qdrant_point_ids: {}",
-                    err
-                ))
-            })?;
+    let recommended_card_metadatas = web::block(move || {
+        get_metadata_from_point_ids(recommended_qdrant_point_ids, None, None, pool)
+    })
+    .await?
+    .map_err(|err| {
+        ServiceError::BadRequest(format!(
+            "Could not get recommended card_metadas from qdrant_point_ids: {}",
+            err
+        ))
+    })?;
 
     Ok(HttpResponse::Ok().json(recommended_card_metadatas))
 }
@@ -1375,9 +1396,11 @@ pub async fn generate_off_cards(
     let prev_messages = data.prev_messages.clone();
     let card_ids = data.card_ids.clone();
     let user_id = user.id;
-    let cards = web::block(move || get_metadata_from_ids_query(card_ids, user_id, dataset.name.clone(), pool))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let cards = web::block(move || {
+        get_metadata_from_ids_query(card_ids, user_id, dataset.name.clone(), pool)
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
     log::info!("Generating cards: {:?}", cards);
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
 

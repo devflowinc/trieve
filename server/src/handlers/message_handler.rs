@@ -1,4 +1,7 @@
-use super::{auth_handler::{LoggedUser, RequireAuth}, dataset_handler::Dataset};
+use super::{
+    auth_handler::{LoggedUser, RequireAuth},
+    dataset_handler::Dataset,
+};
 use crate::{
     data::models,
     data::models::{CardMetadataWithVotesWithScore, Pool},
@@ -477,7 +480,7 @@ pub async fn stream_response(
             None,
             Some(user_id),
             None,
-            dataset
+            dataset,
         )
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;

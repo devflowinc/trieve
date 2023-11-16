@@ -65,16 +65,11 @@ pub async fn create_card_collection(
     let is_public = body.is_public;
 
     let collection = CardCollection::from_details(user.id, name, is_public, description);
-    { 
+    {
         let collection = collection.clone();
-        web::block(move || {
-            create_collection_query(
-                collection,
-                pool,
-            )
-        })
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        web::block(move || create_collection_query(collection, pool))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
     }
 
     Ok(HttpResponse::Ok().json(collection))

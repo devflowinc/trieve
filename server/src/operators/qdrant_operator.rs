@@ -1,14 +1,16 @@
 use super::card_operator::{get_qdrant_connection, SearchResult};
 use crate::errors::{DefaultError, ServiceError};
 use qdrant_client::qdrant::{
-    point_id::PointIdOptions, with_payload_selector::SelectorOptions, Filter, PointId, PointStruct,
-    RecommendPoints, SearchPoints, WithPayloadSelector, CreateCollection, VectorsConfig, VectorParams, Distance,
+    point_id::PointIdOptions, with_payload_selector::SelectorOptions, CreateCollection, Distance,
+    Filter, PointId, PointStruct, RecommendPoints, SearchPoints, VectorParams, VectorsConfig,
+    WithPayloadSelector,
 };
 use serde_json::json;
 use std::str::FromStr;
 
 pub fn get_collection_name_from_dataset(dataset: Option<String>) -> String {
-    let default_collection_name = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
+    let default_collection_name =
+        std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
     let mut dataset = dataset.unwrap_or(default_collection_name.clone());
     // dataset could be DEFAULT becasue it is stored that way in Postgres
     if dataset == "DEFAULT" {
@@ -245,7 +247,10 @@ pub async fn search_qdrant_query(
     Ok(point_ids)
 }
 
-pub async fn delete_qdrant_point_id_query(point_id: uuid::Uuid, dataset: Option<String>) -> Result<(), DefaultError> {
+pub async fn delete_qdrant_point_id_query(
+    point_id: uuid::Uuid,
+    dataset: Option<String>,
+) -> Result<(), DefaultError> {
     let qdrant = get_qdrant_connection().await?;
 
     let qdrant_point_id: Vec<PointId> = vec![point_id.to_string().into()];
@@ -266,7 +271,8 @@ pub async fn recommend_qdrant_query(
     positive_ids: Vec<uuid::Uuid>,
     dataset: Option<String>,
 ) -> Result<Vec<uuid::Uuid>, DefaultError> {
-    let collection_name = dataset.unwrap_or(std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned()));
+    let collection_name =
+        dataset.unwrap_or(std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned()));
 
     let point_ids: Vec<PointId> = positive_ids
         .iter()

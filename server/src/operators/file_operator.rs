@@ -379,7 +379,16 @@ pub async fn create_cards_with_handler(
 
         let web_json_create_card_data = web::Json(create_card_data);
 
-        match create_card(web_json_create_card_data, pool.clone(), Dataset { name: dataset.clone() }, user.clone()).await {
+        match create_card(
+            web_json_create_card_data,
+            pool.clone(),
+            Dataset {
+                name: dataset.clone(),
+            },
+            user.clone(),
+        )
+        .await
+        {
             Ok(response) => {
                 if response.status().is_success() {
                     let card_metadata: ReturnCreatedCard = serde_json::from_slice(

@@ -156,7 +156,8 @@ pub async fn search_card_query(
             current_user_id.unwrap_or_default().to_string(),
         ));
 
-        let point_ids = search_qdrant_query(page, filter, embedding_vector.clone(), dataset).await?;
+        let point_ids =
+            search_qdrant_query(page, filter, embedding_vector.clone(), dataset).await?;
 
         return Ok(SearchCardQueryResult {
             search_results: point_ids,
@@ -294,7 +295,8 @@ pub async fn global_unfiltered_top_match_query(
 ) -> Result<SearchResult, DefaultError> {
     let qdrant = get_qdrant_connection().await?;
 
-    let qdrant_collection = dataset.unwrap_or(std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned()));
+    let qdrant_collection =
+        dataset.unwrap_or(std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned()));
     let data = qdrant
         .search_points(&SearchPoints {
             collection_name: qdrant_collection,
@@ -467,7 +469,8 @@ pub async fn search_card_collections_query(
         })),
     });
 
-    let point_ids: Vec<SearchResult> = search_qdrant_query(page, filter, embedding_vector, dataset).await?;
+    let point_ids: Vec<SearchResult> =
+        search_qdrant_query(page, filter, embedding_vector, dataset).await?;
 
     Ok(SearchCardQueryResult {
         search_results: point_ids,
@@ -1253,7 +1256,7 @@ pub fn get_collided_cards_query(
 ) -> Result<Vec<(CardMetadataWithVotesWithScore, uuid::Uuid)>, DefaultError> {
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
-    
+
     let dataset = dataset.unwrap_or_else(|| "DEFAULT".to_string());
     let mut conn = pool.get().unwrap();
 
@@ -1399,7 +1402,10 @@ pub fn get_metadata_and_votes_from_id_query(
 
     let card_metadata = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::id.eq(card_id))
-        .filter(card_metadata_columns::dataset.eq(dataset_name.unwrap_or_else(|| "DEFAULT".to_string())))
+        .filter(
+            card_metadata_columns::dataset
+                .eq(dataset_name.unwrap_or_else(|| "DEFAULT".to_string())),
+        )
         .select(CardMetadata::as_select())
         .first::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {

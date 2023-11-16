@@ -57,7 +57,7 @@ const ResultsPage = (props: ResultsPageProps) => {
     createSignal(false);
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onDelete, setOnDelete] = createSignal(() => { });
+  const [onDelete, setOnDelete] = createSignal(() => {});
   const [bookmarks, setBookmarks] = createSignal<CardBookmarksDTO[]>([]);
   const [totalPages, setTotalPages] = createSignal(initialTotalPages);
   const [openChat, setOpenChat] = createSignal(false);
@@ -201,8 +201,9 @@ const ResultsPage = (props: ResultsPageProps) => {
         <Show when={resultCards().length === 0 && clientSideRequestFinished()}>
           <button
             onClick={() => {
-              window.location.href = `/search?q=${props.query}&page=${props.page + 1
-                }`;
+              window.location.href = `/search?q=${props.query}&page=${
+                props.page + 1
+              }`;
             }}
           >
             <div class="text-2xl">No results found</div>

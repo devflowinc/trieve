@@ -318,7 +318,7 @@ impl CardMetadata {
             private,
             metadata,
             tracking_id,
-            dataset: dataset.unwrap_or("DEFAULT".to_string())
+            dataset: dataset.unwrap_or("DEFAULT".to_string()),
         }
     }
 
@@ -349,7 +349,7 @@ impl CardMetadata {
             private,
             metadata,
             tracking_id,
-            dataset: dataset.unwrap_or("DEFAULT".to_string())
+            dataset: dataset.unwrap_or("DEFAULT".to_string()),
         }
     }
 }

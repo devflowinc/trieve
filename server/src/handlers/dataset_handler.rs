@@ -1,33 +1,39 @@
-use std::future::{Ready, ready};
+use std::future::{ready, Ready};
 
-use actix_web::{HttpResponse, web, FromRequest};
-use serde::{Serialize, Deserialize};
+use actix_web::{web, FromRequest, HttpResponse};
+use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::{operators::qdrant_operator, errors::ServiceError};
+use crate::{errors::ServiceError, operators::qdrant_operator};
 
 use super::auth_handler::LoggedUser;
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct Dataset {
-    pub name: Option<String>
+    pub name: Option<String>,
 }
 
 impl FromRequest for Dataset {
     type Error = ServiceError;
     type Future = Ready<Result<Self, Self::Error>>;
 
-    fn from_request(req: &actix_web::HttpRequest, _payload: &mut actix_web::dev::Payload) -> Self::Future {
+    fn from_request(
+        req: &actix_web::HttpRequest,
+        _payload: &mut actix_web::dev::Payload,
+    ) -> Self::Future {
         match req.headers().get("AF-Dataset") {
             Some(dataset_header) => match dataset_header.to_str() {
-                Ok(dataset) => ready(Ok(Dataset { name: Some(dataset.to_string()) })),
-                Err(_) => ready(Err(ServiceError::BadRequest("Dataset must be ASCII".to_string()))),
+                Ok(dataset) => ready(Ok(Dataset {
+                    name: Some(dataset.to_string()),
+                })),
+                Err(_) => ready(Err(ServiceError::BadRequest(
+                    "Dataset must be ASCII".to_string(),
+                ))),
             },
             None => ready(Ok(Dataset { name: None })),
         }
     }
 }
-
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct CreateDatasetRequest {
