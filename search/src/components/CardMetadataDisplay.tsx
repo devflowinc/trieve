@@ -14,7 +14,11 @@ import { FiEdit, FiGlobe, FiLock, FiTrash } from "solid-icons/fi";
 import { sanitzerOptions } from "./ScoreCard";
 import { Tooltip } from "./Atoms/Tooltip";
 import CommunityBookmarkPopover from "./CommunityBookmarkPopover";
-import { FaRegularFileImage, FaRegularFilePdf } from "solid-icons/fa";
+import {
+  FaRegularFileCode,
+  FaRegularFileImage,
+  FaRegularFilePdf,
+} from "solid-icons/fa";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { RiOthersCharacterRecognitionLine } from "solid-icons/ri";
 
@@ -67,6 +71,7 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
   const [deleting, setDeleting] = createSignal(false);
   const [deleted, setDeleted] = createSignal(false);
   const [showImageModal, setShowImageModal] = createSignal(false);
+  const [showMetadata, setShowMetadata] = createSignal(false);
 
   const onDelete = () => {
     if (props.signedInUserId !== props.viewingUserId) return;
@@ -126,6 +131,10 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
       imgRangeEnd,
       imgRangePrefix,
     };
+  });
+
+  const useExpand = createMemo(() => {
+    return props.card.content.split(" ").length > 20 * linesBeforeShowMore;
   });
 
   return (
@@ -208,6 +217,20 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                   </Show>
                 }
                 tooltipText="View PDF With OCR"
+              />
+              <Tooltip
+                body={
+                  <Show when={Object.keys(props.card.metadata ?? {}).length}>
+                    <button
+                      class="h-fit"
+                      onClick={() => setShowMetadata(true)}
+                      title="View Images"
+                    >
+                      <FaRegularFileCode class="h-5 w-5 fill-current" />
+                    </button>
+                  </Show>
+                }
+                tooltipText="View Full Metadata"
               />
               <Show when={props.signedInUserId == props.viewingUserId}>
                 <button
@@ -329,12 +352,14 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
           <div class="mb-1 h-1 w-full border-b border-neutral-300 dark:border-neutral-600" />
           <div
             classList={{
-              "line-clamp-4 gradient-mask-b-0": !expanded(),
+              "line-clamp-4 gradient-mask-b-0": useExpand() && !expanded(),
               "text-ellipsis max-w-[100%] break-words space-y-5 leading-normal !text-black dark:!text-white":
                 true,
             }}
             style={
-              !expanded() ? { "-webkit-line-clamp": linesBeforeShowMore } : {}
+              useExpand() && !expanded()
+                ? { "-webkit-line-clamp": linesBeforeShowMore }
+                : {}
             }
             // eslint-disable-next-line solid/no-innerhtml
             innerHTML={sanitizeHtml(
@@ -348,26 +373,28 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
               sanitzerOptions,
             )}
           />
-          <button
-            classList={{
-              "ml-2 font-semibold": true,
-              "animate-pulse": !props.showExpand,
-            }}
-            disabled={!props.showExpand}
-            onClick={() => setExpanded((prev) => !prev)}
-          >
-            {expanded() ? (
-              <div class="flex flex-row items-center">
-                <div>Show Less</div>{" "}
-                <BiRegularChevronUp class="h-8 w-8 fill-current" />
-              </div>
-            ) : (
-              <div class="flex flex-row items-center">
-                <div>Show More</div>{" "}
-                <BiRegularChevronDown class="h-8 w-8 fill-current" />
-              </div>
-            )}
-          </button>
+          <Show when={useExpand()}>
+            <button
+              classList={{
+                "ml-2 font-semibold": true,
+                "animate-pulse": !props.showExpand,
+              }}
+              disabled={!props.showExpand}
+              onClick={() => setExpanded((prev) => !prev)}
+            >
+              {expanded() ? (
+                <div class="flex flex-row items-center">
+                  <div>Show Less</div>{" "}
+                  <BiRegularChevronUp class="h-8 w-8 fill-current" />
+                </div>
+              ) : (
+                <div class="flex flex-row items-center">
+                  <div>Show More</div>{" "}
+                  <BiRegularChevronDown class="h-8 w-8 fill-current" />
+                </div>
+              )}
+            </button>
+          </Show>
         </div>
       </Show>
       <Show when={showImageModal()}>
@@ -388,6 +415,30 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                     imgInformation()?.imgRangePrefix ?? ""
                   }${(imgInformation()?.imgRangeStart ?? 0) + i()}.png`}
                 />
+              )}
+            </For>
+          </div>
+        </FullScreenModal>
+      </Show>
+      <Show when={showMetadata()}>
+        <FullScreenModal isOpen={showMetadata} setIsOpen={setShowMetadata}>
+          <div class="flex max-h-[60vh] max-w-[75vw] flex-col space-y-2 overflow-auto scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600">
+            <For each={Object.keys(props.card.metadata ?? {})}>
+              {(metadataKey) => (
+                <div class="flex flex-wrap space-x-2">
+                  <span>{`"${metadataKey}":`}</span>
+                  <span>{`"${
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/restrict-template-expressions
+                    typeof (props.card.metadata as any)[metadataKey] ===
+                    "object"
+                      ? JSON.stringify(
+                          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+                          (props.card.metadata as any)[metadataKey],
+                        )
+                      : // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+                        (props.card.metadata as any)[metadataKey]
+                  }"`}</span>
+                </div>
               )}
             </For>
           </div>
