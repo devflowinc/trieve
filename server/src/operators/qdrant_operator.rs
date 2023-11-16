@@ -52,7 +52,7 @@ pub async fn create_new_qdrant_point_query(
 
 pub async fn create_new_qdrant_collection_query(
     qdrant_collection: String,
-) -> Result<(), actix_web::Error> {
+) -> Result<(), ServiceError> {
     let qdrant_client = get_qdrant_connection()
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -60,7 +60,7 @@ pub async fn create_new_qdrant_collection_query(
     let embedding_size = std::env::var("EMBEDDING_SIZE").unwrap_or("1536".to_owned());
     let embedding_size = embedding_size.parse::<u64>().unwrap_or(1536);
 
-    let _ = qdrant_client
+    qdrant_client
         .create_collection(&CreateCollection {
             collection_name: qdrant_collection,
             vectors_config: Some(VectorsConfig {
@@ -78,9 +78,11 @@ pub async fn create_new_qdrant_collection_query(
         })
         .await
         .map_err(|err| {
-            log::info!("Failed to create collection: {:?}", err);
-            ServiceError::BadRequest(err.to_string())
-        });
+            if err.to_string().contains("already exists") {
+                return ServiceError::BadRequest("Collection already exists".into());
+            }
+            ServiceError::BadRequest("Failed to create Collection".into())
+        })?;
 
     Ok(())
 }

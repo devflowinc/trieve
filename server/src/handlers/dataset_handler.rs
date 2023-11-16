@@ -48,13 +48,12 @@ pub struct CreateDatasetRequest {
 pub async fn create_dataset(
     data: web::Json<CreateDatasetRequest>,
     user: LoggedUser,
-) -> Result<HttpResponse, actix_web::Error> {
-
+) -> Result<HttpResponse, ServiceError> {
     let admin_email = std::env::var("ADMIN_USER_EMAIL").unwrap_or("".to_string());
     if admin_email != user.email {
-        return Err(ServiceError::Forbidden.into());
+        return Err(ServiceError::Forbidden);
     }
 
     qdrant_operator::create_new_qdrant_collection_query(data.dataset.clone()).await?;
-    Ok(HttpResponse::NotFound().finish())
+    Ok(HttpResponse::NoContent().finish())
 }

@@ -278,6 +278,9 @@ pub async fn main() -> std::io::Result<()> {
             .service(
                 web::scope("/api")
                     .service(
+                        web::resource("/dataset").route(web::post().to(handlers::dataset_handler::create_dataset)),
+                    )
+                    .service(
                         web::resource("/invitation")
                             .route(web::post().to(handlers::invitation_handler::post_invitation)),
                     )
@@ -530,9 +533,6 @@ pub async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::resource("/health").route(web::get().to(handlers::auth_handler::health_check)),
-                    )
-                    .service(
-                        web::resource("/login").route(web::post().to(handlers::dataset_handler::create_dataset)),
                     ),
             )
     })
