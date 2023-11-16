@@ -9,6 +9,7 @@
 
 - styling: slightly improved filters modal UI with distinguished button colors
 - bugfix: show more only appears when needed for CardMetadataDisplay.tsx component
+- bugfix: make ChatPopup choose from only selected ids instead of global set for chat docs 
 
 ### Chat
 
