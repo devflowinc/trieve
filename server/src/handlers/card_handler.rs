@@ -1366,13 +1366,14 @@ pub struct GenerateCardsRequest {
 )]
 pub async fn generate_off_cards(
     data: web::Json<GenerateCardsRequest>,
+    dataset: Dataset,
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let prev_messages = data.prev_messages.clone();
     let card_ids = data.card_ids.clone();
     let user_id = user.id;
-    let cards = web::block(move || get_metadata_from_ids_query(card_ids, user_id, pool))
+    let cards = web::block(move || get_metadata_from_ids_query(card_ids, user_id, dataset.name.clone(), pool))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 

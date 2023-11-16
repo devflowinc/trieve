@@ -1350,6 +1350,7 @@ pub fn get_metadata_from_tracking_id_query(
 pub fn get_metadata_from_ids_query(
     card_ids: Vec<uuid::Uuid>,
     user_id: uuid::Uuid,
+    dataset: Option<String>,
     pool: web::Data<Pool>,
 ) -> Result<Vec<CardMetadataWithVotesWithScore>, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
@@ -1358,6 +1359,7 @@ pub fn get_metadata_from_ids_query(
 
     let metadatas: Vec<CardMetadata> = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::id.eq_any(card_ids))
+        .filter(card_metadata_columns::dataset.eq(dataset.unwrap_or_else(|| "DEFAULT".to_string())))
         .select((
             card_metadata_columns::id,
             card_metadata_columns::content,
