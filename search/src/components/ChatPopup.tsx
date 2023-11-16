@@ -7,6 +7,7 @@ import {
   Setter,
   Show,
   createEffect,
+  createMemo,
   createSignal,
 } from "solid-js";
 import { FiSend, FiStopCircle } from "solid-icons/fi";
@@ -156,6 +157,13 @@ const ChatPopup = (props: LayoutProps) => {
     });
   };
 
+  const messageCards = createMemo(() => {
+    const selectedIds = props.selectedIds();
+    const cards = props.cards();
+
+    return cards.filter((card) => selectedIds.includes(card.metadata[0].id));
+  });
+
   return (
     <div id="topic-layout">
       <Show
@@ -180,7 +188,7 @@ const ChatPopup = (props: LayoutProps) => {
                 return (
                   <AfMessage
                     user={props.user}
-                    cards={props.cards}
+                    cards={messageCards}
                     role={messageRoleFromIndex(idx())}
                     content={message.content}
                     streamingCompletion={streamingCompletion}
