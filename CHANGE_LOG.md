@@ -8,8 +8,11 @@
 ### Search
 
 - styling: slightly improved filters modal UI with distinguished button colors
+- bugfix: show more only appears when needed for CardMetadataDisplay.tsx component
 
 ### Chat
+
+- feature: make link to search open in new tab
 
 ### Docker
 
