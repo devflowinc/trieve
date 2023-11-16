@@ -1390,6 +1390,7 @@ pub fn get_metadata_from_ids_query(
 pub fn get_metadata_and_votes_from_id_query(
     card_id: uuid::Uuid,
     current_user_id: Option<uuid::Uuid>,
+    dataset_name: Option<String>,
     pool: web::Data<Pool>,
 ) -> Result<CardMetadataWithVotesWithScore, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
@@ -1398,6 +1399,7 @@ pub fn get_metadata_and_votes_from_id_query(
 
     let card_metadata = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::id.eq(card_id))
+        .filter(card_metadata_columns::dataset.eq(dataset_name.unwrap_or_else(|| "DEFAULT".to_string())))
         .select(CardMetadata::as_select())
         .first::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {

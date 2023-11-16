@@ -42,6 +42,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const initialResultCards = props.defaultResultCards.score_cards;
   const initialTotalPages = props.defaultResultCards.total_card_pages;
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
 
   const [cardCollections, setCardCollections] = createSignal<
     CardCollectionDTO[]
@@ -56,7 +57,7 @@ const ResultsPage = (props: ResultsPageProps) => {
     createSignal(false);
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onDelete, setOnDelete] = createSignal(() => {});
+  const [onDelete, setOnDelete] = createSignal(() => { });
   const [bookmarks, setBookmarks] = createSignal<CardBookmarksDTO[]>([]);
   const [totalPages, setTotalPages] = createSignal(initialTotalPages);
   const [openChat, setOpenChat] = createSignal(false);
@@ -123,6 +124,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       credentials: "include",
       signal: abortController.signal,
@@ -199,9 +201,8 @@ const ResultsPage = (props: ResultsPageProps) => {
         <Show when={resultCards().length === 0 && clientSideRequestFinished()}>
           <button
             onClick={() => {
-              window.location.href = `/search?q=${props.query}&page=${
-                props.page + 1
-              }`;
+              window.location.href = `/search?q=${props.query}&page=${props.page + 1
+                }`;
             }}
           >
             <div class="text-2xl">No results found</div>

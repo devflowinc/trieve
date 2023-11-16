@@ -82,6 +82,7 @@ export interface ScoreCardProps {
 const ScoreCard = (props: ScoreCardProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const voteFeature = import.meta.env.PUBLIC_SEARCH_VOTE_FEATURE as string;
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
 
   const frontMatterVals = (
     (import.meta.env.PUBLIC_FRONTMATTER_VALS as string | undefined) ??
@@ -215,6 +216,9 @@ const ScoreCard = (props: ScoreCardProps) => {
         void fetch(`${apiHost}/card/${curCardMetadataId}`, {
           method: "DELETE",
           credentials: "include",
+          headers: {
+            "AF-Dataset": dataset,
+          },
         }).then((response) => {
           setDeleting(false);
           if (response.ok) {

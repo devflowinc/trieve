@@ -17,6 +17,7 @@ import { Tooltip } from "./Atoms/Tooltip";
 
 export const EditCardPageForm = (props: SingleCardPageProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
   const initialCardMetadata = props.defaultResultCard.metadata;
 
   const [topLevelError, setTopLevelError] = createSignal("");
@@ -72,6 +73,7 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       credentials: "include",
       body: JSON.stringify({
@@ -130,6 +132,9 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
     void fetch(`${apiHost}/card/${props.cardId ?? ""}`, {
       method: "GET",
       credentials: "include",
+      headers: {
+        "AF-Dataset": dataset,
+      },
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {

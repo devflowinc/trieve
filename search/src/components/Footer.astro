@@ -10,6 +10,7 @@ import ThemeModeController from "./ThemeModeController";
 import type { CardCountDTO } from "../../utils/apiTypes";
 
 const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+const dataset = import.meta.env.PUBLIC_DATASET as string;
 const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
 
 let totalCards = 0;
@@ -19,7 +20,9 @@ try {
     throw new Error("alwaysRequireAuth is on");
   }
 
-  const totalCardsReq = await fetch(`${apiHost}/card/count`);
+  const totalCardsReq = await fetch(`${apiHost}/card/count`, {
+    headers: { "AF-Dataset": dataset },
+  });
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const totalCardsJson: CardCountDTO = await totalCardsReq.json();
 

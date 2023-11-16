@@ -10,6 +10,7 @@ import { EditCardPageForm } from "../../../components/EditCardPageForm";
 
 const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
+const dataset = import.meta.env.PUBLIC_DATASET as string;
 
 const { cardId } = Astro.params;
 let specificCard: SingleCardDTO;
@@ -21,6 +22,9 @@ try {
 
   const specificCardResult = await fetch(`${apiHost}/card/${cardId ?? ""}`, {
     method: "GET",
+    headers: {
+      "AF-Dataset": dataset,
+    },
   });
   const specificCardJson = (await specificCardResult.json()) as unknown;
 

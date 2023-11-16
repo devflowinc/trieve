@@ -28,6 +28,7 @@ export interface SingleCardPageProps {
 export const SingleCardPage = (props: SingleCardPageProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const initialCardMetadata = props.defaultResultCard.metadata;
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
 
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
   const [cardMetadata, setCardMetadata] =
@@ -110,6 +111,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       body: JSON.stringify({
         positive_card_ids: ids,
@@ -161,6 +163,9 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
     void fetch(`${apiHost}/card/${props.cardId ?? ""}`, {
       method: "GET",
       credentials: "include",
+      headers: {
+        "AF-Dataset": dataset,
+      },
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {

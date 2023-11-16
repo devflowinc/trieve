@@ -12,6 +12,7 @@ import { TbRobot } from "solid-icons/tb";
 
 const SearchForm = () => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
   const [evidenceLink, setEvidenceLink] = createSignal("");
   const [errorText, setErrorText] = createSignal<
     string | number | boolean | Node | JSX.ArrayElement | null | undefined
@@ -56,6 +57,7 @@ const SearchForm = () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       credentials: "include",
       body: JSON.stringify({
@@ -266,6 +268,7 @@ const SearchForm = () => {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
+                    "AF-Dataset": dataset,
                   },
                   credentials: "include",
                   body: JSON.stringify({

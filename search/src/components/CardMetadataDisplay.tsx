@@ -47,6 +47,7 @@ export interface CardMetadataDisplayProps {
 
 const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
   const frontMatterVals = (
     (import.meta.env.PUBLIC_FRONTMATTER_VALS as string | undefined) ??
     "link,tag_set,file_name"
@@ -78,6 +79,7 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
         void fetch(`${apiHost}/card/${curCardId}`, {
           method: "DELETE",
           credentials: "include",
+          "AF-Dataset": dataset,
         }).then((response) => {
           setDeleting(false);
           if (response.ok) {

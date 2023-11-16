@@ -1204,12 +1204,14 @@ pub async fn get_card_by_id(
     card_id: web::Path<uuid::Uuid>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
+    dataset: Dataset,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_user_id = user.map(|user| user.id);
+    let dataset_name = dataset.name.clone();
     let card_id = card_id.into_inner();
     let card = web::block(move || {
-        get_metadata_and_votes_from_id_query(card_id, current_user_id, pool)
+        get_metadata_and_votes_from_id_query(card_id, current_user_id, dataset_name, pool)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -1376,7 +1378,7 @@ pub async fn generate_off_cards(
     let cards = web::block(move || get_metadata_from_ids_query(card_ids, user_id, dataset.name.clone(), pool))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
+    log::info!("Generating cards: {:?}", cards);
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
 
     let client = Client {

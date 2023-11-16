@@ -47,6 +47,7 @@ export interface CollectionPageProps {
 
 export const CollectionPage = (props: CollectionPageProps) => {
   const apiHost: string = import.meta.env.PUBLIC_API_HOST as string;
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
   const alwaysRequireAuth: string = import.meta.env
     .PUBLIC_ALWAYS_REQUIRE_AUTH as string;
   const cardMetadatasWithVotes: BookmarkDTO[] = [];
@@ -349,6 +350,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       body: JSON.stringify({
         positive_card_ids: ids,
