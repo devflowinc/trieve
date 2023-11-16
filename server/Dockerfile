@@ -16,26 +16,26 @@ ENV RUSTUP_HOME=/usr/local/rustup \
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-        ca-certificates \
-        gcc \
-        libc6-dev \
-        wget \
-        pkg-config \
-        libssl-dev \
-        python3 \
-        python-is-python3 \
-        libpython3.11-dev \
-        libpq-dev \
-        build-essential \
-        libclang-dev \
-        ; \
+    ca-certificates \
+    gcc \
+    libc6-dev \
+    wget \
+    pkg-config \
+    libssl-dev \
+    python3 \
+    python-is-python3 \
+    libpython3.9-dev \
+    libpq-dev \
+    build-essential \
+    libclang-dev \
+    ; \
     dpkgArch="$(dpkg --print-architecture)"; \
     case "${dpkgArch##*-}" in \
-        amd64) rustArch='x86_64-unknown-linux-gnu'; rustupSha256='0b2f6c8f85a3d02fde2efc0ced4657869d73fccfce59defb4e8d29233116e6db' ;; \
-        armhf) rustArch='armv7-unknown-linux-gnueabihf'; rustupSha256='f21c44b01678c645d8fbba1e55e4180a01ac5af2d38bcbd14aa665e0d96ed69a' ;; \
-        arm64) rustArch='aarch64-unknown-linux-gnu'; rustupSha256='673e336c81c65e6b16dcdede33f4cc9ed0f08bde1dbe7a935f113605292dc800' ;; \
-        i386) rustArch='i686-unknown-linux-gnu'; rustupSha256='e7b0f47557c1afcd86939b118cbcf7fb95a5d1d917bdd355157b63ca00fc4333' ;; \
-        *) echo >&2 "unsupported architecture: ${dpkgArch}"; exit 1 ;; \
+    amd64) rustArch='x86_64-unknown-linux-gnu'; rustupSha256='0b2f6c8f85a3d02fde2efc0ced4657869d73fccfce59defb4e8d29233116e6db' ;; \
+    armhf) rustArch='armv7-unknown-linux-gnueabihf'; rustupSha256='f21c44b01678c645d8fbba1e55e4180a01ac5af2d38bcbd14aa665e0d96ed69a' ;; \
+    arm64) rustArch='aarch64-unknown-linux-gnu'; rustupSha256='673e336c81c65e6b16dcdede33f4cc9ed0f08bde1dbe7a935f113605292dc800' ;; \
+    i386) rustArch='i686-unknown-linux-gnu'; rustupSha256='e7b0f47557c1afcd86939b118cbcf7fb95a5d1d917bdd355157b63ca00fc4333' ;; \
+    *) echo >&2 "unsupported architecture: ${dpkgArch}"; exit 1 ;; \
     esac; \
     url="https://static.rust-lang.org/rustup/archive/1.26.0/${rustArch}/rustup-init"; \
     wget "$url"; \
@@ -48,8 +48,8 @@ RUN set -eux; \
     cargo --version; \
     rustc --version; \
     apt-get remove -y --auto-remove \
-        wget \
-        ; \
+    wget \
+    ; \
     rm -rf /var/lib/apt/lists/*; \
     cargo install cargo-chef;
 
@@ -63,28 +63,28 @@ RUN cargo build --release --features "runtime-env"
 FROM dpokidov/imagemagick:7.1.1-21-bookworm as runtime
 RUN apt-get update; \
     apt-get install -y \
-        libpq-dev \
-        pkg-config\
-        build-essential\
-        python3 \
-        python3-pip \
-        libpng16-16 \
-        libpng-dev \
-        libjpeg62-turbo \
-        libjpeg62-turbo-dev \
-        libgomp1 \
-        ghostscript \
-        libxml2-dev \
-        libxml2-utils \
-        libtiff-dev \
-        libfontconfig1-dev \
-        libfreetype6-dev \
-        fonts-dejavu \
-        liblcms2-2 \
-        liblcms2-dev \
-        libtcmalloc-minimal4 \
-        python-is-python3 \
-        ;
+    libpq-dev \
+    pkg-config\
+    build-essential\
+    python3 \
+    python3-pip \
+    libpng16-16 \
+    libpng-dev \
+    libjpeg62-turbo \
+    libjpeg62-turbo-dev \
+    libgomp1 \
+    ghostscript \
+    libxml2-dev \
+    libxml2-utils \
+    libtiff-dev \
+    libfontconfig1-dev \
+    libfreetype6-dev \
+    fonts-dejavu \
+    liblcms2-2 \
+    liblcms2-dev \
+    libtcmalloc-minimal4 \
+    python-is-python3 \
+    ;
 
 COPY ./server-python/requirements.txt /app/requirements.txt
 RUN pip install --break-system-packages -r /app/requirements.txt; \
@@ -93,7 +93,7 @@ RUN pip install --break-system-packages -r /app/requirements.txt; \
 COPY ./server-python /app/server-python
 
 WORKDIR /app
-COPY --from=builder /imgs/app/target/release/vault-server /app/vault-server
+COPY ./server-python/ /app/server-python
 COPY ./migrations/ /app/migrations
 COPY --from=builder /imgs/app/target/release/vault-server /app/vault-server
 
