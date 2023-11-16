@@ -177,7 +177,11 @@ const ScoreCard = (props: ScoreCardProps) => {
           <Show when={copied()}>
             <FiCheck class="text-green-500" />
           </Show>
-          <a title="Open" href={`${searchURL}/card/${props.card.id}`}>
+          <a
+            title="Open"
+            href={`${searchURL}/card/${props.card.id}`}
+            target="_blank"
+          >
             <VsFileSymlinkFile class="h-5 w-5 fill-current" />
           </a>
         </div>
