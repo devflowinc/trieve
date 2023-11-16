@@ -93,7 +93,7 @@ export const Combobox = (props: ComboboxProps) => {
   };
 
   return (
-    <div class="w-full min-w-[150px]">
+    <div class="w-full min-w-[165px]">
       <div class="mb-1 text-center text-sm font-semibold">
         {props.sectionName}
       </div>
@@ -109,7 +109,7 @@ export const Combobox = (props: ComboboxProps) => {
         />
       </div>
       <div
-        class="mt-1 max-h-[40vh] w-full transform overflow-y-auto rounded px-2 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
+        class="mt-1 max-h-[40vh] w-full transform space-y-1 overflow-y-auto rounded px-2 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
         onMouseEnter={() => {
           setUsingPanel(true);
         }}
@@ -123,15 +123,13 @@ export const Combobox = (props: ComboboxProps) => {
               <button
                 type="button"
                 classList={{
-                  "flex w-full items-center justify-between rounded p-1 hover:bg-neutral-100 dark:hover:bg-neutral-700":
+                  "flex w-full items-center justify-between rounded p-1 bg-neutral-100/20 dark:bg-neutral-700/20 dark:bg-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-700":
                     true,
                   "bg-neutral-300 dark:bg-neutral-900": selected,
                 }}
                 onClick={() => handleClick(name, selected)}
               >
-                <div class="flex flex-row justify-start space-x-2">
-                  <span class="text-left">{name}</span>
-                </div>
+                <div class="w-full break-all text-left">{name}</div>
                 {selected && (
                   <span>
                     <FaSolidCheck class="fill-current text-xl" />
