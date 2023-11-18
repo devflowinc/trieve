@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate diesel;
 use crate::{
-    handlers::auth_handler::create_admin_account, operators::card_operator::get_qdrant_connection,
+    handlers::auth_handler::create_admin_account, operators::card_operator::get_qdrant_connection, errors::ServiceError,
 };
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
@@ -14,6 +14,7 @@ use actix_web::{
 };
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+use pyo3::{Python, types::PyDict, PyAny, Py};
 use qdrant_client::{
     prelude::*,
     qdrant::{VectorParams, VectorsConfig},
@@ -55,6 +56,58 @@ macro_rules! get_env {
         }
         ENV_VAR.as_str()
     }};
+}
+#[derive(Clone)]
+pub struct CrossEncoder {
+    tokenizer: Py<PyAny>,
+    model: Py<PyAny>,
+}
+
+fn initalize_cross_encoder() -> CrossEncoder {
+
+    let cross_encoder = Python::with_gil(|py| {
+        let transformers = py.import("transformers").unwrap();
+
+        let tokenizer: Py<PyAny> = transformers
+            .getattr("AutoTokenizer")
+            .map_err(|e| ServiceError::BadRequest(format!("Could not get tokenizer: {}", e)))?
+            .call_method1::<&str, (&str,)>(
+                "from_pretrained",
+                ("cross-encoder/ms-marco-MiniLM-L-4-v2",),
+            )
+            .map_err(|e| ServiceError::BadRequest(format!("Could not load tokenizer: {}", e)))?.into();
+
+        let onnxruntime = py.import("optimum.onnxruntime").map_err(|e| {
+            ServiceError::BadRequest(format!("Could not import onnxruntime: {}", e))
+        })?;
+        let model_kwargs = PyDict::new(py);
+
+        model_kwargs
+            .set_item("from_transformers", true)
+            .map_err(|e| {
+                ServiceError::BadRequest(format!("Could not set from_transformers: {}", e))
+            })?;
+        model_kwargs
+            .set_item("force_download", false)
+            .map_err(|e| {
+                ServiceError::BadRequest(format!("Could not set force_download: {}", e))
+            })?;
+
+        let model: Py<PyAny> = onnxruntime
+            .getattr("ORTModelForSequenceClassification")
+            .map_err(|e| ServiceError::BadRequest(format!("Could not get model: {}", e)))?
+            .call_method::<&str, (&str,)>(
+                "from_pretrained",
+                ("cross-encoder/ms-marco-MiniLM-L-4-v2",),
+                Some(model_kwargs),
+            )
+            .map_err(|e| ServiceError::BadRequest(format!("Could not load model: {}", e)))?.into();
+        Ok::<CrossEncoder, ServiceError>(CrossEncoder {
+            tokenizer,
+            model,
+        })
+    });
+    cross_encoder.unwrap()
 }
 
 pub struct AppMutexStore {
@@ -229,6 +282,7 @@ pub async fn main() -> std::io::Result<()> {
     let pool: data::models::Pool = r2d2::Pool::builder()
         .build(manager)
         .expect("Failed to create pool.");
+    let cross_encoder = initalize_cross_encoder();
 
     let redis_store = RedisSessionStore::new(redis_url).await.unwrap();
 
@@ -413,6 +467,7 @@ pub async fn main() -> std::io::Result<()> {
                             )
                             .service(
                                 web::resource("/hybrid_search/{page}")
+                                    .app_data(web::Data::new(cross_encoder.clone()))
                                     .route(web::post().to(handlers::card_handler::search_hybrid_card)),
                             )
                             .service(
