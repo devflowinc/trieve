@@ -4,11 +4,12 @@ use crate::data::models::{
     ChatMessageProxy, Pool, UserDTO,
 };
 use crate::errors::ServiceError;
-use crate::get_env;
 use crate::operators::card_operator::*;
 use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
 };
+use crate::{get_env, CrossEncoder};
+
 use crate::operators::collection_operator::{
     create_card_bookmark_query, get_collection_by_id_query,
 };
@@ -24,7 +25,7 @@ use futures_util::TryFutureExt;
 use itertools::Itertools;
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat_completion::{ChatCompletionParameters, ChatMessage, Role};
-use pyo3::types::PyTuple;
+use pyo3::types::PyDict;
 use pyo3::{IntoPy, Python};
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
 use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
@@ -615,6 +616,7 @@ pub async fn update_card_by_tracking_id(
 fn cross_encoder(
     results: Vec<ScoreCardDTO>,
     query: String,
+    cross_encoder_init: web::Data<CrossEncoder>,
 ) -> Result<Vec<ScoreCardDTO>, actix_web::Error> {
     let paired_results = results
         .clone()
@@ -629,25 +631,112 @@ fn cross_encoder(
             )
         })
         .collect::<Vec<(String, String)>>();
-    let scores = Python::with_gil(|py| {
-        let sentence_transformers = py.import("sentence_transformers").map_err(|e| {
-            ServiceError::BadRequest(format!(
-                "Could not import sentence_transformers module: {}",
-                e
-            ))
-        })?;
-        let cross_encoder = sentence_transformers.getattr("CrossEncoder").map_err(|e| {
-            ServiceError::BadRequest(format!("Could not get CrossEncoder module: {}", e))
-        })?;
-        let model = cross_encoder
-            .call1(("cross-encoder/ms-marco-MiniLM-L-4-v2",))
-            .map_err(|e| ServiceError::BadRequest(format!("Could not instantiate model: {}", e)))?;
-        let args = PyTuple::new(py, &[paired_results.clone().into_py(py)]);
-        let scores = model
-            .call_method1("predict", args)
-            .map_err(|e| ServiceError::BadRequest(format!("Could not predict scores: {}", e)))?;
 
-        Ok::<Vec<f32>, ServiceError>(scores.extract().unwrap())
+    // Rust ONNX implementation (not working)
+    // let environment = Environment::builder()
+    //     .with_name("cross-encoder")
+    //     .with_log_level(LoggingLevel::Verbose)
+    //     .build()
+    //     .map_err(|e| ServiceError::BadRequest(format!("Could not create environment: {}", e)))?
+    //     .into_arc();
+
+    // // Create a new session builder
+    // let session = SessionBuilder::new(&environment)
+    //     .map_err(|e| ServiceError::BadRequest(format!("Could not create session builder: {}", e)))?
+    //     .with_optimization_level(GraphOptimizationLevel::Level1)
+    //     .map_err(|e| ServiceError::BadRequest(format!("Could not set optimization level: {}", e)))?
+    //     .with_intra_threads(1)
+    //     .map_err(|e| ServiceError::BadRequest(format!("Could not set intra threads: {}", e)))?
+    //     .with_model_from_file("ce-msmarco-MiniLM-L6-v2/pytorch_model.onnx")
+    //     .map_err(|e| ServiceError::BadRequest(format!("Could not load model: {}", e)))?;
+
+    // let mut query_tokens;
+    // let mut doc_tokens;
+    // let tokenized_data: Vec<(Value<'_>, Value<'_>)> = paired_results
+    //     .iter()
+    //     .map(|(query, document)| {
+    //         // Tokenize and preprocess query and document
+    //         query_tokens = tokenize_and_preprocess(query);
+    //         doc_tokens = tokenize_and_preprocess(document);
+    //         let converted_query_tokens =
+    //             Value::from_array(session.allocator(), &(query_tokens.clone())).unwrap();
+    //         let converted_doc_tokens =
+    //             Value::from_array(session.allocator(), &(doc_tokens.clone())).unwrap();
+    //         (converted_query_tokens, converted_doc_tokens)
+    //     })
+    //     .collect();
+    // // Assuming tokenized_data contains numerical representations of the text
+    // let input_tensor = create_input_tensor(tokenized_data)?;
+    // let output_tensors = session
+    //     .run(input_tensor)
+    //     .map_err(|e| ServiceError::BadRequest(format!("Could not run session: {}", e)))?;
+
+    // print!("{:?}", output_tensors);
+
+    let scores = Python::with_gil(|py| {
+        let token_kwargs = PyDict::new(py);
+        token_kwargs.set_item("return_tensors", "pt").map_err(|e| {
+            ServiceError::BadRequest(format!("Could not set return_tensors: {}", e))
+        })?;
+        token_kwargs
+            .set_item("truncation", true)
+            .map_err(|e| ServiceError::BadRequest(format!("Could not set trucation: {}", e)))?;
+        token_kwargs
+            .set_item("padding", "max_length")
+            .map_err(|e| ServiceError::BadRequest(format!("Could not set padding: {}", e)))?;
+        token_kwargs
+            .set_item("max_length", 512)
+            .map_err(|e| ServiceError::BadRequest(format!("Could not set max_length: {}", e)))?;
+
+        let tokenized_inputs = cross_encoder_init
+            .tokenizer
+            .call_method::<&str, (pyo3::Py<pyo3::PyAny>,)>(
+                py,
+                "batch_encode_plus",
+                (paired_results.into_py(py),),
+                Some(token_kwargs),
+            )
+            .map_err(|e| ServiceError::BadRequest(format!("Could not tokenize inputs: {}", e)))?
+            .into_ref(py);
+
+        let model_kwargs = PyDict::new(py);
+        model_kwargs
+            .set_item("return_dict", true)
+            .map_err(|e| ServiceError::BadRequest(format!("Could not set return_dict: {}", e)))?;
+
+        let output = cross_encoder_init
+            .model
+            .call_method::<&str, (
+                pyo3::Py<pyo3::PyAny>,
+                pyo3::Py<pyo3::PyAny>,
+                pyo3::Py<pyo3::PyAny>,
+            )>(
+                py,
+                "forward",
+                (
+                    tokenized_inputs.get_item("input_ids").unwrap().into(),
+                    tokenized_inputs.get_item("token_type_ids").unwrap().into(),
+                    tokenized_inputs.get_item("attention_mask").unwrap().into(),
+                ),
+                Some(model_kwargs),
+            )
+            .map_err(|e| ServiceError::BadRequest(format!("Could not run model: {}", e)))?
+            .into_ref(py);
+
+        let scores = output
+            .getattr("logits")
+            .map_err(|e| ServiceError::BadRequest(format!("Could not get logits: {}", e)))?
+            .call_method0("tolist")
+            .map_err(|e| ServiceError::BadRequest(format!("Could not get tolist: {}", e)))?;
+
+        Ok::<Vec<f32>, ServiceError>(
+            scores
+                .extract::<Vec<Vec<f32>>>()
+                .unwrap()
+                .into_iter()
+                .flatten()
+                .collect(),
+        )
     })?;
 
     let mut sim_scores_argsort: Vec<usize> = (0..scores.len()).collect();
@@ -891,6 +980,7 @@ pub async fn search_hybrid_card(
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
+    cross_encoder_init: web::Data<CrossEncoder>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_user_id = user.clone().map(|user| user.id);
@@ -1013,13 +1103,12 @@ pub async fn search_hybrid_card(
 
     let score_cards = if data.cross_encoder.unwrap_or(false) {
         let combined_results = semantic_score_cards
-            .clone()
             .into_iter()
             .chain(full_text_query_results.clone().into_iter())
             .unique_by(|score_card| score_card.metadata[0].id)
             .collect::<Vec<ScoreCardDTO>>();
 
-        cross_encoder(combined_results, data.content.clone())?
+        cross_encoder(combined_results, data.content.clone(), cross_encoder_init)?
     } else if let Some(weights) = data.weights {
         if weights.0 == 1.0 {
             semantic_score_cards
