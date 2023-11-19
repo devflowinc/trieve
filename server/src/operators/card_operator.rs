@@ -6,14 +6,12 @@ use crate::data::schema;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::errors::ServiceError;
 use crate::get_env;
-use crate::handlers::card_handler::ParsedQuery;
 use crate::operators::qdrant_operator::search_qdrant_query;
 use crate::{
     data::models::{CardMetadata, Pool},
     errors::DefaultError,
 };
 use actix_web::web;
-
 use diesel::dsl::sql;
 use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;
@@ -137,7 +135,7 @@ pub async fn search_card_query(
     tag_set: Option<Vec<String>>,
     filters: Option<serde_json::Value>,
     current_user_id: Option<uuid::Uuid>,
-    parsed_query: ParsedQuery,
+    quote_words: Option<Vec<String>>,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
 
@@ -146,14 +144,7 @@ pub async fn search_card_query(
 
     if filters.is_none()
         && !link_tag_set_present
-        && !parsed_query
-            .quote_words
-            .as_ref()
-            .is_some_and(|words| !words.is_empty())
-        && !parsed_query
-            .negated_words
-            .as_ref()
-            .is_some_and(|words| !words.is_empty())
+        && !quote_words.as_ref().is_some_and(|words| !words.is_empty())
     {
         let mut filter = Filter::default();
         filter.should.push(Condition::is_empty("private"));
@@ -254,15 +245,9 @@ pub async fn search_card_query(
         }
     }
 
-    if let Some(quote_words) = parsed_query.quote_words {
+    if let Some(quote_words) = quote_words {
         for word in quote_words.iter() {
             query = query.filter(card_metadata_columns::content.ilike(format!("%{}%", word)));
-        }
-    }
-
-    if let Some(negated_words) = parsed_query.negated_words {
-        for word in negated_words.iter() {
-            query = query.filter(card_metadata_columns::content.not_ilike(format!("%{}%", word)));
         }
     }
 
@@ -370,7 +355,6 @@ pub async fn search_card_collections_query(
     filters: Option<serde_json::Value>,
     collection_id: uuid::Uuid,
     user_id: Option<uuid::Uuid>,
-    parsed_query: ParsedQuery,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
@@ -452,18 +436,6 @@ pub async fn search_card_collections_query(
                     _ => (),
                 }
             }
-        }
-    }
-
-    if let Some(quote_words) = parsed_query.quote_words {
-        for word in quote_words.iter() {
-            query = query.filter(card_metadata_columns::content.ilike(format!("%{}%", word)));
-        }
-    }
-
-    if let Some(negated_words) = parsed_query.negated_words {
-        for word in negated_words.iter() {
-            query = query.filter(card_metadata_columns::content.not_ilike(format!("%{}%", word)));
         }
     }
 
@@ -682,7 +654,7 @@ pub fn search_full_text_card_query(
     filters: Option<serde_json::Value>,
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
-    parsed_query: ParsedQuery,
+    quote_words: Option<Vec<String>>,
 ) -> Result<FullTextSearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
@@ -816,15 +788,9 @@ pub fn search_full_text_card_query(
         }
     }
 
-    if let Some(quote_words) = parsed_query.quote_words {
+    if let Some(quote_words) = quote_words {
         for word in quote_words.iter() {
             query = query.filter(card_metadata_columns::content.ilike(format!("%{}%", word)));
-        }
-    }
-
-    if let Some(negated_words) = parsed_query.negated_words {
-        for word in negated_words.iter() {
-            query = query.filter(card_metadata_columns::content.not_ilike(format!("%{}%", word)));
         }
     }
 
@@ -883,7 +849,6 @@ pub fn search_full_text_collection_query(
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
     collection_id: uuid::Uuid,
-    parsed_query: ParsedQuery,
 ) -> Result<FullTextSearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
@@ -1026,18 +991,6 @@ pub fn search_full_text_collection_query(
                     _ => (),
                 }
             }
-        }
-    }
-
-    if let Some(quote_words) = parsed_query.quote_words {
-        for word in quote_words.iter() {
-            query = query.filter(card_metadata_columns::content.ilike(format!("%{}%", word)));
-        }
-    }
-
-    if let Some(negated_words) = parsed_query.negated_words {
-        for word in negated_words.iter() {
-            query = query.filter(card_metadata_columns::content.not_ilike(format!("%{}%", word)));
         }
     }
 
