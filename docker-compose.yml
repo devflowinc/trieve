@@ -2,7 +2,7 @@ version: "3"
 
 services:
   db:
-    image: postgres:15
+    image: paradedb/paradedb:latest
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -189,16 +189,16 @@ services:
       - SUGGESTED_QUERIES=${SUGGESTED_QUERIES}
       - PUBLIC_SEARCH_VOTE_FEATURE=${PUBLIC_SEARCH_VOTE_FEATURE}
 
-  key-cloak:
-    image: quay.io/keycloak/keycloak:22.0.5
-    ports:
-      - "8080:8080"
-    environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-      KC_DB: postgres
-      KC_DB_URL: ${DATABASE_URL}
-    command: ["start"]
+  # key-cloak:
+  #   image: quay.io/keycloak/keycloak:22.0.5
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     KEYCLOAK_ADMIN: admin
+  #     KEYCLOAK_ADMIN_PASSWORD: admin
+  #     KC_DB: postgres
+  #     KC_DB_URL: ${DATABASE_URL}
+  #   command: ["start"]
 
 networks:
   app-network:
