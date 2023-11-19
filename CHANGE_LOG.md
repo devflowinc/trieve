@@ -14,6 +14,7 @@
 ### Chat
 
 - feature: make link to search open in new tab
+- bugfix: always show all cards instead of a single one
 
 ### Docker
 
