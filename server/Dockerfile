@@ -7,7 +7,7 @@ FROM chef AS planner
 COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
-FROM dpokidov/imagemagick AS builder-base
+FROM dpokidov/imagemagick:7.1.1-21-bookworm AS builder-base
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
     PATH=/usr/local/cargo/bin:$PATH \
@@ -24,7 +24,7 @@ RUN set -eux; \
         libssl-dev \
         python3 \
         python-is-python3 \
-        libpython3.9-dev \
+        libpython3.11-dev \
         libpq-dev \
         build-essential \
         libclang-dev \
@@ -60,7 +60,7 @@ RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
 RUN cargo build --release --features "runtime-env"
 
-FROM dpokidov/imagemagick as runtime
+FROM dpokidov/imagemagick:7.1.1-21-bookworm as runtime
 RUN apt-get update; \
     apt-get install -y \
         libpq-dev \
