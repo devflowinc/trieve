@@ -1,4 +1,7 @@
-use super::auth_handler::{LoggedUser, RequireAuth};
+use super::{
+    auth_handler::{LoggedUser, RequireAuth},
+    card_handler::ParsedQuery,
+};
 use crate::{
     data::models,
     data::models::{CardMetadataWithVotesWithScore, Pool},
@@ -468,7 +471,10 @@ pub async fn stream_response(
             None,
             None,
             Some(user_id),
-            None,
+            ParsedQuery {
+                quote_words: None,
+                negated_words: None,
+            },
         )
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;

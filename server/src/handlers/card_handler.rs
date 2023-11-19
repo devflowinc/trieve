@@ -625,6 +625,42 @@ pub struct SearchCardQueryResponseBody {
     total_card_pages: i64,
 }
 
+pub struct ParsedQuery {
+    pub quote_words: Option<Vec<String>>,
+    pub negated_words: Option<Vec<String>>,
+}
+fn parse_query(query: String) -> ParsedQuery {
+    let re = Regex::new(r#""(.*?)""#).unwrap();
+    let quote_words: Vec<String> = re
+        .captures_iter(&query.replace('\\', ""))
+        .map(|capture| capture[1].to_string())
+        .filter(|word| !word.is_empty())
+        .collect::<Vec<String>>();
+
+    let quote_words = if quote_words.is_empty() {
+        None
+    } else {
+        Some(quote_words)
+    };
+
+    let negated_words: Vec<String> = query
+        .split_whitespace()
+        .filter(|word| word.starts_with('-'))
+        .map(|word| word.replace('-', ""))
+        .collect::<Vec<String>>();
+
+    let negated_words = if negated_words.is_empty() {
+        None
+    } else {
+        Some(negated_words)
+    };
+
+    ParsedQuery {
+        quote_words,
+        negated_words,
+    }
+}
+
 #[utoipa::path(
     post,
     path = "/card/search",
@@ -651,12 +687,7 @@ pub async fn search_card(
     let embedding_vector = create_embedding(&data.content).await?;
     let pool1 = pool.clone();
 
-    let re = Regex::new(r#""(.*?)""#).unwrap();
-    let quote_words: Vec<String> = re
-        .captures_iter(&data.content.replace('\\', ""))
-        .map(|capture| capture[1].to_string())
-        .filter(|word| !word.is_empty())
-        .collect::<Vec<String>>();
+    let parsed_query = parse_query(data.content.clone());
 
     let search_card_query_results = search_card_query(
         embedding_vector,
@@ -666,7 +697,7 @@ pub async fn search_card(
         data.tag_set.clone(),
         data.filters.clone(),
         current_user_id,
-        Some(quote_words),
+        parsed_query,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -771,12 +802,7 @@ pub async fn search_full_text_card(
     let pool2 = pool.clone();
     let data_inner = data.clone();
 
-    let re = Regex::new(r#""(.*?)""#).unwrap();
-    let quote_words: Vec<String> = re
-        .captures_iter(&data.content.replace('\\', ""))
-        .map(|capture| capture[1].to_string())
-        .filter(|word| !word.is_empty())
-        .collect::<Vec<String>>();
+    let parsed_query = parse_query(data.content.clone());
 
     let search_card_query_results = web::block(move || {
         search_full_text_card_query(
@@ -787,7 +813,7 @@ pub async fn search_full_text_card(
             data_inner.filters.clone(),
             data_inner.link.clone(),
             data_inner.tag_set,
-            Some(quote_words),
+            parsed_query,
         )
     })
     .await?
@@ -911,6 +937,7 @@ pub async fn search_collections(
     if !collection.is_public && Some(collection.author_id) != current_user_id {
         return Err(ServiceError::Forbidden.into());
     }
+    let parsed_query = parse_query(data.content.clone());
 
     let search_card_query_results = search_card_collections_query(
         embedding_vector,
@@ -921,6 +948,7 @@ pub async fn search_collections(
         data.filters.clone(),
         data.collection_id,
         current_user_id,
+        parsed_query,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -1048,6 +1076,7 @@ pub async fn search_full_text_collections(
     if !collection.is_public && Some(collection.author_id) != current_user_id {
         return Err(ServiceError::Forbidden.into());
     }
+    let parsed_query = parse_query(data.content.clone());
 
     let search_card_query_results = web::block(move || {
         search_full_text_collection_query(
@@ -1059,6 +1088,7 @@ pub async fn search_full_text_collections(
             data_inner.link.clone(),
             data_inner.tag_set.clone(),
             data_inner.collection_id,
+            parsed_query,
         )
     })
     .await?
