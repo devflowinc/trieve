@@ -631,48 +631,6 @@ fn cross_encoder(
             )
         })
         .collect::<Vec<(String, String)>>();
-
-    // Rust ONNX implementation (not working)
-    // let environment = Environment::builder()
-    //     .with_name("cross-encoder")
-    //     .with_log_level(LoggingLevel::Verbose)
-    //     .build()
-    //     .map_err(|e| ServiceError::BadRequest(format!("Could not create environment: {}", e)))?
-    //     .into_arc();
-
-    // // Create a new session builder
-    // let session = SessionBuilder::new(&environment)
-    //     .map_err(|e| ServiceError::BadRequest(format!("Could not create session builder: {}", e)))?
-    //     .with_optimization_level(GraphOptimizationLevel::Level1)
-    //     .map_err(|e| ServiceError::BadRequest(format!("Could not set optimization level: {}", e)))?
-    //     .with_intra_threads(1)
-    //     .map_err(|e| ServiceError::BadRequest(format!("Could not set intra threads: {}", e)))?
-    //     .with_model_from_file("ce-msmarco-MiniLM-L6-v2/pytorch_model.onnx")
-    //     .map_err(|e| ServiceError::BadRequest(format!("Could not load model: {}", e)))?;
-
-    // let mut query_tokens;
-    // let mut doc_tokens;
-    // let tokenized_data: Vec<(Value<'_>, Value<'_>)> = paired_results
-    //     .iter()
-    //     .map(|(query, document)| {
-    //         // Tokenize and preprocess query and document
-    //         query_tokens = tokenize_and_preprocess(query);
-    //         doc_tokens = tokenize_and_preprocess(document);
-    //         let converted_query_tokens =
-    //             Value::from_array(session.allocator(), &(query_tokens.clone())).unwrap();
-    //         let converted_doc_tokens =
-    //             Value::from_array(session.allocator(), &(doc_tokens.clone())).unwrap();
-    //         (converted_query_tokens, converted_doc_tokens)
-    //     })
-    //     .collect();
-    // // Assuming tokenized_data contains numerical representations of the text
-    // let input_tensor = create_input_tensor(tokenized_data)?;
-    // let output_tensors = session
-    //     .run(input_tensor)
-    //     .map_err(|e| ServiceError::BadRequest(format!("Could not run session: {}", e)))?;
-
-    // print!("{:?}", output_tensors);
-
     let scores = Python::with_gil(|py| {
         let token_kwargs = PyDict::new(py);
         token_kwargs.set_item("return_tensors", "pt").map_err(|e| {
