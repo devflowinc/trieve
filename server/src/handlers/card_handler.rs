@@ -610,6 +610,7 @@ pub struct SearchCardData {
     content: String,
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
+    time_range: Option<(String, String)>,
     filters: Option<serde_json::Value>,
 }
 
@@ -695,6 +696,7 @@ pub async fn search_card(
         pool1,
         data.link.clone(),
         data.tag_set.clone(),
+        data.time_range.clone(),
         data.filters.clone(),
         current_user_id,
         parsed_query,
@@ -813,6 +815,7 @@ pub async fn search_full_text_card(
             data_inner.filters.clone(),
             data_inner.link.clone(),
             data_inner.tag_set,
+            data_inner.time_range,
             parsed_query,
         )
     })

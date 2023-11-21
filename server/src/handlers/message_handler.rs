@@ -470,6 +470,7 @@ pub async fn stream_response(
             None,
             None,
             None,
+            None,
             Some(user_id),
             ParsedQuery {
                 quote_words: None,
