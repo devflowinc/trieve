@@ -14,6 +14,7 @@ use crate::{
 };
 use actix_web::web;
 
+use chrono::NaiveDateTime;
 use diesel::dsl::sql;
 use diesel::sql_types::Nullable;
 use diesel::sql_types::Text;
@@ -135,6 +136,7 @@ pub async fn search_card_query(
     pool: web::Data<Pool>,
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
+    time_range: Option<(String, String)>,
     filters: Option<serde_json::Value>,
     current_user_id: Option<uuid::Uuid>,
     parsed_query: ParsedQuery,
@@ -217,6 +219,46 @@ pub async fn search_card_query(
     }
     for link_url in link_inner.iter().skip(1) {
         query = query.or_filter(card_metadata_columns::link.ilike(format!("%{}%", link_url)));
+    }
+
+    if let Some(time_range) = time_range {
+        if time_range.0 != "null" && time_range.1 != "null" {
+            query = query.filter(
+                card_metadata_columns::time_stamp
+                    .gt(time_range
+                        .0
+                        .parse::<NaiveDateTime>()
+                        .map_err(|_| DefaultError {
+                            message: "Failed to parse time range",
+                        })?)
+                    .and(
+                        card_metadata_columns::time_stamp.lt(time_range
+                            .1
+                            .parse::<NaiveDateTime>()
+                            .map_err(|_| DefaultError {
+                                message: "Failed to parse time range",
+                            })?),
+                    ),
+            );
+        } else if time_range.0 != "null" {
+            query = query.filter(
+                card_metadata_columns::time_stamp.gt(time_range
+                    .0
+                    .parse::<NaiveDateTime>()
+                    .map_err(|_| DefaultError {
+                        message: "Failed to parse time range",
+                    })?),
+            );
+        } else if time_range.1 != "null" {
+            query = query.filter(
+                card_metadata_columns::time_stamp.lt(time_range
+                    .1
+                    .parse::<NaiveDateTime>()
+                    .map_err(|_| DefaultError {
+                        message: "Failed to parse time range",
+                    })?),
+            );
+        }
     }
 
     if let Some(serde_json::Value::Object(obj)) = &filters {
@@ -682,6 +724,7 @@ pub fn search_full_text_card_query(
     filters: Option<serde_json::Value>,
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
+    time_range: Option<(String, String)>,
     parsed_query: ParsedQuery,
 ) -> Result<FullTextSearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
@@ -788,6 +831,46 @@ pub fn search_full_text_card_query(
     }
     for link_url in link_inner.iter().skip(1) {
         query = query.or_filter(card_metadata_columns::link.ilike(format!("%{}%", link_url)));
+    }
+
+    if let Some(time_range) = time_range {
+        if time_range.0 != "null" && time_range.1 != "null" {
+            query = query.filter(
+                card_metadata_columns::time_stamp
+                    .gt(time_range
+                        .0
+                        .parse::<NaiveDateTime>()
+                        .map_err(|_| DefaultError {
+                            message: "Failed to parse time range",
+                        })?)
+                    .and(
+                        card_metadata_columns::time_stamp.lt(time_range
+                            .1
+                            .parse::<NaiveDateTime>()
+                            .map_err(|_| DefaultError {
+                                message: "Failed to parse time range",
+                            })?),
+                    ),
+            );
+        } else if time_range.0 != "null" {
+            query = query.filter(
+                card_metadata_columns::time_stamp.gt(time_range
+                    .0
+                    .parse::<NaiveDateTime>()
+                    .map_err(|_| DefaultError {
+                        message: "Failed to parse time range",
+                    })?),
+            );
+        } else if time_range.1 != "null" {
+            query = query.filter(
+                card_metadata_columns::time_stamp.lt(time_range
+                    .1
+                    .parse::<NaiveDateTime>()
+                    .map_err(|_| DefaultError {
+                        message: "Failed to parse time range",
+                    })?),
+            );
+        }
     }
 
     if let Some(serde_json::Value::Object(obj)) = &filters {
