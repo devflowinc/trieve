@@ -2,7 +2,9 @@ import { BiRegularSearch, BiRegularX } from "solid-icons/bi";
 import { AiOutlineClockCircle } from "solid-icons/ai";
 import {
   For,
+  Match,
   Show,
+  Switch,
   createEffect,
   createSignal,
   onCleanup,
@@ -19,6 +21,7 @@ import {
 } from "solid-headless";
 import { FaSolidCheck } from "solid-icons/fa";
 import type { Filters } from "./ResultsPage";
+import { DatePicker } from "./Atoms/DatePicker";
 
 const SearchForm = (props: {
   query?: string;
@@ -60,6 +63,11 @@ const SearchForm = (props: {
     string[]
   >([]);
   const [searchHistoryList, setSearchHistoryList] = createSignal<string[]>([]);
+  const [showFilters, setShowFilters] = createSignal(false);
+  const [timeRange, setTimeRange] = createSignal({
+    start: props.filters.start,
+    end: props.filters.end,
+  });
 
   createEffect(() => {
     // get the previous searched queries from localStorage and set them into the state;
@@ -159,9 +167,13 @@ const SearchForm = (props: {
     window.location.href = props.collectionID
       ? `/collection/${props.collectionID}?q=${searchQuery}` +
         (filters ? `&${filters}` : "") +
+        (timeRange().start ? `&start=${timeRange().start}` : "") +
+        (timeRange().end ? `&end=${timeRange().end}` : "") +
         (searchTypes()[0].isSelected ? `&searchType=fulltextsearch` : "")
       : `/search?q=${searchQuery}` +
         (filters ? `&${filters}` : "") +
+        (timeRange().start ? `&start=${timeRange().start}` : "") +
+        (timeRange().end ? `&end=${timeRange().end}` : "") +
         (searchTypes()[0].isSelected ? `&searchType=fulltextsearch` : "");
   };
 
@@ -522,61 +534,27 @@ const SearchForm = (props: {
               (comboboxSection) => comboboxSection.comboboxItems.length > 0,
             )}
           >
-            <Popover defaultOpen={false} class="relative">
-              {({ isOpen, setState }) => (
-                <>
-                  <PopoverButton
-                    aria-label="Toggle filters"
-                    type="button"
-                    class="flex items-center space-x-1 text-sm "
-                  >
-                    <span>Filters</span>{" "}
-                    <svg
-                      fill="currentColor"
-                      stroke-width="0"
-                      style={{ overflow: "visible", color: "currentColor" }}
-                      viewBox="0 0 16 16"
-                      class="h-3.5 w-3.5 "
-                      height="1em"
-                      width="1em"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />
-                    </svg>
-                  </PopoverButton>
-                  <Transition
-                    show={isOpen()}
-                    enter="transition duration-200"
-                    enterFrom="opacity-0"
-                    enterTo="opacity-100"
-                    leave="transition duration-150"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                  >
-                    <PopoverPanel
-                      unmount={false}
-                      class="absolute z-10 mt-2 h-fit w-fit rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-800"
-                    >
-                      <Menu class="h-0">
-                        <MenuItem class="h-0" as="button" aria-label="Empty" />
-                      </Menu>
-                      <div class="flex w-full min-w-full space-x-2">
-                        <For each={comboBoxSections()}>
-                          {(comboBoxSection) => (
-                            <Combobox
-                              sectionName={comboBoxSection.name}
-                              comboBoxSections={comboBoxSections}
-                              setComboboxSections={setComboBoxSections}
-                              setPopoverOpen={setState}
-                            />
-                          )}
-                        </For>
-                      </div>
-                    </PopoverPanel>
-                  </Transition>
-                </>
-              )}
-            </Popover>
+            <button
+              class="flex items-center space-x-1 text-sm "
+              onClick={(e) => {
+                e.preventDefault();
+                setShowFilters(!showFilters());
+              }}
+            >
+              <span>Filters</span>
+              <svg
+                fill="currentColor"
+                stroke-width="0"
+                style={{ overflow: "visible", color: "currentColor" }}
+                viewBox="0 0 16 16"
+                class="h-3.5 w-3.5 "
+                height="1em"
+                width="1em"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />
+              </svg>
+            </button>
           </Show>
           <Popover defaultOpen={false} class="relative">
             {({ isOpen, setState }) => (
@@ -660,6 +638,76 @@ const SearchForm = (props: {
             )}
           </Popover>
         </div>
+        <Show when={showFilters()}>
+          <div class="flex gap-x-2">
+            <For each={comboBoxSections()}>
+              {(comboBoxSection) => (
+                <Popover defaultOpen={false} class="relative">
+                  {({ isOpen, setState }) => (
+                    <>
+                      <PopoverButton
+                        aria-label="Toggle filters"
+                        type="button"
+                        class="flex items-center space-x-1 text-sm "
+                      >
+                        <span>{comboBoxSection.name}</span>{" "}
+                        <svg
+                          fill="currentColor"
+                          stroke-width="0"
+                          style={{
+                            overflow: "visible",
+                            color: "currentColor",
+                          }}
+                          viewBox="0 0 16 16"
+                          class="h-3.5 w-3.5 "
+                          height="1em"
+                          width="1em"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />
+                        </svg>
+                      </PopoverButton>
+                      <Show when={isOpen()}>
+                        <PopoverPanel
+                          unmount={false}
+                          class="absolute z-10 mt-2 h-fit w-fit rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-800"
+                        >
+                          <Menu class="h-0">
+                            <MenuItem
+                              class="h-0"
+                              as="button"
+                              aria-label="Empty"
+                            />
+                          </Menu>
+                          <div class="flex w-full min-w-full space-x-2">
+                            <Switch>
+                              <Match when={comboBoxSection.name != "Date"}>
+                                <Combobox
+                                  sectionName={comboBoxSection.name}
+                                  comboBoxSections={comboBoxSections}
+                                  setComboboxSections={setComboBoxSections}
+                                  setPopoverOpen={setState}
+                                />
+                              </Match>
+                              <Match when={comboBoxSection.name == "Date"}>
+                                <DatePicker
+                                  sectionName={comboBoxSection.name}
+                                  timeRange={timeRange}
+                                  setTimeRange={setTimeRange}
+                                  setPopoverOpen={setState}
+                                />
+                              </Match>
+                            </Switch>
+                          </div>
+                        </PopoverPanel>
+                      </Show>
+                    </>
+                  )}
+                </Popover>
+              )}
+            </For>
+          </div>
+        </Show>
         <Show when={!props.query && !props.collectionID}>
           <div class="flex justify-center space-x-4 sm:gap-y-0 sm:space-x-2 sm:px-6">
             <button

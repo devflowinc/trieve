@@ -5,6 +5,7 @@ import type { Filters } from "../components/ResultsPage";
 import HomeLayout from "../layouts/HomeLayout.astro";
 import { Show, For } from "solid-js";
 
+
 const dataset = import.meta.env.DATASET as string;
 const suggestedQueries = ((import.meta.env.SUGGESTED_QUERIES ?? "") as string)
   .split(",")
@@ -23,7 +24,9 @@ params.forEach((value, key) => {
     key === "page" ||
     key === "searchType" ||
     key === "Tag Set" ||
-    key === "link"
+    key === "link" ||
+    key === "start" ||
+    key === "end"
   ) {
     return;
   }
@@ -37,6 +40,8 @@ params.forEach((value, key) => {
 const dataTypeFilters: Filters = {
   tagSet: params.get("Tag Set")?.split(",") ?? [],
   link: params.get("link")?.split(",") ?? [],
+  start: params.get("start") ?? "",
+  end: params.get("end") ?? "",
   metadataFilters,
 };
 ---

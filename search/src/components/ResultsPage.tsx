@@ -27,6 +27,8 @@ import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
 export interface Filters {
   tagSet: string[];
   link: string[];
+  start: string;
+  end: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadataFilters: any;
 }
@@ -130,6 +132,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         content: props.query,
         tag_set: props.filters.tagSet,
         link: props.filters.link,
+        time_range: [props.filters.start, props.filters.end],
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         filters: props.filters.metadataFilters,
       }),
