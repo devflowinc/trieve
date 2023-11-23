@@ -25,6 +25,7 @@ const SearchForm = () => {
   const [autoCutSuccessText, setAutoCutSuccessText] =
     createSignal<JSXElement>("");
   const [autoCutSuccessCount, setAutoCutSuccessCount] = createSignal(0);
+  const [timestamp, setTimestamp] = createSignal("");
 
   const submitEvidence = (e: Event) => {
     e.preventDefault();
@@ -61,6 +62,7 @@ const SearchForm = () => {
       body: JSON.stringify({
         card_html: cardHTMLContentValue,
         link: evidenceLinkValue,
+        time_stamp: timestamp(),
         private: _private(),
       }),
     }).then((response) => {
@@ -216,6 +218,14 @@ const SearchForm = () => {
               "w-full bg-neutral-100 border border-gray-300 rounded-md px-4 py-1 dark:bg-neutral-700":
                 true,
               "border border-red-500": errorFields().includes("evidenceLink"),
+            }}
+          />
+          <div>Date</div>
+          <input
+            type="date"
+            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+            onInput={(e) => {
+              setTimestamp(e.currentTarget.value);
             }}
           />
         </div>
