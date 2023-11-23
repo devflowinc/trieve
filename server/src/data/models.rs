@@ -1,6 +1,7 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
 use super::schema::*;
+use chrono::NaiveDateTime;
 use diesel::{expression::ValidGrouping, r2d2::ConnectionManager, PgConnection};
 use openai_dive::v1::resources::chat_completion::{ChatMessage, Role};
 use serde::{Deserialize, Serialize};
@@ -288,6 +289,7 @@ pub struct CardMetadata {
     pub private: bool,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
+    pub time_stamp: Option<NaiveDateTime>,
 }
 
 impl CardMetadata {
@@ -302,6 +304,7 @@ impl CardMetadata {
         private: bool,
         metadata: Option<serde_json::Value>,
         tracking_id: Option<String>,
+        time_stamp: Option<NaiveDateTime>,
     ) -> Self {
         CardMetadata {
             id: uuid::Uuid::new_v4(),
@@ -316,6 +319,7 @@ impl CardMetadata {
             private,
             metadata,
             tracking_id,
+            time_stamp,
         }
     }
 }
@@ -333,6 +337,7 @@ impl CardMetadata {
         private: bool,
         metadata: Option<serde_json::Value>,
         tracking_id: Option<String>,
+        time_stamp: Option<NaiveDateTime>,
     ) -> Self {
         CardMetadata {
             id: id.into(),
@@ -347,6 +352,7 @@ impl CardMetadata {
             private,
             metadata,
             tracking_id,
+            time_stamp,
         }
     }
 }

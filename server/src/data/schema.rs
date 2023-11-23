@@ -66,7 +66,7 @@ diesel::table! {
         private -> Bool,
         metadata -> Nullable<Jsonb>,
         tracking_id -> Nullable<Text>,
-        time_stamp -> Timestamp,
+        time_stamp -> Nullable<Timestamp>,
     }
 }
 
