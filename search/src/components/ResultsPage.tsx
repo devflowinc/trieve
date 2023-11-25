@@ -132,7 +132,15 @@ const ResultsPage = (props: ResultsPageProps) => {
         content: props.query,
         tag_set: props.filters.tagSet,
         link: props.filters.link,
-        time_range: [props.filters.start, props.filters.end],
+        time_range:
+          props.filters.start || props.filters.end
+            ? [
+                props.filters.start
+                  ? props.filters.start + " 00:00:00"
+                  : "null",
+                props.filters.end ? props.filters.end + " 00:00:00" : "null",
+              ]
+            : null,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         filters: props.filters.metadataFilters,
       }),

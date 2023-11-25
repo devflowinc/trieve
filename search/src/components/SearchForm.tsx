@@ -69,6 +69,7 @@ const SearchForm = (props: {
     end: props.filters.end,
   });
 
+
   createEffect(() => {
     // get the previous searched queries from localStorage and set them into the state;
     const searchQueriesFromStorage = localStorage.getItem("searchQueries");
