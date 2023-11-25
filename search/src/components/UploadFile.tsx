@@ -12,6 +12,7 @@ export const UploadFile = () => {
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
   const [errorText, setErrorText] = createSignal("");
   const [submitted, setSubmitted] = createSignal(false);
+  const [timestamp, setTimestamp] = createSignal("");
 
   const handleDragUpload = (e: DragEvent) => {
     e.preventDefault();
@@ -52,6 +53,7 @@ export const UploadFile = () => {
       base64_docx_file: base64File,
       file_name: file_name,
       file_mime_type: file_mime_type,
+      time_stamp: timestamp() + " 00:00:00",
       private: _private(),
       link: link(),
       tag_set: tagSet(),
@@ -112,6 +114,14 @@ export const UploadFile = () => {
             value={tagSet()}
             onInput={(e) => setTagSet(e.target.value)}
             class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+          />
+          <div>Date</div>
+          <input
+            type="date"
+            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+            onInput={(e) => {
+              setTimestamp(e.currentTarget.value);
+            }}
           />
         </div>
         <label
