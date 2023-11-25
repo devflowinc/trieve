@@ -37,11 +37,7 @@ export const DatePicker = (props: DatePickerProps) => {
               name="start"
               type="date"
               class="w-fit rounded-lg border border-gray-300 bg-gray-50 p-2  text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500  dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-              placeholder={
-                props.timeRange().start == ""
-                  ? "Select date start"
-                  : props.timeRange().start
-              }
+              value={props.timeRange().start}
               onChange={(e) => {
                 props.setTimeRange((prev) => ({
                   ...prev,
@@ -56,11 +52,7 @@ export const DatePicker = (props: DatePickerProps) => {
               name="end"
               type="date"
               class="w-fit rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500  dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-              placeholder={
-                props.timeRange().end == ""
-                  ? "Select date end"
-                  : props.timeRange().end
-              }
+              value={props.timeRange().end}
               onChange={(e) => {
                 props.setTimeRange((prev) => ({
                   ...prev,

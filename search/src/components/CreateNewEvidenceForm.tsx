@@ -62,7 +62,7 @@ const SearchForm = () => {
       body: JSON.stringify({
         card_html: cardHTMLContentValue,
         link: evidenceLinkValue,
-        time_stamp: timestamp(),
+        time_stamp: timestamp() + " 00:00:00",
         private: _private(),
       }),
     }).then((response) => {

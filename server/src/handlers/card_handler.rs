@@ -274,9 +274,9 @@ pub async fn create_card(
             card.time_stamp
                 .clone()
                 .map(|ts| -> Result<NaiveDateTime, ServiceError> {
-                    Ok(ts.parse::<NaiveDateTime>().map_err(|_| {
-                        ServiceError::BadRequest("Invalid timestamp format".to_string())
-                    })?)
+                    NaiveDateTime::parse_from_str(&ts, "%Y-%m-%d %H:%M:%S").map_err(|e| {
+                        ServiceError::BadRequest(format!("Invalid timestamp format {}", e))
+                    })
                 })
                 .transpose()?,
         );
@@ -310,9 +310,9 @@ pub async fn create_card(
             card.time_stamp
                 .clone()
                 .map(|ts| -> Result<NaiveDateTime, ServiceError> {
-                    Ok(ts.parse::<NaiveDateTime>().map_err(|_| {
-                        ServiceError::BadRequest("Invalid timestamp format".to_string())
-                    })?)
+                    NaiveDateTime::parse_from_str(&ts, "%Y-%m-%d %H:%M:%S").map_err(|e| {
+                        ServiceError::BadRequest(format!("Invalid timestamp format {}", e))
+                    })
                 })
                 .transpose()?,
         );
@@ -522,9 +522,8 @@ pub async fn update_card(
         card.time_stamp
             .clone()
             .map(|ts| -> Result<NaiveDateTime, ServiceError> {
-                Ok(ts.parse::<NaiveDateTime>().map_err(|_| {
-                    ServiceError::BadRequest("Invalid timestamp format".to_string())
-                })?)
+                NaiveDateTime::parse_from_str(&ts, "%Y-%m-%d %H:%M:%S")
+                    .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))
             })
             .transpose()?,
     );
@@ -617,9 +616,8 @@ pub async fn update_card_by_tracking_id(
         card.time_stamp
             .clone()
             .map(|ts| -> Result<NaiveDateTime, ServiceError> {
-                Ok(ts.parse::<NaiveDateTime>().map_err(|_| {
-                    ServiceError::BadRequest("Invalid timestamp format".to_string())
-                })?)
+                NaiveDateTime::parse_from_str(&ts, "%Y-%m-%d %H:%M:%S")
+                    .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))
             })
             .transpose()?,
     );
