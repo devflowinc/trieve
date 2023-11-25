@@ -773,9 +773,11 @@ pub struct File {
     pub tag_set: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub link: Option<String>,
+    pub time_stamp: Option<chrono::NaiveDateTime>,
 }
 
 impl File {
+    #[allow(clippy::too_many_arguments)]
     pub fn from_details(
         user_id: uuid::Uuid,
         file_name: &str,
@@ -784,6 +786,7 @@ impl File {
         tag_set: Option<String>,
         metadata: Option<serde_json::Value>,
         link: Option<String>,
+        time_stamp: Option<String>,
     ) -> Self {
         File {
             id: uuid::Uuid::new_v4(),
@@ -796,6 +799,9 @@ impl File {
             tag_set,
             metadata,
             link,
+            time_stamp: time_stamp.map(|ts| {
+                chrono::NaiveDateTime::parse_from_str(&ts, "%Y-%m-%d %H:%M:%S").unwrap_or_default()
+            }),
         }
     }
 }

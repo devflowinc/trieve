@@ -57,6 +57,7 @@ pub struct UploadFileData {
     pub tag_set: Option<String>,
     pub description: Option<String>,
     pub link: Option<String>,
+    pub time_stamp: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub create_cards: Option<bool>,
 }
@@ -123,6 +124,7 @@ pub async fn upload_file_handler(
         upload_file_data.private,
         upload_file_data.metadata,
         upload_file_data.create_cards,
+        upload_file_data.time_stamp,
         user,
         pool_inner,
     )

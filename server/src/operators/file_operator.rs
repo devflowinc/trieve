@@ -66,6 +66,7 @@ pub fn create_file_query(
     tag_set: Option<String>,
     metadata: Option<serde_json::Value>,
     link: Option<String>,
+    time_stamp: Option<String>,
     pool: web::Data<Pool>,
 ) -> Result<File, DefaultError> {
     use crate::data::schema::files::dsl as files_columns;
@@ -75,7 +76,7 @@ pub fn create_file_query(
     })?;
 
     let new_file = File::from_details(
-        user_id, file_name, private, file_size, tag_set, metadata, link,
+        user_id, file_name, private, file_size, tag_set, metadata, link, time_stamp,
     );
 
     let created_file: File = diesel::insert_into(files_columns::files)
@@ -135,6 +136,7 @@ pub async fn convert_doc_to_html_query(
     private: bool,
     metadata: Option<serde_json::Value>,
     create_cards: Option<bool>,
+    time_stamp: Option<String>,
     user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<UploadFileResult, DefaultError> {
@@ -237,6 +239,7 @@ pub async fn convert_doc_to_html_query(
             tag_set.clone(),
             Some(tika_metadata_response_json.clone()),
             link.clone(),
+            time_stamp.clone(),
             pool.clone(),
         )?;
 
@@ -262,6 +265,7 @@ pub async fn convert_doc_to_html_query(
             created_file.id,
             description,
             Some(tika_metadata_response_json.clone()),
+            time_stamp,
             link.clone(),
             user,
             temp_html_file_path_buf,
@@ -286,6 +290,7 @@ pub async fn convert_doc_to_html_query(
             tag_set1,
             None,
             None,
+            None,
         ),
     })
 }
@@ -298,6 +303,7 @@ pub async fn create_cards_with_handler(
     created_file_id: uuid::Uuid,
     description: Option<String>,
     metadata: Option<serde_json::Value>,
+    time_stamp: Option<String>,
     link: Option<String>,
     user: LoggedUser,
     temp_html_file_path_buf: PathBuf,
@@ -371,7 +377,7 @@ pub async fn create_cards_with_handler(
             metadata: metadata.clone(),
             collection_id: None,
             tracking_id: None,
-            time_stamp: None,
+            time_stamp: time_stamp.clone(),
         };
         let web_json_create_card_data = web::Json(create_card_data);
 

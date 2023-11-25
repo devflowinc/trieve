@@ -132,6 +132,7 @@ diesel::table! {
         tag_set -> Nullable<Text>,
         metadata -> Nullable<Jsonb>,
         link -> Nullable<Text>,
+        time_stamp -> Nullable<Timestamp>,
     }
 }
 
