@@ -47,7 +47,7 @@ export const DatePicker = (props: DatePickerProps) => {
             />
           </div>
           <span class="mx-4 text-gray-500">to</span>
-          <div class="relative">
+          <div class="relative pb-2">
             <input
               name="end"
               type="date"
