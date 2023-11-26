@@ -1,4 +1,4 @@
-import { Accessor, Setter, createSignal } from "solid-js";
+import type { Accessor, Setter } from "solid-js";
 
 export interface DatePickerProps {
   sectionName: string;
@@ -14,23 +14,12 @@ export interface DatePickerProps {
 }
 
 export const DatePicker = (props: DatePickerProps) => {
-  const [usingPanel, setUsingPanel] = createSignal(false);
-  const [inputValue, setInputValue] = createSignal("");
-
   return (
     <div class="w-full min-w-[165px]">
       <div class="mb-1 text-center text-sm font-semibold">
         {props.sectionName}
       </div>
-      <div
-        class="mt-1 flex max-h-[40vh] w-full transform flex-col space-y-1 overflow-y-auto rounded px-2"
-        onMouseEnter={() => {
-          setUsingPanel(true);
-        }}
-        onMouseLeave={() => {
-          setUsingPanel(false);
-        }}
-      >
+      <div class="mt-1 flex max-h-[40vh] w-full transform flex-col space-y-1 overflow-y-auto rounded px-2">
         <div class="flex flex-col items-center">
           <div class="relative">
             <input
