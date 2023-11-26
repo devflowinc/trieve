@@ -69,7 +69,6 @@ const SearchForm = (props: {
     end: props.filters.end,
   });
 
-
   createEffect(() => {
     // get the previous searched queries from localStorage and set them into the state;
     const searchQueriesFromStorage = localStorage.getItem("searchQueries");
@@ -532,29 +531,20 @@ const SearchForm = (props: {
         <div class="flex space-x-2">
           <Show
             when={comboBoxSections().find(
-              (comboboxSection) => comboboxSection.comboboxItems.length > 0,
+              (comboboxSection) => comboboxSection.name,
             )}
           >
             <button
-              class="flex items-center space-x-1 text-sm "
+              classList={{
+                "flex items-center space-x-1 text-sm p-1 rounded": true,
+                "bg-neutral-200 dark:bg-neutral-700": showFilters(),
+              }}
               onClick={(e) => {
                 e.preventDefault();
                 setShowFilters(!showFilters());
               }}
             >
               <span>Filters</span>
-              <svg
-                fill="currentColor"
-                stroke-width="0"
-                style={{ overflow: "visible", color: "currentColor" }}
-                viewBox="0 0 16 16"
-                class="h-3.5 w-3.5 "
-                height="1em"
-                width="1em"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />
-              </svg>
             </button>
           </Show>
           <Popover defaultOpen={false} class="relative">
@@ -563,7 +553,7 @@ const SearchForm = (props: {
                 <PopoverButton
                   aria-label="Toggle filters"
                   type="button"
-                  class="flex items-center space-x-1 text-sm"
+                  class="flex items-center space-x-1 p-1 text-sm"
                 >
                   <span>Search Type</span>{" "}
                   <svg
