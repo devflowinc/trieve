@@ -329,8 +329,14 @@ pub async fn create_card(
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-        create_new_qdrant_point_query(qdrant_point_id, embedding_vector, private, Some(user.id))
-            .await?;
+        create_new_qdrant_point_query(
+            qdrant_point_id,
+            embedding_vector,
+            private,
+            card_metadata.clone(),
+            Some(user.id),
+        )
+        .await?;
     }
 
     if let Some(collection_id_to_bookmark) = card_collection_id {
