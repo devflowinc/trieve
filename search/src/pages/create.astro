@@ -1,6 +1,6 @@
 ---
 import SearchLayout from "../layouts/SearchLayout.astro";
-import CreateNewEvidenceForm from "../components/CreateNewEvidenceForm";
+import { CreateNewDocChunkForm } from "../components/CreateNewDocChunkForm";
 import Footer from "../components/Footer.astro";
 const create_evidence_feature =
   import.meta.env.PUBLIC_CREATE_EVIDENCE_FEATURE !== "off";
@@ -19,7 +19,7 @@ if (!create_evidence_feature) {
       <h1 class="text-4xl text-center">Create New Evidence Card</h1>
     </a>
     <div class="w-full max-w-4xl px-4 sm:px-8 md:px-20">
-      <CreateNewEvidenceForm client:only />
+      <CreateNewDocumentChunkForm client:only />
     </div>
   </div>
   <div class="flex-1"></div>

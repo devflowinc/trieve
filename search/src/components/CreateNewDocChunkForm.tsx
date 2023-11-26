@@ -3,16 +3,15 @@ import {
   BiRegularQuestionMark,
   BiRegularXCircle,
 } from "solid-icons/bi";
-import { JSX, JSXElement, Show, createEffect, createSignal } from "solid-js";
+import { JSX, Show, createEffect, createSignal } from "solid-js";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import type { TinyMCE } from "../../public/tinymce/tinymce";
 import { CreateCardDTO, isActixApiDefaultError } from "../../utils/apiTypes";
 import { Tooltip } from "./Atoms/Tooltip";
-import { TbRobot } from "solid-icons/tb";
 
-const SearchForm = () => {
+export const CreateNewDocChunkForm = () => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const [evidenceLink, setEvidenceLink] = createSignal("");
+  const [docChunkLink, setDocChunkLink] = createSignal("");
   const [errorText, setErrorText] = createSignal<
     string | number | boolean | Node | JSX.ArrayElement | null | undefined
   >("");
@@ -20,14 +19,9 @@ const SearchForm = () => {
   const [isSubmitting, setIsSubmitting] = createSignal(false);
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
   const [_private, setPrivate] = createSignal(false);
-  const [isLoadingAutoCut, setIsLoadingAutoCut] = createSignal(false);
-  const [autoCutErrorText, setAutoCutErrorText] = createSignal("");
-  const [autoCutSuccessText, setAutoCutSuccessText] =
-    createSignal<JSXElement>("");
-  const [autoCutSuccessCount, setAutoCutSuccessCount] = createSignal(0);
   const [timestamp, setTimestamp] = createSignal("");
 
-  const submitEvidence = (e: Event) => {
+  const submitDocChunk = (e: Event) => {
     e.preventDefault();
 
     const cardHTMLContentValue =
@@ -36,15 +30,12 @@ const SearchForm = () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
     const cardTextContentValue = (window as any).tinyMCE.activeEditor.getBody()
       .textContent as unknown as string;
-    const evidenceLinkValue = evidenceLink();
+    const docChunkLinkValue = docChunkLink();
 
-    if (!cardTextContentValue || !evidenceLinkValue) {
+    if (!cardTextContentValue) {
       const errors: string[] = [];
       if (!cardTextContentValue) {
         errors.push("cardContent");
-      }
-      if (!evidenceLinkValue) {
-        errors.push("evidenceLink");
       }
       setErrorFields(errors);
       return;
@@ -61,7 +52,7 @@ const SearchForm = () => {
       credentials: "include",
       body: JSON.stringify({
         card_html: cardHTMLContentValue,
-        link: evidenceLinkValue,
+        link: docChunkLinkValue,
         time_stamp: timestamp() + " 00:00:00",
         private: _private(),
       }),
@@ -184,40 +175,26 @@ const SearchForm = () => {
     }
   });
 
-  createEffect(() => {
-    const elementToAnimatePulse = document.querySelector("div.tox.tox-tinymce");
-
-    if (isLoadingAutoCut()) {
-      if (elementToAnimatePulse) {
-        elementToAnimatePulse.classList.add("animate-pulse");
-      }
-    } else {
-      if (elementToAnimatePulse) {
-        elementToAnimatePulse.classList.remove("animate-pulse");
-      }
-    }
-  });
-
   return (
     <>
       <form
         class="my-8 flex h-full w-full flex-col space-y-4 text-neutral-800 dark:text-white"
         onSubmit={(e) => {
           e.preventDefault();
-          submitEvidence(e);
+          submitDocChunk(e);
         }}
       >
         <div class="text-center text-red-500">{errorText()}</div>
         <div class="flex flex-col space-y-2">
-          <div>Link to evidence*</div>
+          <div>Link to document chunk</div>
           <input
             type="url"
-            value={evidenceLink()}
-            onInput={(e) => setEvidenceLink(e.target.value)}
+            value={docChunkLink()}
+            onInput={(e) => setDocChunkLink(e.target.value)}
             classList={{
               "w-full bg-neutral-100 border border-gray-300 rounded-md px-4 py-1 dark:bg-neutral-700":
                 true,
-              "border border-red-500": errorFields().includes("evidenceLink"),
+              "border border-red-500": errorFields().includes("docChunkLink"),
             }}
           />
           <div>Date</div>
@@ -240,141 +217,6 @@ const SearchForm = () => {
                 tooltipText="Ctrl+Shift+1 thru 5 to change font size. ctrl+Shift+h to highlight."
               />
             </div>
-            <button
-              classList={{
-                "flex w-fit items-center space-x-1 rounded bg-neutral-100 p-2 px-3 py-1 hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800":
-                  true,
-                "animate-pulse": isLoadingAutoCut(),
-              }}
-              disabled={isLoadingAutoCut()}
-              onClick={(e) => {
-                e.preventDefault();
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-                const cardTextContentValue =
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-                  (window as any).tinyMCE.activeEditor.getBody()
-                    .textContent as unknown as string;
-
-                if (cardTextContentValue.length < 200) {
-                  setAutoCutErrorText(
-                    "Card content must be at least 200 characters to auto-cut.",
-                  );
-                  setAutoCutSuccessText("");
-                  return;
-                }
-
-                if (cardTextContentValue.length > 4300) {
-                  setAutoCutErrorText(
-                    "Card content must be less than 4300 characters to auto-cut.",
-                  );
-                  setAutoCutSuccessText("");
-                  return;
-                }
-
-                setIsLoadingAutoCut(true);
-                void fetch(`${apiHost}/card/cut`, {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  credentials: "include",
-                  body: JSON.stringify({
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                    uncut_card: cardTextContentValue,
-                  }),
-                })
-                  .then((response) => {
-                    setIsLoadingAutoCut(false);
-                    if (response.status === 401) {
-                      setShowNeedLoginModal(true);
-                      return;
-                    }
-
-                    if (!response.ok) {
-                      try {
-                        void response.json().then((data) => {
-                          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                          setAutoCutErrorText(data.message);
-                          setAutoCutSuccessText("");
-                        });
-                      } catch (e) {
-                        console.error(e);
-                        setAutoCutErrorText("Unknown error, try again later");
-                        setAutoCutSuccessText("");
-                      }
-                      return;
-                    }
-
-                    void response.json().then((data) => {
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-                      (window as any).tinyMCE.activeEditor.setContent(
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, solid/reactivity, @typescript-eslint/restrict-plus-operands
-                        data.completion
-                          .replace("\n", " ")
-                          .replace(`<br>`, " ")
-                          .replace(`\\n`, " ")
-                          .replaceAll(`<a`, `<span`)
-                          .replaceAll(`</a>`, `</span>`)
-                          .replaceAll(`blockquote`, "span")
-                          .replaceAll(`<s>`, "<span>")
-                          .replaceAll(`</s>`, "</span>")
-                          .replaceAll(`<u>`, `<u style="font-size: 14pt;">`)
-                          .replaceAll(`<b>`, `<b style="font-size: 14pt;">`),
-                      );
-                      setAutoCutErrorText("");
-                      setAutoCutSuccessCount((prev) => prev + 1);
-                      setAutoCutSuccessText(
-                        <span class="text-center">
-                          Auto-cut successful! 🎉 We're trying to improve. Let
-                          us know how it went on{" "}
-                          <a
-                            class="underline"
-                            href="https://discord.gg/CuJVfgZf54"
-                          >
-                            Discord
-                          </a>
-                          ,{" "}
-                          <a
-                            class="underline"
-                            href="https://t.me/+vUOq6omKOn5lY2Zh"
-                          >
-                            Telegram
-                          </a>
-                          , or{" "}
-                          <a
-                            class="underline"
-                            href="https://matrix.to/#/#arguflow-general:matrix.zerodao.gg"
-                          >
-                            Matrix
-                          </a>
-                        </span>,
-                      );
-                    });
-                  })
-                  .catch(() => {
-                    setIsLoadingAutoCut(false);
-                    setAutoCutErrorText("Something went wrong, try again");
-                    setAutoCutSuccessText("");
-                  });
-              }}
-            >
-              <TbRobot class="h-5 w-5" />
-              <Show when={isLoadingAutoCut()}>
-                <span>Loading...</span>
-              </Show>
-              <Show when={!isLoadingAutoCut() && !autoCutSuccessText()}>
-                <span>auto-cut</span>
-              </Show>
-              <Show when={!isLoadingAutoCut() && autoCutSuccessText()}>
-                <span>retry auto-cut</span>
-              </Show>
-            </button>
-          </div>
-          <div class="flex w-full justify-center text-red-500">
-            {autoCutErrorText()}
-          </div>
-          <div class="flex w-full justify-center text-green-500">
-            {autoCutSuccessText()}
           </div>
           <textarea id="search-query-textarea" />
         </div>
@@ -390,9 +232,9 @@ const SearchForm = () => {
           <button
             class="w-fit rounded bg-neutral-100 p-2 hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"
             type="submit"
-            disabled={isSubmitting() || isLoadingAutoCut()}
+            disabled={isSubmitting()}
           >
-            <Show when={!isSubmitting()}>Submit New Evidence</Show>
+            <Show when={!isSubmitting()}>Submit New Document Chunk</Show>
             <Show when={isSubmitting()}>
               <div class="animate-pulse">Submitting...</div>
             </Show>
@@ -407,7 +249,7 @@ const SearchForm = () => {
           <div class="min-w-[250px] sm:min-w-[300px]">
             <BiRegularXCircle class="mx-auto h-8 w-8 fill-current  !text-red-500" />
             <div class="mb-4 text-center text-xl font-bold">
-              Cannot add evidence or auto-cut without an account
+              Cannot add document chunk without an account
             </div>
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
@@ -421,44 +263,6 @@ const SearchForm = () => {
           </div>
         </FullScreenModal>
       </Show>
-      <Show when={autoCutSuccessCount() > 2}>
-        <FullScreenModal
-          isOpen={() => autoCutSuccessCount() > 2}
-          setIsOpen={(open: boolean) => {
-            setAutoCutSuccessCount(open ? 3 : 0);
-          }}
-        >
-          <div class="min-w-[250px] space-y-3 sm:min-w-[300px]">
-            <div class="mx-auto w-full text-center text-4xl">🎉</div>
-            <div class="mb-4 text-center text-lg font-bold">
-              Thank you for being a persistent early adopter! We're still
-              working on this feature and would love to hear your feedback on{" "}
-              <a
-                class="text-magenta underline"
-                href="https://discord.gg/CuJVfgZf54"
-              >
-                Discord
-              </a>
-              ,{" "}
-              <a
-                class="text-magenta underline"
-                href="https://t.me/+vUOq6omKOn5lY2Zh"
-              >
-                Telegram
-              </a>
-              , or{" "}
-              <a
-                class="text-magenta underline"
-                href="https://matrix.to/#/#arguflow-general:matrix.zerodao.gg"
-              >
-                Matrix
-              </a>
-            </div>
-          </div>
-        </FullScreenModal>
-      </Show>
     </>
   );
 };
-
-export default SearchForm;
