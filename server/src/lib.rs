@@ -17,7 +17,10 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use pyo3::{Python, types::PyDict, PyAny, Py};
 use qdrant_client::{
     prelude::*,
-    qdrant::{VectorParams, VectorsConfig},
+    qdrant::{
+        payload_index_params::IndexParams, FieldType, PayloadIndexParams, TextIndexParams,
+        TokenizerType, VectorParams, VectorsConfig,
+    },
 };
 use tokio::sync::Semaphore;
 use utoipa::OpenApi;
@@ -314,6 +317,51 @@ pub async fn main() -> std::io::Result<()> {
         .await
         .map_err(|err| {
             log::info!("Failed to create collection: {:?}", err);
+        });
+
+    let _ = qdrant_client
+        .create_field_index(
+            qdrant_collection.clone(),
+            "link",
+            FieldType::Text,
+            None,
+            None,
+        )
+        .await
+        .map_err(|err| {
+            log::info!("Failed to create index: {:?}", err);
+        });
+    let _ = qdrant_client
+        .create_field_index(
+            qdrant_collection.clone(),
+            "tag_set",
+            FieldType::Text,
+            None,
+            None,
+        )
+        .await
+        .map_err(|err| {
+            log::info!("Failed to create index: {:?}", err);
+        });
+
+    let _ = qdrant_client
+        .create_field_index(
+            qdrant_collection.clone(),
+            "card_html",
+            FieldType::Text,
+            Some(&PayloadIndexParams {
+                index_params: Some(IndexParams::TextIndexParams(TextIndexParams {
+                    tokenizer: TokenizerType::Word as i32,
+                    min_token_len: Some(2),
+                    max_token_len: Some(10),
+                    lowercase: Some(true),
+                })),
+            }),
+            None,
+        )
+        .await
+        .map_err(|err| {
+            log::info!("Failed to create index: {:?}", err);
         });
 
     run_migrations(&mut pool.get().unwrap());
