@@ -5,13 +5,13 @@ use crate::data::models::{
 use crate::data::schema;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::errors::ServiceError;
-use crate::get_env;
 use crate::handlers::card_handler::ParsedQuery;
 use crate::operators::qdrant_operator::search_qdrant_query;
 use crate::{
     data::models::{CardMetadata, Pool},
     errors::DefaultError,
 };
+use crate::{get_env, AppMutexStore};
 use actix_web::web;
 
 use chrono::NaiveDateTime;
@@ -45,16 +45,35 @@ pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
     })
 }
 
-pub async fn create_embedding(message: &str) -> Result<Vec<f32>, actix_web::Error> {
+pub async fn create_embedding(
+    message: &str,
+    app_mutex: web::Data<AppMutexStore>,
+) -> Result<Vec<f32>, actix_web::Error> {
     let use_custom: u8 = std::env::var("USE_CUSTOM_EMBEDDINGS")
         .unwrap_or("1".to_string())
         .parse::<u8>()
         .unwrap_or(1);
 
-    if use_custom == 0 {
-        create_server_embedding(message).await
-    } else {
-        create_openai_embedding(message).await
+    match &app_mutex.into_inner().embedding_semaphore {
+        Some(semaphore) => {
+            let lease = semaphore.acquire().await.unwrap();
+            if use_custom == 0 {
+                let result = create_server_embedding(message).await;
+                drop(lease);
+                result
+            } else {
+                let result = create_openai_embedding(message).await;
+                drop(lease);
+                result
+            }
+        }
+        _ => {
+            if use_custom == 0 {
+                create_server_embedding(message).await
+            } else {
+                create_openai_embedding(message).await
+            }
+        }
     }
 }
 

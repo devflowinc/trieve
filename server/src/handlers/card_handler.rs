@@ -4,7 +4,6 @@ use crate::data::models::{
     ChatMessageProxy, Pool, UserDTO,
 };
 use crate::errors::ServiceError;
-use crate::get_env;
 use crate::operators::card_operator::*;
 use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
@@ -16,6 +15,7 @@ use crate::operators::qdrant_operator::{
     create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
     update_qdrant_point_private_query,
 };
+use crate::{get_env, AppMutexStore};
 use actix::Arbiter;
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
@@ -129,6 +129,7 @@ pub async fn create_card(
     card: web::Json<CreateCardData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
+    app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let only_admin_can_create_cards =
         std::env::var("ONLY_ADMIN_CAN_CREATE_CARDS").unwrap_or("off".to_string());
@@ -199,7 +200,7 @@ pub async fn create_card(
         })));
     }
 
-    let embedding_vector = create_embedding(&content).await?;
+    let embedding_vector = create_embedding(&content, app_mutex).await?;
 
     let first_semantic_result = global_unfiltered_top_match_query(embedding_vector.clone())
         .await
@@ -471,6 +472,7 @@ pub struct CardHtmlUpdateError {
 pub async fn update_card(
     card: web::Json<UpdateCardData>,
     pool: web::Data<Pool>,
+    app_mutex: web::Data<AppMutexStore>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
@@ -488,7 +490,7 @@ pub async fn update_card(
 
     let new_content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
 
-    let embedding_vector = create_embedding(&new_content).await?;
+    let embedding_vector = create_embedding(&new_content, app_mutex).await?;
 
     let card_html = match card.card_html.clone() {
         Some(card_html) => Some(card_html),
@@ -559,6 +561,7 @@ pub struct UpdateCardByTrackingIdData {
 pub async fn update_card_by_tracking_id(
     card: web::Json<UpdateCardByTrackingIdData>,
     pool: web::Data<Pool>,
+    app_mutex: web::Data<AppMutexStore>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     if card.tracking_id.is_empty() {
@@ -581,7 +584,7 @@ pub async fn update_card_by_tracking_id(
 
     let new_content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
 
-    let embedding_vector = create_embedding(&new_content).await?;
+    let embedding_vector = create_embedding(&new_content, app_mutex).await?;
 
     let card_html = match card.card_html.clone() {
         Some(card_html) => Some(card_html),
@@ -703,12 +706,13 @@ pub async fn search_card(
     data: web::Json<SearchCardData>,
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
+    app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_user_id = user.map(|user| user.id);
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
-    let embedding_vector = create_embedding(&data.content).await?;
+    let embedding_vector = create_embedding(&data.content, app_mutex).await?;
     let pool1 = pool.clone();
 
     let parsed_query = parse_query(data.content.clone());
@@ -940,12 +944,13 @@ pub async fn search_collections(
     data: web::Json<SearchCollectionsData>,
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
+    app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
-    let embedding_vector = create_embedding(&data.content).await?;
+    let embedding_vector = create_embedding(&data.content, app_mutex).await?;
     let collection_id = data.collection_id;
     let pool1 = pool.clone();
     let pool2 = pool.clone();
