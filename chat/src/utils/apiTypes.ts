@@ -10,6 +10,8 @@ export interface CardMetadata {
   file_id: string | null;
   file_name: string | null;
   metadata: object | null;
+  tracking_id: string | null;
+  time_stamp: string | null;
 }
 
 export const indirectHasOwnProperty = (obj: unknown, prop: string): boolean => {

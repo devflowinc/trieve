@@ -11,7 +11,7 @@ import sanitizeHtml from "sanitize-html";
 import { VsFileSymlinkFile } from "solid-icons/vs";
 import BookmarkPopover from "./BookmarkPopover";
 import { FiEdit, FiGlobe, FiLock, FiTrash } from "solid-icons/fi";
-import { sanitzerOptions } from "./ScoreCard";
+import { formatDate, sanitzerOptions } from "./ScoreCard";
 import { Tooltip } from "./Atoms/Tooltip";
 import CommunityBookmarkPopover from "./CommunityBookmarkPopover";
 import {
@@ -53,7 +53,7 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const frontMatterVals = (
     (import.meta.env.PUBLIC_FRONTMATTER_VALS as string | undefined) ??
-    "link,tag_set,file_name"
+    "link,tag_set,file_name,time_stamp"
   ).split(",");
 
   const linesBeforeShowMore = (() => {
@@ -302,9 +302,24 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                     </Show>
                     <Show
                       when={
+                        props.card.time_stamp && frontMatterVal == "time_stamp"
+                      }
+                    >
+                      <div class="flex space-x-2">
+                        <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                          Time Stamp:{" "}
+                        </span>
+                        <span class="line-clamp-1 break-all">
+                          {formatDate(new Date(props.card.time_stamp ?? ""))}
+                        </span>
+                      </div>
+                    </Show>
+                    <Show
+                      when={
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                         frontMatterVal !== "link" &&
                         frontMatterVal !== "tag_set" &&
+                        frontMatterVal !== "time_stamp" &&
                         props.card.metadata &&
                         indirectHasOwnProperty(
                           props.card.metadata,

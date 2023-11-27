@@ -235,6 +235,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
                 file_id: card_with_file_name.map(|file| file.file_id),
                 metadata: metadata.metadata.clone(),
                 tracking_id: metadata.tracking_id.clone(),
+                time_stamp: metadata.time_stamp,
             }
         })
         .collect();
