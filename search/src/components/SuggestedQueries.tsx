@@ -1,6 +1,6 @@
 import { createSignal, createEffect, For, Show } from "solid-js";
 
-function SuggestedQueries(props: { query: string }) {
+export const SuggestedQueries = (props: { query: string }) => {
   const [suggestedQueries, setSuggestedQueries] = createSignal<string[]>([]);
   const [authed, setAuthed] = createSignal<boolean>(true);
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
@@ -37,7 +37,7 @@ function SuggestedQueries(props: { query: string }) {
               {(query) => (
                 <a
                   href={`/search?q=${encodeURIComponent(query)}`}
-                  class="text-blue-500 underline"
+                  class="w-fit text-blue-500 underline"
                 >
                   {query}
                 </a>
@@ -55,6 +55,4 @@ function SuggestedQueries(props: { query: string }) {
       </Show>
     </div>
   );
-}
-
-export default SuggestedQueries;
+};

@@ -4,6 +4,7 @@ import Footer from "../components/Footer.astro";
 import type { Filters } from "../components/ResultsPage";
 import HomeLayout from "../layouts/HomeLayout.astro";
 import { Show, For } from "solid-js";
+import { DefaultQueries } from "../components/DefaultQueries";
 
 const dataset = import.meta.env.DATASET as string;
 const suggestedQueries = ((import.meta.env.SUGGESTED_QUERIES ?? "") as string)
@@ -77,25 +78,7 @@ const dataTypeFilters: Filters = {
       />
     </div>
   </div>
-  <Show when={suggestedQueries.length}>
-    <div class="max-w-4xl px-4 sm:px-8 md:px-20 pt-20 w-full mx-auto">
-      <div class="text-lg font-bold">Suggested Queries</div>
-      <div class="flex flex-col gap-y-2">
-        <For each={suggestedQueries}>
-          {
-            (query) => (
-              <a
-                class="text-blue-500 underline"
-                href={`/search?q=${encodeURIComponent(query)}`}
-              >
-                {query}
-              </a>
-            )
-          }
-        </For>
-      </div>
-    </div>
-  </Show>
+  <DefaultQueries suggestedQueries={suggestedQueries} />
   <div class="flex-1"></div>
   <Footer />
 </HomeLayout>
