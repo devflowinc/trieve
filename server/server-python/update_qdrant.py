@@ -7,10 +7,12 @@ from qdrant_client import QdrantClient
 # Load the .env file
 load_dotenv()
 
-qdrant_client = QdrantClient(url=os.getenv("QDRANT_URL"))
+qdrant_client = QdrantClient(host="localhost", api_key=os.getenv("QDRANT_API_KEY"), https=False)
 # Connect to the PostgreSQL database
 conn = psycopg2.connect(os.getenv("DATABASE_URL"))
 cur = conn.cursor()
+
+cur.execute("SELECT * FROM card_metadata")
 
 while True:
     # Fetch 20 rows
@@ -23,16 +25,20 @@ while True:
     # Iterate over the rows
     for row in rows:
         # Access the payload and update the corresponding qdrant point
-        qdrant_point_id = row[4]  # Assuming the qdrant point is in the second column
-        tag_set = row[7]
-        link = row[2]
-        card_html = row[8]
-        metadata = row[11]
-        private = row[10]
-        author_id = row[3]
+        qdrant_point_id = row[4] if row[4] is not None else ""
+        tag_set = row[7] if row[7] is not None else ""
+        link = row[2] if row[2] is not None else ""
+        card_html = row[8] if row[8] is not None else ""
+        metadata = row[11] if row[11] is not None else ""
+        private = row[10] if row[10] is not None else ""
+        author_id = row[3] if row[3] is not None else ""
+
+
 
         # Perform your desired modifications to the payload and qdrant point
         # ...
+        print(qdrant_point_id)
+
         qdrant_client.overwrite_payload(
             collection_name=os.getenv("QDRANT_COLLECTION"),
             payload={
@@ -45,7 +51,6 @@ while True:
             },
             points=[qdrant_point_id],
         )
-
     # Commit the changes
 
 # Close the cursor and connection
