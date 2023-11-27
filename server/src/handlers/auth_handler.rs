@@ -1,4 +1,5 @@
 use crate::handlers::register_handler;
+use crate::AppMutexStore;
 use crate::{
     data::models::{Pool, SlimUser, User},
     errors::{DefaultError, ServiceError},
@@ -241,8 +242,10 @@ fn find_user_match(auth_data: AuthData, pool: web::Data<Pool>) -> Result<SlimUse
         (status = 400, description = "Service error relating to making an embedding or overall service health", body = [DefaultError]),
     ),
 )]
-pub async fn health_check() -> Result<HttpResponse, actix_web::Error> {
-    let result = operators::card_operator::create_embedding("health check").await;
+pub async fn health_check(
+    app_mutex: web::Data<AppMutexStore>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let result = operators::card_operator::create_embedding("health check", app_mutex).await;
 
     result?;
     Ok(HttpResponse::Ok().finish())

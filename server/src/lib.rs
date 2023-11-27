@@ -18,6 +18,7 @@ use qdrant_client::{
     prelude::*,
     qdrant::{VectorParams, VectorsConfig},
 };
+use tokio::sync::Semaphore;
 use utoipa::OpenApi;
 use utoipa_redoc::{Redoc, Servable};
 
@@ -54,6 +55,10 @@ macro_rules! get_env {
         }
         ENV_VAR.as_str()
     }};
+}
+
+pub struct AppMutexStore {
+    pub embedding_semaphore: Option<Semaphore>,
 }
 
 #[actix_web::main]
@@ -121,7 +126,7 @@ pub async fn main() -> std::io::Result<()> {
         components(
             schemas(
                 handlers::invitation_handler::InvitationResponse,
-                handlers::invitation_handler::InvitationData, 
+                handlers::invitation_handler::InvitationData,
                 handlers::register_handler::SetPasswordData,
                 handlers::auth_handler::AuthData,
                 handlers::password_reset_handler::PasswordResetData,
@@ -271,11 +276,21 @@ pub async fn main() -> std::io::Result<()> {
 
     log::info!("starting HTTP server at http://localhost:8090");
 
+    let app_mutex_store = web::Data::new(AppMutexStore {
+        embedding_semaphore: std::env::var("EMBEDDING_SEMAPHORE_SIZE")
+            .map(|size| match size.parse::<usize>() {
+                Ok(size) => Some(Semaphore::new(size)),
+                Err(_) => None,
+            })
+            .unwrap_or(None),
+    });
+
     HttpServer::new(move || {
         App::new()
             .app_data(PayloadConfig::new(134200000))
             .app_data( web::JsonConfig::default().limit(134200000))
             .app_data(web::Data::new(pool.clone()))
+            .app_data(app_mutex_store.clone())
             .wrap(
                 IdentityMiddleware::builder()
                     .login_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))

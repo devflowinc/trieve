@@ -18,6 +18,7 @@ use crate::{
             user_owns_topic_query,
         },
     },
+    AppMutexStore,
 };
 use actix::Arbiter;
 use actix_web::{
@@ -54,6 +55,7 @@ pub struct CreateMessageData {
 pub async fn create_message_completion_handler(
     data: web::Json<CreateMessageData>,
     user: LoggedUser,
+    app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let create_message_data = data.into_inner();
@@ -118,6 +120,7 @@ pub async fn create_message_completion_handler(
         previous_messages,
         user.id,
         topic_id,
+        app_mutex,
         pool4,
     )
     .await
@@ -180,6 +183,7 @@ pub struct EditMessageData {
 pub async fn edit_message_handler(
     data: web::Json<EditMessageData>,
     user: LoggedUser,
+    app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
@@ -209,6 +213,7 @@ pub async fn edit_message_handler(
             topic_id,
         }),
         user,
+        app_mutex,
         third_pool,
     )
     .await
@@ -228,6 +233,7 @@ pub async fn edit_message_handler(
 pub async fn regenerate_message_handler(
     data: web::Json<RegenerateMessageData>,
     user: LoggedUser,
+    app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
@@ -260,6 +266,7 @@ pub async fn regenerate_message_handler(
             previous_messages,
             user.id,
             topic_id,
+            app_mutex,
             pool3,
         )
         .await;
@@ -314,6 +321,7 @@ pub async fn regenerate_message_handler(
         previous_messages_to_regenerate,
         user.id,
         topic_id,
+        app_mutex,
         pool3,
     )
     .await
@@ -379,6 +387,7 @@ pub async fn stream_response(
     messages: Vec<models::Message>,
     user_id: uuid::Uuid,
     topic_id: uuid::Uuid,
+    app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
@@ -461,7 +470,7 @@ pub async fn stream_response(
             .expect("No response for OpenAI completion")
             .message
             .content;
-        let embedding_vector = create_embedding(query.as_str()).await?;
+        let embedding_vector = create_embedding(query.as_str(), app_mutex).await?;
 
         let search_card_query_results = search_card_query(
             embedding_vector,

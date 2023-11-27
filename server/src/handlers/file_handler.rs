@@ -6,6 +6,7 @@ use crate::{
         convert_doc_to_html_query, delete_file_query, get_file_query, get_user_file_query,
         get_user_id_of_file_query, update_file_query,
     },
+    AppMutexStore,
 };
 use actix_files::NamedFile;
 use actix_web::{http::header::ContentDisposition, web, HttpResponse};
@@ -82,6 +83,7 @@ pub async fn upload_file_handler(
     data: web::Json<UploadFileData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
+    app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let document_upload_feature =
         std::env::var("DOCUMENT_UPLOAD_FEATURE").unwrap_or("off".to_string());
@@ -126,6 +128,7 @@ pub async fn upload_file_handler(
         upload_file_data.create_cards,
         upload_file_data.time_stamp,
         user,
+        app_mutex,
         pool_inner,
     )
     .await
