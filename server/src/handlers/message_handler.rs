@@ -381,7 +381,6 @@ pub async fn stream_response(
     topic_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool1 = pool.clone();
     let pool2 = pool.clone();
 
     let openai_messages: Vec<ChatMessage> = messages
@@ -466,7 +465,6 @@ pub async fn stream_response(
         let search_card_query_results = search_card_query(
             embedding_vector,
             1,
-            pool1,
             None,
             None,
             None,
