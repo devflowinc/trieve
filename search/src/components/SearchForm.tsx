@@ -73,6 +73,7 @@ const SearchForm = (props: {
     // eslint-disable-next-line solid/reactivity
     props.weight ?? "0.5",
   );
+  const [usingPanel, setUsingPanel] = createSignal(false);
 
   createEffect(() => {
     // get the previous searched queries from localStorage and set them into the state;
@@ -719,10 +720,16 @@ const SearchForm = (props: {
                           <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />
                         </svg>
                       </PopoverButton>
-                      <Show when={isOpen()}>
+                      <Show when={isOpen() || usingPanel()}>
                         <PopoverPanel
                           unmount={false}
                           class="absolute z-10 mt-2 h-fit w-fit rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-800"
+                          onMouseEnter={() => {
+                            setUsingPanel(true);
+                          }}
+                          onMouseLeave={() => {
+                            setUsingPanel(false);
+                          }}
                         >
                           <Menu class="h-0">
                             <MenuItem
@@ -738,7 +745,7 @@ const SearchForm = (props: {
                                   sectionName={comboBoxSection.name}
                                   comboBoxSections={comboBoxSections}
                                   setComboboxSections={setComboBoxSections}
-                                  setPopoverOpen={setState}
+                                  setPopoverOpen={setUsingPanel}
                                 />
                               </Match>
                               <Match when={comboBoxSection.name == "Date"}>
