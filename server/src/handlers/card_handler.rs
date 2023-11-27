@@ -880,9 +880,17 @@ pub async fn search_card(
         pool1,
         data.link.clone(),
         data.tag_set.clone(),
+        data.time_range.clone(),
         data.filters.clone(),
         current_user_id,
-        Some(quote_words),
+        ParsedQuery {
+            quote_words: if quote_words.is_empty() {
+                None
+            } else {
+                Some(quote_words)
+            },
+            negated_words: None,
+        },
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -927,6 +935,7 @@ pub async fn search_card(
                     tag_set: Some("".to_string()),
                     metadata: None,
                     tracking_id: None,
+                    time_stamp: None,
                 },
             };
 
@@ -964,6 +973,7 @@ pub struct HybridSearchCardData {
     content: String,
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
+    time_range: Option<(String, String)>,
     filters: Option<serde_json::Value>,
     cross_encoder: Option<bool>,
     weights: Option<(f64, f64)>,
@@ -975,6 +985,7 @@ impl From<HybridSearchCardData> for SearchCardData {
             content: hybrid_search_card_data.content,
             link: hybrid_search_card_data.link,
             tag_set: hybrid_search_card_data.tag_set,
+            time_range: None,
             filters: hybrid_search_card_data.filters,
         }
     }
@@ -1018,9 +1029,7 @@ pub async fn search_hybrid_card(
         data.filters.clone(),
         current_user_id,
         parsed_query,
-    )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    );
 
     let full_text_data = data.clone();
 

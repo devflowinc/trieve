@@ -1,7 +1,6 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
 use super::schema::*;
-use bigdecimal::BigDecimal;
 use chrono::NaiveDateTime;
 use diesel::{expression::ValidGrouping, r2d2::ConnectionManager, PgConnection};
 use openai_dive::v1::resources::chat_completion::{ChatMessage, Role};
