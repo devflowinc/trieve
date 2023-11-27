@@ -3,6 +3,7 @@ use crate::{
     data::models::CardMetadata,
     errors::{DefaultError, ServiceError},
 };
+use itertools::Itertools;
 use qdrant_client::qdrant::{
     point_id::PointIdOptions, with_payload_selector::SelectorOptions, Filter, PointId, PointStruct,
     RecommendPoints, SearchPoints, WithPayloadSelector,
@@ -22,11 +23,11 @@ pub async fn create_new_qdrant_point_query(
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let payload = match private {
-        true => json!({"private": true, "authors": vec![author_id.unwrap_or_default().to_string()], "tag_set": card_metadata.tag_set.unwrap_or("".to_string()), "link": card_metadata.link.unwrap_or("".to_string()), "card_html": card_metadata.card_html.unwrap_or("".to_string()), "metadata": card_metadata.metadata.unwrap_or_default()})
+        true => json!({"private": true, "authors": vec![author_id.unwrap_or_default().to_string()], "tag_set": card_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": card_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "card_html": card_metadata.card_html.unwrap_or("".to_string()), "metadata": card_metadata.metadata.unwrap_or_default()})
                 .try_into()
                 .expect("A json! Value must always be a valid Payload"),
         
-        false => json!({"private": false, "authors": vec![author_id.unwrap_or_default().to_string()], "tag_set": card_metadata.tag_set.unwrap_or("".to_string()), "link": card_metadata.link.unwrap_or("".to_string()), "card_html": card_metadata.card_html.unwrap_or("".to_string()), "metadata": card_metadata.metadata.unwrap_or_default()})
+        false => json!({"private": false, "authors": vec![author_id.unwrap_or_default().to_string()], "tag_set": card_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": card_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "card_html": card_metadata.card_html.unwrap_or("".to_string()), "metadata": card_metadata.metadata.unwrap_or_default()})
             .try_into()
             .expect("A json! Value must always be a valid Payload"),
     };
