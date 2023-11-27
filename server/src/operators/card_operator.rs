@@ -13,7 +13,6 @@ use crate::{
     errors::DefaultError,
 };
 use actix_web::web;
-
 use chrono::NaiveDateTime;
 use diesel::dsl::sql;
 use diesel::sql_types::Nullable;
@@ -29,7 +28,9 @@ use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::{
     prelude::{QdrantClient, QdrantClientConfig},
-    qdrant::{point_id::PointIdOptions, Condition, Filter, HasIdCondition, PointId, SearchPoints},
+    qdrant::{
+        point_id::PointIdOptions, Condition, Filter, HasIdCondition, PointId, Range, SearchPoints,
+    },
 };
 use serde::{Deserialize, Serialize};
 use simsearch::SimSearch;
@@ -166,38 +167,58 @@ pub async fn search_card_query(
 
     if let Some(time_range) = time_range {
         if time_range.0 != "null" && time_range.1 != "null" {
-            query = query.filter(
-                card_metadata_columns::time_stamp
-                    .gt(
-                        NaiveDateTime::parse_from_str(&time_range.0, "%Y-%m-%d %H:%M:%S").map_err(
-                            |_| DefaultError {
+            filter.must.push(Condition::range(
+                "time_stamp",
+                Range {
+                    gt: Some(
+                        NaiveDateTime::parse_from_str(&time_range.0, "%Y-%m-%d %H:%M:%S")
+                            .map_err(|_| DefaultError {
                                 message: "Failed to parse time range",
-                            },
-                        )?,
-                    )
-                    .and(card_metadata_columns::time_stamp.lt(
-                        NaiveDateTime::parse_from_str(&time_range.1, "%Y-%m-%d %H:%M:%S").map_err(
-                            |_| DefaultError {
+                            })?
+                            .timestamp() as f64,
+                    ),
+                    lt: Some(
+                        NaiveDateTime::parse_from_str(&time_range.1, "%Y-%m-%d %H:%M:%S")
+                            .map_err(|_| DefaultError {
                                 message: "Failed to parse time range",
-                            },
-                        )?,
-                    )),
-            );
+                            })?
+                            .timestamp() as f64,
+                    ),
+                    gte: None,
+                    lte: None,
+                },
+            ));
         } else if time_range.1 == "null" {
-            query = query.filter(card_metadata_columns::time_stamp.gt(
-                NaiveDateTime::parse_from_str(&time_range.0, "%Y-%m-%d %H:%M:%S").map_err(
-                    |_| DefaultError {
-                        message: "Failed to parse time range",
-                    },
-                )?,
+            filter.must.push(Condition::range(
+                "time_stamp",
+                Range {
+                    gt: Some(
+                        NaiveDateTime::parse_from_str(&time_range.0, "%Y-%m-%d %H:%M:%S")
+                            .map_err(|_| DefaultError {
+                                message: "Failed to parse time range",
+                            })?
+                            .timestamp() as f64,
+                    ),
+                    lt: None,
+                    gte: None,
+                    lte: None,
+                },
             ));
         } else if time_range.0 == "null" {
-            query = query.filter(card_metadata_columns::time_stamp.lt(
-                NaiveDateTime::parse_from_str(&time_range.1, "%Y-%m-%d %H:%M:%S").map_err(
-                    |_| DefaultError {
-                        message: "Failed to parse time range",
-                    },
-                )?,
+            filter.must.push(Condition::range(
+                "time_stamp",
+                Range {
+                    gt: None,
+                    lt: Some(
+                        NaiveDateTime::parse_from_str(&time_range.1, "%Y-%m-%d %H:%M:%S")
+                            .map_err(|_| DefaultError {
+                                message: "Failed to parse time range",
+                            })?
+                            .timestamp() as f64,
+                    ),
+                    gte: None,
+                    lte: None,
+                },
             ));
         }
     }
