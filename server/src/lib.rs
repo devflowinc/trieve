@@ -322,7 +322,7 @@ pub async fn main() -> std::io::Result<()> {
     let _ = qdrant_client
         .create_field_index(
             qdrant_collection.clone(),
-            "link",
+            "links",
             FieldType::Text,
             None,
             None,
