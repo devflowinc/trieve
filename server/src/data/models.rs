@@ -271,6 +271,7 @@ pub struct CardMetadataWithCount {
     pub private: bool,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
+    pub time_stamp: Option<NaiveDateTime>,
     pub count: i64,
 }
 
@@ -426,6 +427,7 @@ pub struct CardMetadataWithVotes {
     pub private: bool,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
+    pub time_stamp: Option<NaiveDateTime>,
     pub score: Option<f64>,
 }
 
@@ -447,6 +449,7 @@ impl From<(CardMetadata, i64)> for CardMetadataWithVotes {
             private: x.0.private,
             metadata: x.0.metadata,
             tracking_id: x.0.tracking_id,
+            time_stamp: x.0.time_stamp,
             score: None,
         }
     }
@@ -471,6 +474,7 @@ pub struct CardMetadataWithVotesWithScore {
     pub private: bool,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
+    pub time_stamp: Option<NaiveDateTime>,
     pub score: Option<f64>,
 }
 
@@ -691,6 +695,7 @@ pub struct FullTextSearchResult {
     pub private: bool,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
+    pub time_stamp: Option<NaiveDateTime>,
     pub score: Option<f64>,
     pub count: i64,
 }
@@ -711,6 +716,7 @@ impl From<CardMetadata> for FullTextSearchResult {
             private: card.private,
             metadata: card.metadata,
             tracking_id: card.tracking_id,
+            time_stamp: card.time_stamp,
             count: 0,
         }
     }
@@ -731,6 +737,7 @@ impl From<&CardMetadata> for FullTextSearchResult {
             score: None,
             private: card.private,
             tracking_id: card.tracking_id.clone(),
+            time_stamp: card.time_stamp,
             metadata: card.metadata.clone(),
             count: 0,
         }
@@ -753,6 +760,7 @@ impl From<CardMetadataWithCount> for FullTextSearchResult {
             private: card.private,
             metadata: card.metadata,
             tracking_id: card.tracking_id,
+            time_stamp: card.time_stamp,
             count: card.count,
         }
     }
@@ -886,6 +894,7 @@ impl From<CardMetadataWithVotes> for CardMetadataWithVotesWithScore {
             file_id: None,
             metadata: card.metadata,
             tracking_id: card.tracking_id,
+            time_stamp: card.time_stamp,
             file_name: None,
         }
     }

@@ -701,6 +701,7 @@ pub fn get_metadata_query(
                 file_name: card_with_file_name.map(|file| file.file_name.to_string()),
                 metadata: metadata.metadata,
                 tracking_id: metadata.tracking_id,
+                time_stamp: metadata.time_stamp,
             }
         })
         .collect();
@@ -784,6 +785,7 @@ pub fn search_full_text_card_query(
                 card_metadata_columns::private,
                 card_metadata_columns::metadata,
                 card_metadata_columns::tracking_id,
+                card_metadata_columns::time_stamp,
                 sql::<Nullable<Double>>(
                     "(ts_rank(card_metadata.card_metadata_tsvector, plainto_tsquery('english', ",
                 )
@@ -1032,6 +1034,7 @@ pub fn search_full_text_collection_query(
                 card_metadata_columns::private,
                 card_metadata_columns::metadata,
                 card_metadata_columns::tracking_id,
+                card_metadata_columns::time_stamp,
                 sql::<Nullable<Double>>(
                     "(ts_rank(card_metadata.card_metadata_tsvector, plainto_tsquery('english', ",
                 )

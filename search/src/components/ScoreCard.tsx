@@ -85,7 +85,7 @@ const ScoreCard = (props: ScoreCardProps) => {
 
   const frontMatterVals = (
     (import.meta.env.PUBLIC_FRONTMATTER_VALS as string | undefined) ??
-    "link,tag_set"
+    "link,tag_set,time_stamp"
   ).split(",");
 
   const linesBeforeShowMore = (() => {
@@ -524,9 +524,25 @@ const ScoreCard = (props: ScoreCardProps) => {
                       </Show>
                       <Show
                         when={
+                          props.card.time_stamp &&
+                          frontMatterVal == "time_stamp"
+                        }
+                      >
+                        <div class="flex space-x-2">
+                          <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                            Time Stamp:{" "}
+                          </span>
+                          <span class="line-clamp-1 break-all">
+                            {formatDate(new Date(props.card.time_stamp ?? ""))}
+                          </span>
+                        </div>
+                      </Show>
+                      <Show
+                        when={
                           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                           frontMatterVal !== "link" &&
                           frontMatterVal !== "tag_set" &&
+                          frontMatterVal !== "time_stamp" &&
                           props.card.metadata &&
                           indirectHasOwnProperty(
                             props.card.metadata,

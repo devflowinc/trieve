@@ -767,6 +767,7 @@ pub async fn search_card(
                     tag_set: Some("".to_string()),
                     metadata: None,
                     tracking_id: None,
+                    time_stamp: None,
                 },
             };
 
@@ -1025,6 +1026,7 @@ pub async fn search_collections(
                     tag_set: Some("".to_string()),
                     metadata: None,
                     tracking_id: None,
+                    time_stamp: None,
                 },
             };
             card = find_relevant_sentence(card.clone(), data.content.clone()).unwrap_or(card);

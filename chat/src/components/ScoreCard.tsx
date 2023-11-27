@@ -30,6 +30,17 @@ export const sanitzerOptions = {
   },
 };
 
+export const formatDate = (date: Date) => {
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const year = date.getFullYear();
+
+  const formattedMonth = month < 10 ? `0${month}` : month;
+  const formattedDay = day < 10 ? `0${day}` : day;
+
+  return `${formattedMonth}/${formattedDay}/${year}`;
+};
+
 export interface ScoreCardProps {
   signedInUserId?: string;
   cardCollections: CardCollectionDTO[];
@@ -61,7 +72,7 @@ const ScoreCard = (props: ScoreCardProps) => {
 
   const frontMatterVals = (
     (import.meta.env.VITE_FRONTMATTER_VALS as string | undefined) ??
-    "link,tag_set"
+    "link,tag_set,time_stamp"
   ).split(",");
   const searchURL = import.meta.env.VITE_SEARCH_URL as string;
 
@@ -252,9 +263,24 @@ const ScoreCard = (props: ScoreCardProps) => {
                   </Show>
                   <Show
                     when={
+                      props.card.time_stamp && frontMatterVal == "time_stamp"
+                    }
+                  >
+                    <div class="flex space-x-2">
+                      <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                        Time Stamp:{" "}
+                      </span>
+                      <span class="line-clamp-1 break-all">
+                        {formatDate(new Date(props.card.time_stamp ?? ""))}
+                      </span>
+                    </div>
+                  </Show>
+                  <Show
+                    when={
                       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                       frontMatterVal !== "link" &&
                       frontMatterVal !== "tag_set" &&
+                      frontMatterVal !== "time_stamp" &&
                       props.card.metadata &&
                       indirectHasOwnProperty(
                         props.card.metadata,
