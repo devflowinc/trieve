@@ -72,7 +72,9 @@ try {
                 dataTypeFilters.start
                   ? dataTypeFilters.start + " 00:00:00"
                   : "null",
-                dataTypeFilters.end ? dataTypeFilters.end + " 00:00:00" : "null",
+                dataTypeFilters.end
+                  ? dataTypeFilters.end + " 00:00:00"
+                  : "null",
               ]
             : null,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment

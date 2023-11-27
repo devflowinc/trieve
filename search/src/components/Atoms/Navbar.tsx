@@ -33,7 +33,7 @@ export const Navbar = (props: HomeNavbarProps) => {
                   href="/create"
                   class="hidden text-center min-[420px]:text-lg min-[920px]:block"
                 >
-                  Create Card
+                  Create Doc Chunk
                 </a>
               </Show>
               <Show when={uploadDocumentFeature}>
@@ -112,7 +112,7 @@ export const Navbar = (props: HomeNavbarProps) => {
               href="/create"
               class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
             >
-              Create Card
+              Create Doc Chunk
             </a>
           </Show>
           <Show when={uploadDocumentFeature}>
