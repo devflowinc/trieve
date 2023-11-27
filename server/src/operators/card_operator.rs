@@ -152,7 +152,6 @@ pub struct SearchCardQueryResult {
 pub async fn search_card_query(
     embedding_vector: Vec<f32>,
     page: u64,
-    pool: web::Data<Pool>,
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
     time_range: Option<(String, String)>,
@@ -259,7 +258,6 @@ pub async fn search_card_query(
                 .push(Condition::matches("card_html", word.clone()));
         }
     }
-    log::info!("Parsed query {:?}", filter);
 
     let point_ids = search_qdrant_query(page, filter, embedding_vector.clone()).await?;
 
@@ -267,135 +265,6 @@ pub async fn search_card_query(
         search_results: point_ids,
         total_card_pages: 100,
     })
-
-    // let mut conn = pool.get().unwrap();
-
-    // // SELECT distinct card_metadata.qdrant_point_id, card_collisions.collision_qdrant_id
-    // // FROM card_metadata
-    // // left outer JOIN card_collisions ON card_metadata.id = card_collisions.card_id
-    // // WHERE card_metadata.private = false OR (card_metadata.private = false and card_metadata.qdrant_point_id is null);
-
-    // //SELECT DISTINCT "card\_metadata"."qdrant\_point\_id", "card\_collisions"."collision\_qdrant\_id"
-    // //FROM ("card\_metadata"
-    // //LEFT OUTER JOIN "card\_collisions" ON ("card\_metadata"."id" = "card\_collisions"."card\_id"))
-    // //WHERE (("card\_metadata"."private" = $1) OR (("card\_metadata"."private" = $2) AND ("card\_metadata"."qdrant\_point\_id" IS NULL))) -- binds: \[false, false\]
-    // use crate::data::schema::card_collisions::dsl as card_collisions_columns;
-    // use crate::data::schema::card_metadata::dsl as card_metadata_columns;
-
-    // let mut query = card_metadata_columns::card_metadata
-    //     .left_outer_join(
-    //         card_collisions_columns::card_collisions
-    //             .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
-    //     )
-    //     .select((
-    //         card_metadata_columns::qdrant_point_id,
-    //         card_collisions_columns::collision_qdrant_id.nullable(),
-    //     ))
-    //     .into_boxed();
-
-    // query =
-    //     query
-    //         .filter(card_metadata_columns::private.eq(false).or(
-    //             card_metadata_columns::author_id.eq(current_user_id.unwrap_or(uuid::Uuid::nil())),
-    //         ))
-    //         .distinct();
-    // let tag_set_inner = tag_set.unwrap_or_default();
-    // let link_inner = link.unwrap_or_default();
-    // if let Some(tag) = tag_set_inner.get(0) {
-    //     query = query.filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
-    // }
-    // for tag in tag_set_inner.iter().skip(1) {
-    //     query = query.or_filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
-    // }
-
-    // if let Some(link_inner) = link_inner.get(0) {
-    //     query = query.filter(card_metadata_columns::link.ilike(format!("%{}%", link_inner)));
-    // }
-    // for link_url in link_inner.iter().skip(1) {
-    //     query = query.or_filter(card_metadata_columns::link.ilike(format!("%{}%", link_url)));
-    // }
-
-    // if let Some(serde_json::Value::Object(obj)) = &filters {
-    //     for key in obj.keys() {
-    //         if let Some(value) = obj.get(key) {
-    //             match value {
-    //                 serde_json::Value::Array(arr) => {
-    //                     if let Some(first_val) = arr.get(0) {
-    //                         if let Some(string_val) = first_val.as_str() {
-    //                             query = query.filter(
-    //                                 sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-    //                                     .ilike(format!("%{}%", string_val)),
-    //                             );
-    //                         }
-    //                     }
-
-    //                     for item in arr.iter().skip(1) {
-    //                         if let Some(string_val) = item.as_str() {
-    //                             query = query.or_filter(
-    //                                 sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-    //                                     .ilike(format!("%{}%", string_val)),
-    //                             );
-    //                         }
-    //                     }
-    //                 }
-    //                 serde_json::Value::String(string_val) => {
-    //                     query = query.filter(
-    //                         sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-    //                             .ilike(format!("%{}%", string_val)),
-    //                     );
-    //                 }
-    //                 _ => (),
-    //             }
-    //         }
-    //     }
-    // }
-
-    // if let Some(quote_words) = parsed_query.quote_words {
-    //     for word in quote_words.iter() {
-    //         query = query.filter(card_metadata_columns::content.ilike(format!("%{}%", word)));
-    //     }
-    // }
-
-    // if let Some(negated_words) = parsed_query.negated_words {
-    //     for word in negated_words.iter() {
-    //         query = query.filter(card_metadata_columns::content.not_ilike(format!("%{}%", word)));
-    //     }
-    // }
-
-    // let filtered_option_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
-    //     web::block(move || query.load(&mut conn))
-    //         .await
-    //         .map_err(|_| DefaultError {
-    //             message: "Threadpool error",
-    //         })?
-    //         .map_err(|_| DefaultError {
-    //             message: "Failed to load metadata",
-    //         })?;
-
-    // let filtered_point_ids: &Vec<PointId> = &filtered_option_ids
-    //     .iter()
-    //     .map(|uuid| {
-    //         uuid.0
-    //             .unwrap_or(uuid.1.unwrap_or(uuid::Uuid::nil()))
-    //             .to_string()
-    //             .into()
-    //     })
-    //     .collect::<Vec<PointId>>();
-
-    // let mut filter = Filter::default();
-
-    // filter.should.push(Condition {
-    //     condition_one_of: Some(HasId(HasIdCondition {
-    //         has_id: (filtered_point_ids).to_vec(),
-    //     })),
-    // });
-
-    // let point_ids = search_qdrant_query(page, filter, embedding_vector).await?;
-
-    // Ok(SearchCardQueryResult {
-    //     search_results: point_ids,
-    //     total_card_pages: (filtered_point_ids.len() as f64 / 10.0).ceil() as i64,
-    // })
 }
 
 pub async fn global_unfiltered_top_match_query(
