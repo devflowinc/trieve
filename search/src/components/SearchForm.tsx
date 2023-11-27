@@ -69,7 +69,6 @@ const SearchForm = (props: {
     start: props.filters.start,
     end: props.filters.end,
   });
-  const [semanticWeight, setSemanticWeight] = createSignal("0.5");
   const [semanticWeight, setSemanticWeight] = createSignal(
     // eslint-disable-next-line solid/reactivity
     props.weight ?? "0.5",
