@@ -317,7 +317,7 @@ pub async fn main() -> std::io::Result<()> {
     let _ = qdrant_client
         .create_field_index(
             qdrant_collection.clone(),
-            "links",
+            "link",
             FieldType::Text,
             None,
             None,
@@ -338,7 +338,6 @@ pub async fn main() -> std::io::Result<()> {
         .map_err(|err| {
             log::info!("Failed to create index: {:?}", err);
         });
-
     let _ = qdrant_client
         .create_field_index(
             qdrant_collection.clone(),
