@@ -751,7 +751,7 @@ pub async fn search_full_text_card_query(
 
     //escape special characters
     query = query.filter(sql::<Bool>(
-        format!("card_metadata @@@ '{}'", user_query).as_str(),
+        format!("card_metadata @@@ 'card_html:{}'", user_query).as_str(),
     ));
     let tag_set_inner = tag_set.unwrap_or_default();
     let link_inner = link.unwrap_or_default();
