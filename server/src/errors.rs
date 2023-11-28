@@ -1,5 +1,6 @@
 use actix_web::{error::ResponseError, HttpResponse};
 use derive_more::Display;
+#[cfg(feature = "monolith")]
 use diesel::result::{DatabaseErrorKind, Error as DBError};
 use serde::{Deserialize, Serialize};
 use std::convert::From;
@@ -62,6 +63,7 @@ impl From<ParseError> for ServiceError {
     }
 }
 
+#[cfg(feature = "monolith")]
 impl From<DBError> for ServiceError {
     fn from(error: DBError) -> ServiceError {
         // Right now we just care about UniqueViolation from diesel

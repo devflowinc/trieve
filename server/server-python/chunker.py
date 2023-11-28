@@ -169,11 +169,12 @@ def main(html_file_path):
         results = []
         for chunk in chunks:
             results += chunk.output()
-        print(json.dumps(results))
+        return results
     except:
-        print(json.dumps([]))
+        return []
 
 
 if __name__ == "__main__":
     html_file_path = sys.argv[1]
-    main(html_file_path)
+    results = main(html_file_path)
+    print(json.dumps(results))
