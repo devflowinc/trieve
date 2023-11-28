@@ -1031,7 +1031,6 @@ pub async fn search_hybrid_card(
     let search_card_query_results = search_card_query(
         embedding_vector,
         page,
-        pool1,
         data.link.clone(),
         data.tag_set.clone(),
         data.time_range.clone(),
