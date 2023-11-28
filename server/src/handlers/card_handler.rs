@@ -1019,14 +1019,12 @@ pub async fn search_hybrid_card(
     let current_user_id = user.clone().map(|user| user.id);
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let embedding_vector = create_embedding(&data.content).await?;
-    let pool1 = pool.clone();
 
     let parsed_query = parse_query(data.content.clone());
 
     let search_card_query_results = search_card_query(
         embedding_vector,
         page,
-        pool1,
         data.link.clone(),
         data.tag_set.clone(),
         data.time_range.clone(),
