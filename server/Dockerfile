@@ -86,9 +86,9 @@ RUN apt-get update; \
         python-is-python3 \
         ;
 
-COPY ./server-python/requirements.txt /app/server-python/requirements.txt
-RUN pip install -r /app/requirements.txt; \
-    mkdir tmp
+COPY ./server-python/requirements.txt /app/requirements.txt
+RUN pip install --break-system-packages -r /app/requirements.txt; \
+    mkdir /app/tmp
 
 WORKDIR /app
 COPY ./server-python/ /app/server-python
