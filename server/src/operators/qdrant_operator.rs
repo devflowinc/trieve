@@ -22,15 +22,9 @@ pub async fn create_new_qdrant_point_query(
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let payload = match private {
-        true => json!({"private": true, "authors": vec![author_id.unwrap_or_default().to_string()], "tag_set": card_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": card_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "card_html": card_metadata.card_html.unwrap_or("".to_string()), "metadata": card_metadata.metadata.unwrap_or_default(), "timestamp": card_metadata.time_stamp.unwrap_or_default().timestamp()})
+    let payload = json!({"private": private, "authors": vec![author_id.unwrap_or_default().to_string()], "tag_set": card_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": card_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "card_html": card_metadata.card_html.unwrap_or("".to_string()), "metadata": card_metadata.metadata.unwrap_or_default(), "timestamp": card_metadata.time_stamp.unwrap_or_default().timestamp()})
                 .try_into()
-                .expect("A json! Value must always be a valid Payload"),
-
-        false => json!({"private": false, "authors": vec![author_id.unwrap_or_default().to_string()], "tag_set": card_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": card_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "card_html": card_metadata.card_html.unwrap_or("".to_string()), "metadata": card_metadata.metadata.unwrap_or_default(), "timestamp": card_metadata.time_stamp.unwrap_or_default().timestamp()})
-            .try_into()
-            .expect("A json! Value must always be a valid Payload"),
-    };
+                .expect("A json! Value must always be a valid Payload");
 
     let point = PointStruct::new(point_id.clone().to_string(), embedding_vector, payload);
 
