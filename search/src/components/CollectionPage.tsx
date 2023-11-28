@@ -113,10 +113,10 @@ export const CollectionPage = (props: CollectionPageProps) => {
 
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(1);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onDelete, setOnDelete] = createSignal(() => {});
+  const [onDelete, setOnDelete] = createSignal(() => { });
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onCollectionDelete, setOnCollectionDelete] = createSignal(() => {});
+  const [onCollectionDelete, setOnCollectionDelete] = createSignal(() => { });
 
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);

@@ -17,7 +17,6 @@ use crate::{
     handlers::{
         auth_handler::LoggedUser,
         card_handler::{create_card, CreateCardData},
-        file_handler::UploadFileResult,
     },
 };
 use actix_web::{body::MessageBody, web};
@@ -126,6 +125,129 @@ pub fn update_file_query(
         })?;
     Ok(())
 }
+
+
+pub async fn get_file_query(
+    file_uuid: uuid::Uuid,
+    user_uuid: Option<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<FileDTO, actix_web::Error> {
+    use crate::data::schema::files::dsl as files_columns;
+
+    let mut conn = pool
+        .get()
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let file_metadata: File = files_columns::files
+        .filter(files_columns::id.eq(file_uuid))
+        .get_result(&mut conn)
+        .map_err(|_| ServiceError::NotFound)?;
+
+    if file_metadata.private && user_uuid.is_none() {
+        return Err(ServiceError::Unauthorized.into());
+    }
+
+    if file_metadata.private && !user_uuid.is_some_and(|user_id| user_id == file_metadata.user_id) {
+        return Err(ServiceError::Forbidden.into());
+    }
+
+    let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    let file_data = bucket
+        .get_object(file_metadata.id.to_string())
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get file from S3".to_string()))?
+        .to_vec();
+
+    let base64_engine = engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
+    let base64_file_data = base64_engine.encode(file_data);
+
+    let file_dto: FileDTO = file_metadata.into();
+    let file_dto = FileDTO {
+        base64url_content: base64_file_data,
+        ..file_dto
+    };
+
+    Ok(file_dto)
+}
+
+pub async fn get_user_file_query(
+    user_uuid: uuid::Uuid,
+    accessing_user_uuid: Option<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<Vec<File>, actix_web::Error> {
+    use crate::data::schema::files::dsl as files_columns;
+
+    let mut conn = pool
+        .get()
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let mut boxed_query = files_columns::files
+        .filter(files_columns::user_id.eq(user_uuid))
+        .into_boxed();
+
+    match accessing_user_uuid {
+        Some(accessing_user_uuid) => {
+            if user_uuid != accessing_user_uuid {
+                boxed_query = boxed_query.filter(files_columns::private.eq(false));
+            }
+        }
+        None => boxed_query = boxed_query.filter(files_columns::private.eq(false)),
+    }
+
+    let file_metadata: Vec<File> = boxed_query
+        .load(&mut conn)
+        .map_err(|_| ServiceError::NotFound)?;
+
+    Ok(file_metadata)
+}
+
+pub async fn delete_file_query(
+    file_uuid: uuid::Uuid,
+    user_uuid: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), actix_web::Error> {
+    use crate::data::schema::card_files::dsl as card_files_columns;
+    use crate::data::schema::files::dsl as files_columns;
+
+    let mut conn = pool
+        .get()
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let file_metadata: File = files_columns::files
+        .filter(files_columns::id.eq(file_uuid))
+        .get_result(&mut conn)
+        .map_err(|_| ServiceError::NotFound)?;
+
+    if file_metadata.private && user_uuid != file_metadata.user_id {
+        return Err(ServiceError::Forbidden.into());
+    }
+
+    let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    bucket
+        .delete_object(file_metadata.id.to_string())
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not delete file from S3".to_string()))?;
+
+    let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
+        diesel::delete(files_columns::files.filter(files_columns::id.eq(file_uuid)))
+            .execute(conn)?;
+
+        diesel::delete(
+            card_files_columns::card_files.filter(card_files_columns::file_id.eq(file_uuid)),
+        )
+        .execute(conn)?;
+
+        Ok(())
+    });
+
+    match transaction_result {
+        Ok(_) => (),
+        Err(_) => return Err(ServiceError::BadRequest("Could not delete file".to_string()).into()),
+    }
+
+    Ok(())
+}
+
 
 #[allow(clippy::too_many_arguments)]
 pub async fn convert_doc_to_html_query(
@@ -447,127 +569,6 @@ pub async fn create_cards_with_handler(
     .map_err(|_| DefaultError {
         message: "Thread error creating notification",
     })??;
-
-    Ok(())
-}
-
-pub async fn get_file_query(
-    file_uuid: uuid::Uuid,
-    user_uuid: Option<uuid::Uuid>,
-    pool: web::Data<Pool>,
-) -> Result<FileDTO, actix_web::Error> {
-    use crate::data::schema::files::dsl as files_columns;
-
-    let mut conn = pool
-        .get()
-        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
-
-    let file_metadata: File = files_columns::files
-        .filter(files_columns::id.eq(file_uuid))
-        .get_result(&mut conn)
-        .map_err(|_| ServiceError::NotFound)?;
-
-    if file_metadata.private && user_uuid.is_none() {
-        return Err(ServiceError::Unauthorized.into());
-    }
-
-    if file_metadata.private && !user_uuid.is_some_and(|user_id| user_id == file_metadata.user_id) {
-        return Err(ServiceError::Forbidden.into());
-    }
-
-    let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
-    let file_data = bucket
-        .get_object(file_metadata.id.to_string())
-        .await
-        .map_err(|_| ServiceError::BadRequest("Could not get file from S3".to_string()))?
-        .to_vec();
-
-    let base64_engine = engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
-    let base64_file_data = base64_engine.encode(file_data);
-
-    let file_dto: FileDTO = file_metadata.into();
-    let file_dto = FileDTO {
-        base64url_content: base64_file_data,
-        ..file_dto
-    };
-
-    Ok(file_dto)
-}
-
-pub async fn get_user_file_query(
-    user_uuid: uuid::Uuid,
-    accessing_user_uuid: Option<uuid::Uuid>,
-    pool: web::Data<Pool>,
-) -> Result<Vec<File>, actix_web::Error> {
-    use crate::data::schema::files::dsl as files_columns;
-
-    let mut conn = pool
-        .get()
-        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
-
-    let mut boxed_query = files_columns::files
-        .filter(files_columns::user_id.eq(user_uuid))
-        .into_boxed();
-
-    match accessing_user_uuid {
-        Some(accessing_user_uuid) => {
-            if user_uuid != accessing_user_uuid {
-                boxed_query = boxed_query.filter(files_columns::private.eq(false));
-            }
-        }
-        None => boxed_query = boxed_query.filter(files_columns::private.eq(false)),
-    }
-
-    let file_metadata: Vec<File> = boxed_query
-        .load(&mut conn)
-        .map_err(|_| ServiceError::NotFound)?;
-
-    Ok(file_metadata)
-}
-
-pub async fn delete_file_query(
-    file_uuid: uuid::Uuid,
-    user_uuid: uuid::Uuid,
-    pool: web::Data<Pool>,
-) -> Result<(), actix_web::Error> {
-    use crate::data::schema::card_files::dsl as card_files_columns;
-    use crate::data::schema::files::dsl as files_columns;
-
-    let mut conn = pool
-        .get()
-        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
-
-    let file_metadata: File = files_columns::files
-        .filter(files_columns::id.eq(file_uuid))
-        .get_result(&mut conn)
-        .map_err(|_| ServiceError::NotFound)?;
-
-    if file_metadata.private && user_uuid != file_metadata.user_id {
-        return Err(ServiceError::Forbidden.into());
-    }
-
-    let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
-    bucket
-        .delete_object(file_metadata.id.to_string())
-        .await
-        .map_err(|_| ServiceError::BadRequest("Could not delete file from S3".to_string()))?;
-
-    let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
-        diesel::delete(files_columns::files.filter(files_columns::id.eq(file_uuid)))
-            .execute(conn)?;
-
-        diesel::delete(
-            card_files_columns::card_files.filter(card_files_columns::file_id.eq(file_uuid)),
-        )
-        .execute(conn)?;
-
-        Ok(())
-    });
-
-    match transaction_result {
-        Ok(_) => (),
-        Err(_) => return Err(ServiceError::BadRequest("Could not delete file".to_string()).into()),
-    }
 
     Ok(())
 }
