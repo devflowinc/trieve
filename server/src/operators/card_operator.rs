@@ -937,7 +937,7 @@ pub async fn search_full_text_card_query(
 
     let searched_cards: Vec<(FullTextSearchResult, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
-            message: "Failed to load trigram searched cards",
+            message: "Failed to load full-text searched cards",
         })?;
 
     let card_metadata_with_upvotes_and_files = get_metadata_query(

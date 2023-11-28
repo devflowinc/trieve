@@ -60,6 +60,7 @@ We have a full self-hosting guide available on our [documentation page here](htt
 ## Local development with Linux
 
 ### Install apt packages
+
 ```
 sudo apt install curl \
 gcc \
@@ -72,6 +73,7 @@ libpq-dev \
 libssl-dev \
 openssl
 ```
+
 ### Install NodeJS and Yarn
 
 You can install [NVM](https://github.com/nvm-sh/nvm) using its install script.
@@ -90,7 +92,7 @@ npm install -g yarn
 ### Install python requirements
 
 ```
-pip install -r ./server/server-python/requirements.txt 
+pip install -r ./server/server-python/requirements.txt
 ```
 
 ### Make server tmp dir
@@ -189,6 +191,7 @@ Download PostgreSQL 13 from [here](https://www.enterprisedb.com/downloads/postgr
 When installing, ensure that the PostgreSQL server is set to a port other than 5432 to prevent it from interfering with the docker container.
 
 Add Postgres to PATH
+
 ```
 [Environment]::SetEnvironmentVariable("PATH", $Env:PATH + ";C:\Program Files\PostgreSQL\13\lib;C:\Program Files\PostgreSQL\13\bin", [EnvironmentVariableTarget]::Machine)
 ```
@@ -242,12 +245,16 @@ yarn dev
 
 ## Install ImageMagick (Linux) - only needed if you want to use pdf_from_range route
 
-apt install libjpeg-dev
-apt install libpng-dev
-apt install libtiff-dev
+```
+apt install libjpeg-dev libpng-dev libtiff-dev
 
 curl https://imagemagick.org/archive/ImageMagick.tar.gz | tar xz
 cd ImageMagick
 ./configure
 make uninstall
 make install
+```
+
+## How to debug diesel by getting the exact generated SQL
+
+`diesel::debug_query(&query).to_string();`
