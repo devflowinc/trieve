@@ -28,18 +28,18 @@ interface PaginationControllerProps {
 
 export const PaginationController = (props: PaginationControllerProps) => {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  const allWindowUrlExceptPage =
+  const url =
     typeof window !== "undefined"
-      ? window.location.href.replace(/&page=\d+/, "")
-      : "";
+      ? new URL(window.location.href)
+      : null;
 
   return (
     <>
       <Show when={props.page != 1}>
         <button
           onClick={() => {
-            window.location.href =
-              allWindowUrlExceptPage + `&page=${props.page - 1}`;
+            url!.searchParams.set("page", "${props.page - 1}");
+            window.location.href = url!.toString();
           }}
         >
           <BiRegularChevronLeft class="h-8 w-8 fill-current text-neutral-400 dark:text-neutral-500" />
@@ -59,7 +59,8 @@ export const PaginationController = (props: PaginationControllerProps) => {
             "bg-neutral-200 dark:bg-neutral-700": n !== props.page,
           }}
           onClick={() => {
-            window.location.href = allWindowUrlExceptPage + `&page=${n}`;
+            url!.searchParams.set("page", n.toString());
+            window.location.href = url!.toString();
           }}
         >
           {n}
@@ -68,8 +69,8 @@ export const PaginationController = (props: PaginationControllerProps) => {
       <Show when={props.page < props.totalPages}>
         <button
           onClick={() => {
-            window.location.href =
-              allWindowUrlExceptPage + `&page=${props.page + 1}`;
+            url!.searchParams.set("page", `${props.page + 1}`);
+            window.location.href = url!.toString();
           }}
         >
           <BiRegularChevronRight class="h-8 w-8 fill-current text-neutral-400 dark:text-neutral-500" />
