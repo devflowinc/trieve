@@ -1,15 +1,103 @@
-use super::card_operator::{get_qdrant_connection, SearchResult};
+use super::search_operator::SearchResult;
 use crate::{
     data::models::CardMetadata,
     errors::{DefaultError, ServiceError},
+    get_env,
 };
 use itertools::Itertools;
-use qdrant_client::qdrant::{
-    point_id::PointIdOptions, with_payload_selector::SelectorOptions, Filter, PointId, PointStruct,
-    RecommendPoints, SearchPoints, WithPayloadSelector,
+use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
+use qdrant_client::{
+    client::{QdrantClient, QdrantClientConfig},
+    qdrant::{
+        point_id::PointIdOptions, with_payload_selector::SelectorOptions, Filter, PointId,
+        PointStruct, RecommendPoints, SearchPoints, WithPayloadSelector,
+    },
 };
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::str::FromStr;
+
+pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
+    let qdrant_url = get_env!("QDRANT_URL", "QDRANT_URL should be set");
+    let qdrant_api_key = get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set").into();
+    let mut config = QdrantClientConfig::from_url(qdrant_url);
+    config.api_key = Some(qdrant_api_key);
+    QdrantClient::new(Some(config)).map_err(|_err| DefaultError {
+        message: "Failed to connect to Qdrant",
+    })
+}
+
+pub async fn create_embedding(message: &str) -> Result<Vec<f32>, actix_web::Error> {
+    let use_custom: u8 = std::env::var("USE_CUSTOM_EMBEDDINGS")
+        .unwrap_or("1".to_string())
+        .parse::<u8>()
+        .unwrap_or(1);
+
+    if use_custom == 0 {
+        create_server_embedding(message).await
+    } else {
+        create_openai_embedding(message).await
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CustomServerData {
+    pub input: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CustomServerResponse {
+    pub embeddings: Vec<f32>,
+}
+
+pub async fn create_openai_embedding(message: &str) -> Result<Vec<f32>, actix_web::Error> {
+    let open_ai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+    let client = Client::new(open_ai_api_key);
+
+    // Vectorize
+    let parameters = EmbeddingParameters {
+        model: "text-embedding-ada-002".to_string(),
+        input: message.to_string(),
+        user: None,
+    };
+
+    let embeddings = client
+        .embeddings()
+        .create(parameters)
+        .await
+        .map_err(actix_web::error::ErrorBadRequest)?;
+
+    let vector = embeddings.data.get(0).unwrap().embedding.clone();
+    Ok(vector.iter().map(|&x| x as f32).collect())
+}
+
+pub async fn create_server_embedding(message: &str) -> Result<Vec<f32>, actix_web::Error> {
+    let embedding_server_call = std::env::var("EMBEDDING_SERVER_CALL")
+        .expect("EMBEDDING_SERVER_CALL should be set if this is called");
+
+    let client = reqwest::Client::new();
+    let resp = client
+        .post(embedding_server_call)
+        .json(&CustomServerData {
+            input: message.to_string(),
+        })
+        .send()
+        .await
+        .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
+        .json::<CustomServerResponse>()
+        .await
+        .map_err(|_e| {
+            log::error!(
+                "Failed parsing response from custom embedding server {:?}",
+                _e
+            );
+            ServiceError::BadRequest(
+                "Failed parsing response from custom embedding server".to_string(),
+            )
+        })?;
+
+    Ok(resp.embeddings)
+}
 
 pub async fn create_new_qdrant_point_query(
     point_id: uuid::Uuid,

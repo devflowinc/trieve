@@ -136,9 +136,12 @@ const ResultsPage = (props: ResultsPageProps) => {
           : null,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       filters: props.filters.metadataFilters,
+      search_type: {
+        search_type: props.searchType,
+      },
     };
 
-    if (props.searchType === "hybrid_search") {
+    if (props.searchType === "hybrid") {
       const semanticWeight = parseFloat(props.weight ?? "0.5");
       if (semanticWeight != 0.5) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -149,7 +152,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       }
     }
 
-    void fetch(`${apiHost}/card/${props.searchType}/${props.page}`, {
+    void fetch(`${apiHost}/card/search/${props.page}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

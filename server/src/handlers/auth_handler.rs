@@ -242,7 +242,7 @@ fn find_user_match(auth_data: AuthData, pool: web::Data<Pool>) -> Result<SlimUse
     ),
 )]
 pub async fn health_check() -> Result<HttpResponse, actix_web::Error> {
-    let result = operators::card_operator::create_embedding("health check").await;
+    let result = operators::qdrant_operator::create_embedding("health check").await;
 
     result?;
     Ok(HttpResponse::Ok().finish())

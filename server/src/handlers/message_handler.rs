@@ -9,14 +9,15 @@ use crate::{
     get_env,
     operators::{
         card_operator::{
-            create_embedding, find_relevant_sentence,
-            get_metadata_and_collided_cards_from_point_ids_query, search_card_query,
+            find_relevant_sentence, get_metadata_and_collided_cards_from_point_ids_query,
         },
         message_operator::{
             create_message_query, create_topic_message_query, delete_message_query,
             get_message_by_sort_for_topic_query, get_messages_for_topic_query, get_topic_messages,
             user_owns_topic_query,
         },
+        qdrant_operator::create_embedding,
+        search_operator::retrieve_qdrant_points_query,
     },
 };
 use actix::Arbiter;
@@ -462,7 +463,7 @@ pub async fn stream_response(
             .content;
         let embedding_vector = create_embedding(query.as_str()).await?;
 
-        let search_card_query_results = search_card_query(
+        let search_card_query_results = retrieve_qdrant_points_query(
             embedding_vector,
             1,
             None,

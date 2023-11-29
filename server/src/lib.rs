@@ -1,7 +1,8 @@
 #[macro_use]
 extern crate diesel;
 use crate::{
-    handlers::auth_handler::create_admin_account, operators::card_operator::get_qdrant_connection, errors::ServiceError,
+    errors::ServiceError, handlers::auth_handler::create_admin_account,
+    operators::qdrant_operator::get_qdrant_connection,
 };
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
@@ -14,7 +15,7 @@ use actix_web::{
 };
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use pyo3::{Python, types::PyDict, PyAny, Py};
+use pyo3::{types::PyDict, Py, PyAny, Python};
 use qdrant_client::{
     prelude::*,
     qdrant::{
@@ -66,7 +67,6 @@ pub struct CrossEncoder {
 }
 
 fn initalize_cross_encoder() -> CrossEncoder {
-
     let cross_encoder = Python::with_gil(|py| {
         let transformers = py.import("transformers").unwrap();
 
@@ -77,7 +77,8 @@ fn initalize_cross_encoder() -> CrossEncoder {
                 "from_pretrained",
                 ("cross-encoder/ms-marco-MiniLM-L-4-v2",),
             )
-            .map_err(|e| ServiceError::BadRequest(format!("Could not load tokenizer: {}", e)))?.into();
+            .map_err(|e| ServiceError::BadRequest(format!("Could not load tokenizer: {}", e)))?
+            .into();
 
         let onnxruntime = py.import("optimum.onnxruntime").map_err(|e| {
             ServiceError::BadRequest(format!("Could not import onnxruntime: {}", e))
@@ -103,11 +104,9 @@ fn initalize_cross_encoder() -> CrossEncoder {
                 ("cross-encoder/ms-marco-MiniLM-L-4-v2",),
                 Some(model_kwargs),
             )
-            .map_err(|e| ServiceError::BadRequest(format!("Could not load model: {}", e)))?.into();
-        Ok::<CrossEncoder, ServiceError>(CrossEncoder {
-            tokenizer,
-            model,
-        })
+            .map_err(|e| ServiceError::BadRequest(format!("Could not load model: {}", e)))?
+            .into();
+        Ok::<CrossEncoder, ServiceError>(CrossEncoder { tokenizer, model })
     });
     cross_encoder.unwrap()
 }
@@ -140,7 +139,6 @@ pub async fn main() -> std::io::Result<()> {
             handlers::message_handler::create_suggested_queries_handler,
             handlers::card_handler::update_card_by_tracking_id,
             handlers::card_handler::search_card,
-            handlers::card_handler::search_full_text_card,
             handlers::card_handler::generate_off_cards,
             handlers::card_handler::get_card_by_tracking_id,
             handlers::card_handler::delete_card_by_tracking_id,
@@ -161,8 +159,6 @@ pub async fn main() -> std::io::Result<()> {
             handlers::collection_handler::add_bookmark,
             handlers::collection_handler::delete_bookmark,
             handlers::collection_handler::get_logged_in_user_card_collections,
-            handlers::card_handler::search_collections,
-            handlers::card_handler::search_full_text_collections,
             handlers::collection_handler::get_all_bookmarks,
             handlers::file_handler::update_file_handler,
             handlers::file_handler::upload_file_handler,
@@ -177,7 +173,7 @@ pub async fn main() -> std::io::Result<()> {
         components(
             schemas(
                 handlers::invitation_handler::InvitationResponse,
-                handlers::invitation_handler::InvitationData, 
+                handlers::invitation_handler::InvitationData,
                 handlers::register_handler::SetPasswordData,
                 handlers::auth_handler::AuthData,
                 handlers::password_reset_handler::PasswordResetData,
@@ -491,16 +487,8 @@ pub async fn main() -> std::io::Result<()> {
                             )
                             .service(
                                 web::resource("/search/{page}")
-                                    .route(web::post().to(handlers::card_handler::search_card)),
-                            )
-                            .service(
-                                web::resource("/fulltextsearch/{page}")
-                                    .route(web::post().to(handlers::card_handler::search_full_text_card)),
-                            )
-                            .service(
-                                web::resource("/hybrid_search/{page}")
                                     .app_data(web::Data::new(cross_encoder.clone()))
-                                    .route(web::post().to(handlers::card_handler::search_hybrid_card)),
+                                    .route(web::post().to(handlers::card_handler::search_card)),
                             )
                             .service(
                                 web::resource("/generate")
@@ -610,14 +598,9 @@ pub async fn main() -> std::io::Result<()> {
                                             .to(handlers::collection_handler::get_logged_in_user_card_collections)),
                             )
                             .service(
-                                web::resource("/search/{page}").route(
+                                web::resource("/search/{page}")                                    
+                                .route(
                                     web::post().to(handlers::card_handler::search_collections),
-                                ),
-                            )
-                            .service(
-                                web::resource("/fulltextsearch/{page}").route(
-                                    web::post()
-                                        .to(handlers::card_handler::search_full_text_collections),
                                 ),
                             )
                             .service(web::resource("/{collection_id}/{page}").route(

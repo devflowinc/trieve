@@ -9,7 +9,7 @@ use crate::{
     },
     diesel::{Connection, ExpressionMethods, QueryDsl, RunQueryDsl},
     errors::ServiceError,
-    operators::card_operator::get_metadata_query,
+    operators::search_operator::get_metadata_query,
 };
 use actix_web::web;
 use diesel::{
