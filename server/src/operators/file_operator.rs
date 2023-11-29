@@ -411,42 +411,27 @@ pub async fn create_cards_with_handler(
     }
     let converted_description = convert_html(&description.unwrap_or("".to_string()));
     let collection_id;
-    match web::block(move || {
-        create_collection_and_add_bookmarks_query(
-            CardCollection::from_details(
-                user.id,
-                format!("Collection for file {}", file_name),
-                !private,
-                converted_description,
-            ),
-            card_ids,
-            created_file_id,
-            pool1,
-        )
-    })
-    .await
-    {
-        Ok(response) => match response {
-            Ok(collection) => (collection_id = collection.id,),
-            Err(err) => return Err(err),
-        },
-        Err(_) => {
-            return Err(DefaultError {
-                message: "Error creating collection",
-            })
-        }
+    match create_collection_and_add_bookmarks_query(
+        CardCollection::from_details(
+            user.id,
+            format!("Collection for file {}", file_name),
+            !private,
+            converted_description,
+        ),
+        card_ids,
+        created_file_id,
+        pool1,
+    ) {
+        Ok(collection) => (collection_id = collection.id,),
+        Err(err) => return Err(err),
     };
 
-    web::block(move || {
-        add_collection_created_notification_query(
-            FileUploadCompletedNotification::from_details(user.id, collection_id),
-            pool,
-        )
-    })
-    .await
-    .map_err(|_| DefaultError {
+    add_collection_created_notification_query(
+        FileUploadCompletedNotification::from_details(user.id, collection_id),
+        pool,
+    ).map_err(|_| DefaultError {
         message: "Thread error creating notification",
-    })??;
+    })?;
 
     Ok(())
 }
