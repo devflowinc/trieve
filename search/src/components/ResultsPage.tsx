@@ -127,6 +127,13 @@ const ResultsPage = (props: ResultsPageProps) => {
       content: props.query,
       tag_set: props.filters.tagSet,
       link: props.filters.link,
+      time_range:
+        props.filters.start || props.filters.end
+          ? [
+              props.filters.start ? props.filters.start + " 00:00:00" : "null",
+              props.filters.end ? props.filters.end + " 00:00:00" : "null",
+            ]
+          : null,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       filters: props.filters.metadataFilters,
     };
@@ -149,22 +156,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       },
       credentials: "include",
       signal: abortController.signal,
-      body: JSON.stringify({
-        content: props.query,
-        tag_set: props.filters.tagSet,
-        link: props.filters.link,
-        time_range:
-          props.filters.start || props.filters.end
-            ? [
-                props.filters.start
-                  ? props.filters.start + " 00:00:00"
-                  : "null",
-                props.filters.end ? props.filters.end + " 00:00:00" : "null",
-              ]
-            : null,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        filters: props.filters.metadataFilters,
-      }),
+      body: JSON.stringify(requestBody),
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
