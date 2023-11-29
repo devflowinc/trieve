@@ -49,22 +49,29 @@ export const UploadFile = () => {
       .replace(/=+$/, ""); // Remove ending '='
     const file_name = file()?.name;
     const file_mime_type = file()?.type;
-    const body = JSON.stringify({
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const request_body: any = {
       base64_docx_file: base64File,
       file_name: file_name,
       file_mime_type: file_mime_type,
-      time_stamp: timestamp() + " 00:00:00",
       private: _private(),
       link: link(),
       tag_set: tagSet(),
-    });
+    };
+
+    if (timestamp()) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      request_body.time_stamp = timestamp() + " 00:00:00";
+    }
+
     void fetch(`${apiHost}/file`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       credentials: "include",
-      body: body,
+      body: JSON.stringify(request_body),
     }).then((response) => {
       if (response.status === 401) {
         setShowNeedLoginModal(true);
