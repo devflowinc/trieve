@@ -170,17 +170,23 @@ const SearchForm = (props: {
     // Join the filter strings with commas
     const filters = filterStrings.join("&");
 
+    const searchTypeRoute =
+      searchTypes().find((type) => type.isSelected)?.route ?? "";
+    const searchTypeUrlParam = searchTypeRoute
+      ? `&searchType=${searchTypeRoute}`
+      : "";
+
     window.location.href = props.collectionID
       ? `/collection/${props.collectionID}?q=${searchQuery}` +
         (filters ? `&${filters}` : "") +
         (timeRange().start ? `&start=${timeRange().start}` : "") +
         (timeRange().end ? `&end=${timeRange().end}` : "") +
-        (searchTypes()[0].isSelected ? `&searchType=fulltextsearch` : "")
+        searchTypeUrlParam
       : `/search?q=${searchQuery}` +
         (filters ? `&${filters}` : "") +
         (timeRange().start ? `&start=${timeRange().start}` : "") +
         (timeRange().end ? `&end=${timeRange().end}` : "") +
-        (searchTypes()[0].isSelected ? `&searchType=fulltextsearch` : "");
+        searchTypeUrlParam;
   };
 
   onMount(() => {
@@ -542,7 +548,7 @@ const SearchForm = (props: {
           >
             <button
               classList={{
-                "flex items-center space-x-1 text-sm p-1 rounded": true,
+                "flex items-center space-x-1 text-sm pb-1 rounded": true,
                 "bg-neutral-200 dark:bg-neutral-700": showFilters(),
               }}
               onClick={(e) => {
@@ -559,7 +565,7 @@ const SearchForm = (props: {
                 <PopoverButton
                   aria-label="Toggle filters"
                   type="button"
-                  class="flex items-center space-x-1 p-1 text-sm"
+                  class="flex items-center space-x-1 pb-1 text-sm"
                 >
                   <span>Search Type</span>{" "}
                   <svg
@@ -645,7 +651,7 @@ const SearchForm = (props: {
                   <PopoverButton
                     aria-label="Toggle filters"
                     type="button"
-                    class="flex items-center space-x-1 text-sm"
+                    class="flex items-center space-x-1 pb-1 text-sm"
                   >
                     <span>Weight</span>{" "}
                     <svg
