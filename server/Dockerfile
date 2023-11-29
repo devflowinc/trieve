@@ -24,7 +24,7 @@ RUN set -eux; \
     libssl-dev \
     python3 \
     python-is-python3 \
-    libpython3.9-dev \
+    libpython3-dev \
     libpq-dev \
     build-essential \
     libclang-dev \
@@ -89,8 +89,6 @@ RUN apt-get update; \
 COPY ./server-python/requirements.txt /app/requirements.txt
 RUN pip install --break-system-packages -r /app/requirements.txt; \
     mkdir /app/tmp
-
-COPY ./server-python /app/server-python
 
 WORKDIR /app
 COPY ./server-python/ /app/server-python
