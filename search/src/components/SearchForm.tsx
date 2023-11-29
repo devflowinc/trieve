@@ -6,6 +6,7 @@ import {
   Show,
   Switch,
   createEffect,
+  createMemo,
   createSignal,
   onCleanup,
   onMount,
@@ -51,8 +52,7 @@ const SearchForm = (props: {
     { name: "Semantic", isSelected: true, route: "search" },
     { name: "Hybrid Search", isSelected: false, route: "hybrid_search" },
   ]);
-  // eslint-disable-next-line solid/reactivity
-  const [textareaInput, setTextareaInput] = createSignal(props.query ?? "");
+  const [textareaInput, setTextareaInput] = createSignal("");
   const [typewriterEffect, setTypewriterEffect] = createSignal("");
   const [textareaFocused, setTextareaFocused] = createSignal(false);
   const [comboBoxSections, setComboBoxSections] = createSignal<
@@ -69,10 +69,7 @@ const SearchForm = (props: {
     start: props.filters.start,
     end: props.filters.end,
   });
-  const [semanticWeight, setSemanticWeight] = createSignal(
-    // eslint-disable-next-line solid/reactivity
-    props.weight ?? "0.5",
-  );
+  const [semanticWeight, setSemanticWeight] = createSignal("0.5");
   const [usingPanel, setUsingPanel] = createSignal(false);
 
   createEffect(() => {
@@ -123,16 +120,10 @@ const SearchForm = (props: {
     setSearchHistoryList(filteredQueries.slice(0, 5));
   };
 
-  const resizeTextarea = (
-    textarea: HTMLTextAreaElement | null,
-    avoidSetInput: boolean | undefined,
-  ) => {
+  const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
     if (!textarea) return;
 
     textarea.style.height = `${textarea.scrollHeight}px`;
-    if (avoidSetInput) return;
-    setTextareaInput(textarea.value);
-    setTextareaInput(textarea.value);
   };
 
   const onSubmit = (e: Event) => {
@@ -176,17 +167,25 @@ const SearchForm = (props: {
       ? `&searchType=${searchTypeRoute}`
       : "";
 
+    const semanticWeightVal =
+      searchTypeRoute === "hybrid_search" ? semanticWeight() : "";
+    const semanticWeightUrlParam = semanticWeightVal
+      ? `&weight=${semanticWeightVal}`
+      : "";
+
     window.location.href = props.collectionID
       ? `/collection/${props.collectionID}?q=${searchQuery}` +
         (filters ? `&${filters}` : "") +
         (timeRange().start ? `&start=${timeRange().start}` : "") +
         (timeRange().end ? `&end=${timeRange().end}` : "") +
-        searchTypeUrlParam
+        searchTypeUrlParam +
+        semanticWeightUrlParam
       : `/search?q=${searchQuery}` +
         (filters ? `&${filters}` : "") +
         (timeRange().start ? `&start=${timeRange().start}` : "") +
         (timeRange().end ? `&end=${timeRange().end}` : "") +
-        searchTypeUrlParam;
+        searchTypeUrlParam +
+        semanticWeightUrlParam;
   };
 
   onMount(() => {
@@ -304,6 +303,32 @@ const SearchForm = (props: {
   });
 
   createEffect(() => {
+    setSemanticWeight(props.weight ?? "0.5");
+    setTextareaInput(props.query ?? "");
+
+    setSearchTypes((prev) => {
+      return prev.map((item) => {
+        if (props.searchType == item.route) {
+          return { ...item, isSelected: true };
+        } else {
+          return { ...item, isSelected: false };
+        }
+      });
+    });
+
+    setTimeout(() => {
+      resizeTextarea(document.querySelector("#search-query-textarea"));
+    }, 5);
+  });
+
+  createEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const temp = textareaVal();
+
+    resizeTextarea(document.querySelector("#search-query-textarea"));
+  });
+
+  createEffect(() => {
     const comboBoxSet = comboBoxSections();
 
     const tagSetFilters = comboBoxSet
@@ -331,24 +356,6 @@ const SearchForm = (props: {
     };
 
     window.localStorage.setItem("savedCustomFilters", JSON.stringify(filters));
-  });
-
-  createEffect(() => {
-    resizeTextarea(
-      document.getElementById(
-        "search-query-textarea",
-      ) as HTMLTextAreaElement | null,
-      false,
-    );
-    setSearchTypes((prev) => {
-      return prev.map((item) => {
-        if (props.searchType == item.route) {
-          return { ...item, isSelected: true };
-        } else {
-          return { ...item, isSelected: false };
-        }
-      });
-    });
   });
 
   createEffect(() => {
@@ -447,6 +454,17 @@ const SearchForm = (props: {
     feelingLucky();
   });
 
+  const textareaVal = createMemo(() => {
+    const textareaInputVal = textareaInput();
+    const textareaFocusedVal = textareaFocused();
+    const typewriterEffectVal = typewriterEffect();
+    const textareaVal =
+      textareaInputVal ||
+      (textareaFocusedVal ? textareaInputVal : typewriterEffectVal);
+
+    return textareaVal;
+  });
+
   const handleHistoryClick = (e: Event, title: string) => {
     setTextareaInput(title);
     onSubmit(e);
@@ -458,11 +476,12 @@ const SearchForm = (props: {
       <form class="w-full space-y-4 dark:text-white" onSubmit={onSubmit}>
         <div class="relative flex">
           <div
-            class={`flex w-full justify-center space-x-2 rounded-md bg-neutral-100 px-4 py-1 pr-[10px] dark:bg-neutral-700 ${
-              textareaInput().length && searchHistoryList().length
-                ? "rounded-bl-none rounded-br-none"
-                : ""
-            }`}
+            classList={{
+              "flex w-full justify-center space-x-2 rounded-md bg-neutral-100 px-4 py-1 pr-[10px] dark:bg-neutral-700":
+                true,
+              "rounded-bl-none rounded-br-none":
+                textareaInput().length > 0 && searchHistoryList().length > 0,
+            }}
           >
             <BiRegularSearch class="mt-1 h-6 w-6 fill-current" />
             <textarea
@@ -474,12 +493,9 @@ const SearchForm = (props: {
               }}
               onFocus={() => setTextareaFocused(true)}
               onBlur={() => setTextareaFocused(false)}
-              value={
-                textareaInput() ||
-                (textareaFocused() ? textareaInput() : typewriterEffect())
-              }
+              value={textareaVal()}
               onInput={(e) => {
-                resizeTextarea(e.target, false);
+                setTextareaInput(e.target.value);
                 updateSearchHistory(e.target.value, searchQueriesFromStorage());
               }}
               onKeyDown={(e) => {
@@ -500,12 +516,6 @@ const SearchForm = (props: {
                 onClick={(e) => {
                   e.preventDefault();
                   setTextareaInput("");
-                  resizeTextarea(
-                    document.getElementById(
-                      "search-query-textarea",
-                    ) as HTMLTextAreaElement,
-                    true,
-                  );
                 }}
               >
                 <BiRegularX class="h-7 w-7 fill-current" />
