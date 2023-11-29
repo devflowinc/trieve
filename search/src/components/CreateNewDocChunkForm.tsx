@@ -44,18 +44,25 @@ export const CreateNewDocChunkForm = () => {
     setErrorFields([]);
     setIsSubmitting(true);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const request_body: any = {
+      card_html: cardHTMLContentValue,
+      link: docChunkLinkValue,
+      private: _private(),
+    };
+
+    if (timestamp()) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      request_body.time_stamp = timestamp() + " 00:00:00";
+    }
+
     void fetch(`${apiHost}/card`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       credentials: "include",
-      body: JSON.stringify({
-        card_html: cardHTMLContentValue,
-        link: docChunkLinkValue,
-        time_stamp: timestamp() + " 00:00:00",
-        private: _private(),
-      }),
+      body: JSON.stringify(request_body),
     }).then((response) => {
       if (response.status === 401) {
         setShowNeedLoginModal(true);
