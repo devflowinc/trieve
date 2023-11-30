@@ -34,6 +34,7 @@ use qdrant_client::{
 };
 use serde::{Deserialize, Serialize};
 use simsearch::SimSearch;
+use std::cmp::max;
 use std::collections::HashSet;
 
 pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
@@ -159,6 +160,7 @@ pub async fn search_card_query(
     filters: Option<serde_json::Value>,
     current_user_id: Option<uuid::Uuid>,
     parsed_query: ParsedQuery,
+    pool: web::Data<Pool>,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
 
@@ -280,11 +282,14 @@ pub async fn search_card_query(
         }
     }
 
-    let point_ids = search_qdrant_query(page, filter, embedding_vector.clone()).await?;
+    let (total_card_count, point_ids) = futures::join!(
+        get_card_count_query(pool.clone()),
+        search_qdrant_query(page, filter, embedding_vector.clone())
+    );
 
     Ok(SearchCardQueryResult {
-        search_results: point_ids,
-        total_card_pages: 100,
+        search_results: point_ids?,
+        total_card_pages: max(total_card_count? / 10, 1),
     })
 }
 
@@ -893,7 +898,7 @@ pub async fn search_full_text_card_query(
 
     Ok(FullTextSearchCardQueryResult {
         search_results: card_metadata_with_upvotes_and_files,
-        total_card_pages: total_count,
+        total_card_pages: max(total_count, 1),
     })
 }
 
@@ -1809,7 +1814,7 @@ pub async fn delete_card_metadata_query(
     Ok(())
 }
 
-pub fn get_card_count_query(pool: web::Data<Pool>) -> Result<i64, DefaultError> {
+pub async fn get_card_count_query(pool: web::Data<Pool>) -> Result<i64, DefaultError> {
     use crate::data::schema::card_metadata_count::dsl as card_metadata_count_columns;
 
     let mut conn = pool.get().unwrap();
