@@ -8,8 +8,6 @@ use crate::operators::card_operator::*;
 use crate::operators::card_operator::{
     get_metadata_from_id_query, get_qdrant_connection, search_card_query,
 };
-use crate::{get_env, CrossEncoder};
-
 use crate::operators::collection_operator::{
     create_card_bookmark_query, get_collection_by_id_query,
 };
@@ -17,7 +15,8 @@ use crate::operators::qdrant_operator::{
     create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
     update_qdrant_point_private_query,
 };
-use crate::{get_env, AppMutexStore};
+use crate::AppMutexStore;
+use crate::{get_env, CrossEncoder};
 use actix::Arbiter;
 use actix_web::body::MessageBody;
 use actix_web::web::Bytes;
