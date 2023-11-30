@@ -100,7 +100,7 @@ services:
       - 9998:9998
 
   server:
-    image: arguflow/server
+    image: arguflow/server:release-0.1.9
     build: ./server/
     networks:
       - app-network
@@ -144,7 +144,7 @@ services:
       - TIKA_URL=${TIKA_URL}
 
   chat:
-    image: arguflow/chat
+    image: arguflow/chat:release-0.1.9
     build: ./chat/
     networks:
       - app-network
@@ -162,7 +162,7 @@ services:
       - VITE_CHAT_VOTE_FEATURE=${VITE_CHAT_VOTE_FEATURE}
 
   search:
-    image: arguflow/search
+    image: arguflow/search:release-0.1.9
     build: ./search/
     networks:
       - app-network
