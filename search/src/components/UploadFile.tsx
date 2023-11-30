@@ -51,7 +51,7 @@ export const UploadFile = () => {
     const file_mime_type = file()?.type;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const request_body: any = {
+    const requestBody: any = {
       base64_docx_file: base64File,
       file_name: file_name,
       file_mime_type: file_mime_type,
@@ -62,7 +62,7 @@ export const UploadFile = () => {
 
     if (timestamp()) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      request_body.time_stamp = timestamp() + " 00:00:00";
+      requestBody.time_stamp = timestamp() + " 00:00:00";
     }
 
     void fetch(`${apiHost}/file`, {
@@ -71,7 +71,7 @@ export const UploadFile = () => {
         "Content-Type": "application/json",
       },
       credentials: "include",
-      body: JSON.stringify(request_body),
+      body: JSON.stringify(requestBody),
     }).then((response) => {
       if (response.status === 401) {
         setShowNeedLoginModal(true);

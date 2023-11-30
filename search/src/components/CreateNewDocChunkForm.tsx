@@ -12,6 +12,7 @@ import { Tooltip } from "./Atoms/Tooltip";
 export const CreateNewDocChunkForm = () => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const [docChunkLink, setDocChunkLink] = createSignal("");
+  const [tagSet, setTagSet] = createSignal("");
   const [errorText, setErrorText] = createSignal<
     string | number | boolean | Node | JSX.ArrayElement | null | undefined
   >("");
@@ -45,15 +46,16 @@ export const CreateNewDocChunkForm = () => {
     setIsSubmitting(true);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const request_body: any = {
+    const requestBody: any = {
       card_html: cardHTMLContentValue,
       link: docChunkLinkValue,
+      tag_set: tagSet(),
       private: _private(),
     };
 
     if (timestamp()) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      request_body.time_stamp = timestamp() + " 00:00:00";
+      requestBody.time_stamp = timestamp() + " 00:00:00";
     }
 
     void fetch(`${apiHost}/card`, {
@@ -62,7 +64,7 @@ export const CreateNewDocChunkForm = () => {
         "Content-Type": "application/json",
       },
       credentials: "include",
-      body: JSON.stringify(request_body),
+      body: JSON.stringify(requestBody),
     }).then((response) => {
       if (response.status === 401) {
         setShowNeedLoginModal(true);
@@ -203,6 +205,14 @@ export const CreateNewDocChunkForm = () => {
                 true,
               "border border-red-500": errorFields().includes("docChunkLink"),
             }}
+          />
+          <div>Tag Set</div>
+          <input
+            type="text"
+            placeholder="optional - separate with commas"
+            value={tagSet()}
+            onInput={(e) => setTagSet(e.target.value)}
+            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
           />
           <div>Date</div>
           <input
