@@ -255,9 +255,11 @@ const ResultsPage = (props: ResultsPageProps) => {
           </For>
         </div>
       </div>
-      <div class="mx-auto my-12 flex items-center space-x-2">
-        <PaginationController page={props.page} totalPages={totalPages()} />
-      </div>
+      <Show when={resultCards().length > 0}>
+        <div class="mx-auto my-12 flex items-center space-x-2">
+          <PaginationController page={props.page} totalPages={totalPages()} />
+        </div>
+      </Show>
       <div>
         <div
           data-dial-init
