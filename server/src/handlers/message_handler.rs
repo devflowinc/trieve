@@ -390,6 +390,7 @@ pub async fn stream_response(
     app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let pool1 = pool.clone();
     let pool2 = pool.clone();
 
     let openai_messages: Vec<ChatMessage> = messages
@@ -483,6 +484,7 @@ pub async fn stream_response(
                 quote_words: None,
                 negated_words: None,
             },
+            pool1,
         )
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;

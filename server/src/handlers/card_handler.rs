@@ -34,7 +34,7 @@ use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::cmp::min;
+use std::cmp::max;
 use std::collections::HashSet;
 use std::process::Command;
 use tokio_stream::StreamExt;
@@ -875,7 +875,8 @@ pub async fn search_card(
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_user_id = user.map(|user| user.id);
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
-    let embedding_vector = create_embedding(&data.content).await?;
+    let embedding_vector = create_embedding(&data.content, app_mutex).await?;
+    let pool1 = pool.clone();
 
     let re = Regex::new(r#""(.*?)""#).unwrap();
     let quote_words: Vec<String> = re
@@ -900,6 +901,7 @@ pub async fn search_card(
             },
             negated_words: None,
         },
+        pool1,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -1018,6 +1020,7 @@ pub async fn search_hybrid_card(
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
+    app_mutex: web::Data<AppMutexStore>,
     cross_encoder_init: web::Data<CrossEncoder>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -1028,7 +1031,7 @@ pub async fn search_hybrid_card(
 
     let parsed_query = parse_query(data.content.clone());
 
-    let search_card_query_results = search_card_query(
+    let semantic_search_results = search_card_query(
         embedding_vector,
         page,
         data.link.clone(),
@@ -1037,6 +1040,7 @@ pub async fn search_hybrid_card(
         data.filters.clone(),
         current_user_id,
         parsed_query,
+        pool1,
     );
 
     let full_text_data = data.clone();
@@ -1049,26 +1053,33 @@ pub async fn search_hybrid_card(
         _required_user,
     );
 
-    let (search_card_query_results, full_text_handler_results) =
-        futures::join!(search_card_query_results, full_text_handler_results);
+    let (semantic_search_results, full_text_handler_results) =
+        futures::join!(semantic_search_results, full_text_handler_results);
 
-    let search_card_query_results =
-        search_card_query_results.map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let semantic_search_results =
+        semantic_search_results.map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let mut full_text_query_results = vec![];
     let mut full_text_page_count = 1;
+
     if let Ok(response) = full_text_handler_results {
         if response.status().is_success() {
-            let full_text_results: SearchCardQueryResponseBody =
-                serde_json::from_slice(response.into_body().try_into_bytes().unwrap().as_ref())
-                    .map_err(|_err| {
-                        ServiceError::BadRequest("Error getting full text results".to_string())
-                    })?;
+            let full_text_results: SearchCardQueryResponseBody = serde_json::from_slice(
+                response
+                    .into_body()
+                    .try_into_bytes()
+                    .expect("full text search response should always be valid JSON")
+                    .as_ref(),
+            )
+            .map_err(|_err| {
+                ServiceError::BadRequest("Error getting full text results".to_string())
+            })?;
             full_text_query_results = full_text_results.score_cards;
             full_text_page_count = full_text_results.total_card_pages;
         }
     }
-    let point_ids = search_card_query_results
+
+    let point_ids = semantic_search_results
         .search_results
         .iter()
         .map(|point| point.point_id)
@@ -1080,7 +1091,7 @@ pub async fn search_hybrid_card(
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let semantic_score_cards: Vec<ScoreCardDTO> = search_card_query_results
+    let semantic_score_cards: Vec<ScoreCardDTO> = semantic_search_results
         .search_results
         .iter()
         .map(|search_result| {
@@ -1089,6 +1100,7 @@ pub async fn search_hybrid_card(
                 .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
             {
                 Some(metadata_card) => metadata_card.clone(),
+                // the None here should never match, but if it does, we just return a default card instead of err'ing out
                 None => CardMetadataWithVotesWithScore {
                     id: uuid::Uuid::default(),
                     author: None,
@@ -1135,6 +1147,11 @@ pub async fn search_hybrid_card(
         })
         .collect();
 
+    let mut total_card_pages = max(
+        semantic_search_results.total_card_pages,
+        full_text_page_count,
+    );
+
     let score_cards = if data.cross_encoder.unwrap_or(false) {
         let combined_results = semantic_score_cards
             .into_iter()
@@ -1147,6 +1164,7 @@ pub async fn search_hybrid_card(
         if weights.0 == 1.0 {
             semantic_score_cards
         } else if weights.1 == 1.0 {
+            total_card_pages = full_text_page_count;
             full_text_query_results
         } else {
             reciprocal_rank_fusion(semantic_score_cards, full_text_query_results, data.weights)
@@ -1154,11 +1172,6 @@ pub async fn search_hybrid_card(
     } else {
         reciprocal_rank_fusion(semantic_score_cards, full_text_query_results, data.weights)
     };
-
-    let total_card_pages = min(
-        search_card_query_results.total_card_pages,
-        full_text_page_count,
-    );
 
     Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
         score_cards,
@@ -1680,8 +1693,8 @@ pub async fn get_total_card_count(
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let total_count = web::block(move || get_card_count_query(pool))
-        .await?
+    let total_count = get_card_count_query(pool)
+        .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(json!({ "total_count": total_count })))
