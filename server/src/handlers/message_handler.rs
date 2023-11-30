@@ -9,14 +9,15 @@ use crate::{
     get_env,
     operators::{
         card_operator::{
-            create_embedding, find_relevant_sentence,
-            get_metadata_and_collided_cards_from_point_ids_query, search_card_query,
+            find_relevant_sentence, get_metadata_and_collided_cards_from_point_ids_query,
         },
         message_operator::{
             create_message_query, create_topic_message_query, delete_message_query,
             get_message_by_sort_for_topic_query, get_messages_for_topic_query, get_topic_messages,
             user_owns_topic_query,
         },
+        qdrant_operator::create_embedding,
+        search_operator::retrieve_qdrant_points_query,
     },
     AppMutexStore,
 };
@@ -55,8 +56,8 @@ pub struct CreateMessageData {
 pub async fn create_message_completion_handler(
     data: web::Json<CreateMessageData>,
     user: LoggedUser,
-    app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
+    app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let create_message_data = data.into_inner();
     let pool1 = pool.clone();
@@ -183,8 +184,8 @@ pub struct EditMessageData {
 pub async fn edit_message_handler(
     data: web::Json<EditMessageData>,
     user: LoggedUser,
-    app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
+    app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
     let message_sort_order = data.message_sort_order;
@@ -213,8 +214,8 @@ pub async fn edit_message_handler(
             topic_id,
         }),
         user,
-        app_mutex,
         third_pool,
+        app_mutex,
     )
     .await
 }
@@ -233,8 +234,8 @@ pub async fn edit_message_handler(
 pub async fn regenerate_message_handler(
     data: web::Json<RegenerateMessageData>,
     user: LoggedUser,
-    app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
+    app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
     let pool1 = pool.clone();
@@ -390,7 +391,6 @@ pub async fn stream_response(
     app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool1 = pool.clone();
     let pool2 = pool.clone();
 
     let openai_messages: Vec<ChatMessage> = messages
@@ -472,7 +472,7 @@ pub async fn stream_response(
             .content;
         let embedding_vector = create_embedding(query.as_str(), app_mutex).await?;
 
-        let search_card_query_results = search_card_query(
+        let search_card_query_results = retrieve_qdrant_points_query(
             embedding_vector,
             1,
             None,
@@ -484,7 +484,6 @@ pub async fn stream_response(
                 quote_words: None,
                 negated_words: None,
             },
-            pool1,
         )
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;

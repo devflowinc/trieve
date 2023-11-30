@@ -16,7 +16,7 @@ const requestParams = Astro.request.url.split("?")[1];
 const params = new URLSearchParams(requestParams);
 const page = Number(params.get("page")) || 1;
 const query = params.get("q") ?? "";
-const searchType: string = params.get("searchType") ?? "search";
+const searchType: string = params.get("searchType") ?? "semantic";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let metadataFilters: any[] = [];
@@ -42,6 +42,7 @@ const dataTypeFilters: Filters = {
   tagSet: params.get("Tag Set")?.split(",") ?? [],
   link: params.get("link")?.split(",") ?? [],
   metadataFilters,
+  
 };
 
 const apiHost = import.meta.env.PUBLIC_API_HOST as string;
@@ -96,7 +97,7 @@ try {
     }
   } else {
     const collectionCardResponse = await fetch(
-      `${apiHost}/card_collection/${searchType}/${page}`,
+      `${apiHost}/card_collection/search/${page}`,
       {
         method: "POST",
         headers: {
@@ -110,6 +111,9 @@ try {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           filters: dataTypeFilters.metadataFilters,
           collection_id: collectionID,
+          search_type: {
+            search_type: searchType,
+          }
         }),
       },
     );
