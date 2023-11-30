@@ -4,10 +4,15 @@ use crate::data::models::{
     ChatMessageProxy, Pool, UserDTO,
 };
 use crate::errors::ServiceError;
+use crate::operators::card_operator::get_metadata_from_id_query;
 use crate::operators::card_operator::*;
-use crate::operators::card_operator::{
-    get_metadata_from_id_query, get_qdrant_connection, search_card_query,
+use crate::operators::qdrant_operator::{create_embedding, get_qdrant_connection};
+use crate::operators::search_operator::{
+    global_unfiltered_top_match_query, search_full_text_cards, search_full_text_collections,
+    search_hybrid_cards, search_semantic_cards, search_semantic_collections,
 };
+use crate::{get_env, AppMutexStore, CrossEncoder};
+
 use crate::operators::collection_operator::{
     create_card_bookmark_query, get_collection_by_id_query,
 };
@@ -15,29 +20,22 @@ use crate::operators::qdrant_operator::{
     create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
     update_qdrant_point_private_query,
 };
-use crate::AppMutexStore;
-use crate::{get_env, CrossEncoder};
 use actix::Arbiter;
-use actix_web::body::MessageBody;
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
 use chrono::NaiveDateTime;
-use futures_util::TryFutureExt;
-use itertools::Itertools;
+
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat_completion::{ChatCompletionParameters, ChatMessage, Role};
-use pyo3::types::PyDict;
-use pyo3::{IntoPy, Python};
+
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
 use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::cmp::max;
-use std::collections::HashSet;
 use std::process::Command;
 use tokio_stream::StreamExt;
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 
 pub async fn user_owns_card(
     user_id: uuid::Uuid,
@@ -486,8 +484,8 @@ pub struct CardHtmlUpdateError {
 pub async fn update_card(
     card: web::Json<UpdateCardData>,
     pool: web::Data<Pool>,
-    app_mutex: web::Data<AppMutexStore>,
     user: LoggedUser,
+    app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
     let pool2 = pool.clone();
@@ -575,8 +573,8 @@ pub struct UpdateCardByTrackingIdData {
 pub async fn update_card_by_tracking_id(
     card: web::Json<UpdateCardByTrackingIdData>,
     pool: web::Data<Pool>,
-    app_mutex: web::Data<AppMutexStore>,
     user: LoggedUser,
+    app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     if card.tracking_id.is_empty() {
         return Err(ServiceError::BadRequest(
@@ -645,175 +643,42 @@ pub async fn update_card_by_tracking_id(
     Ok(HttpResponse::NoContent().finish())
 }
 
-fn cross_encoder(
-    results: Vec<ScoreCardDTO>,
-    query: String,
-    cross_encoder_init: web::Data<CrossEncoder>,
-) -> Result<Vec<ScoreCardDTO>, actix_web::Error> {
-    let paired_results = results
-        .clone()
-        .into_iter()
-        .map(|score_card| {
-            (
-                query.clone(),
-                score_card.metadata[0]
-                    .card_html
-                    .clone()
-                    .unwrap_or(score_card.metadata[0].content.clone()),
-            )
-        })
-        .collect::<Vec<(String, String)>>();
-    let scores = Python::with_gil(|py| {
-        let token_kwargs = PyDict::new(py);
-        token_kwargs.set_item("return_tensors", "pt").map_err(|e| {
-            ServiceError::BadRequest(format!("Could not set return_tensors: {}", e))
-        })?;
-        token_kwargs
-            .set_item("truncation", true)
-            .map_err(|e| ServiceError::BadRequest(format!("Could not set trucation: {}", e)))?;
-        token_kwargs
-            .set_item("padding", "max_length")
-            .map_err(|e| ServiceError::BadRequest(format!("Could not set padding: {}", e)))?;
-        token_kwargs
-            .set_item("max_length", 512)
-            .map_err(|e| ServiceError::BadRequest(format!("Could not set max_length: {}", e)))?;
-
-        let tokenized_inputs = cross_encoder_init
-            .tokenizer
-            .call_method::<&str, (pyo3::Py<pyo3::PyAny>,)>(
-                py,
-                "batch_encode_plus",
-                (paired_results.into_py(py),),
-                Some(token_kwargs),
-            )
-            .map_err(|e| ServiceError::BadRequest(format!("Could not tokenize inputs: {}", e)))?
-            .into_ref(py);
-
-        let model_kwargs = PyDict::new(py);
-        model_kwargs
-            .set_item("return_dict", true)
-            .map_err(|e| ServiceError::BadRequest(format!("Could not set return_dict: {}", e)))?;
-
-        let output = cross_encoder_init
-            .model
-            .call_method::<&str, (
-                pyo3::Py<pyo3::PyAny>,
-                pyo3::Py<pyo3::PyAny>,
-                pyo3::Py<pyo3::PyAny>,
-            )>(
-                py,
-                "forward",
-                (
-                    tokenized_inputs.get_item("input_ids").unwrap().into(),
-                    tokenized_inputs.get_item("token_type_ids").unwrap().into(),
-                    tokenized_inputs.get_item("attention_mask").unwrap().into(),
-                ),
-                Some(model_kwargs),
-            )
-            .map_err(|e| ServiceError::BadRequest(format!("Could not run model: {}", e)))?
-            .into_ref(py);
-
-        let scores = output
-            .getattr("logits")
-            .map_err(|e| ServiceError::BadRequest(format!("Could not get logits: {}", e)))?
-            .call_method0("tolist")
-            .map_err(|e| ServiceError::BadRequest(format!("Could not get tolist: {}", e)))?;
-
-        Ok::<Vec<f32>, ServiceError>(
-            scores
-                .extract::<Vec<Vec<f32>>>()
-                .unwrap()
-                .into_iter()
-                .flatten()
-                .collect(),
-        )
-    })?;
-
-    let mut sim_scores_argsort: Vec<usize> = (0..scores.len()).collect();
-    sim_scores_argsort.sort_by(|&a, &b| scores[b].partial_cmp(&scores[a]).unwrap());
-    let mut sorted_corpus: Vec<ScoreCardDTO> = sim_scores_argsort
-        .iter()
-        .map(|&idx| results[idx].clone())
-        .collect();
-
-    for (result, &idx) in sorted_corpus.iter_mut().zip(&sim_scores_argsort) {
-        result.score = scores[idx] as f64;
-    }
-
-    sorted_corpus.sort_by(|a, b| {
-        b.score
-            .partial_cmp(&a.score)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
-
-    sorted_corpus.truncate(10);
-    Ok(sorted_corpus)
-}
-
-fn reciprocal_rank_fusion(
-    semantic_results: Vec<ScoreCardDTO>,
-    full_text_results: Vec<ScoreCardDTO>,
-    weights: Option<(f64, f64)>,
-) -> Vec<ScoreCardDTO> {
-    let mut fused_ranking: Vec<ScoreCardDTO> = Vec::new();
-    let weights = weights.unwrap_or((1.0, 1.0));
-    // Iterate through the union of the two result sets
-    for mut document in full_text_results
-        .clone()
-        .into_iter()
-        .chain(semantic_results.clone().into_iter())
-        .unique_by(|card| card.metadata[0].id)
-    {
-        // Find the rank of the document in each result set
-        let rank_semantic = semantic_results
-            .iter()
-            .position(|doc| doc.metadata[0].id == document.metadata[0].id);
-        let rank_full_text = full_text_results
-            .iter()
-            .position(|doc| doc.metadata[0].id == document.metadata[0].id);
-
-        // Combine Reciprocal Ranks using average or another strategy
-        let combined_rank = weights.0 * (rank_semantic.unwrap_or(0) as f64)
-            + weights.1 * (rank_full_text.unwrap_or(0) as f64);
-        document.score = combined_rank;
-
-        // Add the document ID and combined rank to the fused ranking
-        fused_ranking.push(document.clone());
-    }
-
-    // Sort the fused ranking by combined rank in descending order
-    fused_ranking.sort_by(|a, b| {
-        b.score
-            .partial_cmp(&a.score)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
-
-    fused_ranking.truncate(10);
-
-    fused_ranking
-}
-
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[serde(tag = "search_type", rename_all = "lowercase")]
+pub enum SearchType {
+    Semantic,
+    FullText,
+    Hybrid,
+}
+
+#[derive(Serialize, Deserialize, Clone, IntoParams, ToSchema)]
+#[into_params(style = Form, parameter_in = Query)]
+
 pub struct SearchCardData {
-    content: String,
-    link: Option<Vec<String>>,
-    tag_set: Option<Vec<String>>,
-    time_range: Option<(String, String)>,
-    filters: Option<serde_json::Value>,
+    #[param(inline)]
+    pub search_type: SearchType,
+    pub content: String,
+    pub link: Option<Vec<String>>,
+    pub tag_set: Option<Vec<String>>,
+    pub time_range: Option<(String, String)>,
+    pub filters: Option<serde_json::Value>,
+    pub cross_encoder: Option<bool>,
+    pub weights: Option<(f64, f64)>,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct ScoreCardDTO {
-    metadata: Vec<CardMetadataWithVotesWithScore>,
-    score: f64,
+    pub metadata: Vec<CardMetadataWithVotesWithScore>,
+    pub score: f64,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchCardQueryResponseBody {
-    score_cards: Vec<ScoreCardDTO>,
-    total_card_pages: i64,
+    pub score_cards: Vec<ScoreCardDTO>,
+    pub total_card_pages: i64,
 }
 
+#[derive(Clone)]
 pub struct ParsedQuery {
     pub quote_words: Option<Vec<String>>,
     pub negated_words: Option<Vec<String>>,
@@ -868,433 +733,52 @@ pub async fn search_card(
     data: web::Json<SearchCardData>,
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
-    app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
+    cross_encoder_init: web::Data<CrossEncoder>,
+    app_mutex: web::Data<AppMutexStore>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_user_id = user.map(|user| user.id);
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
-    let embedding_vector = create_embedding(&data.content, app_mutex).await?;
-    let pool1 = pool.clone();
-
-    let re = Regex::new(r#""(.*?)""#).unwrap();
-    let quote_words: Vec<String> = re
-        .captures_iter(&data.content.replace('\\', ""))
-        .map(|capture| capture[1].to_string())
-        .filter(|word| !word.is_empty())
-        .collect::<Vec<String>>();
-
-    let search_card_query_results = search_card_query(
-        embedding_vector,
-        page,
-        data.link.clone(),
-        data.tag_set.clone(),
-        data.time_range.clone(),
-        data.filters.clone(),
-        current_user_id,
-        ParsedQuery {
-            quote_words: if quote_words.is_empty() {
-                None
-            } else {
-                Some(quote_words)
-            },
-            negated_words: None,
-        },
-        pool1,
-    )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    let point_ids = search_card_query_results
-        .search_results
-        .iter()
-        .map(|point| point.point_id)
-        .collect::<Vec<_>>();
-
-    let (metadata_cards, collided_cards) = web::block(move || {
-        get_metadata_and_collided_cards_from_point_ids_query(point_ids, current_user_id, pool)
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    let score_cards: Vec<ScoreCardDTO> = search_card_query_results
-        .search_results
-        .iter()
-        .map(|search_result| {
-            let mut card: CardMetadataWithVotesWithScore = match metadata_cards
-                .iter()
-                .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
-            {
-                Some(metadata_card) => metadata_card.clone(),
-                None => CardMetadataWithVotesWithScore {
-                    id: uuid::Uuid::default(),
-                    author: None,
-                    qdrant_point_id: uuid::Uuid::default(),
-                    total_upvotes: 0,
-                    total_downvotes: 0,
-                    vote_by_current_user: None,
-                    created_at: chrono::Utc::now().naive_local(),
-                    updated_at: chrono::Utc::now().naive_local(),
-                    private: false,
-                    score: Some(0.0),
-                    file_id: None,
-                    file_name: None,
-                    content: "".to_string(),
-                    card_html: Some("".to_string()),
-                    link: Some("".to_string()),
-                    tag_set: Some("".to_string()),
-                    metadata: None,
-                    tracking_id: None,
-                    time_stamp: None,
-                },
-            };
-
-            card = find_relevant_sentence(card.clone(), data.content.clone()).unwrap_or(card);
-            let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
-                .iter()
-                .filter(|card| card.qdrant_id == search_result.point_id)
-                .map(|card| card.metadata.clone())
-                .collect();
-
-            if !card.private
-                || card
-                    .clone()
-                    .author
-                    .is_some_and(|author| Some(author.id) == current_user_id)
-            {
-                collided_cards.insert(0, card);
-            }
-
-            ScoreCardDTO {
-                metadata: collided_cards,
-                score: search_result.score.into(),
-            }
-        })
-        .collect();
-
-    Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
-        score_cards,
-        total_card_pages: search_card_query_results.total_card_pages,
-    }))
-}
-
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
-pub struct HybridSearchCardData {
-    content: String,
-    link: Option<Vec<String>>,
-    tag_set: Option<Vec<String>>,
-    time_range: Option<(String, String)>,
-    filters: Option<serde_json::Value>,
-    cross_encoder: Option<bool>,
-    weights: Option<(f64, f64)>,
-}
-
-impl From<HybridSearchCardData> for SearchCardData {
-    fn from(hybrid_search_card_data: HybridSearchCardData) -> Self {
-        SearchCardData {
-            content: hybrid_search_card_data.content,
-            link: hybrid_search_card_data.link,
-            tag_set: hybrid_search_card_data.tag_set,
-            time_range: None,
-            filters: hybrid_search_card_data.filters,
-        }
-    }
-}
-#[utoipa::path(
-    post,
-    path = "/card/hybrid_search",
-    context_path = "/api",
-    tag = "card",
-    request_body(content = HybridSearchCardData, description = "JSON request payload to semantically search for cards (chunks)", content_type = "application/json"),
-    responses(
-        (status = 200, description = "Cards which are similar to the embedding vector of the search query", body = [SearchCardQueryResponseBody]),
-        (status = 400, description = "Service error relating to searching", body = [DefaultError]),
-    ),
-    params(
-        ("page" = Option<u64>, Path, description = "Page number of the search results")
-    ),
-)]
-pub async fn search_hybrid_card(
-    data: web::Json<HybridSearchCardData>,
-    page: Option<web::Path<u64>>,
-    user: Option<LoggedUser>,
-    pool: web::Data<Pool>,
-    app_mutex: web::Data<AppMutexStore>,
-    cross_encoder_init: web::Data<CrossEncoder>,
-    _required_user: RequireAuth,
-) -> Result<HttpResponse, actix_web::Error> {
-    let current_user_id = user.clone().map(|user| user.id);
-    let page = page.map(|page| page.into_inner()).unwrap_or(1);
-    let embedding_vector = create_embedding(&data.content, app_mutex).await?;
-    let pool1 = pool.clone();
 
     let parsed_query = parse_query(data.content.clone());
 
-    let semantic_search_results = search_card_query(
-        embedding_vector,
-        page,
-        data.link.clone(),
-        data.tag_set.clone(),
-        data.time_range.clone(),
-        data.filters.clone(),
-        current_user_id,
-        parsed_query,
-        pool1,
-    );
-
-    let full_text_data = data.clone();
-
-    let full_text_handler_results = search_full_text_card(
-        web::Json(full_text_data.into()),
-        Some(web::Path::from(page)),
-        user.clone(),
-        pool.clone(),
-        _required_user,
-    );
-
-    let (semantic_search_results, full_text_handler_results) =
-        futures::join!(semantic_search_results, full_text_handler_results);
-
-    let semantic_search_results =
-        semantic_search_results.map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    let mut full_text_query_results = vec![];
-    let mut full_text_page_count = 1;
-
-    if let Ok(response) = full_text_handler_results {
-        if response.status().is_success() {
-            let full_text_results: SearchCardQueryResponseBody = serde_json::from_slice(
-                response
-                    .into_body()
-                    .try_into_bytes()
-                    .expect("full text search response should always be valid JSON")
-                    .as_ref(),
+    let result_cards = match data.search_type {
+        SearchType::Semantic => {
+            search_semantic_cards(data, parsed_query, page, pool, current_user_id, app_mutex)
+                .await?
+        }
+        SearchType::FullText => {
+            search_full_text_cards(data, parsed_query, page, pool, current_user_id).await?
+        }
+        SearchType::Hybrid => {
+            search_hybrid_cards(
+                data,
+                parsed_query,
+                page,
+                pool,
+                current_user_id,
+                cross_encoder_init,
+                app_mutex,
             )
-            .map_err(|_err| {
-                ServiceError::BadRequest("Error getting full text results".to_string())
-            })?;
-            full_text_query_results = full_text_results.score_cards;
-            full_text_page_count = full_text_results.total_card_pages;
+            .await?
         }
-    }
-
-    let point_ids = semantic_search_results
-        .search_results
-        .iter()
-        .map(|point| point.point_id)
-        .collect::<Vec<_>>();
-
-    let (metadata_cards, collided_cards) = web::block(move || {
-        get_metadata_and_collided_cards_from_point_ids_query(point_ids, current_user_id, pool)
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    let semantic_score_cards: Vec<ScoreCardDTO> = semantic_search_results
-        .search_results
-        .iter()
-        .map(|search_result| {
-            let mut card: CardMetadataWithVotesWithScore = match metadata_cards
-                .iter()
-                .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
-            {
-                Some(metadata_card) => metadata_card.clone(),
-                // the None here should never match, but if it does, we just return a default card instead of err'ing out
-                None => CardMetadataWithVotesWithScore {
-                    id: uuid::Uuid::default(),
-                    author: None,
-                    qdrant_point_id: uuid::Uuid::default(),
-                    total_upvotes: 0,
-                    total_downvotes: 0,
-                    vote_by_current_user: None,
-                    created_at: chrono::Utc::now().naive_local(),
-                    updated_at: chrono::Utc::now().naive_local(),
-                    private: false,
-                    score: Some(0.0),
-                    file_id: None,
-                    file_name: None,
-                    content: "".to_string(),
-                    card_html: Some("".to_string()),
-                    link: Some("".to_string()),
-                    tag_set: Some("".to_string()),
-                    metadata: None,
-                    tracking_id: None,
-                    time_stamp: None,
-                },
-            };
-
-            card = find_relevant_sentence(card.clone(), data.content.clone()).unwrap_or(card);
-            let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
-                .iter()
-                .filter(|card| card.qdrant_id == search_result.point_id)
-                .map(|card| card.metadata.clone())
-                .collect();
-
-            if !card.private
-                || card
-                    .clone()
-                    .author
-                    .is_some_and(|author| Some(author.id) == current_user_id)
-            {
-                collided_cards.insert(0, card);
-            }
-
-            ScoreCardDTO {
-                metadata: collided_cards,
-                score: search_result.score as f64 * 0.5,
-            }
-        })
-        .collect();
-
-    let mut total_card_pages = max(
-        semantic_search_results.total_card_pages,
-        full_text_page_count,
-    );
-
-    let score_cards = if data.cross_encoder.unwrap_or(false) {
-        let combined_results = semantic_score_cards
-            .into_iter()
-            .chain(full_text_query_results.clone().into_iter())
-            .unique_by(|score_card| score_card.metadata[0].id)
-            .collect::<Vec<ScoreCardDTO>>();
-
-        cross_encoder(combined_results, data.content.clone(), cross_encoder_init)?
-    } else if let Some(weights) = data.weights {
-        if weights.0 == 1.0 {
-            semantic_score_cards
-        } else if weights.1 == 1.0 {
-            total_card_pages = full_text_page_count;
-            full_text_query_results
-        } else {
-            reciprocal_rank_fusion(semantic_score_cards, full_text_query_results, data.weights)
-        }
-    } else {
-        reciprocal_rank_fusion(semantic_score_cards, full_text_query_results, data.weights)
     };
 
-    Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
-        score_cards,
-        total_card_pages,
-    }))
+    Ok(HttpResponse::Ok().json(result_cards))
 }
 
-#[utoipa::path(
-    post,
-    path = "/card/fulltextsearch",
-    context_path = "/api",
-    tag = "card",
-    request_body(content = SearchCardData, description = "JSON request payload to full text search for cards (chunks)", content_type = "application/json"),
-    responses(
-        (status = 200, description = "Cards which have text with a postgres ts_vector similar to the ts_vector of the search query", body = [SearchCardQueryResponseBody]),
-        (status = 400, description = "Service error relating to to searcing for the card", body = [DefaultError]),
-    ),
-    params(
-        ("page" = Option<u64>, Path, description = "Page number of the search results")
-    ),
-)]
-pub async fn search_full_text_card(
-    data: web::Json<SearchCardData>,
-    page: Option<web::Path<u64>>,
-    user: Option<LoggedUser>,
-    pool: web::Data<Pool>,
-    _required_user: RequireAuth,
-) -> Result<HttpResponse, actix_web::Error> {
-    //search over the links as well
-    let page = page.map(|page| page.into_inner()).unwrap_or(1);
-    let current_user_id = user.map(|user| user.id);
-    let pool1 = pool.clone();
-    let pool2 = pool.clone();
-    let data_inner = data.clone();
+#[derive(Serialize, Deserialize, Clone, ToSchema, IntoParams)]
+#[into_params(style = Form, parameter_in = Query)]
 
-    let parsed_query = parse_query(data.content.clone());
-
-    let user_query = data_inner.content.split_whitespace().join(" AND ");
-
-    let search_card_query_results = web::block(move || {
-        search_full_text_card_query(
-            user_query,
-            page,
-            pool1,
-            current_user_id,
-            data_inner.filters.clone(),
-            data_inner.link.clone(),
-            data_inner.tag_set,
-            data_inner.time_range,
-            parsed_query,
-        )
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))
-    .await?;
-
-    let point_ids = search_card_query_results
-        .search_results
-        .iter()
-        .map(|point| point.qdrant_point_id)
-        .collect::<Vec<uuid::Uuid>>();
-
-    let collided_cards =
-        web::block(move || get_collided_cards_query(point_ids, current_user_id, pool2))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    let mut full_text_cards: Vec<ScoreCardDTO> = search_card_query_results
-        .search_results
-        .iter()
-        .map(|search_result: &CardMetadataWithVotesWithScore| {
-            let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
-                .iter()
-                .filter(|card| {
-                    card.1 == search_result.qdrant_point_id && card.0.id != search_result.id
-                })
-                .map(|card| card.0.clone())
-                .collect();
-
-            // de-duplicate collided cards by removing cards with the same metadata: Option<serde_json::Value>
-            let mut seen_metadata = HashSet::new();
-            let mut i = 0;
-            while i < collided_cards.len() {
-                let metadata_string = serde_json::to_string(&collided_cards[i].metadata).unwrap();
-
-                if seen_metadata.contains(&metadata_string) {
-                    collided_cards.remove(i);
-                } else {
-                    seen_metadata.insert(metadata_string);
-                    i += 1;
-                }
-            }
-            let highlighted_sentence =
-                &find_relevant_sentence(search_result.clone(), data.content.clone())
-                    .unwrap_or(search_result.clone());
-            collided_cards.insert(0, highlighted_sentence.clone());
-
-            ScoreCardDTO {
-                metadata: collided_cards,
-                score: search_result.score.unwrap_or(0.0),
-            }
-        })
-        .collect();
-
-    // order full_text_cards by score desc
-    full_text_cards.sort_by(|a, b| {
-        b.score
-            .partial_cmp(&a.score)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
-
-    Ok(HttpResponse::Ok().json(SearchCardQueryResponseBody {
-        score_cards: full_text_cards,
-        total_card_pages: search_card_query_results.total_card_pages,
-    }))
-}
-
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct SearchCollectionsData {
-    content: String,
-    link: Option<Vec<String>>,
-    tag_set: Option<Vec<String>>,
-    filters: Option<serde_json::Value>,
-    collection_id: uuid::Uuid,
+    pub content: String,
+    pub link: Option<Vec<String>>,
+    pub tag_set: Option<Vec<String>>,
+    pub filters: Option<serde_json::Value>,
+    pub collection_id: uuid::Uuid,
+    #[param(inline)]
+    pub search_type: SearchType,
 }
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchCollectionsResult {
@@ -1321,19 +805,16 @@ pub async fn search_collections(
     data: web::Json<SearchCollectionsData>,
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
+    pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
-    pool: web::Data<Pool>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
-    let embedding_vector = create_embedding(&data.content, app_mutex).await?;
     let collection_id = data.collection_id;
-    let pool1 = pool.clone();
-    let pool2 = pool.clone();
-    let pool3 = pool.clone();
-    let current_user_id = user.map(|user| user.id);
 
+    let current_user_id = user.map(|user| user.id);
+    let pool1 = pool.clone();
     let collection = web::block(move || get_collection_by_id_query(collection_id, pool))
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?
@@ -1348,216 +829,36 @@ pub async fn search_collections(
     }
     let parsed_query = parse_query(data.content.clone());
 
-    let search_card_query_results = search_card_collections_query(
-        embedding_vector,
-        page,
-        pool2,
-        data.link.clone(),
-        data.tag_set.clone(),
-        data.filters.clone(),
-        data.collection_id,
-        current_user_id,
-        parsed_query,
-    )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    let point_ids = search_card_query_results
-        .search_results
-        .iter()
-        .map(|point| point.point_id)
-        .collect::<Vec<_>>();
-
-    let point_ids_1 = point_ids.clone();
-
-    let metadata_cards =
-        web::block(move || get_metadata_from_point_ids(point_ids, current_user_id, pool3))
+    let result_cards = match data.search_type {
+        SearchType::Semantic => {
+            search_semantic_collections(
+                data,
+                parsed_query,
+                collection,
+                page,
+                pool1,
+                current_user_id,
+                app_mutex,
+            )
             .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    let collided_cards =
-        web::block(move || get_collided_cards_query(point_ids_1, current_user_id, pool1))
+        }
+        SearchType::FullText => {
+            search_full_text_collections(
+                data,
+                parsed_query,
+                collection,
+                page,
+                pool1,
+                current_user_id,
+            )
             .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        }
+        _ => {
+            return Err(ServiceError::BadRequest("Invalid search type".into()).into());
+        }
+    };
 
-    let score_cards: Vec<ScoreCardDTO> = search_card_query_results
-        .search_results
-        .iter()
-        .map(|search_result| {
-            let mut card: CardMetadataWithVotesWithScore = match metadata_cards
-                .iter()
-                .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
-            {
-                Some(metadata_card) => metadata_card.clone(),
-                None => CardMetadataWithVotesWithScore {
-                    id: uuid::Uuid::default(),
-                    author: None,
-                    qdrant_point_id: uuid::Uuid::default(),
-                    total_upvotes: 0,
-                    total_downvotes: 0,
-                    vote_by_current_user: None,
-                    created_at: chrono::Utc::now().naive_local(),
-                    updated_at: chrono::Utc::now().naive_local(),
-                    private: false,
-                    score: Some(0.0),
-                    file_id: None,
-                    file_name: None,
-                    content: "".to_string(),
-                    card_html: Some("".to_string()),
-                    link: Some("".to_string()),
-                    tag_set: Some("".to_string()),
-                    metadata: None,
-                    tracking_id: None,
-                    time_stamp: None,
-                },
-            };
-            card = find_relevant_sentence(card.clone(), data.content.clone()).unwrap_or(card);
-
-            let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
-                .iter()
-                .filter(|card| card.1 == search_result.point_id)
-                .map(|card| card.0.clone())
-                .collect();
-
-            collided_cards.insert(0, card);
-            // remove duplicates from collided cards
-            let mut seen_ids = HashSet::new();
-            let mut i = 0;
-            while i < collided_cards.len() {
-                if seen_ids.contains(&collided_cards[i].id) {
-                    collided_cards.remove(i);
-                } else {
-                    seen_ids.insert(collided_cards[i].id);
-                    i += 1;
-                }
-            }
-
-            ScoreCardDTO {
-                metadata: collided_cards,
-                score: search_result.score.into(),
-            }
-        })
-        .collect();
-
-    Ok(HttpResponse::Ok().json(SearchCollectionsResult {
-        bookmarks: score_cards,
-        collection,
-        total_pages: search_card_query_results.total_card_pages,
-    }))
-}
-
-#[utoipa::path(
-    post,
-    path = "/card_collection/fulltextsearch",
-    context_path = "/api",
-    tag = "card_collection",
-    request_body(content = SearchCollectionsData, description = "JSON request payload to full_text search a collection", content_type = "application/json"),
-    responses(
-        (status = 200, description = "Collection cards which are similar to the postgres ts_vector of the search query", body = [SearchCollectionsResult]),
-        (status = 400, description = "Service error relating to getting the collections that the card is in", body = [DefaultError]),
-    ),
-    params(
-        ("page" = u64, description = "The page of search results to get"),
-    ),
-)]
-pub async fn search_full_text_collections(
-    data: web::Json<SearchCollectionsData>,
-    page: Option<web::Path<u64>>,
-    user: Option<LoggedUser>,
-    pool: web::Data<Pool>,
-    _required_user: RequireAuth,
-) -> Result<HttpResponse, actix_web::Error> {
-    //search over the links as well
-    let page = page.map(|page| page.into_inner()).unwrap_or(1);
-    let collection_id = data.collection_id;
-    let pool1 = pool.clone();
-    let pool3 = pool.clone();
-    let current_user_id = user.map(|user| user.id);
-    let data_inner = data.clone();
-    let collection = web::block(move || get_collection_by_id_query(collection_id, pool))
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    if !collection.is_public && current_user_id.is_none() {
-        return Err(ServiceError::Unauthorized.into());
-    }
-
-    if !collection.is_public && Some(collection.author_id) != current_user_id {
-        return Err(ServiceError::Forbidden.into());
-    }
-    let parsed_query = parse_query(data.content.clone());
-
-    let search_card_query_results = web::block(move || {
-        search_full_text_collection_query(
-            data_inner.content.clone(),
-            page,
-            pool3,
-            current_user_id,
-            data_inner.filters.clone(),
-            data_inner.link.clone(),
-            data_inner.tag_set.clone(),
-            data_inner.collection_id,
-            parsed_query,
-        )
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    let point_ids = search_card_query_results
-        .search_results
-        .iter()
-        .map(|point| point.qdrant_point_id)
-        .collect::<Vec<uuid::Uuid>>();
-
-    let collided_cards =
-        web::block(move || get_collided_cards_query(point_ids, current_user_id, pool1))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    let full_text_cards: Vec<ScoreCardDTO> = search_card_query_results
-        .search_results
-        .iter()
-        .map(|search_result| {
-            let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
-                .iter()
-                .filter(|card| {
-                    card.1 == search_result.qdrant_point_id && card.0.id != search_result.id
-                })
-                .map(|card| card.0.clone())
-                .collect();
-
-            // de-duplicate collided cards by removing cards with the same metadata: Option<serde_json::Value>
-            let mut seen_metadata = HashSet::new();
-            let mut i = 0;
-            while i < collided_cards.len() {
-                let metadata_string = serde_json::to_string(&collided_cards[i].metadata).unwrap();
-
-                if seen_metadata.contains(&metadata_string) {
-                    collided_cards.remove(i);
-                } else {
-                    seen_metadata.insert(metadata_string);
-                    i += 1;
-                }
-            }
-            let highlighted_sentence =
-                &find_relevant_sentence(search_result.clone(), data.content.clone())
-                    .unwrap_or(search_result.clone());
-
-            collided_cards.insert(0, highlighted_sentence.clone());
-
-            ScoreCardDTO {
-                metadata: collided_cards,
-                score: search_result.score.unwrap_or(0.0),
-            }
-        })
-        .collect();
-
-    Ok(HttpResponse::Ok().json(SearchCollectionsResult {
-        bookmarks: full_text_cards,
-        collection,
-        total_pages: search_card_query_results.total_card_pages,
-    }))
+    Ok(HttpResponse::Ok().json(result_cards))
 }
 
 #[utoipa::path(
@@ -1692,8 +993,8 @@ pub async fn get_total_card_count(
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let total_count = get_card_count_query(pool)
-        .await
+    let total_count = web::block(move || get_card_count_query(pool))
+        .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(json!({ "total_count": total_count })))

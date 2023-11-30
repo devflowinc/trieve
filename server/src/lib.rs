@@ -2,7 +2,7 @@
 extern crate diesel;
 use crate::{
     errors::ServiceError, handlers::auth_handler::create_admin_account,
-    operators::card_operator::get_qdrant_connection,
+    operators::qdrant_operator::get_qdrant_connection,
 };
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
@@ -144,7 +144,6 @@ pub async fn main() -> std::io::Result<()> {
             handlers::message_handler::create_suggested_queries_handler,
             handlers::card_handler::update_card_by_tracking_id,
             handlers::card_handler::search_card,
-            handlers::card_handler::search_full_text_card,
             handlers::card_handler::generate_off_cards,
             handlers::card_handler::get_card_by_tracking_id,
             handlers::card_handler::delete_card_by_tracking_id,
@@ -165,8 +164,6 @@ pub async fn main() -> std::io::Result<()> {
             handlers::collection_handler::add_bookmark,
             handlers::collection_handler::delete_bookmark,
             handlers::collection_handler::get_logged_in_user_card_collections,
-            handlers::card_handler::search_collections,
-            handlers::card_handler::search_full_text_collections,
             handlers::collection_handler::get_all_bookmarks,
             handlers::file_handler::update_file_handler,
             handlers::file_handler::upload_file_handler,
@@ -505,16 +502,8 @@ pub async fn main() -> std::io::Result<()> {
                             )
                             .service(
                                 web::resource("/search/{page}")
-                                    .route(web::post().to(handlers::card_handler::search_card)),
-                            )
-                            .service(
-                                web::resource("/fulltextsearch/{page}")
-                                    .route(web::post().to(handlers::card_handler::search_full_text_card)),
-                            )
-                            .service(
-                                web::resource("/hybrid_search/{page}")
                                     .app_data(web::Data::new(cross_encoder.clone()))
-                                    .route(web::post().to(handlers::card_handler::search_hybrid_card)),
+                                    .route(web::post().to(handlers::card_handler::search_card)),
                             )
                             .service(
                                 web::resource("/generate")
@@ -624,14 +613,9 @@ pub async fn main() -> std::io::Result<()> {
                                             .to(handlers::collection_handler::get_logged_in_user_card_collections)),
                             )
                             .service(
-                                web::resource("/search/{page}").route(
+                                web::resource("/search/{page}")                                    
+                                .route(
                                     web::post().to(handlers::card_handler::search_collections),
-                                ),
-                            )
-                            .service(
-                                web::resource("/fulltextsearch/{page}").route(
-                                    web::post()
-                                        .to(handlers::card_handler::search_full_text_collections),
                                 ),
                             )
                             .service(web::resource("/{collection_id}/{page}").route(

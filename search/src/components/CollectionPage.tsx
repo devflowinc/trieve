@@ -192,25 +192,23 @@ export const CollectionPage = (props: CollectionPageProps) => {
         setClientSideRequestFinished(true);
       });
     } else {
-      void fetch(
-        `${apiHost}/card_collection/${props.searchType}/${props.page}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          signal: abortController.signal,
-          credentials: "include",
-          body: JSON.stringify({
-            content: props.query,
-            tag_set: props.filters.tagSet,
-            link: props.filters.link,
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            filters: props.filters.metadataFilters,
-            collection_id: props.collectionID,
-          }),
+      void fetch(`${apiHost}/card_collection/search/${props.page}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      ).then((response) => {
+        signal: abortController.signal,
+        credentials: "include",
+        body: JSON.stringify({
+          content: props.query,
+          tag_set: props.filters.tagSet,
+          link: props.filters.link,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          filters: props.filters.metadataFilters,
+          collection_id: props.collectionID,
+          search_type: { search_type: props.searchType },
+        }),
+      }).then((response) => {
         if (response.ok) {
           void response.json().then((data) => {
             const collectionBookmarks = data as CardCollectionSearchDTO;

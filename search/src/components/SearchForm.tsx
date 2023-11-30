@@ -48,9 +48,9 @@ const SearchForm = (props: {
     .filter((item: string) => item);
 
   const [searchTypes, setSearchTypes] = createSignal([
-    { name: "Full Text", isSelected: false, route: "fulltextsearch" },
-    { name: "Semantic", isSelected: true, route: "search" },
-    { name: "Hybrid Search", isSelected: false, route: "hybrid_search" },
+    { name: "Full Text", isSelected: false, route: "fulltext" },
+    { name: "Semantic", isSelected: true, route: "semantic" },
+    { name: "Hybrid Search", isSelected: false, route: "hybrid" },
   ]);
   const [textareaInput, setTextareaInput] = createSignal("");
   const [typewriterEffect, setTypewriterEffect] = createSignal("");
