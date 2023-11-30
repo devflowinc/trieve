@@ -1,7 +1,8 @@
 #[macro_use]
 extern crate diesel;
 use crate::{
-    handlers::auth_handler::create_admin_account, operators::card_operator::get_qdrant_connection, errors::ServiceError,
+    errors::ServiceError, handlers::auth_handler::create_admin_account,
+    operators::card_operator::get_qdrant_connection,
 };
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
@@ -14,7 +15,7 @@ use actix_web::{
 };
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use pyo3::{Python, types::PyDict, PyAny, Py};
+use pyo3::{types::PyDict, Py, PyAny, Python};
 use qdrant_client::{
     prelude::*,
     qdrant::{
@@ -67,7 +68,6 @@ pub struct CrossEncoder {
 }
 
 fn initalize_cross_encoder() -> CrossEncoder {
-
     let cross_encoder = Python::with_gil(|py| {
         let transformers = py.import("transformers").unwrap();
 
@@ -78,7 +78,8 @@ fn initalize_cross_encoder() -> CrossEncoder {
                 "from_pretrained",
                 ("cross-encoder/ms-marco-MiniLM-L-4-v2",),
             )
-            .map_err(|e| ServiceError::BadRequest(format!("Could not load tokenizer: {}", e)))?.into();
+            .map_err(|e| ServiceError::BadRequest(format!("Could not load tokenizer: {}", e)))?
+            .into();
 
         let onnxruntime = py.import("optimum.onnxruntime").map_err(|e| {
             ServiceError::BadRequest(format!("Could not import onnxruntime: {}", e))
@@ -104,11 +105,9 @@ fn initalize_cross_encoder() -> CrossEncoder {
                 ("cross-encoder/ms-marco-MiniLM-L-4-v2",),
                 Some(model_kwargs),
             )
-            .map_err(|e| ServiceError::BadRequest(format!("Could not load model: {}", e)))?.into();
-        Ok::<CrossEncoder, ServiceError>(CrossEncoder {
-            tokenizer,
-            model,
-        })
+            .map_err(|e| ServiceError::BadRequest(format!("Could not load model: {}", e)))?
+            .into();
+        Ok::<CrossEncoder, ServiceError>(CrossEncoder { tokenizer, model })
     });
     cross_encoder.unwrap()
 }
@@ -350,7 +349,7 @@ pub async fn main() -> std::io::Result<()> {
             FieldType::Text,
             Some(&PayloadIndexParams {
                 index_params: Some(IndexParams::TextIndexParams(TextIndexParams {
-                    tokenizer: TokenizerType::Word as i32,
+                    tokenizer: TokenizerType::Whitespace as i32,
                     min_token_len: Some(2),
                     max_token_len: Some(10),
                     lowercase: Some(true),
