@@ -4,20 +4,58 @@ import sys
 import json
 import bs4
 import re
+from english_dictionary.scripts.read_pickle import get_dict
+
+english_dict = get_dict()
 
 
 def get_sentences(text):
     split_regex = r"(?<=[.|!|?|…])"
-    return re.split(split_regex, text)
+    sentences = re.split(split_regex, text)
+    sentences = [sentence for sentence in sentences if len(sentence.split(" ")) > 3]
+    return sentences
+
+
+def get_words(text):
+    words = []
+    raw_words = re.split(r"\s+", text)
+    for word in raw_words:
+        word = re.sub(r"\n+", "", word)
+        word = re.sub(r"\t+", "", word)
+        word = re.sub(r"\s+", "", word)
+        if word:
+            words.append(word)
+
+    return words
+
+
+def is_english_word(word):
+    return word in english_dict
+
+
+def num_unique_english_words(text):
+    words = get_words(text)
+    unique_words = set(words)
+    num_unique_english_words = 0
+    for word in unique_words:
+        if is_english_word(word):
+            num_unique_english_words += 1
+    return num_unique_english_words
+
+
+def percentage_english_words(text):
+    words = get_words(text)
+    english_words = [word for word in words if is_english_word(word)]
+    return len(english_words) / len(words)
 
 
 def loop_split_single_sentence(sentences, word_limit):
-    max_single_sentence_word_count = len(sentences[0].split(" "))
+    max_single_sentence_word_count = len(get_words(sentences[0]))
     word_split_factor = 1
     new_sentences = sentences
     while max_single_sentence_word_count > word_limit:
         word_split_factor += 1
-        words = sentences[0].split(" ")
+        words = get_words(sentences[0])
         new_word_size = len(words) // word_split_factor
         remainder = len(words) % word_split_factor
         word_lengths = [new_word_size] * word_split_factor
@@ -98,6 +136,13 @@ class Chunk:
 
         html_chunks = []
         for body in new_p_bodies:
+            count_unique_english_words = num_unique_english_words(body)
+            english_percentage = percentage_english_words(body)
+            if count_unique_english_words < 10 and english_percentage < 0.75:
+                continue
+            if count_unique_english_words < 30 and english_percentage < 0.1:
+                continue
+
             cur_html = "<div>"
             if self.heading:
                 cur_html += f"<h3>{self.heading}</h3>"
@@ -114,16 +159,10 @@ def parse_html(html_content):
 
     for child in html_content.children:
         text = child.text
-        raw_words = re.split(r"\s+", text)
-        words = []
-        for word in raw_words:
-            word = re.sub(r"\n+", "", word)
-            word = re.sub(r"\t+", "", word)
-            word = re.sub(r"\s+", "", word)
-            if word:
-                words.append(word)
-                break
-        if len(words) < 1:
+        words = get_words(text)
+
+        # ignore empty tags
+        if len(words) == 0:
             continue
 
         if child.name in ["h1", "h2", "h3", "h4", "h5", "h6"]:
