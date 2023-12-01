@@ -136,9 +136,7 @@ const ResultsPage = (props: ResultsPageProps) => {
           : null,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       filters: props.filters.metadataFilters,
-      search_type: {
-        search_type: props.searchType,
-      },
+      search_type: props.searchType,
     };
 
     if (props.searchType === "hybrid") {

@@ -643,20 +643,12 @@ pub async fn update_card_by_tracking_id(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
-#[serde(tag = "search_type", rename_all = "lowercase")]
-pub enum SearchType {
-    Semantic,
-    FullText,
-    Hybrid,
-}
-
 #[derive(Serialize, Deserialize, Clone, IntoParams, ToSchema)]
 #[into_params(style = Form, parameter_in = Query)]
 
 pub struct SearchCardData {
     #[param(inline)]
-    pub search_type: SearchType,
+    pub search_type: String,
     pub content: String,
     pub link: Option<Vec<String>>,
     pub tag_set: Option<Vec<String>>,
@@ -743,15 +735,11 @@ pub async fn search_card(
 
     let parsed_query = parse_query(data.content.clone());
 
-    let result_cards = match data.search_type {
-        SearchType::Semantic => {
-            search_semantic_cards(data, parsed_query, page, pool, current_user_id, app_mutex)
-                .await?
-        }
-        SearchType::FullText => {
+    let result_cards = match data.search_type.as_str() {
+        "fulltext" => {
             search_full_text_cards(data, parsed_query, page, pool, current_user_id).await?
         }
-        SearchType::Hybrid => {
+        "hybrid" => {
             search_hybrid_cards(
                 data,
                 parsed_query,
@@ -762,6 +750,10 @@ pub async fn search_card(
                 app_mutex,
             )
             .await?
+        }
+        _ => {
+            search_semantic_cards(data, parsed_query, page, pool, current_user_id, app_mutex)
+                .await?
         }
     };
 
@@ -778,7 +770,7 @@ pub struct SearchCollectionsData {
     pub filters: Option<serde_json::Value>,
     pub collection_id: uuid::Uuid,
     #[param(inline)]
-    pub search_type: SearchType,
+    pub search_type: String,
 }
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchCollectionsResult {
@@ -829,20 +821,8 @@ pub async fn search_collections(
     }
     let parsed_query = parse_query(data.content.clone());
 
-    let result_cards = match data.search_type {
-        SearchType::Semantic => {
-            search_semantic_collections(
-                data,
-                parsed_query,
-                collection,
-                page,
-                pool1,
-                current_user_id,
-                app_mutex,
-            )
-            .await?
-        }
-        SearchType::FullText => {
+    let result_cards = match data.search_type.as_str() {
+        "fulltext" => {
             search_full_text_collections(
                 data,
                 parsed_query,
@@ -854,7 +834,16 @@ pub async fn search_collections(
             .await?
         }
         _ => {
-            return Err(ServiceError::BadRequest("Invalid search type".into()).into());
+            search_semantic_collections(
+                data,
+                parsed_query,
+                collection,
+                page,
+                pool1,
+                current_user_id,
+                app_mutex,
+            )
+            .await?
         }
     };
 

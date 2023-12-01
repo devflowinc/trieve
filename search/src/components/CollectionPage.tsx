@@ -206,7 +206,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           filters: props.filters.metadataFilters,
           collection_id: props.collectionID,
-          search_type: { search_type: props.searchType },
+          search_type: props.searchType,
         }),
       }).then((response) => {
         if (response.ok) {

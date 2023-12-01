@@ -662,7 +662,7 @@ pub async fn search_full_text_card_query(
 
     //escape special characters
     query = query.filter(sql::<Bool>(
-        format!("card_metadata @@@ 'card_html:\"{}\"'", user_query).as_str(),
+        format!("card_metadata @@@ '{}'", user_query).as_str(),
     ));
     let tag_set_inner = tag_set.unwrap_or_default();
     let link_inner = link.unwrap_or_default();
@@ -1121,7 +1121,11 @@ pub async fn search_full_text_cards(
     current_user_id: Option<uuid::Uuid>,
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
     let pool1 = pool.clone();
-    let user_query = data.content.split_whitespace().join(" AND ");
+    let user_query = data
+        .content
+        .split_whitespace()
+        .join(" AND ")
+        .replace("\"", "");
     let data_inner = data.clone();
     let search_card_query_results = search_full_text_card_query(
         user_query,
