@@ -484,6 +484,7 @@ pub async fn stream_response(
                 quote_words: None,
                 negated_words: None,
             },
+            pool.clone(),
         )
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;

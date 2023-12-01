@@ -9,6 +9,7 @@ use crate::handlers::card_handler::{
     ParsedQuery, ScoreCardDTO, SearchCardData, SearchCardQueryResponseBody, SearchCollectionsData,
     SearchCollectionsResult,
 };
+use crate::operators::card_operator::get_card_count_query;
 use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::operators::qdrant_operator::search_qdrant_query;
 use crate::CrossEncoder;
@@ -34,8 +35,8 @@ use qdrant_client::qdrant::{
     point_id::PointIdOptions, Condition, Filter, HasIdCondition, PointId, Range, SearchPoints,
 };
 use serde::{Deserialize, Serialize};
+use std::cmp::max;
 use std::collections::HashSet;
-
 
 use super::card_operator::{
     find_relevant_sentence, get_collided_cards_query,
@@ -65,6 +66,7 @@ pub async fn retrieve_qdrant_points_query(
     filters: Option<serde_json::Value>,
     current_user_id: Option<uuid::Uuid>,
     parsed_query: ParsedQuery,
+    pool: web::Data<Pool>,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
 
@@ -186,11 +188,16 @@ pub async fn retrieve_qdrant_points_query(
         }
     }
 
-    let point_ids = search_qdrant_query(page, filter, embedding_vector.clone()).await?;
+    let (total_cards, point_ids) = futures::join!(
+        get_card_count_query(pool),
+        search_qdrant_query(page, filter, embedding_vector.clone())
+    );
+
+    // let point_ids = search_qdrant_query(page, filter, embedding_vector.clone()).await?;
 
     Ok(SearchCardQueryResult {
-        search_results: point_ids,
-        total_card_pages: 100,
+        search_results: point_ids?,
+        total_card_pages: max(total_cards? / 10, 1),
     })
 }
 
@@ -799,7 +806,7 @@ pub async fn search_full_text_card_query(
 
     Ok(FullTextSearchCardQueryResult {
         search_results: card_metadata_with_upvotes_and_files,
-        total_card_pages: total_count,
+        total_card_pages: max(1, total_count),
     })
 }
 
@@ -1033,6 +1040,7 @@ pub async fn search_semantic_cards(
         data.filters.clone(),
         current_user_id,
         parsed_query,
+        pool.clone(),
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -1366,6 +1374,7 @@ pub async fn search_hybrid_cards(
         data.filters.clone(),
         current_user_id,
         parsed_query.clone(),
+        pool.clone(),
     );
 
     let full_text_handler_results = search_full_text_cards(
