@@ -993,8 +993,8 @@ pub async fn get_total_card_count(
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let total_count = web::block(move || get_card_count_query(pool))
-        .await?
+    let total_count = get_card_count_query(pool)
+        .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(json!({ "total_count": total_count })))

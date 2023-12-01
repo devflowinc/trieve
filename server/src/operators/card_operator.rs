@@ -721,7 +721,7 @@ pub async fn delete_card_metadata_query(
     Ok(())
 }
 
-pub fn get_card_count_query(pool: web::Data<Pool>) -> Result<i64, DefaultError> {
+pub async fn get_card_count_query(pool: web::Data<Pool>) -> Result<i64, DefaultError> {
     use crate::data::schema::card_metadata_count::dsl as card_metadata_count_columns;
 
     let mut conn = pool.get().unwrap();
