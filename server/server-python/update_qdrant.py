@@ -32,8 +32,7 @@ while True:
         metadata = row[11] if row[11] is not None else ""
         private = row[10] if row[10] is not None else ""
         author_id = row[3] if row[3] is not None else ""
-
-
+        time_stamp = row[13] if row[13] is not None else ""
 
         # Perform your desired modifications to the payload and qdrant point
         # ...
@@ -48,6 +47,7 @@ while True:
                 "metadata": metadata,
                 "private": private,
                 "authors": [author_id],
+                "time_stamp": time_stamp,
             },
             points=[qdrant_point_id],
         )
