@@ -168,7 +168,7 @@ const SearchForm = (props: {
       : "";
 
     const semanticWeightVal =
-      searchTypeRoute === "hybrid_search" ? semanticWeight() : "";
+      searchTypeRoute === "hybrid" ? semanticWeight() : "";
     const semanticWeightUrlParam = semanticWeightVal
       ? `&weight=${semanticWeightVal}`
       : "";
@@ -599,10 +599,7 @@ const SearchForm = (props: {
                     <Menu class="ml-1 space-y-1">
                       <For each={searchTypes()}>
                         {(option) => {
-                          if (
-                            props.collectionID &&
-                            option.route === "hybrid_search"
-                          ) {
+                          if (props.collectionID && option.route === "hybrid") {
                             return <></>;
                           }
 
@@ -651,8 +648,7 @@ const SearchForm = (props: {
           </Popover>
           <Show
             when={
-              searchTypes().find((type) => type.isSelected)?.route ===
-              "hybrid_search"
+              searchTypes().find((type) => type.isSelected)?.route === "hybrid"
             }
           >
             <Popover defaultOpen={false} class="relative">
