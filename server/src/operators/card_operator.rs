@@ -858,8 +858,7 @@ pub fn find_relevant_sentence(
             .iter()
             .map(|x| x.join(", "))
             .collect::<Vec<String>>()
-            .join(". ")
-            + ".",
+            .join(". "),
     );
     Ok(new_output)
 }
