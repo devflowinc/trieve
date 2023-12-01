@@ -1,3 +1,8 @@
+use super::card_operator::{
+    find_relevant_sentence, get_collided_cards_query,
+    get_metadata_and_collided_cards_from_point_ids_query, get_metadata_from_point_ids,
+};
+use super::qdrant_operator::create_embedding;
 use crate::data::models::{
     CardCollection, CardFileWithName, CardMetadataWithVotesWithScore, CardVote,
     FullTextSearchResult, User, UserDTO,
@@ -12,6 +17,7 @@ use crate::handlers::card_handler::{
 use crate::operators::card_operator::get_card_count_query;
 use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::operators::qdrant_operator::search_qdrant_query;
+use crate::AppMutexStore;
 use crate::CrossEncoder;
 use crate::{data::models::Pool, errors::DefaultError};
 use actix_web::web;
@@ -24,8 +30,6 @@ use diesel::sql_types::{Bool, Double};
 use diesel::{
     BoolExpressionMethods, JoinOnDsl, NullableExpressionMethods, PgTextExpressionMethods,
 };
-
-use crate::AppMutexStore;
 use futures_util::TryFutureExt;
 use itertools::Itertools;
 use pyo3::types::PyDict;
@@ -37,12 +41,6 @@ use qdrant_client::qdrant::{
 use serde::{Deserialize, Serialize};
 use std::cmp::max;
 use std::collections::HashSet;
-
-use super::card_operator::{
-    find_relevant_sentence, get_collided_cards_query,
-    get_metadata_and_collided_cards_from_point_ids_query, get_metadata_from_point_ids,
-};
-use super::qdrant_operator::create_embedding;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SearchResult {
