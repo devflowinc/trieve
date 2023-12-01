@@ -9,9 +9,7 @@ use crate::operators::card_operator::*;
 use crate::operators::collection_operator::{
     create_card_bookmark_query, get_collection_by_id_query,
 };
-use crate::operators::qdrant_operator::{
-    create_embedding, get_qdrant_connection, update_qdrant_point_query,
-};
+use crate::operators::qdrant_operator::{create_embedding, update_qdrant_point_query};
 use crate::operators::qdrant_operator::{
     create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
 };
@@ -26,8 +24,6 @@ use actix_web::{web, HttpResponse};
 use chrono::NaiveDateTime;
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat_completion::{ChatCompletionParameters, ChatMessage, Role};
-use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
-use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -368,37 +364,21 @@ pub async fn create_card(
 pub async fn delete_card(
     card_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
+    app_mutex: web::Data<AppMutexStore>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let card_id_inner = card_id.into_inner();
     let pool1 = pool.clone();
 
     let card_metadata = user_owns_card(user.id, card_id_inner, pool).await?;
+    let qdrant_point_id = card_metadata.qdrant_point_id;
 
-    let qdrant = get_qdrant_connection()
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    let deleted_values = PointsSelector {
-        points_selector_one_of: Some(PointsSelectorOneOf::Points(PointsIdsList {
-            ids: vec![card_metadata
-                .qdrant_point_id
-                .unwrap_or(uuid::Uuid::nil())
-                .to_string()
-                .into()],
-        })),
-    };
-
-    web::block(move || delete_card_metadata_query(card_id_inner, pool1))
-        .await?
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
-    qdrant
-        .delete_points_blocking(qdrant_collection, &deleted_values, None)
-        .await
-        .map_err(|_err| ServiceError::BadRequest("Failed deleting card from qdrant".into()))?;
+    web::block(move || {
+        delete_card_metadata_query(card_id_inner, qdrant_point_id, app_mutex, pool1)
+    })
+    .await?
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -419,6 +399,7 @@ pub async fn delete_card(
 pub async fn delete_card_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
+    app_mutex: web::Data<AppMutexStore>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let tracking_id_inner = tracking_id.into_inner();
@@ -426,30 +407,15 @@ pub async fn delete_card_by_tracking_id(
 
     let card_metadata = user_owns_card_tracking_id(user.id, tracking_id_inner, pool).await?;
 
-    let qdrant = get_qdrant_connection()
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let qdrant_point_id = card_metadata.qdrant_point_id;
 
-    let deleted_values = PointsSelector {
-        points_selector_one_of: Some(PointsSelectorOneOf::Points(PointsIdsList {
-            ids: vec![card_metadata
-                .qdrant_point_id
-                .unwrap_or(uuid::Uuid::nil())
-                .to_string()
-                .into()],
-        })),
-    };
+    web::block(move || {
+        delete_card_metadata_query(card_metadata.id, qdrant_point_id, app_mutex, pool1)
+    })
+    .await?
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    web::block(move || delete_card_metadata_query(card_metadata.id, pool1))
-        .await?
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
-    qdrant
-        .delete_points_blocking(qdrant_collection, &deleted_values, None)
-        .await
-        .map_err(|_err| ServiceError::BadRequest("Failed deleting card from qdrant".into()))?;
     Ok(HttpResponse::NoContent().finish())
 }
 

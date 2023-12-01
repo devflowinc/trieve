@@ -2,10 +2,11 @@ use crate::data::models::{
     CardCollisions, CardFile, CardMetadataWithVotes, CardMetadataWithVotesWithScore,
     FullTextSearchResult,
 };
+use crate::AppMutexStore;
 
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 
-use crate::operators::qdrant_operator::get_qdrant_connection;
+use crate::operators::qdrant_operator::{create_embedding, get_qdrant_connection};
 use crate::operators::search_operator::get_metadata_query;
 use crate::{
     data::models::{CardMetadata, Pool},
@@ -19,7 +20,7 @@ use diesel::{
     BoolExpressionMethods, Connection, JoinOnDsl, NullableExpressionMethods, SelectableHelper,
 };
 use itertools::Itertools;
-use qdrant_client::qdrant::PointId;
+use qdrant_client::qdrant::{PointId, PointVectors};
 use serde::{Deserialize, Serialize};
 use simsearch::SimSearch;
 
@@ -559,12 +560,14 @@ pub fn update_card_metadata_query(
 }
 
 enum TransactionResult {
-    CardCollisionDetected,
+    CardCollisionDetected(CardMetadata),
     CardCollisionNotDetected,
 }
 
 pub async fn delete_card_metadata_query(
     card_uuid: uuid::Uuid,
+    qdrant_point_id: Option<uuid::Uuid>,
+    app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
@@ -603,7 +606,7 @@ pub async fn delete_card_metadata_query(
                 return Ok(TransactionResult::CardCollisionNotDetected);
             }
 
-            let card_collisions: Vec<(CardCollisions, bool)> =
+            let card_collisions: Vec<(CardCollisions, CardMetadata)> =
                 card_collisions_columns::card_collisions
                     .inner_join(
                         card_metadata_columns::card_metadata
@@ -611,15 +614,21 @@ pub async fn delete_card_metadata_query(
                                 .eq(card_collisions_columns::collision_qdrant_id)),
                     )
                     .filter(card_metadata_columns::id.eq(card_uuid))
-                    .select((CardCollisions::as_select(), card_metadata_columns::private))
+                    .select((CardCollisions::as_select(), CardMetadata::as_select()))
                     .order_by(card_collisions_columns::created_at.asc())
-                    .load::<(CardCollisions, bool)>(conn)?;
+                    .load::<(CardCollisions, CardMetadata)>(conn)?;
 
             if !card_collisions.is_empty() {
                 // get the first collision that is public or the first collision if all are private
-                let latest_collision = match card_collisions.iter().find(|x| !x.1) {
+                let latest_collision = match card_collisions.iter().find(|x| !x.1.private) {
                     Some(x) => x.0.clone(),
                     None => card_collisions[0].0.clone(),
+                };
+
+                let latest_collision_metadata = match card_collisions.iter().find(|x| !x.1.private)
+                {
+                    Some(x) => x.1.clone(),
+                    None => card_collisions[0].1.clone(),
                 };
 
                 // update all collisions except latest_collision to point to a qdrant_id of None
@@ -677,7 +686,9 @@ pub async fn delete_card_metadata_query(
                     .eq(latest_collision.collision_qdrant_id),))
                 .execute(conn)?;
 
-                return Ok(TransactionResult::CardCollisionDetected);
+                return Ok(TransactionResult::CardCollisionDetected(
+                    latest_collision_metadata,
+                ));
             }
 
             // if there were no collisions, just delete the card_metadata without issue
@@ -693,13 +704,16 @@ pub async fn delete_card_metadata_query(
 
     let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
     match transaction_result {
-        Ok(result) => {
-            if let TransactionResult::CardCollisionNotDetected = result {
+        Ok(result) => match result {
+            TransactionResult::CardCollisionNotDetected => {
                 let qdrant = get_qdrant_connection().await?;
                 let _ = qdrant
                     .delete_points(
                         qdrant_collection,
-                        &vec![<String as Into<PointId>>::into(card_uuid.to_string())].into(),
+                        &vec![<String as Into<PointId>>::into(
+                            qdrant_point_id.unwrap_or_default().to_string(),
+                        )]
+                        .into(),
                         None,
                     )
                     .await
@@ -709,7 +723,37 @@ pub async fn delete_card_metadata_query(
                         })
                     });
             }
-        }
+            TransactionResult::CardCollisionDetected(latest_collision_metadata) => {
+                let qdrant = get_qdrant_connection().await?;
+                let collision_content = latest_collision_metadata
+                    .card_html
+                    .unwrap_or(latest_collision_metadata.content);
+
+                let new_embedding_vector = create_embedding(collision_content.as_str(), app_mutex)
+                    .await
+                    .map_err(|_e| DefaultError {
+                        message: "Failed to create embedding for card",
+                    })?;
+
+                let _ = qdrant
+                    .update_vectors_blocking(
+                        qdrant_collection,
+                        &[PointVectors {
+                            id: Some(<String as Into<PointId>>::into(
+                                qdrant_point_id.unwrap_or_default().to_string(),
+                            )),
+                            vectors: Some(new_embedding_vector.into()),
+                        }],
+                        None,
+                    )
+                    .await
+                    .map_err(|_e| {
+                        Err::<(), DefaultError>(DefaultError {
+                            message: "Failed to update card in qdrant",
+                        })
+                    });
+            }
+        },
 
         Err(_) => {
             return Err(DefaultError {
