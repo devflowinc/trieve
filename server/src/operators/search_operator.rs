@@ -184,7 +184,7 @@ pub async fn retrieve_qdrant_points_query(
         for word in negated_words.iter() {
             filter
                 .must_not
-                .push(Condition::matches("card_html", word.clone()));
+                .push(Condition::matches("card_html", word.clone() + " "));
         }
     }
 
