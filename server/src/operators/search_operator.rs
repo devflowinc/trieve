@@ -97,37 +97,37 @@ pub async fn retrieve_qdrant_points_query(
             filter.must.push(Condition::range(
                 "time_stamp",
                 Range {
-                    gt: Some(
+                    gt: None,
+                    lt: None,
+                    gte: Some(
                         NaiveDateTime::parse_from_str(&time_range.0, "%Y-%m-%d %H:%M:%S")
                             .map_err(|_| DefaultError {
                                 message: "Failed to parse time range",
                             })?
                             .timestamp() as f64,
                     ),
-                    lt: Some(
+                    lte: Some(
                         NaiveDateTime::parse_from_str(&time_range.1, "%Y-%m-%d %H:%M:%S")
                             .map_err(|_| DefaultError {
                                 message: "Failed to parse time range",
                             })?
                             .timestamp() as f64,
                     ),
-                    gte: None,
-                    lte: None,
                 },
             ));
         } else if time_range.1 == "null" {
             filter.must.push(Condition::range(
                 "time_stamp",
                 Range {
-                    gt: Some(
+                    gt: None,
+                    lt: None,
+                    gte: Some(
                         NaiveDateTime::parse_from_str(&time_range.0, "%Y-%m-%d %H:%M:%S")
                             .map_err(|_| DefaultError {
                                 message: "Failed to parse time range",
                             })?
                             .timestamp() as f64,
                     ),
-                    lt: None,
-                    gte: None,
                     lte: None,
                 },
             ));
@@ -136,15 +136,15 @@ pub async fn retrieve_qdrant_points_query(
                 "time_stamp",
                 Range {
                     gt: None,
-                    lt: Some(
+                    lt: None,
+                    gte: None,
+                    lte: Some(
                         NaiveDateTime::parse_from_str(&time_range.1, "%Y-%m-%d %H:%M:%S")
                             .map_err(|_| DefaultError {
                                 message: "Failed to parse time range",
                             })?
                             .timestamp() as f64,
                     ),
-                    gte: None,
-                    lte: None,
                 },
             ));
         }
@@ -192,8 +192,6 @@ pub async fn retrieve_qdrant_points_query(
         get_card_count_query(pool),
         search_qdrant_query(page, filter, embedding_vector.clone())
     );
-
-    // let point_ids = search_qdrant_query(page, filter, embedding_vector.clone()).await?;
 
     Ok(SearchCardQueryResult {
         search_results: point_ids?,
@@ -664,7 +662,7 @@ pub async fn search_full_text_card_query(
 
     //escape special characters
     query = query.filter(sql::<Bool>(
-        format!("card_metadata @@@ '{}'", user_query).as_str(),
+        format!("card_metadata @@@ 'card_html:\"{}\"'", user_query).as_str(),
     ));
     let tag_set_inner = tag_set.unwrap_or_default();
     let link_inner = link.unwrap_or_default();
@@ -693,14 +691,14 @@ pub async fn search_full_text_card_query(
         if time_range.0 != "null" && time_range.1 != "null" {
             query = query.filter(
                 card_metadata_columns::time_stamp
-                    .gt(
+                    .ge(
                         NaiveDateTime::parse_from_str(&time_range.0, "%Y-%m-%d %H:%M:%S").map_err(
                             |_| DefaultError {
                                 message: "Failed to parse time range",
                             },
                         )?,
                     )
-                    .and(card_metadata_columns::time_stamp.lt(
+                    .and(card_metadata_columns::time_stamp.le(
                         NaiveDateTime::parse_from_str(&time_range.1, "%Y-%m-%d %H:%M:%S").map_err(
                             |_| DefaultError {
                                 message: "Failed to parse time range",
@@ -709,7 +707,7 @@ pub async fn search_full_text_card_query(
                     )),
             );
         } else if time_range.0 != "null" {
-            query = query.filter(card_metadata_columns::time_stamp.gt(
+            query = query.filter(card_metadata_columns::time_stamp.ge(
                 NaiveDateTime::parse_from_str(&time_range.0, "%Y-%m-%d %H:%M:%S").map_err(
                     |_| DefaultError {
                         message: "Failed to parse time range",
@@ -717,7 +715,7 @@ pub async fn search_full_text_card_query(
                 )?,
             ));
         } else if time_range.1 != "null" {
-            query = query.filter(card_metadata_columns::time_stamp.lt(
+            query = query.filter(card_metadata_columns::time_stamp.le(
                 NaiveDateTime::parse_from_str(&time_range.1, "%Y-%m-%d %H:%M:%S").map_err(
                     |_| DefaultError {
                         message: "Failed to parse time range",
