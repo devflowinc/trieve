@@ -700,7 +700,7 @@ fn parse_query(query: String) -> ParsedQuery {
     let negated_words: Vec<String> = query
         .split_whitespace()
         .filter(|word| word.starts_with('-'))
-        .map(|word| word.replace('-', ""))
+        .map(|word| word.strip_prefix('-').unwrap().to_string())
         .collect::<Vec<String>>();
 
     let negated_words = if negated_words.is_empty() {
