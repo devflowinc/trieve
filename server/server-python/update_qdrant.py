@@ -14,7 +14,7 @@ qdrant_client = QdrantClient(
 conn = psycopg2.connect(os.getenv("DATABASE_URL"))
 cur = conn.cursor()
 
-cur.execute("SELECT * FROM card_metadata")
+cur.execute("SELECT * FROM card_metadata WHERE qdrant_point_id IS NOT NULL")
 
 while True:
     # Fetch 20 rows
