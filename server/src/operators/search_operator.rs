@@ -1123,7 +1123,7 @@ pub async fn search_full_text_cards(
         .content
         .split_whitespace()
         .join(" AND ")
-        .replace("\"", "");
+        .replace('\"', "");
     let data_inner = data.clone();
     let search_card_query_results = search_full_text_card_query(
         user_query,
@@ -1455,7 +1455,7 @@ pub async fn search_hybrid_cards(
     if data.cross_encoder.unwrap_or(false) {
         let combined_results = semantic_score_cards
             .into_iter()
-            .chain(full_text_handler_results.score_cards.clone().into_iter())
+            .chain(full_text_handler_results.score_cards.into_iter())
             .unique_by(|score_card| score_card.metadata[0].id)
             .collect::<Vec<ScoreCardDTO>>();
         Ok(SearchCardQueryResponseBody {
@@ -1613,12 +1613,11 @@ pub async fn search_full_text_collections(
 ) -> Result<SearchCollectionsResult, actix_web::Error> {
     let data_inner = data.clone();
     let pool1 = pool.clone();
-    let pool2 = pool.clone();
 
     let search_card_query_results = search_full_text_collection_query(
         data_inner.content.clone(),
         page,
-        pool2,
+        pool,
         current_user_id,
         data_inner.filters.clone(),
         data_inner.link.clone(),
