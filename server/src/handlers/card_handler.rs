@@ -6,28 +6,25 @@ use crate::data::models::{
 use crate::errors::ServiceError;
 use crate::operators::card_operator::get_metadata_from_id_query;
 use crate::operators::card_operator::*;
+use crate::operators::collection_operator::{
+    create_card_bookmark_query, get_collection_by_id_query,
+};
 use crate::operators::qdrant_operator::{create_embedding, get_qdrant_connection};
+use crate::operators::qdrant_operator::{
+    create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
+    update_qdrant_point_private_query,
+};
 use crate::operators::search_operator::{
     global_unfiltered_top_match_query, search_full_text_cards, search_full_text_collections,
     search_hybrid_cards, search_semantic_cards, search_semantic_collections,
 };
 use crate::{get_env, AppMutexStore, CrossEncoder};
-
-use crate::operators::collection_operator::{
-    create_card_bookmark_query, get_collection_by_id_query,
-};
-use crate::operators::qdrant_operator::{
-    create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
-    update_qdrant_point_private_query,
-};
 use actix::Arbiter;
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
 use chrono::NaiveDateTime;
-
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat_completion::{ChatCompletionParameters, ChatMessage, Role};
-
 use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
 use qdrant_client::qdrant::{PointsIdsList, PointsSelector};
 use regex::Regex;
@@ -643,11 +640,9 @@ pub async fn update_card_by_tracking_id(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Serialize, Deserialize, Clone, IntoParams, ToSchema)]
-#[into_params(style = Form, parameter_in = Query)]
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
 
 pub struct SearchCardData {
-    #[param(inline)]
     pub search_type: String,
     pub content: String,
     pub link: Option<Vec<String>>,
