@@ -1051,11 +1051,9 @@ pub async fn search_semantic_cards(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
-    let (metadata_cards, collided_cards) = web::block(move || {
+    let (metadata_cards, collided_cards) =
         get_metadata_and_collided_cards_from_point_ids_query(point_ids, current_user_id, pool)
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let score_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
@@ -1127,20 +1125,17 @@ pub async fn search_full_text_cards(
     let pool1 = pool.clone();
     let user_query = data.content.split_whitespace().join(" AND ");
     let data_inner = data.clone();
-    let search_card_query_results = web::block(move || {
-        search_full_text_card_query(
-            user_query,
-            page,
-            pool,
-            current_user_id,
-            data_inner.filters,
-            data_inner.link,
-            data_inner.tag_set,
-            data_inner.time_range,
-            parsed_query,
-        )
-    })
-    .await?
+    let search_card_query_results = search_full_text_card_query(
+        user_query,
+        page,
+        pool,
+        current_user_id,
+        data_inner.filters,
+        data_inner.link,
+        data_inner.tag_set,
+        data_inner.time_range,
+        parsed_query,
+    )
     .map_err(|err| ServiceError::BadRequest(err.message.into()))
     .await?;
 
@@ -1150,10 +1145,8 @@ pub async fn search_full_text_cards(
         .map(|point| point.qdrant_point_id)
         .collect::<Vec<uuid::Uuid>>();
 
-    let collided_cards =
-        web::block(move || get_collided_cards_query(point_ids, current_user_id, pool1))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let collided_cards = get_collided_cards_query(point_ids, current_user_id, pool1)
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let mut full_text_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
@@ -1400,11 +1393,9 @@ pub async fn search_hybrid_cards(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
-    let (metadata_cards, collided_cards) = web::block(move || {
+    let (metadata_cards, collided_cards) =
         get_metadata_and_collided_cards_from_point_ids_query(point_ids, current_user_id, pool1)
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let semantic_score_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
@@ -1540,15 +1531,11 @@ pub async fn search_semantic_collections(
 
     let point_ids_1 = point_ids.clone();
 
-    let metadata_cards =
-        web::block(move || get_metadata_from_point_ids(point_ids, current_user_id, pool3))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let metadata_cards = get_metadata_from_point_ids(point_ids, current_user_id, pool3)
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let collided_cards =
-        web::block(move || get_collided_cards_query(point_ids_1, current_user_id, pool1))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let collided_cards = get_collided_cards_query(point_ids_1, current_user_id, pool1)
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let score_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
@@ -1628,20 +1615,17 @@ pub async fn search_full_text_collections(
     let pool1 = pool.clone();
     let pool2 = pool.clone();
 
-    let search_card_query_results = web::block(move || {
-        search_full_text_collection_query(
-            data_inner.content.clone(),
-            page,
-            pool2,
-            current_user_id,
-            data_inner.filters.clone(),
-            data_inner.link.clone(),
-            data_inner.tag_set.clone(),
-            data_inner.collection_id,
-            parsed_query,
-        )
-    })
-    .await?
+    let search_card_query_results = search_full_text_collection_query(
+        data_inner.content.clone(),
+        page,
+        pool2,
+        current_user_id,
+        data_inner.filters.clone(),
+        data_inner.link.clone(),
+        data_inner.tag_set.clone(),
+        data_inner.collection_id,
+        parsed_query,
+    )
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let point_ids = search_card_query_results
@@ -1650,10 +1634,8 @@ pub async fn search_full_text_collections(
         .map(|point| point.qdrant_point_id)
         .collect::<Vec<uuid::Uuid>>();
 
-    let collided_cards =
-        web::block(move || get_collided_cards_query(point_ids, current_user_id, pool1))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let collided_cards = get_collided_cards_query(point_ids, current_user_id, pool1)
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let full_text_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
