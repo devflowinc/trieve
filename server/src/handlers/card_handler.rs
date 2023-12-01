@@ -9,10 +9,11 @@ use crate::operators::card_operator::*;
 use crate::operators::collection_operator::{
     create_card_bookmark_query, get_collection_by_id_query,
 };
-use crate::operators::qdrant_operator::{create_embedding, get_qdrant_connection};
+use crate::operators::qdrant_operator::{
+    create_embedding, get_qdrant_connection, update_qdrant_point_query,
+};
 use crate::operators::qdrant_operator::{
     create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
-    update_qdrant_point_private_query,
 };
 use crate::operators::search_operator::{
     global_unfiltered_top_match_query, search_full_text_cards, search_full_text_collections,
@@ -256,9 +257,10 @@ pub async fn create_card(
 
     //if collision is not nil, insert card with collision
     if collision.is_some() {
-        update_qdrant_point_private_query(
-            collision.expect("Collision must be some"),
+        update_qdrant_point_query(
+            None,
             private,
+            collision.expect("Collision must be some"),
             Some(user.id),
             None,
         )
@@ -512,13 +514,6 @@ pub async fn update_card(
         .await?
         .map_err(|_| ServiceError::BadRequest("Card not found".into()))?;
 
-    update_qdrant_point_private_query(
-        qdrant_point_id,
-        private,
-        Some(user.id),
-        Some(embedding_vector),
-    )
-    .await?;
     let metadata = CardMetadata::from_details_with_id(
         card.card_uuid,
         &new_content,
@@ -538,9 +533,19 @@ pub async fn update_card(
             })
             .transpose()?,
     );
+    let metadata_inner = metadata.clone();
     web::block(move || update_card_metadata_query(metadata, None, pool2))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    update_qdrant_point_query(
+        Some(metadata_inner),
+        private,
+        qdrant_point_id,
+        Some(user.id),
+        Some(embedding_vector),
+    )
+    .await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -606,9 +611,10 @@ pub async fn update_card_by_tracking_id(
         .await?
         .map_err(|_| ServiceError::BadRequest("Card not found".into()))?;
 
-    update_qdrant_point_private_query(
-        qdrant_point_id,
+    update_qdrant_point_query(
+        None,
         private,
+        qdrant_point_id,
         Some(user.id),
         Some(embedding_vector),
     )

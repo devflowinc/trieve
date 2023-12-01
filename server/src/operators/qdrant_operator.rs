@@ -145,9 +145,10 @@ pub async fn create_new_qdrant_point_query(
     Ok(())
 }
 
-pub async fn update_qdrant_point_private_query(
-    point_id: uuid::Uuid,
+pub async fn update_qdrant_point_query(
+    metadata: Option<CardMetadata>,
     private: bool,
+    point_id: uuid::Uuid,
     author_id: Option<uuid::Uuid>,
     updated_vector: Option<Vec<f32>>,
 ) -> Result<(), actix_web::Error> {
@@ -193,36 +194,34 @@ pub async fn update_qdrant_point_private_query(
         return Ok(());
     }
 
-    let payload = match private {
-        true => {
-            let mut current_author_ids = match current_point.payload.get("authors") {
-                Some(authors) => match authors.as_list() {
-                    Some(authors) => authors
-                        .iter()
-                        .map(|author| match author.as_str() {
-                            Some(author) => author.to_string(),
-                            None => "".to_string(),
-                        })
-                        .filter(|author| !author.is_empty())
-                        .collect::<Vec<String>>(),
-                    None => {
-                        vec![]
-                    }
-                },
-                None => {
-                    vec![]
-                }
-            };
-
-            if !current_author_ids.contains(&author_id.unwrap_or_default().to_string()) {
-                current_author_ids.push(author_id.unwrap_or_default().to_string());
+    let mut current_author_ids = match current_point.payload.get("authors") {
+        Some(authors) => match authors.as_list() {
+            Some(authors) => authors
+                .iter()
+                .map(|author| match author.as_str() {
+                    Some(author) => author.to_string(),
+                    None => "".to_string(),
+                })
+                .filter(|author| !author.is_empty())
+                .collect::<Vec<String>>(),
+            None => {
+                vec![]
             }
-
-            json!({"private": true, "authors": current_author_ids})
+        },
+        None => {
+            vec![]
         }
-        false => json!({}),
     };
 
+    if !current_author_ids.contains(&author_id.unwrap().to_string()) {
+        current_author_ids.push(author_id.unwrap().to_string());
+    }
+
+    let payload = if let Some(metadata) = metadata {
+        json!({"private": private, "authors": current_author_ids, "tag_set": metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "card_html": metadata.card_html.unwrap_or("".to_string()), "metadata": metadata.metadata.unwrap_or_default(), "time_stamp": metadata.time_stamp.unwrap_or_default().timestamp()})
+    } else {
+        json!({"private": private, "authors": current_author_ids, "tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "card_html": current_point.payload.get("card_html").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from(""))})
+    };
     let points_selector = qdrant_point_id.into();
 
     if let Some(embedding_vector) = updated_vector {
