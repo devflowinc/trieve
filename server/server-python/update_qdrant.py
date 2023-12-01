@@ -7,7 +7,9 @@ from qdrant_client import QdrantClient
 # Load the .env file
 load_dotenv()
 
-qdrant_client = QdrantClient(host="localhost", api_key=os.getenv("QDRANT_API_KEY"), https=False)
+qdrant_client = QdrantClient(
+    host="localhost", api_key=os.getenv("QDRANT_API_KEY"), https=False
+)
 # Connect to the PostgreSQL database
 conn = psycopg2.connect(os.getenv("DATABASE_URL"))
 cur = conn.cursor()
@@ -38,20 +40,23 @@ while True:
         # ...
         print(qdrant_point_id)
 
-        qdrant_client.overwrite_payload(
-            collection_name=os.getenv("QDRANT_COLLECTION"),
-            payload={
-                "link": link.split(","),
-                "tag_set": tag_set.split(","),
-                "card_html": card_html,
-                "metadata": metadata,
-                "private": private,
-                "authors": [author_id],
-                "time_stamp": time_stamp,
-            },
-            points=[qdrant_point_id],
-        )
-    # Commit the changes
+        try:
+            qdrant_client.overwrite_payload(
+                collection_name=os.getenv("QDRANT_COLLECTION"),
+                payload={
+                    "link": link.split(","),
+                    "tag_set": tag_set.split(","),
+                    "card_html": card_html,
+                    "metadata": metadata,
+                    "private": private,
+                    "authors": [author_id],
+                    "time_stamp": time_stamp,
+                },
+                points=[qdrant_point_id],
+            )
+        except Exception as e:
+            print(e)
+            continue
 
 # Close the cursor and connection
 cur.close()
