@@ -533,13 +533,18 @@ pub async fn update_card(
             })
             .transpose()?,
     );
-    let metadata_inner = metadata.clone();
+    let metadata1 = metadata.clone();
     web::block(move || update_card_metadata_query(metadata, None, pool2))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     update_qdrant_point_query(
-        Some(metadata_inner),
+        // If the card is a collision, we don't want to update the qdrant point
+        if card_metadata.qdrant_point_id.is_none() {
+            None
+        } else {
+            Some(metadata1)
+        },
         private,
         qdrant_point_id,
         Some(user.id),
@@ -611,15 +616,6 @@ pub async fn update_card_by_tracking_id(
         .await?
         .map_err(|_| ServiceError::BadRequest("Card not found".into()))?;
 
-    update_qdrant_point_query(
-        None,
-        private,
-        qdrant_point_id,
-        Some(user.id),
-        Some(embedding_vector),
-    )
-    .await?;
-
     let metadata = CardMetadata::from_details_with_id(
         card_metadata.id,
         &new_content,
@@ -639,9 +635,25 @@ pub async fn update_card_by_tracking_id(
             })
             .transpose()?,
     );
+    let metadata1 = metadata.clone();
+
     web::block(move || update_card_metadata_query(metadata, None, pool2))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    update_qdrant_point_query(
+        // If the card is a collision, we don't want to update the qdrant point
+        if card_metadata.qdrant_point_id.is_none() {
+            None
+        } else {
+            Some(metadata1)
+        },
+        private,
+        qdrant_point_id,
+        Some(user.id),
+        Some(embedding_vector),
+    )
+    .await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
