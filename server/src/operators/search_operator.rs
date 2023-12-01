@@ -36,7 +36,7 @@ use pyo3::types::PyDict;
 use pyo3::{IntoPy, Python};
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::qdrant::{
-    point_id::PointIdOptions, Condition, Filter, HasIdCondition, PointId, Range, SearchPoints,
+    point_id::PointIdOptions, Condition, Filter, HasIdCondition, PointId, SearchPoints,
 };
 use serde::{Deserialize, Serialize};
 use std::cmp::max;
@@ -68,82 +68,109 @@ pub async fn retrieve_qdrant_points_query(
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
 
-    let mut filter = Filter::default();
-    filter.should.push(Condition::is_empty("private"));
-    filter.should.push(Condition::is_null("private"));
-    filter.should.push(Condition::matches("private", false));
-    filter.should.push(Condition::matches(
-        "authors",
-        current_user_id.unwrap_or_default().to_string(),
-    ));
+    // TODO: Talk to Qdrant team about how to force substring match on a field instead of keyword match
+    // TEMPORARY: Using postgres to qdrant_point_id's for cards that match filter conditions
+    // NOTE: Replacement function for native qdrant filters at https://gist.github.com/skeptrunedev/3ede217aa78d6462c5c52c63d0318764
+    use crate::data::schema::card_collisions::dsl as card_collisions_columns;
+    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+    let second_join = diesel::alias!(schema::card_metadata as second_join);
+    let mut conn = pool.get().unwrap();
+
+    let mut query = card_metadata_columns::card_metadata
+        .left_outer_join(
+            card_collisions_columns::card_collisions.on(card_metadata_columns::id
+                .eq(card_collisions_columns::card_id)
+                .and(card_metadata_columns::private.eq(false))),
+        )
+        .left_outer_join(
+            second_join.on(second_join
+                .field(schema::card_metadata::qdrant_point_id)
+                .eq(card_collisions_columns::collision_qdrant_id)
+                .and(second_join.field(schema::card_metadata::private).eq(true))),
+        )
+        .filter(
+            card_metadata_columns::private
+                .eq(false)
+                .or(card_metadata_columns::author_id
+                    .eq(current_user_id.unwrap_or(uuid::Uuid::nil())))
+                .and(
+                    second_join
+                        .field(schema::card_metadata::qdrant_point_id)
+                        .is_not_null()
+                        .or(card_metadata_columns::qdrant_point_id.is_not_null()),
+                ),
+        )
+        .select((
+            card_metadata_columns::qdrant_point_id,
+            second_join
+                .field(schema::card_metadata::qdrant_point_id)
+                .nullable(),
+        ))
+        .distinct_on((
+            card_metadata_columns::qdrant_point_id,
+            second_join
+                .field(schema::card_metadata::qdrant_point_id)
+                .nullable(),
+        ))
+        .into_boxed();
 
     let tag_set_inner = tag_set.unwrap_or_default();
     let link_inner = link.unwrap_or_default();
-
     if !tag_set_inner.is_empty() {
-        filter
-            .must
-            .push(Condition::matches("tag_set", tag_set_inner));
+        query = query.filter(card_metadata_columns::tag_set.ilike(format!(
+            "%{}%",
+            tag_set_inner.get(0).unwrap_or(&String::new())
+        )));
+    }
+
+    for tag in tag_set_inner.iter().skip(1) {
+        query = query.or_filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
     }
 
     if !link_inner.is_empty() {
-        filter.must.push(Condition::matches("link", link_inner));
+        query = query.filter(
+            card_metadata_columns::link
+                .ilike(format!("%{}%", link_inner.get(0).unwrap_or(&String::new()))),
+        );
+    }
+    for link_url in link_inner.iter().skip(1) {
+        query = query.or_filter(card_metadata_columns::link.ilike(format!("%{}%", link_url)));
     }
 
     if let Some(time_range) = time_range {
         if time_range.0 != "null" && time_range.1 != "null" {
-            filter.must.push(Condition::range(
-                "time_stamp",
-                Range {
-                    gt: None,
-                    lt: None,
-                    gte: Some(
-                        NaiveDateTime::parse_from_str(&time_range.0, "%Y-%m-%d %H:%M:%S")
-                            .map_err(|_| DefaultError {
+            query = query.filter(
+                card_metadata_columns::time_stamp
+                    .ge(
+                        NaiveDateTime::parse_from_str(&time_range.0, "%Y-%m-%d %H:%M:%S").map_err(
+                            |_| DefaultError {
                                 message: "Failed to parse time range",
-                            })?
-                            .timestamp() as f64,
-                    ),
-                    lte: Some(
-                        NaiveDateTime::parse_from_str(&time_range.1, "%Y-%m-%d %H:%M:%S")
-                            .map_err(|_| DefaultError {
+                            },
+                        )?,
+                    )
+                    .and(card_metadata_columns::time_stamp.le(
+                        NaiveDateTime::parse_from_str(&time_range.1, "%Y-%m-%d %H:%M:%S").map_err(
+                            |_| DefaultError {
                                 message: "Failed to parse time range",
-                            })?
-                            .timestamp() as f64,
-                    ),
-                },
+                            },
+                        )?,
+                    )),
+            );
+        } else if time_range.0 != "null" {
+            query = query.filter(card_metadata_columns::time_stamp.ge(
+                NaiveDateTime::parse_from_str(&time_range.0, "%Y-%m-%d %H:%M:%S").map_err(
+                    |_| DefaultError {
+                        message: "Failed to parse time range",
+                    },
+                )?,
             ));
-        } else if time_range.1 == "null" {
-            filter.must.push(Condition::range(
-                "time_stamp",
-                Range {
-                    gt: None,
-                    lt: None,
-                    gte: Some(
-                        NaiveDateTime::parse_from_str(&time_range.0, "%Y-%m-%d %H:%M:%S")
-                            .map_err(|_| DefaultError {
-                                message: "Failed to parse time range",
-                            })?
-                            .timestamp() as f64,
-                    ),
-                    lte: None,
-                },
-            ));
-        } else if time_range.0 == "null" {
-            filter.must.push(Condition::range(
-                "time_stamp",
-                Range {
-                    gt: None,
-                    lt: None,
-                    gte: None,
-                    lte: Some(
-                        NaiveDateTime::parse_from_str(&time_range.1, "%Y-%m-%d %H:%M:%S")
-                            .map_err(|_| DefaultError {
-                                message: "Failed to parse time range",
-                            })?
-                            .timestamp() as f64,
-                    ),
-                },
+        } else if time_range.1 != "null" {
+            query = query.filter(card_metadata_columns::time_stamp.le(
+                NaiveDateTime::parse_from_str(&time_range.1, "%Y-%m-%d %H:%M:%S").map_err(
+                    |_| DefaultError {
+                        message: "Failed to parse time range",
+                    },
+                )?,
             ));
         }
     }
@@ -153,18 +180,22 @@ pub async fn retrieve_qdrant_points_query(
             let value = obj.get(key).expect("Value should exist");
             match value {
                 serde_json::Value::Array(arr) => {
-                    filter.must.push(Condition::matches(
-                        &format!("metadata.{}", key),
-                        arr.iter()
-                            .map(|item| item.to_string())
-                            .collect::<Vec<String>>(),
-                    ));
+                    query = query.filter(
+                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                            .ilike(format!("%{}%", arr.get(0).unwrap().as_str().unwrap_or(""))),
+                    );
+                    for item in arr.iter().skip(1) {
+                        query = query.or_filter(
+                            sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                                .ilike(format!("%{}%", item.as_str().unwrap_or(""))),
+                        );
+                    }
                 }
                 _ => {
-                    filter.must.push(Condition::matches(
-                        &format!("metadata.{}", key),
-                        value.to_string().replace('\"', ""),
-                    ));
+                    query = query.filter(
+                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                            .ilike(format!("%{}%", value.as_str().unwrap_or(""))),
+                    );
                 }
             }
         }
@@ -172,19 +203,39 @@ pub async fn retrieve_qdrant_points_query(
 
     if let Some(quote_words) = parsed_query.quote_words {
         for word in quote_words.iter() {
-            filter
-                .must
-                .push(Condition::matches("card_html", word.clone() + " "));
+            query = query.filter(card_metadata_columns::content.ilike(format!("%{}%", word)));
         }
     }
 
     if let Some(negated_words) = parsed_query.negated_words {
         for word in negated_words.iter() {
-            filter
-                .must_not
-                .push(Condition::matches("card_html", word.clone() + " "));
+            query = query.filter(card_metadata_columns::content.not_ilike(format!("%{}%", word)));
         }
     }
+
+    let matching_qdrant_point_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
+        query.load(&mut conn).map_err(|_| DefaultError {
+            message: "Failed to load full-text searched cards",
+        })?;
+
+    let matching_point_ids: Vec<PointId> = matching_qdrant_point_ids
+        .iter()
+        .map(|uuid| {
+            uuid.0
+                .unwrap_or(uuid.1.unwrap_or(uuid::Uuid::nil()))
+                .to_string()
+        })
+        .collect::<HashSet<String>>()
+        .iter()
+        .map(|uuid| (*uuid).clone().into())
+        .collect::<Vec<PointId>>();
+
+    let mut filter = Filter::default();
+    filter.should.push(Condition {
+        condition_one_of: Some(HasId(HasIdCondition {
+            has_id: (matching_point_ids).to_vec(),
+        })),
+    });
 
     let (total_cards, point_ids) = futures::join!(
         get_card_count_query(pool),
@@ -662,6 +713,7 @@ pub async fn search_full_text_card_query(
     query = query.filter(sql::<Bool>(
         format!("card_metadata @@@ '{}'", user_query).as_str(),
     ));
+
     let tag_set_inner = tag_set.unwrap_or_default();
     let link_inner = link.unwrap_or_default();
     if !tag_set_inner.is_empty() {
