@@ -95,7 +95,7 @@ pub async fn retrieve_qdrant_points_query(
     if let Some(time_range) = time_range {
         if time_range.0 != "null" && time_range.1 != "null" {
             filter.must.push(Condition::range(
-                "timestamp",
+                "time_stamp",
                 Range {
                     gt: None,
                     lt: None,
