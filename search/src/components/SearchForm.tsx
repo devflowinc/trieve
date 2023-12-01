@@ -70,7 +70,7 @@ const SearchForm = (props: {
     end: props.filters.end,
   });
   const [semanticWeight, setSemanticWeight] = createSignal("0.5");
-  const [usingPanel, setUsingPanel] = createSignal(false);
+  const [usingPanel, setUsingPanel] = createSignal("");
 
   createEffect(() => {
     // get the previous searched queries from localStorage and set them into the state;
@@ -736,15 +736,17 @@ const SearchForm = (props: {
                           <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />
                         </svg>
                       </PopoverButton>
-                      <Show when={isOpen() || usingPanel()}>
+                      <Show
+                        when={isOpen() || usingPanel() == comboBoxSection.name}
+                      >
                         <PopoverPanel
                           unmount={false}
                           class="absolute z-10 mt-2 h-fit w-fit rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-800"
                           onMouseEnter={() => {
-                            setUsingPanel(true);
+                            setUsingPanel(comboBoxSection.name);
                           }}
                           onMouseLeave={() => {
-                            setUsingPanel(false);
+                            setUsingPanel("");
                           }}
                         >
                           <Menu class="h-0">
