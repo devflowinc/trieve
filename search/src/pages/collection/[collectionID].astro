@@ -42,7 +42,8 @@ const dataTypeFilters: Filters = {
   tagSet: params.get("Tag Set")?.split(",") ?? [],
   link: params.get("link")?.split(",") ?? [],
   metadataFilters,
-  
+  start: "",
+  end: "",
 };
 
 const apiHost = import.meta.env.PUBLIC_API_HOST as string;
@@ -113,7 +114,7 @@ try {
           collection_id: collectionID,
           search_type: {
             search_type: searchType,
-          }
+          },
         }),
       },
     );
