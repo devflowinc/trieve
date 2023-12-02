@@ -1,5 +1,7 @@
 #[macro_use]
 extern crate diesel;
+use std::path::Path;
+
 use crate::{
     errors::ServiceError, handlers::auth_handler::create_admin_account,
     operators::qdrant_operator::get_qdrant_connection,
@@ -15,6 +17,7 @@ use actix_web::{
 };
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+use operators::tantivy_operator::TantivyIndex;
 use pyo3::{types::PyDict, Py, PyAny, Python};
 use qdrant_client::{
     prelude::*,
@@ -23,6 +26,7 @@ use qdrant_client::{
         TokenizerType, VectorParams, VectorsConfig,
     },
 };
+
 use tokio::sync::Semaphore;
 use utoipa::OpenApi;
 use utoipa_redoc::{Redoc, Servable};
@@ -283,6 +287,21 @@ pub async fn main() -> std::io::Result<()> {
         .expect("Failed to create pool.");
     let cross_encoder = initalize_cross_encoder();
 
+    let tantivy_index_path =
+        std::env::var("TANTIVY_INDEX_PATH").unwrap_or("tantivy_index".to_owned());
+    let index_path = Path::new(&tantivy_index_path);
+
+    let tantivy_index = web::Data::new(
+        TantivyIndex::new(index_path)
+            .map_err(|err| {
+                log::info!("Failed to create tantivy index: {:?}", err);
+            })
+            .map_err(|err| {
+                log::info!("Failed to create tantivy index: {:?}", err);
+            })
+            .unwrap(),
+    );
+
     let redis_store = RedisSessionStore::new(redis_url).await.unwrap();
 
     let qdrant_client = get_qdrant_connection().await.unwrap();
@@ -388,6 +407,7 @@ pub async fn main() -> std::io::Result<()> {
             .app_data( web::JsonConfig::default().limit(134200000))
             .app_data(web::Data::new(pool.clone()))
             .app_data(app_mutex_store.clone())
+            .app_data(tantivy_index.clone())
             .wrap(
                 IdentityMiddleware::builder()
                     .login_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
