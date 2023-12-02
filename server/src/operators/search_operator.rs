@@ -800,8 +800,11 @@ pub async fn search_full_text_card_query(
                     .collect::<Vec<uuid::Uuid>>(),
             ),
         )
-        .map_err(|_| DefaultError {
-            message: "Failed to load full-text searched cards",
+        .map_err(|e| {
+            log::info!("Failed to search cards {:?}", e);
+            DefaultError {
+                message: "Failed to load full-text searched cards",
+            }
         })?;
 
     let total_count = if searched_cards.is_empty() {
