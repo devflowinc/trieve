@@ -2,9 +2,12 @@ use super::auth_handler::{LoggedUser, RequireAuth};
 use crate::{
     data::models::{File, Pool},
     errors::ServiceError,
-    operators::file_operator::{
-        convert_doc_to_html_query, delete_file_query, get_file_query, get_user_file_query,
-        get_user_id_of_file_query, update_file_query,
+    operators::{
+        file_operator::{
+            convert_doc_to_html_query, delete_file_query, get_file_query, get_user_file_query,
+            get_user_id_of_file_query, update_file_query,
+        },
+        tantivy_operator::TantivyIndex,
     },
     AppMutexStore,
 };
@@ -83,6 +86,7 @@ pub async fn upload_file_handler(
     data: web::Json<UploadFileData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
+    tantivy_index: web::Data<TantivyIndex>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let document_upload_feature =
@@ -128,6 +132,7 @@ pub async fn upload_file_handler(
         upload_file_data.create_cards,
         upload_file_data.time_stamp,
         user,
+        tantivy_index,
         app_mutex,
         pool_inner,
     )

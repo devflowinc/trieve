@@ -1,5 +1,6 @@
 use super::collection_operator::create_collection_and_add_bookmarks_query;
 use super::notification_operator::add_collection_created_notification_query;
+use super::tantivy_operator::TantivyIndex;
 use crate::AppMutexStore;
 use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
 use crate::{
@@ -139,6 +140,7 @@ pub async fn convert_doc_to_html_query(
     create_cards: Option<bool>,
     time_stamp: Option<String>,
     user: LoggedUser,
+    tantivy_index: web::Data<TantivyIndex>,
     app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
 ) -> Result<UploadFileResult, DefaultError> {
@@ -272,6 +274,7 @@ pub async fn convert_doc_to_html_query(
             user,
             temp_html_file_path_buf,
             glob_string,
+            tantivy_index.clone(),
             app_mutex,
             pool,
         )
@@ -311,6 +314,7 @@ pub async fn create_cards_with_handler(
     user: LoggedUser,
     temp_html_file_path_buf: PathBuf,
     glob_string: String,
+    tantivy_index: web::Data<TantivyIndex>,
     app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
@@ -390,6 +394,7 @@ pub async fn create_cards_with_handler(
             web_json_create_card_data,
             pool.clone(),
             user.clone(),
+            tantivy_index.clone(),
             app_mutex.clone(),
         )
         .await
