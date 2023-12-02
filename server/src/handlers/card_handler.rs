@@ -17,6 +17,7 @@ use crate::operators::search_operator::{
     global_unfiltered_top_match_query, search_full_text_cards, search_full_text_collections,
     search_hybrid_cards, search_semantic_cards, search_semantic_collections,
 };
+use crate::operators::tantivy_operator::TantivyIndex;
 use crate::{get_env, AppMutexStore, CrossEncoder};
 use actix::Arbiter;
 use actix_web::web::Bytes;
@@ -128,6 +129,7 @@ pub async fn create_card(
     card: web::Json<CreateCardData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
+    tantivy_index: web::Data<TantivyIndex>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let only_admin_can_create_cards =
@@ -318,10 +320,11 @@ pub async fn create_card(
                 .transpose()?,
         );
 
-        card_metadata =
-            web::block(move || insert_card_metadata_query(card_metadata, card.file_uuid, pool1))
-                .await?
-                .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        card_metadata = web::block(move || {
+            insert_card_metadata_query(card_metadata, card.file_uuid, tantivy_index, pool1)
+        })
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
         create_new_qdrant_point_query(
             qdrant_point_id,
@@ -365,6 +368,7 @@ pub async fn delete_card(
     card_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
+    tantivy_index: web::Data<TantivyIndex>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let card_id_inner = card_id.into_inner();
@@ -374,7 +378,13 @@ pub async fn delete_card(
     let qdrant_point_id = card_metadata.qdrant_point_id;
 
     web::block(move || {
-        delete_card_metadata_query(card_id_inner, qdrant_point_id, app_mutex, pool1)
+        delete_card_metadata_query(
+            card_id_inner,
+            qdrant_point_id,
+            tantivy_index,
+            app_mutex,
+            pool1,
+        )
     })
     .await?
     .await
@@ -400,6 +410,7 @@ pub async fn delete_card_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
+    tantivy_index: web::Data<TantivyIndex>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let tracking_id_inner = tracking_id.into_inner();
@@ -410,7 +421,13 @@ pub async fn delete_card_by_tracking_id(
     let qdrant_point_id = card_metadata.qdrant_point_id;
 
     web::block(move || {
-        delete_card_metadata_query(card_metadata.id, qdrant_point_id, app_mutex, pool1)
+        delete_card_metadata_query(
+            card_metadata.id,
+            qdrant_point_id,
+            tantivy_index,
+            app_mutex,
+            pool1,
+        )
     })
     .await?
     .await
@@ -450,6 +467,7 @@ pub async fn update_card(
     card: web::Json<UpdateCardData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
+    tantivy_index: web::Data<TantivyIndex>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
@@ -500,7 +518,7 @@ pub async fn update_card(
             .transpose()?,
     );
     let metadata1 = metadata.clone();
-    web::block(move || update_card_metadata_query(metadata, None, pool2))
+    web::block(move || update_card_metadata_query(metadata, None, tantivy_index, pool2))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -547,6 +565,7 @@ pub async fn update_card_by_tracking_id(
     card: web::Json<UpdateCardByTrackingIdData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
+    tantivy_index: web::Data<TantivyIndex>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     if card.tracking_id.is_empty() {
@@ -603,7 +622,7 @@ pub async fn update_card_by_tracking_id(
     );
     let metadata1 = metadata.clone();
 
-    web::block(move || update_card_metadata_query(metadata, None, pool2))
+    web::block(move || update_card_metadata_query(metadata, None, tantivy_index, pool2))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -700,12 +719,15 @@ fn parse_query(query: String) -> ParsedQuery {
         ("page" = Option<u64>, Path, description = "Page number of the search results")
     ),
 )]
+
+#[allow(clippy::too_many_arguments)]
 pub async fn search_card(
     data: web::Json<SearchCardData>,
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
     cross_encoder_init: web::Data<CrossEncoder>,
+    tantivy_index: web::Data<TantivyIndex>,
     app_mutex: web::Data<AppMutexStore>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -716,7 +738,15 @@ pub async fn search_card(
 
     let result_cards = match data.search_type.as_str() {
         "fulltext" => {
-            search_full_text_cards(data, parsed_query, page, pool, current_user_id).await?
+            search_full_text_cards(
+                data,
+                parsed_query,
+                page,
+                pool,
+                tantivy_index,
+                current_user_id,
+            )
+            .await?
         }
         "hybrid" => {
             search_hybrid_cards(
@@ -726,6 +756,7 @@ pub async fn search_card(
                 pool,
                 current_user_id,
                 cross_encoder_init,
+                tantivy_index,
                 app_mutex,
             )
             .await?
@@ -751,6 +782,22 @@ pub struct SearchCollectionsData {
     #[param(inline)]
     pub search_type: String,
 }
+
+impl From<SearchCollectionsData> for SearchCardData {
+    fn from(data: SearchCollectionsData) -> Self {
+        Self {
+            content: data.content,
+            link: data.link,
+            tag_set: data.tag_set,
+            time_range: None,
+            filters: data.filters,
+            cross_encoder: None,
+            weights: None,
+            search_type: data.search_type,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchCollectionsResult {
     pub bookmarks: Vec<ScoreCardDTO>,
@@ -777,6 +824,7 @@ pub async fn search_collections(
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
+    tantivy_index: web::Data<TantivyIndex>,
     app_mutex: web::Data<AppMutexStore>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -808,6 +856,7 @@ pub async fn search_collections(
                 collection,
                 page,
                 pool1,
+                tantivy_index,
                 current_user_id,
             )
             .await?

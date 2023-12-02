@@ -3,6 +3,7 @@ use crate::data::models::{
     FullTextSearchResult,
 };
 use crate::AppMutexStore;
+use crate::TantivyIndex;
 
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 
@@ -426,6 +427,7 @@ pub fn get_metadata_and_votes_from_tracking_id_query(
 pub fn insert_card_metadata_query(
     card_data: CardMetadata,
     file_uuid: Option<uuid::Uuid>,
+    tantivy_index: web::Data<TantivyIndex>,
     pool: web::Data<Pool>,
 ) -> Result<CardMetadata, DefaultError> {
     use crate::data::schema::card_files::dsl as card_files_columns;
@@ -451,7 +453,11 @@ pub fn insert_card_metadata_query(
     });
 
     match transaction_result {
-        Ok(_) => (),
+        Ok(_) => tantivy_index
+            .add_card(card_data.clone())
+            .map_err(|_e| DefaultError {
+                message: "Failed to add card to index",
+            })?,
         Err(_) => {
             return Err(DefaultError {
                 message: "Failed to insert card metadata, likely due to duplicate tracking_id",
@@ -509,6 +515,7 @@ pub fn insert_duplicate_card_metadata_query(
 pub fn update_card_metadata_query(
     card_data: CardMetadata,
     file_uuid: Option<uuid::Uuid>,
+    tantivy_index: web::Data<TantivyIndex>,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_files::dsl as card_files_columns;
@@ -516,6 +523,7 @@ pub fn update_card_metadata_query(
     use crate::data::schema::card_votes::dsl as card_votes_columns;
 
     let mut conn = pool.get().unwrap();
+    let card_data_1 = card_data.clone();
 
     let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
         diesel::update(
@@ -548,7 +556,11 @@ pub fn update_card_metadata_query(
     });
 
     match transaction_result {
-        Ok(_) => (),
+        Ok(_) => tantivy_index
+            .update_card(card_data_1)
+            .map_err(|_e| DefaultError {
+                message: "Failed to add card to index",
+            })?,
         Err(_) => {
             return Err(DefaultError {
                 message: "Failed to update card metadata",
@@ -567,6 +579,7 @@ enum TransactionResult {
 pub async fn delete_card_metadata_query(
     card_uuid: uuid::Uuid,
     qdrant_point_id: Option<uuid::Uuid>,
+    tantivy_index: web::Data<TantivyIndex>,
     app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
@@ -722,12 +735,19 @@ pub async fn delete_card_metadata_query(
                             message: "Failed to delete card from qdrant",
                         })
                     });
+
+                tantivy_index
+                    .delete_card(card_uuid)
+                    .map_err(|_e| DefaultError {
+                        message: "Failed to delete card from index",
+                    })?;
             }
             TransactionResult::CardCollisionDetected(latest_collision_metadata) => {
                 let qdrant = get_qdrant_connection().await?;
                 let collision_content = latest_collision_metadata
                     .card_html
-                    .unwrap_or(latest_collision_metadata.content);
+                    .clone()
+                    .unwrap_or(latest_collision_metadata.content.clone());
 
                 let new_embedding_vector = create_embedding(collision_content.as_str(), app_mutex)
                     .await
@@ -752,6 +772,11 @@ pub async fn delete_card_metadata_query(
                             message: "Failed to update card in qdrant",
                         })
                     });
+                tantivy_index
+                    .update_card(latest_collision_metadata)
+                    .map_err(|_e| DefaultError {
+                        message: "Failed to update card in index",
+                    })?;
             }
         },
 
