@@ -453,11 +453,12 @@ pub fn insert_card_metadata_query(
     });
 
     match transaction_result {
-        Ok(_) => tantivy_index
-            .add_card(card_data.clone())
-            .map_err(|_e| DefaultError {
+        Ok(_) => tantivy_index.add_card(card_data.clone()).map_err(|e| {
+            log::info!("Failed to add card to index: {:?}", e);
+            DefaultError {
                 message: "Failed to add card to index",
-            })?,
+            }
+        })?,
         Err(_) => {
             return Err(DefaultError {
                 message: "Failed to insert card metadata, likely due to duplicate tracking_id",

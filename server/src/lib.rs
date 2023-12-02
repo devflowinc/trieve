@@ -288,16 +288,13 @@ pub async fn main() -> std::io::Result<()> {
     let cross_encoder = initalize_cross_encoder();
 
     let tantivy_index_path =
-        std::env::var("TANTIVY_INDEX_PATH").unwrap_or("tantivy_index".to_owned());
+        std::env::var("TANTIVY_INDEX_PATH").unwrap_or("../tantivy_index".to_owned());
     let index_path = Path::new(&tantivy_index_path);
 
     let tantivy_index = web::Data::new(
         TantivyIndex::new(index_path)
             .map_err(|err| {
-                log::info!("Failed to create tantivy index: {:?}", err);
-            })
-            .map_err(|err| {
-                log::info!("Failed to create tantivy index: {:?}", err);
+                log::info!("Failed to create tantivy index: {:?}", err.to_string());
             })
             .unwrap(),
     );
