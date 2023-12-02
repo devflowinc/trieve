@@ -54,7 +54,7 @@ impl TantivyIndex {
             .set_indexing_options(
                 TextFieldIndexing::default()
                     .set_tokenizer("ngram")
-                    .set_index_option(IndexRecordOption::Basic),
+                    .set_index_option(IndexRecordOption::WithFreqsAndPositions),
             )
             .set_stored();
 
@@ -63,16 +63,16 @@ impl TantivyIndex {
         let schema = schema_builder.build();
         let index = if !path.as_ref().exists() {
             std::fs::create_dir_all(&path)?;
-            let index = Index::create_in_dir(&path, schema.clone())?;
-            index.tokenizers().register("ngram", ngram_tokenizer);
-            index.tokenizers().register("raw_id", raw_tokenizer.clone());
-            index
-                .fast_field_tokenizer()
-                .register("raw_id", raw_tokenizer);
-            index
+            Index::create_in_dir(&path, schema.clone())?
         } else {
             Index::open_in_dir(&path)?
         };
+
+        index.tokenizers().register("ngram", ngram_tokenizer);
+        index.tokenizers().register("raw_id", raw_tokenizer.clone());
+        index
+            .fast_field_tokenizer()
+            .register("raw_id", raw_tokenizer);
 
         Ok(Self { index, schema })
     }
@@ -95,6 +95,7 @@ impl TantivyIndex {
     pub fn search_cards(
         &self,
         query: &str,
+        page: u64,
         filtered_ids: Option<Vec<uuid::Uuid>>,
     ) -> tantivy::Result<Vec<SearchResult>> {
         log::info!("Searching for {:?}", query);
@@ -112,7 +113,6 @@ impl TantivyIndex {
         let query_parser = QueryParser::for_index(&self.index, vec![card_html]);
 
         let query = query_parser.parse_query_lenient(query).0;
-        log::info!("Searching for {:?}", query);
         let filters = filtered_ids
             .unwrap_or(vec![])
             .iter()
@@ -128,9 +128,10 @@ impl TantivyIndex {
             BooleanQuery::new(final_query)
         };
 
-        log::info!("Searching for {:?}", filters_and_query);
-
-        let top_docs = searcher.search(&filters_and_query, &TopDocs::with_limit(10))?;
+        let top_docs = searcher.search(
+            &filters_and_query,
+            &TopDocs::with_limit(10).and_offset(((page - 1) * 10) as usize),
+        )?;
 
         let mut cards = vec![];
 
@@ -149,7 +150,6 @@ impl TantivyIndex {
                 score,
             });
         }
-        log::info!("Found cards {:?}", cards);
 
         Ok(cards)
     }
@@ -174,15 +174,6 @@ impl TantivyIndex {
         }
         let doc_id = self.schema.get_field("doc_id").unwrap();
         let card_html = self.schema.get_field("card_html").unwrap();
-
-        let query_parser = QueryParser::for_index(&self.index, vec![doc_id]);
-
-        query_parser.parse_query(
-            card.qdrant_point_id
-                .expect("Card needs a qdrant id")
-                .to_string()
-                .as_str(),
-        )?;
 
         //each of these index_writers allocates 30mb of memory -- can lead to lockup if too many are open
         let mut index_writer = self.index.writer(30_000_000)?;

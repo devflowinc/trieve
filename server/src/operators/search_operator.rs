@@ -777,9 +777,6 @@ pub async fn search_full_text_card_query(
             query = query.filter(card_metadata_columns::content.not_ilike(format!("%{}%", word)));
         }
     }
-    query = query
-        .limit(10)
-        .offset(((page - 1) * 10).try_into().unwrap_or(0));
 
     let matching_tantivy_ids: Vec<(FullTextDocIds, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
@@ -789,6 +786,7 @@ pub async fn search_full_text_card_query(
     let searched_cards = tantivy_index
         .search_cards(
             user_query.as_str(),
+            page,
             Some(
                 matching_tantivy_ids
                     .iter()
@@ -978,10 +976,6 @@ pub fn search_full_text_collection_query(
         second_join.field(schema::card_metadata::qdrant_point_id),
     ));
 
-    query = query
-        .limit(10)
-        .offset(((page - 1) * 10).try_into().unwrap_or(0));
-
     let matching_tantivy_ids: Vec<(FullTextDocIds, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
             message: "Failed to load trigram searched cards",
@@ -990,6 +984,7 @@ pub fn search_full_text_collection_query(
     let searched_cards = tantivy_index
         .search_cards(
             user_query.as_str(),
+            page,
             Some(
                 matching_tantivy_ids
                     .iter()
