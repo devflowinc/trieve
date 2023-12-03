@@ -644,7 +644,6 @@ pub async fn update_card_by_tracking_id(
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
-
 pub struct SearchCardData {
     pub search_type: String,
     pub content: String,
@@ -719,7 +718,6 @@ fn parse_query(query: String) -> ParsedQuery {
         ("page" = Option<u64>, Path, description = "Page number of the search results")
     ),
 )]
-
 #[allow(clippy::too_many_arguments)]
 pub async fn search_card(
     data: web::Json<SearchCardData>,
@@ -772,7 +770,6 @@ pub async fn search_card(
 
 #[derive(Serialize, Deserialize, Clone, ToSchema, IntoParams)]
 #[into_params(style = Form, parameter_in = Query)]
-
 pub struct SearchCollectionsData {
     pub content: String,
     pub link: Option<Vec<String>>,
