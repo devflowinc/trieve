@@ -1,5 +1,11 @@
+use std::collections::VecDeque;
 use std::path::Path;
+use std::sync::Arc;
+use std::sync::Condvar;
+use std::sync::Mutex;
+use std::sync::RwLock;
 
+use actix::Arbiter;
 use itertools::Itertools;
 use tantivy::collector::TopDocs;
 use tantivy::doc;
@@ -14,6 +20,7 @@ use tantivy::tokenizer::RawTokenizer;
 use tantivy::tokenizer::RemoveLongFilter;
 use tantivy::tokenizer::TextAnalyzer;
 use tantivy::Index;
+use tantivy::IndexWriter;
 use tantivy::ReloadPolicy;
 
 use crate::data::models::CardMetadata;
@@ -22,6 +29,8 @@ use super::search_operator::SearchResult;
 
 pub struct TantivyIndex {
     pub index: Index,
+    pub index_writer: Arc<RwLock<IndexWriter>>,
+    pub commit_queue: Arc<CommitQueue>,
     pub schema: Schema,
 }
 
@@ -74,21 +83,34 @@ impl TantivyIndex {
             .fast_field_tokenizer()
             .register("raw_id", raw_tokenizer);
 
-        Ok(Self { index, schema })
+        let index_writer = Arc::new(RwLock::new(index.writer(30_000_000)?));
+        let commit_queue = Arc::new(CommitQueue::new(index_writer.clone()));
+
+        commit_queue.run();
+        let commit_queue_inner = commit_queue.clone();
+        Arbiter::new().spawn_fn(move || {
+            commit_queue_inner.wait_for_job();
+        });
+
+        Ok(Self {
+            index,
+            index_writer,
+            commit_queue,
+            schema,
+        })
     }
 
     pub fn add_card(&self, card: CardMetadata) -> tantivy::Result<()> {
         let doc_id = self.schema.get_field("doc_id").unwrap();
         let card_html = self.schema.get_field("card_html").unwrap();
-        let mut index_writer = self.index.writer(30_000_000)?;
 
-        index_writer.add_document(doc!(
+        self.index_writer.read().unwrap().add_document(doc!(
             doc_id => card.qdrant_point_id.expect("Card needs a qdrant id").to_string(),
             card_html => card.card_html.unwrap_or("".to_string())
         ))?;
 
         //add to some sort of WAL which commits after a certain number of writes
-        index_writer.commit()?;
+        self.commit_queue.add_commit(card.qdrant_point_id.unwrap());
         Ok(())
     }
 
@@ -161,10 +183,12 @@ impl TantivyIndex {
 
         query_parser.parse_query(card_id.to_string().as_str())?;
 
-        let mut index_writer = self.index.writer(30_000_000)?;
-        index_writer.delete_term(Term::from_field_text(doc_id, card_id.to_string().as_str()));
+        self.index_writer
+            .read()
+            .unwrap()
+            .delete_term(Term::from_field_text(doc_id, card_id.to_string().as_str()));
 
-        index_writer.commit()?;
+        self.index_writer.write().unwrap().commit()?;
         Ok(())
     }
 
@@ -176,22 +200,65 @@ impl TantivyIndex {
         let card_html = self.schema.get_field("card_html").unwrap();
 
         //each of these index_writers allocates 30mb of memory -- can lead to lockup if too many are open
-        let mut index_writer = self.index.writer(30_000_000)?;
 
-        index_writer.delete_term(Term::from_field_text(
-            doc_id,
-            card.qdrant_point_id
-                .expect("Card needs a qdrant id")
-                .to_string()
-                .as_str(),
-        ));
+        self.index_writer
+            .read()
+            .unwrap()
+            .delete_term(Term::from_field_text(
+                doc_id,
+                card.qdrant_point_id
+                    .expect("Card needs a qdrant id")
+                    .to_string()
+                    .as_str(),
+            ));
 
-        index_writer.add_document(doc!(
+        self.index_writer.read().unwrap().add_document(doc!(
             doc_id => card.qdrant_point_id.expect("Card needs a qdrant id").to_string(),
             card_html => card.card_html.unwrap_or("".to_string())
         ))?;
 
-        index_writer.commit()?;
+        self.index_writer.write().unwrap().commit()?;
         Ok(())
+    }
+}
+
+pub struct CommitQueue {
+    jobs: Mutex<VecDeque<uuid::Uuid>>,
+    index_writer: Arc<RwLock<IndexWriter>>,
+    cvar: Arc<Condvar>,
+}
+
+impl CommitQueue {
+    pub fn new(index_writer: Arc<RwLock<IndexWriter>>) -> Self {
+        CommitQueue {
+            jobs: Mutex::new(VecDeque::new()),
+            index_writer,
+            cvar: Arc::new(Condvar::new()),
+        }
+    }
+    pub fn add_commit(&self, card_id: uuid::Uuid) {
+        let mut jobs = self.jobs.lock().unwrap();
+        jobs.append(&mut vec![card_id].into_iter().collect());
+    }
+
+    pub fn wait_for_job(&self) {
+        let mut jobs = self.jobs.lock().unwrap();
+        loop {
+            if !jobs.is_empty() {
+                let mut index_writer = self.index_writer.write().unwrap();
+                index_writer.commit().unwrap();
+                *jobs = VecDeque::new();
+            } else {
+                jobs = self.cvar.wait(jobs).unwrap();
+            }
+        }
+    }
+
+    pub fn run(&self) {
+        let cvar = self.cvar.clone();
+        Arbiter::new().spawn(async move {
+            std::thread::sleep(std::time::Duration::from_secs(60));
+            cvar.notify_all();
+        });
     }
 }
