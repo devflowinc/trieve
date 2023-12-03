@@ -245,6 +245,7 @@ impl CommitQueue {
         let mut jobs = self.jobs.lock().unwrap();
         loop {
             if !jobs.is_empty() {
+                log::info!("Committing");
                 let mut index_writer = self.index_writer.write().unwrap();
                 index_writer.commit().unwrap();
                 *jobs = VecDeque::new();
@@ -257,7 +258,7 @@ impl CommitQueue {
     pub fn run(&self) {
         let cvar = self.cvar.clone();
         Arbiter::new().spawn(async move {
-            std::thread::sleep(std::time::Duration::from_secs(60));
+            std::thread::sleep(std::time::Duration::from_secs(10));
             cvar.notify_all();
         });
     }
