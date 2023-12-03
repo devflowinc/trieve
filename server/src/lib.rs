@@ -1,7 +1,5 @@
 #[macro_use]
 extern crate diesel;
-use std::path::Path;
-
 use crate::{
     errors::ServiceError, handlers::auth_handler::create_admin_account,
     operators::qdrant_operator::get_qdrant_connection,
@@ -26,7 +24,7 @@ use qdrant_client::{
         TokenizerType, VectorParams, VectorsConfig,
     },
 };
-
+use std::path::Path;
 use tokio::sync::Semaphore;
 use utoipa::OpenApi;
 use utoipa_redoc::{Redoc, Servable};
