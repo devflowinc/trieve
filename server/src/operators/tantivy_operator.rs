@@ -5,6 +5,8 @@ use std::sync::Condvar;
 use std::sync::Mutex;
 use std::sync::RwLock;
 
+use super::search_operator::SearchResult;
+use crate::data::models::CardMetadata;
 use actix::Arbiter;
 use itertools::Itertools;
 use tantivy::collector::TopDocs;
@@ -23,10 +25,6 @@ use tantivy::Index;
 use tantivy::IndexReader;
 use tantivy::IndexWriter;
 use tantivy::ReloadPolicy;
-
-use crate::data::models::CardMetadata;
-
-use super::search_operator::SearchResult;
 
 pub struct TantivyIndex {
     pub index: Index,
