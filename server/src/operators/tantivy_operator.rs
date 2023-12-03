@@ -20,6 +20,7 @@ use tantivy::tokenizer::RawTokenizer;
 use tantivy::tokenizer::RemoveLongFilter;
 use tantivy::tokenizer::TextAnalyzer;
 use tantivy::Index;
+use tantivy::IndexReader;
 use tantivy::IndexWriter;
 use tantivy::ReloadPolicy;
 
@@ -30,6 +31,7 @@ use super::search_operator::SearchResult;
 pub struct TantivyIndex {
     pub index: Index,
     pub index_writer: Arc<RwLock<IndexWriter>>,
+    pub index_reader: Arc<IndexReader>,
     pub commit_queue: Arc<CommitQueue>,
     pub schema: Schema,
 }
@@ -88,12 +90,20 @@ impl TantivyIndex {
 
         commit_queue.run();
         let commit_queue_inner = commit_queue.clone();
-        Arbiter::new().spawn_fn(move || {
+        Arbiter::new().spawn(async move {
             commit_queue_inner.wait_for_job();
         });
 
+        let index_reader = Arc::new(
+            index
+                .reader_builder()
+                .reload_policy(ReloadPolicy::OnCommit)
+                .try_into()?,
+        );
+
         Ok(Self {
             index,
+            index_reader,
             index_writer,
             commit_queue,
             schema,
@@ -120,14 +130,7 @@ impl TantivyIndex {
         page: u64,
         filtered_ids: Option<Vec<uuid::Uuid>>,
     ) -> tantivy::Result<Vec<SearchResult>> {
-        log::info!("Searching for {:?}", query);
-        let reader = self
-            .index
-            .reader_builder()
-            .reload_policy(ReloadPolicy::OnCommit)
-            .try_into()?;
-
-        let searcher = reader.searcher();
+        let searcher = self.index_reader.searcher();
 
         let doc_id = self.schema.get_field("doc_id").unwrap();
         let card_html = self.schema.get_field("card_html").unwrap();
@@ -149,7 +152,6 @@ impl TantivyIndex {
             let final_query = vec![(Occur::Must, query)];
             BooleanQuery::new(final_query)
         };
-
         let top_docs = searcher.search(
             &filters_and_query,
             &TopDocs::with_limit(10).and_offset(((page - 1) * 10) as usize),
@@ -172,6 +174,8 @@ impl TantivyIndex {
                 score,
             });
         }
+
+        log::info!("Found {:?}", cards);
 
         Ok(cards)
     }
@@ -245,7 +249,6 @@ impl CommitQueue {
         let mut jobs = self.jobs.lock().unwrap();
         loop {
             if !jobs.is_empty() {
-                log::info!("Committing");
                 let mut index_writer = self.index_writer.write().unwrap();
                 index_writer.commit().unwrap();
                 *jobs = VecDeque::new();
@@ -258,8 +261,10 @@ impl CommitQueue {
     pub fn run(&self) {
         let cvar = self.cvar.clone();
         Arbiter::new().spawn(async move {
-            std::thread::sleep(std::time::Duration::from_secs(10));
-            cvar.notify_all();
+            loop {
+                std::thread::sleep(std::time::Duration::from_secs(10));
+                cvar.notify_all();
+            }
         });
     }
 }
