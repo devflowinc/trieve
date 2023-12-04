@@ -24,7 +24,7 @@ use qdrant_client::{
         TokenizerType, VectorParams, VectorsConfig,
     },
 };
-use tokio::sync::{Mutex, Semaphore};
+use tokio::sync::{RwLock, Semaphore};
 use utoipa::OpenApi;
 use utoipa_redoc::{Redoc, Servable};
 
@@ -286,7 +286,7 @@ pub async fn main() -> std::io::Result<()> {
 
     let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
 
-    let tantivy_index = web::Data::new(Mutex::new(
+    let tantivy_index = web::Data::new(RwLock::new(
         TantivyIndexMap::new(&qdrant_collection).map_err(|err| {
             log::info!("Failed to create tantivy index: {:?}", err.to_string());
             std::io::Error::new(std::io::ErrorKind::Other, err.to_string())
@@ -294,7 +294,7 @@ pub async fn main() -> std::io::Result<()> {
     ));
 
     tantivy_index
-        .lock()
+        .write()
         .await
         .create_index(None)
         .map_err(|err| {
