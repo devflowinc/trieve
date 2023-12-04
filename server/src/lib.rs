@@ -1,8 +1,9 @@
 #[macro_use]
 extern crate diesel;
 use crate::{
-    errors::ServiceError, handlers::auth_handler::create_admin_account,
-    operators::qdrant_operator::get_qdrant_connection,
+    errors::ServiceError,
+    handlers::auth_handler::create_admin_account,
+    operators::{qdrant_operator::get_qdrant_connection, tantivy_operator::TantivyIndexMap},
 };
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
@@ -15,7 +16,6 @@ use actix_web::{
 };
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use operators::tantivy_operator::TantivyIndex;
 use pyo3::{types::PyDict, Py, PyAny, Python};
 use qdrant_client::{
     prelude::*,
@@ -24,8 +24,7 @@ use qdrant_client::{
         TokenizerType, VectorParams, VectorsConfig,
     },
 };
-use std::path::Path;
-use tokio::sync::Semaphore;
+use tokio::sync::{Mutex, Semaphore};
 use utoipa::OpenApi;
 use utoipa_redoc::{Redoc, Servable};
 
@@ -285,29 +284,30 @@ pub async fn main() -> std::io::Result<()> {
         .expect("Failed to create pool.");
     let cross_encoder = initalize_cross_encoder();
 
-    let tantivy_index_path =
-        std::env::var("TANTIVY_INDEX_PATH").unwrap_or("../tantivy_index".to_owned());
-    let index_path = Path::new(&tantivy_index_path);
+    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
 
-    let tantivy_index = web::Data::new(
-        TantivyIndex::new(index_path)
-            .map_err(|err| {
-                log::info!("Failed to create tantivy index: {:?}", err.to_string());
-            })
-            .unwrap(),
-    );
+    let tantivy_index = web::Data::new(Mutex::new(
+        TantivyIndexMap::new(&qdrant_collection).map_err(|err| {
+            log::info!("Failed to create tantivy index: {:?}", err.to_string());
+            std::io::Error::new(std::io::ErrorKind::Other, err.to_string())
+        })?,
+    ));
+
+    tantivy_index
+        .lock()
+        .await
+        .create_index(None)
+        .map_err(|err| {
+            log::info!("Failed to create tantivy index: {:?}", err.to_string());
+            std::io::Error::new(std::io::ErrorKind::Other, err.to_string())
+        })?;
 
     let redis_store = RedisSessionStore::new(redis_url).await.unwrap();
 
     let qdrant_client = get_qdrant_connection().await.unwrap();
-    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
     let embedding_size = std::env::var("EMBEDDING_SIZE").unwrap_or("1536".to_owned());
     let embedding_size = embedding_size.parse::<u64>().unwrap_or(1536);
-    log::info!(
-        "Qdrant collection: {} size {}",
-        qdrant_collection,
-        embedding_size
-    );
+
     let _ = qdrant_client
         .create_collection(&CreateCollection {
             collection_name: qdrant_collection.clone(),

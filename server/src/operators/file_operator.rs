@@ -1,6 +1,6 @@
 use super::collection_operator::create_collection_and_add_bookmarks_query;
 use super::notification_operator::add_collection_created_notification_query;
-use super::tantivy_operator::TantivyIndex;
+use super::tantivy_operator::TantivyIndexMap;
 use crate::AppMutexStore;
 use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
 use crate::{
@@ -30,6 +30,7 @@ use base64::{
 use diesel::RunQueryDsl;
 use s3::{creds::Credentials, Bucket, Region};
 use std::{path::PathBuf, process::Command};
+use tokio::sync::Mutex;
 
 pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
     let s3_access_key = get_env!("S3_ACCESS_KEY", "S3_ACCESS_KEY should be set").into();
@@ -140,7 +141,7 @@ pub async fn convert_doc_to_html_query(
     create_cards: Option<bool>,
     time_stamp: Option<String>,
     user: LoggedUser,
-    tantivy_index: web::Data<TantivyIndex>,
+    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
 ) -> Result<UploadFileResult, DefaultError> {
@@ -274,7 +275,7 @@ pub async fn convert_doc_to_html_query(
             user,
             temp_html_file_path_buf,
             glob_string,
-            tantivy_index.clone(),
+            tantivy_index_map.clone(),
             app_mutex,
             pool,
         )
@@ -314,7 +315,7 @@ pub async fn create_cards_with_handler(
     user: LoggedUser,
     temp_html_file_path_buf: PathBuf,
     glob_string: String,
-    tantivy_index: web::Data<TantivyIndex>,
+    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
@@ -393,7 +394,7 @@ pub async fn create_cards_with_handler(
             web_json_create_card_data,
             pool.clone(),
             user.clone(),
-            tantivy_index.clone(),
+            tantivy_index_map.clone(),
             app_mutex.clone(),
         )
         .await
