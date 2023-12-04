@@ -2,7 +2,7 @@ use super::card_operator::{
     find_relevant_sentence, get_collided_cards_query,
     get_metadata_and_collided_cards_from_point_ids_query, get_metadata_from_point_ids,
 };
-use super::qdrant_operator::create_embedding;
+use crate::operators::qdrant_operator::{create_embedding, self, get_qdrant_connection, search_qdrant_query};
 use super::tantivy_operator::TantivyIndexMap;
 use crate::data::models::{
     CardCollection, CardFileWithName, CardMetadataWithVotesWithScore, CardVote,
@@ -16,16 +16,12 @@ use crate::handlers::card_handler::{
     SearchCollectionsResult,
 };
 use crate::operators::card_operator::get_card_count_query;
-use crate::operators::qdrant_operator::get_qdrant_connection;
-use crate::operators::qdrant_operator::search_qdrant_query;
 use crate::AppMutexStore;
 use crate::CrossEncoder;
 use crate::{data::models::Pool, errors::DefaultError};
 use actix_web::web;
 use chrono::NaiveDateTime;
-use diesel::dsl::sql;
-use diesel::sql_types::Int8;
-use diesel::sql_types::Text;
+use diesel::{dsl::sql, sql_types::{Int8, Text}};
 use diesel::{
     BoolExpressionMethods, JoinOnDsl, NullableExpressionMethods, PgTextExpressionMethods,
 };
@@ -64,6 +60,7 @@ pub async fn retrieve_qdrant_points_query(
     filters: Option<serde_json::Value>,
     current_user_id: Option<uuid::Uuid>,
     parsed_query: ParsedQuery,
+    dataset_name: String,
     pool: web::Data<Pool>,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
@@ -239,7 +236,7 @@ pub async fn retrieve_qdrant_points_query(
 
     let (total_cards, point_ids) = futures::join!(
         get_card_count_query(pool),
-        search_qdrant_query(page, filter, embedding_vector.clone())
+        search_qdrant_query(page, filter, embedding_vector.clone(), dataset_name.clone())
     );
 
     Ok(SearchCardQueryResult {
@@ -250,10 +247,11 @@ pub async fn retrieve_qdrant_points_query(
 
 pub async fn global_unfiltered_top_match_query(
     embedding_vector: Vec<f32>,
+    dataset_name: String,
 ) -> Result<SearchResult, DefaultError> {
     let qdrant = get_qdrant_connection().await?;
 
-    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
+    let qdrant_collection = qdrant_operator::get_collection_name_from_dataset(dataset_name);
     let data = qdrant
         .search_points(&SearchPoints {
             collection_name: qdrant_collection,
@@ -316,6 +314,7 @@ pub async fn search_card_collections_query(
     filters: Option<serde_json::Value>,
     collection_id: uuid::Uuid,
     user_id: Option<uuid::Uuid>,
+    dataset_name: String,
     parsed_query: ParsedQuery,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
@@ -438,7 +437,7 @@ pub async fn search_card_collections_query(
         })),
     });
 
-    let point_ids: Vec<SearchResult> = search_qdrant_query(page, filter, embedding_vector).await?;
+    let point_ids: Vec<SearchResult> = search_qdrant_query(page, filter, embedding_vector, dataset_name.clone()).await?;
 
     Ok(SearchCardQueryResult {
         search_results: point_ids,
@@ -632,6 +631,7 @@ pub async fn search_full_text_card_query(
     time_range: Option<(String, String)>,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     parsed_query: ParsedQuery,
+    dataset_name: String,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
@@ -663,6 +663,8 @@ pub async fn search_full_text_card_query(
                         .or(card_metadata_columns::qdrant_point_id.is_not_null()),
                 ),
         )
+        .filter(
+            card_metadata_columns::dataset.eq(dataset_name))
         .select((
             (
                 card_metadata_columns::qdrant_point_id,
@@ -839,6 +841,7 @@ pub async fn search_full_text_collection_query(
     collection_id: uuid::Uuid,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     parsed_query: ParsedQuery,
+    dataset_name: String,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
@@ -894,6 +897,7 @@ pub async fn search_full_text_collection_query(
                 ),
         )
         .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id))
+        .filter(card_metadata_columns::dataset.eq(dataset_name))
         .select((
             (
                 card_metadata_columns::qdrant_point_id,
@@ -1025,6 +1029,7 @@ pub async fn search_full_text_collection_query(
     })
 }
 
+/// Retrieve cards from point ids, DOES NOT GUARD AGAINST DATASET ACCESS PERMISSIONS
 pub async fn retrieve_cards_from_point_ids(
     search_card_query_results: SearchCardQueryResult,
     data: web::Json<SearchCardData>,
@@ -1107,6 +1112,7 @@ pub async fn search_semantic_cards(
     page: u64,
     pool: web::Data<Pool>,
     current_user_id: Option<uuid::Uuid>,
+    dataset_name: String,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
     let embedding_vector = create_embedding(&data.content, app_mutex).await?;
@@ -1120,6 +1126,7 @@ pub async fn search_semantic_cards(
         data.filters.clone(),
         current_user_id,
         parsed_query,
+        dataset_name.clone(),
         pool.clone(),
     )
     .await
@@ -1142,6 +1149,7 @@ pub async fn search_full_text_cards(
     pool: web::Data<Pool>,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     current_user_id: Option<uuid::Uuid>,
+    dataset_name: String,
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
     let pool1 = pool.clone();
     let user_query = data
@@ -1161,6 +1169,7 @@ pub async fn search_full_text_cards(
         data_inner.time_range,
         tantivy_index_map,
         parsed_query,
+        dataset_name.clone(),
     )
     .map_err(|err| ServiceError::BadRequest(err.message.into()))
     .await?;
@@ -1329,6 +1338,7 @@ pub async fn search_hybrid_cards(
     current_user_id: Option<uuid::Uuid>,
     cross_encoder_init: web::Data<CrossEncoder>,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
+    dataset_name: String,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
     let embedding_vector = create_embedding(&data.content, app_mutex).await?;
@@ -1343,6 +1353,7 @@ pub async fn search_hybrid_cards(
         data.filters.clone(),
         current_user_id,
         parsed_query.clone(),
+        dataset_name.clone(),
         pool.clone(),
     );
 
@@ -1353,6 +1364,7 @@ pub async fn search_hybrid_cards(
         pool,
         tantivy_index_map,
         current_user_id,
+        dataset_name.clone(),
     );
 
     let (search_card_query_results, full_text_handler_results) =
@@ -1479,6 +1491,7 @@ pub async fn search_semantic_collections(
     page: u64,
     pool: web::Data<Pool>,
     current_user_id: Option<uuid::Uuid>,
+    dataset_name: String,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<SearchCollectionsResult, actix_web::Error> {
     let embedding_vector: Vec<f32> = create_embedding(&data.content, app_mutex).await?;
@@ -1495,6 +1508,7 @@ pub async fn search_semantic_collections(
         data.filters.clone(),
         data.collection_id,
         current_user_id,
+        dataset_name.clone(),
         parsed_query,
     )
     .await
@@ -1588,6 +1602,7 @@ pub async fn search_full_text_collections(
     pool: web::Data<Pool>,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     current_user_id: Option<uuid::Uuid>,
+    dataset_name: String,
 ) -> Result<SearchCollectionsResult, actix_web::Error> {
     let data_inner = data.clone();
     let pool1 = pool.clone();
@@ -1603,6 +1618,7 @@ pub async fn search_full_text_collections(
         data_inner.collection_id,
         tantivy_index_map,
         parsed_query,
+        dataset_name,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;

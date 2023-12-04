@@ -435,6 +435,9 @@ pub async fn main() -> std::io::Result<()> {
             .service(
                 web::scope("/api")
                     .service(
+                        web::resource("/dataset").route(web::post().to(handlers::dataset_handler::create_dataset)),
+                    )
+                    .service(
                         web::resource("/invitation")
                             .route(web::post().to(handlers::invitation_handler::post_invitation)),
                     )

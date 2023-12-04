@@ -10,3 +10,4 @@ pub mod register_handler;
 pub mod topic_handler;
 pub mod user_handler;
 pub mod vote_handler;
+pub mod dataset_handler;
