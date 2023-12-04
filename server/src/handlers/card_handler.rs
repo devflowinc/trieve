@@ -29,7 +29,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::process::Command;
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 use tokio_stream::StreamExt;
 use utoipa::{IntoParams, ToSchema};
 
@@ -131,7 +131,7 @@ pub async fn create_card(
     card: web::Json<CreateCardData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
-    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
+    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let only_admin_can_create_cards =
@@ -373,7 +373,7 @@ pub async fn delete_card(
     card_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
-    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
+    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let card_id_inner = card_id.into_inner();
@@ -412,7 +412,7 @@ pub async fn delete_card_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
-    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
+    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let tracking_id_inner = tracking_id.into_inner();
@@ -422,16 +422,13 @@ pub async fn delete_card_by_tracking_id(
 
     let qdrant_point_id = card_metadata.qdrant_point_id;
 
-    web::block(move || {
-        delete_card_metadata_query(
-            card_metadata.id,
-            qdrant_point_id,
-            tantivy_index_map,
-            app_mutex,
-            pool1,
-        )
-    })
-    .await?
+    delete_card_metadata_query(
+        card_metadata.id,
+        qdrant_point_id,
+        tantivy_index_map,
+        app_mutex,
+        pool1,
+    )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -469,7 +466,7 @@ pub async fn update_card(
     card: web::Json<UpdateCardData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
-    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
+    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
@@ -567,7 +564,7 @@ pub async fn update_card_by_tracking_id(
     card: web::Json<UpdateCardByTrackingIdData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
-    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
+    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     if card.tracking_id.is_empty() {
@@ -727,7 +724,7 @@ pub async fn search_card(
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
     cross_encoder_init: web::Data<CrossEncoder>,
-    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
+    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -823,7 +820,7 @@ pub async fn search_collections(
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
-    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
+    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {

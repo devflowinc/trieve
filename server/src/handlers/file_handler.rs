@@ -21,8 +21,8 @@ use base64::{
 use magick_rust::MagickWand;
 use pyo3::{types::PyDict, Python};
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
 use std::path::PathBuf;
+use tokio::sync::RwLock;
 use utoipa::ToSchema;
 
 pub fn validate_file_name(s: String) -> Result<String, actix_web::Error> {
@@ -87,7 +87,7 @@ pub async fn upload_file_handler(
     data: web::Json<UploadFileData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
-    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
+    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let document_upload_feature =
