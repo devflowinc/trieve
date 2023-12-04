@@ -1,4 +1,4 @@
-use super::auth_handler::LoggedUser;
+use super::{auth_handler::LoggedUser, dataset_handler::Dataset};
 use crate::{
     data::models::Pool,
     operators::{
@@ -30,13 +30,15 @@ pub struct CreateVoteData {
 pub async fn create_vote(
     data: web::Json<CreateVoteData>,
     user: LoggedUser,
+    dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let data_inner = data.into_inner();
+    let dataset_name = dataset.name.clone();
     let card_metadata_id = data_inner.card_metadata_id;
     let vote = data_inner.vote;
     let pool1 = pool.clone();
-    let card_data = web::block(move || get_metadata_from_id_query(card_metadata_id, pool)).await?;
+    let card_data = web::block(move || get_metadata_from_id_query(card_metadata_id, dataset_name, pool)).await?;
     match card_data {
         Ok(data) => {
             if data.private {
@@ -70,13 +72,15 @@ pub async fn create_vote(
 pub async fn delete_vote(
     card_metadata_id: web::Path<uuid::Uuid>,
     user: LoggedUser,
+    dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let card_metadata_id_inner = card_metadata_id.into_inner();
     let pool1 = pool.clone();
+    let dataset_name = dataset.name.clone();
 
     let card_data =
-        web::block(move || get_metadata_from_id_query(card_metadata_id_inner, pool)).await?;
+        web::block(move || get_metadata_from_id_query(card_metadata_id_inner, dataset_name, pool)).await?;
     match card_data {
         Ok(data) => {
             if data.private {
