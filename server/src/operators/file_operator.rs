@@ -2,6 +2,7 @@ use super::collection_operator::create_collection_and_add_bookmarks_query;
 use super::notification_operator::add_collection_created_notification_query;
 use super::tantivy_operator::TantivyIndexMap;
 use crate::AppMutexStore;
+use crate::handlers::dataset_handler::Dataset;
 use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
 use crate::{
     data::models::FileDTO,
@@ -143,6 +144,7 @@ pub async fn convert_doc_to_html_query(
     user: LoggedUser,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
+    dataset_name: String,
     pool: web::Data<Pool>,
 ) -> Result<UploadFileResult, DefaultError> {
     let user1 = user.clone();
@@ -277,6 +279,7 @@ pub async fn convert_doc_to_html_query(
             glob_string,
             tantivy_index_map.clone(),
             app_mutex,
+            dataset_name.clone(),
             pool,
         )
         .await;
@@ -317,6 +320,7 @@ pub async fn create_cards_with_handler(
     glob_string: String,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
+    dataset_name: String,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     let parser_command =
@@ -396,6 +400,7 @@ pub async fn create_cards_with_handler(
             user.clone(),
             tantivy_index_map.clone(),
             app_mutex.clone(),
+            Dataset { name: dataset_name.clone() }
         )
         .await
         {

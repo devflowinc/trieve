@@ -291,6 +291,7 @@ pub struct CardMetadata {
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
+    pub dataset: String
 }
 
 impl CardMetadata {
@@ -306,6 +307,7 @@ impl CardMetadata {
         metadata: Option<serde_json::Value>,
         tracking_id: Option<String>,
         time_stamp: Option<NaiveDateTime>,
+        dataset: String
     ) -> Self {
         CardMetadata {
             id: uuid::Uuid::new_v4(),
@@ -321,6 +323,7 @@ impl CardMetadata {
             metadata,
             tracking_id,
             time_stamp,
+            dataset
         }
     }
 }
@@ -339,6 +342,7 @@ impl CardMetadata {
         metadata: Option<serde_json::Value>,
         tracking_id: Option<String>,
         time_stamp: Option<NaiveDateTime>,
+        dataset: String
     ) -> Self {
         CardMetadata {
             id: id.into(),
@@ -354,6 +358,7 @@ impl CardMetadata {
             metadata,
             tracking_id,
             time_stamp,
+            dataset
         }
     }
 }

@@ -158,6 +158,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
             card_metadata_columns::metadata,
             card_metadata_columns::tracking_id,
             card_metadata_columns::time_stamp,
+            card_metadata_columns::dataset,
         ))
         .limit(10)
         .offset((page - 1) * 10)
