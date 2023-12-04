@@ -40,7 +40,7 @@ use qdrant_client::qdrant::{
 use serde::{Deserialize, Serialize};
 use std::cmp::max;
 use std::collections::HashSet;
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SearchResult {
@@ -630,7 +630,7 @@ pub async fn search_full_text_card_query(
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
     time_range: Option<(String, String)>,
-    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
+    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     parsed_query: ParsedQuery,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
@@ -784,7 +784,7 @@ pub async fn search_full_text_card_query(
             message: "Failed to load full-text searched cards",
         })?;
 
-    let tantivy_index_map = tantivy_index_map.lock().await;
+    let tantivy_index_map = tantivy_index_map.read().await;
 
     let searched_cards = tantivy_index_map
         .search_cards(
@@ -837,7 +837,7 @@ pub async fn search_full_text_collection_query(
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
     collection_id: uuid::Uuid,
-    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
+    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     parsed_query: ParsedQuery,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
@@ -985,7 +985,7 @@ pub async fn search_full_text_collection_query(
             message: "Failed to load trigram searched cards",
         })?;
 
-    let tantivy_index_map = tantivy_index_map.lock().await;
+    let tantivy_index_map = tantivy_index_map.read().await;
 
     let searched_cards = tantivy_index_map
         .search_cards(
@@ -1140,7 +1140,7 @@ pub async fn search_full_text_cards(
     parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
-    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
+    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     current_user_id: Option<uuid::Uuid>,
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
     let pool1 = pool.clone();
@@ -1328,7 +1328,7 @@ pub async fn search_hybrid_cards(
     pool: web::Data<Pool>,
     current_user_id: Option<uuid::Uuid>,
     cross_encoder_init: web::Data<CrossEncoder>,
-    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
+    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
     let embedding_vector = create_embedding(&data.content, app_mutex).await?;
@@ -1586,7 +1586,7 @@ pub async fn search_full_text_collections(
     collection: CardCollection,
     page: u64,
     pool: web::Data<Pool>,
-    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
+    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     current_user_id: Option<uuid::Uuid>,
 ) -> Result<SearchCollectionsResult, actix_web::Error> {
     let data_inner = data.clone();
