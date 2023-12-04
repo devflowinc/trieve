@@ -27,18 +27,6 @@ services:
       - app-network
     command: redis-server --requirepass ${REDIS_PASSWORD}
 
-  script-redis:
-    image: redis:7.2.2
-    container_name: my-script-redis
-    restart: always
-    ports:
-      - "6380:6379"
-    volumes:
-      - script-redis-data:/data
-    networks:
-      - app-network
-    command: redis-server --requirepass ${REDIS_PASSWORD}
-
   qdrant-database:
     image: qdrant/qdrant:v1.3.2
     environment:
@@ -108,6 +96,7 @@ services:
       - 8090:8090
     volumes:
       - ./server/images:/app/images
+      - ./server/tantivy:/app/tantivy
     links:
       - tika:tika
     environment:

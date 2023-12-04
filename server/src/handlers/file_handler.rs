@@ -7,7 +7,7 @@ use crate::{
             convert_doc_to_html_query, delete_file_query, get_file_query, get_user_file_query,
             get_user_id_of_file_query, update_file_query,
         },
-        tantivy_operator::TantivyIndex,
+        tantivy_operator::TantivyIndexMap,
     },
     AppMutexStore,
 };
@@ -21,6 +21,7 @@ use base64::{
 use magick_rust::MagickWand;
 use pyo3::{types::PyDict, Python};
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
 use std::path::PathBuf;
 use utoipa::ToSchema;
 
@@ -86,7 +87,7 @@ pub async fn upload_file_handler(
     data: web::Json<UploadFileData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
-    tantivy_index: web::Data<TantivyIndex>,
+    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let document_upload_feature =
@@ -132,7 +133,7 @@ pub async fn upload_file_handler(
         upload_file_data.create_cards,
         upload_file_data.time_stamp,
         user,
-        tantivy_index,
+        tantivy_index_map,
         app_mutex,
         pool_inner,
     )
