@@ -17,7 +17,7 @@ use crate::operators::search_operator::{
     global_unfiltered_top_match_query, search_full_text_cards, search_full_text_collections,
     search_hybrid_cards, search_semantic_cards, search_semantic_collections,
 };
-use crate::operators::tantivy_operator::TantivyIndex;
+use crate::operators::tantivy_operator::TantivyIndexMap;
 use crate::{get_env, AppMutexStore, CrossEncoder};
 use actix::Arbiter;
 use actix_web::web::Bytes;
@@ -29,6 +29,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::process::Command;
+use tokio::sync::Mutex;
 use tokio_stream::StreamExt;
 use utoipa::{IntoParams, ToSchema};
 
@@ -130,7 +131,7 @@ pub async fn create_card(
     card: web::Json<CreateCardData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
-    tantivy_index: web::Data<TantivyIndex>,
+    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let only_admin_can_create_cards =
@@ -325,11 +326,10 @@ pub async fn create_card(
                 .transpose()?,
         );
 
-        card_metadata = web::block(move || {
-            insert_card_metadata_query(card_metadata, card.file_uuid, tantivy_index, pool1)
-        })
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        card_metadata =
+            insert_card_metadata_query(card_metadata, card.file_uuid, tantivy_index_map, pool1)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
         create_new_qdrant_point_query(
             qdrant_point_id,
@@ -373,7 +373,7 @@ pub async fn delete_card(
     card_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
-    tantivy_index: web::Data<TantivyIndex>,
+    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let card_id_inner = card_id.into_inner();
@@ -382,16 +382,13 @@ pub async fn delete_card(
     let card_metadata = user_owns_card(user.id, card_id_inner, pool).await?;
     let qdrant_point_id = card_metadata.qdrant_point_id;
 
-    web::block(move || {
-        delete_card_metadata_query(
-            card_id_inner,
-            qdrant_point_id,
-            tantivy_index,
-            app_mutex,
-            pool1,
-        )
-    })
-    .await?
+    delete_card_metadata_query(
+        card_id_inner,
+        qdrant_point_id,
+        tantivy_index_map,
+        app_mutex,
+        pool1,
+    )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -415,7 +412,7 @@ pub async fn delete_card_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
-    tantivy_index: web::Data<TantivyIndex>,
+    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let tracking_id_inner = tracking_id.into_inner();
@@ -429,7 +426,7 @@ pub async fn delete_card_by_tracking_id(
         delete_card_metadata_query(
             card_metadata.id,
             qdrant_point_id,
-            tantivy_index,
+            tantivy_index_map,
             app_mutex,
             pool1,
         )
@@ -472,7 +469,7 @@ pub async fn update_card(
     card: web::Json<UpdateCardData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
-    tantivy_index: web::Data<TantivyIndex>,
+    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
@@ -523,8 +520,8 @@ pub async fn update_card(
             .transpose()?,
     );
     let metadata1 = metadata.clone();
-    web::block(move || update_card_metadata_query(metadata, None, tantivy_index, pool2))
-        .await?
+    update_card_metadata_query(metadata, None, tantivy_index_map, pool2)
+        .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     update_qdrant_point_query(
@@ -570,7 +567,7 @@ pub async fn update_card_by_tracking_id(
     card: web::Json<UpdateCardByTrackingIdData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
-    tantivy_index: web::Data<TantivyIndex>,
+    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     if card.tracking_id.is_empty() {
@@ -627,8 +624,8 @@ pub async fn update_card_by_tracking_id(
     );
     let metadata1 = metadata.clone();
 
-    web::block(move || update_card_metadata_query(metadata, None, tantivy_index, pool2))
-        .await?
+    update_card_metadata_query(metadata, None, tantivy_index_map, pool2)
+        .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     update_qdrant_point_query(
@@ -730,7 +727,7 @@ pub async fn search_card(
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
     cross_encoder_init: web::Data<CrossEncoder>,
-    tantivy_index: web::Data<TantivyIndex>,
+    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -746,7 +743,7 @@ pub async fn search_card(
                 parsed_query,
                 page,
                 pool,
-                tantivy_index,
+                tantivy_index_map,
                 current_user_id,
             )
             .await?
@@ -759,7 +756,7 @@ pub async fn search_card(
                 pool,
                 current_user_id,
                 cross_encoder_init,
-                tantivy_index,
+                tantivy_index_map,
                 app_mutex,
             )
             .await?
@@ -826,7 +823,7 @@ pub async fn search_collections(
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
-    tantivy_index: web::Data<TantivyIndex>,
+    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -858,7 +855,7 @@ pub async fn search_collections(
                 collection,
                 page,
                 pool1,
-                tantivy_index,
+                tantivy_index_map,
                 current_user_id,
             )
             .await?

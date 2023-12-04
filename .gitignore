@@ -19,6 +19,7 @@ output.json
 temp.json
 server/target
 server/images
+server/tantivy
 *.icloud
 chat/src/.root 2.css.icloud
 server/server-python/test.ipynb

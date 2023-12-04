@@ -3,7 +3,7 @@ use super::card_operator::{
     get_metadata_and_collided_cards_from_point_ids_query, get_metadata_from_point_ids,
 };
 use super::qdrant_operator::create_embedding;
-use super::tantivy_operator::TantivyIndex;
+use super::tantivy_operator::TantivyIndexMap;
 use crate::data::models::{
     CardCollection, CardFileWithName, CardMetadataWithVotesWithScore, CardVote,
     FullTextSearchResult, User, UserDTO,
@@ -40,6 +40,7 @@ use qdrant_client::qdrant::{
 use serde::{Deserialize, Serialize};
 use std::cmp::max;
 use std::collections::HashSet;
+use tokio::sync::Mutex;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SearchResult {
@@ -629,7 +630,7 @@ pub async fn search_full_text_card_query(
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
     time_range: Option<(String, String)>,
-    tantivy_index: web::Data<TantivyIndex>,
+    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
     parsed_query: ParsedQuery,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
@@ -783,8 +784,11 @@ pub async fn search_full_text_card_query(
             message: "Failed to load full-text searched cards",
         })?;
 
-    let searched_cards = tantivy_index
+    let tantivy_index_map = tantivy_index_map.lock().await;
+
+    let searched_cards = tantivy_index_map
         .search_cards(
+            None,
             user_query.as_str(),
             page,
             Some(
@@ -824,7 +828,7 @@ pub async fn search_full_text_card_query(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn search_full_text_collection_query(
+pub async fn search_full_text_collection_query(
     user_query: String,
     page: u64,
     pool: web::Data<Pool>,
@@ -833,7 +837,7 @@ pub fn search_full_text_collection_query(
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
     collection_id: uuid::Uuid,
-    tantivy_index: web::Data<TantivyIndex>,
+    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
     parsed_query: ParsedQuery,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
@@ -981,8 +985,11 @@ pub fn search_full_text_collection_query(
             message: "Failed to load trigram searched cards",
         })?;
 
-    let searched_cards = tantivy_index
+    let tantivy_index_map = tantivy_index_map.lock().await;
+
+    let searched_cards = tantivy_index_map
         .search_cards(
+            None,
             user_query.as_str(),
             page,
             Some(
@@ -1133,7 +1140,7 @@ pub async fn search_full_text_cards(
     parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
-    tantivy_index: web::Data<TantivyIndex>,
+    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
     current_user_id: Option<uuid::Uuid>,
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
     let pool1 = pool.clone();
@@ -1152,7 +1159,7 @@ pub async fn search_full_text_cards(
         data_inner.link,
         data_inner.tag_set,
         data_inner.time_range,
-        tantivy_index,
+        tantivy_index_map,
         parsed_query,
     )
     .map_err(|err| ServiceError::BadRequest(err.message.into()))
@@ -1321,7 +1328,7 @@ pub async fn search_hybrid_cards(
     pool: web::Data<Pool>,
     current_user_id: Option<uuid::Uuid>,
     cross_encoder_init: web::Data<CrossEncoder>,
-    tantivy_index: web::Data<TantivyIndex>,
+    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
     let embedding_vector = create_embedding(&data.content, app_mutex).await?;
@@ -1344,7 +1351,7 @@ pub async fn search_hybrid_cards(
         parsed_query,
         page,
         pool,
-        tantivy_index,
+        tantivy_index_map,
         current_user_id,
     );
 
@@ -1579,7 +1586,7 @@ pub async fn search_full_text_collections(
     collection: CardCollection,
     page: u64,
     pool: web::Data<Pool>,
-    tantivy_index: web::Data<TantivyIndex>,
+    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
     current_user_id: Option<uuid::Uuid>,
 ) -> Result<SearchCollectionsResult, actix_web::Error> {
     let data_inner = data.clone();
@@ -1594,9 +1601,10 @@ pub async fn search_full_text_collections(
         data_inner.link.clone(),
         data_inner.tag_set.clone(),
         data_inner.collection_id,
-        tantivy_index,
+        tantivy_index_map,
         parsed_query,
     )
+    .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let result_cards = retrieve_cards_from_point_ids(
