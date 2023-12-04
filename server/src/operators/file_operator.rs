@@ -30,7 +30,7 @@ use base64::{
 use diesel::RunQueryDsl;
 use s3::{creds::Credentials, Bucket, Region};
 use std::{path::PathBuf, process::Command};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
     let s3_access_key = get_env!("S3_ACCESS_KEY", "S3_ACCESS_KEY should be set").into();
@@ -141,7 +141,7 @@ pub async fn convert_doc_to_html_query(
     create_cards: Option<bool>,
     time_stamp: Option<String>,
     user: LoggedUser,
-    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
+    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
 ) -> Result<UploadFileResult, DefaultError> {
@@ -315,7 +315,7 @@ pub async fn create_cards_with_handler(
     user: LoggedUser,
     temp_html_file_path_buf: PathBuf,
     glob_string: String,
-    tantivy_index_map: web::Data<Mutex<TantivyIndexMap>>,
+    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
