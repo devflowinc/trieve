@@ -135,9 +135,15 @@ impl TantivyIndexMap {
         Ok(())
     }
 
-    pub fn get_tantivy_index(&self, index_name: Option<&str>) -> tantivy::Result<&TantivyIndex> {
+    fn get_tantivy_index(&self, index_name: Option<&str>) -> tantivy::Result<&TantivyIndex> {
         let index_name = match index_name {
-            Some(index_name) => index_name,
+            Some(index_name) => {
+                if index_name == "DEFAULT" {
+                    &self.default_index
+                } else {
+                    index_name
+                }
+            }
             None => &self.default_index,
         };
 
