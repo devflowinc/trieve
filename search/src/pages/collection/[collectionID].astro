@@ -9,6 +9,7 @@ import type {
 } from "../../../utils/apiTypes";
 import type { Filters } from "../../components/ResultsPage";
 
+const dataset = import.meta.env.PUBLIC_DATASET as string;
 const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
 
 const collectionID = Astro.params.collectionID ?? "";
@@ -77,6 +78,9 @@ try {
       `${apiHost}/card_collection/${collectionID}/${page}`,
       {
         method: "GET",
+        headers: {
+          "AF-Dataset": dataset,
+        },
       },
     );
     if (!collectionCardResponse.ok) {
@@ -103,6 +107,7 @@ try {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "AF-Dataset": dataset,
         },
         credentials: "include",
         body: JSON.stringify({

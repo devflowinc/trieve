@@ -24,6 +24,7 @@ export interface UserCardDisplayProps {
 
 export const UserCardDisplay = (props: UserCardDisplayProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
 
   const [user, setUser] = createSignal<UserDTOWithVotesAndCards>();
   const [clientSideRequestFinished, setClientSideRequestFinished] =
@@ -38,9 +39,9 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
   props.initialUser && setUser(props.initialUser);
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onDelete, setOnDelete] = createSignal<() => void>(() => {});
+  const [onDelete, setOnDelete] = createSignal<() => void>(() => { });
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onCollectionDelete, setOnCollectionDelete] = createSignal(() => {});
+  const [onCollectionDelete, setOnCollectionDelete] = createSignal(() => { });
   const [
     showConfirmCollectionDeleteModal,
     setShowConfirmCollectionmDeleteModal,
@@ -86,6 +87,7 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       body: JSON.stringify({
         card_ids: user()?.cards.map((c) => c.id)
@@ -107,6 +109,9 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
     void fetch(`${apiHost}/card_collection/1`, {
       method: "GET",
       credentials: "include",
+      headers: {
+        "AF-Dataset": dataset,
+      }
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {

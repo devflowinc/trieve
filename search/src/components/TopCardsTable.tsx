@@ -8,6 +8,7 @@ export interface TopCardsTableProps {
 
 export const TopCardsTable = (props: TopCardsTableProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
 
   const [errorText, setErrorText] = createSignal("");
   const [topCards, setTopCards] = createSignal<CardMetadataWithVotes[]>(
@@ -33,6 +34,7 @@ export const TopCardsTable = (props: TopCardsTableProps) => {
       signal: abortController.signal,
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       credentials: "include",
     }).then((response) => {

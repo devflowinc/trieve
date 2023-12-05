@@ -11,6 +11,7 @@ import { UserCardDisplay } from "../../components/UserCardDisplay";
 
 const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
+const dataset = import.meta.env.PUBLIC_DATASET as string;
 
 let { id } = Astro.params;
 id = id?.split("&")[0];
@@ -35,6 +36,7 @@ try {
   const queryPromise = fetch(`${apiHost}/user/${id}/${page}`, {
     method: "GET",
     headers: {
+      "AF-Dataset": dataset,
       "Content-Type": "application/json",
     },
   });
