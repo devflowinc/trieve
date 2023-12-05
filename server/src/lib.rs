@@ -682,7 +682,20 @@ pub async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::resource("/health").route(web::get().to(handlers::auth_handler::health_check)),
-                    ),
+                    )
+                .service(
+                    web::scope("/organization")
+                    .service(
+                        web::resource("/{organization_id}")
+                            .route(web::get().to(handlers::organization_handler::get_organization_by_id))
+                            .route(web::delete().to(handlers::organization_handler::delete_organization_by_id))
+                    )
+                    .service(
+                        web::resource("")
+                            .route(web::post().to(handlers::organization_handler::create_organization))
+                            .route(web::put().to(handlers::organization_handler::update_organization))
+                    )
+                )
             )
     })
     .bind(("0.0.0.0", 8090))?
