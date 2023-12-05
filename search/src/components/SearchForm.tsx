@@ -42,10 +42,6 @@ const SearchForm = (props: {
 
   const createEvidenceFeature =
     import.meta.env.PUBLIC_CREATE_EVIDENCE_FEATURE !== "off";
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-  const feelingSuffixes: string[] = (import.meta.env.PUBLIC_LUCKY_ITEMS || "")
-    .split(",")
-    .filter((item: string) => item);
 
   const [searchTypes, setSearchTypes] = createSignal([
     { name: "Full Text", isSelected: false, route: "fulltext" },
@@ -58,8 +54,6 @@ const SearchForm = (props: {
   const [comboBoxSections, setComboBoxSections] = createSignal<
     ComboboxSection[]
   >(customComboBoxFilterVals);
-  const [feelingLuckyText, setFeelingLuckyText] = createSignal(feelingSuffixes);
-  const [feelingLuckySpinning, setFeelingLuckySpinning] = createSignal(false);
   const [searchQueriesFromStorage, setSearchQueriesFromStorage] = createSignal<
     string[]
   >([]);
@@ -414,46 +408,6 @@ const SearchForm = (props: {
     });
   });
 
-  // contains the logic for the feeling lucky button
-  createEffect(() => {
-    let hoverTimeout = 0;
-
-    const feelingRandom = () => {
-      setFeelingLuckyText((prev) => {
-        const arr = prev.slice();
-        for (let i = arr.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-        if (arr[arr.length - 1] === prev[prev.length - 1]) {
-          [arr[arr.length - 1], arr[0]] = [arr[0], arr[arr.length - 1]];
-        }
-        return arr;
-      });
-
-      hoverTimeout = setTimeout(() => {
-        setFeelingLuckySpinning(false);
-        hoverTimeout = 0;
-      }, 300);
-    };
-
-    const feelingLucky = () => {
-      clearTimeout(hoverTimeout);
-      hoverTimeout = 0;
-      setFeelingLuckySpinning(false);
-    };
-
-    const spinning = feelingLuckySpinning();
-    if (spinning) {
-      if (hoverTimeout) {
-        return;
-      }
-      feelingRandom();
-      return;
-    }
-    feelingLucky();
-  });
-
   const textareaVal = createMemo(() => {
     const textareaInputVal = textareaInput();
     const textareaFocusedVal = textareaFocused();
@@ -795,33 +749,6 @@ const SearchForm = (props: {
                 href="/create"
               >
                 Create
-              </a>
-            </Show>
-            <Show when={feelingSuffixes.length > 0}>
-              <a
-                class="relative hidden h-[40px] overflow-hidden rounded bg-neutral-100 p-2 text-center transition-width duration-1000 hover:bg-neutral-100 dark:bg-neutral-700 sm:block"
-                href={`/search?q=I'm feeling ${
-                  feelingLuckyText().findLast(() => true) ?? ""
-                }`}
-                onMouseEnter={() => {
-                  setFeelingLuckySpinning(true);
-                }}
-                onMouseLeave={() => {
-                  setFeelingLuckySpinning(false);
-                }}
-              >
-                <Show when={feelingLuckySpinning()}>
-                  <span class="block h-[40px] animate-scrollup overflow-hidden">
-                    <For each={feelingLuckyText()}>
-                      {(text) => <p>I'm Feeling {text}</p>}
-                    </For>
-                  </span>
-                </Show>
-                <Show when={!feelingLuckySpinning()}>
-                  <span>
-                    I'm Feeling {feelingLuckyText().findLast(() => true)}
-                  </span>
-                </Show>
               </a>
             </Show>
           </div>
