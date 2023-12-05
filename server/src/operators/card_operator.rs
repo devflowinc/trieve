@@ -230,6 +230,7 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
 pub fn get_collided_cards_query(
     point_ids: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
+    dataset_name: String,
     pool: web::Data<Pool>,
 ) -> Result<Vec<(CardMetadataWithVotesWithScore, uuid::Uuid)>, DefaultError> {
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
@@ -268,6 +269,7 @@ pub fn get_collided_cards_query(
                 .eq(false)
                 .or(card_metadata_columns::author_id.eq(current_user_id.unwrap_or_default())),
         )
+        .filter(card_metadata_columns::dataset.eq(dataset_name))
         // TODO: Properly handle this and remove the arbitrary limit
         .limit(500)
         .load::<CardMetadata>(&mut conn)

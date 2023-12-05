@@ -541,6 +541,7 @@ pub struct CardCollection {
     pub description: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub dataset: String,
 }
 
 impl CardCollection {
@@ -549,6 +550,7 @@ impl CardCollection {
         name: String,
         is_public: bool,
         description: String,
+        dataset: String,
     ) -> Self {
         CardCollection {
             id: uuid::Uuid::new_v4(),
@@ -556,6 +558,7 @@ impl CardCollection {
             author_id,
             name,
             description,
+            dataset,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
         }
@@ -618,16 +621,18 @@ pub struct CardCollectionBookmark {
     pub card_metadata_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub dataset: String,
 }
 
 impl CardCollectionBookmark {
-    pub fn from_details(collection_id: uuid::Uuid, card_metadata_id: uuid::Uuid) -> Self {
+    pub fn from_details(collection_id: uuid::Uuid, card_metadata_id: uuid::Uuid, dataset: String) -> Self {
         CardCollectionBookmark {
             id: uuid::Uuid::new_v4(),
             collection_id,
             card_metadata_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
+            dataset,
         }
     }
 }

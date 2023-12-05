@@ -20,7 +20,6 @@ use crate::operators::search_operator::{
 };
 use crate::operators::tantivy_operator::TantivyIndexMap;
 use crate::{get_env, AppMutexStore, CrossEncoder};
-use actix::Arbiter;
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
 use chrono::NaiveDateTime;
@@ -347,11 +346,10 @@ pub async fn create_card(
 
     if let Some(collection_id_to_bookmark) = card_collection_id {
         let card_collection_bookmark =
-            CardCollectionBookmark::from_details(collection_id_to_bookmark, card_metadata.id);
-        Arbiter::new().spawn(async move {
-            let _ = web::block(move || create_card_bookmark_query(pool3, card_collection_bookmark))
-                .await;
-        });
+            CardCollectionBookmark::from_details(collection_id_to_bookmark, card_metadata.id, dataset_name.clone());
+
+        let _ = web::block(move || create_card_bookmark_query(pool3, card_collection_bookmark))
+            .await?;
     }
 
     Ok(HttpResponse::Ok().json(ReturnCreatedCard {
@@ -853,10 +851,14 @@ pub async fn search_collections(
 
     let current_user_id = user.map(|user| user.id);
     let pool1 = pool.clone();
-    let collection = web::block(move || get_collection_by_id_query(collection_id, pool))
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let collection = {
+        let dataset_name = dataset_name.clone();
+        web::block(move || get_collection_by_id_query(collection_id, dataset_name.clone(), pool))
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+    };
 
     if !collection.is_public && current_user_id.is_none() {
         return Err(ServiceError::Unauthorized.into());

@@ -1,4 +1,4 @@
-use super::auth_handler::{LoggedUser, RequireAuth};
+use super::{auth_handler::{LoggedUser, RequireAuth}, dataset_handler::Dataset};
 use crate::{
     data::models::{
         CardCollection, CardCollectionAndFile, CardCollectionBookmark,
@@ -24,9 +24,10 @@ use utoipa::ToSchema;
 pub async fn user_owns_collection(
     user_id: uuid::Uuid,
     collection_id: uuid::Uuid,
+    dataset_name: String,
     pool: web::Data<Pool>,
 ) -> Result<CardCollection, actix_web::Error> {
-    let collection = web::block(move || get_collection_by_id_query(collection_id, pool))
+    let collection = web::block(move || get_collection_by_id_query(collection_id, dataset_name, pool))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -58,13 +59,15 @@ pub struct CreateCardCollectionData {
 pub async fn create_card_collection(
     body: web::Json<CreateCardCollectionData>,
     user: LoggedUser,
+    dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let name = body.name.clone();
     let description = body.description.clone();
     let is_public = body.is_public;
+    let dataset_name = dataset.name.clone();
 
-    let collection = CardCollection::from_details(user.id, name, is_public, description);
+    let collection = CardCollection::from_details(user.id, name, is_public, description, dataset_name.clone());
     {
         let collection = collection.clone();
         web::block(move || create_collection_query(collection, pool))
@@ -104,6 +107,7 @@ pub struct UserCollectionQuery {
 pub async fn get_specific_user_card_collections(
     user: Option<LoggedUser>,
     user_and_page: web::Path<UserCollectionQuery>,
+    dataset: Dataset,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -113,6 +117,7 @@ pub async fn get_specific_user_card_collections(
             user_and_page.user_id,
             accessing_user_id,
             user_and_page.page,
+            dataset.name.clone(),
             pool,
         )
     })
@@ -158,10 +163,11 @@ pub async fn get_specific_user_card_collections(
 pub async fn get_logged_in_user_card_collections(
     user: LoggedUser,
     page: web::Path<u64>,
+    dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let collections = web::block(move || {
-        get_collections_for_logged_in_user_query(user.id, page.into_inner(), pool)
+        get_collections_for_logged_in_user_query(user.id, page.into_inner(), dataset.name.clone(), pool)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -206,14 +212,16 @@ pub struct DeleteCollectionData {
 pub async fn delete_card_collection(
     data: web::Json<DeleteCollectionData>,
     pool: web::Data<Pool>,
+    dataset: Dataset,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool2 = pool.clone();
     let collection_id = data.collection_id;
+    let dataset_name = dataset.name.clone();
 
-    user_owns_collection(user.id, collection_id, pool).await?;
+    user_owns_collection(user.id, collection_id, dataset_name.clone(), pool).await?;
 
-    web::block(move || delete_collection_by_id_query(collection_id, pool2))
+    web::block(move || delete_collection_by_id_query(collection_id, dataset_name, pool2))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -242,19 +250,21 @@ pub struct UpdateCardCollectionData {
 pub async fn update_card_collection(
     body: web::Json<UpdateCardCollectionData>,
     pool: web::Data<Pool>,
+    dataset: Dataset,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let name = body.name.clone();
     let description = body.description.clone();
     let is_public = body.is_public;
     let collection_id = body.collection_id;
+    let dataset_name = dataset.name.clone();
 
     let pool2 = pool.clone();
 
-    let collection = user_owns_collection(user.id, collection_id, pool).await?;
+    let collection = user_owns_collection(user.id, collection_id, dataset_name.clone(), pool).await?;
 
     web::block(move || {
-        update_card_collection_query(collection, name, description, is_public, pool2)
+        update_card_collection_query(collection, name, description, is_public, dataset_name, pool2)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -284,23 +294,28 @@ pub struct AddCardToCollectionData {
 pub async fn add_bookmark(
     body: web::Json<AddCardToCollectionData>,
     collection_id: web::Path<uuid::Uuid>,
+    dataset: Dataset,
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool2 = pool.clone();
     let card_metadata_id = body.card_metadata_id;
     let collection_id = collection_id.into_inner();
+    let dataset_name = dataset.name.clone();
 
-    user_owns_collection(user.id, collection_id, pool).await?;
+    user_owns_collection(user.id, collection_id, dataset_name.clone(), pool).await?;
 
-    web::block(move || {
-        create_card_bookmark_query(
-            pool2,
-            CardCollectionBookmark::from_details(collection_id, card_metadata_id),
-        )
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    {
+        let dataset_name = dataset_name.clone();
+        web::block(move || {
+            create_card_bookmark_query(
+                pool2,
+                CardCollectionBookmark::from_details(collection_id, card_metadata_id, dataset_name),
+            )
+        })
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    }
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -340,6 +355,7 @@ pub async fn get_all_bookmarks(
     path_data: web::Path<GetAllBookmarksData>,
     pool: web::Data<Pool>,
     user: Option<LoggedUser>,
+    dataset: Dataset,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let collection_id = path_data.collection_id;
@@ -347,12 +363,16 @@ pub async fn get_all_bookmarks(
     let pool1 = pool.clone();
     let pool2 = pool.clone();
     let current_user_id = user.map(|user| user.id);
+    let dataset_name = dataset.name.clone();
 
-    let bookmarks = web::block(move || {
-        get_bookmarks_for_collection_query(collection_id, page, None, current_user_id, pool2)
-    })
-    .await?
-    .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?;
+    let bookmarks = {
+        let dataset_name = dataset_name.clone();
+        web::block(move || {
+            get_bookmarks_for_collection_query(collection_id, page, None, current_user_id, dataset_name, pool2)
+        })
+        .await?
+        .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?
+    };
 
     let point_ids = bookmarks
         .metadata
@@ -360,10 +380,12 @@ pub async fn get_all_bookmarks(
         .map(|point| point.qdrant_point_id)
         .collect::<Vec<uuid::Uuid>>();
 
-    let collided_cards =
-        web::block(move || get_collided_cards_query(point_ids, current_user_id, pool1))
+    let collided_cards = {
+        let dataset_name = dataset_name.clone();
+        web::block(move || get_collided_cards_query(point_ids, current_user_id, dataset_name, pool1))
             .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+    };
 
     let collection_cards = bookmarks
         .metadata
@@ -435,15 +457,17 @@ pub struct GetCollectionsForCardsData {
 pub async fn get_collections_card_is_in(
     data: web::Json<GetCollectionsForCardsData>,
     pool: web::Data<Pool>,
+    dataset: Dataset,
     user: Option<LoggedUser>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let card_ids = data.card_ids.clone();
 
+    let dataset_name = dataset.name.clone();
     let current_user_id = user.map(|user| user.id);
 
     let collections =
-        web::block(move || get_collections_for_bookmark_query(card_ids, current_user_id, pool))
+        web::block(move || get_collections_for_bookmark_query(card_ids, current_user_id, dataset_name, pool))
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -474,17 +498,24 @@ pub async fn delete_bookmark(
     body: web::Json<RemoveBookmarkData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
+    dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let collection_id = collection_id.into_inner();
     let bookmark_id = body.card_metadata_id;
+    let dataset_name = dataset.name.clone();
 
-    let pool2 = pool.clone();
+    {
+        let pool = pool.clone();
+        user_owns_collection(user.id, collection_id, dataset_name.clone(), pool).await?;
+    }
 
-    user_owns_collection(user.id, collection_id, pool).await?;
-
-    web::block(move || delete_bookmark_query(bookmark_id, collection_id, pool2))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    {
+        let dataset_name = dataset_name.clone();
+        let pool = pool.clone();
+        web::block(move || delete_bookmark_query(bookmark_id, collection_id, dataset_name, pool))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    }
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -510,16 +541,22 @@ pub struct GenerateOffCollectionData {
 pub async fn generate_off_collection(
     body: web::Json<GenerateOffCollectionData>,
     pool: web::Data<Pool>,
+    dataset: Dataset,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let request_data = body.into_inner();
     let collection_id = request_data.collection_id;
     let page = request_data.page.unwrap_or(1);
-    let collection_bookmarks = web::block(move || {
-        get_bookmarks_for_collection_query(collection_id, page, Some(10), Some(user.id), pool)
-    })
-    .await??
-    .metadata;
+    let dataset_name = dataset.name.clone();
+
+    let collection_bookmarks = {
+        let dataset_name = dataset_name.clone();
+        web::block(move || {
+            get_bookmarks_for_collection_query(collection_id, page, Some(10), Some(user.id), dataset_name, pool)
+        })
+        .await??
+        .metadata
+    };
 
     let query = request_data.query.unwrap_or(
         "Now, provide a multi paragraph summary of the information I provided.".to_string(),
