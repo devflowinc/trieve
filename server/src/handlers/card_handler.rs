@@ -330,7 +330,7 @@ pub async fn create_card(
         );
 
         card_metadata =
-            insert_card_metadata_query(card_metadata, card.file_uuid, tantivy_index_map, pool1)
+            insert_card_metadata_query(card_metadata, card.file_uuid, tantivy_index_map, dataset_name.clone(), pool1)
                 .await
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 

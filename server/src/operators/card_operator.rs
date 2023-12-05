@@ -416,7 +416,7 @@ pub fn get_metadata_and_votes_from_tracking_id_query(
 
     let card_metadata = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::tracking_id.eq(tracking_id))
-        .filter(card_metadata_columns::dataset.eq(dataset_name))
+        .filter(card_metadata_columns::dataset.eq(dataset_name.clone()))
         .select(CardMetadata::as_select())
         .first::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
@@ -441,6 +441,7 @@ pub async fn insert_card_metadata_query(
     card_data: CardMetadata,
     file_uuid: Option<uuid::Uuid>,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
+    dataset_name: String,
     pool: web::Data<Pool>,
 ) -> Result<CardMetadata, DefaultError> {
     use crate::data::schema::card_files::dsl as card_files_columns;
@@ -469,7 +470,7 @@ pub async fn insert_card_metadata_query(
 
     match transaction_result {
         Ok(_) => tantivy_index_map
-            .add_card(None, card_data.clone())
+            .add_card(Some(dataset_name.as_str()), card_data.clone())
             .map_err(|e| {
                 log::info!("Failed to add card to index: {:?}", e);
                 DefaultError {
@@ -693,7 +694,7 @@ pub async fn delete_card_metadata_query(
                 diesel::delete(
                     card_metadata_columns::card_metadata
                         .filter(card_metadata_columns::id.eq(card_uuid))
-                        .filter(card_metadata_columns::dataset.eq(dataset_name)),
+                        .filter(card_metadata_columns::dataset.eq(dataset_name.clone())),
                 )
                 .execute(conn)?;
 
@@ -732,7 +733,7 @@ pub async fn delete_card_metadata_query(
             diesel::delete(
                 card_metadata_columns::card_metadata
                     .filter(card_metadata_columns::id.eq(card_uuid))
-                    .filter(card_metadata_columns::dataset.eq(dataset_name)),
+                    .filter(card_metadata_columns::dataset.eq(dataset_name.clone())),
             )
             .execute(conn)?;
 
@@ -764,7 +765,7 @@ pub async fn delete_card_metadata_query(
                 let tantivy_index_map = tantivy_index_map.read().await;
 
                 tantivy_index_map
-                    .delete_card(None, card_uuid)
+                    .delete_card(Some(dataset_name.as_str()), card_uuid)
                     .map_err(|_e| DefaultError {
                         message: "Failed to delete card from index",
                     })?;
