@@ -664,7 +664,7 @@ pub async fn search_full_text_card_query(
                 ),
         )
         .filter(
-            card_metadata_columns::dataset.eq(dataset_name))
+            card_metadata_columns::dataset.eq(dataset_name.clone()))
         .select((
             (
                 card_metadata_columns::qdrant_point_id,
@@ -790,7 +790,7 @@ pub async fn search_full_text_card_query(
 
     let searched_cards = tantivy_index_map
         .search_cards(
-            None,
+            Some(dataset_name.as_str()),
             user_query.as_str(),
             page,
             Some(
@@ -897,7 +897,7 @@ pub async fn search_full_text_collection_query(
                 ),
         )
         .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id))
-        .filter(card_metadata_columns::dataset.eq(dataset_name))
+        .filter(card_metadata_columns::dataset.eq(dataset_name.clone()))
         .select((
             (
                 card_metadata_columns::qdrant_point_id,
@@ -993,7 +993,7 @@ pub async fn search_full_text_collection_query(
 
     let searched_cards = tantivy_index_map
         .search_cards(
-            None,
+            Some(dataset_name.as_str()),
             user_query.as_str(),
             page,
             Some(
