@@ -429,9 +429,11 @@ pub async fn create_cards_with_handler(
             format!("Collection for file {}", file_name),
             !private,
             converted_description,
+            dataset_name.clone(),
         ),
         card_ids,
         created_file_id,
+        dataset_name.clone(),
         pool1,
     ) {
         Ok(collection) => (collection_id = collection.id,),

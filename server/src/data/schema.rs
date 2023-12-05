@@ -15,6 +15,7 @@ diesel::table! {
         description -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        dataset -> Text,
     }
 }
 
@@ -25,6 +26,7 @@ diesel::table! {
         card_metadata_id -> Uuid,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        dataset -> Text,
     }
 }
 
