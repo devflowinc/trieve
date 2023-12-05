@@ -113,6 +113,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    dataset (name) {
+        name -> Text,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     file_upload_completed_notifications (id) {
         id -> Uuid,
         user_uuid -> Uuid,
@@ -285,6 +293,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     card_votes,
     collections_from_files,
     cut_cards,
+    dataset,
     file_upload_completed_notifications,
     files,
     invitations,
