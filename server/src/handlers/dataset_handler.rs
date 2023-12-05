@@ -1,18 +1,13 @@
-use std::{
-    future::{ready, Ready},
-    sync::RwLock,
-};
-
-use actix_web::{web, FromRequest, HttpResponse};
-use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
-
+use super::auth_handler::LoggedUser;
 use crate::{
     errors::ServiceError,
     operators::{qdrant_operator, tantivy_operator::TantivyIndexMap},
 };
-
-use super::auth_handler::LoggedUser;
+use actix_web::{web, FromRequest, HttpResponse};
+use serde::{Deserialize, Serialize};
+use std::future::{ready, Ready};
+use tokio::sync::RwLock;
+use utoipa::ToSchema;
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct Dataset {
@@ -85,12 +80,7 @@ pub async fn create_dataset(
 
     tantivy_index_map
         .write()
-        .map_err(|err| {
-            ServiceError::BadRequest(format!(
-                "Failed to lock tantivy index: {:?}",
-                err.to_string()
-            ))
-        })?
+        .await
         .create_index(Some(&data.dataset))
         .map_err(|err| {
             ServiceError::BadRequest(format!(
