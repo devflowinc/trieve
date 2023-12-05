@@ -43,6 +43,7 @@ export interface ResultsPageProps {
 
 const ResultsPage = (props: ResultsPageProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
   const initialResultCards = props.defaultResultCards.score_cards;
   const initialTotalPages = props.defaultResultCards.total_card_pages;
 
@@ -59,7 +60,7 @@ const ResultsPage = (props: ResultsPageProps) => {
     createSignal(false);
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onDelete, setOnDelete] = createSignal(() => {});
+  const [onDelete, setOnDelete] = createSignal(() => { });
   const [bookmarks, setBookmarks] = createSignal<CardBookmarksDTO[]>([]);
   const [totalPages, setTotalPages] = createSignal(initialTotalPages);
   const [openChat, setOpenChat] = createSignal(false);
@@ -71,6 +72,9 @@ const ResultsPage = (props: ResultsPageProps) => {
     void fetch(`${apiHost}/card_collection/1`, {
       method: "GET",
       credentials: "include",
+      headers: {
+        "AF-Dataset": dataset,
+      }
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
@@ -89,6 +93,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       body: JSON.stringify({
         card_ids: resultCards().flatMap((c) => {
@@ -130,9 +135,9 @@ const ResultsPage = (props: ResultsPageProps) => {
       time_range:
         props.filters.start || props.filters.end
           ? [
-              props.filters.start ? props.filters.start + " 00:00:00" : "null",
-              props.filters.end ? props.filters.end + " 00:00:00" : "null",
-            ]
+            props.filters.start ? props.filters.start + " 00:00:00" : "null",
+            props.filters.end ? props.filters.end + " 00:00:00" : "null",
+          ]
           : null,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       filters: props.filters.metadataFilters,
@@ -154,6 +159,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       credentials: "include",
       signal: abortController.signal,
@@ -224,9 +230,8 @@ const ResultsPage = (props: ResultsPageProps) => {
         <Show when={resultCards().length === 0 && clientSideRequestFinished()}>
           <button
             onClick={() => {
-              window.location.href = `/search?q=${props.query}&page=${
-                props.page + 1
-              }`;
+              window.location.href = `/search?q=${props.query}&page=${props.page + 1
+                }`;
             }}
           >
             <div class="text-2xl">No results found</div>

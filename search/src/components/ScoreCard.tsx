@@ -80,6 +80,7 @@ export interface ScoreCardProps {
 }
 
 const ScoreCard = (props: ScoreCardProps) => {
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const voteFeature = import.meta.env.PUBLIC_SEARCH_VOTE_FEATURE as string;
 
@@ -91,7 +92,7 @@ const ScoreCard = (props: ScoreCardProps) => {
   const linesBeforeShowMore = (() => {
     const parsedLinesBeforeShowMore = Number.parseInt(
       (import.meta.env.PUBLIC_LINES_BEFORE_SHOW_MORE as string | undefined) ??
-        "4",
+      "4",
       10,
     );
     return Number.isNaN(parsedLinesBeforeShowMore)
@@ -170,6 +171,9 @@ const ScoreCard = (props: ScoreCardProps) => {
     void fetch(`${apiHost}/vote/${props.card.id}`, {
       method: "DELETE",
       credentials: "include",
+      headers: {
+        "AF-Dataset": dataset,
+      }
     }).then((response) => {
       if (!response.ok) {
         setUserVote(prev_vote);
@@ -188,6 +192,7 @@ const ScoreCard = (props: ScoreCardProps) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       credentials: "include",
       body: JSON.stringify({
@@ -214,6 +219,9 @@ const ScoreCard = (props: ScoreCardProps) => {
         setDeleting(true);
         void fetch(`${apiHost}/card/${curCardMetadataId}`, {
           method: "DELETE",
+          headers: {
+            "AF-Dataset": dataset,
+          },
           credentials: "include",
         }).then((response) => {
           setDeleting(false);
@@ -327,16 +335,14 @@ const ScoreCard = (props: ScoreCardProps) => {
                   <Show when={imgInformation()}>
                     <a
                       class="h-fit"
-                      href={`${apiHost}/pdf_from_range/${
-                        imgInformation()?.imgRangeStart ?? 0
-                      }/${imgInformation()?.imgRangeEnd ?? 0}/${
-                        imgInformation()?.imgRangePrefix ?? ""
-                      }/${
+                      href={`${apiHost}/pdf_from_range/${imgInformation()?.imgRangeStart ?? 0
+                        }/${imgInformation()?.imgRangeEnd ?? 0}/${imgInformation()?.imgRangePrefix ?? ""
+                        }/${
                         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                         props.card.metadata?.file_name ??
                         imgInformation()?.imgRangeStart ??
                         "Arguflow PDF From Range"
-                      }/false`}
+                        }/false`}
                       target="_blank"
                       title="Open PDF"
                     >
@@ -351,16 +357,14 @@ const ScoreCard = (props: ScoreCardProps) => {
                   <Show when={imgInformation()}>
                     <a
                       class="h-fit"
-                      href={`${apiHost}/pdf_from_range/${
-                        imgInformation()?.imgRangeStart ?? 0
-                      }/${imgInformation()?.imgRangeEnd ?? 0}/${
-                        imgInformation()?.imgRangePrefix ?? ""
-                      }/${
+                      href={`${apiHost}/pdf_from_range/${imgInformation()?.imgRangeStart ?? 0
+                        }/${imgInformation()?.imgRangeEnd ?? 0}/${imgInformation()?.imgRangePrefix ?? ""
+                        }/${
                         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                         props.card.metadata?.file_name ??
                         imgInformation()?.imgRangeStart ??
                         "Arguflow PDF From Range"
-                      }/true`}
+                        }/true`}
                       target="_blank"
                       title="Open PDF"
                     >
@@ -596,10 +600,10 @@ const ScoreCard = (props: ScoreCardProps) => {
             innerHTML={sanitizeHtml(
               props.card.card_html !== undefined
                 ? props.card.card_html
-                    .replaceAll("line-height", "lh")
-                    .replace("\n", " ")
-                    .replace(`<br>`, " ")
-                    .replace(`\\n`, " ")
+                  .replaceAll("line-height", "lh")
+                  .replace("\n", " ")
+                  .replace(`<br>`, " ")
+                  .replace(`\\n`, " ")
                 : "",
               sanitzerOptions,
             )}
@@ -642,9 +646,8 @@ const ScoreCard = (props: ScoreCardProps) => {
               {(_, i) => (
                 <img
                   class="mx-auto my-auto"
-                  src={`${apiHost}/image/${
-                    imgInformation()?.imgRangePrefix ?? ""
-                  }${(imgInformation()?.imgRangeStart ?? 0) + i()}.png`}
+                  src={`${apiHost}/image/${imgInformation()?.imgRangePrefix ?? ""
+                    }${(imgInformation()?.imgRangeStart ?? 0) + i()}.png`}
                 />
               )}
             </For>
@@ -661,14 +664,14 @@ const ScoreCard = (props: ScoreCardProps) => {
                   <span>{`"${
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/restrict-template-expressions
                     typeof (props.card.metadata as any)[metadataKey] ===
-                    "object"
+                      "object"
                       ? JSON.stringify(
-                          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                          (props.card.metadata as any)[metadataKey],
-                        )
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+                        (props.card.metadata as any)[metadataKey],
+                      )
                       : // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                        (props.card.metadata as any)[metadataKey]
-                  }"`}</span>
+                      (props.card.metadata as any)[metadataKey]
+                    }"`}</span>
                 </div>
               )}
             </For>

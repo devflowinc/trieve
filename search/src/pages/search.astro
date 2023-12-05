@@ -8,6 +8,7 @@ import { SuggestedQueries } from "../components/SuggestedQueries";
 
 const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
+const dataset = import.meta.env.PUBLIC_DATASET as string;
 
 const requestParams = Astro.request.url.split("?")[1];
 const params = new URLSearchParams(requestParams);
@@ -92,6 +93,7 @@ try {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       credentials: "include",
       body: JSON.stringify(requestBody),

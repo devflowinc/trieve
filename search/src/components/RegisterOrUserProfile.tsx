@@ -20,6 +20,7 @@ export interface RegisterOrUserProfileProps {
 
 const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
   const showGithubStars = import.meta.env.PUBLIC_SHOW_GITHUB_STARS as string;
 
   const [isLoadingUser, setIsLoadingUser] = createSignal(true);
@@ -30,6 +31,7 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       credentials: "include",
     }).then((response) => {
