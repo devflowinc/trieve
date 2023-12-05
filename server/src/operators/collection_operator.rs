@@ -43,6 +43,7 @@ pub fn create_collection_and_add_bookmarks_query(
     new_collection: CardCollection,
     bookmarks: Vec<uuid::Uuid>,
     created_file_id: uuid::Uuid,
+    dataset_name: String,
     pool: web::Data<Pool>,
 ) -> Result<CardCollection, DefaultError> {
     use crate::data::schema::card_collection::dsl::*;
@@ -61,7 +62,7 @@ pub fn create_collection_and_add_bookmarks_query(
                 bookmarks
                     .iter()
                     .map(|bookmark| {
-                        CardCollectionBookmark::from_details(new_collection.id, *bookmark)
+                        CardCollectionBookmark::from_details(new_collection.id, *bookmark, dataset_name.clone())
                     })
                     .collect::<Vec<CardCollectionBookmark>>(),
             )
@@ -95,6 +96,7 @@ pub fn get_collections_for_specifc_user_query(
     user_id: uuid::Uuid,
     accessing_user_id: Option<uuid::Uuid>,
     page: u64,
+    dataset_name: String,
     pool: web::Data<Pool>,
 ) -> Result<Vec<CardCollectionAndFileWithCount>, DefaultError> {
     use crate::data::schema::card_collection::dsl::*;
@@ -125,6 +127,7 @@ pub fn get_collections_for_specifc_user_query(
         ))
         .order_by(updated_at.desc())
         .filter(author_id.eq(user_id))
+        .filter(dataset.eq(dataset_name))
         .into_boxed();
 
     match accessing_user_id {
@@ -150,6 +153,7 @@ pub fn get_collections_for_specifc_user_query(
 pub fn get_collections_for_logged_in_user_query(
     current_user_id: uuid::Uuid,
     page: u64,
+    dataset_name: String,
     pool: web::Data<Pool>,
 ) -> Result<Vec<CardCollectionAndFileWithCount>, DefaultError> {
     use crate::data::schema::card_collection::dsl::*;
@@ -181,6 +185,7 @@ pub fn get_collections_for_logged_in_user_query(
             user_collection_count_columns::collection_count.nullable(),
         ))
         .filter(author_id.eq(current_user_id))
+        .filter(dataset.eq(dataset_name))
         .order(updated_at.desc())
         .limit(5)
         .offset(((page - 1) * 5).try_into().unwrap_or(0))
@@ -194,6 +199,7 @@ pub fn get_collections_for_logged_in_user_query(
 
 pub fn get_collection_by_id_query(
     collection_id: uuid::Uuid,
+    dataset_name: String,
     pool: web::Data<Pool>,
 ) -> Result<CardCollection, DefaultError> {
     use crate::data::schema::card_collection::dsl::*;
@@ -201,6 +207,7 @@ pub fn get_collection_by_id_query(
     let mut conn = pool.get().unwrap();
 
     let collection = card_collection
+        .filter(dataset.eq(dataset_name))
         .filter(id.eq(collection_id))
         .first::<CardCollection>(&mut conn)
         .map_err(|_err| DefaultError {
@@ -212,6 +219,7 @@ pub fn get_collection_by_id_query(
 
 pub fn delete_collection_by_id_query(
     collection_id: uuid::Uuid,
+    dataset_name: String,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_collection::dsl as card_collection_columns;
@@ -244,7 +252,8 @@ pub fn delete_collection_by_id_query(
 
         diesel::delete(
             card_collection_columns::card_collection
-                .filter(card_collection_columns::id.eq(collection_id)),
+                .filter(card_collection_columns::id.eq(collection_id))
+                .filter(card_collection_columns::dataset.eq(dataset_name)),
         )
         .execute(conn)?;
 
@@ -264,13 +273,14 @@ pub fn update_card_collection_query(
     new_name: Option<String>,
     new_description: Option<String>,
     new_is_public: Option<bool>,
+    dataset_name: String,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_collection::dsl::*;
 
     let mut conn = pool.get().unwrap();
 
-    diesel::update(card_collection.filter(id.eq(collection.id)))
+    diesel::update(card_collection.filter(id.eq(collection.id)).filter(dataset.eq(dataset_name)))
         .set((
             name.eq(new_name.unwrap_or(collection.name)),
             description.eq(new_description.unwrap_or(collection.description)),
@@ -314,6 +324,7 @@ pub fn get_bookmarks_for_collection_query(
     page: u64,
     limit: Option<i64>,
     current_user_id: Option<uuid::Uuid>,
+    dataset_name: String,
     pool: web::Data<Pool>,
 ) -> Result<CollectionsBookmarkQueryResult, ServiceError> {
     use crate::data::schema::card_collection::dsl as card_collection_columns;
@@ -344,7 +355,8 @@ pub fn get_bookmarks_for_collection_query(
                     .eq(collection)
                     .and(card_metadata_columns::private.eq(false).or(
                         card_metadata_columns::author_id.eq(current_user_id.unwrap_or_default()),
-                    )),
+                    ))
+                    .and(card_collection_columns::dataset.eq(dataset_name)),
             )
             .select((
                 (
@@ -372,6 +384,7 @@ pub fn get_bookmarks_for_collection_query(
                     card_collection_columns::description.assume_not_null(),
                     card_collection_columns::created_at.assume_not_null(),
                     card_collection_columns::updated_at.assume_not_null(),
+                    card_collection_columns::dataset.assume_not_null(),
                 ),
             ))
             .limit(limit)
@@ -432,6 +445,7 @@ pub struct BookmarkCollectionResult {
 pub fn get_collections_for_bookmark_query(
     card_ids: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
+    dataset_name: String,
     pool: web::Data<Pool>,
 ) -> Result<Vec<BookmarkCollectionResult>, DefaultError> {
     use crate::data::schema::card_collection::dsl as card_collection_columns;
@@ -450,6 +464,7 @@ pub fn get_collections_for_bookmark_query(
                 .eq(true)
                 .or(card_collection_columns::author_id.eq(current_user_id.unwrap_or_default())),
         )
+        .filter(card_collection_columns::dataset.eq(dataset_name))
         .filter(card_collection_bookmarks_columns::card_metadata_id.eq_any(card_ids))
         .select((
             card_collection_columns::id,
@@ -510,6 +525,7 @@ pub fn get_collections_for_bookmark_query(
 pub fn delete_bookmark_query(
     bookmark: uuid::Uuid,
     collection: uuid::Uuid,
+    dataset_name: String,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_collection_bookmarks::dsl::*;
@@ -518,6 +534,7 @@ pub fn delete_bookmark_query(
 
     diesel::delete(
         card_collection_bookmarks
+            .filter(dataset.eq(dataset_name))
             .filter(card_metadata_id.eq(bookmark))
             .filter(collection_id.eq(collection)),
     )

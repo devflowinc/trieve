@@ -1525,7 +1525,7 @@ pub async fn search_semantic_collections(
     let metadata_cards = get_metadata_from_point_ids(point_ids, current_user_id, pool3)
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let collided_cards = get_collided_cards_query(point_ids_1, current_user_id, pool1)
+    let collided_cards = get_collided_cards_query(point_ids_1, current_user_id, dataset_name, pool1)
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let score_cards: Vec<ScoreCardDTO> = search_card_query_results

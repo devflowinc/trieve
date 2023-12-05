@@ -28,7 +28,7 @@ impl FromRequest for Dataset {
         );
         match req.headers().get("AF-Dataset") {
             Some(dataset_header) => match dataset_header.to_str() {
-                Ok(dataset) if dataset != "" && dataset != "undefined" => {
+                Ok(dataset) if !dataset.is_empty() && dataset != "undefined" => {
                     log::error!("Dataset is {}", dataset);
                     ready(Ok(Dataset {
                         name: dataset.to_string(),
