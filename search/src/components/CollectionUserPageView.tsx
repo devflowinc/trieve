@@ -21,6 +21,7 @@ export interface CollectionUserPageViewProps {
 
 export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
   const [collections, setCollections] = createSignal<CardCollectionDTO[]>([]);
   const [collectionPage, setCollectionPage] = createSignal(1);
   const [collectionPageCount, setCollectionPageCount] = createSignal(1);
@@ -37,6 +38,9 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
     void fetch(`${apiHost}/user/collections/${userId}/${collectionPage()}`, {
       method: "GET",
       credentials: "include",
+      headers: {
+        "AF-Dataset": dataset,
+      }
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
@@ -64,6 +68,7 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
+            "AF-Dataset": dataset,
           },
           body: JSON.stringify({
             collection_id: collection.id,

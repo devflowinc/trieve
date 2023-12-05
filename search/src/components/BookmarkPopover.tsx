@@ -29,6 +29,7 @@ export interface BookmarkPopoverProps {
 
 const BookmarkPopover = (props: BookmarkPopoverProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
 
   const [refetchingCardCollections, setRefetchingCardCollections] =
     createSignal(false);
@@ -112,6 +113,9 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
   ) => {
     void fetch(`${apiHost}/card_collection/${localCollectionPage()}`, {
       method: "GET",
+      headers: {
+        "AF-Dataset": dataset,
+      },
       credentials: "include",
     }).then((response) => {
       if (!setCardCollections) return;
@@ -171,6 +175,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       body: JSON.stringify({
         card_ids: [props.cardMetadata.id],
@@ -295,6 +300,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                                       : "DELETE",
                                     headers: {
                                       "Content-Type": "application/json",
+                                      "AF-Dataset": dataset,
                                     },
                                     credentials: "include",
                                     body: JSON.stringify({
@@ -369,6 +375,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                             method: "POST",
                             headers: {
                               "Content-Type": "application/json",
+                              "AF-Dataset": dataset,
                             },
                             credentials: "include",
                             body: JSON.stringify({

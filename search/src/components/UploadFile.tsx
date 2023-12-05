@@ -3,6 +3,7 @@ import { Show, createSignal } from "solid-js";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 
 export const UploadFile = () => {
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const [file, setFile] = createSignal<File | undefined>();
   const [_private, setPrivate] = createSignal(false);
@@ -69,6 +70,7 @@ export const UploadFile = () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       credentials: "include",
       body: JSON.stringify(requestBody),
