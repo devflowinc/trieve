@@ -1015,3 +1015,25 @@ pub struct Dataset {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[diesel(table_name = organizations)]
+pub struct Organization {
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub configuration: serde_json::Value,
+    created_at: chrono::NaiveDateTime,
+    updated_at: chrono::NaiveDateTime,
+}
+
+impl Organization {
+    pub fn from_details(name: String, configuration: serde_json::Value) -> Self {
+        Organization {
+            id: uuid::Uuid::new_v4(),
+            name,
+            configuration,
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
+        }
+    }
+}
