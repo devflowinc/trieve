@@ -27,6 +27,7 @@ export interface SingleCardPageProps {
 }
 export const SingleCardPage = (props: SingleCardPageProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
   const initialCardMetadata = props.defaultResultCard.metadata;
 
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
@@ -43,7 +44,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
     createSignal(false);
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onDelete, setOnDelete] = createSignal(() => {});
+  const [onDelete, setOnDelete] = createSignal(() => { });
   const [clientSideRequestFinished, setClientSideRequestFinished] =
     createSignal(false);
   const [loadingRecommendations, setLoadingRecommendations] =
@@ -69,6 +70,9 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
     void fetch(`${apiHost}/card_collection/1`, {
       method: "GET",
       credentials: "include",
+      headers: {
+        "AF-Dataset": dataset,
+      }
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
@@ -87,6 +91,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       body: JSON.stringify({
         card_ids: cardMetadata()?.id ? [cardMetadata()?.id] : [],
@@ -110,6 +115,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       body: JSON.stringify({
         positive_card_ids: ids,
@@ -161,6 +167,9 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
     void fetch(`${apiHost}/card/${props.cardId ?? ""}`, {
       method: "GET",
       credentials: "include",
+      headers: {
+        "AF-Dataset": dataset,
+      }
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {

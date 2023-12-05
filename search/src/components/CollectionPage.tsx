@@ -47,6 +47,7 @@ export interface CollectionPageProps {
 
 export const CollectionPage = (props: CollectionPageProps) => {
   const apiHost: string = import.meta.env.PUBLIC_API_HOST as string;
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
   const alwaysRequireAuth: string = import.meta.env
     .PUBLIC_ALWAYS_REQUIRE_AUTH as string;
   const cardMetadatasWithVotes: BookmarkDTO[] = [];
@@ -113,10 +114,10 @@ export const CollectionPage = (props: CollectionPageProps) => {
 
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(1);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onDelete, setOnDelete] = createSignal(() => {});
+  const [onDelete, setOnDelete] = createSignal(() => { });
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onCollectionDelete, setOnCollectionDelete] = createSignal(() => {});
+  const [onCollectionDelete, setOnCollectionDelete] = createSignal(() => { });
 
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
@@ -167,6 +168,9 @@ export const CollectionPage = (props: CollectionPageProps) => {
           method: "GET",
           credentials: "include",
           signal: abortController.signal,
+          headers: {
+            "AF-Dataset": dataset,
+          }
         },
       ).then((response) => {
         if (response.ok) {
@@ -196,6 +200,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "AF-Dataset": dataset,
         },
         signal: abortController.signal,
         credentials: "include",
@@ -243,6 +248,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
+            "AF-Dataset": dataset,
           },
           signal: abortController.signal,
           body: JSON.stringify({
@@ -278,6 +284,9 @@ export const CollectionPage = (props: CollectionPageProps) => {
     void fetch(`${apiHost}/card_collection/1`, {
       method: "GET",
       credentials: "include",
+      headers: {
+        "AF-Dataset": dataset,
+      }
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
@@ -296,6 +305,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       body: JSON.stringify({
         card_ids: metadatasWithVotes().flatMap((m) => {
@@ -325,6 +335,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
       body: JSON.stringify(body),
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
     }).then((response) => {
       setFetchingCollections(false);
@@ -347,6 +358,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       body: JSON.stringify({
         positive_card_ids: ids,

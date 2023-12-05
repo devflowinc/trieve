@@ -11,6 +11,7 @@ import { Tooltip } from "./Atoms/Tooltip";
 
 export const CreateNewDocChunkForm = () => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
   const [docChunkLink, setDocChunkLink] = createSignal("");
   const [tagSet, setTagSet] = createSignal("");
   const [errorText, setErrorText] = createSignal<
@@ -62,6 +63,7 @@ export const CreateNewDocChunkForm = () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       credentials: "include",
       body: JSON.stringify(requestBody),
@@ -137,39 +139,39 @@ export const CreateNewDocChunkForm = () => {
       entity_encoding: "raw",
       entities: "160,nbsp,38,amp,60,lt,62,gt",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setup: function (editor: any) {
+      setup: function(editor: any) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+1", "Font size 8.", function () {
+        editor.addShortcut("meta+shift+1", "Font size 8.", function() {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
           editor.execCommand("FontSize", false, `8pt`);
         });
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+2", "Font size 12.", function () {
+        editor.addShortcut("meta+shift+2", "Font size 12.", function() {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
           editor.execCommand("FontSize", false, `12pt`);
         });
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+3", "Font size 16.", function () {
+        editor.addShortcut("meta+shift+3", "Font size 16.", function() {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
           editor.execCommand("FontSize", false, `16pt`);
         });
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+4", "Font size 20.", function () {
+        editor.addShortcut("meta+shift+4", "Font size 20.", function() {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
           editor.execCommand("FontSize", false, `20pt`);
         });
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+5", "Font size 24.", function () {
+        editor.addShortcut("meta+shift+5", "Font size 24.", function() {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
           editor.execCommand("FontSize", false, `24pt`);
         });
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+h", "Font size 24.", function () {
+        editor.addShortcut("meta+shift+h", "Font size 24.", function() {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
           editor.execCommand("HiliteColor", false, `#F1C40F`);
         });
