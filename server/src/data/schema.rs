@@ -186,6 +186,16 @@ diesel::table! {
 }
 
 diesel::table! {
+    organizations (id) {
+        id -> Uuid,
+        name -> Text,
+        configuration -> Jsonb,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     password_resets (id) {
         id -> Uuid,
         #[max_length = 100]
@@ -193,19 +203,6 @@ diesel::table! {
         expires_at -> Timestamp,
         created_at -> Timestamp,
         updated_at -> Timestamp,
-    }
-}
-
-diesel::table! {
-    spatial_ref_sys (srid) {
-        srid -> Int4,
-        #[max_length = 256]
-        auth_name -> Nullable<Varchar>,
-        auth_srid -> Nullable<Int4>,
-        #[max_length = 2048]
-        srtext -> Nullable<Varchar>,
-        #[max_length = 2048]
-        proj4text -> Nullable<Varchar>,
     }
 }
 
@@ -309,8 +306,8 @@ diesel::allow_tables_to_appear_in_same_query!(
     files,
     invitations,
     messages,
+    organizations,
     password_resets,
-    spatial_ref_sys,
     stripe_customers,
     topics,
     user_collection_counts,

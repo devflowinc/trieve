@@ -12,3 +12,4 @@ pub mod topic_operator;
 pub mod user_operator;
 pub mod vote_operator;
 pub mod dataset_operator;
+pub mod organization_operator;
