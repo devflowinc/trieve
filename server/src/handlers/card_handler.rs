@@ -834,6 +834,7 @@ pub struct SearchCollectionsResult {
         ("page" = u64, description = "The page of search results to get"),
     ),
 )]
+#[allow(clippy::too_many_arguments)]
 pub async fn search_collections(
     data: web::Json<SearchCollectionsData>,
     page: Option<web::Path<u64>>,

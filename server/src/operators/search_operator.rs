@@ -2,7 +2,7 @@ use super::card_operator::{
     find_relevant_sentence, get_collided_cards_query,
     get_metadata_and_collided_cards_from_point_ids_query, get_metadata_from_point_ids,
 };
-use crate::operators::qdrant_operator::{create_embedding, self, get_qdrant_connection, search_qdrant_query};
+use crate::operators::qdrant_operator::{create_embedding, get_qdrant_connection, search_qdrant_query};
 use super::tantivy_operator::TantivyIndexMap;
 use crate::data::models::{
     CardCollection, CardFileWithName, CardMetadataWithVotesWithScore, CardVote,
@@ -251,7 +251,7 @@ pub async fn global_unfiltered_top_match_query(
 ) -> Result<SearchResult, DefaultError> {
     let qdrant = get_qdrant_connection().await?;
 
-    let qdrant_collection = qdrant_operator::get_collection_name_from_dataset(dataset_id);
+    let qdrant_collection = dataset_id.to_string();
     let data = qdrant
         .search_points(&SearchPoints {
             collection_name: qdrant_collection,
@@ -841,7 +841,7 @@ pub async fn search_full_text_collection_query(
     collection_id: uuid::Uuid,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     parsed_query: ParsedQuery,
-    dataset_id: uuid::Uuid,
+    dataset_uuid: uuid::Uuid,
 ) -> Result<SearchCardQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
@@ -897,7 +897,7 @@ pub async fn search_full_text_collection_query(
                 ),
         )
         .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id))
-        // .filter(card_metadata_columns::dataset_id.eq(dataset_id.clone()))
+        .filter(card_metadata_columns::dataset_id.eq(dataset_uuid))
         .select((
             (
                 card_metadata_columns::qdrant_point_id,
@@ -993,7 +993,7 @@ pub async fn search_full_text_collection_query(
 
     let searched_cards = tantivy_index_map
         .search_cards(
-            Some(dataset_id.to_string().as_str()),
+            Some(dataset_uuid.to_string().as_str()),
             user_query.as_str(),
             page,
             Some(
@@ -1484,6 +1484,7 @@ pub async fn search_hybrid_cards(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn search_semantic_collections(
     data: web::Json<SearchCollectionsData>,
     parsed_query: ParsedQuery,
@@ -1594,6 +1595,7 @@ pub async fn search_semantic_collections(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn search_full_text_collections(
     data: web::Json<SearchCollectionsData>,
     parsed_query: ParsedQuery,
