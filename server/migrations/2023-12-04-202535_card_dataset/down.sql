@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS dataset;
+DROP TABLE IF EXISTS datasets;
 
 -- This file should undo anything in `up.sql`
 ALTER TABLE card_metadata

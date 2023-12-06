@@ -230,7 +230,7 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
 pub fn get_collided_cards_query(
     point_ids: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
-    _dataset_id: uuid::Uuid,
+    dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Vec<(CardMetadataWithVotesWithScore, uuid::Uuid)>, DefaultError> {
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
@@ -269,7 +269,7 @@ pub fn get_collided_cards_query(
                 .eq(false)
                 .or(card_metadata_columns::author_id.eq(current_user_id.unwrap_or_default())),
         )
-        // .filter(card_metadata_columns::dataset_id.eq(dataset_id))
+        .filter(card_metadata_columns::dataset_id.eq(dataset_uuid))
         // TODO: Properly handle this and remove the arbitrary limit
         .limit(500)
         .load::<CardMetadata>(&mut conn)
@@ -315,7 +315,7 @@ pub fn get_metadata_from_id_query(
 
 pub fn get_metadata_from_tracking_id_query(
     tracking_id: String,
-    _dataset_id: uuid::Uuid,
+    dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<CardMetadata, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
@@ -324,7 +324,7 @@ pub fn get_metadata_from_tracking_id_query(
 
     card_metadata_columns::card_metadata
         .filter(card_metadata_columns::tracking_id.eq(tracking_id))
-        // .filter(card_metadata_columns::dataset_id.eq(dataset))
+        .filter(card_metadata_columns::dataset_id.eq(dataset_uuid))
         .select(CardMetadata::as_select())
         .first::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
@@ -335,7 +335,7 @@ pub fn get_metadata_from_tracking_id_query(
 pub fn get_metadata_from_ids_query(
     card_ids: Vec<uuid::Uuid>,
     user_id: uuid::Uuid,
-    _dataset_id: uuid::Uuid,
+    dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Vec<CardMetadataWithVotesWithScore>, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
@@ -344,7 +344,7 @@ pub fn get_metadata_from_ids_query(
 
     let metadatas: Vec<CardMetadata> = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::id.eq_any(card_ids))
-        // .filter(card_metadata_columns::dataset_id.eq(dataset_id))
+        .filter(card_metadata_columns::dataset_id.eq(dataset_uuid))
         .select((
             card_metadata_columns::id,
             card_metadata_columns::content,
@@ -376,7 +376,7 @@ pub fn get_metadata_from_ids_query(
 pub fn get_metadata_and_votes_from_id_query(
     card_id: uuid::Uuid,
     current_user_id: Option<uuid::Uuid>,
-    _dataset_id: uuid::Uuid,
+    dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<CardMetadataWithVotesWithScore, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
@@ -385,7 +385,7 @@ pub fn get_metadata_and_votes_from_id_query(
 
     let card_metadata = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::id.eq(card_id))
-        // .filter(card_metadata_columns::dataset_id.eq(dataset_id))
+        .filter(card_metadata_columns::dataset_id.eq(dataset_uuid))
         .select(CardMetadata::as_select())
         .first::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
@@ -409,7 +409,7 @@ pub fn get_metadata_and_votes_from_id_query(
 pub fn get_metadata_and_votes_from_tracking_id_query(
     tracking_id: String,
     current_user_id: Option<uuid::Uuid>,
-    _dataset_id: uuid::Uuid,
+    dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<CardMetadataWithVotesWithScore, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
@@ -418,7 +418,7 @@ pub fn get_metadata_and_votes_from_tracking_id_query(
 
     let card_metadata = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::tracking_id.eq(tracking_id))
-        // .filter(card_metadata_columns::dataset_id.eq(dataset_id.clone()))
+        .filter(card_metadata_columns::dataset_id.eq(dataset_uuid))
         .select(CardMetadata::as_select())
         .first::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
@@ -606,7 +606,7 @@ pub async fn delete_card_metadata_query(
     qdrant_point_id: Option<uuid::Uuid>,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
-    dataset_id: uuid::Uuid,
+    dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
@@ -696,7 +696,7 @@ pub async fn delete_card_metadata_query(
                 diesel::delete(
                     card_metadata_columns::card_metadata
                         .filter(card_metadata_columns::id.eq(card_uuid))
-                        // .filter(card_metadata_columns::dataset_id.eq(dataset_id.clone())),
+                        .filter(card_metadata_columns::dataset_id.eq(dataset_uuid)),
                 )
                 .execute(conn)?;
 
@@ -735,7 +735,7 @@ pub async fn delete_card_metadata_query(
             diesel::delete(
                 card_metadata_columns::card_metadata
                     .filter(card_metadata_columns::id.eq(card_uuid))
-                    // .filter(card_metadata_columns::dataset_id.eq(dataset_id.clone())),
+                    .filter(card_metadata_columns::dataset_id.eq(dataset_uuid)),
             )
             .execute(conn)?;
 
@@ -767,7 +767,7 @@ pub async fn delete_card_metadata_query(
                 let tantivy_index_map = tantivy_index_map.read().await;
 
                 tantivy_index_map
-                    .delete_card(Some(dataset_id.to_string().as_str()), card_uuid)
+                    .delete_card(Some(dataset_uuid.to_string().as_str()), card_uuid)
                     .map_err(|_e| DefaultError {
                         message: "Failed to delete card from index",
                     })?;
@@ -879,7 +879,7 @@ pub fn get_qdrant_id_from_card_id_query(
 
 pub fn get_top_cards_query(
     page: u64,
-    _dataset_id: uuid::Uuid,
+    dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Vec<CardMetadataWithVotes>, DefaultError> {
     let page = if page == 0 { 1 } else { page };
@@ -895,7 +895,7 @@ pub fn get_top_cards_query(
         )
         .select((CardMetadata::as_select(), diesel::dsl::sql::<BigInt>("(SUM(case when vote = true then 1 else 0 end) - SUM(case when vote = false then 1 else 0 end)) as score")))
         .filter(card_metadata_columns::private.eq(false))
-        // .filter(card_metadata_columns::dataset_id.eq(dataset_id))
+        .filter(card_metadata_columns::dataset_id.eq(dataset_uuid))
         .group_by(card_metadata_columns::id)
         .order(sql::<Text>("score DESC"))
         .limit(5)
