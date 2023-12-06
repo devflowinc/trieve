@@ -56,9 +56,10 @@ pub async fn user_owns_card_tracking_id(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<CardMetadata, actix_web::Error> {
-    let cards = web::block(move || get_metadata_from_tracking_id_query(tracking_id, dataset_id, pool))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let cards =
+        web::block(move || get_metadata_from_tracking_id_query(tracking_id, dataset_id, pool))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if cards.author_id != user_id {
         return Err(ServiceError::Forbidden.into());
@@ -208,14 +209,15 @@ pub async fn create_card(
 
     let embedding_vector = create_embedding(&content, app_mutex).await?;
 
-    let first_semantic_result = global_unfiltered_top_match_query(embedding_vector.clone(), dataset_id)
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!(
-                "Could not get semantic similarity for collision check: {}",
-                err.message
-            ))
-        })?;
+    let first_semantic_result =
+        global_unfiltered_top_match_query(embedding_vector.clone(), dataset_id)
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!(
+                    "Could not get semantic similarity for collision check: {}",
+                    err.message
+                ))
+            })?;
 
     let duplicate_distance_threshold = std::env::var("DUPLICATE_DISTANCE_THRESHOLD")
         .unwrap_or("0.95".to_string())
@@ -328,10 +330,15 @@ pub async fn create_card(
             dataset_id,
         );
 
-        card_metadata =
-            insert_card_metadata_query(card_metadata, card.file_uuid, tantivy_index_map, dataset_id, pool1)
-                .await
-                .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        card_metadata = insert_card_metadata_query(
+            card_metadata,
+            card.file_uuid,
+            tantivy_index_map,
+            dataset_id,
+            pool1,
+        )
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
         create_new_qdrant_point_query(
             qdrant_point_id,
@@ -345,11 +352,14 @@ pub async fn create_card(
     }
 
     if let Some(collection_id_to_bookmark) = card_collection_id {
-        let card_collection_bookmark =
-            CardCollectionBookmark::from_details(collection_id_to_bookmark, card_metadata.id, dataset_id);
+        let card_collection_bookmark = CardCollectionBookmark::from_details(
+            collection_id_to_bookmark,
+            card_metadata.id,
+            dataset_id,
+        );
 
-        let _ = web::block(move || create_card_bookmark_query(pool3, card_collection_bookmark))
-            .await?;
+        let _ =
+            web::block(move || create_card_bookmark_query(pool3, card_collection_bookmark)).await?;
     }
 
     Ok(HttpResponse::Ok().json(ReturnCreatedCard {
@@ -425,7 +435,8 @@ pub async fn delete_card_by_tracking_id(
     let pool1 = pool.clone();
     let dataset_id = dataset.id;
 
-    let card_metadata = user_owns_card_tracking_id(user.id, tracking_id_inner, dataset_id, pool).await?;
+    let card_metadata =
+        user_owns_card_tracking_id(user.id, tracking_id_inner, dataset_id, pool).await?;
 
     let qdrant_point_id = card_metadata.qdrant_point_id;
 
@@ -778,8 +789,16 @@ pub async fn search_card(
             .await?
         }
         _ => {
-            search_semantic_cards(data, parsed_query, page, pool, current_user_id, dataset_id, app_mutex)
-                .await?
+            search_semantic_cards(
+                data,
+                parsed_query,
+                page,
+                pool,
+                current_user_id,
+                dataset_id,
+                app_mutex,
+            )
+            .await?
         }
     };
 
@@ -952,7 +971,12 @@ pub async fn get_card_by_id(
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_user_id = user.map(|user| user.id);
     let card = web::block(move || {
-        get_metadata_and_votes_from_id_query(card_id.into_inner(), current_user_id, dataset.id, pool)
+        get_metadata_and_votes_from_id_query(
+            card_id.into_inner(),
+            current_user_id,
+            dataset.id,
+            pool,
+        )
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -970,6 +994,7 @@ pub async fn get_card_by_id(
                     username: None,
                     visible_email: false,
                     created_at: chrono::NaiveDateTime::default(),
+                    organization_id: uuid::Uuid::default(),
                 })
                 .id,
         ) != current_user_id
@@ -1024,6 +1049,7 @@ pub async fn get_card_by_tracking_id(
                     username: None,
                     visible_email: false,
                     created_at: chrono::NaiveDateTime::default(),
+                    organization_id: uuid::Uuid::default(),
                 })
                 .id,
         ) != current_user_id
@@ -1072,12 +1098,11 @@ pub async fn get_recommended_cards(
     let positive_card_ids = data.positive_card_ids.clone();
     let dataset_id = dataset.id;
 
-    let recommended_qdrant_point_ids =
-        recommend_qdrant_query(positive_card_ids, dataset_id)
-            .await
-            .map_err(|err| {
-                ServiceError::BadRequest(format!("Could not get recommended cards: {}", err))
-            })?;
+    let recommended_qdrant_point_ids = recommend_qdrant_query(positive_card_ids, dataset_id)
+        .await
+        .map_err(|err| {
+            ServiceError::BadRequest(format!("Could not get recommended cards: {}", err))
+        })?;
 
     let recommended_card_metadatas =
         web::block(move || get_metadata_from_point_ids(recommended_qdrant_point_ids, None, pool))
@@ -1118,9 +1143,10 @@ pub async fn generate_off_cards(
     let prev_messages = data.prev_messages.clone();
     let card_ids = data.card_ids.clone();
     let user_id = user.id;
-    let cards = web::block(move || get_metadata_from_ids_query(card_ids, user_id, dataset.id, pool))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let cards =
+        web::block(move || get_metadata_from_ids_query(card_ids, user_id, dataset.id, pool))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
 

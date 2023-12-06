@@ -2,7 +2,6 @@
 extern crate diesel;
 use crate::{
     errors::ServiceError,
-    handlers::auth_handler::create_admin_account,
     operators::{qdrant_operator::get_qdrant_connection, tantivy_operator::TantivyIndexMap},
 };
 use actix_cors::Cors;
@@ -381,16 +380,6 @@ pub async fn main() -> std::io::Result<()> {
         });
 
     run_migrations(&mut pool.get().unwrap());
-
-    let email = std::env::var("ADMIN_USER_EMAIL");
-    let password = std::env::var("ADMIN_USER_PASSWORD");
-
-    match (email, password) {
-        (Ok(email), Ok(password)) => create_admin_account(email, password, pool.clone()).await,
-        (Ok(_), Err(_)) => log::warn!("ADMIN_USER_EMAIL is set, but ADMIN_USER_PASSWORD is not"),
-        (Err(_), Ok(_)) => log::warn!("ADMIN_USER_PASSWORD is set, but ADMIN_USER_EMAIL is not"),
-        (Err(_), Err(_)) => log::info!("No admin user is set"),
-    }
 
     log::info!("starting HTTP server at http://localhost:8090");
 

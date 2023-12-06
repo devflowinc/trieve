@@ -10,7 +10,7 @@ use utoipa::ToSchema;
 // type alias to use in multiple places
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[diesel(table_name = users)]
 pub struct User {
     pub id: uuid::Uuid,
@@ -22,10 +22,15 @@ pub struct User {
     pub website: Option<String>,
     pub visible_email: bool,
     pub api_key_hash: Option<String>,
+    pub organization_id: uuid::Uuid,
 }
 
 impl User {
-    pub fn from_details<S: Into<String>, T: Into<String>>(email: S, pwd: T) -> Self {
+    pub fn from_details<S: Into<String>, T: Into<String>>(
+        email: S,
+        pwd: T,
+        organization_id: uuid::Uuid,
+    ) -> Self {
         User {
             id: uuid::Uuid::new_v4(),
             email: email.into(),
@@ -36,6 +41,7 @@ impl User {
             website: None,
             visible_email: true,
             api_key_hash: None,
+            organization_id,
         }
     }
 }
@@ -48,22 +54,19 @@ pub struct Invitation {
     pub expires_at: chrono::NaiveDateTime,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub referral_tokens: Option<String>,
+    pub organization_id: uuid::Uuid,
 }
 
 // any type that implements Into<String> can be used to create Invitation
-impl<T> From<T> for Invitation
-where
-    T: Into<String>,
-{
-    fn from(email: T) -> Self {
+impl Invitation {
+    pub fn from_details(email: String, organization_id: uuid::Uuid) -> Self {
         Invitation {
             id: uuid::Uuid::new_v4(),
-            email: email.into(),
+            email: email,
             expires_at: chrono::Utc::now().naive_local() + chrono::Duration::minutes(5),
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
-            referral_tokens: None,
+            organization_id,
         }
     }
 }
@@ -205,58 +208,6 @@ impl Message {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
-#[diesel(table_name = stripe_customers)]
-pub struct StripeCustomer {
-    pub id: uuid::Uuid,
-    pub stripe_id: String,
-    pub email: Option<String>,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-}
-
-impl StripeCustomer {
-    pub fn from_details<S: Into<String>, T: Into<String>>(stripe_id: S, email: Option<T>) -> Self {
-        StripeCustomer {
-            id: uuid::Uuid::new_v4(),
-            stripe_id: stripe_id.into(),
-            email: email.map(|e| e.into()),
-            created_at: chrono::Utc::now().naive_local(),
-            updated_at: chrono::Utc::now().naive_local(),
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
-#[diesel(table_name = user_plans)]
-pub struct UserPlan {
-    pub id: uuid::Uuid,
-    pub stripe_customer_id: String,
-    pub stripe_subscription_id: String,
-    pub plan: String,
-    pub status: String,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-}
-
-impl UserPlan {
-    pub fn from_details(
-        stripe_customer_id: String,
-        plan: String,
-        subscription_id: String,
-        status: Option<String>,
-    ) -> Self {
-        UserPlan {
-            id: uuid::Uuid::new_v4(),
-            stripe_customer_id,
-            plan,
-            status: status.unwrap_or("active".to_string()),
-            stripe_subscription_id: subscription_id,
-            created_at: chrono::Utc::now().naive_local(),
-            updated_at: chrono::Utc::now().naive_local(),
-        }
-    }
-}
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
 pub struct CardMetadataWithCount {
     pub id: uuid::Uuid,
@@ -323,7 +274,7 @@ impl CardMetadata {
             metadata,
             tracking_id,
             time_stamp,
-            dataset_id
+            dataset_id,
         }
     }
 }
@@ -358,7 +309,7 @@ impl CardMetadata {
             metadata,
             tracking_id,
             time_stamp,
-            dataset_id
+            dataset_id,
         }
     }
 }
@@ -490,6 +441,7 @@ pub struct SlimUser {
     pub username: Option<String>,
     pub website: Option<String>,
     pub visible_email: bool,
+    pub organization_id: uuid::Uuid,
 }
 
 impl From<User> for SlimUser {
@@ -500,6 +452,7 @@ impl From<User> for SlimUser {
             username: user.username,
             website: user.website,
             visible_email: user.visible_email,
+            organization_id: user.organization_id,
         }
     }
 }
@@ -512,6 +465,7 @@ pub struct UserDTO {
     pub website: Option<String>,
     pub visible_email: bool,
     pub created_at: chrono::NaiveDateTime,
+    pub organization_id: uuid::Uuid,
 }
 
 impl From<User> for UserDTO {
@@ -527,6 +481,7 @@ impl From<User> for UserDTO {
             website: user.website,
             visible_email: user.visible_email,
             created_at: user.created_at,
+            organization_id: user.organization_id,
         }
     }
 }
@@ -625,7 +580,11 @@ pub struct CardCollectionBookmark {
 }
 
 impl CardCollectionBookmark {
-    pub fn from_details(collection_id: uuid::Uuid, card_metadata_id: uuid::Uuid, dataset_id: uuid::Uuid) -> Self {
+    pub fn from_details(
+        collection_id: uuid::Uuid,
+        card_metadata_id: uuid::Uuid,
+        dataset_id: uuid::Uuid,
+    ) -> Self {
         CardCollectionBookmark {
             id: uuid::Uuid::new_v4(),
             collection_id,
@@ -672,6 +631,7 @@ pub struct UserDTOWithVotesAndCards {
     pub total_upvotes_received: i32,
     pub total_downvotes_received: i32,
     pub total_votes_cast: i32,
+    pub organization_id: uuid::Uuid,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, ToSchema)]
@@ -683,6 +643,7 @@ pub struct UserDTOWithScore {
     pub visible_email: bool,
     pub created_at: chrono::NaiveDateTime,
     pub score: i64,
+    pub organization_id: uuid::Uuid,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
