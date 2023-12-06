@@ -175,6 +175,10 @@ pub async fn main() -> std::io::Result<()> {
             handlers::notification_handler::get_notifications,
             handlers::notification_handler::mark_all_notifications_as_read,
             handlers::auth_handler::health_check,
+            handlers::organization_handler::get_organization_by_id,
+            handlers::organization_handler::delete_organization_by_id,
+            handlers::organization_handler::update_organization,
+            handlers::organization_handler::create_organization,
         ),
         components(
             schemas(
@@ -226,6 +230,8 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::file_handler::UpdateFileData,
                 handlers::notification_handler::NotificationId,
                 handlers::notification_handler::Notification,
+                handlers::organization_handler::CreateOrganizationData,
+                handlers::organization_handler::UpdateOrganizationData,
                 operators::notification_operator::NotificationReturn,
                 data::models::SlimUser,
                 data::models::UserDTO,
@@ -243,6 +249,7 @@ pub async fn main() -> std::io::Result<()> {
                 data::models::CardCollection,
                 data::models::FileDTO,
                 data::models::FileUploadCompletedNotificationWithName,
+                data::models::Organization,
                 errors::DefaultError,
             )
         ),
