@@ -1016,6 +1016,17 @@ pub struct Dataset {
     pub updated_at: chrono::NaiveDateTime,
 }
 
+impl Dataset {
+    pub fn from_details(name: String) -> Self {
+        Dataset {
+            id: uuid::Uuid::new_v4(),
+            name,
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[diesel(table_name = organizations)]
 pub struct Organization {
