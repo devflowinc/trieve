@@ -11,6 +11,19 @@ use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+#[utoipa::path(
+    get,
+    path = "/organization/{organization_id}",
+    context_path = "/api",
+    tag = "organization",
+    responses(
+        (status = 200, description = "Organization with the id that was requested", body = [Organization]),
+        (status = 400, description = "Service error relating to finding the organization by id", body = [DefaultError]),
+    ),
+    params(
+        ("organization_id" = Option<uuid>, Path, description = "id of the organization you want to fetch")
+    ),
+)]
 pub async fn get_organization_by_id(
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -25,6 +38,19 @@ pub async fn get_organization_by_id(
     Ok(HttpResponse::Ok().json(organization))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/organization/{organization_id}",
+    context_path = "/api",
+    tag = "organization",
+    responses(
+        (status = 204, description = "Confirmation that the organization with the requested id was deleted"),
+        (status = 400, description = "Service error relating to deleting the organization by id", body = [DefaultError]),
+    ),
+    params(
+        ("organization_id" = Option<uuid>, Path, description = "id of the organization you want to delete")
+    ),
+)]
 pub async fn delete_organization_by_id(
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -36,7 +62,7 @@ pub async fn delete_organization_by_id(
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    Ok(HttpResponse::Ok().finish())
+    Ok(HttpResponse::NoContent().finish())
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
@@ -46,6 +72,17 @@ pub struct UpdateOrganizationData {
     configuration: serde_json::Value,
 }
 
+#[utoipa::path(
+    put,
+    path = "/organization",
+    context_path = "/api",
+    tag = "organization",
+    request_body(content = UpdateOrganizationData, description = "The organization data that you want to update", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Updated organization object", body = [Organization]),
+        (status = 400, description = "Service error relating to updating the organization", body = [DefaultError]),
+    ),
+)]
 pub async fn update_organization(
     organization: web::Json<UpdateOrganizationData>,
     pool: web::Data<Pool>,
@@ -53,7 +90,7 @@ pub async fn update_organization(
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_update_data = organization.into_inner();
 
-    web::block(move || {
+    let updated_organization = web::block(move || {
         update_organization_query(
             organization_update_data.organization_uuid,
             organization_update_data.name.as_str(),
@@ -64,7 +101,7 @@ pub async fn update_organization(
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    Ok(HttpResponse::Ok().finish())
+    Ok(HttpResponse::Ok().json(updated_organization))
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
@@ -73,6 +110,17 @@ pub struct CreateOrganizationData {
     configuration: serde_json::Value,
 }
 
+#[utoipa::path(
+    post,
+    path = "/organization",
+    context_path = "/api",
+    tag = "organization",
+    request_body(content = CreateOrganizationData, description = "The organization data that you want to create", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Created organization object", body = [Organization]),
+        (status = 400, description = "Service error relating to creating the organization", body = [DefaultError]),
+    ),
+)]
 pub async fn create_organization(
     organization: web::Json<CreateOrganizationData>,
     pool: web::Data<Pool>,
