@@ -41,15 +41,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    card_dataset (id) {
-        id -> Uuid,
-        name -> Text,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
-    }
-}
-
-diesel::table! {
     card_files (id) {
         id -> Uuid,
         card_id -> Uuid,
@@ -165,7 +156,7 @@ diesel::table! {
         expires_at -> Timestamp,
         created_at -> Timestamp,
         updated_at -> Timestamp,
-        referral_tokens -> Nullable<Text>,
+        organization_id -> Uuid,
     }
 }
 
@@ -207,17 +198,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    stripe_customers (id) {
-        id -> Uuid,
-        stripe_id -> Text,
-        #[max_length = 100]
-        email -> Nullable<Varchar>,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
-    }
-}
-
-diesel::table! {
     topics (id) {
         id -> Uuid,
         user_id -> Uuid,
@@ -247,18 +227,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    user_plans (id) {
-        id -> Uuid,
-        stripe_customer_id -> Text,
-        stripe_subscription_id -> Text,
-        plan -> Text,
-        status -> Text,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
-    }
-}
-
-diesel::table! {
     users (id) {
         id -> Uuid,
         email -> Text,
@@ -269,6 +237,7 @@ diesel::table! {
         website -> Nullable<Text>,
         visible_email -> Bool,
         api_key_hash -> Nullable<Text>,
+        organization_id -> Uuid,
     }
 }
 
@@ -285,16 +254,17 @@ diesel::joinable!(collections_from_files -> files (file_id));
 diesel::joinable!(cut_cards -> users (user_id));
 diesel::joinable!(file_upload_completed_notifications -> card_collection (collection_uuid));
 diesel::joinable!(files -> users (user_id));
+diesel::joinable!(invitations -> organizations (organization_id));
 diesel::joinable!(messages -> topics (topic_id));
 diesel::joinable!(topics -> users (user_id));
 diesel::joinable!(user_collection_counts -> users (user_id));
 diesel::joinable!(user_notification_counts -> users (user_uuid));
+diesel::joinable!(users -> organizations (organization_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     card_collection,
     card_collection_bookmarks,
     card_collisions,
-    card_dataset,
     card_files,
     card_metadata,
     card_metadata_count,
@@ -308,10 +278,8 @@ diesel::allow_tables_to_appear_in_same_query!(
     messages,
     organizations,
     password_resets,
-    stripe_customers,
     topics,
     user_collection_counts,
     user_notification_counts,
-    user_plans,
     users,
 );

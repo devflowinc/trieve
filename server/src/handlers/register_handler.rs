@@ -119,7 +119,7 @@ fn insert_user_from_invitation(
                     message: "Error Processing Password, Try Again",
                 })?;
 
-            let user = User::from_details(invitation.email, password);
+            let user = User::from_details(invitation.email, password, invitation.organization_id);
             let inserted_user: User = diesel::insert_into(users)
                 .values(&user)
                 .get_result(&mut conn)

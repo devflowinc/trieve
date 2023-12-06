@@ -290,6 +290,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
         total_upvotes_received,
         total_downvotes_received,
         total_votes_cast,
+        organization_id: user.organization_id,
     })
 }
 
@@ -407,6 +408,7 @@ pub fn get_top_users_query(
                 visible_email: user.visible_email,
                 created_at: user.created_at,
                 score: user_score.score,
+                organization_id: user.organization_id,
             }
         })
         .collect::<Vec<UserDTOWithScore>>();

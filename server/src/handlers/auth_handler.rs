@@ -3,7 +3,6 @@ use crate::AppMutexStore;
 use crate::{
     data::models::{Pool, SlimUser, User},
     errors::{DefaultError, ServiceError},
-    handlers::register_handler::hash_password,
     operators::{
         self,
         user_operator::{get_user_by_id_query, get_user_from_api_key_query},
@@ -97,39 +96,6 @@ pub fn verify(hash: &str, password: &str) -> Result<bool, ServiceError> {
         dbg!(err);
         ServiceError::Unauthorized
     })
-}
-
-pub async fn create_admin_account(email: String, password: String, pool: Pool) {
-    // see if account exists
-    let user = {
-        let email = email.clone();
-        let pool = pool.clone();
-        let password = password.clone();
-        web::block(move || find_user_match(AuthData { email, password }, web::Data::new(pool)))
-            .await
-            .unwrap()
-    };
-
-    if user.is_ok() {
-        log::info!("Admin account already exists");
-        return;
-    }
-
-    log::info!("Creating admin account for {}", email);
-
-    let password: String = hash_password(&password).expect("Failed to hash password");
-
-    use crate::data::schema::users::dsl as users_columns;
-
-    let user = User::from_details(email, password);
-    let mut conn = pool.get().unwrap();
-    match diesel::insert_into(users_columns::users)
-        .values(&user)
-        .execute(&mut conn)
-    {
-        Ok(_) => log::info!("Admin account created"),
-        Err(e) => log::error!("Failed to create admin account: {}", e),
-    }
 }
 
 #[utoipa::path(
