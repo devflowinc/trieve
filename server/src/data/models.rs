@@ -291,7 +291,7 @@ pub struct CardMetadata {
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
-    pub dataset: String
+    pub dataset_id: uuid::Uuid,
 }
 
 impl CardMetadata {
@@ -307,7 +307,7 @@ impl CardMetadata {
         metadata: Option<serde_json::Value>,
         tracking_id: Option<String>,
         time_stamp: Option<NaiveDateTime>,
-        dataset: String
+        dataset_id: uuid::Uuid,
     ) -> Self {
         CardMetadata {
             id: uuid::Uuid::new_v4(),
@@ -323,7 +323,7 @@ impl CardMetadata {
             metadata,
             tracking_id,
             time_stamp,
-            dataset
+            dataset_id
         }
     }
 }
@@ -342,7 +342,7 @@ impl CardMetadata {
         metadata: Option<serde_json::Value>,
         tracking_id: Option<String>,
         time_stamp: Option<NaiveDateTime>,
-        dataset: String
+        dataset_id: uuid::Uuid,
     ) -> Self {
         CardMetadata {
             id: id.into(),
@@ -358,7 +358,7 @@ impl CardMetadata {
             metadata,
             tracking_id,
             time_stamp,
-            dataset
+            dataset_id
         }
     }
 }
@@ -541,7 +541,7 @@ pub struct CardCollection {
     pub description: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub dataset: String,
+    pub dataset_id: uuid::Uuid,
 }
 
 impl CardCollection {
@@ -550,7 +550,7 @@ impl CardCollection {
         name: String,
         is_public: bool,
         description: String,
-        dataset: String,
+        dataset_id: uuid::Uuid,
     ) -> Self {
         CardCollection {
             id: uuid::Uuid::new_v4(),
@@ -558,7 +558,7 @@ impl CardCollection {
             author_id,
             name,
             description,
-            dataset,
+            dataset_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
         }
@@ -621,18 +621,18 @@ pub struct CardCollectionBookmark {
     pub card_metadata_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub dataset: String,
+    pub dataset_id: uuid::Uuid,
 }
 
 impl CardCollectionBookmark {
-    pub fn from_details(collection_id: uuid::Uuid, card_metadata_id: uuid::Uuid, dataset: String) -> Self {
+    pub fn from_details(collection_id: uuid::Uuid, card_metadata_id: uuid::Uuid, dataset_id: uuid::Uuid) -> Self {
         CardCollectionBookmark {
             id: uuid::Uuid::new_v4(),
             collection_id,
             card_metadata_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
-            dataset,
+            dataset_id,
         }
     }
 }
@@ -1005,4 +1005,13 @@ pub struct UserNotificationCount {
     pub id: uuid::Uuid,
     pub user_uuid: uuid::Uuid,
     pub notification_count: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
+#[diesel(table_name = datasets)]
+pub struct Dataset {
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
 }
