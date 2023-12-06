@@ -10,7 +10,6 @@ use crate::{
 use actix_web::{web, HttpRequest, HttpResponse};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
-use serde_json::to_string;
 use utoipa::ToSchema;
 
 #[derive(Deserialize, Serialize, ToSchema)]
@@ -21,7 +20,7 @@ pub struct InvitationResponse {
 #[derive(Deserialize, ToSchema)]
 pub struct InvitationData {
     pub email: String,
-    pub referral_tokens: Vec<String>,
+    pub organization_id: uuid::Uuid,
 }
 
 #[utoipa::path(
@@ -43,7 +42,7 @@ pub async fn post_invitation(
 ) -> Result<HttpResponse, actix_web::Error> {
     let invitation_data = invitation_data.into_inner();
     let email = invitation_data.email;
-    let invitation_referral_tokens = invitation_data.referral_tokens;
+
     if !email_regex().is_match(&email) {
         return Ok(
             HttpResponse::BadRequest().json(crate::errors::DefaultError {
@@ -61,11 +60,11 @@ pub async fn post_invitation(
         .unwrap()
         .to_string();
 
-    let stringified_referral_tokens = to_string(&invitation_referral_tokens).unwrap();
-    let registration_url =
-        web::block(move || create_invitation(host_name, email, stringified_referral_tokens, pool))
-            .await?
-            .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    let registration_url = web::block(move || {
+        create_invitation(host_name, email, invitation_data.organization_id, pool)
+    })
+    .await?
+    .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
     Ok(HttpResponse::Ok().json(InvitationResponse { registration_url }))
 }
@@ -73,10 +72,10 @@ pub async fn post_invitation(
 pub fn create_invitation(
     app_url: String,
     email: String,
-    invitation_referral_tokens: String,
+    organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<String, DefaultError> {
-    let invitation = create_invitation_query(email, invitation_referral_tokens, pool)?;
+    let invitation = create_invitation_query(email, organization_id, pool)?;
     // send_invitation(app_url, &invitation)
 
     Ok(format!(
@@ -88,7 +87,7 @@ pub fn create_invitation(
 /// Diesel query
 fn create_invitation_query(
     email: String,
-    invitation_referral_tokens: String,
+    organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Invitation, DefaultError> {
     use crate::data::schema::invitations::dsl::invitations;
@@ -102,8 +101,7 @@ fn create_invitation_query(
 
     let mut conn = pool.get().unwrap();
 
-    let mut new_invitation = Invitation::from(email);
-    new_invitation.referral_tokens = Some(invitation_referral_tokens);
+    let new_invitation = Invitation::from_details(email, organization_id);
 
     let inserted_invitation = diesel::insert_into(invitations)
         .values(&new_invitation)

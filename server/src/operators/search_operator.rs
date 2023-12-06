@@ -2,7 +2,6 @@ use super::card_operator::{
     find_relevant_sentence, get_collided_cards_query,
     get_metadata_and_collided_cards_from_point_ids_query, get_metadata_from_point_ids,
 };
-use crate::operators::qdrant_operator::{create_embedding, get_qdrant_connection, search_qdrant_query};
 use super::tantivy_operator::TantivyIndexMap;
 use crate::data::models::{
     CardCollection, CardFileWithName, CardMetadataWithVotesWithScore, CardVote,
@@ -16,12 +15,18 @@ use crate::handlers::card_handler::{
     SearchCollectionsResult,
 };
 use crate::operators::card_operator::get_card_count_query;
+use crate::operators::qdrant_operator::{
+    create_embedding, get_qdrant_connection, search_qdrant_query,
+};
 use crate::AppMutexStore;
 use crate::CrossEncoder;
 use crate::{data::models::Pool, errors::DefaultError};
 use actix_web::web;
 use chrono::NaiveDateTime;
-use diesel::{dsl::sql, sql_types::{Int8, Text}};
+use diesel::{
+    dsl::sql,
+    sql_types::{Int8, Text},
+};
 use diesel::{
     BoolExpressionMethods, JoinOnDsl, NullableExpressionMethods, PgTextExpressionMethods,
 };
@@ -437,7 +442,8 @@ pub async fn search_card_collections_query(
         })),
     });
 
-    let point_ids: Vec<SearchResult> = search_qdrant_query(page, filter, embedding_vector, dataset_id).await?;
+    let point_ids: Vec<SearchResult> =
+        search_qdrant_query(page, filter, embedding_vector, dataset_id).await?;
 
     Ok(SearchCardQueryResult {
         search_results: point_ids,
@@ -510,6 +516,7 @@ pub fn get_metadata_query(
                 user_columns::website,
                 user_columns::visible_email,
                 user_columns::api_key_hash,
+                user_columns::organization_id,
             )
                 .nullable(),
             (
@@ -568,6 +575,7 @@ pub fn get_metadata_query(
                     website: user.website.clone(),
                     visible_email: user.visible_email,
                     created_at: user.created_at,
+                    organization_id: user.organization_id
                 });
 
             let card_with_file_name = file_ids
@@ -663,8 +671,7 @@ pub async fn search_full_text_card_query(
                         .or(card_metadata_columns::qdrant_point_id.is_not_null()),
                 ),
         )
-        .filter(
-            card_metadata_columns::dataset_id.eq(dataset_id))
+        .filter(card_metadata_columns::dataset_id.eq(dataset_id))
         .select((
             (
                 card_metadata_columns::qdrant_point_id,
