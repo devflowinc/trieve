@@ -10,11 +10,11 @@ use tokio::sync::RwLock;
 use utoipa::ToSchema;
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-pub struct Dataset {
-    pub name: String,
+pub struct SlimDataset {
+    pub id: uuid::Uuid,
 }
 
-impl FromRequest for Dataset {
+impl FromRequest for SlimDataset {
     type Error = ServiceError;
     type Future = Ready<Result<Self, Self::Error>>;
 
@@ -28,32 +28,34 @@ impl FromRequest for Dataset {
         );
         match req.headers().get("AF-Dataset") {
             Some(dataset_header) => match dataset_header.to_str() {
-                Ok(dataset) if !dataset.is_empty() && dataset != "undefined" => {
+                Ok(dataset) => {
                     log::error!("Dataset is {}", dataset);
-                    ready(Ok(Dataset {
-                        name: dataset.to_string(),
-                    }))
-                }
-                Ok(dataset) if dataset.eq("") || dataset.eq("undefined") => ready(Ok(Dataset {
-                    name: "DEFAULT".to_string(),
-                })),
-                Ok(dataset) => ready(Ok(Dataset {
-                    name: dataset.to_string(),
-                })),
+                    // Try to convert to a uuid
+                    let id_result = uuid::Uuid::parse_str(dataset).map_err(|err| {
+                        ServiceError::BadRequest(format!(
+                            "Dataset must be a valid UUID: {:?}",
+                            err.to_string()
+                        ))
+                    });
+                    match id_result {
+                        Ok(id) => ready(Ok(SlimDataset { id })),
+                        Err(err) => ready(Err(err)),
+                    }
+                },
                 Err(_) => ready(Err(ServiceError::BadRequest(
                     "Dataset must be ASCII".to_string(),
                 ))),
             },
-            None => ready(Ok(Dataset {
-                name: "DEFAULT".to_string(),
-            })),
+            None => ready(Err(ServiceError::BadRequest(
+                "Dataset must be specified".to_string(),
+            ))),
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct CreateDatasetRequest {
-    pub dataset: String,
+    pub dataset_id: uuid::Uuid,
 }
 
 #[utoipa::path(
@@ -72,7 +74,7 @@ pub async fn create_dataset(
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     user: LoggedUser,
 ) -> Result<HttpResponse, ServiceError> {
-    log::info!("Creating dataset {:?}", data.dataset);
+    log::info!("Creating dataset {:?}", data.dataset_id);
     let admin_email = std::env::var("ADMIN_USER_EMAIL").unwrap_or("".to_string());
     if admin_email != user.email {
         return Err(ServiceError::Forbidden);
@@ -81,7 +83,7 @@ pub async fn create_dataset(
     tantivy_index_map
         .write()
         .await
-        .create_index(Some(&data.dataset))
+        .create_index(Some(&data.dataset_id.to_string()))
         .map_err(|err| {
             ServiceError::BadRequest(format!(
                 "Failed to create tantivy index: {:?}",
@@ -89,7 +91,9 @@ pub async fn create_dataset(
             ))
         })?;
 
-    log::info!("Creating dataset {:?}", data.dataset);
-    qdrant_operator::create_new_qdrant_collection_query(data.dataset.clone()).await?;
+    log::info!("Creating dataset {:?}", data.dataset_id);
+    // TODO
+    qdrant_operator::create_new_qdrant_collection_query("DEFAULT".to_string()).await?;
+    // qdrant_operator::create_new_qdrant_collection_query(data.dataset_id.clone()).await?;
     Ok(HttpResponse::NoContent().finish())
 }

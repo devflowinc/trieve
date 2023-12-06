@@ -1,5 +1,5 @@
 use super::auth_handler::{LoggedUser, RequireAuth};
-use super::dataset_handler::Dataset;
+use super::dataset_handler::SlimDataset;
 use crate::data::models::{
     CardCollection, CardCollectionBookmark, CardMetadata, CardMetadataWithVotesWithScore,
     ChatMessageProxy, Pool, UserDTO,
@@ -36,10 +36,10 @@ use utoipa::{IntoParams, ToSchema};
 pub async fn user_owns_card(
     user_id: uuid::Uuid,
     card_id: uuid::Uuid,
-    dataset_name: String,
+    dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<CardMetadata, actix_web::Error> {
-    let cards = web::block(move || get_metadata_from_id_query(card_id, dataset_name, pool))
+    let cards = web::block(move || get_metadata_from_id_query(card_id, dataset_id, pool))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -53,10 +53,10 @@ pub async fn user_owns_card(
 pub async fn user_owns_card_tracking_id(
     user_id: uuid::Uuid,
     tracking_id: String,
-    dataset_name: String,
+    dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<CardMetadata, actix_web::Error> {
-    let cards = web::block(move || get_metadata_from_tracking_id_query(tracking_id, dataset_name, pool))
+    let cards = web::block(move || get_metadata_from_tracking_id_query(tracking_id, dataset_id, pool))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -134,7 +134,7 @@ pub async fn create_card(
     user: LoggedUser,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
-    dataset: Dataset,
+    dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let only_admin_can_create_cards =
         std::env::var("ONLY_ADMIN_CAN_CREATE_CARDS").unwrap_or("off".to_string());
@@ -144,7 +144,7 @@ pub async fn create_card(
             return Err(ServiceError::Forbidden.into());
         }
     }
-    let dataset_name = dataset.name.clone();
+    let dataset_id = dataset.id;
 
     let private = card.private.unwrap_or(false);
     let card_tracking_id = card
@@ -208,7 +208,7 @@ pub async fn create_card(
 
     let embedding_vector = create_embedding(&content, app_mutex).await?;
 
-    let first_semantic_result = global_unfiltered_top_match_query(embedding_vector.clone(), dataset_name.clone())
+    let first_semantic_result = global_unfiltered_top_match_query(embedding_vector.clone(), dataset_id)
         .await
         .map_err(|err| {
             ServiceError::BadRequest(format!(
@@ -234,7 +234,7 @@ pub async fn create_card(
         match score_card_result {
             Ok(card_results) => {
                 if card_results.is_empty() {
-                    delete_qdrant_point_id_query(first_semantic_result.point_id, dataset_name)
+                    delete_qdrant_point_id_query(first_semantic_result.point_id, dataset_id)
                         .await
                         .map_err(|_| {
                             ServiceError::BadRequest(
@@ -266,7 +266,7 @@ pub async fn create_card(
             collision.expect("Collision must be some"),
             Some(user.id),
             None,
-            dataset_name.clone(),
+            dataset_id,
         )
         .await?;
 
@@ -288,7 +288,7 @@ pub async fn create_card(
                     })
                 })
                 .transpose()?,
-            dataset_name.clone(),
+            dataset_id,
         );
         card_metadata = web::block(move || {
             insert_duplicate_card_metadata_query(
@@ -325,11 +325,11 @@ pub async fn create_card(
                     })
                 })
                 .transpose()?,
-            dataset_name.clone(),
+            dataset_id,
         );
 
         card_metadata =
-            insert_card_metadata_query(card_metadata, card.file_uuid, tantivy_index_map, dataset_name.clone(), pool1)
+            insert_card_metadata_query(card_metadata, card.file_uuid, tantivy_index_map, dataset_id, pool1)
                 .await
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -339,14 +339,14 @@ pub async fn create_card(
             private,
             card_metadata.clone(),
             Some(user.id),
-            dataset_name.clone(),
+            dataset_id,
         )
         .await?;
     }
 
     if let Some(collection_id_to_bookmark) = card_collection_id {
         let card_collection_bookmark =
-            CardCollectionBookmark::from_details(collection_id_to_bookmark, card_metadata.id, dataset_name.clone());
+            CardCollectionBookmark::from_details(collection_id_to_bookmark, card_metadata.id, dataset_id);
 
         let _ = web::block(move || create_card_bookmark_query(pool3, card_collection_bookmark))
             .await?;
@@ -377,13 +377,13 @@ pub async fn delete_card(
     app_mutex: web::Data<AppMutexStore>,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     user: LoggedUser,
-    dataset: Dataset,
+    dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let card_id_inner = card_id.into_inner();
-    let dataset_name = dataset.name;
+    let dataset_id = dataset.id;
     let pool1 = pool.clone();
 
-    let card_metadata = user_owns_card(user.id, card_id_inner, dataset_name.clone(), pool).await?;
+    let card_metadata = user_owns_card(user.id, card_id_inner, dataset_id, pool).await?;
     let qdrant_point_id = card_metadata.qdrant_point_id;
 
     delete_card_metadata_query(
@@ -391,7 +391,7 @@ pub async fn delete_card(
         qdrant_point_id,
         tantivy_index_map,
         app_mutex,
-        dataset_name,
+        dataset_id,
         pool1,
     )
     .await
@@ -419,13 +419,13 @@ pub async fn delete_card_by_tracking_id(
     app_mutex: web::Data<AppMutexStore>,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     user: LoggedUser,
-    dataset: Dataset,
+    dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let tracking_id_inner = tracking_id.into_inner();
     let pool1 = pool.clone();
-    let dataset_name = dataset.name.clone();
+    let dataset_id = dataset.id;
 
-    let card_metadata = user_owns_card_tracking_id(user.id, tracking_id_inner, dataset_name.clone(), pool).await?;
+    let card_metadata = user_owns_card_tracking_id(user.id, tracking_id_inner, dataset_id, pool).await?;
 
     let qdrant_point_id = card_metadata.qdrant_point_id;
 
@@ -434,7 +434,7 @@ pub async fn delete_card_by_tracking_id(
         qdrant_point_id,
         tantivy_index_map,
         app_mutex,
-        dataset_name.clone(),
+        dataset_id,
         pool1,
     )
     .await
@@ -476,12 +476,12 @@ pub async fn update_card(
     user: LoggedUser,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
-    dataset: Dataset,
+    dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
     let pool2 = pool.clone();
-    let dataset_name = dataset.name.clone();
-    let card_metadata = user_owns_card(user.id, card.card_uuid, dataset_name.clone(), pool).await?;
+    let dataset_id = dataset.id;
+    let card_metadata = user_owns_card(user.id, card.card_uuid, dataset_id, pool).await?;
 
     let link = card
         .link
@@ -525,7 +525,7 @@ pub async fn update_card(
                     .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))
             })
             .transpose()?,
-        dataset_name.clone(),
+        dataset_id,
     );
     let metadata1 = metadata.clone();
     update_card_metadata_query(metadata, None, tantivy_index_map, pool2)
@@ -543,7 +543,7 @@ pub async fn update_card(
         qdrant_point_id,
         Some(user.id),
         Some(embedding_vector),
-        dataset_name.clone(),
+        dataset_id,
     )
     .await?;
 
@@ -578,9 +578,9 @@ pub async fn update_card_by_tracking_id(
     user: LoggedUser,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
-    dataset: Dataset,
+    dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let dataset_name = dataset.name.clone();
+    let dataset_id = dataset.id;
     if card.tracking_id.is_empty() {
         return Err(ServiceError::BadRequest(
             "Tracking id must be provided to update by tracking_id".into(),
@@ -592,7 +592,7 @@ pub async fn update_card_by_tracking_id(
 
     let pool1 = pool.clone();
     let pool2 = pool.clone();
-    let card_metadata = user_owns_card_tracking_id(user.id, tracking_id, dataset_name.clone(), pool).await?;
+    let card_metadata = user_owns_card_tracking_id(user.id, tracking_id, dataset_id, pool).await?;
 
     let link = card
         .link
@@ -632,7 +632,7 @@ pub async fn update_card_by_tracking_id(
                     .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))
             })
             .transpose()?,
-        dataset_name.clone(),
+        dataset_id,
     );
     let metadata1 = metadata.clone();
 
@@ -651,7 +651,7 @@ pub async fn update_card_by_tracking_id(
         qdrant_point_id,
         Some(user.id),
         Some(embedding_vector),
-        dataset_name.clone(),
+        dataset_id,
     )
     .await?;
 
@@ -743,11 +743,11 @@ pub async fn search_card(
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
     _required_user: RequireAuth,
-    dataset: Dataset,
+    dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_user_id = user.map(|user| user.id);
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
-    let dataset_name = dataset.name.clone();
+    let dataset_id = dataset.id;
     let parsed_query = parse_query(data.content.clone());
 
     let result_cards = match data.search_type.as_str() {
@@ -759,7 +759,7 @@ pub async fn search_card(
                 pool,
                 tantivy_index_map,
                 current_user_id,
-                dataset_name,
+                dataset_id,
             )
             .await?
         }
@@ -772,13 +772,13 @@ pub async fn search_card(
                 current_user_id,
                 cross_encoder_init,
                 tantivy_index_map,
-                dataset_name,
+                dataset_id,
                 app_mutex,
             )
             .await?
         }
         _ => {
-            search_semantic_cards(data, parsed_query, page, pool, current_user_id, dataset_name, app_mutex)
+            search_semantic_cards(data, parsed_query, page, pool, current_user_id, dataset_id, app_mutex)
                 .await?
         }
     };
@@ -842,19 +842,19 @@ pub async fn search_collections(
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
     _required_user: RequireAuth,
-    dataset: Dataset,
+    dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let collection_id = data.collection_id;
-    let dataset_name = dataset.name.clone();
+    let dataset_id = dataset.id;
 
     let current_user_id = user.map(|user| user.id);
     let pool1 = pool.clone();
 
     let collection = {
-        let dataset_name = dataset_name.clone();
-        web::block(move || get_collection_by_id_query(collection_id, dataset_name.clone(), pool))
+        let dataset_id = dataset_id;
+        web::block(move || get_collection_by_id_query(collection_id, dataset_id, pool))
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?
@@ -879,7 +879,7 @@ pub async fn search_collections(
                 pool1,
                 tantivy_index_map,
                 current_user_id,
-                dataset_name.clone(),
+                dataset_id,
             )
             .await?
         }
@@ -891,7 +891,7 @@ pub async fn search_collections(
                 page,
                 pool1,
                 current_user_id,
-                dataset_name.clone(),
+                dataset_id,
                 app_mutex,
             )
             .await?
@@ -918,11 +918,11 @@ pub async fn get_top_cards(
     page: Option<web::Path<u64>>,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
-    dataset: Dataset,
+    dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
 
-    let top_cards = web::block(move || get_top_cards_query(page, dataset.name.clone(), pool))
+    let top_cards = web::block(move || get_top_cards_query(page, dataset.id, pool))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -947,11 +947,11 @@ pub async fn get_card_by_id(
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
-    dataset: Dataset,
+    dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_user_id = user.map(|user| user.id);
     let card = web::block(move || {
-        get_metadata_and_votes_from_id_query(card_id.into_inner(), current_user_id, dataset.name.clone(), pool)
+        get_metadata_and_votes_from_id_query(card_id.into_inner(), current_user_id, dataset.id, pool)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -996,14 +996,14 @@ pub async fn get_card_by_tracking_id(
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
-    dataset: Dataset,
+    dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_user_id = user.map(|user| user.id);
     let card = web::block(move || {
         get_metadata_and_votes_from_tracking_id_query(
             tracking_id.into_inner(),
             current_user_id,
-            dataset.name.clone(),
+            dataset.id,
             pool,
         )
     })
@@ -1037,7 +1037,7 @@ pub async fn get_card_by_tracking_id(
 pub async fn get_total_card_count(
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
-    dataset: Dataset,
+    _dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let total_count = get_card_count_query(pool)
         .await
@@ -1066,13 +1066,13 @@ pub async fn get_recommended_cards(
     data: web::Json<RecommendCardsRequest>,
     pool: web::Data<Pool>,
     _user: LoggedUser,
-    dataset: Dataset,
+    dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let positive_card_ids = data.positive_card_ids.clone();
-    let dataset_name = dataset.name.clone();
+    let dataset_id = dataset.id;
 
     let recommended_qdrant_point_ids =
-        recommend_qdrant_query(positive_card_ids, dataset_name)
+        recommend_qdrant_query(positive_card_ids, dataset_id)
             .await
             .map_err(|err| {
                 ServiceError::BadRequest(format!("Could not get recommended cards: {}", err))
@@ -1112,12 +1112,12 @@ pub async fn generate_off_cards(
     data: web::Json<GenerateCardsRequest>,
     pool: web::Data<Pool>,
     user: LoggedUser,
-    dataset: Dataset,
+    dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let prev_messages = data.prev_messages.clone();
     let card_ids = data.card_ids.clone();
     let user_id = user.id;
-    let cards = web::block(move || get_metadata_from_ids_query(card_ids, user_id, dataset.name.clone(), pool))
+    let cards = web::block(move || get_metadata_from_ids_query(card_ids, user_id, dataset.id, pool))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 

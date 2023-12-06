@@ -15,7 +15,7 @@ diesel::table! {
         description -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,
-        dataset -> Text,
+        dataset_id -> Uuid,
     }
 }
 
@@ -26,7 +26,7 @@ diesel::table! {
         card_metadata_id -> Uuid,
         created_at -> Timestamp,
         updated_at -> Timestamp,
-        dataset -> Text,
+        dataset_id -> Uuid,
     }
 }
 
@@ -35,6 +35,15 @@ diesel::table! {
         id -> Uuid,
         card_id -> Uuid,
         collision_qdrant_id -> Nullable<Uuid>,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
+    card_dataset (id) {
+        id -> Uuid,
+        name -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
@@ -69,7 +78,7 @@ diesel::table! {
         metadata -> Nullable<Jsonb>,
         tracking_id -> Nullable<Text>,
         time_stamp -> Nullable<Timestamp>,
-        dataset -> Text,
+        dataset_id -> Uuid,
     }
 }
 
@@ -113,7 +122,8 @@ diesel::table! {
 }
 
 diesel::table! {
-    dataset (name) {
+    datasets (id) {
+        id -> Uuid,
         name -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,
@@ -287,13 +297,14 @@ diesel::allow_tables_to_appear_in_same_query!(
     card_collection,
     card_collection_bookmarks,
     card_collisions,
+    card_dataset,
     card_files,
     card_metadata,
     card_metadata_count,
     card_votes,
     collections_from_files,
     cut_cards,
-    dataset,
+    datasets,
     file_upload_completed_notifications,
     files,
     invitations,

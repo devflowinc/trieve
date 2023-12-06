@@ -1,40 +1,37 @@
-CREATE TABLE dataset (
+CREATE TABLE datasets (
   id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  name TEXT UNIQUE NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-INSERT INTO dataset (name) VALUES ('DEFAULT');
-
-CREATE OR REPLACE FUNCTION set_default_dataset_id()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.dataset_id IS NULL THEN
-    SELECT id INTO NEW.dataset_id FROM dataset WHERE name = 'DEFAULT';
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-
-CREATE TRIGGER set_default_dataset_id_trigger
-BEFORE INSERT ON card_metadata
-FOR EACH ROW EXECUTE FUNCTION set_default_dataset_id();
-
-CREATE TRIGGER set_default_dataset_id_trigger
-BEFORE INSERT ON card_collection
-FOR EACH ROW EXECUTE FUNCTION set_default_dataset_id();
-
-CREATE TRIGGER set_default_dataset_id_trigger
-BEFORE INSERT ON card_collection_bookmarks
-FOR EACH ROW EXECUTE FUNCTION set_default_dataset_id();
+INSERT INTO datasets (name) VALUES ('DEFAULT');
 
 ALTER TABLE card_metadata
-ADD COLUMN dataset_id UUID NOT NULL;
+ADD COLUMN dataset_id UUID NULL;
 
 ALTER TABLE card_collection
-ADD COLUMN dataset_id UUID NOT NULL;
+ADD COLUMN dataset_id UUID NULL;
 
 ALTER TABLE card_collection_bookmarks
-ADD COLUMN dataset_id UUID NOT NULL;
+ADD COLUMN dataset_id UUID NULL;
+
+UPDATE card_metadata
+SET dataset_id = datasets.id
+FROM datasets
+WHERE
+  datasets.name = 'DEFAULT';
+
+UPDATE card_collection
+SET dataset_id = datasets.id
+FROM datasets
+WHERE datasets.name = 'DEFAULT';
+
+UPDATE card_collection_bookmarks
+SET dataset_id = datasets.id
+FROM datasets
+WHERE datasets.name = 'DEFAULT';
+
+ALTER TABLE card_metadata ALTER COLUMN dataset_id SET NOT NULL;
+ALTER TABLE card_collection ALTER COLUMN dataset_id SET NOT NULL;
+ALTER TABLE card_collection_bookmarks ALTER COLUMN dataset_id SET NOT NULL;
