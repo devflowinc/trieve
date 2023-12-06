@@ -1,4 +1,4 @@
-use super::{auth_handler::{LoggedUser, RequireAuth}, dataset_handler::Dataset};
+use super::{auth_handler::{LoggedUser, RequireAuth}, dataset_handler::SlimDataset};
 use crate::{
     data::models::{File, Pool},
     errors::ServiceError,
@@ -88,10 +88,10 @@ pub async fn upload_file_handler(
     pool: web::Data<Pool>,
     user: LoggedUser,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
-    dataset: Dataset,
+    dataset: SlimDataset,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let dataset_name = dataset.name.clone();
+    let dataset_id = dataset.id;
     let document_upload_feature =
         std::env::var("DOCUMENT_UPLOAD_FEATURE").unwrap_or("off".to_string());
 
@@ -137,7 +137,7 @@ pub async fn upload_file_handler(
         user,
         tantivy_index_map,
         app_mutex,
-        dataset_name.clone(),
+        dataset_id,
         pool_inner,
     )
     .await

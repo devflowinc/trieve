@@ -11,3 +11,4 @@ pub mod tantivy_operator;
 pub mod topic_operator;
 pub mod user_operator;
 pub mod vote_operator;
+pub mod dataset_operator;

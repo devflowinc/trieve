@@ -1,6 +1,6 @@
 use super::{
     auth_handler::{LoggedUser, RequireAuth},
-    card_handler::ParsedQuery, dataset_handler::Dataset,
+    card_handler::ParsedQuery, dataset_handler::SlimDataset,
 };
 use crate::{
     data::models,
@@ -56,7 +56,7 @@ pub struct CreateMessageData {
 pub async fn create_message_completion_handler(
     data: web::Json<CreateMessageData>,
     user: LoggedUser,
-    dataset_name: String,
+    dataest: SlimDataset,
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -66,6 +66,7 @@ pub async fn create_message_completion_handler(
     let pool3 = pool.clone();
     let pool4 = pool.clone();
     let topic_id = create_message_data.topic_id;
+    let dataset_id = dataest.id;
 
     let new_message = models::Message::from_details(
         create_message_data.new_message_content,
@@ -122,7 +123,7 @@ pub async fn create_message_completion_handler(
         previous_messages,
         user.id,
         topic_id,
-        dataset_name.clone(),
+        dataset_id,
         app_mutex,
         pool4,
     )
@@ -186,7 +187,7 @@ pub struct EditMessageData {
 pub async fn edit_message_handler(
     data: web::Json<EditMessageData>,
     user: LoggedUser,
-    dataset_name: String,
+    dataset: SlimDataset,
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -217,7 +218,7 @@ pub async fn edit_message_handler(
             topic_id,
         }),
         user,
-        dataset_name,
+        dataset,
         third_pool,
         app_mutex,
     )
@@ -238,7 +239,7 @@ pub async fn edit_message_handler(
 pub async fn regenerate_message_handler(
     data: web::Json<RegenerateMessageData>,
     user: LoggedUser,
-    dataset: Dataset,
+    dataset: SlimDataset,
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -246,7 +247,7 @@ pub async fn regenerate_message_handler(
     let pool1 = pool.clone();
     let pool2 = pool.clone();
     let pool3 = pool.clone();
-    let dataset_name = dataset.name.clone();
+    let dataset_id = dataset.id;
 
     let user_topic = web::block(move || user_owns_topic_query(user.id, topic_id, &pool1))
         .await?
@@ -273,7 +274,7 @@ pub async fn regenerate_message_handler(
             previous_messages,
             user.id,
             topic_id,
-            dataset_name.clone(),
+            dataset_id,
             app_mutex,
             pool3,
         )
@@ -329,7 +330,7 @@ pub async fn regenerate_message_handler(
         previous_messages_to_regenerate,
         user.id,
         topic_id,
-        dataset_name.clone(),
+        dataset_id,
         app_mutex,
         pool3,
     )
@@ -396,7 +397,7 @@ pub async fn stream_response(
     messages: Vec<models::Message>,
     user_id: uuid::Uuid,
     topic_id: uuid::Uuid,
-    dataset_name: String,
+    dataset_id: uuid::Uuid,
     app_mutex: web::Data<AppMutexStore>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -493,7 +494,7 @@ pub async fn stream_response(
                 quote_words: None,
                 negated_words: None,
             },
-            dataset_name.clone(),
+            dataset_id,
             pool.clone(),
         )
         .await
