@@ -968,7 +968,7 @@ pub struct UserNotificationCount {
     pub notification_count: i32,
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[diesel(table_name = datasets)]
 pub struct Dataset {
     pub id: uuid::Uuid,
