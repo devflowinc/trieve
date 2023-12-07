@@ -1,7 +1,10 @@
 use super::auth_handler::LoggedUser;
 use crate::{
+    data::models::{Dataset, Pool},
     errors::ServiceError,
-    operators::{qdrant_operator, tantivy_operator::TantivyIndexMap, dataset_operator::create_dataset_query}, data::models::{Pool, Dataset},
+    operators::{
+        dataset_operator::create_dataset_query, qdrant_operator, tantivy_operator::TantivyIndexMap,
+    },
 };
 use actix_web::{web, FromRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -41,7 +44,7 @@ impl FromRequest for SlimDataset {
                         Ok(id) => ready(Ok(SlimDataset { id })),
                         Err(err) => ready(Err(err)),
                     }
-                },
+                }
                 Err(_) => ready(Err(ServiceError::BadRequest(
                     "Dataset must be ASCII".to_string(),
                 ))),
@@ -55,7 +58,7 @@ impl FromRequest for SlimDataset {
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct CreateDatasetRequest {
-    pub dataset_name: String
+    pub dataset_name: String,
 }
 
 #[utoipa::path(
@@ -94,16 +97,12 @@ pub async fn create_dataset(
 
     qdrant_operator::create_new_qdrant_collection_query(data.dataset_name.clone()).await?;
 
-    let dataset = Dataset::from_details(data.dataset_name.clone());
+    let dataset = Dataset::from_details(data.dataset_name.clone(), user.organization_id);
 
-    let dataset = web::block(move || {
-        create_dataset_query(
-            dataset,
-            pool
-        )
-    }).await.map_err(|_| {
-        ServiceError::BadRequest("Threadpool error".to_string())
-    })?.await?;
+    let dataset = web::block(move || create_dataset_query(dataset, pool))
+        .await
+        .map_err(|_| ServiceError::BadRequest("Threadpool error".to_string()))?
+        .await?;
 
     Ok(HttpResponse::Ok().json(dataset))
 }
