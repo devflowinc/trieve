@@ -382,6 +382,7 @@ pub async fn create_cards_with_handler(
             collection_id: None,
             tracking_id: None,
             time_stamp: time_stamp.clone(),
+            card_vector: None,
         };
         let web_json_create_card_data = web::Json(create_card_data);
 
@@ -429,7 +430,8 @@ pub async fn create_cards_with_handler(
     add_collection_created_notification_query(
         FileUploadCompletedNotification::from_details(user.id, collection_id),
         pool,
-    ).map_err(|_| DefaultError {
+    )
+    .map_err(|_| DefaultError {
         message: "Thread error creating notification",
     })?;
 
