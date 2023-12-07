@@ -10,6 +10,7 @@ use crate::operators::card_operator::*;
 use crate::operators::collection_operator::{
     create_card_bookmark_query, get_collection_by_id_query,
 };
+use crate::operators::dataset_operator::get_dataset_by_id_query;
 use crate::operators::qdrant_operator::{create_embedding, update_qdrant_point_query};
 use crate::operators::qdrant_operator::{
     create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
@@ -140,13 +141,23 @@ pub async fn create_card(
 ) -> Result<HttpResponse, actix_web::Error> {
     let only_admin_can_create_cards =
         std::env::var("ONLY_ADMIN_CAN_CREATE_CARDS").unwrap_or("off".to_string());
+
     if only_admin_can_create_cards == "on" {
         let admin_email = std::env::var("ADMIN_USER_EMAIL").unwrap_or("".to_string());
         if admin_email != user.email {
             return Err(ServiceError::Forbidden.into());
         }
     }
-    let dataset_id = dataset.id;
+
+    let pool1 = pool.clone();
+    let pool2 = pool.clone();
+    let pool3 = pool.clone();
+
+    let dataset1 = dataset.clone();
+    let dataset = web::block(move || get_dataset_by_id_query(dataset1.id, pool)).await??;
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    }
 
     let private = card.private.unwrap_or(false);
     let card_tracking_id = card
@@ -157,10 +168,6 @@ pub async fn create_card(
 
     let mut collision: Option<uuid::Uuid> = None;
 
-    let pool1 = pool.clone();
-    let pool2 = pool.clone();
-    let pool3 = pool.clone();
-
     let content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
 
     let embedding_vector = if let Some(embedding_vector) = card.card_vector.clone() {
@@ -170,7 +177,7 @@ pub async fn create_card(
     };
 
     let first_semantic_result =
-        global_unfiltered_top_match_query(embedding_vector.clone(), dataset_id)
+        global_unfiltered_top_match_query(embedding_vector.clone(), dataset.id)
             .await
             .map_err(|err| {
                 ServiceError::BadRequest(format!(
@@ -196,7 +203,7 @@ pub async fn create_card(
         match score_card_result {
             Ok(card_results) => {
                 if card_results.is_empty() {
-                    delete_qdrant_point_id_query(first_semantic_result.point_id, dataset_id)
+                    delete_qdrant_point_id_query(first_semantic_result.point_id, dataset.id)
                         .await
                         .map_err(|_| {
                             ServiceError::BadRequest(
@@ -228,7 +235,7 @@ pub async fn create_card(
             collision.expect("Collision must be some"),
             Some(user.id),
             None,
-            dataset_id,
+            dataset.id,
         )
         .await?;
 
@@ -250,7 +257,7 @@ pub async fn create_card(
                     })
                 })
                 .transpose()?,
-            dataset_id,
+            dataset.id,
         );
         card_metadata = web::block(move || {
             insert_duplicate_card_metadata_query(
@@ -287,14 +294,14 @@ pub async fn create_card(
                     })
                 })
                 .transpose()?,
-            dataset_id,
+            dataset.id,
         );
 
         card_metadata = insert_card_metadata_query(
             card_metadata,
             card.file_uuid,
             tantivy_index_map,
-            dataset_id,
+            dataset.id,
             pool1,
         )
         .await
@@ -306,7 +313,7 @@ pub async fn create_card(
             private,
             card_metadata.clone(),
             Some(user.id),
-            dataset_id,
+            dataset.id,
         )
         .await?;
     }
@@ -315,7 +322,7 @@ pub async fn create_card(
         let card_collection_bookmark = CardCollectionBookmark::from_details(
             collection_id_to_bookmark,
             card_metadata.id,
-            dataset_id,
+            dataset.id,
         );
 
         let _ =
