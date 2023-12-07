@@ -118,6 +118,7 @@ diesel::table! {
         name -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        organization_id -> Uuid,
     }
 }
 
@@ -252,6 +253,7 @@ diesel::joinable!(card_votes -> users (voted_user_id));
 diesel::joinable!(collections_from_files -> card_collection (collection_id));
 diesel::joinable!(collections_from_files -> files (file_id));
 diesel::joinable!(cut_cards -> users (user_id));
+diesel::joinable!(datasets -> organizations (organization_id));
 diesel::joinable!(file_upload_completed_notifications -> card_collection (collection_uuid));
 diesel::joinable!(files -> users (user_id));
 diesel::joinable!(invitations -> organizations (organization_id));
