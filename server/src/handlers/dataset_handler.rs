@@ -25,14 +25,9 @@ impl FromRequest for SlimDataset {
         req: &actix_web::HttpRequest,
         _payload: &mut actix_web::dev::Payload,
     ) -> Self::Future {
-        log::error!(
-            "Dataset from request, headers: {:?}",
-            req.headers().get("AF-Dataset")
-        );
         match req.headers().get("AF-Dataset") {
             Some(dataset_header) => match dataset_header.to_str() {
                 Ok(dataset) => {
-                    log::error!("Dataset is {}", dataset);
                     // Try to convert to a uuid
                     let id_result = uuid::Uuid::parse_str(dataset).map_err(|err| {
                         ServiceError::BadRequest(format!(
@@ -78,7 +73,6 @@ pub async fn create_dataset(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, ServiceError> {
-    log::info!("Creating dataset {:?}", data.dataset_name);
     let admin_email = std::env::var("ADMIN_USER_EMAIL").unwrap_or("".to_string());
     if admin_email != user.email {
         return Err(ServiceError::Forbidden);
