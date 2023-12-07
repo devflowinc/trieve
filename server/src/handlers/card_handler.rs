@@ -161,51 +161,6 @@ pub async fn create_card(
     let pool3 = pool.clone();
 
     let content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
-    // Card content can be at least 470 characters long
-
-    let minimum_card_char_len = std::env::var("MINIMUM_CARD_CHAR_LENGTH")
-        .unwrap_or("0".to_string())
-        .parse::<usize>()
-        .unwrap_or(0);
-
-    let maximum_card_char_len = std::env::var("MAXIMUM_CARD_CHAR_LENGTH")
-        .unwrap_or("29000".to_string())
-        .parse::<usize>()
-        .unwrap_or(29000);
-
-    let minimum_card_word_len = std::env::var("MINIMUM_CARD_WORD_LENGTH")
-        .unwrap_or("0".to_string())
-        .parse::<usize>()
-        .unwrap_or(0);
-
-    let maximum_card_word_len = std::env::var("MAXIMUM_CARD_WORD_LENGTH")
-        .unwrap_or("5000".to_string())
-        .parse::<usize>()
-        .unwrap_or(5000);
-
-    if content.len() < minimum_card_char_len {
-        return Ok(HttpResponse::BadRequest().json(json!({
-            "message": format!("Card content must be at least {} characters long", minimum_card_char_len),
-        })));
-    }
-
-    if content.len() > maximum_card_char_len {
-        return Ok(HttpResponse::BadRequest().json(json!({
-            "message": format!("Card content must no more than {} characters long", maximum_card_char_len),
-        })));
-    }
-
-    let words_in_content = content.split_whitespace().collect::<Vec<&str>>().len();
-    if words_in_content < minimum_card_word_len {
-        return Ok(HttpResponse::BadRequest().json(json!({
-            "message": format!("Card content must be at least {} words long", minimum_card_word_len),
-        })));
-    }
-    if words_in_content > maximum_card_word_len {
-        return Ok(HttpResponse::BadRequest().json(json!({
-            "message": format!("Card content must be at most {} words long",  maximum_card_word_len),
-        })));
-    }
 
     let embedding_vector = create_embedding(&content, app_mutex).await?;
 
