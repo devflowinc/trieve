@@ -973,15 +973,17 @@ pub struct UserNotificationCount {
 pub struct Dataset {
     pub id: uuid::Uuid,
     pub name: String,
+    pub organization_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
 
 impl Dataset {
-    pub fn from_details(name: String) -> Self {
+    pub fn from_details(name: String, organization_id: uuid::Uuid) -> Self {
         Dataset {
             id: uuid::Uuid::new_v4(),
             name,
+            organization_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
         }
