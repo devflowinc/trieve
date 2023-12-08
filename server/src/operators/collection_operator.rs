@@ -5,7 +5,7 @@ use crate::{
 use crate::{
     data::models::{
         CardCollectionAndFileWithCount, CardCollectionBookmark, CardMetadataWithCount,
-        CardMetadataWithVotesWithScore, FileCollection, FullTextSearchResult, SlimCollection,
+        CardMetadataWithFileData, FileCollection, FullTextSearchResult, SlimCollection,
     },
     diesel::{Connection, ExpressionMethods, QueryDsl, RunQueryDsl},
     errors::ServiceError,
@@ -62,7 +62,11 @@ pub fn create_collection_and_add_bookmarks_query(
                 bookmarks
                     .iter()
                     .map(|bookmark| {
-                        CardCollectionBookmark::from_details(new_collection.id, *bookmark, given_dataset_id)
+                        CardCollectionBookmark::from_details(
+                            new_collection.id,
+                            *bookmark,
+                            given_dataset_id,
+                        )
                     })
                     .collect::<Vec<CardCollectionBookmark>>(),
             )
@@ -280,18 +284,20 @@ pub fn update_card_collection_query(
 
     let mut conn = pool.get().unwrap();
 
-    diesel::update(card_collection.filter(id.eq(collection.id))
-        .filter(dataset_id.eq(dataset_uuid))
-        )
-        .set((
-            name.eq(new_name.unwrap_or(collection.name)),
-            description.eq(new_description.unwrap_or(collection.description)),
-            is_public.eq(new_is_public.unwrap_or(collection.is_public)),
-        ))
-        .execute(&mut conn)
-        .map_err(|_err| DefaultError {
-            message: "Error updating collection",
-        })?;
+    diesel::update(
+        card_collection
+            .filter(id.eq(collection.id))
+            .filter(dataset_id.eq(dataset_uuid)),
+    )
+    .set((
+        name.eq(new_name.unwrap_or(collection.name)),
+        description.eq(new_description.unwrap_or(collection.description)),
+        is_public.eq(new_is_public.unwrap_or(collection.is_public)),
+    ))
+    .execute(&mut conn)
+    .map_err(|_err| DefaultError {
+        message: "Error updating collection",
+    })?;
 
     Ok(())
 }
@@ -317,7 +323,7 @@ pub fn create_card_bookmark_query(
     Ok(())
 }
 pub struct CollectionsBookmarkQueryResult {
-    pub metadata: Vec<CardMetadataWithVotesWithScore>,
+    pub metadata: Vec<CardMetadataWithFileData>,
     pub collection: CardCollection,
     pub total_pages: i64,
 }
@@ -423,9 +429,8 @@ pub fn get_bookmarks_for_collection_query(
         })
         .collect::<Vec<FullTextSearchResult>>();
 
-    let card_metadata_with_upvotes_and_file_id =
-        get_metadata_query(converted_cards, current_user_id, conn)
-            .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
+    let card_metadata_with_file_id = get_metadata_query(converted_cards, conn)
+        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
     let total_pages = match bookmark_metadata.get(0) {
         Some(metadata) => (metadata.0.count as f64 / 10.0).ceil() as i64,
@@ -433,7 +438,7 @@ pub fn get_bookmarks_for_collection_query(
     };
 
     Ok(CollectionsBookmarkQueryResult {
-        metadata: card_metadata_with_upvotes_and_file_id,
+        metadata: card_metadata_with_file_id,
         collection: card_collection,
         total_pages,
     })

@@ -336,92 +336,14 @@ impl CardCollisions {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping, ToSchema)]
-#[diesel(table_name = card_votes)]
-pub struct CardVote {
-    pub id: uuid::Uuid,
-    pub voted_user_id: uuid::Uuid,
-    pub card_metadata_id: uuid::Uuid,
-    pub vote: bool,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-    pub deleted: bool,
-}
-
-impl CardVote {
-    pub fn from_details(
-        voted_user_id: &uuid::Uuid,
-        card_metadata_id: &uuid::Uuid,
-        vote: &bool,
-    ) -> Self {
-        CardVote {
-            id: uuid::Uuid::new_v4(),
-            voted_user_id: *voted_user_id,
-            card_metadata_id: *card_metadata_id,
-            vote: *vote,
-            created_at: chrono::Utc::now().naive_local(),
-            updated_at: chrono::Utc::now().naive_local(),
-            deleted: false,
-        }
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct CardMetadataWithVotes {
+pub struct CardMetadataWithFileData {
     pub id: uuid::Uuid,
     pub author: Option<UserDTO>,
     pub content: String,
     pub card_html: Option<String>,
     pub link: Option<String>,
     pub qdrant_point_id: uuid::Uuid,
-    pub total_upvotes: i64,
-    pub total_downvotes: i64,
-    pub vote_by_current_user: Option<bool>,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-    pub tag_set: Option<String>,
-    pub private: bool,
-    pub metadata: Option<serde_json::Value>,
-    pub tracking_id: Option<String>,
-    pub time_stamp: Option<NaiveDateTime>,
-    pub score: Option<f64>,
-}
-
-impl From<(CardMetadata, i64)> for CardMetadataWithVotes {
-    fn from(x: (CardMetadata, i64)) -> Self {
-        CardMetadataWithVotes {
-            id: x.0.id,
-            author: None,
-            content: x.0.content,
-            card_html: x.0.card_html,
-            link: x.0.link,
-            qdrant_point_id: x.0.qdrant_point_id.unwrap_or_default(),
-            total_upvotes: x.1.max(0),
-            total_downvotes: 0,
-            vote_by_current_user: None,
-            created_at: x.0.created_at,
-            updated_at: x.0.updated_at,
-            tag_set: x.0.tag_set,
-            private: x.0.private,
-            metadata: x.0.metadata,
-            tracking_id: x.0.tracking_id,
-            time_stamp: x.0.time_stamp,
-            score: None,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct CardMetadataWithVotesWithScore {
-    pub id: uuid::Uuid,
-    pub author: Option<UserDTO>,
-    pub content: String,
-    pub card_html: Option<String>,
-    pub link: Option<String>,
-    pub qdrant_point_id: uuid::Uuid,
-    pub total_upvotes: i64,
-    pub total_downvotes: i64,
-    pub vote_by_current_user: Option<bool>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub tag_set: Option<String>,
@@ -431,7 +353,6 @@ pub struct CardMetadataWithVotesWithScore {
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
-    pub score: Option<f64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -619,7 +540,7 @@ impl FileCollection {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct UserDTOWithVotesAndCards {
+pub struct UserDTOWithCards {
     pub id: uuid::Uuid,
     pub email: Option<String>,
     pub username: Option<String>,
@@ -627,29 +548,8 @@ pub struct UserDTOWithVotesAndCards {
     pub visible_email: bool,
     pub created_at: chrono::NaiveDateTime,
     pub total_cards_created: i64,
-    pub cards: Vec<CardMetadataWithVotesWithScore>,
-    pub total_upvotes_received: i32,
-    pub total_downvotes_received: i32,
-    pub total_votes_cast: i32,
+    pub cards: Vec<CardMetadataWithFileData>,
     pub organization_id: uuid::Uuid,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Queryable, ToSchema)]
-pub struct UserDTOWithScore {
-    pub id: uuid::Uuid,
-    pub email: Option<String>,
-    pub username: Option<String>,
-    pub website: Option<String>,
-    pub visible_email: bool,
-    pub created_at: chrono::NaiveDateTime,
-    pub score: i64,
-    pub organization_id: uuid::Uuid,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
-pub struct UserScore {
-    pub author_id: uuid::Uuid,
-    pub score: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, Default)]
@@ -843,32 +743,6 @@ pub struct CardFileWithName {
     pub card_id: uuid::Uuid,
     pub file_id: uuid::Uuid,
     pub file_name: String,
-}
-
-impl From<CardMetadataWithVotes> for CardMetadataWithVotesWithScore {
-    fn from(card: CardMetadataWithVotes) -> Self {
-        CardMetadataWithVotesWithScore {
-            id: card.id,
-            author: card.author,
-            content: card.content,
-            card_html: card.card_html,
-            link: card.link,
-            qdrant_point_id: card.qdrant_point_id,
-            total_upvotes: card.total_upvotes,
-            total_downvotes: card.total_downvotes,
-            vote_by_current_user: card.vote_by_current_user,
-            created_at: card.created_at,
-            updated_at: card.updated_at,
-            tag_set: card.tag_set,
-            private: card.private,
-            score: card.score,
-            file_id: None,
-            metadata: card.metadata,
-            tracking_id: card.tracking_id,
-            time_stamp: card.time_stamp,
-            file_name: None,
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable, Selectable)]

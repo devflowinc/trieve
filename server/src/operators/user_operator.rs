@@ -1,6 +1,5 @@
 use crate::data::models::{
-    CardFileWithName, CardMetadata, CardMetadataWithVotesWithScore, CardVote, SlimUser,
-    UserDTOWithScore, UserDTOWithVotesAndCards, UserScore,
+    CardFileWithName, CardMetadata, CardMetadataWithFileData, SlimUser, UserDTOWithCards,
 };
 use crate::diesel::prelude::*;
 use crate::handlers::register_handler::{generate_api_key, hash_password};
@@ -10,7 +9,6 @@ use crate::{
     errors::DefaultError,
 };
 use actix_web::web;
-use diesel::sql_types::{BigInt, Text};
 
 pub fn get_user_by_email_query(
     user_email: &String,
@@ -81,15 +79,14 @@ pub fn get_user_by_id_query(
     }
 }
 
-pub fn get_user_with_votes_and_cards_by_id_query(
+pub fn get_user_with_cards_by_id_query(
     user_id: uuid::Uuid,
     accessing_user_id: Option<uuid::Uuid>,
     page: &i64,
     pool: web::Data<Pool>,
-) -> Result<UserDTOWithVotesAndCards, DefaultError> {
+) -> Result<UserDTOWithCards, DefaultError> {
     use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
-    use crate::data::schema::card_votes::dsl as card_votes_columns;
     use crate::data::schema::files::dsl as files_columns;
     use crate::data::schema::users::dsl as user_columns;
 
@@ -167,20 +164,6 @@ pub fn get_user_with_votes_and_cards_by_id_query(
             message: "Error loading user cards",
         })?;
 
-    let card_votes: Vec<CardVote> = card_votes_columns::card_votes
-        .filter(
-            card_votes_columns::card_metadata_id.eq_any(
-                user_card_metadatas
-                    .iter()
-                    .map(|metadata| metadata.id)
-                    .collect::<Vec<uuid::Uuid>>(),
-            ),
-        )
-        .load::<CardVote>(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to load upvotes",
-        })?;
-
     let file_ids: Vec<CardFileWithName> = card_files_columns::card_files
         .filter(
             card_files_columns::card_id.eq_any(
@@ -203,35 +186,23 @@ pub fn get_user_with_votes_and_cards_by_id_query(
             message: "Failed to load metadata",
         })?;
 
-    let card_metadata_with_upvotes: Vec<CardMetadataWithVotesWithScore> = (user_card_metadatas)
+    let card_metadata_with_score_and_file: Vec<CardMetadataWithFileData> = (user_card_metadatas)
         .iter()
         .map(|metadata| {
-            let votes = card_votes
-                .iter()
-                .filter(|upvote| upvote.card_metadata_id == metadata.id)
-                .collect::<Vec<&CardVote>>();
-            let total_upvotes = votes.iter().filter(|upvote| upvote.vote).count() as i64;
-            let total_downvotes = votes.iter().filter(|upvote| !upvote.vote).count() as i64;
-            let vote_by_current_user = None;
-
             let author = None;
             let card_with_file_name = file_ids.iter().find(|file| file.card_id == metadata.id);
 
-            CardMetadataWithVotesWithScore {
+            CardMetadataWithFileData {
                 id: metadata.id,
                 content: metadata.content.clone(),
                 link: metadata.link.clone(),
                 author,
                 qdrant_point_id: metadata.qdrant_point_id.unwrap_or(uuid::Uuid::nil()),
-                total_upvotes,
-                total_downvotes,
                 card_html: metadata.card_html.clone(),
-                vote_by_current_user,
                 created_at: metadata.created_at,
                 updated_at: metadata.updated_at,
                 tag_set: metadata.tag_set.clone(),
                 private: metadata.private,
-                score: None,
                 file_name: card_with_file_name.map(|file| file.file_name.clone()),
                 file_id: card_with_file_name.map(|file| file.file_id),
                 metadata: metadata.metadata.clone(),
@@ -241,40 +212,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
         })
         .collect();
 
-    let user_card_votes = card_votes_columns::card_votes
-        .inner_join(
-            card_metadata_columns::card_metadata
-                .on(card_votes_columns::card_metadata_id.eq(card_metadata_columns::id)),
-        )
-        .select((
-            card_votes_columns::id,
-            card_votes_columns::voted_user_id,
-            card_votes_columns::card_metadata_id,
-            card_votes_columns::vote,
-            card_votes_columns::created_at,
-            card_votes_columns::updated_at,
-            card_votes_columns::deleted,
-        ))
-        .filter(card_metadata_columns::author_id.eq(user.id))
-        .load::<CardVote>(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to load upvotes",
-        })?;
-    let total_upvotes_received = user_card_votes
-        .iter()
-        .filter(|card_vote| card_vote.vote)
-        .count() as i32;
-    let total_downvotes_received = user_card_votes.len() as i32 - total_upvotes_received;
-
-    let total_votes_cast = card_votes_columns::card_votes
-        .filter(card_votes_columns::voted_user_id.eq(user.id))
-        .count()
-        .get_result::<i64>(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to load total votes cast",
-        })? as i32;
-
-    Ok(UserDTOWithVotesAndCards {
+    Ok(UserDTOWithCards {
         id: user.id,
         email: if user.visible_email {
             Some(user.email)
@@ -286,10 +224,7 @@ pub fn get_user_with_votes_and_cards_by_id_query(
         visible_email: user.visible_email,
         created_at: user.created_at,
         total_cards_created: total_cards_created_by_user,
-        cards: card_metadata_with_upvotes,
-        total_upvotes_received,
-        total_downvotes_received,
-        total_votes_cast,
+        cards: card_metadata_with_score_and_file,
         organization_id: user.organization_id,
     })
 }
@@ -339,96 +274,6 @@ pub fn update_user_query(
         })?;
 
     Ok(SlimUser::from(user))
-}
-
-pub fn get_top_users_query(
-    page: &i64,
-    pool: web::Data<Pool>,
-) -> Result<Vec<UserDTOWithScore>, DefaultError> {
-    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
-    use crate::data::schema::card_votes::dsl as card_votes_columns;
-    use crate::data::schema::users::dsl as users_columns;
-
-    let mut conn = pool.get().unwrap();
-
-    let query = card_metadata_columns::card_metadata
-        .inner_join(
-            card_votes_columns::card_votes
-                .on(card_metadata_columns::id.eq(card_votes_columns::card_metadata_id))
-        )
-        .select((
-            card_metadata_columns::author_id,
-            diesel::dsl::sql::<BigInt>("(SUM(case when vote = true then 1 else 0 end) - SUM(case when vote = false then 1 else 0 end)) as score"),
-        ))
-        .group_by((
-            card_metadata_columns::author_id,
-        ))
-        .order(diesel::dsl::sql::<Text>("score desc"))
-        .limit(10)
-        .offset((page - 1) * 10);
-
-    let user_scores: Vec<UserScore> =
-        query
-            .load::<UserScore>(&mut conn)
-            .map_err(|_| DefaultError {
-                message: "Failed to load top users",
-            })?;
-
-    let users_with_scores = users_columns::users
-        .filter(
-            users_columns::id.eq_any(
-                user_scores
-                    .iter()
-                    .map(|user_score| user_score.author_id)
-                    .collect::<Vec<uuid::Uuid>>(),
-            ),
-        )
-        .load::<User>(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to load top users",
-        })?;
-
-    let user_scores_with_users = user_scores
-        .iter()
-        .map(|user_score| {
-            let user = users_with_scores
-                .iter()
-                .find(|user| user.id == user_score.author_id)
-                .unwrap();
-
-            UserDTOWithScore {
-                id: user_score.author_id,
-                email: if user.visible_email {
-                    Some(user.email.clone())
-                } else {
-                    None
-                },
-                username: user.username.clone(),
-                website: user.website.clone(),
-                visible_email: user.visible_email,
-                created_at: user.created_at,
-                score: user_score.score,
-                organization_id: user.organization_id,
-            }
-        })
-        .collect::<Vec<UserDTOWithScore>>();
-
-    Ok(user_scores_with_users)
-}
-
-pub fn get_total_users_query(pool: web::Data<Pool>) -> Result<i64, DefaultError> {
-    use crate::data::schema::users::dsl::*;
-
-    let mut conn = pool.get().unwrap();
-
-    let total_users = users
-        .count()
-        .get_result::<i64>(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to load total users",
-        })?;
-
-    Ok(total_users)
 }
 
 pub fn set_user_api_key_query(
