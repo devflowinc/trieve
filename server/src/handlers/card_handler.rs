@@ -350,6 +350,12 @@ pub async fn delete_card(
     user: LoggedUser,
     dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let pool1 = pool.clone();
+    let dataset = web::block(move || get_dataset_by_id_query(dataset.id, pool1)).await??;
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    }
+
     let card_id_inner = card_id.into_inner();
     let dataset_id = dataset.id;
     let pool1 = pool.clone();
