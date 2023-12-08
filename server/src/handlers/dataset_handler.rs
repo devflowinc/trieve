@@ -5,6 +5,7 @@ use crate::{
     operators::{
         dataset_operator::create_dataset_query, qdrant_operator, tantivy_operator::TantivyIndexMap,
     },
+    operators::{tantivy_operator::TantivyIndexMap, dataset_operator::new_dataset_operation}, data::models::{Pool, Dataset},
 };
 use actix_web::{web, FromRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -78,25 +79,8 @@ pub async fn create_dataset(
         return Err(ServiceError::Forbidden);
     }
 
-    tantivy_index_map
-        .write()
-        .await
-        .create_index(Some(&data.dataset_name.to_string()))
-        .map_err(|err| {
-            ServiceError::BadRequest(format!(
-                "Failed to create tantivy index: {:?}",
-                err.to_string()
-            ))
-        })?;
-
-    qdrant_operator::create_new_qdrant_collection_query(data.dataset_name.clone()).await?;
-
     let dataset = Dataset::from_details(data.dataset_name.clone(), user.organization_id);
 
-    let dataset = web::block(move || create_dataset_query(dataset, pool))
-        .await
-        .map_err(|_| ServiceError::BadRequest("Threadpool error".to_string()))?
-        .await?;
-
-    Ok(HttpResponse::Ok().json(dataset))
+    let d = new_dataset_operation(dataset, tantivy_index_map, pool).await?;
+    Ok(HttpResponse::Ok().json(d))
 }

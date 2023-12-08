@@ -11,7 +11,7 @@ use qdrant_client::{
     client::{QdrantClient, QdrantClientConfig},
     qdrant::{
         point_id::PointIdOptions, with_payload_selector::SelectorOptions, Filter, PointId,
-        PointStruct, RecommendPoints, SearchPoints, WithPayloadSelector, CreateCollection, VectorsConfig, VectorParams, Distance,
+        PointStruct, RecommendPoints, SearchPoints, WithPayloadSelector, CreateCollection, VectorsConfig, VectorParams, Distance, FieldType, PayloadIndexParams, payload_index_params::IndexParams, TokenizerType, TextIndexParams,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -28,6 +28,7 @@ pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
     })
 }
 
+/// Create Qdrant collection and indexes needed
 pub async fn create_new_qdrant_collection_query(
     qdrant_collection: String,
 ) -> Result<(), ServiceError> {
@@ -40,7 +41,7 @@ pub async fn create_new_qdrant_collection_query(
 
     qdrant_client
         .create_collection(&CreateCollection {
-            collection_name: qdrant_collection,
+            collection_name: qdrant_collection.clone(),
             vectors_config: Some(VectorsConfig {
                 config: Some(qdrant_client::qdrant::vectors_config::Config::Params(
                     VectorParams {
@@ -60,6 +61,52 @@ pub async fn create_new_qdrant_collection_query(
                 return ServiceError::BadRequest("Collection already exists".into());
             }
             ServiceError::BadRequest("Failed to create Collection".into())
+        })?;
+
+     qdrant_client
+        .create_field_index(
+            qdrant_collection.clone(),
+            "link",
+            FieldType::Text,
+            None,
+            None,
+        )
+        .await
+        .map_err(|_| {
+            ServiceError::BadRequest("Failed to create index".into())
+        })?;
+
+    qdrant_client
+        .create_field_index(
+            qdrant_collection.clone(),
+            "tag_set",
+            FieldType::Text,
+            None,
+            None,
+        )
+        .await
+        .map_err(|_| {
+            ServiceError::BadRequest("Failed to create index".into())
+        })?;
+
+    qdrant_client
+        .create_field_index(
+            qdrant_collection.clone(),
+            "card_html",
+            FieldType::Text,
+            Some(&PayloadIndexParams {
+                index_params: Some(IndexParams::TextIndexParams(TextIndexParams {
+                    tokenizer: TokenizerType::Whitespace as i32,
+                    min_token_len: Some(2),
+                    max_token_len: Some(10),
+                    lowercase: Some(true),
+                })),
+            }),
+            None,
+        )
+        .await
+        .map_err(|_| {
+            ServiceError::BadRequest("Failed to create index".into())
         })?;
 
     Ok(())
