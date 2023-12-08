@@ -1,8 +1,10 @@
-use super::{auth_handler::{LoggedUser, RequireAuth}, dataset_handler::SlimDataset};
+use super::{
+    auth_handler::{LoggedUser, RequireAuth},
+    dataset_handler::SlimDataset,
+};
 use crate::{
     data::models::{
-        CardCollection, CardCollectionAndFile, CardCollectionBookmark,
-        CardMetadataWithVotesWithScore, Pool,
+        CardCollection, CardCollectionAndFile, CardCollectionBookmark, CardMetadataWithFileData, Pool,
     },
     errors::ServiceError,
     operators::{card_operator::get_collided_cards_query, collection_operator::*},
@@ -27,9 +29,10 @@ pub async fn user_owns_collection(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<CardCollection, actix_web::Error> {
-    let collection = web::block(move || get_collection_by_id_query(collection_id, dataset_id, pool))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let collection =
+        web::block(move || get_collection_by_id_query(collection_id, dataset_id, pool))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if collection.author_id != user_id {
         return Err(ServiceError::Forbidden.into());
@@ -67,7 +70,8 @@ pub async fn create_card_collection(
     let is_public = body.is_public;
     let dataset_id = dataset.id;
 
-    let collection = CardCollection::from_details(user.id, name, is_public, description, dataset_id);
+    let collection =
+        CardCollection::from_details(user.id, name, is_public, description, dataset_id);
     {
         let collection = collection.clone();
         web::block(move || create_collection_query(collection, pool))
@@ -334,7 +338,7 @@ pub struct GetAllBookmarksData {
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct BookmarkCards {
-    pub metadata: Vec<CardMetadataWithVotesWithScore>,
+    pub metadata: Vec<CardMetadataWithFileData>,
 }
 
 #[utoipa::path(
@@ -368,7 +372,14 @@ pub async fn get_all_bookmarks(
     let bookmarks = {
         let dataset_id = dataset_id;
         web::block(move || {
-            get_bookmarks_for_collection_query(collection_id, page, None, current_user_id, dataset_id, pool2)
+            get_bookmarks_for_collection_query(
+                collection_id,
+                page,
+                None,
+                current_user_id,
+                dataset_id,
+                pool2,
+            )
         })
         .await?
         .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?
@@ -391,7 +402,7 @@ pub async fn get_all_bookmarks(
         .metadata
         .iter()
         .map(|search_result| {
-            let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
+            let mut collided_cards: Vec<CardMetadataWithFileData> = collided_cards
                 .iter()
                 .filter(|card| {
                     card.1 == search_result.qdrant_point_id && card.0.id != search_result.id
@@ -466,10 +477,11 @@ pub async fn get_collections_card_is_in(
     let dataset_id = dataset.id;
     let current_user_id = user.map(|user| user.id);
 
-    let collections =
-        web::block(move || get_collections_for_bookmark_query(card_ids, current_user_id, dataset_id, pool))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let collections = web::block(move || {
+        get_collections_for_bookmark_query(card_ids, current_user_id, dataset_id, pool)
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(collections))
 }
@@ -552,7 +564,14 @@ pub async fn generate_off_collection(
     let collection_bookmarks = {
         let dataset_id = dataset_id;
         web::block(move || {
-            get_bookmarks_for_collection_query(collection_id, page, Some(10), Some(user.id), dataset_id, pool)
+            get_bookmarks_for_collection_query(
+                collection_id,
+                page,
+                Some(10),
+                Some(user.id),
+                dataset_id,
+                pool,
+            )
         })
         .await??
         .metadata

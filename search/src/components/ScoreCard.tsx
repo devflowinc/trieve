@@ -14,13 +14,7 @@ import {
   type CardMetadataWithVotes,
 } from "../../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
-import {
-  RiArrowsArrowDownCircleFill,
-  RiArrowsArrowDownCircleLine,
-  RiArrowsArrowUpCircleFill,
-  RiArrowsArrowUpCircleLine,
-  RiOthersCharacterRecognitionLine,
-} from "solid-icons/ri";
+import { RiOthersCharacterRecognitionLine } from "solid-icons/ri";
 import BookmarkPopover from "./BookmarkPopover";
 import { VsFileSymlinkFile } from "solid-icons/vs";
 import sanitizeHtml from "sanitize-html";
@@ -82,7 +76,6 @@ export interface ScoreCardProps {
 const ScoreCard = (props: ScoreCardProps) => {
   const dataset = import.meta.env.PUBLIC_DATASET as string;
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const voteFeature = import.meta.env.PUBLIC_SEARCH_VOTE_FEATURE as string;
 
   const frontMatterVals = (
     (import.meta.env.PUBLIC_FRONTMATTER_VALS as string | undefined) ??
@@ -92,7 +85,7 @@ const ScoreCard = (props: ScoreCardProps) => {
   const linesBeforeShowMore = (() => {
     const parsedLinesBeforeShowMore = Number.parseInt(
       (import.meta.env.PUBLIC_LINES_BEFORE_SHOW_MORE as string | undefined) ??
-      "4",
+        "4",
       10,
     );
     return Number.isNaN(parsedLinesBeforeShowMore)
@@ -101,11 +94,6 @@ const ScoreCard = (props: ScoreCardProps) => {
   })();
 
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
-  const [userVote, setUserVote] = createSignal(0);
-  const [totalVote, setTotalVote] = createSignal(
-    // eslint-disable-next-line solid/reactivity
-    props.card.total_upvotes - props.card.total_downvotes,
-  );
   const [showPropsModal, setShowPropsModal] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
   const [deleted, setDeleted] = createSignal(false);
@@ -155,57 +143,6 @@ const ScoreCard = (props: ScoreCardProps) => {
     props.setShowModal(true);
     setShowPropsModal(false);
   });
-
-  createEffect(() => {
-    if (props.card.vote_by_current_user === null) {
-      return;
-    }
-    const userVote = props.card.vote_by_current_user ? 1 : -1;
-    setUserVote(userVote);
-    const newTotalVote =
-      props.card.total_upvotes - props.card.total_downvotes - userVote;
-    setTotalVote(newTotalVote);
-  });
-
-  const deleteVote = (prev_vote: number) => {
-    void fetch(`${apiHost}/vote/${props.card.id}`, {
-      method: "DELETE",
-      credentials: "include",
-      headers: {
-        "AF-Dataset": dataset,
-      }
-    }).then((response) => {
-      if (!response.ok) {
-        setUserVote(prev_vote);
-        if (response.status === 401) setShowPropsModal(true);
-      }
-    });
-  };
-
-  const createVote = (prev_vote: number, new_vote: number) => {
-    if (new_vote === 0) {
-      deleteVote(prev_vote);
-      return;
-    }
-
-    void fetch(`${apiHost}/vote`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "AF-Dataset": dataset,
-      },
-      credentials: "include",
-      body: JSON.stringify({
-        card_metadata_id: props.card.id,
-        vote: new_vote === 1 ? true : false,
-      }),
-    }).then((response) => {
-      if (!response.ok) {
-        setUserVote(prev_vote);
-        if (response.status === 401) setShowPropsModal(true);
-      }
-    });
-  };
 
   const deleteCard = () => {
     if (!props.setOnDelete) return;
@@ -335,14 +272,16 @@ const ScoreCard = (props: ScoreCardProps) => {
                   <Show when={imgInformation()}>
                     <a
                       class="h-fit"
-                      href={`${apiHost}/pdf_from_range/${imgInformation()?.imgRangeStart ?? 0
-                        }/${imgInformation()?.imgRangeEnd ?? 0}/${imgInformation()?.imgRangePrefix ?? ""
-                        }/${
+                      href={`${apiHost}/pdf_from_range/${
+                        imgInformation()?.imgRangeStart ?? 0
+                      }/${imgInformation()?.imgRangeEnd ?? 0}/${
+                        imgInformation()?.imgRangePrefix ?? ""
+                      }/${
                         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                         props.card.metadata?.file_name ??
                         imgInformation()?.imgRangeStart ??
                         "Arguflow PDF From Range"
-                        }/false`}
+                      }/false`}
                       target="_blank"
                       title="Open PDF"
                     >
@@ -357,14 +296,16 @@ const ScoreCard = (props: ScoreCardProps) => {
                   <Show when={imgInformation()}>
                     <a
                       class="h-fit"
-                      href={`${apiHost}/pdf_from_range/${imgInformation()?.imgRangeStart ?? 0
-                        }/${imgInformation()?.imgRangeEnd ?? 0}/${imgInformation()?.imgRangePrefix ?? ""
-                        }/${
+                      href={`${apiHost}/pdf_from_range/${
+                        imgInformation()?.imgRangeStart ?? 0
+                      }/${imgInformation()?.imgRangeEnd ?? 0}/${
+                        imgInformation()?.imgRangePrefix ?? ""
+                      }/${
                         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                         props.card.metadata?.file_name ??
                         imgInformation()?.imgRangeStart ??
                         "Arguflow PDF From Range"
-                        }/true`}
+                      }/true`}
                       target="_blank"
                       title="Open PDF"
                     >
@@ -460,127 +401,85 @@ const ScoreCard = (props: ScoreCardProps) => {
                 )}
               </Show>
             </div>
-            <div class="flex w-full items-start">
-              <div class="flex flex-col items-center pr-2">
-                <Show when={voteFeature != "off" && !props.card.private}>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setUserVote((prev) => {
-                        const new_val = prev === 1 ? 0 : 1;
-                        createVote(prev, new_val);
-                        return new_val;
-                      });
-                    }}
-                  >
-                    <Show when={userVote() === 1}>
-                      <RiArrowsArrowUpCircleFill class="h-8 w-8 fill-current !text-turquoise-500" />
+            <div class="flex w-full flex-col">
+              <For each={frontMatterVals}>
+                {(frontMatterVal) => (
+                  <>
+                    <Show when={props.card.link && frontMatterVal == "link"}>
+                      <a
+                        class="line-clamp-1 w-fit break-all text-magenta-500 underline dark:text-turquoise-400"
+                        target="_blank"
+                        href={props.card.link ?? ""}
+                      >
+                        {props.card.link}
+                      </a>
                     </Show>
-                    <Show when={userVote() != 1}>
-                      <RiArrowsArrowUpCircleLine class="h-8 w-8 fill-current" />
+                    <Show
+                      when={props.card.tag_set && frontMatterVal == "tag_set"}
+                    >
+                      <div class="flex space-x-2">
+                        <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                          Tag Set:{" "}
+                        </span>
+                        <span class="line-clamp-1 break-all">
+                          {props.card.tag_set}
+                        </span>
+                      </div>
                     </Show>
-                  </button>
-                  <span class="my-1">{totalVote() + userVote()}</span>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setUserVote((prev) => {
-                        const new_val = prev === -1 ? 0 : -1;
-                        createVote(prev, new_val);
-                        return new_val;
-                      });
-                    }}
-                  >
-                    <Show when={userVote() === -1}>
-                      <RiArrowsArrowDownCircleFill class="h-8 w-8 fill-current !text-turquoise-500" />
+                    <Show
+                      when={
+                        props.card.time_stamp && frontMatterVal == "time_stamp"
+                      }
+                    >
+                      <div class="flex space-x-2">
+                        <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                          Time Stamp:{" "}
+                        </span>
+                        <span class="line-clamp-1 break-all">
+                          {formatDate(new Date(props.card.time_stamp ?? ""))}
+                        </span>
+                      </div>
                     </Show>
-                    <Show when={userVote() != -1}>
-                      <RiArrowsArrowDownCircleLine class="h-8 w-8 fill-current" />
+                    <Show
+                      when={
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                        frontMatterVal !== "link" &&
+                        frontMatterVal !== "tag_set" &&
+                        frontMatterVal !== "time_stamp" &&
+                        props.card.metadata &&
+                        indirectHasOwnProperty(
+                          props.card.metadata,
+                          frontMatterVal,
+                        ) &&
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+                        (props.card.metadata as any)[frontMatterVal]
+                      }
+                    >
+                      <div class="flex space-x-2">
+                        <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                          {frontMatterVal}:{" "}
+                        </span>
+                        <span class="line-clamp-1 break-all">
+                          {props.card.metadata &&
+                            indirectHasOwnProperty(
+                              props.card.metadata,
+                              frontMatterVal,
+                            ) &&
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
+                            (props.card.metadata as any)[
+                              frontMatterVal
+                            ].replace(/ +/g, " ")}
+                        </span>
+                      </div>
                     </Show>
-                  </button>
+                  </>
+                )}
+              </For>
+              <div class="grid w-fit auto-cols-min grid-cols-[1fr,3fr] gap-x-2 text-neutral-800 dark:text-neutral-200">
+                <Show when={props.score != 0}>
+                  <span class="font-semibold">Similarity: </span>
+                  <span>{props.score.toPrecision(3)}</span>
                 </Show>
-              </div>
-              <div class="flex w-full flex-col">
-                <For each={frontMatterVals}>
-                  {(frontMatterVal) => (
-                    <>
-                      <Show when={props.card.link && frontMatterVal == "link"}>
-                        <a
-                          class="line-clamp-1 w-fit break-all text-magenta-500 underline dark:text-turquoise-400"
-                          target="_blank"
-                          href={props.card.link ?? ""}
-                        >
-                          {props.card.link}
-                        </a>
-                      </Show>
-                      <Show
-                        when={props.card.tag_set && frontMatterVal == "tag_set"}
-                      >
-                        <div class="flex space-x-2">
-                          <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                            Tag Set:{" "}
-                          </span>
-                          <span class="line-clamp-1 break-all">
-                            {props.card.tag_set}
-                          </span>
-                        </div>
-                      </Show>
-                      <Show
-                        when={
-                          props.card.time_stamp &&
-                          frontMatterVal == "time_stamp"
-                        }
-                      >
-                        <div class="flex space-x-2">
-                          <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                            Time Stamp:{" "}
-                          </span>
-                          <span class="line-clamp-1 break-all">
-                            {formatDate(new Date(props.card.time_stamp ?? ""))}
-                          </span>
-                        </div>
-                      </Show>
-                      <Show
-                        when={
-                          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                          frontMatterVal !== "link" &&
-                          frontMatterVal !== "tag_set" &&
-                          frontMatterVal !== "time_stamp" &&
-                          props.card.metadata &&
-                          indirectHasOwnProperty(
-                            props.card.metadata,
-                            frontMatterVal,
-                          ) &&
-                          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                          (props.card.metadata as any)[frontMatterVal]
-                        }
-                      >
-                        <div class="flex space-x-2">
-                          <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                            {frontMatterVal}:{" "}
-                          </span>
-                          <span class="line-clamp-1 break-all">
-                            {props.card.metadata &&
-                              indirectHasOwnProperty(
-                                props.card.metadata,
-                                frontMatterVal,
-                              ) &&
-                              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
-                              (props.card.metadata as any)[
-                                frontMatterVal
-                              ].replace(/ +/g, " ")}
-                          </span>
-                        </div>
-                      </Show>
-                    </>
-                  )}
-                </For>
-                <div class="grid w-fit auto-cols-min grid-cols-[1fr,3fr] gap-x-2 text-neutral-800 dark:text-neutral-200">
-                  <Show when={props.score != 0}>
-                    <span class="font-semibold">Similarity: </span>
-                    <span>{props.score.toPrecision(3)}</span>
-                  </Show>
-                </div>
               </div>
             </div>
           </div>
@@ -600,10 +499,10 @@ const ScoreCard = (props: ScoreCardProps) => {
             innerHTML={sanitizeHtml(
               props.card.card_html !== undefined
                 ? props.card.card_html
-                  .replaceAll("line-height", "lh")
-                  .replace("\n", " ")
-                  .replace(`<br>`, " ")
-                  .replace(`\\n`, " ")
+                    .replaceAll("line-height", "lh")
+                    .replace("\n", " ")
+                    .replace(`<br>`, " ")
+                    .replace(`\\n`, " ")
                 : "",
               sanitzerOptions,
             )}
@@ -646,8 +545,9 @@ const ScoreCard = (props: ScoreCardProps) => {
               {(_, i) => (
                 <img
                   class="mx-auto my-auto"
-                  src={`${apiHost}/image/${imgInformation()?.imgRangePrefix ?? ""
-                    }${(imgInformation()?.imgRangeStart ?? 0) + i()}.png`}
+                  src={`${apiHost}/image/${
+                    imgInformation()?.imgRangePrefix ?? ""
+                  }${(imgInformation()?.imgRangeStart ?? 0) + i()}.png`}
                 />
               )}
             </For>
@@ -664,14 +564,14 @@ const ScoreCard = (props: ScoreCardProps) => {
                   <span>{`"${
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/restrict-template-expressions
                     typeof (props.card.metadata as any)[metadataKey] ===
-                      "object"
+                    "object"
                       ? JSON.stringify(
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                        (props.card.metadata as any)[metadataKey],
-                      )
+                          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+                          (props.card.metadata as any)[metadataKey],
+                        )
                       : // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                      (props.card.metadata as any)[metadataKey]
-                    }"`}</span>
+                        (props.card.metadata as any)[metadataKey]
+                  }"`}</span>
                 </div>
               )}
             </For>

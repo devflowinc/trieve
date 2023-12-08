@@ -4,8 +4,7 @@ use super::card_operator::{
 };
 use super::tantivy_operator::TantivyIndexMap;
 use crate::data::models::{
-    CardCollection, CardFileWithName, CardMetadataWithVotesWithScore, CardVote,
-    FullTextSearchResult, User, UserDTO,
+    CardCollection, CardFileWithName, CardMetadataWithFileData, FullTextSearchResult, User, UserDTO,
 };
 use crate::data::schema::{self};
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
@@ -449,13 +448,11 @@ pub async fn search_card_collections_query(
 
 pub fn get_metadata_query(
     card_metadata: Vec<FullTextSearchResult>,
-    current_user_id: Option<uuid::Uuid>,
     mut conn: r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::PgConnection>>,
-) -> Result<Vec<CardMetadataWithVotesWithScore>, DefaultError> {
+) -> Result<Vec<CardMetadataWithFileData>, DefaultError> {
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_files::dsl as card_files_columns;
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
-    use crate::data::schema::card_votes::dsl as card_votes_columns;
     use crate::data::schema::files::dsl as files_columns;
     use crate::data::schema::users::dsl as user_columns;
 
@@ -473,10 +470,6 @@ pub fn get_metadata_query(
             user_columns::users.on(card_metadata_columns::author_id.eq(user_columns::id)),
         )
         .left_outer_join(
-            card_votes_columns::card_votes
-                .on(card_metadata_columns::id.eq(card_votes_columns::card_metadata_id)),
-        )
-        .left_outer_join(
             card_files_columns::card_files
                 .on(card_metadata_columns::id.eq(card_files_columns::card_id)),
         )
@@ -490,16 +483,6 @@ pub fn get_metadata_query(
                 card_files_columns::card_id,
                 card_files_columns::file_id,
                 files_columns::file_name,
-            )
-                .nullable(),
-            (
-                card_votes_columns::id,
-                card_votes_columns::voted_user_id,
-                card_votes_columns::card_metadata_id,
-                card_votes_columns::vote,
-                card_votes_columns::created_at,
-                card_votes_columns::updated_at,
-                card_votes_columns::deleted,
             )
                 .nullable(),
             (
@@ -522,7 +505,6 @@ pub fn get_metadata_query(
         ))
         .load::<(
             Option<CardFileWithName>,
-            Option<CardVote>,
             Option<User>,
             (uuid::Uuid, Option<uuid::Uuid>),
         )>(&mut conn)
@@ -531,31 +513,15 @@ pub fn get_metadata_query(
         })?;
 
     #[allow(clippy::type_complexity)]
-    let (file_ids, card_votes, card_creators, card_collisions): (
+    let (file_ids, card_creators, card_collisions): (
         Vec<Option<CardFileWithName>>,
-        Vec<Option<CardVote>>,
         Vec<Option<User>>,
         Vec<(uuid::Uuid, Option<uuid::Uuid>)>,
     ) = itertools::multiunzip(all_datas);
 
-    let card_metadata_with_upvotes_and_file_id: Vec<CardMetadataWithVotesWithScore> = card_metadata
+    let card_metadata_with_file_id: Vec<CardMetadataWithFileData> = card_metadata
         .into_iter()
         .map(|metadata| {
-            let votes = card_votes
-                .iter()
-                .flatten()
-                .filter(|upvote| upvote.card_metadata_id == metadata.id)
-                .collect::<Vec<&CardVote>>();
-            let total_upvotes = votes.iter().filter(|upvote| upvote.vote).count() as i64;
-            let total_downvotes = votes.iter().filter(|upvote| !upvote.vote).count() as i64;
-            let vote_by_current_user = match current_user_id {
-                Some(user_id) => votes
-                    .iter()
-                    .find(|upvote| upvote.voted_user_id == user_id)
-                    .map(|upvote| upvote.vote),
-                None => None,
-            };
-
             let author = card_creators
                 .iter()
                 .flatten()
@@ -591,20 +557,16 @@ pub fn get_metadata_query(
                 },
             };
 
-            CardMetadataWithVotesWithScore {
+            CardMetadataWithFileData {
                 id: metadata.id,
                 content: metadata.content,
                 link: metadata.link,
                 tag_set: metadata.tag_set,
                 author,
                 qdrant_point_id,
-                total_upvotes,
-                total_downvotes,
-                vote_by_current_user,
                 created_at: metadata.created_at,
                 updated_at: metadata.updated_at,
                 private: metadata.private,
-                score: metadata.score,
                 card_html: metadata.card_html,
                 file_id: card_with_file_name.map(|file| file.file_id),
                 file_name: card_with_file_name.map(|file| file.file_name.to_string()),
@@ -614,7 +576,7 @@ pub fn get_metadata_query(
             }
         })
         .collect();
-    Ok(card_metadata_with_upvotes_and_file_id)
+    Ok(card_metadata_with_file_id)
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable)]
@@ -1053,22 +1015,18 @@ pub async fn retrieve_cards_from_point_ids(
         .search_results
         .iter()
         .map(|search_result| {
-            let mut card: CardMetadataWithVotesWithScore = match metadata_cards
+            let mut card: CardMetadataWithFileData = match metadata_cards
                 .iter()
                 .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
             {
                 Some(metadata_card) => metadata_card.clone(),
-                None => CardMetadataWithVotesWithScore {
+                None => CardMetadataWithFileData {
                     id: uuid::Uuid::default(),
                     author: None,
                     qdrant_point_id: uuid::Uuid::default(),
-                    total_upvotes: 0,
-                    total_downvotes: 0,
-                    vote_by_current_user: None,
                     created_at: chrono::Utc::now().naive_local(),
                     updated_at: chrono::Utc::now().naive_local(),
                     private: false,
-                    score: Some(0.0),
                     file_id: None,
                     file_name: None,
                     content: "".to_string(),
@@ -1082,7 +1040,7 @@ pub async fn retrieve_cards_from_point_ids(
             };
 
             card = find_relevant_sentence(card.clone(), data.content.clone()).unwrap_or(card);
-            let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
+            let mut collided_cards: Vec<CardMetadataWithFileData> = collided_cards
                 .iter()
                 .filter(|card| card.qdrant_id == search_result.point_id)
                 .map(|card| card.metadata.clone())
@@ -1393,22 +1351,18 @@ pub async fn search_hybrid_cards(
         .search_results
         .iter()
         .map(|search_result| {
-            let mut card: CardMetadataWithVotesWithScore = match metadata_cards
+            let mut card: CardMetadataWithFileData = match metadata_cards
                 .iter()
                 .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
             {
                 Some(metadata_card) => metadata_card.clone(),
-                None => CardMetadataWithVotesWithScore {
+                None => CardMetadataWithFileData {
                     id: uuid::Uuid::default(),
                     author: None,
                     qdrant_point_id: uuid::Uuid::default(),
-                    total_upvotes: 0,
-                    total_downvotes: 0,
-                    vote_by_current_user: None,
                     created_at: chrono::Utc::now().naive_local(),
                     updated_at: chrono::Utc::now().naive_local(),
                     private: false,
-                    score: Some(0.0),
                     file_id: None,
                     file_name: None,
                     content: "".to_string(),
@@ -1422,7 +1376,7 @@ pub async fn search_hybrid_cards(
             };
 
             card = find_relevant_sentence(card.clone(), data.content.clone()).unwrap_or(card);
-            let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
+            let mut collided_cards: Vec<CardMetadataWithFileData> = collided_cards
                 .iter()
                 .filter(|card| card.qdrant_id == search_result.point_id)
                 .map(|card| card.metadata.clone())
@@ -1526,7 +1480,7 @@ pub async fn search_semantic_collections(
 
     let point_ids_1 = point_ids.clone();
 
-    let metadata_cards = get_metadata_from_point_ids(point_ids, current_user_id, pool3)
+    let metadata_cards = get_metadata_from_point_ids(point_ids, pool3)
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let collided_cards = get_collided_cards_query(point_ids_1, current_user_id, dataset_id, pool1)
@@ -1536,22 +1490,18 @@ pub async fn search_semantic_collections(
         .search_results
         .iter()
         .map(|search_result| {
-            let mut card: CardMetadataWithVotesWithScore = match metadata_cards
+            let mut card: CardMetadataWithFileData = match metadata_cards
                 .iter()
                 .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
             {
                 Some(metadata_card) => metadata_card.clone(),
-                None => CardMetadataWithVotesWithScore {
+                None => CardMetadataWithFileData {
                     id: uuid::Uuid::default(),
                     author: None,
                     qdrant_point_id: uuid::Uuid::default(),
-                    total_upvotes: 0,
-                    total_downvotes: 0,
-                    vote_by_current_user: None,
                     created_at: chrono::Utc::now().naive_local(),
                     updated_at: chrono::Utc::now().naive_local(),
                     private: false,
-                    score: Some(0.0),
                     file_id: None,
                     file_name: None,
                     content: "".to_string(),
@@ -1565,7 +1515,7 @@ pub async fn search_semantic_collections(
             };
             card = find_relevant_sentence(card.clone(), data.content.clone()).unwrap_or(card);
 
-            let mut collided_cards: Vec<CardMetadataWithVotesWithScore> = collided_cards
+            let mut collided_cards: Vec<CardMetadataWithFileData> = collided_cards
                 .iter()
                 .filter(|card| card.1 == search_result.point_id)
                 .map(|card| card.0.clone())

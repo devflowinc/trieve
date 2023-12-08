@@ -140,14 +140,9 @@ pub async fn main() -> std::io::Result<()> {
             handlers::card_handler::get_card_by_tracking_id,
             handlers::card_handler::delete_card_by_tracking_id,
             handlers::card_handler::get_card_by_id,
-            handlers::card_handler::delete_card,
-            handlers::card_handler::get_top_cards,
-            handlers::vote_handler::create_vote,
-            handlers::vote_handler::delete_vote,
-            handlers::user_handler::get_top_users,
             handlers::user_handler::update_user,
             handlers::user_handler::set_user_api_key,
-            handlers::user_handler::get_user_with_votes_and_cards_by_id,
+            handlers::user_handler::get_user_with_cards_by_id,
             handlers::file_handler::get_user_files_handler,
             handlers::collection_handler::get_specific_user_card_collections,
             handlers::collection_handler::create_card_collection,
@@ -198,10 +193,8 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::card_handler::ScoreCardDTO,
                 handlers::card_handler::SearchCollectionsData,
                 handlers::card_handler::SearchCollectionsResult,
-                handlers::vote_handler::CreateVoteData,
-                handlers::user_handler::TopUserData,
                 handlers::user_handler::UpdateUserData,
-                handlers::user_handler::GetUserWithVotesAndCardsData,
+                handlers::user_handler::GetUserWithCardsData,
                 handlers::user_handler::SetUserApiKeyResponse,
                 handlers::collection_handler::CollectionData,
                 handlers::collection_handler::UserCollectionQuery,
@@ -229,12 +222,9 @@ pub async fn main() -> std::io::Result<()> {
                 data::models::Topic,
                 data::models::Message,
                 data::models::CardMetadata,
-                data::models::CardMetadataWithVotes,
-                data::models::CardMetadataWithVotesWithScore,
+                data::models::CardMetadataWithFileData,
                 data::models::ChatMessageProxy,
-                data::models::CardVote,
-                data::models::UserDTOWithScore,
-                data::models::UserDTOWithVotesAndCards,
+                data::models::UserDTOWithCards,
                 data::models::File,
                 data::models::CardCollectionAndFile,
                 data::models::CardCollection,
@@ -251,10 +241,7 @@ pub async fn main() -> std::io::Result<()> {
             (name = "password", description = "Password reset endpoint"),
             (name = "topic", description = "Topic chat endpoint"),
             (name = "message", description = "Message chat endpoint"),
-            (name = "vote", description = "Vote endpoint"),
             (name = "card", description = "Card endpoint"),
-            (name = "top_users", description = "Top users endpoint"),
-            (name = "top_cards", description = "Top cards endpoint"),
             (name = "user", description = "User endpoint"),
             (name = "card_collection", description = "Card collection endpoint"),
             (name = "file", description = "File endpoint"),
@@ -440,27 +427,7 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(web::get().to(handlers::card_handler::get_card_by_id))
                                     .route(web::delete().to(handlers::card_handler::delete_card)),
                             )
-                    )
-                    .service(
-                        web::scope("/vote")
-                            .service(
-                                web::resource("")
-                                    .route(web::post().to(handlers::vote_handler::create_vote)),
-                            )
-                            .service(
-                                web::resource("/{card_metadata_id}")
-                                    .route(web::delete().to(handlers::vote_handler::delete_vote)),
-                            ),
-                    )
-                    .service(
-                        web::resource("/top_users/{page}")
-                            .route(web::get().to(handlers::user_handler::get_top_users)),
-                    )
-                    .service(
-                        web::resource("/top_cards/{page}")
-                            .route(web::get().to(handlers::card_handler::get_top_cards)),
-                    )
-                    .service(
+                    ).service(
                         web::scope("/user")
                             .service(web::resource("")
                                 .route(web::put().to(handlers::user_handler::update_user)),
@@ -469,7 +436,7 @@ pub async fn main() -> std::io::Result<()> {
                                 .route(web::get().to(handlers::user_handler::set_user_api_key)),
                             )
                             .service(web::resource("/{user_id}/{page}")
-                                .route(web::get().to(handlers::user_handler::get_user_with_votes_and_cards_by_id)),
+                                .route(web::get().to(handlers::user_handler::get_user_with_cards_by_id)),
                             )
                             .service(
                                 web::resource("/files/{user_id}")

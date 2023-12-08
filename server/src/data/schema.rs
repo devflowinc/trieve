@@ -74,18 +74,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    card_votes (id) {
-        id -> Uuid,
-        voted_user_id -> Uuid,
-        card_metadata_id -> Uuid,
-        vote -> Bool,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
-        deleted -> Bool,
-    }
-}
-
-diesel::table! {
     collections_from_files (id) {
         id -> Uuid,
         collection_id -> Uuid,
@@ -241,8 +229,6 @@ diesel::joinable!(card_collection_bookmarks -> card_metadata (card_metadata_id))
 diesel::joinable!(card_files -> card_metadata (card_id));
 diesel::joinable!(card_files -> files (file_id));
 diesel::joinable!(card_metadata -> users (author_id));
-diesel::joinable!(card_votes -> card_metadata (card_metadata_id));
-diesel::joinable!(card_votes -> users (voted_user_id));
 diesel::joinable!(collections_from_files -> card_collection (collection_id));
 diesel::joinable!(collections_from_files -> files (file_id));
 diesel::joinable!(cut_cards -> users (user_id));
@@ -262,7 +248,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     card_collisions,
     card_files,
     card_metadata,
-    card_votes,
     collections_from_files,
     cut_cards,
     datasets,
