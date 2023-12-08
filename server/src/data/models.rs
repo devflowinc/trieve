@@ -62,7 +62,7 @@ impl Invitation {
     pub fn from_details(email: String, organization_id: uuid::Uuid) -> Self {
         Invitation {
             id: uuid::Uuid::new_v4(),
-            email: email,
+            email,
             expires_at: chrono::Utc::now().naive_local() + chrono::Duration::minutes(5),
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
