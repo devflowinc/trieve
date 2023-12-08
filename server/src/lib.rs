@@ -2,7 +2,7 @@
 extern crate diesel;
 use crate::{
     errors::ServiceError,
-    operators::{tantivy_operator::TantivyIndexMap, dataset_operator::{fetch_default_dataset, new_dataset_operation}},
+    operators::tantivy_operator::TantivyIndexMap,
 };
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
@@ -282,32 +282,9 @@ pub async fn main() -> std::io::Result<()> {
         .expect("Failed to create pool.");
     let cross_encoder = initalize_cross_encoder();
 
-
     let redis_store = RedisSessionStore::new(redis_url).await.unwrap();
 
-    // Fetch default dataset id
-    let (err, tantivy_index) = match fetch_default_dataset(pool.clone()) {
-        Ok(dataset) => {
-
-            let tantivy_index = web::Data::new(RwLock::new(
-                TantivyIndexMap::new(&dataset.id.to_string()).map_err(|err| {
-                    log::info!("Failed to create tantivy index: {:?}", err.to_string());
-                    std::io::Error::new(std::io::ErrorKind::Other, err.to_string())
-                })?,
-            ));
-
-            let operation_result = new_dataset_operation(dataset, tantivy_index.clone(), web::Data::new(pool.clone())).await;
-            (operation_result, tantivy_index)
-        }
-        Err(err) => {
-            log::error!("Failed to fetch default dataset, cannot create indexes {:}", err);
-            return Ok(());
-        }
-    };
-
-    if let Err(err) = err {
-        log::info!("Failed to create default dataset: {:?}", err.to_string());
-    }
+    let tantivy_index = web::Data::new(RwLock::new(TantivyIndexMap::new()));
 
     run_migrations(&mut pool.get().unwrap());
 

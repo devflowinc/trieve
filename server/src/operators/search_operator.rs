@@ -793,7 +793,7 @@ pub async fn search_full_text_card_query(
 
     let searched_cards = tantivy_index_map
         .search_cards(
-            Some(dataset_id.to_string().as_str()),
+            dataset_id.to_string().as_str(),
             user_query.as_str(),
             page,
             Some(
@@ -996,7 +996,7 @@ pub async fn search_full_text_collection_query(
 
     let searched_cards = tantivy_index_map
         .search_cards(
-            Some(dataset_uuid.to_string().as_str()),
+            dataset_uuid.to_string().as_str(),
             user_query.as_str(),
             page,
             Some(
