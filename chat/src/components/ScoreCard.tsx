@@ -1,4 +1,4 @@
-import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
+import { For, Show, createMemo, createSignal } from "solid-js";
 import {
   indirectHasOwnProperty,
   type CardBookmarksDTO,
@@ -6,12 +6,6 @@ import {
   type CardMetadataWithVotes,
 } from "../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
-import {
-  RiArrowsArrowDownCircleFill,
-  RiArrowsArrowDownCircleLine,
-  RiArrowsArrowUpCircleFill,
-  RiArrowsArrowUpCircleLine,
-} from "solid-icons/ri";
 import { VsFileSymlinkFile } from "solid-icons/vs";
 import sanitizeHtml from "sanitize-html";
 import { Tooltip } from "./Atoms/Tooltip";
@@ -67,9 +61,6 @@ export const getLocalTime = (strDate: string | Date) => {
 };
 
 const ScoreCard = (props: ScoreCardProps) => {
-  const apiHost = import.meta.env.VITE_API_HOST as string;
-  const voteFeature = import.meta.env.VITE_CHAT_VOTE_FEATURE as string;
-
   const frontMatterVals = (
     (import.meta.env.VITE_FRONTMATTER_VALS as string | undefined) ??
     "link,tag_set,time_stamp"
@@ -88,57 +79,7 @@ const ScoreCard = (props: ScoreCardProps) => {
   })();
 
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
-  const [userVote, setUserVote] = createSignal(0);
-  const [totalVote, setTotalVote] = createSignal(
-    // eslint-disable-next-line solid/reactivity
-    props.card.total_upvotes - props.card.total_downvotes,
-  );
   const [copied, setCopied] = createSignal(false);
-
-  createEffect(() => {
-    if (props.card.vote_by_current_user === null) {
-      return;
-    }
-    const userVote = props.card.vote_by_current_user ? 1 : -1;
-    setUserVote(userVote);
-    const newTotalVote =
-      props.card.total_upvotes - props.card.total_downvotes - userVote;
-    setTotalVote(newTotalVote);
-  });
-
-  const deleteVote = (prev_vote: number) => {
-    void fetch(`${apiHost}/vote/${props.card.id}`, {
-      method: "DELETE",
-      credentials: "include",
-    }).then((response) => {
-      if (!response.ok) {
-        setUserVote(prev_vote);
-      }
-    });
-  };
-
-  const createVote = (prev_vote: number, new_vote: number) => {
-    if (new_vote === 0) {
-      deleteVote(prev_vote);
-      return;
-    }
-
-    void fetch(`${apiHost}/vote`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      body: JSON.stringify({
-        card_metadata_id: props.card.id,
-        vote: new_vote === 1 ? true : false,
-      }),
-    }).then((response) => {
-      if (!response.ok) {
-        setUserVote(prev_vote);
-      }
-    });
-  };
 
   const copyCard = () => {
     navigator.clipboard
@@ -196,122 +137,77 @@ const ScoreCard = (props: ScoreCardProps) => {
             <VsFileSymlinkFile class="h-5 w-5 fill-current" />
           </a>
         </div>
-        <div class="flex w-full items-start">
-          <div class="flex flex-col items-center pr-2">
-            <Show when={voteFeature !== "off" && !props.card.private}>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  setUserVote((prev) => {
-                    const new_val = prev === 1 ? 0 : 1;
-                    createVote(prev, new_val);
-                    return new_val;
-                  });
-                }}
-              >
-                <Show when={userVote() === 1}>
-                  <RiArrowsArrowUpCircleFill class="!text-turquoise-500 h-8 w-8 fill-current" />
-                </Show>
-                <Show when={userVote() != 1}>
-                  <RiArrowsArrowUpCircleLine class="h-8 w-8 fill-current" />
-                </Show>
-              </button>
-              <span class="my-1">{totalVote() + userVote()}</span>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  setUserVote((prev) => {
-                    const new_val = prev === -1 ? 0 : -1;
-                    createVote(prev, new_val);
-                    return new_val;
-                  });
-                }}
-              >
-                <Show when={userVote() === -1}>
-                  <RiArrowsArrowDownCircleFill class="!text-turquoise-500 h-8 w-8 fill-current" />
-                </Show>
-                <Show when={userVote() != -1}>
-                  <RiArrowsArrowDownCircleLine class="h-8 w-8 fill-current" />
-                </Show>
-              </button>
-            </Show>
-          </div>
-          <div class="flex w-full flex-col">
-            <For each={frontMatterVals}>
-              {(frontMatterVal) => (
-                <>
-                  <Show when={props.card.link && frontMatterVal == "link"}>
-                    <a
-                      class="dark:text-turquoise-400 line-clamp-1 w-fit break-all text-magenta-400 underline"
-                      target="_blank"
-                      href={props.card.link ?? ""}
-                    >
-                      {props.card.link}
-                    </a>
-                  </Show>
-                  <Show
-                    when={props.card.tag_set && frontMatterVal == "tag_set"}
+        <div class="flex w-full flex-col">
+          <For each={frontMatterVals}>
+            {(frontMatterVal) => (
+              <>
+                <Show when={props.card.link && frontMatterVal == "link"}>
+                  <a
+                    class="dark:text-turquoise-400 line-clamp-1 w-fit break-all text-magenta-400 underline"
+                    target="_blank"
+                    href={props.card.link ?? ""}
                   >
-                    <div class="flex space-x-2">
-                      <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                        Tag Set:{" "}
-                      </span>
-                      <span class="line-clamp-1 break-all">
-                        {props.card.tag_set}
-                      </span>
-                    </div>
-                  </Show>
-                  <Show
-                    when={
-                      props.card.time_stamp && frontMatterVal == "time_stamp"
-                    }
-                  >
-                    <div class="flex space-x-2">
-                      <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                        Time Stamp:{" "}
-                      </span>
-                      <span class="line-clamp-1 break-all">
-                        {formatDate(new Date(props.card.time_stamp ?? ""))}
-                      </span>
-                    </div>
-                  </Show>
-                  <Show
-                    when={
-                      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                      frontMatterVal !== "link" &&
-                      frontMatterVal !== "tag_set" &&
-                      frontMatterVal !== "time_stamp" &&
-                      props.card.metadata &&
-                      indirectHasOwnProperty(
-                        props.card.metadata,
-                        frontMatterVal,
-                      ) &&
-                      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                      (props.card.metadata as any)[frontMatterVal]
-                    }
-                  >
-                    <div class="flex space-x-2">
-                      <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                        {frontMatterVal}:{" "}
-                      </span>
-                      <span class="line-clamp-1 break-all">
-                        {props.card.metadata &&
-                          indirectHasOwnProperty(
-                            props.card.metadata,
-                            frontMatterVal,
-                          ) &&
-                          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
-                          (props.card.metadata as any)[frontMatterVal].replace(
-                            / +/g,
-                            " ",
-                          )}
-                      </span>
-                    </div>
-                  </Show>
-                </>
-              )}
-            </For>
-          </div>
+                    {props.card.link}
+                  </a>
+                </Show>
+                <Show when={props.card.tag_set && frontMatterVal == "tag_set"}>
+                  <div class="flex space-x-2">
+                    <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                      Tag Set:{" "}
+                    </span>
+                    <span class="line-clamp-1 break-all">
+                      {props.card.tag_set}
+                    </span>
+                  </div>
+                </Show>
+                <Show
+                  when={props.card.time_stamp && frontMatterVal == "time_stamp"}
+                >
+                  <div class="flex space-x-2">
+                    <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                      Time Stamp:{" "}
+                    </span>
+                    <span class="line-clamp-1 break-all">
+                      {formatDate(new Date(props.card.time_stamp ?? ""))}
+                    </span>
+                  </div>
+                </Show>
+                <Show
+                  when={
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                    frontMatterVal !== "link" &&
+                    frontMatterVal !== "tag_set" &&
+                    frontMatterVal !== "time_stamp" &&
+                    props.card.metadata &&
+                    indirectHasOwnProperty(
+                      props.card.metadata,
+                      frontMatterVal,
+                    ) &&
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+                    (props.card.metadata as any)[frontMatterVal]
+                  }
+                >
+                  <div class="flex space-x-2">
+                    <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                      {frontMatterVal}:{" "}
+                    </span>
+                    <span class="line-clamp-1 break-all">
+                      {props.card.metadata &&
+                        indirectHasOwnProperty(
+                          props.card.metadata,
+                          frontMatterVal,
+                        ) &&
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
+                        (props.card.metadata as any)[frontMatterVal].replace(
+                          / +/g,
+                          " ",
+                        )}
+                    </span>
+                  </div>
+                </Show>
+              </>
+            )}
+          </For>
         </div>
       </div>
       <div class="mb-1 h-1 w-full border-b border-neutral-300 dark:border-neutral-600" />
