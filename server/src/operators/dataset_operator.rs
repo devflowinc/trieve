@@ -1,12 +1,46 @@
-use crate::diesel::RunQueryDsl;
+use crate::diesel::{RunQueryDsl};
+use crate::diesel::prelude::*;
 use crate::{
     data::models::{Dataset, Pool},
     errors::ServiceError,
 };
 use actix_web::web;
 use diesel::{ExpressionMethods, QueryDsl, SelectableHelper};
+use tokio::sync::RwLock;
 
-pub async fn create_dataset_query(
+use super::qdrant_operator::create_new_qdrant_collection_query;
+use super::tantivy_operator::TantivyIndexMap;
+
+/// Creates all indexes between Pg, Qdrant and tantivy
+pub async fn new_dataset_operation(
+    dataset: Dataset,
+    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
+    pool: web::Data<Pool>,
+) -> Result<Dataset, ServiceError> {
+
+    tantivy_index_map
+        .write()
+        .await
+        .create_index(Some(&dataset.id.to_string()))
+        .map_err(|err| ServiceError::BadRequest(format!(
+                "Failed to create tantivy index: {:?}",
+                err.to_string()
+            ))
+        )?;
+
+    create_new_qdrant_collection_query(dataset.id.to_string()).await?;
+
+    web::block(move || {
+        create_dataset_query(
+            dataset,
+            pool
+        )
+    }).await.map_err(|_| {
+        ServiceError::BadRequest("Threadpool error".to_string())
+    })?
+}
+
+pub fn create_dataset_query(
     new_dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<Dataset, ServiceError> {
@@ -41,4 +75,15 @@ pub fn get_dataset_by_id_query(
         .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?;
 
     Ok(organization)
+
+pub fn fetch_default_dataset(pool: Pool) -> Result<Dataset, ServiceError> {
+    use crate::data::schema::datasets::dsl::*;
+
+    let mut conn = pool.get().map_err(|_| ServiceError::InternalServerError)?;
+    let default_name = "DEFAULT".to_string();
+
+    datasets
+        .filter(name.eq(&default_name))
+        .first::<Dataset>(&mut conn)
+        .map_err(|_| ServiceError::BadRequest("Error loading dataset".to_string()))
 }

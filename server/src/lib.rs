@@ -2,7 +2,7 @@
 extern crate diesel;
 use crate::{
     errors::ServiceError,
-    operators::{qdrant_operator::get_qdrant_connection, tantivy_operator::TantivyIndexMap},
+    operators::{tantivy_operator::TantivyIndexMap, dataset_operator::{fetch_default_dataset, new_dataset_operation}},
 };
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
@@ -16,13 +16,6 @@ use actix_web::{
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use pyo3::{types::PyDict, Py, PyAny, Python};
-use qdrant_client::{
-    prelude::*,
-    qdrant::{
-        payload_index_params::IndexParams, FieldType, PayloadIndexParams, TextIndexParams,
-        TokenizerType, VectorParams, VectorsConfig,
-    },
-};
 use tokio::sync::{RwLock, Semaphore};
 use utoipa::OpenApi;
 use utoipa_redoc::{Redoc, Servable};
@@ -289,94 +282,32 @@ pub async fn main() -> std::io::Result<()> {
         .expect("Failed to create pool.");
     let cross_encoder = initalize_cross_encoder();
 
-    let qdrant_collection = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_cards".to_owned());
-
-    let tantivy_index = web::Data::new(RwLock::new(
-        TantivyIndexMap::new(&qdrant_collection).map_err(|err| {
-            log::info!("Failed to create tantivy index: {:?}", err.to_string());
-            std::io::Error::new(std::io::ErrorKind::Other, err.to_string())
-        })?,
-    ));
-
-    tantivy_index
-        .write()
-        .await
-        .create_index(None)
-        .map_err(|err| {
-            log::info!("Failed to create tantivy index: {:?}", err.to_string());
-            std::io::Error::new(std::io::ErrorKind::Other, err.to_string())
-        })?;
 
     let redis_store = RedisSessionStore::new(redis_url).await.unwrap();
 
-    let qdrant_client = get_qdrant_connection().await.unwrap();
-    let embedding_size = std::env::var("EMBEDDING_SIZE").unwrap_or("1536".to_owned());
-    let embedding_size = embedding_size.parse::<u64>().unwrap_or(1536);
+    // Fetch default dataset id
+    let (err, tantivy_index) = match fetch_default_dataset(pool.clone()) {
+        Ok(dataset) => {
 
-    let _ = qdrant_client
-        .create_collection(&CreateCollection {
-            collection_name: qdrant_collection.clone(),
-            vectors_config: Some(VectorsConfig {
-                config: Some(qdrant_client::qdrant::vectors_config::Config::Params(
-                    VectorParams {
-                        size: embedding_size,
-                        distance: Distance::Cosine.into(),
-                        hnsw_config: None,
-                        quantization_config: None,
-                        on_disk: None,
-                    },
-                )),
-            }),
-            ..Default::default()
-        })
-        .await
-        .map_err(|err| {
-            log::info!("Failed to create collection: {:?}", err);
-        });
+            let tantivy_index = web::Data::new(RwLock::new(
+                TantivyIndexMap::new(&dataset.id.to_string()).map_err(|err| {
+                    log::info!("Failed to create tantivy index: {:?}", err.to_string());
+                    std::io::Error::new(std::io::ErrorKind::Other, err.to_string())
+                })?,
+            ));
 
-    let _ = qdrant_client
-        .create_field_index(
-            qdrant_collection.clone(),
-            "link",
-            FieldType::Text,
-            None,
-            None,
-        )
-        .await
-        .map_err(|err| {
-            log::info!("Failed to create index: {:?}", err);
-        });
-    let _ = qdrant_client
-        .create_field_index(
-            qdrant_collection.clone(),
-            "tag_set",
-            FieldType::Text,
-            None,
-            None,
-        )
-        .await
-        .map_err(|err| {
-            log::info!("Failed to create index: {:?}", err);
-        });
-    let _ = qdrant_client
-        .create_field_index(
-            qdrant_collection.clone(),
-            "card_html",
-            FieldType::Text,
-            Some(&PayloadIndexParams {
-                index_params: Some(IndexParams::TextIndexParams(TextIndexParams {
-                    tokenizer: TokenizerType::Whitespace as i32,
-                    min_token_len: Some(2),
-                    max_token_len: Some(10),
-                    lowercase: Some(true),
-                })),
-            }),
-            None,
-        )
-        .await
-        .map_err(|err| {
-            log::info!("Failed to create index: {:?}", err);
-        });
+            let operation_result = new_dataset_operation(dataset, tantivy_index.clone(), web::Data::new(pool.clone())).await;
+            (operation_result, tantivy_index)
+        }
+        Err(err) => {
+            log::error!("Failed to fetch default dataset, cannot create indexes {:}", err);
+            return Ok(());
+        }
+    };
+
+    if let Err(err) = err {
+        log::info!("Failed to create default dataset: {:?}", err.to_string());
+    }
 
     run_migrations(&mut pool.get().unwrap());
 
