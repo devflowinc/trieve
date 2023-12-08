@@ -391,10 +391,7 @@ pub async fn insert_card_metadata_query(
 
     match transaction_result {
         Ok(_) => tantivy_index_map
-            .add_card(
-                Some(given_dataset_id.to_string().as_str()),
-                card_data.clone(),
-            )
+            .add_card(given_dataset_id.to_string().as_str(), card_data.clone())
             .map_err(|e| {
                 log::info!("Failed to add card to index: {:?}", e);
                 DefaultError {
