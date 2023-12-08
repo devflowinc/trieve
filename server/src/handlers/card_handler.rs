@@ -500,7 +500,7 @@ pub async fn update_card(
         dataset_id,
     );
     let metadata1 = metadata.clone();
-    update_card_metadata_query(metadata, None, tantivy_index_map, pool2)
+    update_card_metadata_query(metadata, None, tantivy_index_map, dataset_id, pool2)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -608,7 +608,7 @@ pub async fn update_card_by_tracking_id(
     );
     let metadata1 = metadata.clone();
 
-    update_card_metadata_query(metadata, None, tantivy_index_map, pool2)
+    update_card_metadata_query(metadata, None, tantivy_index_map, dataset_id, pool2)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 

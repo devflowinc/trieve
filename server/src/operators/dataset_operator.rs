@@ -1,5 +1,4 @@
-use crate::diesel::{RunQueryDsl};
-use crate::diesel::prelude::*;
+use crate::diesel::RunQueryDsl;
 use crate::{
     data::models::{Dataset, Pool},
     errors::ServiceError,
@@ -21,7 +20,7 @@ pub async fn new_dataset_operation(
     tantivy_index_map
         .write()
         .await
-        .create_index(Some(&dataset.id.to_string()))
+        .create_index(&dataset.id.to_string())
         .map_err(|err| ServiceError::BadRequest(format!(
                 "Failed to create tantivy index: {:?}",
                 err.to_string()
@@ -75,15 +74,4 @@ pub fn get_dataset_by_id_query(
         .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?;
 
     Ok(organization)
-
-pub fn fetch_default_dataset(pool: Pool) -> Result<Dataset, ServiceError> {
-    use crate::data::schema::datasets::dsl::*;
-
-    let mut conn = pool.get().map_err(|_| ServiceError::InternalServerError)?;
-    let default_name = "DEFAULT".to_string();
-
-    datasets
-        .filter(name.eq(&default_name))
-        .first::<Dataset>(&mut conn)
-        .map_err(|_| ServiceError::BadRequest("Error loading dataset".to_string()))
 }
