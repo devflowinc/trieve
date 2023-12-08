@@ -7,26 +7,6 @@ import {
 } from "solid-icons/bi";
 import { SiMatrix } from "solid-icons/si";
 import ThemeModeController from "./ThemeModeController";
-import type { CardCountDTO } from "../../utils/apiTypes";
-
-const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
-
-let totalCards = 0;
-
-try {
-  if (alwaysRequireAuth === "on") {
-    throw new Error("alwaysRequireAuth is on");
-  }
-
-  const totalCardsReq = await fetch(`${apiHost}/card/count`);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const totalCardsJson: CardCountDTO = await totalCardsReq.json();
-
-  totalCards = totalCardsJson.total_count;
-} catch (e) {
-  console.error(e);
-}
 ---
 
 <div class="flex w-full flex-col items-center space-y-2 py-4 mt-12">
@@ -67,13 +47,6 @@ try {
       <BiLogosGithub size={30} class="fill-current" client:only />
     </a>
   </div>
-  {
-    totalCards > 0 && alwaysRequireAuth !== "on" && (
-      <div class="w-full text-center text-sm text-neutral-600 dark:text-neutral-400">
-        {totalCards.toLocaleString()} cards in the database
-      </div>
-    )
-  }
   <div class="flex w-full justify-center space-x-4">
     <div>contact@arguflow.gg</div>
     <div>
