@@ -397,6 +397,12 @@ pub async fn delete_card_by_tracking_id(
     user: LoggedUser,
     dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let pool1 = pool.clone();
+    let dataset = web::block(move || get_dataset_by_id_query(dataset.id, pool1)).await??;
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    }
+
     let tracking_id_inner = tracking_id.into_inner();
     let pool1 = pool.clone();
     let dataset_id = dataset.id;
