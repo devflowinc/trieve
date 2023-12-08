@@ -1,10 +1,9 @@
 use super::auth_handler::{LoggedUser, RequireAuth};
 use crate::{
-    data::models::{Pool, UserDTOWithScore},
+    data::models::Pool,
     errors::{DefaultError, ServiceError},
     operators::user_operator::{
-        get_top_users_query, get_total_users_query, get_user_with_votes_and_cards_by_id_query,
-        set_user_api_key_query, update_user_query,
+        get_user_with_cards_by_id_query, set_user_api_key_query, update_user_query,
     },
 };
 use actix_web::{web, HttpResponse};
@@ -19,7 +18,7 @@ pub struct UpdateUserData {
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
-pub struct GetUserWithVotesAndCardsData {
+pub struct GetUserWithCardsData {
     pub user_id: uuid::Uuid,
     pub page: i64,
 }
@@ -30,16 +29,16 @@ pub struct GetUserWithVotesAndCardsData {
     context_path = "/api",
     tag = "user",
     responses(
-        (status = 200, description = "JSON body representing the cards made by a given user with their votes", body = [UserDTOWithVotesAndCards]),
-        (status = 400, description = "Service error relating to getting the cards and votes for the given user", body = [DefaultError]),
+        (status = 200, description = "JSON body representing the cards made by a given user with their cards", body = [UserDTOWithCards]),
+        (status = 400, description = "Service error relating to getting the cards for the given user", body = [DefaultError]),
     ),
     params(
         ("user_id" = uuid::Uuid, description = "The id of the user to fetch"),
         ("page" = i64, description = "The page of cards to fetch"),
     ),
 )]
-pub async fn get_user_with_votes_and_cards_by_id(
-    path_data: web::Path<GetUserWithVotesAndCardsData>,
+pub async fn get_user_with_cards_by_id(
+    path_data: web::Path<GetUserWithCardsData>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
@@ -49,12 +48,12 @@ pub async fn get_user_with_votes_and_cards_by_id(
     let page = path_data.page;
 
     let user_result = web::block(move || {
-        get_user_with_votes_and_cards_by_id_query(user_query_id, accessing_user_id, &page, pool)
+        get_user_with_cards_by_id_query(user_query_id, accessing_user_id, &page, pool)
     })
     .await?;
 
     match user_result {
-        Ok(user_with_votes_and_cards) => Ok(HttpResponse::Ok().json(user_with_votes_and_cards)),
+        Ok(user_with_cards) => Ok(HttpResponse::Ok().json(user_with_cards)),
         Err(e) => Err(ServiceError::BadRequest(e.message.into()).into()),
     }
 }
@@ -90,47 +89,6 @@ pub async fn update_user(
 
     match user_result {
         Ok(slim_user) => Ok(HttpResponse::Ok().json(slim_user)),
-        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
-    }
-}
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct TopUserData {
-    users: Vec<UserDTOWithScore>,
-    total_user_pages: i64,
-}
-
-#[utoipa::path(
-    get,
-    path = "/top_users/{page}",
-    context_path = "/api",
-    tag = "top_users",
-    responses(
-        (status = 200, description = "JSON body representing the top users by collected votes", body = [TopUserData]),
-        (status = 400, description = "Service error relating to fetching the top users by collected votes", body = [DefaultError]),
-    ),
-    params(
-        ("page" = i64, description = "The page of users to fetch"),
-    ),
-)]
-pub async fn get_top_users(
-    page: web::Path<i64>,
-    pool: web::Data<Pool>,
-    _required_user: RequireAuth,
-) -> Result<HttpResponse, actix_web::Error> {
-    let page = page.into_inner();
-
-    let pool2 = pool.clone();
-    let users_result = web::block(move || get_top_users_query(&page, pool)).await?;
-    let total_users = web::block(move || get_total_users_query(pool2))
-        .await?
-        .map_err(|_err| ServiceError::BadRequest("Failed to get Total users".into()))?;
-    let total_user_pages = (total_users as f64 / 10.0).ceil() as i64;
-
-    match users_result {
-        Ok(users) => Ok(HttpResponse::Ok().json(TopUserData {
-            users,
-            total_user_pages,
-        })),
         Err(e) => Ok(HttpResponse::BadRequest().json(e)),
     }
 }

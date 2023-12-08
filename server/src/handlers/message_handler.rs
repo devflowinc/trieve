@@ -1,10 +1,11 @@
 use super::{
     auth_handler::{LoggedUser, RequireAuth},
-    card_handler::ParsedQuery, dataset_handler::SlimDataset,
+    card_handler::ParsedQuery,
+    dataset_handler::SlimDataset,
 };
 use crate::{
     data::models,
-    data::models::{CardMetadataWithVotesWithScore, Pool},
+    data::models::{CardMetadataWithFileData, Pool},
     errors::{DefaultError, ServiceError},
     get_env,
     operators::{
@@ -517,7 +518,7 @@ pub async fn stream_response(
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-        let citation_cards: Vec<CardMetadataWithVotesWithScore> = metadata_cards
+        let citation_cards: Vec<CardMetadataWithFileData> = metadata_cards
             .iter()
             .map(|card| {
                 if card.private
@@ -543,7 +544,7 @@ pub async fn stream_response(
             .map(|card| {
                 find_relevant_sentence(card.clone(), query.to_string()).unwrap_or(card.clone())
             })
-            .collect::<Vec<CardMetadataWithVotesWithScore>>();
+            .collect::<Vec<CardMetadataWithFileData>>();
 
         citation_cards_stringified = serde_json::to_string(&highlighted_citation_cards)
             .expect("Failed to serialize citation cards");
