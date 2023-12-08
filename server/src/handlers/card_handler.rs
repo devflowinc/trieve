@@ -1039,13 +1039,18 @@ pub struct RecommendCardsRequest {
 pub async fn get_recommended_cards(
     data: web::Json<RecommendCardsRequest>,
     pool: web::Data<Pool>,
-    _user: LoggedUser,
+    user: LoggedUser,
     dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let positive_card_ids = data.positive_card_ids.clone();
-    let dataset_id = dataset.id;
+    let pool1 = pool.clone();
+    let dataset = web::block(move || get_dataset_by_id_query(dataset.id, pool1)).await??;
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    }
 
-    let recommended_qdrant_point_ids = recommend_qdrant_query(positive_card_ids, dataset_id)
+    let positive_card_ids = data.positive_card_ids.clone();
+
+    let recommended_qdrant_point_ids = recommend_qdrant_query(positive_card_ids, dataset.id)
         .await
         .map_err(|err| {
             ServiceError::BadRequest(format!("Could not get recommended cards: {}", err))
