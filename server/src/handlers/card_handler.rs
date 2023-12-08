@@ -552,7 +552,12 @@ pub async fn update_card_by_tracking_id(
     app_mutex: web::Data<AppMutexStore>,
     dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let dataset_id = dataset.id;
+    let pool1 = pool.clone();
+    let dataset = web::block(move || get_dataset_by_id_query(dataset.id, pool1)).await??;
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
+
     if card.tracking_id.is_empty() {
         return Err(ServiceError::BadRequest(
             "Tracking id must be provided to update by tracking_id".into(),
@@ -564,7 +569,7 @@ pub async fn update_card_by_tracking_id(
 
     let pool1 = pool.clone();
     let pool2 = pool.clone();
-    let card_metadata = user_owns_card_tracking_id(user.id, tracking_id, dataset_id, pool).await?;
+    let card_metadata = user_owns_card_tracking_id(user.id, tracking_id, dataset.id, pool).await?;
 
     let link = card
         .link
@@ -604,7 +609,7 @@ pub async fn update_card_by_tracking_id(
                     .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))
             })
             .transpose()?,
-        dataset_id,
+        dataset.id,
     );
     let metadata1 = metadata.clone();
 
@@ -623,7 +628,7 @@ pub async fn update_card_by_tracking_id(
         qdrant_point_id,
         Some(user.id),
         Some(embedding_vector),
-        dataset_id,
+        dataset.id,
     )
     .await?;
 
