@@ -1,8 +1,8 @@
 use super::auth_handler::{LoggedUser, RequireAuth};
 use super::dataset_handler::SlimDataset;
 use crate::data::models::{
-    CardCollection, CardCollectionBookmark, CardMetadata, CardMetadataWithVotesWithScore,
-    ChatMessageProxy, Pool, UserDTO,
+    CardCollection, CardCollectionBookmark, CardMetadata, CardMetadataWithFileData,
+    ChatMessageProxy, Pool,
 };
 use crate::errors::ServiceError;
 use crate::operators::card_operator::get_metadata_from_id_query;
@@ -190,7 +190,7 @@ pub async fn create_card(
         collision = Some(first_semantic_result.point_id);
 
         let score_card_result = web::block(move || {
-            get_metadata_from_point_ids(vec![first_semantic_result.point_id], Some(user.id), pool2)
+            get_metadata_from_point_ids(vec![first_semantic_result.point_id], pool2)
         })
         .await?;
 
@@ -335,7 +335,7 @@ pub async fn create_card(
     context_path = "/api",
     tag = "card",
     responses(
-        (status = 204, description = "Confirmation that the card with the id specified was deleted", body = [CardMetadataWithVotesWithScore]),
+        (status = 204, description = "Confirmation that the card with the id specified was deleted"),
         (status = 400, description = "Service error relating to finding a card by tracking_id", body = [DefaultError]),
     ),
     params(
@@ -383,7 +383,7 @@ pub async fn delete_card(
     context_path = "/api",
     tag = "card",
     responses(
-        (status = 204, description = "Confirmation that the card with the tracking_id specified was deleted", body = [CardMetadataWithVotesWithScore]),
+        (status = 204, description = "Confirmation that the card with the tracking_id specified was deleted"),
         (status = 400, description = "Service error relating to finding a card by tracking_id", body = [DefaultError]),
     ),
     params(
@@ -667,7 +667,7 @@ pub struct SearchCardData {
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct ScoreCardDTO {
-    pub metadata: Vec<CardMetadataWithVotesWithScore>,
+    pub metadata: Vec<CardMetadataWithFileData>,
     pub score: f64,
 }
 
@@ -912,39 +912,11 @@ pub async fn search_collections(
 
 #[utoipa::path(
     get,
-    path = "/top_cards",
-    context_path = "/api",
-    tag = "top_cards",
-    responses(
-        (status = 200, description = "JSON body representing the top cards by collected votes", body = [Vec<CardMetadataWithVotes>]),
-        (status = 400, description = "Service error relating to fetching the top cards by collected votes", body = [DefaultError]),
-    ),
-    params(
-        ("page" = u64, description = "The page of top cards to fetch"),
-    ),
-)]
-pub async fn get_top_cards(
-    page: Option<web::Path<u64>>,
-    pool: web::Data<Pool>,
-    _required_user: RequireAuth,
-    dataset: SlimDataset,
-) -> Result<HttpResponse, actix_web::Error> {
-    let page = page.map(|page| page.into_inner()).unwrap_or(1);
-
-    let top_cards = web::block(move || get_top_cards_query(page, dataset.id, pool))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    Ok(HttpResponse::Ok().json(top_cards))
-}
-
-#[utoipa::path(
-    get,
     path = "/card/{card_id}",
     context_path = "/api",
     tag = "card",
     responses(
-        (status = 200, description = "Card with the id that you were searching for", body = [CardMetadataWithVotesWithScore]),
+        (status = 200, description = "Card with the id that you were searching for", body = [CardMetadata]),
         (status = 400, description = "Service error relating to fidning a card by tracking_id", body = [DefaultError]),
     ),
     params(
@@ -964,35 +936,14 @@ pub async fn get_card_by_id(
     }
 
     let current_user_id = Some(user.id);
-    let card = web::block(move || {
-        get_metadata_and_votes_from_id_query(
-            card_id.into_inner(),
-            current_user_id,
-            dataset.id,
-            pool,
-        )
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let card =
+        web::block(move || get_metadata_from_id_query(card_id.into_inner(), dataset.id, pool))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
     if card.private && current_user_id.is_none() {
         return Err(ServiceError::Unauthorized.into());
     }
-    if card.private
-        && Some(
-            card.clone()
-                .author
-                .unwrap_or(UserDTO {
-                    id: uuid::Uuid::default(),
-                    email: None,
-                    website: None,
-                    username: None,
-                    visible_email: false,
-                    created_at: chrono::NaiveDateTime::default(),
-                    organization_id: uuid::Uuid::default(),
-                })
-                .id,
-        ) != current_user_id
-    {
+    if card.private && Some(card.author_id) != current_user_id {
         return Err(ServiceError::Forbidden.into());
     }
     Ok(HttpResponse::Ok().json(card))
@@ -1004,7 +955,7 @@ pub async fn get_card_by_id(
     context_path = "/api",
     tag = "card",
     responses(
-        (status = 200, description = "Card with the tracking_id that you were searching for", body = [CardMetadataWithVotesWithScore]),
+        (status = 200, description = "Card with the tracking_id that you were searching for", body = [CardMetadata]),
         (status = 400, description = "Service error relating to fidning a card by tracking_id", body = [DefaultError]),
     ),
     params(
@@ -1026,34 +977,14 @@ pub async fn get_card_by_tracking_id(
 
     let current_user_id = Some(user.id);
     let card = web::block(move || {
-        get_metadata_and_votes_from_tracking_id_query(
-            tracking_id.into_inner(),
-            current_user_id,
-            dataset.id,
-            pool,
-        )
+        get_metadata_from_tracking_id_query(tracking_id.into_inner(), dataset.id, pool)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
     if card.private && current_user_id.is_none() {
         return Err(ServiceError::Unauthorized.into());
     }
-    if card.private
-        && Some(
-            card.clone()
-                .author
-                .unwrap_or(UserDTO {
-                    id: uuid::Uuid::default(),
-                    email: None,
-                    website: None,
-                    username: None,
-                    visible_email: false,
-                    created_at: chrono::NaiveDateTime::default(),
-                    organization_id: uuid::Uuid::default(),
-                })
-                .id,
-        ) != current_user_id
-    {
+    if card.private && Some(card.author_id) != current_user_id {
         return Err(ServiceError::Forbidden.into());
     }
     Ok(HttpResponse::Ok().json(card))
@@ -1071,7 +1002,7 @@ pub struct RecommendCardsRequest {
     tag = "card",
     request_body(content = RecommendCardsRequest, description = "JSON request payload to get recommendations of cards similar to the cards in the request", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON response payload containing cards with scores which are similar to those in the request body", body = [Vec<CardMetadataWithVotesWithScore>]),
+        (status = 200, description = "JSON response payload containing cards with scores which are similar to those in the request body", body = [Vec<CardMetadataWithFileData>]),
         (status = 400, description = "Service error relating to to getting similar cards", body = [DefaultError]),
     )
 )]
@@ -1096,7 +1027,7 @@ pub async fn get_recommended_cards(
         })?;
 
     let recommended_card_metadatas =
-        web::block(move || get_metadata_from_point_ids(recommended_qdrant_point_ids, None, pool))
+        web::block(move || get_metadata_from_point_ids(recommended_qdrant_point_ids, pool))
             .await?
             .map_err(|err| {
                 ServiceError::BadRequest(format!(
@@ -1139,11 +1070,9 @@ pub async fn generate_off_cards(
 
     let prev_messages = data.prev_messages.clone();
     let card_ids = data.card_ids.clone();
-    let user_id = user.id;
-    let cards =
-        web::block(move || get_metadata_from_ids_query(card_ids, user_id, dataset.id, pool))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let cards = web::block(move || get_metadata_from_ids_query(card_ids, dataset.id, pool))
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
 
