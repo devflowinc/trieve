@@ -457,6 +457,12 @@ pub async fn update_card(
     dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
+    let dataset = web::block(move || get_dataset_by_id_query(dataset.id, pool1)).await??;
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    }
+
+    let pool1 = pool.clone();
     let pool2 = pool.clone();
     let dataset_id = dataset.id;
     let card_metadata = user_owns_card(user.id, card.card_uuid, dataset_id, pool).await?;
@@ -941,12 +947,17 @@ pub async fn get_top_cards(
 )]
 pub async fn get_card_by_id(
     card_id: web::Path<uuid::Uuid>,
-    user: Option<LoggedUser>,
+    user: LoggedUser,
     pool: web::Data<Pool>,
-    _required_user: RequireAuth,
     dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let current_user_id = user.map(|user| user.id);
+    let pool1 = pool.clone();
+    let dataset = web::block(move || get_dataset_by_id_query(dataset.id, pool1)).await??;
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    }
+
+    let current_user_id = Some(user.id);
     let card = web::block(move || {
         get_metadata_and_votes_from_id_query(
             card_id.into_inner(),
