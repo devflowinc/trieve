@@ -472,7 +472,7 @@ pub async fn insert_card_metadata_query(
 
     match transaction_result {
         Ok(_) => tantivy_index_map
-            .add_card(Some(given_dataset_id.to_string().as_str()), card_data.clone())
+            .add_card(given_dataset_id.to_string().as_str(), card_data.clone())
             .map_err(|e| {
                 log::info!("Failed to add card to index: {:?}", e);
                 DefaultError {
@@ -538,6 +538,7 @@ pub async fn update_card_metadata_query(
     card_data: CardMetadata,
     file_uuid: Option<uuid::Uuid>,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
+    dataseet_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_files::dsl as card_files_columns;
@@ -581,7 +582,7 @@ pub async fn update_card_metadata_query(
         Ok(_) => {
             let tantivy_index_map = tantivy_index_map.read().await;
             tantivy_index_map
-                .update_card(None, card_data_1)
+                .update_card(dataseet_uuid.to_string().as_str(), card_data_1)
                 .map_err(|_e| DefaultError {
                     message: "Failed to add card to index",
                 })?
@@ -767,7 +768,7 @@ pub async fn delete_card_metadata_query(
                 let tantivy_index_map = tantivy_index_map.read().await;
 
                 tantivy_index_map
-                    .delete_card(Some(dataset_uuid.to_string().as_str()), card_uuid)
+                    .delete_card(dataset_uuid.to_string().as_str(), card_uuid)
                     .map_err(|_e| DefaultError {
                         message: "Failed to delete card from index",
                     })?;
@@ -806,7 +807,7 @@ pub async fn delete_card_metadata_query(
                 let tantivy_index_map = tantivy_index_map.read().await;
 
                 tantivy_index_map
-                    .update_card(None, latest_collision_metadata)
+                    .update_card(dataset_uuid.to_string().as_str(), latest_collision_metadata)
                     .map_err(|_e| DefaultError {
                         message: "Failed to update card in index",
                     })?;

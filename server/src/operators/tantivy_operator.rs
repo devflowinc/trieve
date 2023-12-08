@@ -36,24 +36,17 @@ pub struct TantivyIndex {
 }
 
 pub struct TantivyIndexMap {
-    pub default_index: String,
     pub indices: HashMap<String, TantivyIndex>,
 }
 
 impl TantivyIndexMap {
-    pub fn new(default_index: &str) -> tantivy::Result<Self> {
-        Ok(Self {
-            default_index: default_index.to_string(),
+    pub fn new() -> Self {
+        Self {
             indices: HashMap::new(),
-        })
+        }
     }
 
-    pub fn create_index(&mut self, index_name: Option<&str>) -> tantivy::Result<()> {
-        let index_name = match index_name {
-            Some(index_name) => index_name,
-            None => &self.default_index,
-        };
-
+    pub fn create_index(&mut self, index_name: &str) -> tantivy::Result<()> {
         if self.indices.contains_key(index_name) {
             return Ok(());
         }
@@ -135,18 +128,7 @@ impl TantivyIndexMap {
         Ok(())
     }
 
-    fn get_tantivy_index(&self, index_name: Option<&str>) -> tantivy::Result<&TantivyIndex> {
-        let index_name = match index_name {
-            Some(index_name) => {
-                if index_name == "DEFAULT" {
-                    &self.default_index
-                } else {
-                    index_name
-                }
-            }
-            None => &self.default_index,
-        };
-
+    fn get_tantivy_index(&self, index_name: &str) -> tantivy::Result<&TantivyIndex> {
         match self.indices.get(index_name) {
             Some(index) => Ok(index),
             None => Err(tantivy::TantivyError::InvalidArgument(
@@ -155,7 +137,7 @@ impl TantivyIndexMap {
         }
     }
 
-    pub fn add_card(&self, index_name: Option<&str>, card: CardMetadata) -> tantivy::Result<()> {
+    pub fn add_card(&self, index_name: &str, card: CardMetadata) -> tantivy::Result<()> {
         let tantivy_index = self.get_tantivy_index(index_name)?;
 
         let doc_id = tantivy_index.schema.get_field("doc_id").unwrap();
@@ -180,7 +162,7 @@ impl TantivyIndexMap {
 
     pub fn search_cards(
         &self,
-        index_name: Option<&str>,
+        index_name: &str,
         query: &str,
         page: u64,
         filtered_ids: Option<Vec<uuid::Uuid>>,
@@ -239,7 +221,7 @@ impl TantivyIndexMap {
 
     pub fn delete_card(
         &self,
-        index_name: Option<&str>,
+        index_name: &str,
         card_id: uuid::Uuid,
     ) -> tantivy::Result<()> {
         let tantivy_index = self.get_tantivy_index(index_name)?;
@@ -261,7 +243,7 @@ impl TantivyIndexMap {
         Ok(())
     }
 
-    pub fn update_card(&self, index_name: Option<&str>, card: CardMetadata) -> tantivy::Result<()> {
+    pub fn update_card(&self, index_name: &str, card: CardMetadata) -> tantivy::Result<()> {
         let tantivy_index = self.get_tantivy_index(index_name)?;
 
         if card.qdrant_point_id.is_none() {

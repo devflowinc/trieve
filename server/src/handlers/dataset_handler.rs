@@ -2,10 +2,7 @@ use super::auth_handler::LoggedUser;
 use crate::{
     data::models::{Dataset, Pool},
     errors::ServiceError,
-    operators::{
-        dataset_operator::create_dataset_query, qdrant_operator, tantivy_operator::TantivyIndexMap,
-    },
-    operators::{tantivy_operator::TantivyIndexMap, dataset_operator::new_dataset_operation}, data::models::{Pool, Dataset},
+    operators::{dataset_operator::new_dataset_operation, tantivy_operator::TantivyIndexMap},
 };
 use actix_web::{web, FromRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
