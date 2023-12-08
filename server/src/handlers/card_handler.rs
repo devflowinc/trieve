@@ -714,15 +714,20 @@ fn parse_query(query: String) -> ParsedQuery {
 pub async fn search_card(
     data: web::Json<SearchCardData>,
     page: Option<web::Path<u64>>,
-    user: Option<LoggedUser>,
+    user: LoggedUser,
     pool: web::Data<Pool>,
     cross_encoder_init: web::Data<CrossEncoder>,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
-    _required_user: RequireAuth,
     dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let current_user_id = user.map(|user| user.id);
+    let pool1 = pool.clone();
+    let dataset = web::block(move || get_dataset_by_id_query(dataset.id, pool1)).await??;
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
+
+    let current_user_id = Some(user.id);
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let dataset_id = dataset.id;
     let parsed_query = parse_query(data.content.clone());
