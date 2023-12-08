@@ -1,6 +1,5 @@
 -- Your SQL goes here
 -- Create a new table to store row counts
--- Create a new table to store row counts
 CREATE TABLE card_metadata_count (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     total_rows BIGINT NOT NULL

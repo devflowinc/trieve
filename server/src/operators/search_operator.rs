@@ -14,7 +14,6 @@ use crate::handlers::card_handler::{
     ParsedQuery, ScoreCardDTO, SearchCardData, SearchCardQueryResponseBody, SearchCollectionsData,
     SearchCollectionsResult,
 };
-use crate::operators::card_operator::get_card_count_query;
 use crate::operators::qdrant_operator::{
     create_embedding, get_qdrant_connection, search_qdrant_query,
 };
@@ -239,14 +238,11 @@ pub async fn retrieve_qdrant_points_query(
         })),
     });
 
-    let (total_cards, point_ids) = futures::join!(
-        get_card_count_query(pool),
-        search_qdrant_query(page, filter, embedding_vector.clone(), dataset_id)
-    );
+    let point_ids = search_qdrant_query(page, filter, embedding_vector.clone(), dataset_id).await;
 
     Ok(SearchCardQueryResult {
         search_results: point_ids?,
-        total_card_pages: max(total_cards? / 10, 1),
+        total_card_pages: 10,
     })
 }
 

@@ -28,7 +28,6 @@ use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat_completion::{ChatCompletionParameters, ChatMessage, Role};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::process::Command;
 use tokio::sync::RwLock;
 use tokio_stream::StreamExt;
@@ -1024,20 +1023,6 @@ pub async fn get_card_by_tracking_id(
         return Err(ServiceError::Forbidden.into());
     }
     Ok(HttpResponse::Ok().json(card))
-}
-
-// TODO
-#[utoipa::path(get, path = "/card/count", context_path = "/api", tag = "card")]
-pub async fn get_total_card_count(
-    pool: web::Data<Pool>,
-    _required_user: RequireAuth,
-    _dataset: SlimDataset,
-) -> Result<HttpResponse, actix_web::Error> {
-    let total_count = get_card_count_query(pool)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    Ok(HttpResponse::Ok().json(json!({ "total_count": total_count })))
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
