@@ -74,13 +74,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    card_metadata_count (id) {
-        id -> Uuid,
-        total_rows -> Int8,
-    }
-}
-
-diesel::table! {
     card_votes (id) {
         id -> Uuid,
         voted_user_id -> Uuid,
@@ -269,7 +262,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     card_collisions,
     card_files,
     card_metadata,
-    card_metadata_count,
     card_votes,
     collections_from_files,
     cut_cards,

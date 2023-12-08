@@ -140,7 +140,6 @@ pub async fn main() -> std::io::Result<()> {
             handlers::card_handler::create_card,
             handlers::card_handler::update_card,
             handlers::card_handler::get_recommended_cards,
-            handlers::card_handler::get_total_card_count,
             handlers::message_handler::create_suggested_queries_handler,
             handlers::card_handler::update_card_by_tracking_id,
             handlers::card_handler::search_card,
@@ -501,10 +500,6 @@ pub async fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/update")
                                     .route(web::put().to(handlers::card_handler::update_card)),
-                            )
-                            .service(
-                                web::resource("/count")
-                                    .route(web::get().to(handlers::card_handler::get_total_card_count)),
                             )
                             .service(
                                 web::resource("/search")
