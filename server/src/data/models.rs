@@ -946,13 +946,6 @@ impl CutCard {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
-#[diesel(table_name = card_metadata_count)]
-pub struct CardMetadataCount {
-    pub id: uuid::Uuid,
-    pub total_rows: i64,
-}
-
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
 #[diesel(table_name = user_collection_counts)]
 pub struct UserCollectionCount {
     pub id: uuid::Uuid,

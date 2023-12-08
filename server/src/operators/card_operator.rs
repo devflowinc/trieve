@@ -823,19 +823,6 @@ pub async fn delete_card_metadata_query(
     Ok(())
 }
 
-pub async fn get_card_count_query(pool: web::Data<Pool>) -> Result<i64, DefaultError> {
-    use crate::data::schema::card_metadata_count::dsl as card_metadata_count_columns;
-
-    let mut conn = pool.get().unwrap();
-
-    card_metadata_count_columns::card_metadata_count
-        .select(card_metadata_count_columns::total_rows)
-        .first(&mut conn)
-        .map_err(|_err| DefaultError {
-            message: "Failed to get card count",
-        })
-}
-
 pub fn get_qdrant_id_from_card_id_query(
     card_id: uuid::Uuid,
     pool: web::Data<Pool>,

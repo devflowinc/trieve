@@ -360,10 +360,6 @@ export interface CreateCardDTO {
   duplicate: boolean;
 }
 
-export interface CardCountDTO {
-  total_count: number;
-}
-
 export interface SingleCardDTO {
   metadata: CardMetadataWithVotes | null;
   status: number;
