@@ -1092,6 +1092,12 @@ pub async fn generate_off_cards(
     user: LoggedUser,
     dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let pool1 = pool.clone();
+    let datset = web::block(move || get_dataset_by_id_query(dataset.id, pool1)).await??;
+    if user.organization_id != datset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    }
+
     let prev_messages = data.prev_messages.clone();
     let card_ids = data.card_ids.clone();
     let user_id = user.id;
