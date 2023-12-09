@@ -676,6 +676,7 @@ pub async fn delete_card_metadata_query(
                 let _ = qdrant
                     .delete_points(
                         qdrant_collection,
+                        None,
                         &vec![<String as Into<PointId>>::into(
                             qdrant_point_id.unwrap_or_default().to_string(),
                         )]
@@ -713,6 +714,7 @@ pub async fn delete_card_metadata_query(
                 let _ = qdrant
                     .update_vectors_blocking(
                         qdrant_collection,
+                        None,
                         &[PointVectors {
                             id: Some(<String as Into<PointId>>::into(
                                 qdrant_point_id.unwrap_or_default().to_string(),

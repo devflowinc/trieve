@@ -127,11 +127,7 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
                           <MenuItem
                             as="button"
                             class="flex space-x-2 rounded-md px-2 py-1 hover:cursor-pointer focus:bg-neutral-100 focus:outline-none dark:hover:bg-neutral-600 dark:hover:bg-none dark:focus:bg-neutral-600"
-                            onClick={() => {
-                              // keycloak.logout().catch((error) => {
-                              //   console.error(error);
-                              // });
-                            }}
+                            onClick={logout}
                           >
                             <BiRegularLogOut class="h-6 w-6 fill-current" />
                             <div class="text-md font-medium">Logout</div>
