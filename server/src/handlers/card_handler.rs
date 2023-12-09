@@ -216,7 +216,7 @@ pub async fn create_card(
                     )
                     .into());
                 }
-                card_results.get(0).unwrap().clone()
+                card_results.first().unwrap().clone()
             }
             Err(err) => {
                 return Err(ServiceError::BadRequest(err.message.into()).into());
@@ -864,7 +864,6 @@ pub async fn search_collections(
     let pool1 = pool.clone();
 
     let collection = {
-        let dataset_id = dataset_id;
         web::block(move || get_collection_by_id_query(collection_id, dataset_id, pool))
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?

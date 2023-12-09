@@ -1,7 +1,6 @@
-use crate::handlers::register_handler;
 use crate::{
     data::models::{Pool, SlimUser, User},
-    errors::{DefaultError, ServiceError},
+    errors::ServiceError,
     operators::{
         self,
         user_operator::{get_user_by_id_query, get_user_from_api_key_query},
@@ -17,14 +16,14 @@ use diesel::prelude::*;
 
 use oauth2::reqwest::http_client;
 use oauth2::{
-    AsyncCodeTokenRequest, AuthUrl, AuthorizationCode, ClientSecret, CsrfToken, PkceCodeChallenge,
-    PkceCodeVerifier, RedirectUrl, Scope, TokenResponse,
+    AuthUrl, AuthorizationCode, ClientSecret, CsrfToken, PkceCodeChallenge, PkceCodeVerifier,
+    RedirectUrl, Scope, TokenResponse,
 };
 use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
-use openidconnect::reqwest::async_http_client;
-use openidconnect::{AccessTokenHash, ClientId, IssuerUrl, LanguageTag, Nonce};
+
+use openidconnect::{AccessTokenHash, ClientId, IssuerUrl, Nonce};
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
+
 use std::future::{ready, Ready};
 use utoipa::ToSchema;
 
@@ -151,27 +150,26 @@ pub async fn build_oidc_client() -> CoreClient {
     )
 }
 
-pub fn verify(hash: &str, password: &str) -> Result<bool, ServiceError> {
-    argon2::verify_encoded_ext(
-        hash,
-        password.as_bytes(),
-        register_handler::SECRET_KEY.as_bytes(),
-        &[],
-    )
-    .map_err(|err| {
-        dbg!(err);
-        ServiceError::Unauthorized
-    })
-}
-
-pub async fn create_account(email: String, name: Option<String>, pool: web::Data<Pool>) -> User {
+pub async fn create_account(
+    email: String,
+    name: Option<String>,
+    user_id: Option<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> User {
     // see if account exists
 
     log::info!("Creating account for {}", email);
 
     use crate::data::schema::users::dsl as users_columns;
 
-    let user = User::from_details(email, name);
+    let user = if let Some(user_id) = user_id {
+        //TODO: use org id
+        User::from_details_with_id(user_id, email, name, uuid::Uuid::new_v4())
+    } else {
+        //TODO: use org id
+        User::from_details(email.clone(), name, uuid::Uuid::new_v4())
+    };
+
     let mut conn = pool.get().unwrap();
     match diesel::insert_into(users_columns::users)
         .values(&user)
@@ -211,10 +209,9 @@ const OIDC_SESSION_KEY: &str = "oidc_state";
     path = "/auth",
     context_path = "/api",
     tag = "auth",
-    request_body(content = AuthData, description = "JSON request payload to sign in", content_type = "application/json"),
     responses(
-        (status = 200, description = "Response that returns with set-cookie header", body = [SlimUser]),
-        (status = 400, description = "Email or password empty or incorrect", body = [DefaultError]),
+        (status = 200, description = "Response that redirects to OAuth provider"),
+        (status = 400, description = "OAuth Error", body = [DefaultError]),
     )
 )]
 pub async fn login(
@@ -241,7 +238,7 @@ pub async fn login(
     };
 
     session
-        .insert(OIDC_SESSION_KEY, &oidc_state)
+        .insert(OIDC_SESSION_KEY, oidc_state)
         .map_err(|_| ServiceError::InternalServerError("Could not set OIDC Session".into()))?;
 
     session
@@ -352,6 +349,7 @@ pub async fn callback(
             create_account(
                 email.to_string(),
                 Some(name.iter().next().unwrap().1.to_string()),
+                Some(user_id),
                 pool,
             )
             .await
@@ -366,7 +364,7 @@ pub async fn callback(
 
     Identity::login(&req.extensions(), user_string).unwrap();
     session.remove(OIDC_SESSION_KEY);
-    log::info!("Successfully authenticated user {}", &slim_user.email);
+    log::info!("Successfully authenticated user {}", &slim_user.id);
 
     let redirect_url: String = session
         .get::<String>("redirect_url")
@@ -400,19 +398,6 @@ pub async fn get_me(
         Ok(user) => Ok(HttpResponse::Ok().json(SlimUser::from(user))),
         Err(e) => Ok(HttpResponse::BadRequest().json(e)),
     }
-}
-
-fn find_user_match(auth_data: AuthData, pool: web::Data<Pool>) -> Result<SlimUser, DefaultError> {
-    use crate::data::schema::users::dsl::{email, users};
-
-    let mut conn = pool.get().unwrap();
-
-    let user = users
-        .filter(email.eq(&auth_data.email))
-        .first::<User>(&mut conn)
-        .unwrap();
-
-    Ok(user.into())
 }
 
 #[utoipa::path(
