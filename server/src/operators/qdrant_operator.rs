@@ -10,8 +10,10 @@ use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use qdrant_client::{
     client::{QdrantClient, QdrantClientConfig},
     qdrant::{
-        point_id::PointIdOptions, with_payload_selector::SelectorOptions, Filter, PointId,
-        PointStruct, RecommendPoints, SearchPoints, WithPayloadSelector, CreateCollection, VectorsConfig, VectorParams, Distance, FieldType, PayloadIndexParams, payload_index_params::IndexParams, TokenizerType, TextIndexParams,
+        payload_index_params::IndexParams, point_id::PointIdOptions,
+        with_payload_selector::SelectorOptions, CreateCollection, Distance, FieldType, Filter,
+        PayloadIndexParams, PointId, PointStruct, RecommendPoints, SearchPoints, TextIndexParams,
+        TokenizerType, VectorParams, VectorsConfig, WithPayloadSelector,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -63,7 +65,7 @@ pub async fn create_new_qdrant_collection_query(
             ServiceError::BadRequest("Failed to create Collection".into())
         })?;
 
-     qdrant_client
+    qdrant_client
         .create_field_index(
             qdrant_collection.clone(),
             "link",
@@ -72,9 +74,7 @@ pub async fn create_new_qdrant_collection_query(
             None,
         )
         .await
-        .map_err(|_| {
-            ServiceError::BadRequest("Failed to create index".into())
-        })?;
+        .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
     qdrant_client
         .create_field_index(
@@ -85,9 +85,7 @@ pub async fn create_new_qdrant_collection_query(
             None,
         )
         .await
-        .map_err(|_| {
-            ServiceError::BadRequest("Failed to create index".into())
-        })?;
+        .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
     qdrant_client
         .create_field_index(
@@ -105,9 +103,7 @@ pub async fn create_new_qdrant_collection_query(
             None,
         )
         .await
-        .map_err(|_| {
-            ServiceError::BadRequest("Failed to create index".into())
-        })?;
+        .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
     Ok(())
 }
@@ -223,7 +219,7 @@ pub async fn create_new_qdrant_point_query(
 
     let qdrant_collection = dataset_id.to_string();
     qdrant
-        .upsert_points_blocking(qdrant_collection, vec![point], None)
+        .upsert_points_blocking(qdrant_collection, None, vec![point], None)
         .await
         .map_err(|_err| ServiceError::BadRequest("Failed inserting card to qdrant".into()))?;
 
@@ -252,6 +248,7 @@ pub async fn update_qdrant_point_query(
     let current_point_vec = qdrant
         .get_points(
             qdrant_collection.clone(),
+            None,
             &qdrant_point_id,
             false.into(),
             true.into(),
@@ -320,7 +317,7 @@ pub async fn update_qdrant_point_query(
         );
 
         qdrant
-            .upsert_points(qdrant_collection, vec![point], None)
+            .upsert_points(qdrant_collection, None, vec![point], None)
             .await
             .map_err(|_err| ServiceError::BadRequest("Failed upserting card in qdrant".into()))?;
 
@@ -330,6 +327,7 @@ pub async fn update_qdrant_point_query(
     qdrant
         .overwrite_payload(
             qdrant_collection,
+            None,
             &points_selector,
             payload
                 .try_into()
@@ -387,7 +385,10 @@ pub async fn search_qdrant_query(
     Ok(point_ids)
 }
 
-pub async fn delete_qdrant_point_id_query(point_id: uuid::Uuid, dataset_id: uuid::Uuid) -> Result<(), DefaultError> {
+pub async fn delete_qdrant_point_id_query(
+    point_id: uuid::Uuid,
+    dataset_id: uuid::Uuid,
+) -> Result<(), DefaultError> {
     let qdrant = get_qdrant_connection().await?;
 
     let qdrant_point_id: Vec<PointId> = vec![point_id.to_string().into()];
@@ -395,7 +396,7 @@ pub async fn delete_qdrant_point_id_query(point_id: uuid::Uuid, dataset_id: uuid
     let qdrant_collection = dataset_id.to_string();
 
     qdrant
-        .delete_points(qdrant_collection, &points_selector, None)
+        .delete_points(qdrant_collection, None, &points_selector, None)
         .await
         .map_err(|_err| DefaultError {
             message: "Failed to delete point from qdrant",
@@ -434,6 +435,8 @@ pub async fn recommend_qdrant_query(
         positive_vectors: vec![],
         negative_vectors: vec![],
         strategy: None,
+        timeout: None,
+        shard_key_selector: None,
     };
 
     let qdrant_client = get_qdrant_connection().await?;

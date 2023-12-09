@@ -310,14 +310,16 @@ pub async fn add_bookmark(
 
     user_owns_collection(user.id, collection_id, dataset_id, pool).await?;
 
-    web::block(move || {
-        create_card_bookmark_query(
-            pool2,
-            CardCollectionBookmark::from_details(collection_id, card_metadata_id),
-        )
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    {
+        web::block(move || {
+            create_card_bookmark_query(
+                pool2,
+                CardCollectionBookmark::from_details(collection_id, card_metadata_id, dataset_id),
+            )
+        })
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    }
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -368,7 +370,6 @@ pub async fn get_all_bookmarks(
     let dataset_id = dataset.id;
 
     let bookmarks = {
-        let dataset_id = dataset_id;
         web::block(move || {
             get_bookmarks_for_collection_query(
                 collection_id,
@@ -390,7 +391,6 @@ pub async fn get_all_bookmarks(
         .collect::<Vec<uuid::Uuid>>();
 
     let collided_cards = {
-        let dataset_id = dataset_id;
         web::block(move || get_collided_cards_query(point_ids, current_user_id, dataset_id, pool1))
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?
@@ -520,7 +520,6 @@ pub async fn delete_bookmark(
     }
 
     {
-        let dataset_id = dataset_id;
         let pool = pool.clone();
         web::block(move || delete_bookmark_query(bookmark_id, collection_id, dataset_id, pool))
             .await?
@@ -560,7 +559,6 @@ pub async fn generate_off_collection(
     let dataset_id = dataset.id;
 
     let collection_bookmarks = {
-        let dataset_id = dataset_id;
         web::block(move || {
             get_bookmarks_for_collection_query(
                 collection_id,
