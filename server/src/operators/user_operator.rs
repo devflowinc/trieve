@@ -71,6 +71,7 @@ pub fn get_user_by_id_query(
         .map_err(|_| DefaultError {
             message: "Error loading user",
         })?;
+
     match user {
         Some(user) => Ok(user),
         None => Err(DefaultError {
