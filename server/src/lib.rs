@@ -1,10 +1,8 @@
 #[macro_use]
 extern crate diesel;
 use crate::{
-    errors::ServiceError,
+    errors::ServiceError, handlers::auth_handler::build_oidc_client,
     operators::tantivy_operator::TantivyIndexMap,
-    handlers::auth_handler::{build_oidc_client, create_account},
-    operators::qdrant_operator::get_qdrant_connection,
 };
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
@@ -117,13 +115,9 @@ pub async fn main() -> std::io::Result<()> {
     #[openapi(
         info(description = "Arguflow REST API OpenAPI Documentation"),
         paths(
-            handlers::invitation_handler::post_invitation,
-            handlers::register_handler::register_user,
             handlers::auth_handler::login,
             handlers::auth_handler::logout,
             handlers::auth_handler::get_me,
-            handlers::password_reset_handler::reset_user_password_handler,
-            handlers::password_reset_handler::send_password_reset_email_handler,
             handlers::topic_handler::create_topic,
             handlers::topic_handler::delete_topic,
             handlers::topic_handler::update_topic,
@@ -171,12 +165,7 @@ pub async fn main() -> std::io::Result<()> {
         ),
         components(
             schemas(
-                handlers::invitation_handler::InvitationResponse,
-                handlers::invitation_handler::InvitationData,
-                handlers::register_handler::SetPasswordData,
                 handlers::auth_handler::AuthData,
-                handlers::password_reset_handler::PasswordResetData,
-                handlers::password_reset_handler::PasswordResetEmailData,
                 handlers::topic_handler::CreateTopicData,
                 handlers::topic_handler::DeleteTopicData,
                 handlers::topic_handler::UpdateTopicData,
@@ -307,7 +296,7 @@ pub async fn main() -> std::io::Result<()> {
             .wrap(
                 SessionMiddleware::builder(
                     redis_store.clone(),
-                    Key::from(handlers::register_handler::SECRET_KEY.as_bytes()),
+                    Key::from(operators::user_operator::SECRET_KEY.as_bytes()),
                 )
                 .session_lifecycle(
                     PersistentSession::default().session_ttl(time::Duration::days(1)),
@@ -332,14 +321,6 @@ pub async fn main() -> std::io::Result<()> {
                         web::resource("/dataset").route(web::post().to(handlers::dataset_handler::create_dataset)),
                     )
                     .service(
-                        web::resource("/invitation")
-                            .route(web::post().to(handlers::invitation_handler::post_invitation)),
-                    )
-                    .service(
-                        web::resource("/register/{invitation_id}")
-                            .route(web::post().to(handlers::register_handler::register_user)),
-                    )
-                    .service(
                         web::scope("/auth")
                         .service(
                         web::resource("")
@@ -354,22 +335,6 @@ pub async fn main() -> std::io::Result<()> {
                             web::resource("/callback")
                                 .route(web::get().to(handlers::auth_handler::callback)),
                         )
-                    )
-            
-                    .service(
-                        web::scope("/password")
-                            .service(
-                                web::resource("").route(
-                                    web::post()
-                                        .to(handlers::password_reset_handler::reset_user_password_handler),
-                                )
-                            )
-                            .service(web::resource("/{email}").route(
-                                web::get().to(
-                                    handlers::password_reset_handler::send_password_reset_email_handler,
-                                ),
-                            ),
-                            ),
                     )
                     .service(
                         web::resource("/topic")

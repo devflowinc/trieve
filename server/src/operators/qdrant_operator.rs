@@ -167,7 +167,7 @@ pub async fn create_openai_embedding(message: &str) -> Result<Vec<f32>, actix_we
         .await
         .map_err(actix_web::error::ErrorBadRequest)?;
 
-    let vector = embeddings.data.get(0).unwrap().embedding.clone();
+    let vector = embeddings.data.first().unwrap().embedding.clone();
     Ok(vector.iter().map(|&x| x as f32).collect())
 }
 

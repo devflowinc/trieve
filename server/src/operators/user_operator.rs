@@ -2,36 +2,16 @@ use crate::data::models::{
     CardFileWithName, CardMetadata, CardMetadataWithFileData, SlimUser, UserDTOWithCards,
 };
 use crate::diesel::prelude::*;
-use crate::handlers::register_handler::{generate_api_key, hash_password};
 use crate::handlers::user_handler::UpdateUserData;
 use crate::{
     data::models::{Pool, User},
     errors::DefaultError,
 };
 use actix_web::web;
-
-pub fn get_user_by_email_query(
-    user_email: &String,
-    pool: &web::Data<Pool>,
-) -> Result<User, DefaultError> {
-    use crate::data::schema::users::dsl::*;
-
-    let mut conn = pool.get().unwrap();
-
-    let user: Option<User> = users
-        .filter(email.eq(user_email))
-        .first::<User>(&mut conn)
-        .optional()
-        .map_err(|_| DefaultError {
-            message: "Error loading user",
-        })?;
-    match user {
-        Some(user) => Ok(user),
-        None => Err(DefaultError {
-            message: "User not found",
-        }),
-    }
-}
+use argon2::Config;
+use once_cell::sync::Lazy;
+use rand::distributions::Alphanumeric;
+use rand::Rng;
 
 pub fn get_user_by_username_query(
     user_name: &String,
@@ -275,6 +255,37 @@ pub fn update_user_query(
         })?;
 
     Ok(SlimUser::from(user))
+}
+
+pub fn generate_api_key() -> String {
+    let rng = rand::thread_rng();
+    let api_key: String = format!(
+        "af-{}",
+        rng.sample_iter(&Alphanumeric)
+            .take(32)
+            .map(char::from)
+            .collect::<String>()
+    );
+
+    api_key
+}
+
+pub static SECRET_KEY: Lazy<String> =
+    Lazy::new(|| std::env::var("SECRET_KEY").unwrap_or_else(|_| "0123".repeat(16)));
+
+pub static SALT: Lazy<String> =
+    Lazy::new(|| std::env::var("SALT").unwrap_or_else(|_| "supersecuresalt".to_string()));
+
+pub fn hash_password(password: &str) -> Result<String, DefaultError> {
+    let config = Config {
+        secret: SECRET_KEY.as_bytes(),
+        ..Default::default()
+    };
+    argon2::hash_encoded(password.as_bytes(), SALT.as_bytes(), &config).map_err(|_err| {
+        DefaultError {
+            message: "Error processing password, try again",
+        }
+    })
 }
 
 pub fn set_user_api_key_query(

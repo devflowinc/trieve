@@ -120,7 +120,7 @@ pub async fn retrieve_qdrant_points_query(
     if !tag_set_inner.is_empty() {
         query = query.filter(card_metadata_columns::tag_set.ilike(format!(
             "%{}%",
-            tag_set_inner.get(0).unwrap_or(&String::new())
+            tag_set_inner.first().unwrap_or(&String::new())
         )));
     }
 
@@ -129,10 +129,10 @@ pub async fn retrieve_qdrant_points_query(
     }
 
     if !link_inner.is_empty() {
-        query = query.filter(
-            card_metadata_columns::link
-                .ilike(format!("%{}%", link_inner.get(0).unwrap_or(&String::new()))),
-        );
+        query = query.filter(card_metadata_columns::link.ilike(format!(
+            "%{}%",
+            link_inner.first().unwrap_or(&String::new())
+        )));
     }
     for link_url in link_inner.iter().skip(1) {
         query = query.or_filter(card_metadata_columns::link.ilike(format!("%{}%", link_url)));
@@ -183,7 +183,7 @@ pub async fn retrieve_qdrant_points_query(
                 serde_json::Value::Array(arr) => {
                     query = query.filter(
                         sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                            .ilike(format!("%{}%", arr.get(0).unwrap().as_str().unwrap_or(""))),
+                            .ilike(format!("%{}%", arr.first().unwrap().as_str().unwrap_or(""))),
                     );
                     for item in arr.iter().skip(1) {
                         query = query.or_filter(
@@ -269,7 +269,7 @@ pub async fn global_unfiltered_top_match_query(
             }
         })?;
 
-    let top_search_result: SearchResult = match data.result.get(0) {
+    let top_search_result: SearchResult = match data.result.first() {
         Some(point) => match point.clone().id {
             Some(point_id) => match point_id.point_id_options {
                 Some(PointIdOptions::Uuid(id)) => SearchResult {
@@ -352,14 +352,14 @@ pub async fn search_card_collections_query(
     let tag_set_inner = tag_set.unwrap_or_default();
     let link_inner = link.unwrap_or_default();
 
-    if let Some(tag) = tag_set_inner.get(0) {
+    if let Some(tag) = tag_set_inner.first() {
         query = query.filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
     }
     for tag in tag_set_inner.iter().skip(1) {
         query = query.or_filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
     }
 
-    if let Some(link_inner) = link_inner.get(0) {
+    if let Some(link_inner) = link_inner.first() {
         query = query.filter(card_metadata_columns::link.ilike(format!("%{}%", link_inner)));
     }
     for link_url in link_inner.iter().skip(1) {
@@ -371,7 +371,7 @@ pub async fn search_card_collections_query(
             if let Some(value) = obj.get(key) {
                 match value {
                     serde_json::Value::Array(arr) => {
-                        if let Some(first_val) = arr.get(0) {
+                        if let Some(first_val) = arr.first() {
                             if let Some(string_val) = first_val.as_str() {
                                 query = query.filter(
                                     sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
@@ -653,7 +653,7 @@ pub async fn search_full_text_card_query(
     if !tag_set_inner.is_empty() {
         query = query.filter(card_metadata_columns::tag_set.ilike(format!(
             "%{}%",
-            tag_set_inner.get(0).unwrap_or(&String::new())
+            tag_set_inner.first().unwrap_or(&String::new())
         )));
     }
 
@@ -662,10 +662,10 @@ pub async fn search_full_text_card_query(
     }
 
     if !link_inner.is_empty() {
-        query = query.filter(
-            card_metadata_columns::link
-                .ilike(format!("%{}%", link_inner.get(0).unwrap_or(&String::new()))),
-        );
+        query = query.filter(card_metadata_columns::link.ilike(format!(
+            "%{}%",
+            link_inner.first().unwrap_or(&String::new())
+        )));
     }
     for link_url in link_inner.iter().skip(1) {
         query = query.or_filter(card_metadata_columns::link.ilike(format!("%{}%", link_url)));
@@ -716,7 +716,7 @@ pub async fn search_full_text_card_query(
                 serde_json::Value::Array(arr) => {
                     query = query.filter(
                         sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                            .ilike(format!("%{}%", arr.get(0).unwrap().as_str().unwrap_or(""))),
+                            .ilike(format!("%{}%", arr.first().unwrap().as_str().unwrap_or(""))),
                     );
                     for item in arr.iter().skip(1) {
                         query = query.or_filter(
@@ -781,7 +781,7 @@ pub async fn search_full_text_card_query(
         0
     } else {
         (matching_tantivy_ids
-            .get(0)
+            .first()
             .expect("searched_cards should have a len of at least 1")
             .0
             .total_count as f64
@@ -884,14 +884,14 @@ pub async fn search_full_text_collection_query(
     let tag_set_inner = tag_set.unwrap_or_default();
     let link_inner = link.unwrap_or_default();
 
-    if let Some(tag) = tag_set_inner.get(0) {
+    if let Some(tag) = tag_set_inner.first() {
         query = query.filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
     }
     for tag in tag_set_inner.iter().skip(1) {
         query = query.or_filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
     }
 
-    if let Some(link_inner) = link_inner.get(0) {
+    if let Some(link_inner) = link_inner.first() {
         query = query.filter(card_metadata_columns::link.ilike(format!("%{}%", link_inner)));
     }
     for link_url in link_inner.iter().skip(1) {
@@ -903,7 +903,7 @@ pub async fn search_full_text_collection_query(
             if let Some(value) = obj.get(key) {
                 match value {
                     serde_json::Value::Array(arr) => {
-                        if let Some(first_val) = arr.get(0) {
+                        if let Some(first_val) = arr.first() {
                             if let Some(string_val) = first_val.as_str() {
                                 query = query.filter(
                                     sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
@@ -981,7 +981,7 @@ pub async fn search_full_text_collection_query(
         0
     } else {
         (matching_tantivy_ids
-            .get(0)
+            .first()
             .expect("searched_cards should have a len of at least 1")
             .0
             .total_count as f64

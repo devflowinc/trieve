@@ -404,7 +404,7 @@ pub fn get_bookmarks_for_collection_query(
             .load::<(CardMetadataWithCount, Option<uuid::Uuid>, CardCollection)>(&mut conn)
             .map_err(|_err| ServiceError::BadRequest("Error getting bookmarks".to_string()))?;
 
-    let card_collection = if let Some(bookmark) = bookmark_metadata.get(0) {
+    let card_collection = if let Some(bookmark) = bookmark_metadata.first() {
         bookmark.2.clone()
     } else {
         card_collection_columns::card_collection
@@ -436,7 +436,7 @@ pub fn get_bookmarks_for_collection_query(
     let card_metadata_with_file_id = get_metadata_query(converted_cards, conn)
         .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
-    let total_pages = match bookmark_metadata.get(0) {
+    let total_pages = match bookmark_metadata.first() {
         Some(metadata) => (metadata.0.count as f64 / 10.0).ceil() as i64,
         None => 0,
     };
