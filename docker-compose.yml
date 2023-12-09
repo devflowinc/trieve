@@ -177,6 +177,17 @@ services:
       - SUGGESTED_QUERIES=${SUGGESTED_QUERIES}
       - PUBLIC_SEARCH_VOTE_FEATURE=${PUBLIC_SEARCH_VOTE_FEATURE}
 
+  keycloak:
+    image: jboss/keycloak
+    environment:
+      - DB_VENDOR=h2
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=aintsecure
+    volumes:
+      - keycloak-data:/opt/jboss/keycloak/standalone/data
+    ports:
+      - 8080:8080
+
 networks:
   app-network:
     driver: bridge
@@ -187,3 +198,4 @@ volumes:
   pgdata:
   qdrant_data:
   s3-data:
+  keycloak-data:

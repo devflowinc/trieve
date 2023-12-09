@@ -107,7 +107,7 @@ try {
     <div
       class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white"
     >
-      <HomeNavbar stars={stars} dataset={dataset} client:load />
+      <HomeNavbar stars={stars} dataset={dataset} client:only />
       <slot />
     </div>
   </body>

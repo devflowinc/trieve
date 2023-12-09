@@ -15,12 +15,19 @@ use actix_web::{
 use diesel::prelude::*;
 use serde::Deserialize;
 use std::future::{ready, Ready};
+use std::str::FromStr;
 use utoipa::ToSchema;
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct AuthData {
     pub email: String,
     pub password: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct OpCallback {
+    pub id_token: String,
+    pub code: String,
 }
 pub type LoggedUser = SlimUser;
 
@@ -125,11 +132,12 @@ pub async fn logout(id: Identity) -> HttpResponse {
 )]
 pub async fn login(
     req: HttpRequest,
-    auth_data: web::Json<AuthData>,
+    auth_data: web::Json<OpCallback>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let auth_data_inner = auth_data.into_inner();
-    let email = auth_data_inner.email;
+    let token = openidconnect::IdToken::from_str(&auth_data_inner.id_token).unwrap();
+    let email = token.claims(token., nonce_verifier);
     let password = auth_data_inner.password;
 
     if email.is_empty() || password.is_empty() {
