@@ -13,6 +13,7 @@ import { isUserDTO, type UserDTO } from "../../utils/apiTypes";
 import { NotificationPopover } from "./Atoms/NotificationPopover";
 import { AiFillGithub } from "solid-icons/ai";
 import { TbMinusVertical } from "solid-icons/tb";
+import Keycloak from "keycloak-js";
 
 export interface RegisterOrUserProfileProps {
   stars: number;
@@ -25,6 +26,7 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
 
   const [isLoadingUser, setIsLoadingUser] = createSignal(true);
   const [currentUser, setCurrentUser] = createSignal<UserDTO | null>(null);
+  const keycloak = new Keycloak("keycloak.json");
 
   const logout = () => {
     void fetch(`${apiHost}/auth`, {
@@ -43,6 +45,10 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
   };
 
   createEffect(() => {
+    if (!keycloak.authenticated) {
+      setIsLoadingUser(false);
+      return;
+    }
     void fetch(`${apiHost}/auth`, {
       method: "GET",
       headers: {
@@ -69,11 +75,23 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
         <div class="flex items-center space-x-2">
           <Show when={!currentUser()}>
             <div class="flex items-center space-x-3">
-              <a href="/auth/login" class="min-[420px]:text-lg">
-                Login
-              </a>
-              <a href="/auth/register" class="min-[420px]:text-lg">
-                Register
+              <a
+                onClick={() => {
+                  keycloak
+                    .login()
+                    .then(() => {
+                      console.log("login success");
+                      console.log("Keycloak", keycloak);
+                      console.log("token", keycloak.token);
+                      console.log("refreshToken", keycloak.refreshToken);
+                    })
+                    .catch((error) => {
+                      console.error(error);
+                    });
+                }}
+                class="min-[420px]:text-lg"
+              >
+                Login/Register
               </a>
             </div>
           </Show>
@@ -129,7 +147,11 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
                           <MenuItem
                             as="button"
                             class="flex space-x-2 rounded-md px-2 py-1 hover:cursor-pointer focus:bg-neutral-100 focus:outline-none dark:hover:bg-neutral-600 dark:hover:bg-none dark:focus:bg-neutral-600"
-                            onClick={logout}
+                            onClick={() => {
+                              keycloak.logout().catch((error) => {
+                                console.error(error);
+                              });
+                            }}
                           >
                             <BiRegularLogOut class="h-6 w-6 fill-current" />
                             <div class="text-md font-medium">Logout</div>

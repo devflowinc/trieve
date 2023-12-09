@@ -1,0 +1,8 @@
+{
+  "realm": "arguflow",
+  "auth-server-url": "http://localhost:8080/auth/",
+  "ssl-required": "none",
+  "resource": "search",
+  "public-client": true,
+  "confidential-port": 0
+}
