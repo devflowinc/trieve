@@ -144,7 +144,7 @@ pub async fn get_specific_user_card_collections(
             })
             .collect(),
         total_pages: collections
-            .get(0)
+            .first()
             .map(|collection| {
                 (collection.collection_count.unwrap_or(10) as f64 / 10.0).ceil() as i64
             })
@@ -192,7 +192,7 @@ pub async fn get_logged_in_user_card_collections(
             })
             .collect(),
         total_pages: collections
-            .get(0)
+            .first()
             .map(|collection| (collection.collection_count.unwrap_or(5) as f64 / 5.0).ceil() as i64)
             .unwrap_or(1),
     }))

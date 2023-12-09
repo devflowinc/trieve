@@ -178,7 +178,7 @@ impl TantivyIndexMap {
 
         let query = query_parser.parse_query_lenient(query).0;
         let filters = filtered_ids
-            .unwrap_or(vec![])
+            .unwrap_or_default()
             .iter()
             .map(|x| Term::from_field_text(doc_id, x.to_string().as_str()))
             .collect_vec();
