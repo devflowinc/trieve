@@ -1,6 +1,11 @@
 #[macro_use]
 extern crate diesel;
-use crate::{errors::ServiceError, operators::tantivy_operator::TantivyIndexMap};
+use crate::{
+    errors::ServiceError,
+    operators::tantivy_operator::TantivyIndexMap,
+    handlers::auth_handler::{build_oidc_client, create_account},
+    operators::qdrant_operator::get_qdrant_connection,
+};
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
@@ -270,7 +275,7 @@ pub async fn main() -> std::io::Result<()> {
     let redis_store = RedisSessionStore::new(redis_url).await.unwrap();
 
     let tantivy_index = web::Data::new(RwLock::new(TantivyIndexMap::new()));
-
+    let oidc_client = build_oidc_client().await;
     run_migrations(&mut pool.get().unwrap());
 
     log::info!("starting HTTP server at http://localhost:8090");
@@ -291,6 +296,7 @@ pub async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(pool.clone()))
             .app_data(app_mutex_store.clone())
             .app_data(tantivy_index.clone())
+            .app_data(web::Data::new(oidc_client.clone()))
             .wrap(
                 IdentityMiddleware::builder()
                     .login_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
@@ -334,11 +340,22 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::post().to(handlers::register_handler::register_user)),
                     )
                     .service(
-                        web::resource("/auth")
-                            .route(web::post().to(handlers::auth_handler::login))
+                        web::scope("/auth")
+                        .service(
+                        web::resource("")
+                            .route(web::get().to(handlers::auth_handler::login))
                             .route(web::delete().to(handlers::auth_handler::logout))
-                            .route(web::get().to(handlers::auth_handler::get_me)),
+                        )
+                        .service(
+                            web::resource("/me")
+                                .route(web::get().to(handlers::auth_handler::get_me)),
+                        )
+                        .service(
+                            web::resource("/callback")
+                                .route(web::get().to(handlers::auth_handler::callback)),
+                        )
                     )
+            
                     .service(
                         web::scope("/password")
                             .service(

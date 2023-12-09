@@ -15,7 +15,6 @@ pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub struct User {
     pub id: uuid::Uuid,
     pub email: String,
-    pub hash: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub username: Option<String>,
@@ -23,18 +22,18 @@ pub struct User {
     pub visible_email: bool,
     pub api_key_hash: Option<String>,
     pub organization_id: uuid::Uuid,
+    pub name: Option<String>,
 }
 
 impl User {
-    pub fn from_details<S: Into<String>, T: Into<String>>(
+    pub fn from_details<S: Into<String>>(
         email: S,
-        pwd: T,
+        name: Option<S>,
         organization_id: uuid::Uuid,
     ) -> Self {
         User {
             id: uuid::Uuid::new_v4(),
             email: email.into(),
-            hash: pwd.into(),
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             username: None,
@@ -42,6 +41,7 @@ impl User {
             visible_email: true,
             api_key_hash: None,
             organization_id,
+            name: name.map(|n| n.into()),
         }
     }
 }

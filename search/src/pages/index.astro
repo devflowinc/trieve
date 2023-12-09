@@ -13,7 +13,6 @@ const suggestedQueries = ((import.meta.env.SUGGESTED_QUERIES ?? "") as string)
 const requestParams = Astro.request.url.split("?")[1];
 const params = new URLSearchParams(requestParams);
 const searchType: string = params.get("searchType") ?? "search";
-const authParams = Astro.request.url.split("#")[1];
 const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 
 
@@ -47,24 +46,7 @@ const dataTypeFilters: Filters = {
   metadataFilters,
 };
 
-if (authParams) {
-  const auth = new URLSearchParams(authParams);
-  const session_state = auth.get("session_state");
-  const state = auth.get("state");
-  const code = auth.get("code");
 
-  void fetch(`${apiHost}/api/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      session_state,
-      state,
-      code,
-    }),
-  });
-}
 ---
 
 <HomeLayout>

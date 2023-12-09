@@ -26,7 +26,6 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
 
   const [isLoadingUser, setIsLoadingUser] = createSignal(true);
   const [currentUser, setCurrentUser] = createSignal<UserDTO | null>(null);
-  const keycloak = new Keycloak("keycloak.json");
 
   const logout = () => {
     void fetch(`${apiHost}/auth`, {
@@ -45,11 +44,7 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
   };
 
   createEffect(() => {
-    if (!keycloak.authenticated) {
-      setIsLoadingUser(false);
-      return;
-    }
-    void fetch(`${apiHost}/auth`, {
+    void fetch(`${apiHost}/auth/me`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -75,22 +70,7 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
         <div class="flex items-center space-x-2">
           <Show when={!currentUser()}>
             <div class="flex items-center space-x-3">
-              <a
-                onClick={() => {
-                  keycloak
-                    .login()
-                    .then(() => {
-                      console.log("login success");
-                      console.log("Keycloak", keycloak);
-                      console.log("token", keycloak.token);
-                      console.log("refreshToken", keycloak.refreshToken);
-                    })
-                    .catch((error) => {
-                      console.error(error);
-                    });
-                }}
-                class="min-[420px]:text-lg"
-              >
+              <a href={`${apiHost}/auth`} class="min-[420px]:text-lg">
                 Login/Register
               </a>
             </div>
@@ -148,9 +128,9 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
                             as="button"
                             class="flex space-x-2 rounded-md px-2 py-1 hover:cursor-pointer focus:bg-neutral-100 focus:outline-none dark:hover:bg-neutral-600 dark:hover:bg-none dark:focus:bg-neutral-600"
                             onClick={() => {
-                              keycloak.logout().catch((error) => {
-                                console.error(error);
-                              });
+                              // keycloak.logout().catch((error) => {
+                              //   console.error(error);
+                              // });
                             }}
                           >
                             <BiRegularLogOut class="h-6 w-6 fill-current" />
