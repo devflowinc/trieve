@@ -44,6 +44,26 @@ impl User {
             name: name.map(|n| n.into()),
         }
     }
+
+    pub fn from_details_with_id<S: Into<String>, T: Into<uuid::Uuid>>(
+        id: T,
+        email: S,
+        name: Option<S>,
+        organization_id: uuid::Uuid,
+    ) -> Self {
+        User {
+            id: id.into(),
+            email: email.into(),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
+            username: None,
+            website: None,
+            visible_email: true,
+            api_key_hash: None,
+            organization_id,
+            name: name.map(|n| n.into()),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
