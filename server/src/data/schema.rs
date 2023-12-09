@@ -169,7 +169,20 @@ diesel::table! {
 }
 
 diesel::table! {
-    password_resets (id) {
+    spatial_ref_sys (srid) {
+        srid -> Int4,
+        #[max_length = 256]
+        auth_name -> Nullable<Varchar>,
+        auth_srid -> Nullable<Int4>,
+        #[max_length = 2048]
+        srtext -> Nullable<Varchar>,
+        #[max_length = 2048]
+        proj4text -> Nullable<Varchar>,
+    }
+}
+
+diesel::table! {
+    stripe_customers (id) {
         id -> Uuid,
         #[max_length = 100]
         email -> Varchar,
@@ -212,7 +225,6 @@ diesel::table! {
     users (id) {
         id -> Uuid,
         email -> Text,
-        hash -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,
         username -> Nullable<Text>,
@@ -220,6 +232,7 @@ diesel::table! {
         visible_email -> Bool,
         api_key_hash -> Nullable<Text>,
         organization_id -> Uuid,
+        name -> Nullable<Text>,
     }
 }
 
@@ -260,6 +273,8 @@ diesel::allow_tables_to_appear_in_same_query!(
     messages,
     organizations,
     password_resets,
+    spatial_ref_sys,
+    stripe_customers,
     topics,
     user_collection_counts,
     user_notification_counts,

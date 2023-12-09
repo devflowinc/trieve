@@ -1,5 +1,4 @@
 use crate::handlers::register_handler;
-use crate::AppMutexStore;
 use crate::{
     data::models::{Pool, SlimUser, User},
     errors::{DefaultError, ServiceError},
@@ -8,14 +7,25 @@ use crate::{
         user_operator::{get_user_by_id_query, get_user_from_api_key_query},
     },
 };
+use crate::{get_env, AppMutexStore};
 use actix_identity::Identity;
+use actix_session::Session;
 use actix_web::{
     dev::Payload, web, Error, FromRequest, HttpMessage as _, HttpRequest, HttpResponse,
 };
 use diesel::prelude::*;
-use serde::Deserialize;
+
+use oauth2::reqwest::http_client;
+use oauth2::{
+    AsyncCodeTokenRequest, AuthUrl, AuthorizationCode, ClientSecret, CsrfToken, PkceCodeChallenge,
+    PkceCodeVerifier, RedirectUrl, Scope, TokenResponse,
+};
+use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
+use openidconnect::reqwest::async_http_client;
+use openidconnect::{AccessTokenHash, ClientId, IssuerUrl, LanguageTag, Nonce};
+use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::future::{ready, Ready};
-use std::str::FromStr;
 use utoipa::ToSchema;
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -26,9 +36,14 @@ pub struct AuthData {
 
 #[derive(Deserialize, Debug)]
 pub struct OpCallback {
-    pub id_token: String,
+    pub state: String,
+    pub session_state: String,
     pub code: String,
 }
+
+#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
+struct AFClaims {}
+
 pub type LoggedUser = SlimUser;
 
 impl FromRequest for LoggedUser {
@@ -92,6 +107,50 @@ impl FromRequest for RequireAuth {
     }
 }
 
+pub async fn build_oidc_client() -> CoreClient {
+    let issuer_url = get_env!(
+        "OIDC_ISSUER_URL",
+        "Issuer URL for OpenID provider must be set"
+    )
+    .to_string();
+    let client_id = get_env!(
+        "OIDC_CLIENT_ID",
+        "Client ID for OpenID provider must be set"
+    )
+    .to_string();
+    let auth_redirect_url = get_env!(
+        "OIDC_AUTH_REDIRECT_URL",
+        "Auth redirect URL for OpenID provider must be set"
+    )
+    .to_string();
+    let client_secret = get_env!(
+        "OIDC_CLIENT_SECRET",
+        "Client secret for OpenID provider must be set"
+    )
+    .to_string();
+
+    //build OpenId Connect client
+    let meta_data = CoreProviderMetadata::discover(
+        &IssuerUrl::new(issuer_url.clone()).expect("IssuerUrl for OpenID provider must be set"),
+        http_client,
+    )
+    .unwrap();
+
+    CoreClient::new(
+        ClientId::new(client_id.clone()),
+        Some(ClientSecret::new(client_secret.clone())),
+        IssuerUrl::new(issuer_url.clone()).expect("IssuerUrl for OpenID provider must be set"),
+        AuthUrl::new(auth_redirect_url.clone()).expect("Auth configuration is not a valid URL"),
+        meta_data.token_endpoint().cloned(),
+        meta_data.userinfo_endpoint().cloned(),
+        meta_data.jwks().to_owned(),
+    )
+    .set_redirect_uri(
+        RedirectUrl::new("http://localhost:8090/api/auth/callback".to_string())
+            .expect("Redirect URL for OpenID provider must be set"),
+    )
+}
+
 pub fn verify(hash: &str, password: &str) -> Result<bool, ServiceError> {
     argon2::verify_encoded_ext(
         hash,
@@ -103,6 +162,25 @@ pub fn verify(hash: &str, password: &str) -> Result<bool, ServiceError> {
         dbg!(err);
         ServiceError::Unauthorized
     })
+}
+
+pub async fn create_account(email: String, name: Option<String>, pool: web::Data<Pool>) -> User {
+    // see if account exists
+
+    log::info!("Creating account for {}", email);
+
+    use crate::data::schema::users::dsl as users_columns;
+
+    let user = User::from_details(email, name);
+    let mut conn = pool.get().unwrap();
+    match diesel::insert_into(users_columns::users)
+        .values(&user)
+        .execute(&mut conn)
+    {
+        Ok(_) => log::info!("Account created"),
+        Err(e) => log::error!("Failed to create account: {}", e),
+    }
+    user
 }
 
 #[utoipa::path(
@@ -119,6 +197,15 @@ pub async fn logout(id: Identity) -> HttpResponse {
     HttpResponse::NoContent().finish()
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct OpenIdConnectState {
+    pub pkce_verifier: PkceCodeVerifier,
+    pub csrf_token: CsrfToken,
+    pub nonce: Nonce,
+}
+
+const OIDC_SESSION_KEY: &str = "oidc_state";
+
 #[utoipa::path(
     post,
     path = "/auth",
@@ -132,32 +219,163 @@ pub async fn logout(id: Identity) -> HttpResponse {
 )]
 pub async fn login(
     req: HttpRequest,
-    auth_data: web::Json<OpCallback>,
+    session: Session,
+    oidc_client: web::Data<CoreClient>,
+) -> Result<HttpResponse, Error> {
+    let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
+
+    let (auth_url, csrf_token, nonce) = oidc_client
+        .authorize_url(
+            CoreAuthenticationFlow::AuthorizationCode,
+            CsrfToken::new_random,
+            Nonce::new_random,
+        )
+        .add_scope(Scope::new("openid".to_string()))
+        .set_pkce_challenge(pkce_challenge)
+        .url();
+
+    let oidc_state = OpenIdConnectState {
+        pkce_verifier,
+        csrf_token,
+        nonce,
+    };
+
+    session
+        .insert(OIDC_SESSION_KEY, &oidc_state)
+        .map_err(|_| ServiceError::InternalServerError("Could not set OIDC Session".into()))?;
+
+    session
+        .insert(
+            "redirect_url",
+            req.headers()
+                .get("Referer")
+                .map(|h| h.to_str().unwrap_or("/"))
+                .unwrap_or("/"),
+        )
+        .map_err(|_| ServiceError::InternalServerError("Could not set redirect url".into()))?;
+
+    //redirect to OpenIdProvider for authentication
+    Ok(HttpResponse::SeeOther()
+        .insert_header(("Location", auth_url.as_str()))
+        .finish())
+}
+
+#[utoipa::path(
+    get,
+    path = "/auth/callback",
+    context_path = "/api",
+    tag = "auth",
+    responses(
+        (status = 200, description = "Response that returns with set-cookie header", body = [SlimUser]),
+        (status = 400, description = "Email or password empty or incorrect", body = [DefaultError]),
+    )
+)]
+pub async fn callback(
+    req: HttpRequest,
+    session: Session,
+    oidc_client: web::Data<CoreClient>,
     pool: web::Data<Pool>,
-) -> Result<HttpResponse, actix_web::Error> {
-    let auth_data_inner = auth_data.into_inner();
-    let token = openidconnect::IdToken::from_str(&auth_data_inner.id_token).unwrap();
-    let email = token.claims(token., nonce_verifier);
-    let password = auth_data_inner.password;
+    query: web::Query<OpCallback>,
+) -> Result<HttpResponse, Error> {
+    let state: OpenIdConnectState = session
+        .get(OIDC_SESSION_KEY)
+        .map_err(|_| ServiceError::InternalServerError("Could not get OIDC Session".into()))?
+        .ok_or(ServiceError::Unauthorized)?;
 
-    if email.is_empty() || password.is_empty() {
-        return Ok(HttpResponse::BadRequest().json(DefaultError {
-            message: "Email or password is empty",
-        }));
-    }
+    let code_verifier = state.pkce_verifier;
+    let code = query.code.clone();
+    let nonce = state.nonce;
 
-    let find_user_result =
-        web::block(move || find_user_match(AuthData { email, password }, pool)).await?;
+    let token_response = oidc_client
+        .exchange_code(AuthorizationCode::new(code))
+        .set_pkce_verifier(code_verifier)
+        .request(http_client)
+        .map_err(|e| match e {
+            oauth2::RequestTokenError::ServerResponse(e) => {
+                ServiceError::InternalServerError(e.to_string())
+            }
+            _ => ServiceError::InternalServerError("Unknown error".into()),
+        })?;
 
-    match find_user_result {
-        Ok(user) => {
-            let user_string = serde_json::to_string(&user).unwrap();
-            Identity::login(&req.extensions(), user_string).unwrap();
+    let id_token = token_response
+        .extra_fields()
+        .id_token()
+        .ok_or_else(|| ServiceError::InternalServerError("Empty ID Token".into()))?;
 
-            Ok(HttpResponse::NoContent().finish())
+    let id_token_verifier = oidc_client.id_token_verifier();
+    let claims = id_token
+        .claims(&id_token_verifier, &nonce)
+        .map_err(|_| ServiceError::InternalServerError("Claims Verification Error".into()))?;
+
+    match claims.access_token_hash() {
+        None => Err(ServiceError::BadRequest(
+            "Missing access token hash".to_string(),
+        ))?,
+        Some(given_token_hash) => {
+            let calculated_token_hash = AccessTokenHash::from_token(
+                token_response.access_token(),
+                &id_token.signing_alg().map_err(|_| {
+                    ServiceError::BadRequest("ID token hash unavailable".to_string())
+                })?,
+            )
+            .map_err(|_| ServiceError::BadRequest("ID token hash unavailable".to_string()))?;
+
+            if calculated_token_hash != *given_token_hash {
+                Err(ServiceError::BadRequest(
+                    "ID token hash invalid".to_string(),
+                ))
+            } else {
+                Ok(())
+            }
         }
-        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
-    }
+    }?;
+
+    let user_id = claims
+        .subject()
+        .to_string()
+        .parse::<uuid::Uuid>()
+        .map_err(|_| {
+            ServiceError::InternalServerError("Failed to parse user ID from claims".into())
+        })?;
+
+    let email = claims.email().ok_or_else(|| {
+        ServiceError::InternalServerError("Failed to parse email from claims".into())
+    })?;
+
+    let name = claims.name().ok_or_else(|| {
+        ServiceError::InternalServerError("Failed to parse name from claims".into())
+    })?;
+
+    let user = match get_user_by_id_query(&user_id, pool.clone()) {
+        Ok(user) => user,
+        Err(_) => {
+            create_account(
+                email.to_string(),
+                Some(name.iter().next().unwrap().1.to_string()),
+                pool,
+            )
+            .await
+        }
+    };
+
+    let slim_user: SlimUser = user.into();
+
+    let user_string = serde_json::to_string(&slim_user).map_err(|_| {
+        ServiceError::InternalServerError("Failed to serialize user to JSON".into())
+    })?;
+
+    Identity::login(&req.extensions(), user_string).unwrap();
+    session.remove(OIDC_SESSION_KEY);
+    log::info!("Successfully authenticated user {}", &slim_user.email);
+
+    let redirect_url: String = session
+        .get::<String>("redirect_url")
+        .map_err(|_| ServiceError::InternalServerError("Could not get redirect url".into()))?
+        .ok_or(ServiceError::Unauthorized)?;
+
+    Ok(HttpResponse::SeeOther()
+        .insert_header(("Location", redirect_url))
+        .finish())
 }
 
 #[utoipa::path(
@@ -189,21 +407,12 @@ fn find_user_match(auth_data: AuthData, pool: web::Data<Pool>) -> Result<SlimUse
 
     let mut conn = pool.get().unwrap();
 
-    let mut items = users
+    let user = users
         .filter(email.eq(&auth_data.email))
-        .load::<User>(&mut conn)
+        .first::<User>(&mut conn)
         .unwrap();
 
-    if let Some(user) = items.pop() {
-        if let Ok(matching) = verify(&user.hash, &auth_data.password) {
-            if matching {
-                return Ok(user.into());
-            }
-        }
-    }
-    Err(DefaultError {
-        message: "Incorrect email or password",
-    })
+    Ok(user.into())
 }
 
 #[utoipa::path(

@@ -489,7 +489,6 @@ pub fn get_metadata_query(
             (
                 user_columns::id,
                 user_columns::email,
-                user_columns::hash,
                 user_columns::created_at,
                 user_columns::updated_at,
                 user_columns::username,
@@ -497,6 +496,7 @@ pub fn get_metadata_query(
                 user_columns::visible_email,
                 user_columns::api_key_hash,
                 user_columns::organization_id,
+                user_columns::name,
             )
                 .nullable(),
             (

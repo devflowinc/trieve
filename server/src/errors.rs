@@ -13,14 +13,14 @@ pub struct DefaultError {
 }
 
 #[derive(Serialize, Deserialize, Debug, Display)]
-pub struct BadRequestBody {
+pub struct ErrorResponseBody {
     pub message: String,
 }
 
 #[derive(Debug, Display)]
 pub enum ServiceError {
-    #[display(fmt = "Internal Server Error")]
-    InternalServerError,
+    #[display(fmt = "Internal Server Error: {_0}")]
+    InternalServerError(String),
 
     #[display(fmt = "BadRequest: {_0}")]
     BadRequest(String),
@@ -39,11 +39,12 @@ pub enum ServiceError {
 impl ResponseError for ServiceError {
     fn error_response(&self) -> HttpResponse {
         match self {
-            ServiceError::InternalServerError => {
-                HttpResponse::InternalServerError().json("Internal Server Error, Please try later")
-            }
+            ServiceError::InternalServerError(ref message) => HttpResponse::InternalServerError()
+                .json(ErrorResponseBody {
+                    message: message.to_string(),
+                }),
             ServiceError::BadRequest(ref message) => {
-                HttpResponse::BadRequest().json(BadRequestBody {
+                HttpResponse::BadRequest().json(ErrorResponseBody {
                     message: message.to_string(),
                 })
             }
@@ -72,9 +73,11 @@ impl From<DBError> for ServiceError {
                     let message = info.details().unwrap_or_else(|| info.message()).to_string();
                     return ServiceError::BadRequest(message);
                 }
-                ServiceError::InternalServerError
+                ServiceError::InternalServerError("Unknown DB Error. Please try again later".into())
             }
-            _ => ServiceError::InternalServerError,
+            _ => ServiceError::InternalServerError(
+                "Internal Server Error. Please try again later".into(),
+            ),
         }
     }
 }

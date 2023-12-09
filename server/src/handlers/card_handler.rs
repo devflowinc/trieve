@@ -1163,7 +1163,10 @@ pub async fn generate_off_cards(
                 let chat_content = response.choices[0].delta.content.clone();
                 return Ok(Bytes::from(chat_content.unwrap_or("".to_string())));
             }
-            Err(ServiceError::InternalServerError.into())
+            Err(ServiceError::InternalServerError(
+                "Model Response Error. Please try again later".into(),
+            )
+            .into())
         },
     )))
 }

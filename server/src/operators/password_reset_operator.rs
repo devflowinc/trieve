@@ -114,12 +114,12 @@ fn reset_user_password_query(
             message: "There is no account associated with that email",
         })?;
 
-    diesel::update(users.find(user.id))
-        .set(hash.eq(password))
-        .execute(&mut conn)
-        .map_err(|_db_error| DefaultError {
-            message: "Error updating user password",
-        })?;
+    // diesel::update(users.find(user.id))
+    //     .set(hash.eq(password))
+    //     .execute(&mut conn)
+    //     .map_err(|_db_error| DefaultError {
+    //         message: "Error updating user password",
+    //     })?;
 
     Ok(())
 }
