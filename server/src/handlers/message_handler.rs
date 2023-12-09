@@ -631,7 +631,10 @@ pub async fn stream_response(
                 }
                 return Ok(Bytes::from(chat_content.unwrap_or("".to_string())));
             }
-            Err(ServiceError::InternalServerError.into())
+            Err(ServiceError::InternalServerError(
+                "Model Response Error. Please try again later.".into(),
+            )
+            .into())
         },
     ))))
 }
