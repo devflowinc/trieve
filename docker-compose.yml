@@ -131,6 +131,10 @@ services:
       - OPENAI_BASE_URL=${OPENAI_BASE_URL}
       - DOCUMENT_DOWNLOAD_FEATURE=${DOCUMENT_DOWNLOAD_FEATURE}
       - TIKA_URL=${TIKA_URL}
+      - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET}
+      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID}
+      - OIDC_AUTH_REDIRECT_URL=${OIDC_AUTH_REDIRECT_URL}
+      - OIDC_ISSUER_URL=${OIDC_ISSUER_URL}
 
   chat:
     image: arguflow/chat
@@ -178,13 +182,16 @@ services:
       - PUBLIC_SEARCH_VOTE_FEATURE=${PUBLIC_SEARCH_VOTE_FEATURE}
 
   keycloak:
-    image: jboss/keycloak
+    image: quay.io/keycloak/keycloak:23.0.1
     environment:
       - DB_VENDOR=h2
-      - KEYCLOAK_USER=admin
-      - KEYCLOAK_PASSWORD=aintsecure
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=aintsecure
+    command:
+      - "start-dev"
     volumes:
-      - keycloak-data:/opt/jboss/keycloak/standalone/data
+      - keycloak-data:/opt/keycloak/data
+      - /home/denssumesh/Documents/arguflow/arguflow/server/realm-export.json:/opt/keycloak/imports/realm-export.json
     ports:
       - 8080:8080
 
