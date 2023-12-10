@@ -190,11 +190,10 @@ services:
       - KC_DATABASE_URL=jdbc:postgresql://localhost:5434/keycloak
       - KC_DB_USERNAME=postgres
       - KC_DB_PASSWORD=password
-    command:
-      - "start-dev"
+    entrypoint: "/opt/keycloak/bin/kc.sh start-dev --import-realm"
     volumes:
       - keycloak-data:/opt/keycloak/data
-      - /home/denssumesh/Documents/arguflow/arguflow/server/realm-export.json:/opt/keycloak/imports/realm-export.json
+      - ./server/realm-export.json:/opt/keycloak/data/import/realm-export.json
     ports:
       - 8080:8080
     networks:
