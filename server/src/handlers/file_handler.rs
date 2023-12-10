@@ -1,4 +1,7 @@
-use super::{auth_handler::{LoggedUser, RequireAuth}, dataset_handler::SlimDataset};
+use super::{
+    auth_handler::{LoggedUser, RequireAuth},
+    dataset_handler::SlimDataset,
+};
 use crate::{
     data::models::{File, Pool},
     errors::ServiceError,
