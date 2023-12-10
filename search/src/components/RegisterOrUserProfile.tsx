@@ -13,7 +13,6 @@ import { isUserDTO, type UserDTO } from "../../utils/apiTypes";
 import { NotificationPopover } from "./Atoms/NotificationPopover";
 import { AiFillGithub } from "solid-icons/ai";
 import { TbMinusVertical } from "solid-icons/tb";
-import Keycloak from "keycloak-js";
 
 export interface RegisterOrUserProfileProps {
   stars: number;
