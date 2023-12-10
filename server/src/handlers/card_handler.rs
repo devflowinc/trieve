@@ -76,6 +76,7 @@ pub struct CreateCardData {
     pub private: Option<bool>,
     pub file_uuid: Option<uuid::Uuid>,
     pub metadata: Option<serde_json::Value>,
+    pub card_vector: Option<Vec<f32>>,
     pub tracking_id: Option<String>,
     pub collection_id: Option<uuid::Uuid>,
     pub time_stamp: Option<String>,
@@ -169,7 +170,11 @@ pub async fn create_card(
 
     let content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
 
-    let embedding_vector = create_embedding(&content, app_mutex).await?;
+    let embedding_vector = if let Some(embedding_vector) = card.card_vector.clone() {
+        embedding_vector
+    } else {
+        create_embedding(&content, app_mutex).await?
+    };
 
     let first_semantic_result =
         global_unfiltered_top_match_query(embedding_vector.clone(), dataset.id)

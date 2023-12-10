@@ -110,7 +110,7 @@ export const TopCardsTable = (props: TopCardsTableProps) => {
                       <div class="line-clamp-2 p-1 text-sm text-neutral-800 dark:text-neutral-100">
                         <a
                           href={`/card/${recent_card.id}`}
-                          class="line-clamp-2 break-all text-turquoise-600 underline dark:text-acid-500 min-[672px]:max-w-[300px]  min-[672px]:break-normal min-[860px]:max-w-none"
+                          class="line-clamp-2 overflow-ellipsis break-all text-turquoise-600 underline dark:text-acid-500  min-[672px]:max-w-[300px] min-[672px]:break-normal min-[860px]:max-w-none"
                         >
                           {recent_card.content}
                         </a>
