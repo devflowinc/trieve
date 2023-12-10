@@ -1,9 +1,6 @@
 #[macro_use]
 extern crate diesel;
-use crate::{
-    errors::ServiceError,
-    operators::tantivy_operator::TantivyIndexMap,
-};
+use crate::{errors::ServiceError, operators::tantivy_operator::TantivyIndexMap};
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
 use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
@@ -132,6 +129,7 @@ pub async fn main() -> std::io::Result<()> {
             handlers::message_handler::regenerate_message_handler,
             handlers::card_handler::create_card,
             handlers::card_handler::update_card,
+            handlers::card_handler::delete_card,
             handlers::card_handler::get_recommended_cards,
             handlers::message_handler::create_suggested_queries_handler,
             handlers::card_handler::update_card_by_tracking_id,
