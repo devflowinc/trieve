@@ -886,6 +886,7 @@ pub struct Organization {
     pub configuration: serde_json::Value,
     created_at: chrono::NaiveDateTime,
     updated_at: chrono::NaiveDateTime,
+    pub registerable: Option<bool>,
 }
 
 impl Organization {
@@ -896,6 +897,7 @@ impl Organization {
             configuration,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
+            registerable: Some(true),
         }
     }
 }

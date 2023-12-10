@@ -219,11 +219,7 @@ impl TantivyIndexMap {
         Ok(cards)
     }
 
-    pub fn delete_card(
-        &self,
-        index_name: &str,
-        card_id: uuid::Uuid,
-    ) -> tantivy::Result<()> {
+    pub fn delete_card(&self, index_name: &str, card_id: uuid::Uuid) -> tantivy::Result<()> {
         let tantivy_index = self.get_tantivy_index(index_name)?;
 
         let doc_id = tantivy_index.schema.get_field("doc_id").unwrap();

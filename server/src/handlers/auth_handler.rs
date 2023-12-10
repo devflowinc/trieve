@@ -3,6 +3,7 @@ use crate::{
     errors::ServiceError,
     operators::{
         self,
+        organization_operator::get_org_from_dataset_id_query,
         user_operator::{get_user_by_id_query, get_user_from_api_key_query},
     },
 };
@@ -154,20 +155,33 @@ pub async fn create_account(
     email: String,
     name: Option<String>,
     user_id: Option<uuid::Uuid>,
+    dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> User {
+) -> Result<User, ServiceError> {
     // see if account exists
 
     log::info!("Creating account for {}", email);
 
     use crate::data::schema::users::dsl as users_columns;
 
+    let org = get_org_from_dataset_id_query(dataset_id, pool.clone())
+        .await
+        .map_err(|_| {
+            ServiceError::InternalServerError("Could not find organization for dataset".to_string())
+        })?;
+
+    let org_id = org.id;
+
+    if org.registerable == Some(false) {
+        return Err(ServiceError::Forbidden);
+    }
+
     let user = if let Some(user_id) = user_id {
         //TODO: use org id
-        User::from_details_with_id(user_id, email, name, uuid::Uuid::new_v4())
+        User::from_details_with_id(user_id, email, name, org_id)
     } else {
         //TODO: use org id
-        User::from_details(email.clone(), name, uuid::Uuid::new_v4())
+        User::from_details(email.clone(), name, org_id)
     };
 
     let mut conn = pool.get().unwrap();
@@ -175,10 +189,17 @@ pub async fn create_account(
         .values(&user)
         .execute(&mut conn)
     {
-        Ok(_) => log::info!("Account created"),
-        Err(e) => log::error!("Failed to create account: {}", e),
+        Ok(_) => {
+            log::info!("Account created!");
+            Ok(user)
+        }
+        Err(e) => {
+            log::error!("Failed to create account: {}", e);
+            Err(ServiceError::InternalServerError(
+                "Failed to create account".into(),
+            ))
+        }
     }
-    user
 }
 
 #[utoipa::path(
@@ -217,6 +238,7 @@ const OIDC_SESSION_KEY: &str = "oidc_state";
 pub async fn login(
     req: HttpRequest,
     session: Session,
+    dataset_id: web::Query<uuid::Uuid>,
     oidc_client: web::Data<CoreClient>,
 ) -> Result<HttpResponse, Error> {
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
@@ -250,6 +272,10 @@ pub async fn login(
                 .unwrap_or("/"),
         )
         .map_err(|_| ServiceError::InternalServerError("Could not set redirect url".into()))?;
+
+    session
+        .insert("dataset_id", dataset_id.into_inner().to_string())
+        .map_err(|_| ServiceError::InternalServerError("Could not set org id".into()))?;
 
     //redirect to OpenIdProvider for authentication
     Ok(HttpResponse::SeeOther()
@@ -343,6 +369,13 @@ pub async fn callback(
         ServiceError::InternalServerError("Failed to parse name from claims".into())
     })?;
 
+    let dataset_id = session
+        .get::<String>("dataset_id")
+        .map_err(|_| ServiceError::InternalServerError("Could not get org id".into()))?
+        .ok_or(ServiceError::Unauthorized)?
+        .parse::<uuid::Uuid>()
+        .map_err(|_| ServiceError::InternalServerError("Could not parse org id".into()))?;
+
     let user = match get_user_by_id_query(&user_id, pool.clone()) {
         Ok(user) => user,
         Err(_) => {
@@ -350,9 +383,10 @@ pub async fn callback(
                 email.to_string(),
                 Some(name.iter().next().unwrap().1.to_string()),
                 Some(user_id),
+                dataset_id,
                 pool,
             )
-            .await
+            .await?
         }
     };
 
@@ -364,6 +398,9 @@ pub async fn callback(
 
     Identity::login(&req.extensions(), user_string).unwrap();
     session.remove(OIDC_SESSION_KEY);
+    session.remove("org_id");
+    session.remove("redirect_url");
+
     log::info!("Successfully authenticated user {}", &slim_user.id);
 
     let redirect_url: String = session

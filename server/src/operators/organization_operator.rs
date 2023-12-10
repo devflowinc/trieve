@@ -96,3 +96,26 @@ pub fn get_organization_by_id_query(
 
     Ok(organization)
 }
+
+pub async fn get_org_from_dataset_id_query(
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Organization, DefaultError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+    use crate::data::schema::organizations::dsl as organizations_columns;
+
+    let mut conn = pool.get().map_err(|_| DefaultError {
+        message: "Could not get database connection",
+    })?;
+
+    let organization: Organization = datasets_columns::datasets
+        .inner_join(organizations_columns::organizations)
+        .filter(datasets_columns::id.eq(dataset_id))
+        .select(Organization::as_select())
+        .first(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Could not find organization, try again with a different id",
+        })?;
+
+    Ok(organization)
+}
