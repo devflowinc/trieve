@@ -4,7 +4,8 @@ use super::{
 };
 use crate::{
     data::models::{
-        CardCollection, CardCollectionAndFile, CardCollectionBookmark, CardMetadataWithFileData, Pool,
+        CardCollection, CardCollectionAndFile, CardCollectionBookmark, CardMetadataWithFileData,
+        Pool,
     },
     errors::ServiceError,
     operators::{card_operator::get_collided_cards_query, collection_operator::*},
@@ -309,17 +310,14 @@ pub async fn add_bookmark(
 
     user_owns_collection(user.id, collection_id, dataset_id, pool).await?;
 
-    {
-        let dataset_id = dataset_id;
-        web::block(move || {
-            create_card_bookmark_query(
-                pool2,
-                CardCollectionBookmark::from_details(collection_id, card_metadata_id, dataset_id),
-            )
-        })
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    }
+    web::block(move || {
+        create_card_bookmark_query(
+            pool2,
+            CardCollectionBookmark::from_details(collection_id, card_metadata_id),
+        )
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
