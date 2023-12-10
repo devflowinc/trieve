@@ -314,11 +314,8 @@ pub async fn create_card(
     }
 
     if let Some(collection_id_to_bookmark) = card_collection_id {
-        let card_collection_bookmark = CardCollectionBookmark::from_details(
-            collection_id_to_bookmark,
-            card_metadata.id,
-            dataset.id,
-        );
+        let card_collection_bookmark =
+            CardCollectionBookmark::from_details(collection_id_to_bookmark, card_metadata.id);
 
         let _ =
             web::block(move || create_card_bookmark_query(pool3, card_collection_bookmark)).await?;

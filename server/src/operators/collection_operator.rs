@@ -41,7 +41,7 @@ pub fn create_collection_query(
 
 pub fn create_collection_and_add_bookmarks_query(
     new_collection: CardCollection,
-    bookmarks: Vec<uuid::Uuid>,
+    bookmark_ids: Vec<uuid::Uuid>,
     created_file_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -49,6 +49,14 @@ pub fn create_collection_and_add_bookmarks_query(
     use crate::data::schema::card_collection::dsl::*;
 
     let mut conn = pool.get().unwrap();
+
+    card_collection
+        .filter(dataset_id.eq(given_dataset_id))
+        .filter(id.eq(new_collection.id))
+        .first::<CardCollection>(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Collection not found, likely incorrect dataset_id",
+        })?;
 
     let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
         diesel::insert_into(card_collection)
@@ -59,14 +67,10 @@ pub fn create_collection_and_add_bookmarks_query(
 
         diesel::insert_into(card_collection_bookmarks)
             .values(
-                bookmarks
+                bookmark_ids
                     .iter()
                     .map(|bookmark| {
-                        CardCollectionBookmark::from_details(
-                            new_collection.id,
-                            *bookmark,
-                            given_dataset_id,
-                        )
+                        CardCollectionBookmark::from_details(new_collection.id, *bookmark)
                     })
                     .collect::<Vec<CardCollectionBookmark>>(),
             )
@@ -530,20 +534,28 @@ pub fn get_collections_for_bookmark_query(
     Ok(bookmark_collections)
 }
 pub fn delete_bookmark_query(
-    bookmark: uuid::Uuid,
-    collection: uuid::Uuid,
-    dataset_uuid: uuid::Uuid,
+    bookmark_id: uuid::Uuid,
+    collection_id: uuid::Uuid,
+    dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
-    use crate::data::schema::card_collection_bookmarks::dsl::*;
+    use crate::data::schema::card_collection::dsl as card_collection_columns;
+    use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
 
     let mut conn = pool.get().unwrap();
 
+    card_collection_columns::card_collection
+        .filter(card_collection_columns::id.eq(collection_id))
+        .filter(card_collection_columns::dataset_id.eq(dataset_id))
+        .first::<CardCollection>(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Collection not found, likely incorrect dataset_id",
+        })?;
+
     diesel::delete(
-        card_collection_bookmarks
-            .filter(card_metadata_id.eq(bookmark))
-            .filter(collection_id.eq(collection))
-            .filter(dataset_id.eq(dataset_uuid)),
+        card_collection_bookmarks_columns::card_collection_bookmarks
+            .filter(card_collection_bookmarks_columns::card_metadata_id.eq(bookmark_id))
+            .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id)),
     )
     .execute(&mut conn)
     .map_err(|_err| {
