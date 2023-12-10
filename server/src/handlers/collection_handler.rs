@@ -310,16 +310,14 @@ pub async fn add_bookmark(
 
     user_owns_collection(user.id, collection_id, dataset_id, pool).await?;
 
-    {
-        web::block(move || {
-            create_card_bookmark_query(
-                pool2,
-                CardCollectionBookmark::from_details(collection_id, card_metadata_id, dataset_id),
-            )
-        })
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    }
+    web::block(move || {
+        create_card_bookmark_query(
+            pool2,
+            CardCollectionBookmark::from_details(collection_id, card_metadata_id),
+        )
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
