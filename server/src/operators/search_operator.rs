@@ -100,6 +100,7 @@ pub async fn retrieve_qdrant_points_query(
                         .or(card_metadata_columns::qdrant_point_id.is_not_null()),
                 ),
         )
+        .filter(card_metadata_columns::dataset_id.eq(dataset_id))
         .select((
             card_metadata_columns::qdrant_point_id,
             second_join
@@ -1100,6 +1101,7 @@ pub async fn search_semantic_cards(
         pool.clone(),
     )
     .await?;
+
     Ok(result_cards)
 }
 
