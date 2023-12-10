@@ -457,7 +457,7 @@ pub async fn update_card_metadata_query(
     card_data: CardMetadata,
     file_uuid: Option<uuid::Uuid>,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
-    dataseet_uuid: uuid::Uuid,
+    dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::card_files::dsl as card_files_columns;
@@ -468,11 +468,14 @@ pub async fn update_card_metadata_query(
 
     let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
         diesel::update(
-            card_metadata_columns::card_metadata.filter(card_metadata_columns::id.eq(card_data.id)),
+            card_metadata_columns::card_metadata
+                .filter(card_metadata_columns::id.eq(card_data.id))
+                .filter(card_metadata_columns::dataset_id.eq(dataset_uuid)),
         )
         .set((
             card_metadata_columns::link.eq(card_data.link),
             card_metadata_columns::card_html.eq(card_data.card_html),
+            card_metadata_columns::content.eq(card_data.content),
             card_metadata_columns::private.eq(card_data.private),
             card_metadata_columns::metadata.eq(card_data.metadata),
         ))
@@ -493,7 +496,7 @@ pub async fn update_card_metadata_query(
         Ok(_) => {
             let tantivy_index_map = tantivy_index_map.read().await;
             tantivy_index_map
-                .update_card(dataseet_uuid.to_string().as_str(), card_data_1)
+                .update_card(dataset_uuid.to_string().as_str(), card_data_1)
                 .map_err(|_e| DefaultError {
                     message: "Failed to add card to index",
                 })?
@@ -521,6 +524,13 @@ pub async fn delete_card_metadata_query(
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
+    let card_metadata = get_metadata_from_id_query(card_uuid, dataset_uuid, pool.clone())?;
+    if card_metadata.dataset_id != dataset_uuid {
+        return Err(DefaultError {
+            message: "Card does not belong to dataset",
+        });
+    }
+
     use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
     use crate::data::schema::card_files::dsl as card_files_columns;
@@ -550,7 +560,8 @@ pub async fn delete_card_metadata_query(
                 // there cannot be collisions for a collision, just delete the card_metadata without issue
                 diesel::delete(
                     card_metadata_columns::card_metadata
-                        .filter(card_metadata_columns::id.eq(card_uuid)),
+                        .filter(card_metadata_columns::id.eq(card_uuid))
+                        .filter(card_metadata_columns::dataset_id.eq(dataset_uuid)),
                 )
                 .execute(conn)?;
 
@@ -565,6 +576,7 @@ pub async fn delete_card_metadata_query(
                                 .eq(card_collisions_columns::collision_qdrant_id)),
                     )
                     .filter(card_metadata_columns::id.eq(card_uuid))
+                    .filter(card_metadata_columns::dataset_id.eq(dataset_uuid))
                     .select((CardCollisions::as_select(), CardMetadata::as_select()))
                     .order_by(card_collisions_columns::created_at.asc())
                     .load::<(CardCollisions, CardMetadata)>(conn)?;
@@ -615,7 +627,8 @@ pub async fn delete_card_metadata_query(
                 // set the card_metadata of latest_collision to have the qdrant_point_id of the original card_metadata
                 diesel::update(
                     card_metadata_columns::card_metadata
-                        .filter(card_metadata_columns::id.eq(latest_collision.card_id)),
+                        .filter(card_metadata_columns::id.eq(latest_collision.card_id))
+                        .filter(card_metadata_columns::dataset_id.eq(dataset_uuid)),
                 )
                 .set((
                     card_metadata_columns::qdrant_point_id.eq(latest_collision.collision_qdrant_id),

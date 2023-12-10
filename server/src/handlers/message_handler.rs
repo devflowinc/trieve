@@ -648,7 +648,7 @@ pub struct SuggestedQueriesResponse {
 
 #[utoipa::path(
     post,
-    path = "/card/fulltextsearch/{page}",
+    path = "/card/gen_suggestions",
     context_path = "/api",
     tag = "card",
     request_body(content = SuggestedQueriesRequest, description = "JSON request payload to get alternative suggested queries", content_type = "application/json"),

@@ -137,6 +137,13 @@ pub async fn create_card(
     app_mutex: web::Data<AppMutexStore>,
     dataset: SlimDataset,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let pool1 = pool.clone();
+    let dataset1 = dataset.clone();
+    let dataset = web::block(move || get_dataset_by_id_query(dataset1.id, pool1)).await??;
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    }
+
     let only_admin_can_create_cards =
         std::env::var("ONLY_ADMIN_CAN_CREATE_CARDS").unwrap_or("off".to_string());
 
@@ -150,12 +157,6 @@ pub async fn create_card(
     let pool1 = pool.clone();
     let pool2 = pool.clone();
     let pool3 = pool.clone();
-
-    let dataset1 = dataset.clone();
-    let dataset = web::block(move || get_dataset_by_id_query(dataset1.id, pool)).await??;
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    }
 
     let private = card.private.unwrap_or(false);
     let card_tracking_id = card
@@ -630,7 +631,6 @@ pub async fn update_card_by_tracking_id(
         dataset.id,
     );
     let metadata1 = metadata.clone();
-
     update_card_metadata_query(metadata, None, tantivy_index_map, dataset.id, pool2)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -935,17 +935,19 @@ pub async fn get_card_by_id(
         return Err(ServiceError::Forbidden.into());
     }
 
-    let current_user_id = Some(user.id);
     let card =
         web::block(move || get_metadata_from_id_query(card_id.into_inner(), dataset.id, pool))
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let current_user_id = Some(user.id);
     if card.private && current_user_id.is_none() {
         return Err(ServiceError::Unauthorized.into());
     }
     if card.private && Some(card.author_id) != current_user_id {
         return Err(ServiceError::Forbidden.into());
     }
+
     Ok(HttpResponse::Ok().json(card))
 }
 
@@ -975,18 +977,20 @@ pub async fn get_card_by_tracking_id(
         return Err(ServiceError::Forbidden.into());
     }
 
-    let current_user_id = Some(user.id);
     let card = web::block(move || {
         get_metadata_from_tracking_id_query(tracking_id.into_inner(), dataset.id, pool)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let current_user_id = Some(user.id);
     if card.private && current_user_id.is_none() {
         return Err(ServiceError::Unauthorized.into());
     }
     if card.private && Some(card.author_id) != current_user_id {
         return Err(ServiceError::Forbidden.into());
     }
+
     Ok(HttpResponse::Ok().json(card))
 }
 
