@@ -407,7 +407,9 @@ impl From<User> for UserDTO {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema)]
+#[derive(
+    Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema,
+)]
 #[diesel(table_name = card_collection)]
 pub struct CardCollection {
     pub id: uuid::Uuid,
@@ -489,7 +491,9 @@ impl From<CardCollectionAndFileWithCount> for CardCollectionAndFile {
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, Queryable, Insertable, Clone)]
+#[derive(
+    Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema,
+)]
 #[diesel(table_name = card_collection_bookmarks)]
 pub struct CardCollectionBookmark {
     pub id: uuid::Uuid,
@@ -497,22 +501,16 @@ pub struct CardCollectionBookmark {
     pub card_metadata_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub dataset_id: uuid::Uuid,
 }
 
 impl CardCollectionBookmark {
-    pub fn from_details(
-        collection_id: uuid::Uuid,
-        card_metadata_id: uuid::Uuid,
-        dataset_id: uuid::Uuid,
-    ) -> Self {
+    pub fn from_details(collection_id: uuid::Uuid, card_metadata_id: uuid::Uuid) -> Self {
         CardCollectionBookmark {
             id: uuid::Uuid::new_v4(),
             collection_id,
             card_metadata_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
-            dataset_id,
         }
     }
 }
@@ -653,6 +651,7 @@ pub struct File {
     pub metadata: Option<serde_json::Value>,
     pub link: Option<String>,
     pub time_stamp: Option<chrono::NaiveDateTime>,
+    pub dataset_id: uuid::Uuid,
 }
 
 impl File {
@@ -666,6 +665,7 @@ impl File {
         metadata: Option<serde_json::Value>,
         link: Option<String>,
         time_stamp: Option<String>,
+        dataset_id: uuid::Uuid,
     ) -> Self {
         File {
             id: uuid::Uuid::new_v4(),
@@ -681,6 +681,7 @@ impl File {
             time_stamp: time_stamp.map(|ts| {
                 chrono::NaiveDateTime::parse_from_str(&ts, "%Y-%m-%d %H:%M:%S").unwrap_or_default()
             }),
+            dataset_id,
         }
     }
 }

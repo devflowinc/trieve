@@ -1,8 +1,8 @@
 use super::collection_operator::create_collection_and_add_bookmarks_query;
 use super::notification_operator::add_collection_created_notification_query;
 use super::tantivy_operator::TantivyIndexMap;
-use crate::AppMutexStore;
 use crate::handlers::dataset_handler::SlimDataset;
+use crate::AppMutexStore;
 use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
 use crate::{
     data::models::FileDTO,
@@ -71,6 +71,7 @@ pub fn create_file_query(
     metadata: Option<serde_json::Value>,
     link: Option<String>,
     time_stamp: Option<String>,
+    dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<File, DefaultError> {
     use crate::data::schema::files::dsl as files_columns;
@@ -80,7 +81,7 @@ pub fn create_file_query(
     })?;
 
     let new_file = File::from_details(
-        user_id, file_name, private, file_size, tag_set, metadata, link, time_stamp,
+        user_id, file_name, private, file_size, tag_set, metadata, link, time_stamp, dataset_id,
     );
 
     let created_file: File = diesel::insert_into(files_columns::files)
@@ -247,6 +248,7 @@ pub async fn convert_doc_to_html_query(
             Some(tika_metadata_response_json.clone()),
             link.clone(),
             time_stamp.clone(),
+            dataset_id,
             pool.clone(),
         )?;
 
@@ -301,6 +303,7 @@ pub async fn convert_doc_to_html_query(
             None,
             None,
             None,
+            dataset_id,
         ),
     })
 }
@@ -401,7 +404,7 @@ pub async fn create_cards_with_handler(
             user.clone(),
             tantivy_index_map.clone(),
             app_mutex.clone(),
-            SlimDataset { id: dataset_id }
+            SlimDataset { id: dataset_id },
         )
         .await
         {
