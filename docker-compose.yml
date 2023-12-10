@@ -184,9 +184,12 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.1
     environment:
-      - DB_VENDOR=h2
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=aintsecure
+      - KC_DATABASE=postgres
+      - KC_DATABASE_URL=jdbc:postgresql://localhost:5434/keycloak
+      - KC_DB_USERNAME=postgres
+      - KC_DB_PASSWORD=password
     command:
       - "start-dev"
     volumes:
@@ -194,6 +197,22 @@ services:
       - /home/denssumesh/Documents/arguflow/arguflow/server/realm-export.json:/opt/keycloak/imports/realm-export.json
     ports:
       - 8080:8080
+    networks:
+      - app-network
+
+  keycloak-db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: keycloak
+    volumes:
+      - pg-keycloak-data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    networks:
+      - app-network
 
 networks:
   app-network:
@@ -206,3 +225,4 @@ volumes:
   qdrant_data:
   s3-data:
   keycloak-data:
+  pg-keycloak-data:
