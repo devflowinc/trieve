@@ -26,7 +26,6 @@ diesel::table! {
         card_metadata_id -> Uuid,
         created_at -> Timestamp,
         updated_at -> Timestamp,
-        dataset_id -> Uuid,
     }
 }
 
@@ -127,6 +126,7 @@ diesel::table! {
         metadata -> Nullable<Jsonb>,
         link -> Nullable<Text>,
         time_stamp -> Nullable<Timestamp>,
+        dataset_id -> Uuid,
     }
 }
 
@@ -223,17 +223,20 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(card_collection -> datasets (dataset_id));
 diesel::joinable!(card_collection -> users (author_id));
 diesel::joinable!(card_collection_bookmarks -> card_collection (collection_id));
 diesel::joinable!(card_collection_bookmarks -> card_metadata (card_metadata_id));
 diesel::joinable!(card_files -> card_metadata (card_id));
 diesel::joinable!(card_files -> files (file_id));
+diesel::joinable!(card_metadata -> datasets (dataset_id));
 diesel::joinable!(card_metadata -> users (author_id));
 diesel::joinable!(collections_from_files -> card_collection (collection_id));
 diesel::joinable!(collections_from_files -> files (file_id));
 diesel::joinable!(cut_cards -> users (user_id));
 diesel::joinable!(datasets -> organizations (organization_id));
 diesel::joinable!(file_upload_completed_notifications -> card_collection (collection_uuid));
+diesel::joinable!(files -> datasets (dataset_id));
 diesel::joinable!(files -> users (user_id));
 diesel::joinable!(invitations -> organizations (organization_id));
 diesel::joinable!(messages -> topics (topic_id));
