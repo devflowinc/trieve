@@ -165,6 +165,7 @@ diesel::table! {
         configuration -> Jsonb,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        registerable -> Nullable<Bool>,
     }
 }
 

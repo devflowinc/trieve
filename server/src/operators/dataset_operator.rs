@@ -16,27 +16,22 @@ pub async fn new_dataset_operation(
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     pool: web::Data<Pool>,
 ) -> Result<Dataset, ServiceError> {
-
     tantivy_index_map
         .write()
         .await
         .create_index(&dataset.id.to_string())
-        .map_err(|err| ServiceError::BadRequest(format!(
+        .map_err(|err| {
+            ServiceError::BadRequest(format!(
                 "Failed to create tantivy index: {:?}",
                 err.to_string()
             ))
-        )?;
+        })?;
 
     create_new_qdrant_collection_query(dataset.id.to_string()).await?;
 
-    web::block(move || {
-        create_dataset_query(
-            dataset,
-            pool
-        )
-    }).await.map_err(|_| {
-        ServiceError::BadRequest("Threadpool error".to_string())
-    })?
+    web::block(move || create_dataset_query(dataset, pool))
+        .await
+        .map_err(|_| ServiceError::BadRequest("Threadpool error".to_string()))?
 }
 
 pub fn create_dataset_query(
