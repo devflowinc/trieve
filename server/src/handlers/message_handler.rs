@@ -1,10 +1,9 @@
 use super::{
     auth_handler::{LoggedUser, RequireAuth},
     card_handler::ParsedQuery,
-    dataset_handler::SlimDataset,
 };
 use crate::{
-    data::models,
+    data::models::{self, Dataset},
     data::models::{CardMetadataWithFileData, Pool},
     errors::{DefaultError, ServiceError},
     get_env,
@@ -57,7 +56,7 @@ pub struct CreateMessageData {
 pub async fn create_message_completion_handler(
     data: web::Json<CreateMessageData>,
     user: LoggedUser,
-    dataest: SlimDataset,
+    dataset: Dataset,
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -67,7 +66,6 @@ pub async fn create_message_completion_handler(
     let pool3 = pool.clone();
     let pool4 = pool.clone();
     let topic_id = create_message_data.topic_id;
-    let dataset_id = dataest.id;
 
     let new_message = models::Message::from_details(
         create_message_data.new_message_content,
@@ -124,7 +122,7 @@ pub async fn create_message_completion_handler(
         previous_messages,
         user.id,
         topic_id,
-        dataset_id,
+        dataset.id,
         app_mutex,
         pool4,
     )
@@ -188,7 +186,7 @@ pub struct EditMessageData {
 pub async fn edit_message_handler(
     data: web::Json<EditMessageData>,
     user: LoggedUser,
-    dataset: SlimDataset,
+    dataset: Dataset,
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -240,7 +238,7 @@ pub async fn edit_message_handler(
 pub async fn regenerate_message_handler(
     data: web::Json<RegenerateMessageData>,
     user: LoggedUser,
-    dataset: SlimDataset,
+    dataset: Dataset,
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {

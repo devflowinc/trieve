@@ -1,7 +1,7 @@
 use super::collection_operator::create_collection_and_add_bookmarks_query;
 use super::notification_operator::add_collection_created_notification_query;
 use super::tantivy_operator::TantivyIndexMap;
-use crate::handlers::dataset_handler::SlimDataset;
+use crate::data::models::Dataset;
 use crate::AppMutexStore;
 use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
 use crate::{
@@ -145,13 +145,14 @@ pub async fn convert_doc_to_html_query(
     user: LoggedUser,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
-    dataset_id: uuid::Uuid,
+    dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<UploadFileResult, DefaultError> {
     let user1 = user.clone();
     let file_name1 = file_name.clone();
     let file_data1 = file_data.clone();
     let tag_set1 = tag_set.clone();
+    let dataset1 = dataset.clone();
 
     tokio::spawn(async move {
         let new_id = uuid::Uuid::new_v4();
@@ -248,7 +249,7 @@ pub async fn convert_doc_to_html_query(
             Some(tika_metadata_response_json.clone()),
             link.clone(),
             time_stamp.clone(),
-            dataset_id,
+            dataset1.id,
             pool.clone(),
         )?;
 
@@ -281,7 +282,7 @@ pub async fn convert_doc_to_html_query(
             glob_string,
             tantivy_index_map.clone(),
             app_mutex,
-            dataset_id,
+            dataset1,
             pool,
         )
         .await;
@@ -303,7 +304,7 @@ pub async fn convert_doc_to_html_query(
             None,
             None,
             None,
-            dataset_id,
+            dataset.id,
         ),
     })
 }
@@ -323,20 +324,17 @@ pub async fn create_cards_with_handler(
     glob_string: String,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
-    dataset_id: uuid::Uuid,
+    dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     let parser_command =
         std::env::var("PARSER_COMMAND").unwrap_or("./server-python/chunker.py".to_string());
-    let delete_html_file = || {
+    let delete_html_file = || -> Result<(), DefaultError> {
         let files = glob::glob(glob_string.as_str()).expect("Failed to read glob pattern");
 
         for file in files.flatten() {
-            std::fs::remove_file(file).map_err(|err| {
-                log::error!("Could not delete temp file {:?}", err);
-                DefaultError {
-                    message: "Could not delete temp file",
-                }
+            std::fs::remove_file(file).map_err(|_| DefaultError {
+                message: "Could not delete temp file",
             })?;
         }
 
@@ -404,7 +402,7 @@ pub async fn create_cards_with_handler(
             user.clone(),
             tantivy_index_map.clone(),
             app_mutex.clone(),
-            SlimDataset { id: dataset_id },
+            dataset.clone(),
         )
         .await
         {
@@ -432,11 +430,11 @@ pub async fn create_cards_with_handler(
             format!("Collection for file {}", file_name),
             !private,
             converted_description,
-            dataset_id,
+            dataset.id,
         ),
         card_ids,
         created_file_id,
-        dataset_id,
+        dataset.id,
         pool1,
     ) {
         Ok(collection) => (collection_id = collection.id,),
