@@ -1,8 +1,7 @@
 use super::auth_handler::{LoggedUser, RequireAuth};
-use super::dataset_handler::SlimDataset;
 use crate::data::models::{
     CardCollection, CardCollectionBookmark, CardMetadata, CardMetadataWithFileData,
-    ChatMessageProxy, Pool,
+    ChatMessageProxy, Dataset, Pool,
 };
 use crate::errors::ServiceError;
 use crate::operators::card_operator::get_metadata_from_id_query;
@@ -10,7 +9,6 @@ use crate::operators::card_operator::*;
 use crate::operators::collection_operator::{
     create_card_bookmark_query, get_collection_by_id_query,
 };
-use crate::operators::dataset_operator::get_dataset_by_id_query;
 use crate::operators::qdrant_operator::{create_embedding, update_qdrant_point_query};
 use crate::operators::qdrant_operator::{
     create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
@@ -136,11 +134,8 @@ pub async fn create_card(
     user: LoggedUser,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
-    dataset: SlimDataset,
+    dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool1 = pool.clone();
-    let dataset1 = dataset.clone();
-    let dataset = web::block(move || get_dataset_by_id_query(dataset1.id, pool1)).await??;
     if user.organization_id != dataset.organization_id {
         return Err(ServiceError::Forbidden.into());
     }
@@ -351,10 +346,8 @@ pub async fn delete_card(
     app_mutex: web::Data<AppMutexStore>,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     user: LoggedUser,
-    dataset: SlimDataset,
+    dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool1 = pool.clone();
-    let dataset = web::block(move || get_dataset_by_id_query(dataset.id, pool1)).await??;
     if user.organization_id != dataset.organization_id {
         return Err(ServiceError::Forbidden.into());
     }
@@ -399,10 +392,8 @@ pub async fn delete_card_by_tracking_id(
     app_mutex: web::Data<AppMutexStore>,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     user: LoggedUser,
-    dataset: SlimDataset,
+    dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool1 = pool.clone();
-    let dataset = web::block(move || get_dataset_by_id_query(dataset.id, pool1)).await??;
     if user.organization_id != dataset.organization_id {
         return Err(ServiceError::Forbidden.into());
     }
@@ -463,10 +454,8 @@ pub async fn update_card(
     user: LoggedUser,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
-    dataset: SlimDataset,
+    dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool1 = pool.clone();
-    let dataset = web::block(move || get_dataset_by_id_query(dataset.id, pool1)).await??;
     if user.organization_id != dataset.organization_id {
         return Err(ServiceError::Forbidden.into());
     }
@@ -571,10 +560,8 @@ pub async fn update_card_by_tracking_id(
     user: LoggedUser,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
-    dataset: SlimDataset,
+    dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool1 = pool.clone();
-    let dataset = web::block(move || get_dataset_by_id_query(dataset.id, pool1)).await??;
     if user.organization_id != dataset.organization_id {
         return Err(ServiceError::Forbidden.into());
     };
@@ -739,10 +726,8 @@ pub async fn search_card(
     cross_encoder_init: web::Data<CrossEncoder>,
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
-    dataset: SlimDataset,
+    dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool1 = pool.clone();
-    let dataset = web::block(move || get_dataset_by_id_query(dataset.id, pool1)).await??;
     if user.organization_id != dataset.organization_id {
         return Err(ServiceError::Forbidden.into());
     };
@@ -853,7 +838,7 @@ pub async fn search_collections(
     tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
     _required_user: RequireAuth,
-    dataset: SlimDataset,
+    dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
@@ -928,10 +913,8 @@ pub async fn get_card_by_id(
     card_id: web::Path<uuid::Uuid>,
     user: LoggedUser,
     pool: web::Data<Pool>,
-    dataset: SlimDataset,
+    dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool1 = pool.clone();
-    let dataset = web::block(move || get_dataset_by_id_query(dataset.id, pool1)).await??;
     if user.organization_id != dataset.organization_id {
         return Err(ServiceError::Forbidden.into());
     }
@@ -970,10 +953,8 @@ pub async fn get_card_by_tracking_id(
     user: LoggedUser,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
-    dataset: SlimDataset,
+    dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool1 = pool.clone();
-    let dataset = web::block(move || get_dataset_by_id_query(dataset.id, pool1)).await??;
     if user.organization_id != dataset.organization_id {
         return Err(ServiceError::Forbidden.into());
     }
@@ -1015,10 +996,8 @@ pub async fn get_recommended_cards(
     data: web::Json<RecommendCardsRequest>,
     pool: web::Data<Pool>,
     user: LoggedUser,
-    dataset: SlimDataset,
+    dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool1 = pool.clone();
-    let dataset = web::block(move || get_dataset_by_id_query(dataset.id, pool1)).await??;
     if user.organization_id != dataset.organization_id {
         return Err(ServiceError::Forbidden.into());
     }
@@ -1065,11 +1044,9 @@ pub async fn generate_off_cards(
     data: web::Json<GenerateCardsRequest>,
     pool: web::Data<Pool>,
     user: LoggedUser,
-    dataset: SlimDataset,
+    dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool1 = pool.clone();
-    let datset = web::block(move || get_dataset_by_id_query(dataset.id, pool1)).await??;
-    if user.organization_id != datset.organization_id {
+    if user.organization_id != dataset.organization_id {
         return Err(ServiceError::Forbidden.into());
     }
 

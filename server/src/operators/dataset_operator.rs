@@ -1,4 +1,5 @@
 use crate::diesel::RunQueryDsl;
+use crate::errors::DefaultError;
 use crate::{
     data::models::{Dataset, Pool},
     errors::ServiceError,
@@ -29,12 +30,10 @@ pub async fn new_dataset_operation(
 
     create_new_qdrant_collection_query(dataset.id.to_string()).await?;
 
-    web::block(move || create_dataset_query(dataset, pool))
-        .await
-        .map_err(|_| ServiceError::BadRequest("Threadpool error".to_string()))?
+    Ok(create_dataset_query(dataset, pool).await?)
 }
 
-pub fn create_dataset_query(
+pub async fn create_dataset_query(
     new_dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<Dataset, ServiceError> {
@@ -49,9 +48,34 @@ pub fn create_dataset_query(
         .execute(&mut conn)
         .map_err(|_| ServiceError::BadRequest("Failed to create dataset".to_string()))?;
 
+    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
+    let client = redis::Client::open(redis_url).map_err(|err| {
+        ServiceError::BadRequest(format!(
+            "Could not create redis client: {}",
+            err.to_string()
+        ))
+    })?;
+    let mut redis_conn = client.get_async_connection().await.map_err(|err| {
+        ServiceError::BadRequest(format!("Could not connect to redis: {}", err.to_string()))
+    })?;
+    redis::cmd("SET")
+        .arg(format!("dataset:{}", new_dataset.id))
+        .arg(serde_json::to_string(&new_dataset).map_err(|err| {
+            ServiceError::BadRequest(format!("Could not stringify dataset: {}", err.to_string()))
+        })?)
+        .query_async(&mut redis_conn)
+        .await
+        .map_err(|err| {
+            ServiceError::BadRequest(format!(
+                "Could not set dataset in redis: {}",
+                err.to_string()
+            ))
+        })?;
+
     Ok(new_dataset)
 }
 
+#[allow(dead_code)]
 pub fn get_dataset_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -69,4 +93,47 @@ pub fn get_dataset_by_id_query(
         .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?;
 
     Ok(organization)
+}
+
+pub async fn load_datasets_into_redis(pool: Pool) -> Result<(), DefaultError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+
+    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
+    let client = redis::Client::open(redis_url).map_err(|_| DefaultError {
+        message: "Could not create redis client",
+    })?;
+    let mut redis_conn = client
+        .get_async_connection()
+        .await
+        .map_err(|_| DefaultError {
+            message: "Could not connect to redis",
+        })?;
+
+    let mut pg_conn = pool.get().map_err(|_| DefaultError {
+        message: "Could not get database connection",
+    })?;
+
+    let datasets: Vec<Dataset> = datasets_columns::datasets
+        .select(Dataset::as_select())
+        .load(&mut pg_conn)
+        .map_err(|_| DefaultError {
+            message: "Could not load datasets from database",
+        })?;
+
+    for dataset in datasets {
+        let dataset_stringified = serde_json::to_string(&dataset).map_err(|_| DefaultError {
+            message: "Could not stringify dataset",
+        })?;
+
+        redis::cmd("SET")
+            .arg(format!("dataset:{}", dataset.id))
+            .arg(dataset_stringified)
+            .query_async(&mut redis_conn)
+            .await
+            .map_err(|_| DefaultError {
+                message: "Could not set dataset in redis",
+            })?;
+    }
+
+    Ok(())
 }

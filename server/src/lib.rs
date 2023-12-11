@@ -1,8 +1,9 @@
 #[macro_use]
 extern crate diesel;
 use crate::{
-    errors::ServiceError, handlers::auth_handler::build_oidc_client,
-    operators::tantivy_operator::TantivyIndexMap,
+    errors::ServiceError,
+    handlers::auth_handler::build_oidc_client,
+    operators::{dataset_operator::load_datasets_into_redis, tantivy_operator::TantivyIndexMap},
 };
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
@@ -265,7 +266,9 @@ pub async fn main() -> std::io::Result<()> {
     let oidc_client = build_oidc_client().await;
     run_migrations(&mut pool.get().unwrap());
 
-    log::info!("starting HTTP server at http://localhost:8090");
+    load_datasets_into_redis(pool.clone())
+        .await
+        .expect("Failed to load datasets into redis");
 
     let app_mutex_store = web::Data::new(AppMutexStore {
         embedding_semaphore: std::env::var("EMBEDDING_SEMAPHORE_SIZE")

@@ -1,11 +1,8 @@
-use super::{
-    auth_handler::{LoggedUser, RequireAuth},
-    dataset_handler::SlimDataset,
-};
+use super::auth_handler::{LoggedUser, RequireAuth};
 use crate::{
     data::models::{
         CardCollection, CardCollectionAndFile, CardCollectionBookmark, CardMetadataWithFileData,
-        Pool,
+        Dataset, Pool,
     },
     errors::ServiceError,
     operators::{card_operator::get_collided_cards_query, collection_operator::*},
@@ -63,16 +60,15 @@ pub struct CreateCardCollectionData {
 pub async fn create_card_collection(
     body: web::Json<CreateCardCollectionData>,
     user: LoggedUser,
-    dataset: SlimDataset,
+    dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let name = body.name.clone();
     let description = body.description.clone();
     let is_public = body.is_public;
-    let dataset_id = dataset.id;
 
     let collection =
-        CardCollection::from_details(user.id, name, is_public, description, dataset_id);
+        CardCollection::from_details(user.id, name, is_public, description, dataset.id);
     {
         let collection = collection.clone();
         web::block(move || create_collection_query(collection, pool))
@@ -112,7 +108,7 @@ pub struct UserCollectionQuery {
 pub async fn get_specific_user_card_collections(
     user: Option<LoggedUser>,
     user_and_page: web::Path<UserCollectionQuery>,
-    dataset: SlimDataset,
+    dataset: Dataset,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -168,7 +164,7 @@ pub async fn get_specific_user_card_collections(
 pub async fn get_logged_in_user_card_collections(
     user: LoggedUser,
     page: web::Path<u64>,
-    dataset: SlimDataset,
+    dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let collections = web::block(move || {
@@ -217,7 +213,7 @@ pub struct DeleteCollectionData {
 pub async fn delete_card_collection(
     data: web::Json<DeleteCollectionData>,
     pool: web::Data<Pool>,
-    dataset: SlimDataset,
+    dataset: Dataset,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool2 = pool.clone();
@@ -255,7 +251,7 @@ pub struct UpdateCardCollectionData {
 pub async fn update_card_collection(
     body: web::Json<UpdateCardCollectionData>,
     pool: web::Data<Pool>,
-    dataset: SlimDataset,
+    dataset: Dataset,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let name = body.name.clone();
@@ -299,7 +295,7 @@ pub struct AddCardToCollectionData {
 pub async fn add_bookmark(
     body: web::Json<AddCardToCollectionData>,
     collection_id: web::Path<uuid::Uuid>,
-    dataset: SlimDataset,
+    dataset: Dataset,
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -357,7 +353,7 @@ pub async fn get_all_bookmarks(
     path_data: web::Path<GetAllBookmarksData>,
     pool: web::Data<Pool>,
     user: Option<LoggedUser>,
-    dataset: SlimDataset,
+    dataset: Dataset,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let collection_id = path_data.collection_id;
@@ -464,7 +460,7 @@ pub struct GetCollectionsForCardsData {
 pub async fn get_collections_card_is_in(
     data: web::Json<GetCollectionsForCardsData>,
     pool: web::Data<Pool>,
-    dataset: SlimDataset,
+    dataset: Dataset,
     user: Option<LoggedUser>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -506,7 +502,7 @@ pub async fn delete_bookmark(
     body: web::Json<RemoveBookmarkData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
-    dataset: SlimDataset,
+    dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let collection_id = collection_id.into_inner();
     let bookmark_id = body.card_metadata_id;
@@ -548,7 +544,7 @@ pub struct GenerateOffCollectionData {
 pub async fn generate_off_collection(
     body: web::Json<GenerateOffCollectionData>,
     pool: web::Data<Pool>,
-    dataset: SlimDataset,
+    dataset: Dataset,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let request_data = body.into_inner();
