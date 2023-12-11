@@ -13,8 +13,6 @@ const suggestedQueries = ((import.meta.env.SUGGESTED_QUERIES ?? "") as string)
 const requestParams = Astro.request.url.split("?")[1];
 const params = new URLSearchParams(requestParams);
 const searchType: string = params.get("searchType") ?? "search";
-const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let metadataFilters: any[] = [];
@@ -45,8 +43,6 @@ const dataTypeFilters: Filters = {
   end: params.get("end") ?? "",
   metadataFilters,
 };
-
-
 ---
 
 <HomeLayout>
