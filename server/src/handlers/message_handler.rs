@@ -31,7 +31,7 @@ use crossbeam_channel::unbounded;
 use futures_util::stream;
 use openai_dive::v1::{
     api::Client,
-    resources::chat_completion::{ChatCompletionParameters, ChatMessage, Role},
+    resources::chat::{ChatCompletionParameters, ChatMessage, Role},
 };
 use serde::{Deserialize, Serialize};
 use tokio_stream::StreamExt;
@@ -341,11 +341,13 @@ pub async fn regenerate_message_handler(
 pub async fn get_topic_string(prompt: String) -> Result<String, DefaultError> {
     let prompt_topic_message = ChatMessage {
         role: Role::User,
-        content: format!(
+        content: Some(format!(
             "Write a 2-3 word topic name from the following prompt: {}",
             prompt
-        ),
+        )),
+        tool_calls: None,
         name: None,
+        tool_call_id: None,
     };
     let openai_messages = vec![prompt_topic_message];
     let parameters = ChatCompletionParameters {
@@ -360,6 +362,9 @@ pub async fn get_topic_string(prompt: String) -> Result<String, DefaultError> {
         frequency_penalty: Some(0.8),
         logit_bias: None,
         user: None,
+        respsonse_format: None,
+        tools: None,
+        tool_choice: None,
     };
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
@@ -388,6 +393,8 @@ pub async fn get_topic_string(prompt: String) -> Result<String, DefaultError> {
         .expect("No response for OpenAI completion")
         .message
         .content
+        .clone()
+        .unwrap_or("".to_string())
         .to_string();
 
     Ok(topic)
@@ -447,7 +454,7 @@ pub async fn stream_response(
             model: "gpt-3.5-turbo".into(),
             messages: vec![ChatMessage {
                 role: Role::User,
-                content: format!(
+                content: Some(format!(
                     "{}{}",
                     rag_prompt,
                     openai_messages
@@ -456,8 +463,11 @@ pub async fn stream_response(
                         .expect("No messages")
                         .clone()
                         .content
-                ),
+                        .unwrap_or("".to_string())
+                )),
+                tool_calls: None,
                 name: None,
+                tool_call_id: None,
             }],
             temperature: None,
             top_p: None,
@@ -468,6 +478,9 @@ pub async fn stream_response(
             frequency_penalty: Some(0.8),
             logit_bias: None,
             user: None,
+            respsonse_format: None,
+            tools: None,
+            tool_choice: None,
         };
 
         let evidence_search_query = client
@@ -480,7 +493,9 @@ pub async fn stream_response(
             .first()
             .expect("No response for OpenAI completion")
             .message
-            .content;
+            .content
+            .clone()
+            .unwrap_or("".to_string());
         let embedding_vector = create_embedding(query.as_str(), app_mutex).await?;
 
         let search_card_query_results = retrieve_qdrant_points_query(
@@ -557,11 +572,11 @@ pub async fn stream_response(
             .collect::<Vec<String>>()
             .join("\n\n");
 
-        last_message = format!(
-            "Here's my prompt. Include the document numbers that you used in square brackets at the end of the sentences that you used the docs for: {} \n\n Pretending you found it, base your tone on and use the following retrieved information as the basis of your response.: {}",
-            openai_messages.last().expect("There needs to be at least 1 prior message").content,
+        last_message = Some(format!(
+            "Here's my prompt. Include the document numbers that you used in square brackets at the end of the sentences that you used the docs for: {} \n\n Pretending you found it, use the following retrieved information as the basis of your response.: {}",
+            openai_messages.last().expect("There needs to be at least 1 prior message").content.clone().unwrap_or("".to_string()),
             rag_content,
-        );
+        ));
     }
 
     // replace the last message with the last message with evidence
@@ -575,6 +590,8 @@ pub async fn stream_response(
                     role: message.role,
                     content: last_message.clone(),
                     name: message.name,
+                    tool_calls: None,
+                    tool_call_id: None,
                 }
             } else {
                 message
@@ -594,6 +611,9 @@ pub async fn stream_response(
         frequency_penalty: Some(0.8),
         logit_bias: None,
         user: None,
+        respsonse_format: None,
+        tools: None,
+        tool_choice: None,
     };
 
     let (s, r) = unbounded::<String>();
@@ -681,8 +701,10 @@ pub async fn create_suggested_queries_handler(
     let query = format!("generate 3 suggested queries based off this query a user made. Your only response should be the 3 queries which are comma seperated and are just text and you do not add any other context or information about the queries.  Here is the query: {}", data.query);
     let message = ChatMessage {
         role: Role::User,
-        content: query,
+        content: Some(query),
+        tool_calls: None,
         name: None,
+        tool_call_id: None,
     };
     let parameters = ChatCompletionParameters {
         model: "gpt-3.5-turbo".into(),
@@ -696,6 +718,9 @@ pub async fn create_suggested_queries_handler(
         frequency_penalty: Some(0.8),
         logit_bias: None,
         user: None,
+        respsonse_format: None,
+        tools: None,
+        tool_choice: None,
     };
 
     let mut query = client
@@ -703,9 +728,14 @@ pub async fn create_suggested_queries_handler(
         .create(parameters.clone())
         .await
         .expect("No OpenAI Completion for topic");
-    let mut queries: Vec<String> = query.choices[0]
+    let mut queries: Vec<String> = query
+        .choices
+        .first()
+        .expect("No response for OpenAI completion")
         .message
         .content
+        .clone()
+        .unwrap_or("".to_string())
         .split(',')
         .map(|query| query.to_string().trim().trim_matches('\n').to_string())
         .collect();
@@ -715,9 +745,14 @@ pub async fn create_suggested_queries_handler(
             .create(parameters.clone())
             .await
             .expect("No OpenAI Completion for topic");
-        queries = query.choices[0]
+        queries = query
+            .choices
+            .first()
+            .expect("No response for OpenAI completion")
             .message
             .content
+            .clone()
+            .unwrap_or("".to_string())
             .split(',')
             .map(|query| query.to_string().trim().trim_matches('\n').to_string())
             .collect();

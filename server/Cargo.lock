@@ -123,15 +123,15 @@ dependencies = [
 
 [[package]]
 name = "actix-identity"
-version = "0.5.2"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1224c9f9593dc27c9077b233ce04adedc1d7febcfc35ee9f53ea3c24df180bec"
+checksum = "36e1cc6f95e245b2f3c6995df4e1c0c697704c48c28ec325d135a3ca039d4952"
 dependencies = [
  "actix-service",
  "actix-session",
  "actix-utils",
  "actix-web",
- "anyhow",
+ "derive_more",
  "futures-core",
  "serde",
  "tracing",
@@ -200,9 +200,9 @@ dependencies = [
 
 [[package]]
 name = "actix-session"
-version = "0.7.2"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43da8b818ae1f11049a4d218975345fe8e56ce5a5f92c11f972abcff5ff80e87"
+checksum = "2e6a28f813a6671e1847d005cad0be36ae4d016287690f765c303379837c13d6"
 dependencies = [
  "actix-service",
  "actix-utils",
@@ -211,7 +211,7 @@ dependencies = [
  "async-trait",
  "derive_more",
  "rand 0.8.5",
- "redis 0.21.7",
+ "redis 0.23.3",
  "serde",
  "serde_json",
  "tracing",
@@ -2104,6 +2104,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25db6b064527c5d482d0423354fcd07a89a2dfe07b67892e62411946db7f07b0"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2638,10 +2647,11 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "openai_dive"
-version = "0.2.13"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef7b1c33f65130dc5bf710c23fe0356a8ec1c3b124400eac5abb954bd2e6a140"
+checksum = "0f27c58bef7522daf6e432a0d35c49a39d95683137c32e0a966bac66ec2ad99c"
 dependencies = [
+ "bytes 1.5.0",
  "futures 0.3.29",
  "reqwest 0.11.22",
  "reqwest-eventsource",
@@ -3317,9 +3327,9 @@ dependencies = [
 
 [[package]]
 name = "redis"
-version = "0.21.7"
+version = "0.23.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "152f3863635cbb76b73bc247845781098302c6c9ad2060e1a9a7de56840346b6"
+checksum = "4f49cdc0bb3f412bf8e7d1bd90fe1d9eb10bc5c399ba90973c14662a27b3f8ba"
 dependencies = [
  "arc-swap",
  "async-trait",
@@ -3334,15 +3344,16 @@ dependencies = [
  "ryu",
  "tokio 1.35.0",
  "tokio-native-tls",
+ "tokio-retry",
  "tokio-util 0.7.10",
  "url 2.3.0",
 ]
 
 [[package]]
 name = "redis"
-version = "0.23.3"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f49cdc0bb3f412bf8e7d1bd90fe1d9eb10bc5c399ba90973c14662a27b3f8ba"
+checksum = "c580d9cbbe1d1b479e8d67cf9daf6a62c957e6846048408b80b43ac3f6af84cd"
 dependencies = [
  "async-trait",
  "bytes 1.5.0",
@@ -3353,6 +3364,8 @@ dependencies = [
  "pin-project-lite 0.2.13",
  "rustls",
  "rustls-native-certs",
+ "rustls-pemfile",
+ "rustls-webpki",
  "ryu",
  "sha1_smol",
  "socket2 0.4.10",
@@ -3549,9 +3562,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest-eventsource"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f03f570355882dd8d15acc3a313841e6e90eddbc76a93c748fd82cc13ba9f51"
+checksum = "f529a5ff327743addc322af460761dff5b50e0c826b9e6ac44c3195c50bb2026"
 dependencies = [
  "eventsource-stream",
  "futures-core",
@@ -3594,14 +3607,13 @@ dependencies = [
 
 [[package]]
 name = "rust-argon2"
-version = "1.0.1"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5885493fdf0be6cdff808d1533ce878d21cfa49c7086fa00c66355cd9141bfc"
+checksum = "1e71971821b3ae0e769e4a4328dbcb517607b434db7697e9aba17203ec14e46a"
 dependencies = [
  "base64 0.21.5",
  "blake2b_simd",
  "constant_time_eq",
- "crossbeam-utils 0.8.16",
 ]
 
 [[package]]
@@ -4596,6 +4608,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio-retry"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f57eb36ecbe0fc510036adff84824dd3c24bb781e21bfa67b69d556aa85214f"
+dependencies = [
+ "pin-project",
+ "rand 0.8.5",
+ "tokio 1.35.0",
+]
+
+[[package]]
 name = "tokio-rustls"
 version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5024,9 +5047,9 @@ dependencies = [
 
 [[package]]
 name = "utoipa-redoc"
-version = "1.0.0"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c91925cf8fc316aaef77dcc6845770a62016c598d4114b63e991c3e7e5b0549"
+checksum = "01520ff2511e54c069eda8e93569fff9893b2548c53c1357655292f47ef6782f"
 dependencies = [
  "actix-web",
  "serde",
@@ -5081,7 +5104,7 @@ dependencies = [
  "futures 0.3.29",
  "futures-util",
  "glob",
- "itertools 0.11.0",
+ "itertools 0.12.0",
  "lazy_static",
  "log",
  "magick_rust",
@@ -5093,7 +5116,7 @@ dependencies = [
  "qdrant-client",
  "r2d2",
  "rand 0.8.5",
- "redis 0.23.3",
+ "redis 0.24.0",
  "regex",
  "reqwest 0.11.22",
  "rust-argon2",

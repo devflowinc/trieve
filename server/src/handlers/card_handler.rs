@@ -25,7 +25,7 @@ use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
 use chrono::NaiveDateTime;
 use openai_dive::v1::api::Client;
-use openai_dive::v1::resources::chat_completion::{ChatCompletionParameters, ChatMessage, Role};
+use openai_dive::v1::resources::chat::{ChatCompletionParameters, ChatMessage, Role};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::process::Command;
@@ -1102,14 +1102,20 @@ pub async fn generate_off_cards(
     messages.truncate(prev_messages.len() - 1);
     messages.push(ChatMessage {
         role: Role::User,
-        content: "I am going to provide several pieces of information for you to use in response to a request or question. You will not respond until I ask you to.".to_string(),
+        content: Some("I am going to provide several pieces of information for you to use in response to a request or question. You will not respond until I ask you to.".to_string()),
+        tool_calls: None,
         name: None,
+        tool_call_id: None,
     });
     messages.push(ChatMessage {
         role: Role::Assistant,
-        content: "Understood, I will not reply until I receive a direct request or question."
-            .to_string(),
+        content: Some(
+            "Understood, I will not reply until I receive a direct request or question."
+                .to_string(),
+        ),
+        tool_calls: None,
         name: None,
+        tool_call_id: None,
     });
     cards.iter().enumerate().for_each(|(idx, bookmark)| {
         let first_240_words = bookmark
@@ -1121,23 +1127,29 @@ pub async fn generate_off_cards(
 
         messages.push(ChatMessage {
             role: Role::User,
-            content: format!("Doc {}: {}", idx + 1, first_240_words),
+            content: Some(format!("Doc {}: {}", idx + 1, first_240_words)),
+            tool_calls: None,
             name: None,
+            tool_call_id: None,
         });
         messages.push(ChatMessage {
             role: Role::Assistant,
-            content: "".to_string(),
+            content: Some("".to_string()),
+            tool_calls: None,
             name: None,
+            tool_call_id: None,
         });
     });
     messages.push(ChatMessage {
         role: Role::User,
-        content: format!("Respond to this question and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for.: {}",prev_messages
+        content: Some(format!("Respond to this question and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for.: {}",prev_messages
             .last()
             .expect("There needs to be at least 1 prior message")
             .content
-            .clone()),
-        name: None,
+            .clone())),
+            tool_calls: None,
+            name: None,
+            tool_call_id: None,
     });
 
     let parameters = ChatCompletionParameters {
@@ -1152,6 +1164,9 @@ pub async fn generate_off_cards(
         frequency_penalty: Some(0.8),
         logit_bias: None,
         user: None,
+        respsonse_format: None,
+        tools: None,
+        tool_choice: None,
     };
 
     let stream = client.chat().create_stream(parameters).await.unwrap();
