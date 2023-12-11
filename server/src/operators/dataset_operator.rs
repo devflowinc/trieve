@@ -30,7 +30,7 @@ pub async fn new_dataset_operation(
 
     create_new_qdrant_collection_query(dataset.id.to_string()).await?;
 
-    Ok(create_dataset_query(dataset, pool).await?)
+    create_dataset_query(dataset, pool).await
 }
 
 pub async fn create_dataset_query(
@@ -50,26 +50,21 @@ pub async fn create_dataset_query(
 
     let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
     let client = redis::Client::open(redis_url).map_err(|err| {
-        ServiceError::BadRequest(format!(
-            "Could not create redis client: {}",
-            err.to_string()
-        ))
+        ServiceError::BadRequest(format!("Could not create redis client: {}", err))
     })?;
-    let mut redis_conn = client.get_async_connection().await.map_err(|err| {
-        ServiceError::BadRequest(format!("Could not connect to redis: {}", err.to_string()))
-    })?;
+    let mut redis_conn = client
+        .get_async_connection()
+        .await
+        .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
     redis::cmd("SET")
         .arg(format!("dataset:{}", new_dataset.id))
         .arg(serde_json::to_string(&new_dataset).map_err(|err| {
-            ServiceError::BadRequest(format!("Could not stringify dataset: {}", err.to_string()))
+            ServiceError::BadRequest(format!("Could not stringify dataset: {}", err))
         })?)
         .query_async(&mut redis_conn)
         .await
         .map_err(|err| {
-            ServiceError::BadRequest(format!(
-                "Could not set dataset in redis: {}",
-                err.to_string()
-            ))
+            ServiceError::BadRequest(format!("Could not set dataset in redis: {}", err))
         })?;
 
     Ok(new_dataset)

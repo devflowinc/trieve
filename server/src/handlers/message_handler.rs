@@ -60,6 +60,9 @@ pub async fn create_message_completion_handler(
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
     let create_message_data = data.into_inner();
     let pool1 = pool.clone();
     let pool2 = pool.clone();
@@ -74,16 +77,19 @@ pub async fn create_message_completion_handler(
         "user".to_string(),
         None,
         None,
+        dataset.id,
     );
 
-    let user_topic = web::block(move || user_owns_topic_query(user.id, topic_id, &pool1))
-        .await?
-        .map_err(|_e| ServiceError::Unauthorized)?;
+    let user_topic =
+        web::block(move || user_owns_topic_query(user.id, topic_id, dataset.id, &pool1))
+            .await?
+            .map_err(|_e| ServiceError::Unauthorized)?;
 
     // get the previous messages
-    let mut previous_messages = web::block(move || get_topic_messages(topic_id, &pool2))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let mut previous_messages =
+        web::block(move || get_topic_messages(topic_id, dataset.id, &pool2))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if !user_topic.normal_chat {
         // remove citations from the previous messages
@@ -111,6 +117,7 @@ pub async fn create_message_completion_handler(
             previous_messages,
             new_message,
             user.id,
+            dataset.id,
             &pool3,
         )
     })
@@ -143,16 +150,23 @@ pub async fn create_message_completion_handler(
 pub async fn get_all_topic_messages(
     user: LoggedUser,
     messages_topic_id: web::Path<uuid::Uuid>,
+    dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
+
     let second_pool = pool.clone();
     let topic_id: uuid::Uuid = messages_topic_id.into_inner();
     // check if the user owns the topic
-    let _user_topic = web::block(move || user_owns_topic_query(user.id, topic_id, &second_pool))
-        .await?
-        .map_err(|_e| ServiceError::Unauthorized)?;
+    let _user_topic =
+        web::block(move || user_owns_topic_query(user.id, topic_id, dataset.id, &second_pool))
+            .await?
+            .map_err(|_e| ServiceError::Unauthorized)?;
 
-    let messages = web::block(move || get_messages_for_topic_query(topic_id, &pool)).await?;
+    let messages =
+        web::block(move || get_messages_for_topic_query(topic_id, dataset.id, &pool)).await?;
 
     match messages {
         Ok(messages) => Ok(HttpResponse::Ok().json(messages)),
@@ -190,6 +204,10 @@ pub async fn edit_message_handler(
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
+
     let topic_id = data.topic_id;
     let message_sort_order = data.message_sort_order;
     let new_message_content = &data.new_message_content;
@@ -197,7 +215,7 @@ pub async fn edit_message_handler(
     let third_pool = pool.clone();
 
     let message_from_sort_order_result = web::block(move || {
-        get_message_by_sort_for_topic_query(topic_id, message_sort_order, &pool)
+        get_message_by_sort_for_topic_query(topic_id, dataset.id, message_sort_order, &pool)
     })
     .await?;
 
@@ -208,8 +226,10 @@ pub async fn edit_message_handler(
         }
     };
 
-    let _ = web::block(move || delete_message_query(&user.id, message_id, topic_id, &second_pool))
-        .await?;
+    let _ = web::block(move || {
+        delete_message_query(&user.id, message_id, topic_id, dataset.id, &second_pool)
+    })
+    .await?;
 
     create_message_completion_handler(
         actix_web::web::Json(CreateMessageData {
@@ -242,17 +262,22 @@ pub async fn regenerate_message_handler(
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
     let topic_id = data.topic_id;
     let pool1 = pool.clone();
     let pool2 = pool.clone();
     let pool3 = pool.clone();
     let dataset_id = dataset.id;
 
-    let user_topic = web::block(move || user_owns_topic_query(user.id, topic_id, &pool1))
-        .await?
-        .map_err(|_e| ServiceError::Unauthorized)?;
+    let user_topic =
+        web::block(move || user_owns_topic_query(user.id, topic_id, dataset_id, &pool1))
+            .await?
+            .map_err(|_e| ServiceError::Unauthorized)?;
 
-    let previous_messages_result = web::block(move || get_topic_messages(topic_id, &pool2)).await?;
+    let previous_messages_result =
+        web::block(move || get_topic_messages(topic_id, dataset_id, &pool2)).await?;
 
     let mut previous_messages = match previous_messages_result {
         Ok(messages) => messages,
@@ -322,7 +347,9 @@ pub async fn regenerate_message_handler(
         previous_messages_to_regenerate.push(message.clone());
     }
 
-    let _ = web::block(move || delete_message_query(&user.id, message_id, topic_id, &pool)).await?;
+    let _ =
+        web::block(move || delete_message_query(&user.id, message_id, topic_id, dataset_id, &pool))
+            .await?;
 
     stream_response(
         user_topic.normal_chat,
@@ -633,6 +660,7 @@ pub async fn stream_response(
             "assistant".to_string(),
             None,
             Some(chunk_v.len().try_into().unwrap()),
+            dataset_id,
         );
 
         let _ = create_message_query(new_message, user_id, &pool);

@@ -128,6 +128,7 @@ pub struct Topic {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub normal_chat: bool,
+    pub dataset_id: uuid::Uuid,
 }
 
 impl Topic {
@@ -135,6 +136,7 @@ impl Topic {
         resolution: S,
         user_id: T,
         normal_chat: Option<bool>,
+        dataset_id: uuid::Uuid,
     ) -> Self {
         Topic {
             id: uuid::Uuid::new_v4(),
@@ -145,6 +147,7 @@ impl Topic {
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             normal_chat: normal_chat.unwrap_or(false),
+            dataset_id,
         }
     }
 }
@@ -162,6 +165,7 @@ pub struct Message {
     pub completion_tokens: Option<i32>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub dataset_id: uuid::Uuid,
 }
 
 impl From<Message> for ChatMessage {
@@ -216,6 +220,7 @@ impl Message {
         role: String,
         prompt_tokens: Option<i32>,
         completion_tokens: Option<i32>,
+        dataset_id: T,
     ) -> Self {
         Message {
             id: uuid::Uuid::new_v4(),
@@ -228,6 +233,7 @@ impl Message {
             completion_tokens,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
+            dataset_id: dataset_id.into(),
         }
     }
 }

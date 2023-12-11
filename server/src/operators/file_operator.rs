@@ -114,6 +114,7 @@ pub fn get_user_id_of_file_query(
 
 pub fn update_file_query(
     file_id: uuid::Uuid,
+    dataset_id: uuid::Uuid,
     private: bool,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
@@ -122,12 +123,16 @@ pub fn update_file_query(
         message: "Could not get database connection",
     })?;
 
-    diesel::update(files_columns::files.filter(files_columns::id.eq(file_id)))
-        .set(files_columns::private.eq(private))
-        .execute(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Could not update file, try again",
-        })?;
+    diesel::update(
+        files_columns::files
+            .filter(files_columns::id.eq(file_id))
+            .filter(files_columns::dataset_id.eq(dataset_id)),
+    )
+    .set(files_columns::private.eq(private))
+    .execute(&mut conn)
+    .map_err(|_| DefaultError {
+        message: "Could not update file, try again",
+    })?;
     Ok(())
 }
 
@@ -454,6 +459,7 @@ pub async fn create_cards_with_handler(
 
 pub async fn get_file_query(
     file_uuid: uuid::Uuid,
+    dataset_id: uuid::Uuid,
     user_uuid: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<FileDTO, actix_web::Error> {
@@ -465,6 +471,7 @@ pub async fn get_file_query(
 
     let file_metadata: File = files_columns::files
         .filter(files_columns::id.eq(file_uuid))
+        .filter(files_columns::dataset_id.eq(dataset_id))
         .get_result(&mut conn)
         .map_err(|_| ServiceError::NotFound)?;
 
@@ -498,6 +505,7 @@ pub async fn get_file_query(
 pub async fn get_user_file_query(
     user_uuid: uuid::Uuid,
     accessing_user_uuid: Option<uuid::Uuid>,
+    dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Vec<File>, actix_web::Error> {
     use crate::data::schema::files::dsl as files_columns;
@@ -508,6 +516,7 @@ pub async fn get_user_file_query(
 
     let mut boxed_query = files_columns::files
         .filter(files_columns::user_id.eq(user_uuid))
+        .filter(files_columns::dataset_id.eq(dataset_id))
         .into_boxed();
 
     match accessing_user_uuid {
@@ -529,6 +538,7 @@ pub async fn get_user_file_query(
 pub async fn delete_file_query(
     file_uuid: uuid::Uuid,
     user_uuid: uuid::Uuid,
+    dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), actix_web::Error> {
     use crate::data::schema::card_files::dsl as card_files_columns;
@@ -540,6 +550,7 @@ pub async fn delete_file_query(
 
     let file_metadata: File = files_columns::files
         .filter(files_columns::id.eq(file_uuid))
+        .filter(files_columns::dataset_id.eq(dataset_id))
         .get_result(&mut conn)
         .map_err(|_| ServiceError::NotFound)?;
 
@@ -554,8 +565,12 @@ pub async fn delete_file_query(
         .map_err(|_| ServiceError::BadRequest("Could not delete file from S3".to_string()))?;
 
     let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
-        diesel::delete(files_columns::files.filter(files_columns::id.eq(file_uuid)))
-            .execute(conn)?;
+        diesel::delete(
+            files_columns::files
+                .filter(files_columns::id.eq(file_uuid))
+                .filter(files_columns::dataset_id.eq(dataset_id)),
+        )
+        .execute(conn)?;
 
         diesel::delete(
             card_files_columns::card_files.filter(card_files_columns::file_id.eq(file_uuid)),
