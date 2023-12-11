@@ -346,6 +346,7 @@ pub async fn search_card_collections_query(
                 .eq(false)
                 .or(card_metadata_columns::author_id.eq(user_id.unwrap_or(uuid::Uuid::nil()))),
         )
+        .filter(card_metadata_columns::dataset_id.eq(dataset_id))
         .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id))
         .distinct()
         .into_boxed();

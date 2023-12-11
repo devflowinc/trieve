@@ -43,6 +43,7 @@ pub struct NotificationReturn {
 }
 pub fn get_notifications_query(
     user_id: uuid::Uuid,
+    dataset_id: uuid::Uuid,
     page: i64,
     pool: web::Data<Pool>,
 ) -> Result<NotificationReturn, DefaultError> {
@@ -65,6 +66,7 @@ pub fn get_notifications_query(
                         .eq(user_notification_counts_columns::user_uuid)),
             )
             .filter(file_upload_completed_notifications_columns::user_uuid.eq(user_id))
+            .filter(file_upload_completed_notifications_columns::dataset_id.eq(dataset_id))
             .select((
                 FileUploadCompletedNotification::as_select(),
                 card_collection_columns::name.nullable(),
@@ -100,6 +102,7 @@ pub fn get_notifications_query(
 
 pub fn mark_notification_as_read_query(
     user_id: uuid::Uuid,
+    dataset_id: uuid::Uuid,
     notification_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
@@ -109,6 +112,7 @@ pub fn mark_notification_as_read_query(
     let file_upload_completed_result = diesel::update(
         file_upload_completed_notifications_columns::file_upload_completed_notifications
             .filter(file_upload_completed_notifications_columns::user_uuid.eq(user_id))
+            .filter(file_upload_completed_notifications_columns::dataset_id.eq(dataset_id))
             .filter(file_upload_completed_notifications_columns::id.eq(notification_id)),
     )
     .set(file_upload_completed_notifications_columns::user_read.eq(true))
@@ -124,6 +128,7 @@ pub fn mark_notification_as_read_query(
 
 pub fn mark_all_notifications_as_read_query(
     user_id: uuid::Uuid,
+    dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
@@ -132,6 +137,7 @@ pub fn mark_all_notifications_as_read_query(
 
     let file_upload_completed_result = diesel::update(
         file_upload_completed_notifications_columns::file_upload_completed_notifications
+            .filter(file_upload_completed_notifications_columns::dataset_id.eq(dataset_id))
             .filter(file_upload_completed_notifications_columns::user_uuid.eq(user_id)),
     )
     .set(file_upload_completed_notifications_columns::user_read.eq(true))

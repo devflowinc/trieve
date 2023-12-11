@@ -189,7 +189,7 @@ pub async fn update_file_handler(
 
     user_owns_file(user.id, data.file_id, pool).await?;
 
-    web::block(move || update_file_query(data.file_id, data.private, pool1))
+    web::block(move || update_file_query(data.file_id, dataset.id, data.private, pool1))
         .await?
         .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
@@ -228,7 +228,7 @@ pub async fn get_file_handler(
 
     let user_id = Some(user.id);
 
-    let file = get_file_query(file_id.into_inner(), user_id, pool).await?;
+    let file = get_file_query(file_id.into_inner(), dataset.id, user_id, pool).await?;
 
     Ok(HttpResponse::Ok().json(file))
 }
@@ -248,6 +248,7 @@ pub async fn get_file_handler(
 )]
 pub async fn get_user_files_handler(
     user_id: web::Path<uuid::Uuid>,
+    dataset: Dataset,
     pool: web::Data<Pool>,
     user: Option<LoggedUser>,
     _required_user: RequireAuth,
@@ -255,7 +256,7 @@ pub async fn get_user_files_handler(
     let accessing_user_id = user.map(|u| u.id);
     let user_id = user_id.into_inner();
 
-    let files = get_user_file_query(user_id, accessing_user_id, pool).await?;
+    let files = get_user_file_query(user_id, accessing_user_id, dataset.id, pool).await?;
 
     Ok(HttpResponse::Ok().json(files))
 }
@@ -283,7 +284,7 @@ pub async fn delete_file_handler(
         return Err(ServiceError::Forbidden.into());
     };
 
-    delete_file_query(file_id.into_inner(), user.id, pool).await?;
+    delete_file_query(file_id.into_inner(), user.id, dataset.id, pool).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }

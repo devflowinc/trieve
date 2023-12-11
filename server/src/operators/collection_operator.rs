@@ -368,7 +368,8 @@ pub fn get_bookmarks_for_collection_query(
                     .and(card_metadata_columns::private.eq(false).or(
                         card_metadata_columns::author_id.eq(current_user_id.unwrap_or_default()),
                     ))
-                    .and(card_collection_columns::dataset_id.eq(dataset_uuid)),
+                    .and(card_collection_columns::dataset_id.eq(dataset_uuid))
+                    .and(card_metadata_columns::dataset_id.eq(dataset_uuid)),
             )
             .select((
                 (
@@ -409,6 +410,7 @@ pub fn get_bookmarks_for_collection_query(
     } else {
         card_collection_columns::card_collection
             .filter(card_collection_columns::id.eq(collection))
+            .filter(card_collection_columns::dataset_id.eq(dataset_uuid))
             .first::<CardCollection>(&mut conn)
             .map_err(|_err| ServiceError::BadRequest("Error getting collection".to_string()))?
     };
