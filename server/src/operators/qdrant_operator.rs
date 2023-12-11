@@ -159,6 +159,7 @@ pub async fn create_openai_embedding(message: &str) -> Result<Vec<f32>, actix_we
         model: "text-embedding-ada-002".to_string(),
         input: message.to_string(),
         user: None,
+        encoding_format: None,
     };
 
     let embeddings = client
