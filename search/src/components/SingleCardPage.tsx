@@ -44,7 +44,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
     createSignal(false);
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onDelete, setOnDelete] = createSignal(() => { });
+  const [onDelete, setOnDelete] = createSignal(() => {});
   const [clientSideRequestFinished, setClientSideRequestFinished] =
     createSignal(false);
   const [loadingRecommendations, setLoadingRecommendations] =
@@ -72,7 +72,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
       credentials: "include",
       headers: {
         "AF-Dataset": dataset,
-      }
+      },
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
@@ -150,7 +150,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
 
   // Fetch the user info for the auth'ed user
   createEffect(() => {
-    void fetch(`${apiHost}/auth`, {
+    void fetch(`${apiHost}/auth/me`, {
       method: "GET",
       credentials: "include",
     }).then((response) => {
@@ -169,7 +169,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
       credentials: "include",
       headers: {
         "AF-Dataset": dataset,
-      }
+      },
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
@@ -386,9 +386,9 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href="/auth/register"
+                href={`${apiHost}/auth?dataset_id=${dataset}`}
               >
-                Register
+                Login/Register
                 <BiRegularLogIn class="h-6 w-6 fill-current" />
               </a>
             </div>

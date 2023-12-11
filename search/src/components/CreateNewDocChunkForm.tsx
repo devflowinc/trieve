@@ -139,39 +139,39 @@ export const CreateNewDocChunkForm = () => {
       entity_encoding: "raw",
       entities: "160,nbsp,38,amp,60,lt,62,gt",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setup: function(editor: any) {
+      setup: function (editor: any) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+1", "Font size 8.", function() {
+        editor.addShortcut("meta+shift+1", "Font size 8.", function () {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
           editor.execCommand("FontSize", false, `8pt`);
         });
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+2", "Font size 12.", function() {
+        editor.addShortcut("meta+shift+2", "Font size 12.", function () {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
           editor.execCommand("FontSize", false, `12pt`);
         });
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+3", "Font size 16.", function() {
+        editor.addShortcut("meta+shift+3", "Font size 16.", function () {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
           editor.execCommand("FontSize", false, `16pt`);
         });
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+4", "Font size 20.", function() {
+        editor.addShortcut("meta+shift+4", "Font size 20.", function () {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
           editor.execCommand("FontSize", false, `20pt`);
         });
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+5", "Font size 24.", function() {
+        editor.addShortcut("meta+shift+5", "Font size 24.", function () {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
           editor.execCommand("FontSize", false, `24pt`);
         });
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        editor.addShortcut("meta+shift+h", "Font size 24.", function() {
+        editor.addShortcut("meta+shift+h", "Font size 24.", function () {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
           editor.execCommand("HiliteColor", false, `#F1C40F`);
         });
@@ -273,9 +273,9 @@ export const CreateNewDocChunkForm = () => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href="/auth/register"
+                href={`${apiHost}/auth?dataset_id=${dataset}`}
               >
-                Register
+                Login/Register
                 <BiRegularLogIn class="h-6 w-6  fill-current" />
               </a>
             </div>

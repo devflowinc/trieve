@@ -60,7 +60,7 @@ const ResultsPage = (props: ResultsPageProps) => {
     createSignal(false);
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onDelete, setOnDelete] = createSignal(() => { });
+  const [onDelete, setOnDelete] = createSignal(() => {});
   const [bookmarks, setBookmarks] = createSignal<CardBookmarksDTO[]>([]);
   const [totalPages, setTotalPages] = createSignal(initialTotalPages);
   const [openChat, setOpenChat] = createSignal(false);
@@ -74,7 +74,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       credentials: "include",
       headers: {
         "AF-Dataset": dataset,
-      }
+      },
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
@@ -111,7 +111,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   };
 
   createEffect(() => {
-    void fetch(`${apiHost}/auth`, {
+    void fetch(`${apiHost}/auth/me`, {
       method: "GET",
       credentials: "include",
     }).then((response) => {
@@ -135,9 +135,9 @@ const ResultsPage = (props: ResultsPageProps) => {
       time_range:
         props.filters.start || props.filters.end
           ? [
-            props.filters.start ? props.filters.start + " 00:00:00" : "null",
-            props.filters.end ? props.filters.end + " 00:00:00" : "null",
-          ]
+              props.filters.start ? props.filters.start + " 00:00:00" : "null",
+              props.filters.end ? props.filters.end + " 00:00:00" : "null",
+            ]
           : null,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       filters: props.filters.metadataFilters,
@@ -230,8 +230,9 @@ const ResultsPage = (props: ResultsPageProps) => {
         <Show when={resultCards().length === 0 && clientSideRequestFinished()}>
           <button
             onClick={() => {
-              window.location.href = `/search?q=${props.query}&page=${props.page + 1
-                }`;
+              window.location.href = `/search?q=${props.query}&page=${
+                props.page + 1
+              }`;
             }}
           >
             <div class="text-2xl">No results found</div>
@@ -348,13 +349,10 @@ const ResultsPage = (props: ResultsPageProps) => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href="/auth/register"
+                href={`${apiHost}/auth?dataset_id=${dataset}`}
               >
-                Register
+                Login/Register
                 <BiRegularLogIn class="h-6 w-6 fill-current" />
-              </a>
-              <a class="text-center font-semibold underline" href="/auth/login">
-                Login
               </a>
             </div>
           </div>

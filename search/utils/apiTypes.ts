@@ -242,16 +242,7 @@ export const isUserDTOWithVotesAndCards = (
     indirectHasOwnProperty(user, "created_at") &&
     typeof (user as UserDTOWithVotesAndCards).created_at === "string" &&
     indirectHasOwnProperty(user, "total_cards_created") &&
-    typeof (user as UserDTOWithVotesAndCards).total_cards_created ===
-      "number" &&
-    indirectHasOwnProperty(user, "total_upvotes_received") &&
-    typeof (user as UserDTOWithVotesAndCards).total_upvotes_received ===
-      "number" &&
-    indirectHasOwnProperty(user, "total_downvotes_received") &&
-    typeof (user as UserDTOWithVotesAndCards).total_downvotes_received ===
-      "number" &&
-    indirectHasOwnProperty(user, "total_votes_cast") &&
-    typeof (user as UserDTOWithVotesAndCards).total_votes_cast === "number"
+    typeof (user as UserDTOWithVotesAndCards).total_cards_created === "number"
   );
 };
 

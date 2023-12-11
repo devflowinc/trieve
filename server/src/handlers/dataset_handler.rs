@@ -75,7 +75,7 @@ impl FromRequest for Dataset {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct CreateDatasetRequest {
     pub dataset_name: String,
 }
@@ -87,8 +87,8 @@ pub struct CreateDatasetRequest {
     tag = "dataset",
     request_body(content = CreateDatasetRequest, description = "JSON request payload to create a new dataset", content_type = "application/json"),
     responses(
-        (status = 200, description = "Dataset created successfully"),
-        (status = 400, description = "Service error relating to creating the dataset", body = [BadRequestBody]),
+        (status = 200, description = "Dataset created successfully", body = [Dataset]),
+        (status = 400, description = "Service error relating to creating the dataset", body = [DefaultError]),
     ),
 )]
 pub async fn create_dataset(

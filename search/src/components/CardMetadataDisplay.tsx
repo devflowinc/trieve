@@ -59,7 +59,7 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
   const linesBeforeShowMore = (() => {
     const parsedLinesBeforeShowMore = Number.parseInt(
       (import.meta.env.PUBLIC_LINES_BEFORE_SHOW_MORE as string | undefined) ??
-      "4",
+        "4",
       10,
     );
     return Number.isNaN(parsedLinesBeforeShowMore)
@@ -86,7 +86,7 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
           credentials: "include",
           headers: {
             "AF-Dataset": dataset,
-          }
+          },
         }).then((response) => {
           setDeleting(false);
           if (response.ok) {
@@ -179,14 +179,16 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                   <Show when={imgInformation()}>
                     <a
                       class="h-fit"
-                      href={`${apiHost}/pdf_from_range/${imgInformation()?.imgRangeStart ?? 0
-                        }/${imgInformation()?.imgRangeEnd ?? 0}/${imgInformation()?.imgRangePrefix ?? ""
-                        }/${
+                      href={`${apiHost}/pdf_from_range/${
+                        imgInformation()?.imgRangeStart ?? 0
+                      }/${imgInformation()?.imgRangeEnd ?? 0}/${
+                        imgInformation()?.imgRangePrefix ?? ""
+                      }/${
                         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                         props.card.metadata?.file_name ??
                         imgInformation()?.imgRangeStart ??
                         "Arguflow PDF From Range"
-                        }/false`}
+                      }/false`}
                       target="_blank"
                       title="Open PDF"
                     >
@@ -201,14 +203,16 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                   <Show when={imgInformation()}>
                     <a
                       class="h-fit"
-                      href={`${apiHost}/pdf_from_range/${imgInformation()?.imgRangeStart ?? 0
-                        }/${imgInformation()?.imgRangeEnd ?? 0}/${imgInformation()?.imgRangePrefix ?? ""
-                        }/${
+                      href={`${apiHost}/pdf_from_range/${
+                        imgInformation()?.imgRangeStart ?? 0
+                      }/${imgInformation()?.imgRangeEnd ?? 0}/${
+                        imgInformation()?.imgRangePrefix ?? ""
+                      }/${
                         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                         props.card.metadata?.file_name ??
                         imgInformation()?.imgRangeStart ??
                         "Arguflow PDF From Range"
-                        }/true`}
+                      }/true`}
                       target="_blank"
                       title="Open PDF"
                     >
@@ -349,19 +353,6 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                   </>
                 )}
               </For>
-              <Show
-                when={
-                  !!props.card.total_upvotes && !!props.card.total_downvotes
-                }
-              >
-                <div class="flex w-fit gap-x-2 text-neutral-800 dark:text-neutral-200">
-                  <span class="font-semibold">Cumulative Score: </span>
-                  <span>
-                    {(props.card.total_upvotes ?? 0) -
-                      (props.card.total_downvotes ?? 0)}
-                  </span>
-                </div>
-              </Show>
             </div>
           </div>
           <div class="mb-1 h-1 w-full border-b border-neutral-300 dark:border-neutral-600" />
@@ -380,10 +371,10 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
             innerHTML={sanitizeHtml(
               props.card.card_html !== undefined
                 ? props.card.card_html
-                  .replaceAll("line-height", "lh")
-                  .replace("\n", " ")
-                  .replace(`<br>`, " ")
-                  .replace(`\\n`, " ")
+                    .replaceAll("line-height", "lh")
+                    .replace("\n", " ")
+                    .replace(`<br>`, " ")
+                    .replace(`\\n`, " ")
                 : "",
               sanitzerOptions,
             )}
@@ -426,8 +417,9 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
               {(_, i) => (
                 <img
                   class="mx-auto my-auto"
-                  src={`${apiHost}/image/${imgInformation()?.imgRangePrefix ?? ""
-                    }${(imgInformation()?.imgRangeStart ?? 0) + i()}.png`}
+                  src={`${apiHost}/image/${
+                    imgInformation()?.imgRangePrefix ?? ""
+                  }${(imgInformation()?.imgRangeStart ?? 0) + i()}.png`}
                 />
               )}
             </For>
@@ -444,14 +436,14 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                   <span>{`"${
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/restrict-template-expressions
                     typeof (props.card.metadata as any)[metadataKey] ===
-                      "object"
+                    "object"
                       ? JSON.stringify(
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                        (props.card.metadata as any)[metadataKey],
-                      )
+                          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+                          (props.card.metadata as any)[metadataKey],
+                        )
                       : // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                      (props.card.metadata as any)[metadataKey]
-                    }"`}</span>
+                        (props.card.metadata as any)[metadataKey]
+                  }"`}</span>
                 </div>
               )}
             </For>

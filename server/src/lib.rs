@@ -161,6 +161,7 @@ pub async fn main() -> std::io::Result<()> {
             handlers::organization_handler::delete_organization_by_id,
             handlers::organization_handler::update_organization,
             handlers::organization_handler::create_organization,
+            handlers::dataset_handler::create_dataset,
         ),
         components(
             schemas(
@@ -208,6 +209,7 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::organization_handler::CreateOrganizationData,
                 handlers::organization_handler::UpdateOrganizationData,
                 operators::notification_operator::NotificationReturn,
+                handlers::dataset_handler::CreateDatasetRequest,
                 data::models::SlimUser,
                 data::models::UserDTO,
                 data::models::Topic,
@@ -222,6 +224,7 @@ pub async fn main() -> std::io::Result<()> {
                 data::models::FileDTO,
                 data::models::FileUploadCompletedNotificationWithName,
                 data::models::Organization,
+                data::models::Dataset,
                 errors::DefaultError,
             )
         ),
@@ -238,6 +241,8 @@ pub async fn main() -> std::io::Result<()> {
             (name = "file", description = "File endpoint"),
             (name = "notifications", description = "Notifications endpoint"),
             (name = "health", description = "Health check endpoint"),
+            (name = "organization", description = "Organization endpoint"),
+            (name = "dataset", description = "Dataset endpoint"),
         ),
     )]
     struct ApiDoc;
