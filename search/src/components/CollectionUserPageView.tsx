@@ -40,7 +40,7 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
       credentials: "include",
       headers: {
         "AF-Dataset": dataset,
-      }
+      },
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {

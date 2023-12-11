@@ -8,7 +8,7 @@ import {
 
 const SearchForm = () => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
   const [currentUser, setCurrentUser] = createSignal<UserDTO | null>(null);
   const [username, setUsername] = createSignal("");
   const [website, setWebsite] = createSignal("");
@@ -89,7 +89,7 @@ const SearchForm = () => {
   };
 
   createEffect(() => {
-    void fetch(`${apiHost}/auth`, {
+    void fetch(`${apiHost}/auth/me`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -105,11 +105,11 @@ const SearchForm = () => {
             setHideEmail(!data.visible_email);
             return;
           }
-          window.location.href = "/auth/register";
+          window.location.href = `${apiHost}/auth?dataset_id=${dataset}`;
         });
         return;
       }
-      window.location.href = "/auth/register";
+      window.location.href = `${apiHost}/auth?dataset_id=${dataset}`;
     });
   });
 
