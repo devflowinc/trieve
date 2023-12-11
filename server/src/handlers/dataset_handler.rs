@@ -10,12 +10,7 @@ use std::future::{ready, Ready};
 use tokio::sync::RwLock;
 use utoipa::ToSchema;
 
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-pub struct SlimDataset {
-    pub id: uuid::Uuid,
-}
-
-impl FromRequest for SlimDataset {
+impl FromRequest for Dataset {
     type Error = ServiceError;
     type Future = Ready<Result<Self, Self::Error>>;
 
@@ -25,18 +20,49 @@ impl FromRequest for SlimDataset {
     ) -> Self::Future {
         match req.headers().get("AF-Dataset") {
             Some(dataset_header) => match dataset_header.to_str() {
-                Ok(dataset) => {
-                    // Try to convert to a uuid
-                    let id_result = uuid::Uuid::parse_str(dataset).map_err(|err| {
-                        ServiceError::BadRequest(format!(
-                            "Dataset must be a valid UUID: {:?}",
-                            err.to_string()
-                        ))
-                    });
-                    match id_result {
-                        Ok(id) => ready(Ok(SlimDataset { id })),
-                        Err(err) => ready(Err(err)),
-                    }
+                Ok(dataset_id) => {
+                    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
+
+                    let client = match redis::Client::open(redis_url) {
+                        Ok(client) => client,
+                        Err(_) => {
+                            return ready(Err(ServiceError::BadRequest(
+                                "Could not create redis client".to_string(),
+                            )))
+                        }
+                    };
+
+                    let mut redis_conn = match client.get_connection() {
+                        Ok(redis_conn) => redis_conn,
+                        Err(_) => {
+                            return ready(Err(ServiceError::BadRequest(
+                                "Could not get redis connection".to_string(),
+                            )))
+                        }
+                    };
+
+                    let dataset: String = match redis::cmd("GET")
+                        .arg(format!("dataset:{}", dataset_id))
+                        .query(&mut redis_conn)
+                    {
+                        Ok(dataset) => dataset,
+                        Err(_) => {
+                            return ready(Err(ServiceError::BadRequest(
+                                "Could not get dataset from redis".to_string(),
+                            )))
+                        }
+                    };
+
+                    let dataset: Dataset = match serde_json::from_str(&dataset) {
+                        Ok(dataset) => dataset,
+                        Err(_) => {
+                            return ready(Err(ServiceError::BadRequest(
+                                "Could not parse dataset from redis".to_string(),
+                            )))
+                        }
+                    };
+
+                    ready(Ok(dataset))
                 }
                 Err(_) => ready(Err(ServiceError::BadRequest(
                     "Dataset must be ASCII".to_string(),
