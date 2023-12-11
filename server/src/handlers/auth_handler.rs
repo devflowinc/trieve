@@ -401,9 +401,6 @@ pub async fn callback(
     })?;
 
     Identity::login(&req.extensions(), user_string).unwrap();
-    session.remove(OIDC_SESSION_KEY);
-    session.remove("org_id");
-    session.remove("redirect_url");
 
     log::info!("Successfully authenticated user {}", &slim_user.id);
 
@@ -411,6 +408,10 @@ pub async fn callback(
         .get::<String>("redirect_url")
         .map_err(|_| ServiceError::InternalServerError("Could not get redirect url".into()))?
         .ok_or(ServiceError::Unauthorized)?;
+
+    session.remove(OIDC_SESSION_KEY);
+    session.remove("org_id");
+    session.remove("redirect_url");
 
     Ok(HttpResponse::SeeOther()
         .insert_header(("Location", redirect_url))

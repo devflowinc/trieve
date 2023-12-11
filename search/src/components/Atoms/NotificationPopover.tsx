@@ -19,6 +19,7 @@ import { SingleNotification } from "../Notification";
 
 export const NotificationPopover = (props: { user: UserDTO | null }) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const dataset = import.meta.env.PUBLIC_DATASET as string;
   const similarityScoreThreshold =
     (import.meta.env.PUBLIC_SIMILARITY_SCORE_THRESHOLD as number | undefined) ??
     80;
@@ -35,6 +36,9 @@ export const NotificationPopover = (props: { user: UserDTO | null }) => {
   const fetchNotifs = () => {
     void fetch(`${apiHost}/notifications/${page()}`, {
       method: "GET",
+      headers: {
+        "AF-Dataset": dataset,
+      },
       credentials: "include",
     }).then((response) => {
       void response.json().then((data) => {
@@ -52,6 +56,7 @@ export const NotificationPopover = (props: { user: UserDTO | null }) => {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       credentials: "include",
       body: JSON.stringify({
@@ -80,6 +85,7 @@ export const NotificationPopover = (props: { user: UserDTO | null }) => {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset,
       },
       credentials: "include",
     }).then((response) => {

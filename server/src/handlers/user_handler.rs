@@ -1,6 +1,6 @@
 use super::auth_handler::{LoggedUser, RequireAuth};
 use crate::{
-    data::models::Pool,
+    data::models::{Dataset, Pool},
     errors::{DefaultError, ServiceError},
     operators::user_operator::{
         get_user_with_cards_by_id_query, set_user_api_key_query, update_user_query,
@@ -39,6 +39,7 @@ pub struct GetUserWithCardsData {
 )]
 pub async fn get_user_with_cards_by_id(
     path_data: web::Path<GetUserWithCardsData>,
+    dataset: Dataset,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
@@ -48,7 +49,7 @@ pub async fn get_user_with_cards_by_id(
     let page = path_data.page;
 
     let user_result = web::block(move || {
-        get_user_with_cards_by_id_query(user_query_id, accessing_user_id, &page, pool)
+        get_user_with_cards_by_id_query(user_query_id, accessing_user_id, dataset.id, &page, pool)
     })
     .await?;
 

@@ -63,6 +63,7 @@ pub fn get_user_by_id_query(
 pub fn get_user_with_cards_by_id_query(
     user_id: uuid::Uuid,
     accessing_user_id: Option<uuid::Uuid>,
+    dataset_id: uuid::Uuid,
     page: &i64,
     pool: web::Data<Pool>,
 ) -> Result<UserDTOWithCards, DefaultError> {
@@ -89,11 +90,13 @@ pub fn get_user_with_cards_by_id_query(
 
     let mut total_cards_created_by_user = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::author_id.eq(user.id))
+        .filter(card_metadata_columns::dataset_id.eq(dataset_id))
         .into_boxed();
 
     //Ensure only user can see their own private cards on their page
     let mut user_card_metadatas = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::author_id.eq(user.id))
+        .filter(card_metadata_columns::dataset_id.eq(dataset_id))
         .into_boxed();
 
     match accessing_user_id {
@@ -157,6 +160,7 @@ pub fn get_user_with_cards_by_id_query(
         )
         .inner_join(files_columns::files)
         .filter(files_columns::private.eq(false))
+        .filter(files_columns::dataset_id.eq(dataset_id))
         .select((
             card_files_columns::card_id,
             card_files_columns::file_id,
