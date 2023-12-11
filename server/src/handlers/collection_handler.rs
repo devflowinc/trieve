@@ -8,7 +8,10 @@ use crate::{
         Pool,
     },
     errors::ServiceError,
-    operators::{card_operator::get_collided_cards_query, collection_operator::*},
+    operators::{
+        card_operator::get_collided_cards_query, collection_operator::*,
+        dataset_operator::get_dataset_by_id_query,
+    },
 };
 use actix_web::{
     web::{self, Bytes},
@@ -66,13 +69,19 @@ pub async fn create_card_collection(
     dataset: SlimDataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let pool1 = pool.clone();
+    let dataset1 = dataset.clone();
+    let dataset = web::block(move || get_dataset_by_id_query(dataset1.id, pool1)).await??;
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    }
+
     let name = body.name.clone();
     let description = body.description.clone();
     let is_public = body.is_public;
-    let dataset_id = dataset.id;
 
     let collection =
-        CardCollection::from_details(user.id, name, is_public, description, dataset_id);
+        CardCollection::from_details(user.id, name, is_public, description, dataset.id);
     {
         let collection = collection.clone();
         web::block(move || create_collection_query(collection, pool))
