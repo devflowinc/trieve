@@ -3,7 +3,6 @@ use crate::data::models::CardMetadata;
 use actix::Arbiter;
 use itertools::Itertools;
 use std::collections::HashMap;
-use std::collections::VecDeque;
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::Condvar;
@@ -278,7 +277,7 @@ impl TantivyIndexMap {
 }
 
 pub struct CommitQueue {
-    jobs: Mutex<VecDeque<uuid::Uuid>>,
+    jobs: Mutex<Vec<uuid::Uuid>>,
     index_writer: Arc<RwLock<IndexWriter>>,
     cvar: Arc<Condvar>,
 }
@@ -286,7 +285,7 @@ pub struct CommitQueue {
 impl CommitQueue {
     pub fn new(index_writer: Arc<RwLock<IndexWriter>>) -> Self {
         CommitQueue {
-            jobs: Mutex::new(VecDeque::new()),
+            jobs: Mutex::new(Vec::new()),
             index_writer,
             cvar: Arc::new(Condvar::new()),
         }
@@ -302,7 +301,7 @@ impl CommitQueue {
             if !jobs.is_empty() {
                 let mut index_writer = self.index_writer.write().unwrap();
                 index_writer.commit().unwrap();
-                *jobs = VecDeque::new();
+                *jobs = Vec::new();
             } else {
                 jobs = self.cvar.wait(jobs).unwrap();
             }
