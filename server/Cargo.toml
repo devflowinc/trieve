@@ -63,7 +63,9 @@ utoipa-redoc = { version = "2.0", features = ["actix-web"] }
 magick_rust = "0.19.1"
 pyo3 = { version = "0.20.0", features = ["full", "auto-initialize"] }
 tantivy = "0.21.1"
-openidconnect = { version = "3.4.0", features = ["reqwest"] }
+openidconnect = { version = "3.4.0", features = [
+    "reqwest",
+], default-features = false }
 oauth2 = "4.4.2"
 
 
