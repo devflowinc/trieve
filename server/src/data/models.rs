@@ -3,7 +3,7 @@
 use super::schema::*;
 use chrono::NaiveDateTime;
 use diesel::{expression::ValidGrouping, r2d2::ConnectionManager, PgConnection};
-use openai_dive::v1::resources::chat_completion::{ChatMessage, Role};
+use openai_dive::v1::resources::chat::{ChatMessage, Role};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -174,8 +174,10 @@ impl From<Message> for ChatMessage {
 
         ChatMessage {
             role,
-            content: message.content,
+            content: Some(message.content),
+            tool_calls: None,
             name: None,
+            tool_call_id: None,
         }
     }
 }
@@ -198,8 +200,10 @@ impl From<ChatMessageProxy> for ChatMessage {
 
         ChatMessage {
             role,
-            content: message.content,
+            content: Some(message.content),
+            tool_calls: None,
             name: message.name,
+            tool_call_id: None,
         }
     }
 }

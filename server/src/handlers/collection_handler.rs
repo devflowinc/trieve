@@ -18,7 +18,7 @@ use crossbeam_channel::unbounded;
 use futures_util::StreamExt;
 use openai_dive::v1::{
     api::Client,
-    resources::chat_completion::{ChatCompletionParameters, ChatMessage, Role},
+    resources::chat::{ChatCompletionParameters, ChatMessage, Role},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -578,31 +578,43 @@ pub async fn generate_off_collection(
     let mut messages: Vec<ChatMessage> = Vec::new();
     messages.push(ChatMessage {
         role: Role::User,
-        content: "I am going to provide several pieces of information for you to use in response to a request or question. You will not respond until I ask you to.".to_string(),
+        content: Some("I am going to provide several pieces of information for you to use in response to a request or question. You will not respond until I ask you to.".to_string()),
+        tool_calls: None,
         name: None,
+        tool_call_id: None,
     });
     messages.push(ChatMessage {
         role: Role::Assistant,
-        content: "Understood, I will not reply until I receive a direct request or question."
-            .to_string(),
+        content: Some(
+            "Understood, I will not reply until I receive a direct request or question."
+                .to_string(),
+        ),
+        tool_calls: None,
         name: None,
+        tool_call_id: None,
     });
     collection_bookmarks.iter().for_each(|bookmark| {
         messages.push(ChatMessage {
             role: Role::User,
-            content: bookmark.content.clone(),
+            content: Some(bookmark.content.clone()),
+            tool_calls: None,
             name: None,
+            tool_call_id: None,
         });
         messages.push(ChatMessage {
             role: Role::Assistant,
-            content: "".to_string(),
+            content: Some("".to_string()),
+            tool_calls: None,
             name: None,
+            tool_call_id: None,
         });
     });
     messages.push(ChatMessage {
         role: Role::User,
-        content: query,
+        content: Some(query),
+        tool_calls: None,
         name: None,
+        tool_call_id: None,
     });
 
     let summary_completion_param = ChatCompletionParameters {
@@ -617,6 +629,9 @@ pub async fn generate_off_collection(
         frequency_penalty: Some(0.8),
         logit_bias: None,
         user: None,
+        respsonse_format: None,
+        tools: None,
+        tool_choice: None,
     };
 
     let open_ai_api_key = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
