@@ -91,6 +91,10 @@ pub async fn upload_file_handler(
     dataset: Dataset,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
+
     let document_upload_feature =
         std::env::var("DOCUMENT_UPLOAD_FEATURE").unwrap_or("off".to_string());
 
@@ -166,7 +170,12 @@ pub async fn update_file_handler(
     data: web::Json<UpdateFileData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
+    dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
+
     let document_upload_feature =
         std::env::var("DOCUMENT_UPLOAD_FEATURE").unwrap_or("off".to_string());
 
@@ -203,9 +212,13 @@ pub async fn update_file_handler(
 pub async fn get_file_handler(
     file_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-    user: Option<LoggedUser>,
-    _required_user: RequireAuth,
+    user: LoggedUser,
+    dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
+
     let download_enabled = std::env::var("DOCUMENT_DOWNLOAD_FEATURE").unwrap_or("off".to_string());
     if download_enabled != "on" {
         return Err(
@@ -213,7 +226,7 @@ pub async fn get_file_handler(
         );
     }
 
-    let user_id = user.map(|user| user.id);
+    let user_id = Some(user.id);
 
     let file = get_file_query(file_id.into_inner(), user_id, pool).await?;
 
@@ -264,7 +277,12 @@ pub async fn delete_file_handler(
     file_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     user: LoggedUser,
+    dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
+
     delete_file_query(file_id.into_inner(), user.id, pool).await?;
 
     Ok(HttpResponse::NoContent().finish())
