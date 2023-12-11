@@ -14,17 +14,14 @@ use actix_web::{
     dev::Payload, web, Error, FromRequest, HttpMessage as _, HttpRequest, HttpResponse,
 };
 use diesel::prelude::*;
-
-use oauth2::reqwest::http_client;
+use oauth2::reqwest::async_http_client;
 use oauth2::{
     AuthUrl, AuthorizationCode, ClientSecret, CsrfToken, PkceCodeChallenge, PkceCodeVerifier,
     RedirectUrl, Scope, TokenResponse,
 };
 use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
-
 use openidconnect::{AccessTokenHash, ClientId, IssuerUrl, Nonce};
 use serde::{Deserialize, Serialize};
-
 use std::future::{ready, Ready};
 use utoipa::ToSchema;
 
@@ -130,11 +127,12 @@ pub async fn build_oidc_client() -> CoreClient {
     .to_string();
 
     //build OpenId Connect client
-    let meta_data = CoreProviderMetadata::discover(
-        &IssuerUrl::new(issuer_url.clone()).expect("IssuerUrl for OpenID provider must be set"),
-        http_client,
+    let meta_data = CoreProviderMetadata::discover_async(
+        IssuerUrl::new(issuer_url.clone()).expect("IssuerUrl for OpenID provider must be set"),
+        async_http_client,
     )
-    .unwrap();
+    .await
+    .expect("Failed to discover OpenID provider");
 
     CoreClient::new(
         ClientId::new(client_id.clone()),
@@ -312,7 +310,8 @@ pub async fn callback(
     let token_response = oidc_client
         .exchange_code(AuthorizationCode::new(code))
         .set_pkce_verifier(code_verifier)
-        .request(http_client)
+        .request_async(async_http_client)
+        .await
         .map_err(|e| match e {
             oauth2::RequestTokenError::ServerResponse(e) => {
                 ServiceError::InternalServerError(e.to_string())
