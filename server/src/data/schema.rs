@@ -110,6 +110,7 @@ diesel::table! {
         user_read -> Bool,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        dataset_id -> Uuid,
     }
 }
 
@@ -155,6 +156,7 @@ diesel::table! {
         completion_tokens -> Nullable<Int4>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        dataset_id -> Uuid,
     }
 }
 
@@ -190,6 +192,7 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         normal_chat -> Bool,
+        dataset_id -> Uuid,
     }
 }
 
@@ -237,10 +240,13 @@ diesel::joinable!(collections_from_files -> files (file_id));
 diesel::joinable!(cut_cards -> users (user_id));
 diesel::joinable!(datasets -> organizations (organization_id));
 diesel::joinable!(file_upload_completed_notifications -> card_collection (collection_uuid));
+diesel::joinable!(file_upload_completed_notifications -> datasets (dataset_id));
 diesel::joinable!(files -> datasets (dataset_id));
 diesel::joinable!(files -> users (user_id));
 diesel::joinable!(invitations -> organizations (organization_id));
+diesel::joinable!(messages -> datasets (dataset_id));
 diesel::joinable!(messages -> topics (topic_id));
+diesel::joinable!(topics -> datasets (dataset_id));
 diesel::joinable!(topics -> users (user_id));
 diesel::joinable!(user_collection_counts -> users (user_id));
 diesel::joinable!(user_notification_counts -> users (user_uuid));

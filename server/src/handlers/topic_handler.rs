@@ -1,6 +1,6 @@
 use super::message_handler::get_topic_string;
 use crate::{
-    data::models::{Pool, Topic},
+    data::models::{Dataset, Pool, Topic},
     errors::{DefaultError, ServiceError},
     handlers::auth_handler::LoggedUser,
     operators::topic_operator::{
@@ -32,8 +32,12 @@ pub struct CreateTopicData {
 pub async fn create_topic(
     data: web::Json<CreateTopicData>,
     user: LoggedUser,
+    dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
     let data_inner = data.into_inner();
     let resolution = data_inner.resolution;
     let normal_chat = data_inner.normal_chat;
@@ -48,7 +52,7 @@ pub async fn create_topic(
         .await
         .map_err(|e| ServiceError::BadRequest(format!("Error getting topic string: {}", e)))?;
 
-    let new_topic = Topic::from_details(topic_resolution, user.id, normal_chat);
+    let new_topic = Topic::from_details(topic_resolution, user.id, normal_chat, dataset.id);
     let new_topic1 = new_topic.clone();
 
     let create_topic_result = web::block(move || create_topic_query(new_topic, &pool)).await?;
@@ -78,19 +82,24 @@ pub struct DeleteTopicData {
 pub async fn delete_topic(
     data: web::Json<DeleteTopicData>,
     user: LoggedUser,
+    dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
     let data_inner = data.into_inner();
     let topic_id = data_inner.topic_id;
     let pool_inner = pool.clone();
 
     let user_topic =
-        web::block(move || get_topic_for_user_query(user.id, topic_id, &pool_inner)).await?;
+        web::block(move || get_topic_for_user_query(user.id, topic_id, dataset.id, &pool_inner))
+            .await?;
 
     match user_topic {
         Ok(topic) => {
             let delete_topic_result =
-                web::block(move || delete_topic_query(topic.id, &pool)).await?;
+                web::block(move || delete_topic_query(topic.id, dataset.id, &pool)).await?;
 
             match delete_topic_result {
                 Ok(()) => Ok(HttpResponse::NoContent().finish()),
@@ -122,8 +131,12 @@ pub struct UpdateTopicData {
 pub async fn update_topic(
     data: web::Json<UpdateTopicData>,
     user: LoggedUser,
+    dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
     let data_inner = data.into_inner();
     let topic_id = data_inner.topic_id;
     let resolution = data_inner.resolution;
@@ -137,12 +150,15 @@ pub async fn update_topic(
     }
 
     let user_topic =
-        web::block(move || get_topic_for_user_query(user.id, topic_id, &pool_inner)).await?;
+        web::block(move || get_topic_for_user_query(user.id, topic_id, dataset.id, &pool_inner))
+            .await?;
 
     match user_topic {
         Ok(topic) => {
-            let update_topic_result =
-                web::block(move || update_topic_query(topic.id, resolution, side, &pool)).await?;
+            let update_topic_result = web::block(move || {
+                update_topic_query(topic.id, resolution, side, dataset.id, &pool)
+            })
+            .await?;
 
             match update_topic_result {
                 Ok(()) => Ok(HttpResponse::NoContent().finish()),
@@ -165,9 +181,14 @@ pub async fn update_topic(
 )]
 pub async fn get_all_topics(
     user: LoggedUser,
+    dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let topics = web::block(move || get_all_topics_for_user_query(user.id, &pool)).await?;
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
+    let topics =
+        web::block(move || get_all_topics_for_user_query(user.id, dataset.id, &pool)).await?;
 
     match topics {
         Ok(topics) => Ok(HttpResponse::Ok().json(topics)),
