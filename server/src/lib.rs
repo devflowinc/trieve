@@ -80,10 +80,8 @@ fn initalize_cross_encoder() -> CrossEncoder {
         let model_kwargs = PyDict::new(py);
 
         model_kwargs
-            .set_item("from_transformers", true)
-            .map_err(|e| {
-                ServiceError::BadRequest(format!("Could not set from_transformers: {}", e))
-            })?;
+            .set_item("export", true)
+            .map_err(|e| ServiceError::BadRequest(format!("Could not set onnx export: {}", e)))?;
         model_kwargs
             .set_item("force_download", false)
             .map_err(|e| {
