@@ -167,6 +167,10 @@ pub async fn get_logged_in_user_card_collections(
     dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
+
     let collections = web::block(move || {
         get_collections_for_logged_in_user_query(user.id, page.into_inner(), dataset.id, pool)
     })
@@ -216,13 +220,16 @@ pub async fn delete_card_collection(
     dataset: Dataset,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
+
     let pool2 = pool.clone();
     let collection_id = data.collection_id;
-    let dataset_id = dataset.id;
 
-    user_owns_collection(user.id, collection_id, dataset_id, pool).await?;
+    user_owns_collection(user.id, collection_id, dataset.id, pool).await?;
 
-    web::block(move || delete_collection_by_id_query(collection_id, dataset_id, pool2))
+    web::block(move || delete_collection_by_id_query(collection_id, dataset.id, pool2))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -254,18 +261,21 @@ pub async fn update_card_collection(
     dataset: Dataset,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
+
     let name = body.name.clone();
     let description = body.description.clone();
     let is_public = body.is_public;
     let collection_id = body.collection_id;
-    let dataset_id = dataset.id;
 
     let pool2 = pool.clone();
 
-    let collection = user_owns_collection(user.id, collection_id, dataset_id, pool).await?;
+    let collection = user_owns_collection(user.id, collection_id, dataset.id, pool).await?;
 
     web::block(move || {
-        update_card_collection_query(collection, name, description, is_public, dataset_id, pool2)
+        update_card_collection_query(collection, name, description, is_public, dataset.id, pool2)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -299,6 +309,10 @@ pub async fn add_bookmark(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
+
     let pool2 = pool.clone();
     let card_metadata_id = body.card_metadata_id;
     let collection_id = collection_id.into_inner();
@@ -352,15 +366,18 @@ pub struct BookmarkCards {
 pub async fn get_all_bookmarks(
     path_data: web::Path<GetAllBookmarksData>,
     pool: web::Data<Pool>,
-    user: Option<LoggedUser>,
+    user: LoggedUser,
     dataset: Dataset,
-    _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
+
     let collection_id = path_data.collection_id;
     let page = path_data.page.unwrap_or(1);
     let pool1 = pool.clone();
     let pool2 = pool.clone();
-    let current_user_id = user.map(|user| user.id);
+    let current_user_id = Some(user.id);
     let dataset_id = dataset.id;
 
     let bookmarks = {
@@ -504,21 +521,21 @@ pub async fn delete_bookmark(
     user: LoggedUser,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if user.organization_id != dataset.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    };
+
+    let pool1 = pool.clone();
     let collection_id = collection_id.into_inner();
     let bookmark_id = body.card_metadata_id;
     let dataset_id = dataset.id;
 
-    {
-        let pool = pool.clone();
-        user_owns_collection(user.id, collection_id, dataset_id, pool).await?;
-    }
+    let pool = pool.clone();
+    user_owns_collection(user.id, collection_id, dataset_id, pool1).await?;
 
-    {
-        let pool = pool.clone();
-        web::block(move || delete_bookmark_query(bookmark_id, collection_id, dataset_id, pool))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    }
+    web::block(move || delete_bookmark_query(bookmark_id, collection_id, dataset_id, pool))
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
