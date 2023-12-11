@@ -223,6 +223,11 @@ pub struct OpenIdConnectState {
 
 const OIDC_SESSION_KEY: &str = "oidc_state";
 
+#[derive(Deserialize, Debug)]
+pub struct AuthQuery {
+    pub dataset_id: uuid::Uuid,
+}
+
 #[utoipa::path(
     post,
     path = "/auth",
@@ -236,7 +241,7 @@ const OIDC_SESSION_KEY: &str = "oidc_state";
 pub async fn login(
     req: HttpRequest,
     session: Session,
-    dataset_id: web::Query<uuid::Uuid>,
+    dataset_id: web::Query<AuthQuery>,
     oidc_client: web::Data<CoreClient>,
 ) -> Result<HttpResponse, Error> {
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
@@ -272,7 +277,7 @@ pub async fn login(
         .map_err(|_| ServiceError::InternalServerError("Could not set redirect url".into()))?;
 
     session
-        .insert("dataset_id", dataset_id.into_inner().to_string())
+        .insert("dataset_id", dataset_id.dataset_id.to_string())
         .map_err(|_| ServiceError::InternalServerError("Could not set org id".into()))?;
 
     //redirect to OpenIdProvider for authentication
