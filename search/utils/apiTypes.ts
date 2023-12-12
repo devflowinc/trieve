@@ -13,8 +13,6 @@ export interface CardMetadata {
   file_name: string | null;
   metadata: Record<string, never> | null;
   private?: boolean;
-  total_upvotes?: number;
-  total_downvotes?: number;
 }
 
 export const indirectHasOwnProperty = (obj: unknown, prop: string): boolean => {
@@ -48,10 +46,7 @@ export const isCardMetadata = (card: unknown): card is CardMetadata => {
 };
 
 export type CardMetadataWithVotes = Exclude<CardMetadata, "author"> & {
-  author: UserDTO | null;
-  total_upvotes: number;
-  total_downvotes: number;
-  vote_by_current_user: boolean | null;
+  author_id: UserDTO | null;
   private: boolean | null;
 };
 
@@ -63,21 +58,13 @@ export const isCardMetadataWithVotes = (
   return (
     indirectHasOwnProperty(card, "id") &&
     typeof (card as CardMetadataWithVotes).id === "string" &&
-    indirectHasOwnProperty(card, "author") &&
-    (isUserDTO((card as CardMetadataWithVotes).author) ||
-      (card as CardMetadataWithVotes).author === null) &&
+    indirectHasOwnProperty(card, "author_id") &&
+    (typeof (card as CardMetadataWithVotes).author_id == "string" ||
+      (card as CardMetadataWithVotes).author_id === null) &&
     indirectHasOwnProperty(card, "content") &&
     typeof (card as CardMetadataWithVotes).content === "string" &&
     indirectHasOwnProperty(card, "qdrant_point_id") &&
     typeof (card as CardMetadataWithVotes).qdrant_point_id === "string" &&
-    indirectHasOwnProperty(card, "total_upvotes") &&
-    typeof (card as CardMetadataWithVotes).total_upvotes === "number" &&
-    indirectHasOwnProperty(card, "total_downvotes") &&
-    typeof (card as CardMetadataWithVotes).total_downvotes === "number" &&
-    indirectHasOwnProperty(card, "vote_by_current_user") &&
-    (typeof (card as CardMetadataWithVotes).vote_by_current_user ===
-      "boolean" ||
-      (card as CardMetadataWithVotes).vote_by_current_user === null) &&
     indirectHasOwnProperty(card, "created_at") &&
     typeof (card as CardMetadataWithVotes).created_at === "string" &&
     indirectHasOwnProperty(card, "updated_at") &&
@@ -224,9 +211,6 @@ export type UserDTOWithVotesAndCards = UserDTO & {
   created_at: string;
   cards: CardMetadataWithVotes[];
   total_cards_created: number;
-  total_upvotes_received: number;
-  total_downvotes_received: number;
-  total_votes_cast: number;
 };
 
 export const isUserDTOWithVotesAndCards = (
