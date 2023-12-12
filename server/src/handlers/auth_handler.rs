@@ -3,7 +3,7 @@ use crate::{
     errors::ServiceError,
     operators::{
         self,
-        organization_operator::get_org_from_dataset_id_query,
+        organization_operator::{create_organization_query, get_org_from_dataset_id_query},
         user_operator::{get_user_by_id_query, get_user_from_api_key_query},
     },
 };
@@ -22,6 +22,7 @@ use oauth2::{
 use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
 use openidconnect::{AccessTokenHash, ClientId, IssuerUrl, Nonce};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::future::{ready, Ready};
 use utoipa::ToSchema;
 
@@ -151,9 +152,9 @@ pub async fn build_oidc_client() -> CoreClient {
 
 pub async fn create_account(
     email: String,
-    name: Option<String>,
-    user_id: Option<uuid::Uuid>,
-    dataset_id: uuid::Uuid,
+    name: String,
+    user_id: uuid::Uuid,
+    dataset_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<User, ServiceError> {
     // see if account exists
@@ -162,11 +163,21 @@ pub async fn create_account(
 
     use crate::data::schema::users::dsl as users_columns;
 
-    let org = get_org_from_dataset_id_query(dataset_id, pool.clone())
-        .await
-        .map_err(|_| {
-            ServiceError::InternalServerError("Could not find organization for dataset".to_string())
-        })?;
+    let org = match dataset_id {
+        Some(dataset_id) => get_org_from_dataset_id_query(dataset_id, pool.clone())
+            .await
+            .map_err(|_| {
+                ServiceError::InternalServerError(
+                    "Could not find organization for dataset".to_string(),
+                )
+            })?,
+        None => create_organization_query(user_id.to_string().as_str(), json!({}), pool.clone())
+            .map_err(|_| {
+                ServiceError::InternalServerError(
+                    "Could not create organization for user".to_string(),
+                )
+            })?,
+    };
 
     let org_id = org.id;
 
@@ -174,13 +185,7 @@ pub async fn create_account(
         return Err(ServiceError::Forbidden);
     }
 
-    let user = if let Some(user_id) = user_id {
-        //TODO: use org id
-        User::from_details_with_id(user_id, email, name, org_id)
-    } else {
-        //TODO: use org id
-        User::from_details(email.clone(), name, org_id)
-    };
+    let user = User::from_details_with_id(user_id, email, Some(name), org_id);
 
     let mut conn = pool.get().unwrap();
     match diesel::insert_into(users_columns::users)
@@ -225,7 +230,7 @@ const OIDC_SESSION_KEY: &str = "oidc_state";
 
 #[derive(Deserialize, Debug)]
 pub struct AuthQuery {
-    pub dataset_id: uuid::Uuid,
+    pub dataset_id: Option<uuid::Uuid>,
 }
 
 #[utoipa::path(
@@ -276,9 +281,11 @@ pub async fn login(
         )
         .map_err(|_| ServiceError::InternalServerError("Could not set redirect url".into()))?;
 
-    session
-        .insert("dataset_id", dataset_id.dataset_id.to_string())
-        .map_err(|_| ServiceError::InternalServerError("Could not set org id".into()))?;
+    if let Some(dataset_id) = dataset_id.dataset_id {
+        session
+            .insert("dataset_id", dataset_id.to_string())
+            .map_err(|_| ServiceError::InternalServerError("Could not set org id".into()))?;
+    }
 
     //redirect to OpenIdProvider for authentication
     Ok(HttpResponse::SeeOther()
@@ -375,18 +382,20 @@ pub async fn callback(
 
     let dataset_id = session
         .get::<String>("dataset_id")
-        .map_err(|_| ServiceError::InternalServerError("Could not get org id".into()))?
-        .ok_or(ServiceError::Unauthorized)?
-        .parse::<uuid::Uuid>()
-        .map_err(|_| ServiceError::InternalServerError("Could not parse org id".into()))?;
+        .unwrap_or(None)
+        .map(|id| -> Result<uuid::Uuid, ServiceError> {
+            id.parse::<uuid::Uuid>()
+                .map_err(|_| ServiceError::InternalServerError("Could not parse org id".into()))
+        })
+        .transpose()?;
 
     let user = match get_user_by_id_query(&user_id, pool.clone()) {
         Ok(user) => user,
         Err(_) => {
             create_account(
                 email.to_string(),
-                Some(name.iter().next().unwrap().1.to_string()),
-                Some(user_id),
+                name.iter().next().unwrap().1.to_string(),
+                user_id,
                 dataset_id,
                 pool,
             )
