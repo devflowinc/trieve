@@ -66,57 +66,6 @@ impl User {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
-#[diesel(table_name = invitations)]
-pub struct Invitation {
-    pub id: uuid::Uuid,
-    pub email: String,
-    pub expires_at: chrono::NaiveDateTime,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-    pub organization_id: uuid::Uuid,
-}
-
-// any type that implements Into<String> can be used to create Invitation
-impl Invitation {
-    pub fn from_details(email: String, organization_id: uuid::Uuid) -> Self {
-        Invitation {
-            id: uuid::Uuid::new_v4(),
-            email,
-            expires_at: chrono::Utc::now().naive_local() + chrono::Duration::minutes(5),
-            created_at: chrono::Utc::now().naive_local(),
-            updated_at: chrono::Utc::now().naive_local(),
-            organization_id,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
-#[diesel(table_name = password_resets)]
-pub struct PasswordReset {
-    pub id: uuid::Uuid,
-    pub email: String,
-    pub expires_at: chrono::NaiveDateTime,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-}
-
-// any type that implements Into<String> can be used to create PasswordReset
-impl<T> From<T> for PasswordReset
-where
-    T: Into<String>,
-{
-    fn from(email: T) -> Self {
-        PasswordReset {
-            id: uuid::Uuid::new_v4(),
-            email: email.into(),
-            expires_at: chrono::Utc::now().naive_local() + chrono::Duration::minutes(5),
-            created_at: chrono::Utc::now().naive_local(),
-            updated_at: chrono::Utc::now().naive_local(),
-        }
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping, Clone, ToSchema)]
 #[diesel(table_name = topics)]
 pub struct Topic {

@@ -1,11 +1,5 @@
 // @generated automatically by Diesel CLI.
 
-pub mod sql_types {
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "tsvector", schema = "pg_catalog"))]
-    pub struct Tsvector;
-}
-
 diesel::table! {
     card_collection (id) {
         id -> Uuid,
@@ -50,9 +44,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    use diesel::sql_types::*;
-    use super::sql_types::Tsvector;
-
     card_metadata (id) {
         id -> Uuid,
         content -> Text,
@@ -63,7 +54,6 @@ diesel::table! {
         updated_at -> Timestamp,
         tag_set -> Nullable<Text>,
         card_html -> Nullable<Text>,
-        card_metadata_tsvector -> Nullable<Tsvector>,
         private -> Bool,
         metadata -> Nullable<Jsonb>,
         tracking_id -> Nullable<Text>,
@@ -132,18 +122,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    invitations (id) {
-        id -> Uuid,
-        #[max_length = 100]
-        email -> Varchar,
-        expires_at -> Timestamp,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
-        organization_id -> Uuid,
-    }
-}
-
-diesel::table! {
     messages (id) {
         id -> Uuid,
         topic_id -> Uuid,
@@ -168,17 +146,6 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         registerable -> Nullable<Bool>,
-    }
-}
-
-diesel::table! {
-    password_resets (id) {
-        id -> Uuid,
-        #[max_length = 100]
-        email -> Varchar,
-        expires_at -> Timestamp,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
     }
 }
 
@@ -243,7 +210,6 @@ diesel::joinable!(file_upload_completed_notifications -> card_collection (collec
 diesel::joinable!(file_upload_completed_notifications -> datasets (dataset_id));
 diesel::joinable!(files -> datasets (dataset_id));
 diesel::joinable!(files -> users (user_id));
-diesel::joinable!(invitations -> organizations (organization_id));
 diesel::joinable!(messages -> datasets (dataset_id));
 diesel::joinable!(messages -> topics (topic_id));
 diesel::joinable!(topics -> datasets (dataset_id));
@@ -263,10 +229,8 @@ diesel::allow_tables_to_appear_in_same_query!(
     datasets,
     file_upload_completed_notifications,
     files,
-    invitations,
     messages,
     organizations,
-    password_resets,
     topics,
     user_collection_counts,
     user_notification_counts,
