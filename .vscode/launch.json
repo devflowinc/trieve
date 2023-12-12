@@ -1,44 +1,45 @@
 {
   "version": "0.2.0",
   "configurations": [
-      {
-          "type": "lldb",
-          "request": "launch",
-          "name": "Debug executable 'vault-server'",
-          "cargo": {
-              "args": [
-                  "build",
-                  "--manifest-path=./server/Cargo.toml",
-                  "--bin=vault-server",
-                  "--package=vault-server"
-              ],
-              "filter": {
-                  "name": "vault-server",
-                  "kind": "bin"
-              }
-          },
-          "args": [],
-          "cwd": "${workspaceFolder}/server"
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug executable 'vault-server'",
+      "cargo": {
+        "args": [
+          "+nightly",
+          "build",
+          "--manifest-path=./server/Cargo.toml",
+          "--bin=vault-server",
+          "--package=vault-server"
+        ],
+        "filter": {
+          "name": "vault-server",
+          "kind": "bin"
+        }
       },
-      {
-          "type": "lldb",
-          "request": "launch",
-          "name": "Debug unit tests in executable 'vault-server'",
-          "cargo": {
-              "args": [
-                  "test",
-                  "--manifest-path=./server/Cargo.toml",
-                  "--no-run",
-                  "--bin=vault-server",
-                  "--package=vault-server"
-              ],
-              "filter": {
-                  "name": "vault-server",
-                  "kind": "bin"
-              }
-          },
-          "args": [],
-          "cwd": "${workspaceFolder}/server"
-      }
+      "args": [],
+      "cwd": "${workspaceFolder}/server"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in executable 'vault-server'",
+      "cargo": {
+        "args": [
+          "test",
+          "--manifest-path=./server/Cargo.toml",
+          "--no-run",
+          "--bin=vault-server",
+          "--package=vault-server"
+        ],
+        "filter": {
+          "name": "vault-server",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}/server"
+    }
   ]
 }

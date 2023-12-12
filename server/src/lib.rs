@@ -275,6 +275,12 @@ pub async fn main() -> std::io::Result<()> {
         .await
         .expect("Failed to load datasets into redis");
 
+    tantivy_index
+        .write()
+        .await
+        .load_tantivy_indexes()
+        .expect("Failed to load datasets into tantivy");
+
     let app_mutex_store = web::Data::new(AppMutexStore {
         embedding_semaphore: std::env::var("EMBEDDING_SEMAPHORE_SIZE")
             .map(|size| match size.parse::<usize>() {

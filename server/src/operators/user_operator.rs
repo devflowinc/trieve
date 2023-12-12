@@ -283,7 +283,7 @@ pub static SALT: Lazy<String> =
 pub fn hash_password(password: &str) -> Result<String, DefaultError> {
     let config = Config {
         secret: SECRET_KEY.as_bytes(),
-        ..Default::default()
+        ..Config::original()
     };
     argon2::hash_encoded(password.as_bytes(), SALT.as_bytes(), &config).map_err(|_err| {
         DefaultError {
