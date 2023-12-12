@@ -127,6 +127,27 @@ impl TantivyIndexMap {
         Ok(())
     }
 
+    pub fn load_tantivy_indexes(&mut self) -> tantivy::Result<()> {
+        let path = Path::new("./tantivy");
+        if !path.exists() {
+            std::fs::create_dir_all(path)?;
+        }
+
+        let paths = std::fs::read_dir(path)?
+            .map(|res| res.map(|e| e.path()))
+            .collect::<Result<Vec<_>, std::io::Error>>()?;
+
+        for path in paths {
+            let index_name = path.file_name().unwrap().to_str().ok_or_else(|| {
+                tantivy::TantivyError::InvalidArgument("Invalid index name".to_string())
+            })?;
+
+            self.create_index(index_name)?;
+        }
+
+        Ok(())
+    }
+
     fn get_tantivy_index(&self, index_name: &str) -> tantivy::Result<&TantivyIndex> {
         match self.indices.get(index_name) {
             Some(index) => Ok(index),
