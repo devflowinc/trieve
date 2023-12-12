@@ -242,7 +242,7 @@ pub async fn retrieve_qdrant_points_query(
 
     Ok(SearchCardQueryResult {
         search_results: point_ids?,
-        total_card_pages: 10,
+        total_card_pages: (matching_qdrant_point_ids.len() as f64 / 10.0).ceil() as i64,
     })
 }
 
