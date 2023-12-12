@@ -138,6 +138,7 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
+          console.log(isCardMetadataWithVotes(data));
           if (!isCardMetadataWithVotes(data)) {
             setTopLevelError("This card could not be found.");
             setFetching(false);

@@ -216,7 +216,6 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::dataset_handler::CreateDatasetRequest,
                 handlers::dataset_handler::UpdateDatasetRequest,
                 handlers::dataset_handler::DeleteDatasetRequest,
-                handlers::dataset_handler::GetDatasetRequest,
                 data::models::SlimUser,
                 data::models::UserDTO,
                 data::models::Topic,
@@ -236,10 +235,7 @@ pub async fn main() -> std::io::Result<()> {
             )
         ),
         tags(
-            (name = "invitation", description = "Invitations for new users endpoint"),
-            (name = "register", description = "Register new users endpoint"),
             (name = "auth", description = "Authentication endpoint"),
-            (name = "password", description = "Password reset endpoint"),
             (name = "topic", description = "Topic chat endpoint"),
             (name = "message", description = "Message chat endpoint"),
             (name = "card", description = "Card endpoint"),
@@ -250,7 +246,7 @@ pub async fn main() -> std::io::Result<()> {
             (name = "health", description = "Health check endpoint"),
             (name = "organization", description = "Organization endpoint"),
             (name = "dataset", description = "Dataset endpoint"),
-        ),
+        )
     )]
     struct ApiDoc;
 
@@ -338,10 +334,13 @@ pub async fn main() -> std::io::Result<()> {
                 web::scope("/api")
                     .service(
                         web::resource("/dataset")
-                            .route(web::get().to(handlers::dataset_handler::get_dataset))
                             .route(web::post().to(handlers::dataset_handler::create_dataset))
                             .route(web::put().to(handlers::dataset_handler::update_dataset))
                             .route(web::delete().to(handlers::dataset_handler::delete_dataset)),
+                    )
+                    .service(
+                        web::resource("/dataset/{dataset_id}")
+                            .route(web::get().to(handlers::dataset_handler::get_dataset)),
                     )
                     .service(
                         web::scope("/auth")
@@ -438,12 +437,12 @@ pub async fn main() -> std::io::Result<()> {
                             .service(web::resource("/set_api_key")
                                 .route(web::get().to(handlers::user_handler::set_user_api_key)),
                             )
-                            .service(web::resource("/{user_id}/{page}")
-                                .route(web::get().to(handlers::user_handler::get_user_with_cards_by_id)),
-                            )
                             .service(
                                 web::resource("/files/{user_id}")
                                     .route(web::get().to(handlers::file_handler::get_user_files_handler)),
+                            )
+                            .service(web::resource("/{user_id}/{page}")
+                                .route(web::get().to(handlers::user_handler::get_user_with_cards_by_id)),
                             )
                             .service(
                                 web::resource("/collections/{user_id}/{page}").route(
