@@ -231,6 +231,9 @@ const OIDC_SESSION_KEY: &str = "oidc_state";
 #[derive(Deserialize, Debug)]
 pub struct AuthQuery {
     pub dataset_id: Option<uuid::Uuid>,
+    pub redirect_uri: Option<String>,
+    //some sort of inivitation code -> maybe put it in db to guard registration -> we can make it so that only the org admin can invite people
+    //redirect url or if none back to the page it requested from
 }
 
 #[utoipa::path(
@@ -246,7 +249,7 @@ pub struct AuthQuery {
 pub async fn login(
     req: HttpRequest,
     session: Session,
-    dataset_id: web::Query<AuthQuery>,
+    data: web::Query<AuthQuery>,
     oidc_client: web::Data<CoreClient>,
 ) -> Result<HttpResponse, Error> {
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
@@ -271,17 +274,20 @@ pub async fn login(
         .insert(OIDC_SESSION_KEY, oidc_state)
         .map_err(|_| ServiceError::InternalServerError("Could not set OIDC Session".into()))?;
 
+    let redirect_uri = match data.redirect_uri.clone() {
+        Some(redirect_uri) => redirect_uri,
+        None => req
+            .headers()
+            .get("Referer")
+            .map(|h| h.to_str().unwrap_or("/"))
+            .unwrap_or("/")
+            .to_string(),
+    };
     session
-        .insert(
-            "redirect_url",
-            req.headers()
-                .get("Referer")
-                .map(|h| h.to_str().unwrap_or("/"))
-                .unwrap_or("/"),
-        )
+        .insert("redirect_url", redirect_uri)
         .map_err(|_| ServiceError::InternalServerError("Could not set redirect url".into()))?;
 
-    if let Some(dataset_id) = dataset_id.dataset_id {
+    if let Some(dataset_id) = data.dataset_id {
         session
             .insert("dataset_id", dataset_id.to_string())
             .map_err(|_| ServiceError::InternalServerError("Could not set org id".into()))?;
