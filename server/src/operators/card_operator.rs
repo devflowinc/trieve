@@ -398,10 +398,11 @@ pub async fn insert_card_metadata_query(
                     message: "Failed to add card to index",
                 }
             })?,
-        Err(_) => {
+        Err(e) => {
+            log::info!("Failed to insert card metadata: {:?}", e);
             return Err(DefaultError {
                 message: "Failed to insert card metadata, likely due to duplicate tracking_id",
-            })
+            });
         }
     };
 
