@@ -1,3 +1,4 @@
+#![feature(ready_into_inner)]
 #[macro_use]
 extern crate diesel;
 use crate::{
@@ -162,6 +163,9 @@ pub async fn main() -> std::io::Result<()> {
             handlers::organization_handler::update_organization,
             handlers::organization_handler::create_organization,
             handlers::dataset_handler::create_dataset,
+            handlers::dataset_handler::update_dataset,
+            handlers::dataset_handler::delete_dataset,
+            handlers::dataset_handler::get_dataset,
         ),
         components(
             schemas(
@@ -210,6 +214,9 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::organization_handler::UpdateOrganizationData,
                 operators::notification_operator::NotificationReturn,
                 handlers::dataset_handler::CreateDatasetRequest,
+                handlers::dataset_handler::UpdateDatasetRequest,
+                handlers::dataset_handler::DeleteDatasetRequest,
+                handlers::dataset_handler::GetDatasetRequest,
                 data::models::SlimUser,
                 data::models::UserDTO,
                 data::models::Topic,
@@ -330,7 +337,11 @@ pub async fn main() -> std::io::Result<()> {
             .service(
                 web::scope("/api")
                     .service(
-                        web::resource("/dataset").route(web::post().to(handlers::dataset_handler::create_dataset)),
+                        web::resource("/dataset")
+                            .route(web::get().to(handlers::dataset_handler::get_dataset))
+                            .route(web::post().to(handlers::dataset_handler::create_dataset))
+                            .route(web::put().to(handlers::dataset_handler::update_dataset))
+                            .route(web::delete().to(handlers::dataset_handler::delete_dataset)),
                     )
                     .service(
                         web::scope("/auth")

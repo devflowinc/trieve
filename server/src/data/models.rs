@@ -820,9 +820,9 @@ pub struct UserNotificationCount {
 pub struct Dataset {
     pub id: uuid::Uuid,
     pub name: String,
-    pub organization_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub organization_id: uuid::Uuid,
 }
 
 impl Dataset {
