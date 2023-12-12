@@ -198,11 +198,6 @@ pub async fn delete_dataset(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
-pub struct GetDatasetRequest {
-    pub dataset_id: String,
-}
-
 #[utoipa::path(
     get,
     path = "/dataset",
@@ -216,14 +211,9 @@ pub struct GetDatasetRequest {
 )]
 
 pub async fn get_dataset(
-    data: web::Json<GetDatasetRequest>,
     pool: web::Data<Pool>,
+    dataset_id: web::Path<uuid::Uuid>,
 ) -> Result<HttpResponse, ServiceError> {
-    let dataset_id = data
-        .dataset_id
-        .clone()
-        .parse::<uuid::Uuid>()
-        .map_err(|_| ServiceError::BadRequest("Dataset ID must be a valid UUID".to_string()))?;
-    let d = get_dataset_by_id_query(dataset_id, pool).await?;
+    let d = get_dataset_by_id_query(dataset_id.into_inner(), pool).await?;
     Ok(HttpResponse::Ok().json(d))
 }
