@@ -5,7 +5,6 @@ use crate::{
     errors::ServiceError,
     handlers::auth_handler::build_oidc_client,
     operators::{
-        dataset_operator::load_datasets_into_redis,
         qdrant_operator::create_new_qdrant_collection_query, tantivy_operator::TantivyIndexMap,
     },
 };
@@ -276,10 +275,6 @@ pub async fn main() -> std::io::Result<()> {
     let tantivy_index = web::Data::new(RwLock::new(TantivyIndexMap::new()));
     let oidc_client = build_oidc_client().await;
     run_migrations(&mut pool.get().unwrap());
-
-    load_datasets_into_redis(pool.clone())
-        .await
-        .expect("Failed to load datasets into redis");
 
     tantivy_index
         .write()
