@@ -46,6 +46,7 @@ export const isCardMetadata = (card: unknown): card is CardMetadata => {
 };
 
 export type CardMetadataWithVotes = Exclude<CardMetadata, "author"> & {
+  author: UserDTO | null;
   author_id: UserDTO | null;
   private: boolean | null;
 };
