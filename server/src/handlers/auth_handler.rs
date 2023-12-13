@@ -5,6 +5,7 @@ use crate::{
         self,
         invitation_operator::get_invitation_by_id_query,
         organization_operator::{create_organization_query, get_org_from_dataset_id_query},
+        stripe_customer_operator::create_stripe_customer_query,
         user_operator::{get_user_by_id_query, get_user_from_api_key_query},
     },
 };
@@ -159,10 +160,6 @@ pub async fn create_account(
     inv_code: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<User, ServiceError> {
-    // see if account exists
-
-    log::info!("Creating account for {}", email);
-
     use crate::data::schema::users::dsl as users_columns;
 
     let org = match dataset_id {
@@ -230,10 +227,7 @@ pub async fn create_account(
         .values(&user)
         .execute(&mut conn)
     {
-        Ok(_) => {
-            log::info!("Account created!");
-            Ok(user)
-        }
+        Ok(_) => Ok(user),
         Err(e) => {
             log::error!("Failed to create account: {}", e);
             Err(ServiceError::InternalServerError(
@@ -361,6 +355,8 @@ pub async fn callback(
     pool: web::Data<Pool>,
     query: web::Query<OpCallback>,
 ) -> Result<HttpResponse, Error> {
+    let pool1 = pool.clone();
+
     let state: OpenIdConnectState = session
         .get(OIDC_SESSION_KEY)
         .map_err(|_| ServiceError::InternalServerError("Could not get OIDC Session".into()))?
@@ -451,6 +447,8 @@ pub async fn callback(
         }
     };
 
+    let _ = create_stripe_customer_query(email.to_string(), pool1.clone()).await;
+
     let slim_user: SlimUser = user.into();
 
     let user_string = serde_json::to_string(&slim_user).map_err(|_| {
@@ -458,8 +456,6 @@ pub async fn callback(
     })?;
 
     Identity::login(&req.extensions(), user_string).unwrap();
-
-    log::info!("Successfully authenticated user {}", &slim_user.id);
 
     session.remove(OIDC_SESSION_KEY);
     session.remove("login_state");
