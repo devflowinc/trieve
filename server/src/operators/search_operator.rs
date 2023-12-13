@@ -16,9 +16,9 @@ use crate::handlers::card_handler::{
 use crate::operators::qdrant_operator::{
     create_embedding, get_qdrant_connection, search_qdrant_query,
 };
-use crate::AppMutexStore;
 use crate::CrossEncoder;
 use crate::{data::models::Pool, errors::DefaultError};
+use crate::{get_env, AppMutexStore};
 use actix_web::web;
 use chrono::NaiveDateTime;
 use diesel::{
@@ -252,13 +252,24 @@ pub async fn global_unfiltered_top_match_query(
 ) -> Result<SearchResult, DefaultError> {
     let qdrant = get_qdrant_connection().await?;
 
-    let qdrant_collection = dataset_id.to_string();
+    let qdrant_collection = get_env!(
+        "QDRANT_COLLECTION",
+        "QDRANT_COLLECTION should be set if this is called"
+    )
+    .to_string();
+
+    let mut dataset_filter = Filter::default();
+    dataset_filter
+        .must
+        .push(Condition::matches("dataset_id", dataset_id.to_string()));
+
     let data = qdrant
         .search_points(&SearchPoints {
             collection_name: qdrant_collection,
             vector: embedding_vector,
             limit: 1,
             with_payload: None,
+            filter: Some(dataset_filter),
             ..Default::default()
         })
         .await

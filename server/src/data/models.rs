@@ -878,7 +878,7 @@ impl Invitation {
     pub fn from_details(email: String, dataset_id: uuid::Uuid) -> Self {
         Invitation {
             id: uuid::Uuid::new_v4(),
-            email: email,
+            email,
             dataset_id,
             used: false,
             expires_at: chrono::Utc::now().naive_local() + chrono::Duration::days(3),

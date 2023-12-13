@@ -3,10 +3,10 @@
 # Function to reset the Qdrant database
 reset_qdrant_database() {
     echo "Resetting the Qdrant database..."
-    docker compose stop qdrant-database
-    docker compose rm -f qdrant-database
-    docker volume rm arguflow_qdrant_data
-    docker compose up -d qdrant-database
+    sudo docker compose stop qdrant-database
+    sudo docker compose rm -f qdrant-database
+    sudo docker volume rm arguflow_qdrant_data
+    sudo docker compose up -d qdrant-database
     diesel db reset
 }
 
