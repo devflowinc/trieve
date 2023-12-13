@@ -9,6 +9,7 @@ pub mod notification_operator;
 pub mod organization_operator;
 pub mod qdrant_operator;
 pub mod search_operator;
+pub mod stripe_customer_operator;
 pub mod tantivy_operator;
 pub mod topic_operator;
 pub mod user_operator;

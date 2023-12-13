@@ -32,26 +32,11 @@ pub fn get_metadata_from_point_ids(
 ) -> Result<Vec<CardMetadataWithFileData>, DefaultError> {
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().expect("Failed to get connection from pool");
 
     let card_metadata: Vec<CardMetadata> = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::qdrant_point_id.eq_any(&point_ids))
-        .select((
-            card_metadata_columns::id,
-            card_metadata_columns::content,
-            card_metadata_columns::link,
-            card_metadata_columns::author_id,
-            card_metadata_columns::qdrant_point_id,
-            card_metadata_columns::created_at,
-            card_metadata_columns::updated_at,
-            card_metadata_columns::tag_set,
-            card_metadata_columns::card_html,
-            card_metadata_columns::private,
-            card_metadata_columns::metadata,
-            card_metadata_columns::tracking_id,
-            card_metadata_columns::time_stamp,
-            card_metadata_columns::dataset_id,
-        ))
+        .select(CardMetadata::as_select())
         .load::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to load metadata",
