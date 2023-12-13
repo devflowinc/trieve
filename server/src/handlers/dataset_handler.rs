@@ -10,87 +10,47 @@ use crate::{
         tantivy_operator::TantivyIndexMap,
     },
 };
-use actix_web::{web, FromRequest, HttpResponse};
+use actix_web::{web, FromRequest, HttpMessage, HttpResponse};
+use futures_util::{Future, FutureExt};
 use serde::{Deserialize, Serialize};
-use std::future::{ready, Ready};
+use std::{pin::Pin, rc::Rc};
 use tokio::sync::RwLock;
 use utoipa::ToSchema;
 
 impl FromRequest for Dataset {
     type Error = ServiceError;
-    type Future = Ready<Result<Self, Self::Error>>;
+    type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
 
     fn from_request(
         req: &actix_web::HttpRequest,
-        payload: &mut actix_web::dev::Payload,
+        _payload: &mut actix_web::dev::Payload,
     ) -> Self::Future {
-        match req.headers().get("AF-Dataset") {
-            Some(dataset_header) => match dataset_header.to_str() {
-                Ok(dataset_id) => {
-                    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
+        let req = req.clone();
+        Box::pin(async move {
+            let pool = req.app_data::<web::Data<Pool>>().unwrap().clone();
+            let dataset_header =
+                req.headers()
+                    .get("AF-Dataset")
+                    .ok_or(ServiceError::BadRequest(
+                        "Dataset must be specified".to_string(),
+                    ))?;
 
-                    let client = match redis::Client::open(redis_url) {
-                        Ok(client) => client,
-                        Err(_) => {
-                            return ready(Err(ServiceError::BadRequest(
-                                "Could not create redis client".to_string(),
-                            )))
-                        }
-                    };
+            let dataset_id = dataset_header
+                .to_str()
+                .map_err(|_| ServiceError::BadRequest("Dataset must be valid string".to_string()))?
+                .parse::<uuid::Uuid>()
+                .map_err(|_| ServiceError::BadRequest("Dataset must be valid UUID".to_string()))?;
 
-                    let mut redis_conn = match client.get_connection() {
-                        Ok(redis_conn) => redis_conn,
-                        Err(_) => {
-                            return ready(Err(ServiceError::BadRequest(
-                                "Could not get redis connection".to_string(),
-                            )))
-                        }
-                    };
+            let dataset = get_dataset_by_id_query(dataset_id, pool).await?;
 
-                    let dataset: String = match redis::cmd("GET")
-                        .arg(format!("dataset:{}", dataset_id))
-                        .query(&mut redis_conn)
-                    {
-                        Ok(dataset) => dataset,
-                        Err(_) => {
-                            return ready(Err(ServiceError::BadRequest(
-                                "Could not get dataset from redis".to_string(),
-                            )))
-                        }
-                    };
+            let ext = req.extensions();
+            let user = ext.get::<LoggedUser>().ok_or(ServiceError::Forbidden)?;
+            if dataset.organization_id != user.organization_id {
+                return Err(ServiceError::Forbidden);
+            }
 
-                    let dataset: Dataset = match serde_json::from_str(&dataset) {
-                        Ok(dataset) => dataset,
-                        Err(_) => {
-                            return ready(Err(ServiceError::BadRequest(
-                                "Could not parse dataset from redis".to_string(),
-                            )))
-                        }
-                    };
-
-                    let user = match LoggedUser::from_request(req, payload).into_inner() {
-                        Ok(user) => user,
-                        Err(_) => {
-                            return ready(Err(ServiceError::BadRequest(
-                                "Could not get user from request".to_string(),
-                            )))
-                        }
-                    };
-
-                    if dataset.organization_id != user.organization_id {
-                        return ready(Err(ServiceError::Forbidden));
-                    }
-
-                    ready(Ok(dataset))
-                }
-                Err(_) => ready(Err(ServiceError::BadRequest(
-                    "Dataset must be ASCII".to_string(),
-                ))),
-            },
-            None => ready(Err(ServiceError::BadRequest(
-                "Dataset must be specified".to_string(),
-            ))),
-        }
+            Ok::<Dataset, ServiceError>(dataset)
+        })
     }
 }
 
@@ -129,7 +89,7 @@ pub async fn create_dataset(
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct UpdateDatasetRequest {
-    pub dataset_id: String,
+    pub dataset_id: uuid::Uuid,
     pub dataset_name: String,
 }
 
@@ -154,18 +114,13 @@ pub async fn update_dataset(
         return Err(ServiceError::Forbidden);
     }
 
-    let dataset_id = data
-        .dataset_id
-        .clone()
-        .parse::<uuid::Uuid>()
-        .map_err(|_| ServiceError::BadRequest("Dataset ID must be a valid UUID".to_string()))?;
-    let d = update_dataset_query(dataset_id, data.dataset_name.clone(), pool).await?;
+    let d = update_dataset_query(data.dataset_id, data.dataset_name.clone(), pool).await?;
     Ok(HttpResponse::Ok().json(d))
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct DeleteDatasetRequest {
-    pub dataset_id: String,
+    pub dataset_id: uuid::Uuid,
 }
 
 #[utoipa::path(
@@ -189,12 +144,7 @@ pub async fn delete_dataset(
         return Err(ServiceError::Forbidden);
     }
 
-    let dataset_id = data
-        .dataset_id
-        .clone()
-        .parse::<uuid::Uuid>()
-        .map_err(|_| ServiceError::BadRequest("Dataset ID must be a valid UUID".to_string()))?;
-    delete_dataset_by_id_query(dataset_id, pool).await?;
+    delete_dataset_by_id_query(data.dataset_id, pool).await?;
     Ok(HttpResponse::NoContent().finish())
 }
 
