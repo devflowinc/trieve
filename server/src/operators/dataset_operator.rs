@@ -8,7 +8,6 @@ use actix_web::web;
 use diesel::{ExpressionMethods, QueryDsl, SelectableHelper};
 use tokio::sync::RwLock;
 
-use super::qdrant_operator::create_new_qdrant_collection_query;
 use super::tantivy_operator::TantivyIndexMap;
 
 /// Creates all indexes between Pg, Qdrant and tantivy
@@ -27,8 +26,6 @@ pub async fn new_dataset_operation(
                 err.to_string()
             ))
         })?;
-
-    create_new_qdrant_collection_query(dataset.id.to_string()).await?;
 
     create_dataset_query(dataset, pool).await
 }

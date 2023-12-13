@@ -11,9 +11,10 @@ use qdrant_client::{
     client::{QdrantClient, QdrantClientConfig},
     qdrant::{
         payload_index_params::IndexParams, point_id::PointIdOptions,
-        with_payload_selector::SelectorOptions, CreateCollection, Distance, FieldType, Filter,
-        PayloadIndexParams, PointId, PointStruct, RecommendPoints, SearchPoints, TextIndexParams,
-        TokenizerType, VectorParams, VectorsConfig, WithPayloadSelector,
+        with_payload_selector::SelectorOptions, Condition, CreateCollection, Distance, FieldType,
+        Filter, HnswConfigDiff, PayloadIndexParams, PointId, PointStruct, RecommendPoints,
+        SearchPoints, TextIndexParams, TokenizerType, VectorParams, VectorsConfig,
+        WithPayloadSelector,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -31,9 +32,13 @@ pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
 }
 
 /// Create Qdrant collection and indexes needed
-pub async fn create_new_qdrant_collection_query(
-    qdrant_collection: String,
-) -> Result<(), ServiceError> {
+pub async fn create_new_qdrant_collection_query() -> Result<(), ServiceError> {
+    let qdrant_collection = get_env!(
+        "QDRANT_COLLECTION",
+        "QDRANT_COLLECTION should be set if this is called"
+    )
+    .to_string();
+
     let qdrant_client = get_qdrant_connection()
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -54,6 +59,11 @@ pub async fn create_new_qdrant_collection_query(
                         on_disk: None,
                     },
                 )),
+            }),
+            hnsw_config: Some(HnswConfigDiff {
+                payload_m: Some(16),
+                m: Some(0),
+                ..Default::default()
             }),
             ..Default::default()
         })
@@ -81,6 +91,17 @@ pub async fn create_new_qdrant_collection_query(
             qdrant_collection.clone(),
             "tag_set",
             FieldType::Text,
+            None,
+            None,
+        )
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
+
+    qdrant_client
+        .create_field_index(
+            qdrant_collection.clone(),
+            "dataset_id",
+            FieldType::Keyword,
             None,
             None,
         )
@@ -208,17 +229,22 @@ pub async fn create_new_qdrant_point_query(
     author_id: Option<uuid::Uuid>,
     dataset_id: uuid::Uuid,
 ) -> Result<(), actix_web::Error> {
+    let qdrant_collection = get_env!(
+        "QDRANT_COLLECTION",
+        "QDRANT_COLLECTION should be set if this is called"
+    )
+    .to_string();
+
     let qdrant = get_qdrant_connection()
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let payload = json!({"private": private, "authors": vec![author_id.unwrap_or_default().to_string()], "tag_set": card_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": card_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "card_html": card_metadata.card_html.unwrap_or("".to_string()), "metadata": card_metadata.metadata.unwrap_or_default(), "time_stamp": card_metadata.time_stamp.unwrap_or_default().timestamp()})
+    let payload = json!({"private": private, "authors": vec![author_id.unwrap_or_default().to_string()], "tag_set": card_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": card_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "card_html": card_metadata.card_html.unwrap_or("".to_string()), "metadata": card_metadata.metadata.unwrap_or_default(), "time_stamp": card_metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string()})
                 .try_into()
                 .expect("A json! Value must always be a valid Payload");
 
     let point = PointStruct::new(point_id.clone().to_string(), embedding_vector, payload);
 
-    let qdrant_collection = dataset_id.to_string();
     qdrant
         .upsert_points_blocking(qdrant_collection, None, vec![point], None)
         .await
@@ -245,7 +271,12 @@ pub async fn update_qdrant_point_query(
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let qdrant_collection = dataset_id.to_string();
+    let qdrant_collection = get_env!(
+        "QDRANT_COLLECTION",
+        "QDRANT_COLLECTION should be set if this is called"
+    )
+    .to_string();
+
     let current_point_vec = qdrant
         .get_points(
             qdrant_collection.clone(),
@@ -302,9 +333,9 @@ pub async fn update_qdrant_point_query(
     }
 
     let payload = if let Some(metadata) = metadata {
-        json!({"private": private, "authors": current_author_ids, "tag_set": metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "card_html": metadata.card_html.unwrap_or("".to_string()), "metadata": metadata.metadata.unwrap_or_default(), "time_stamp": metadata.time_stamp.unwrap_or_default().timestamp()})
+        json!({"private": private, "authors": current_author_ids, "tag_set": metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "card_html": metadata.card_html.unwrap_or("".to_string()), "metadata": metadata.metadata.unwrap_or_default(), "time_stamp": metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string()})
     } else {
-        json!({"private": private, "authors": current_author_ids, "tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "card_html": current_point.payload.get("card_html").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from(""))})
+        json!({"private": private, "authors": current_author_ids, "tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "card_html": current_point.payload.get("card_html").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")), "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from(""))})
     };
     let points_selector = qdrant_point_id.into();
 
@@ -345,13 +376,21 @@ pub async fn update_qdrant_point_query(
 
 pub async fn search_qdrant_query(
     page: u64,
-    filter: Filter,
+    mut filter: Filter,
     embedding_vector: Vec<f32>,
     dataset_id: uuid::Uuid,
 ) -> Result<Vec<SearchResult>, DefaultError> {
     let qdrant = get_qdrant_connection().await?;
 
-    let qdrant_collection = dataset_id.to_string();
+    let qdrant_collection = get_env!(
+        "QDRANT_COLLECTION",
+        "QDRANT_COLLECTION should be set if this is called"
+    )
+    .to_string();
+
+    filter
+        .must
+        .push(Condition::matches("dataset_id", dataset_id.to_string()));
 
     let data = qdrant
         .search_points(&SearchPoints {
@@ -416,12 +455,16 @@ pub async fn recommend_qdrant_query(
         .iter()
         .map(|id| id.to_string().into())
         .collect();
+    let dataset_filter = Some(Filter::must([Condition::matches(
+        "dataset_id",
+        dataset_id.to_string(),
+    )]));
 
     let recommend_points = RecommendPoints {
         collection_name,
         positive: point_ids,
         negative: vec![],
-        filter: None,
+        filter: dataset_filter,
         limit: 10,
         with_payload: Some(WithPayloadSelector {
             selector_options: Some(SelectorOptions::Enable(true)),
