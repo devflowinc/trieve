@@ -1,0 +1,10 @@
+-- Your SQL goes here
+CREATE TABLE invitations (
+  id UUID NOT NULL UNIQUE PRIMARY KEY,
+  email VARCHAR(100) NOT NULL,
+  dataset_id UUID NOT NULL,
+  used BOOLEAN NOT NULL DEFAULT FALSE,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP NOT NULL,
+  updated_at TIMESTAMP NOT NULL
+);
