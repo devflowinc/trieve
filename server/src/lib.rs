@@ -564,6 +564,10 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::put().to(handlers::organization_handler::update_organization))
                     )
                 )
+                .service(
+                    web::resource("/invitation")
+                        .route(web::post().to(handlers::invitation_handler::post_invitation)),
+                )
             )
     })
     .bind(("0.0.0.0", 8090))?

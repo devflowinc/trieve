@@ -122,6 +122,19 @@ diesel::table! {
 }
 
 diesel::table! {
+    invitations (id) {
+        id -> Uuid,
+        #[max_length = 100]
+        email -> Varchar,
+        dataset_id -> Uuid,
+        used -> Bool,
+        expires_at -> Timestamp,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     messages (id) {
         id -> Uuid,
         topic_id -> Uuid,
@@ -229,6 +242,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     datasets,
     file_upload_completed_notifications,
     files,
+    invitations,
     messages,
     organizations,
     topics,
