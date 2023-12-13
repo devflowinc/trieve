@@ -44,8 +44,8 @@ try {
   const collectionsPromise = fetch(`${apiHost}/user/collections/${id}/1`, {
     method: "GET",
     headers: {
-      "AF-Dataset": dataset
-      },
+      "AF-Dataset": dataset,
+    },
   });
 
   const [queryResult, collectionsResult] = await Promise.all([
