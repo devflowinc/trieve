@@ -3,6 +3,7 @@ use crate::{
     errors::ServiceError,
     operators::{
         self,
+        invitation_operator::get_invitation_by_id_query,
         organization_operator::{create_organization_query, get_org_from_dataset_id_query},
         user_operator::{get_user_by_id_query, get_user_from_api_key_query},
     },
@@ -155,6 +156,7 @@ pub async fn create_account(
     name: String,
     user_id: uuid::Uuid,
     dataset_id: Option<uuid::Uuid>,
+    inv_code: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<User, ServiceError> {
     // see if account exists
@@ -182,7 +184,43 @@ pub async fn create_account(
     let org_id = org.id;
 
     if org.registerable == Some(false) {
-        return Err(ServiceError::Forbidden);
+        if let Some(inv_code) = inv_code {
+            let invitation = get_invitation_by_id_query(inv_code, pool.clone())
+                .await
+                .map_err(|_| {
+                    ServiceError::InternalServerError(
+                        "Could not find invitation for user".to_string(),
+                    )
+                })?;
+
+            if invitation.email != email {
+                return Err(ServiceError::BadRequest(
+                    "Email does not match invitation".to_string(),
+                ));
+            }
+
+            if invitation.dataset_id != dataset_id.unwrap() {
+                return Err(ServiceError::BadRequest(
+                    "Dataset ID does not match invitation".to_string(),
+                ));
+            }
+
+            if invitation.expired() {
+                return Err(ServiceError::BadRequest(
+                    "Invitation has expired".to_string(),
+                ));
+            }
+
+            if invitation.used {
+                return Err(ServiceError::BadRequest(
+                    "Invitation has already been used".to_string(),
+                ));
+            }
+        } else {
+            return Err(ServiceError::BadRequest(
+                "This organization is private".to_string(),
+            ));
+        }
     }
 
     let user = User::from_details_with_id(user_id, email, Some(name), org_id);
@@ -232,8 +270,14 @@ const OIDC_SESSION_KEY: &str = "oidc_state";
 pub struct AuthQuery {
     pub dataset_id: Option<uuid::Uuid>,
     pub redirect_uri: Option<String>,
-    //some sort of inivitation code -> maybe put it in db to guard registration -> we can make it so that only the org admin can invite people
-    //redirect url or if none back to the page it requested from
+    pub inv_code: Option<uuid::Uuid>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LoginState {
+    pub redirect_uri: String,
+    pub dataset_id: Option<uuid::Uuid>,
+    pub inv_code: Option<uuid::Uuid>,
 }
 
 #[utoipa::path(
@@ -283,15 +327,16 @@ pub async fn login(
             .unwrap_or("/")
             .to_string(),
     };
-    session
-        .insert("redirect_url", redirect_uri)
-        .map_err(|_| ServiceError::InternalServerError("Could not set redirect url".into()))?;
 
-    if let Some(dataset_id) = data.dataset_id {
-        session
-            .insert("dataset_id", dataset_id.to_string())
-            .map_err(|_| ServiceError::InternalServerError("Could not set org id".into()))?;
-    }
+    let login_state = LoginState {
+        redirect_uri,
+        dataset_id: data.dataset_id,
+        inv_code: data.inv_code,
+    };
+
+    session
+        .insert("login_state", login_state)
+        .map_err(|_| ServiceError::InternalServerError("Could not set redirect url".into()))?;
 
     //redirect to OpenIdProvider for authentication
     Ok(HttpResponse::SeeOther()
@@ -386,14 +431,10 @@ pub async fn callback(
         ServiceError::InternalServerError("Failed to parse name from claims".into())
     })?;
 
-    let dataset_id = session
-        .get::<String>("dataset_id")
-        .unwrap_or(None)
-        .map(|id| -> Result<uuid::Uuid, ServiceError> {
-            id.parse::<uuid::Uuid>()
-                .map_err(|_| ServiceError::InternalServerError("Could not parse org id".into()))
-        })
-        .transpose()?;
+    let login_state = session
+        .get::<LoginState>("login_state")
+        .map_err(|_| ServiceError::InternalServerError("Could not get redirect url".into()))?
+        .ok_or(ServiceError::Unauthorized)?;
 
     let user = match get_user_by_id_query(&user_id, pool.clone()) {
         Ok(user) => user,
@@ -402,7 +443,8 @@ pub async fn callback(
                 email.to_string(),
                 name.iter().next().unwrap().1.to_string(),
                 user_id,
-                dataset_id,
+                login_state.dataset_id,
+                login_state.inv_code,
                 pool,
             )
             .await?
@@ -419,17 +461,11 @@ pub async fn callback(
 
     log::info!("Successfully authenticated user {}", &slim_user.id);
 
-    let redirect_url: String = session
-        .get::<String>("redirect_url")
-        .map_err(|_| ServiceError::InternalServerError("Could not get redirect url".into()))?
-        .ok_or(ServiceError::Unauthorized)?;
-
     session.remove(OIDC_SESSION_KEY);
-    session.remove("org_id");
-    session.remove("redirect_url");
+    session.remove("login_state");
 
     Ok(HttpResponse::SeeOther()
-        .insert_header(("Location", redirect_url))
+        .insert_header(("Location", login_state.redirect_uri))
         .finish())
 }
 
