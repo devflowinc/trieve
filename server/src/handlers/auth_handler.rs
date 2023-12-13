@@ -3,7 +3,8 @@ use crate::{
     errors::ServiceError,
     operators::{
         self,
-        organization_operator::get_org_from_dataset_id_query,
+        invitation_operator::get_invitation_by_id_query,
+        organization_operator::{create_organization_query, get_org_from_dataset_id_query},
         user_operator::{get_user_by_id_query, get_user_from_api_key_query},
     },
 };
@@ -22,6 +23,7 @@ use oauth2::{
 use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
 use openidconnect::{AccessTokenHash, ClientId, IssuerUrl, Nonce};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::future::{ready, Ready};
 use utoipa::ToSchema;
 
@@ -151,9 +153,10 @@ pub async fn build_oidc_client() -> CoreClient {
 
 pub async fn create_account(
     email: String,
-    name: Option<String>,
-    user_id: Option<uuid::Uuid>,
-    dataset_id: uuid::Uuid,
+    name: String,
+    user_id: uuid::Uuid,
+    dataset_id: Option<uuid::Uuid>,
+    inv_code: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<User, ServiceError> {
     // see if account exists
@@ -162,25 +165,65 @@ pub async fn create_account(
 
     use crate::data::schema::users::dsl as users_columns;
 
-    let org = get_org_from_dataset_id_query(dataset_id, pool.clone())
-        .await
-        .map_err(|_| {
-            ServiceError::InternalServerError("Could not find organization for dataset".to_string())
-        })?;
+    let org = match dataset_id {
+        Some(dataset_id) => get_org_from_dataset_id_query(dataset_id, pool.clone())
+            .await
+            .map_err(|_| {
+                ServiceError::InternalServerError(
+                    "Could not find organization for dataset".to_string(),
+                )
+            })?,
+        None => create_organization_query(user_id.to_string().as_str(), json!({}), pool.clone())
+            .map_err(|_| {
+                ServiceError::InternalServerError(
+                    "Could not create organization for user".to_string(),
+                )
+            })?,
+    };
 
     let org_id = org.id;
 
     if org.registerable == Some(false) {
-        return Err(ServiceError::Forbidden);
+        if let Some(inv_code) = inv_code {
+            let invitation = get_invitation_by_id_query(inv_code, pool.clone())
+                .await
+                .map_err(|_| {
+                    ServiceError::InternalServerError(
+                        "Could not find invitation for user".to_string(),
+                    )
+                })?;
+
+            if invitation.email != email {
+                return Err(ServiceError::BadRequest(
+                    "Email does not match invitation".to_string(),
+                ));
+            }
+
+            if invitation.dataset_id != dataset_id.unwrap() {
+                return Err(ServiceError::BadRequest(
+                    "Dataset ID does not match invitation".to_string(),
+                ));
+            }
+
+            if invitation.expired() {
+                return Err(ServiceError::BadRequest(
+                    "Invitation has expired".to_string(),
+                ));
+            }
+
+            if invitation.used {
+                return Err(ServiceError::BadRequest(
+                    "Invitation has already been used".to_string(),
+                ));
+            }
+        } else {
+            return Err(ServiceError::BadRequest(
+                "This organization is private".to_string(),
+            ));
+        }
     }
 
-    let user = if let Some(user_id) = user_id {
-        //TODO: use org id
-        User::from_details_with_id(user_id, email, name, org_id)
-    } else {
-        //TODO: use org id
-        User::from_details(email.clone(), name, org_id)
-    };
+    let user = User::from_details_with_id(user_id, email, Some(name), org_id);
 
     let mut conn = pool.get().unwrap();
     match diesel::insert_into(users_columns::users)
@@ -225,7 +268,16 @@ const OIDC_SESSION_KEY: &str = "oidc_state";
 
 #[derive(Deserialize, Debug)]
 pub struct AuthQuery {
-    pub dataset_id: uuid::Uuid,
+    pub dataset_id: Option<uuid::Uuid>,
+    pub redirect_uri: Option<String>,
+    pub inv_code: Option<uuid::Uuid>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LoginState {
+    pub redirect_uri: String,
+    pub dataset_id: Option<uuid::Uuid>,
+    pub inv_code: Option<uuid::Uuid>,
 }
 
 #[utoipa::path(
@@ -241,7 +293,7 @@ pub struct AuthQuery {
 pub async fn login(
     req: HttpRequest,
     session: Session,
-    dataset_id: web::Query<AuthQuery>,
+    data: web::Query<AuthQuery>,
     oidc_client: web::Data<CoreClient>,
 ) -> Result<HttpResponse, Error> {
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
@@ -266,19 +318,25 @@ pub async fn login(
         .insert(OIDC_SESSION_KEY, oidc_state)
         .map_err(|_| ServiceError::InternalServerError("Could not set OIDC Session".into()))?;
 
-    session
-        .insert(
-            "redirect_url",
-            req.headers()
-                .get("Referer")
-                .map(|h| h.to_str().unwrap_or("/"))
-                .unwrap_or("/"),
-        )
-        .map_err(|_| ServiceError::InternalServerError("Could not set redirect url".into()))?;
+    let redirect_uri = match data.redirect_uri.clone() {
+        Some(redirect_uri) => redirect_uri,
+        None => req
+            .headers()
+            .get("Referer")
+            .map(|h| h.to_str().unwrap_or("/"))
+            .unwrap_or("/")
+            .to_string(),
+    };
+
+    let login_state = LoginState {
+        redirect_uri,
+        dataset_id: data.dataset_id,
+        inv_code: data.inv_code,
+    };
 
     session
-        .insert("dataset_id", dataset_id.dataset_id.to_string())
-        .map_err(|_| ServiceError::InternalServerError("Could not set org id".into()))?;
+        .insert("login_state", login_state)
+        .map_err(|_| ServiceError::InternalServerError("Could not set redirect url".into()))?;
 
     //redirect to OpenIdProvider for authentication
     Ok(HttpResponse::SeeOther()
@@ -373,21 +431,20 @@ pub async fn callback(
         ServiceError::InternalServerError("Failed to parse name from claims".into())
     })?;
 
-    let dataset_id = session
-        .get::<String>("dataset_id")
-        .map_err(|_| ServiceError::InternalServerError("Could not get org id".into()))?
-        .ok_or(ServiceError::Unauthorized)?
-        .parse::<uuid::Uuid>()
-        .map_err(|_| ServiceError::InternalServerError("Could not parse org id".into()))?;
+    let login_state = session
+        .get::<LoginState>("login_state")
+        .map_err(|_| ServiceError::InternalServerError("Could not get redirect url".into()))?
+        .ok_or(ServiceError::Unauthorized)?;
 
     let user = match get_user_by_id_query(&user_id, pool.clone()) {
         Ok(user) => user,
         Err(_) => {
             create_account(
                 email.to_string(),
-                Some(name.iter().next().unwrap().1.to_string()),
-                Some(user_id),
-                dataset_id,
+                name.iter().next().unwrap().1.to_string(),
+                user_id,
+                login_state.dataset_id,
+                login_state.inv_code,
                 pool,
             )
             .await?
@@ -404,17 +461,11 @@ pub async fn callback(
 
     log::info!("Successfully authenticated user {}", &slim_user.id);
 
-    let redirect_url: String = session
-        .get::<String>("redirect_url")
-        .map_err(|_| ServiceError::InternalServerError("Could not get redirect url".into()))?
-        .ok_or(ServiceError::Unauthorized)?;
-
     session.remove(OIDC_SESSION_KEY);
-    session.remove("org_id");
-    session.remove("redirect_url");
+    session.remove("login_state");
 
     Ok(HttpResponse::SeeOther()
-        .insert_header(("Location", redirect_url))
+        .insert_header(("Location", login_state.redirect_uri))
         .finish())
 }
 

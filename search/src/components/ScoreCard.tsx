@@ -147,6 +147,7 @@ const ScoreCard = (props: ScoreCardProps) => {
   const deleteCard = () => {
     if (!props.setOnDelete) return;
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (props.signedInUserId !== props.card.author?.id) return;
 
     const curCardMetadataId = props.card.id;
