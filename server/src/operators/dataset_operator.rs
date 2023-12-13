@@ -1,5 +1,4 @@
 use crate::diesel::RunQueryDsl;
-use crate::errors::DefaultError;
 use crate::{
     data::models::{Dataset, Pool},
     errors::ServiceError,
@@ -84,7 +83,7 @@ pub async fn get_dataset_by_id_query(
 
     let redis_dataset: Result<Dataset, ServiceError> = {
         let dataset_json: String = redis::cmd("GET")
-            .arg(format!("dataset:{}", id.to_string()))
+            .arg(format!("dataset:{}", id))
             .query_async(&mut redis_conn)
             .await
             .map_err(|_| {
@@ -96,7 +95,7 @@ pub async fn get_dataset_by_id_query(
     };
 
     match redis_dataset {
-        Ok(dataset) => return Ok(dataset),
+        Ok(dataset) => Ok(dataset),
         Err(_) => {
             use crate::data::schema::datasets::dsl as datasets_columns;
             let mut conn = pool.get().map_err(|_| {

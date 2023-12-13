@@ -11,9 +11,9 @@ use crate::{
     },
 };
 use actix_web::{web, FromRequest, HttpMessage, HttpResponse};
-use futures_util::{Future, FutureExt};
+use futures_util::Future;
 use serde::{Deserialize, Serialize};
-use std::{pin::Pin, rc::Rc};
+use std::pin::Pin;
 use tokio::sync::RwLock;
 use utoipa::ToSchema;
 
