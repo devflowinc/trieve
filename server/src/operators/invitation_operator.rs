@@ -64,7 +64,7 @@ pub fn send_invitation(inv_url: String, invitation: Invitation) -> Result<(), De
     ));
 
     let sg_email = Message::new(email_address)
-        .set_subject("Reset your Arguflow AI password")
+        .set_subject("Invitation to join Arguflow AI dataset")
         .add_content(
             Content::new()
                 .set_content_type("text/html")
