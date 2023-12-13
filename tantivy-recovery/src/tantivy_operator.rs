@@ -27,12 +27,6 @@ pub struct TantivyIndexMap {
     pub indices: HashMap<String, TantivyIndex>,
 }
 
-impl Default for TantivyIndexMap {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl TantivyIndexMap {
     pub fn new() -> Self {
         Self {
