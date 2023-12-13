@@ -163,6 +163,16 @@ diesel::table! {
 }
 
 diesel::table! {
+    stripe_customers (id) {
+        id -> Uuid,
+        stripe_id -> Text,
+        email -> Text,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     topics (id) {
         id -> Uuid,
         user_id -> Uuid,
@@ -245,6 +255,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     invitations,
     messages,
     organizations,
+    stripe_customers,
     topics,
     user_collection_counts,
     user_notification_counts,
