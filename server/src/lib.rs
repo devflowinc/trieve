@@ -4,7 +4,10 @@ extern crate diesel;
 use crate::{
     errors::ServiceError,
     handlers::auth_handler::build_oidc_client,
-    operators::{dataset_operator::load_datasets_into_redis, tantivy_operator::TantivyIndexMap},
+    operators::{
+        dataset_operator::load_datasets_into_redis,
+        qdrant_operator::create_new_qdrant_collection_query, tantivy_operator::TantivyIndexMap,
+    },
 };
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
@@ -283,6 +286,10 @@ pub async fn main() -> std::io::Result<()> {
         .await
         .load_tantivy_indexes()
         .expect("Failed to load datasets into tantivy");
+
+    let _ = create_new_qdrant_collection_query().await.map_err(|err| {
+        log::error!("Failed to create qdrant collection: {:?}", err);
+    });
 
     let app_mutex_store = web::Data::new(AppMutexStore {
         embedding_semaphore: std::env::var("EMBEDDING_SEMAPHORE_SIZE")
