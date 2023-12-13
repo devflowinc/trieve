@@ -1,4 +1,5 @@
 /target
+tantivy-recovery/target
 *.env
 .env.docker
 tmp
