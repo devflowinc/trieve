@@ -860,3 +860,33 @@ impl Organization {
         }
     }
 }
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
+#[diesel(table_name = invitations)]
+pub struct Invitation {
+    pub id: uuid::Uuid,
+    pub email: String,
+    pub dataset_id: uuid::Uuid,
+    pub used: bool,
+    pub expires_at: chrono::NaiveDateTime,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+// any type that implements Into<String> can be used to create Invitation
+impl Invitation {
+    pub fn from_details(email: String, dataset_id: uuid::Uuid) -> Self {
+        Invitation {
+            id: uuid::Uuid::new_v4(),
+            email: email,
+            dataset_id,
+            used: false,
+            expires_at: chrono::Utc::now().naive_local() + chrono::Duration::days(3),
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
+        }
+    }
+    pub fn expired(&self) -> bool {
+        self.expires_at < chrono::Utc::now().naive_local()
+    }
+}
