@@ -123,6 +123,7 @@ pub async fn main() -> std::io::Result<()> {
             handlers::dataset_handler::delete_dataset,
             handlers::dataset_handler::get_dataset,
             handlers::dataset_handler::get_datasets_from_organization,
+            handlers::stripe_handler::direct_to_payment_link,
         ),
         components(
             schemas(
@@ -203,6 +204,7 @@ pub async fn main() -> std::io::Result<()> {
             (name = "health", description = "Health check endpoint"),
             (name = "organization", description = "Organization endpoint"),
             (name = "dataset", description = "Dataset endpoint"),
+            (name = "stripe", description = "Stripe endpoint"),
         )
     )]
     struct ApiDoc;
@@ -531,6 +533,10 @@ pub async fn main() -> std::io::Result<()> {
                                 web::resource("/webhook")
                                     .route(web::post().to(handlers::stripe_handler::webhook)),
                             )
+                            .service(
+                                web::resource("/payment_link/{plan_id}/{organization_id}")
+                                    .route(web::get().to(handlers::stripe_handler::direct_to_payment_link)),
+                            ),
                     )
             
             )

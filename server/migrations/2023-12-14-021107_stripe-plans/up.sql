@@ -7,6 +7,7 @@ CREATE TABLE stripe_plans (
     user_count INTEGER NOT NULL DEFAULT 0,
     dataset_count INTEGER NOT NULL DEFAULT 0,
     message_count INTEGER NOT NULL DEFAULT 0,
+    amount BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL
 );
