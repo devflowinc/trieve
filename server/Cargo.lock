@@ -478,7 +478,10 @@ version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "19a0b12cb3b2df9abfaa381632e4d55b2aede9063034daaa0d0145413719a7e1"
 dependencies = [
+ "chrono",
  "futures-util",
+ "hex",
+ "hmac",
  "http-types",
  "hyper",
  "hyper-tls",
@@ -486,10 +489,12 @@ dependencies = [
  "serde_json",
  "serde_path_to_error",
  "serde_qs 0.10.1",
+ "sha2",
  "smart-default",
  "smol_str",
  "thiserror",
  "tokio",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -1109,7 +1114,7 @@ dependencies = [
  "pq-sys",
  "r2d2",
  "serde_json",
- "uuid",
+ "uuid 1.6.1",
 ]
 
 [[package]]
@@ -3960,7 +3965,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "time",
- "uuid",
+ "uuid 1.6.1",
  "winapi",
 ]
 
@@ -4521,7 +4526,7 @@ dependencies = [
  "quote",
  "regex",
  "syn 2.0.39",
- "uuid",
+ "uuid 1.6.1",
 ]
 
 [[package]]
@@ -4534,6 +4539,15 @@ dependencies = [
  "serde",
  "serde_json",
  "utoipa",
+]
+
+[[package]]
+name = "uuid"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
+dependencies = [
+ "getrandom 0.2.11",
 ]
 
 [[package]]
@@ -4602,7 +4616,7 @@ dependencies = [
  "tokio-stream",
  "utoipa",
  "utoipa-redoc",
- "uuid",
+ "uuid 1.6.1",
 ]
 
 [[package]]
