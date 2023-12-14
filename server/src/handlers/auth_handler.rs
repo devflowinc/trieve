@@ -5,7 +5,7 @@ use crate::{
         self,
         invitation_operator::get_invitation_by_id_query,
         organization_operator::{create_organization_query, get_org_from_dataset_id_query},
-        stripe_customer_operator::create_stripe_customer_query,
+        stripe_operator::create_stripe_customer_query,
         user_operator::{get_user_by_id_query, get_user_from_api_key_query},
     },
 };
