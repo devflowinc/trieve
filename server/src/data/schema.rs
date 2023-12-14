@@ -173,6 +173,31 @@ diesel::table! {
 }
 
 diesel::table! {
+    stripe_plans (id) {
+        id -> Uuid,
+        stripe_id -> Text,
+        card_count -> Int4,
+        file_storage -> Int4,
+        user_count -> Int4,
+        dataset_count -> Int4,
+        message_count -> Int4,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
+    stripe_subscriptions (id) {
+        id -> Uuid,
+        stripe_id -> Text,
+        stripe_plan_id -> Text,
+        stripe_customer_id -> Text,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     topics (id) {
         id -> Uuid,
         user_id -> Uuid,
@@ -256,6 +281,8 @@ diesel::allow_tables_to_appear_in_same_query!(
     messages,
     organizations,
     stripe_customers,
+    stripe_plans,
+    stripe_subscriptions,
     topics,
     user_collection_counts,
     user_notification_counts,
