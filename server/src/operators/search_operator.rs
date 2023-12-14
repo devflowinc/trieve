@@ -20,6 +20,7 @@ use crate::CrossEncoder;
 use crate::{data::models::Pool, errors::DefaultError};
 use crate::{get_env, AppMutexStore};
 use actix_web::web;
+use candle_core::Tensor;
 use chrono::NaiveDateTime;
 use diesel::{
     dsl::sql,
@@ -30,8 +31,7 @@ use diesel::{
 };
 use futures_util::TryFutureExt;
 use itertools::Itertools;
-use pyo3::types::PyDict;
-use pyo3::{IntoPy, Python};
+
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::qdrant::{
     point_id::PointIdOptions, Condition, Filter, HasIdCondition, PointId, SearchPoints,
@@ -1174,71 +1174,42 @@ fn cross_encoder(
             )
         })
         .collect::<Vec<(String, String)>>();
-    let scores = Python::with_gil(|py| {
-        let token_kwargs = PyDict::new(py);
-        token_kwargs.set_item("return_tensors", "pt").map_err(|e| {
-            ServiceError::BadRequest(format!("Could not set return_tensors: {}", e))
-        })?;
-        token_kwargs
-            .set_item("truncation", true)
-            .map_err(|e| ServiceError::BadRequest(format!("Could not set trucation: {}", e)))?;
-        token_kwargs
-            .set_item("padding", "max_length")
-            .map_err(|e| ServiceError::BadRequest(format!("Could not set padding: {}", e)))?;
-        token_kwargs
-            .set_item("max_length", 512)
-            .map_err(|e| ServiceError::BadRequest(format!("Could not set max_length: {}", e)))?;
 
-        let tokenized_inputs = cross_encoder_init
-            .tokenizer
-            .call_method::<&str, (pyo3::Py<pyo3::PyAny>,)>(
-                py,
-                "batch_encode_plus",
-                (paired_results.into_py(py),),
-                Some(token_kwargs),
-            )
-            .map_err(|e| ServiceError::BadRequest(format!("Could not tokenize inputs: {}", e)))?
-            .into_ref(py);
+    let tokenizer = &cross_encoder_init.tokenizer;
 
-        let model_kwargs = PyDict::new(py);
-        model_kwargs
-            .set_item("return_dict", true)
-            .map_err(|e| ServiceError::BadRequest(format!("Could not set return_dict: {}", e)))?;
+    let tokenized_inputs = tokenizer
+        .encode_batch(paired_results, false)
+        .map_err(|e| ServiceError::BadRequest(format!("Could not tokenize inputs: {}", e)))?;
 
-        let output = cross_encoder_init
-            .model
-            .call_method::<&str, (
-                pyo3::Py<pyo3::PyAny>,
-                pyo3::Py<pyo3::PyAny>,
-                pyo3::Py<pyo3::PyAny>,
-            )>(
-                py,
-                "forward",
-                (
-                    tokenized_inputs.get_item("input_ids").unwrap().into(),
-                    tokenized_inputs.get_item("token_type_ids").unwrap().into(),
-                    tokenized_inputs.get_item("attention_mask").unwrap().into(),
-                ),
-                Some(model_kwargs),
-            )
-            .map_err(|e| ServiceError::BadRequest(format!("Could not run model: {}", e)))?
-            .into_ref(py);
+    let token_ids = tokenized_inputs
+        .iter()
+        .map(|tokens| {
+            let tokens = tokens.get_ids().to_vec();
+            Tensor::new(tokens.as_slice(), &candle_core::Device::Cpu)
+                .map_err(|e| ServiceError::BadRequest(format!("Could not create tensor: {}", e)))
+        })
+        .collect::<Result<Vec<Tensor>, ServiceError>>()?;
 
-        let scores = output
-            .getattr("logits")
-            .map_err(|e| ServiceError::BadRequest(format!("Could not get logits: {}", e)))?
-            .call_method0("tolist")
-            .map_err(|e| ServiceError::BadRequest(format!("Could not get tolist: {}", e)))?;
+    let token_ids = Tensor::stack(&token_ids, 0)
+        .map_err(|e| ServiceError::BadRequest(format!("Could not stack tensors: {}", e)))?;
 
-        Ok::<Vec<f32>, ServiceError>(
-            scores
-                .extract::<Vec<Vec<f32>>>()
-                .unwrap()
-                .into_iter()
-                .flatten()
-                .collect(),
-        )
-    })?;
+    let token_type_ids = token_ids
+        .zeros_like()
+        .map_err(|e| ServiceError::BadRequest(format!("Could not create tensor: {}", e)))?;
+
+    let embeddings = cross_encoder_init
+        .model
+        .forward(&token_ids, &token_type_ids)
+        .map_err(|e| ServiceError::BadRequest(format!("Could not run model: {}", e)))?;
+
+    let scores = embeddings
+        .to_dtype(candle_core::DType::F32)
+        .unwrap()
+        .to_vec2::<f32>()
+        .unwrap()
+        .into_iter()
+        .flatten()
+        .collect::<Vec<f32>>();
 
     let mut sim_scores_argsort: Vec<usize> = (0..scores.len()).collect();
     sim_scores_argsort.sort_by(|&a, &b| scores[b].partial_cmp(&scores[a]).unwrap());
