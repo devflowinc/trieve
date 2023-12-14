@@ -912,3 +912,68 @@ impl StripeCustomer {
         }
     }
 }
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
+#[diesel(table_name = stripe_plans)]
+pub struct StripePlan {
+    pub id: uuid::Uuid,
+    pub stripe_id: String,
+    pub card_count: i32,
+    pub file_storage: i32,
+    pub user_count: i32,
+    pub dataset_count: i32,
+    pub message_count: i32,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl StripePlan {
+    pub fn from_details(
+        stripe_id: String,
+        card_count: i32,
+        file_storage: i32,
+        user_count: i32,
+        dataset_count: i32,
+        message_count: i32,
+    ) -> Self {
+        StripePlan {
+            id: uuid::Uuid::new_v4(),
+            stripe_id,
+            card_count,
+            file_storage,
+            user_count,
+            dataset_count,
+            message_count,
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
+#[diesel(table_name = stripe_subscriptions)]
+pub struct StripeSubscription {
+    pub id: uuid::Uuid,
+    pub stripe_id: String,
+    pub stripe_plan_id: String,
+    pub stripe_customer_id: String,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl StripeSubscription {
+    pub fn from_details(
+        stripe_id: String,
+        stripe_plan_id: String,
+        stripe_customer_id: String,
+    ) -> Self {
+        StripeSubscription {
+            id: uuid::Uuid::new_v4(),
+            stripe_id,
+            stripe_plan_id,
+            stripe_customer_id,
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
+        }
+    }
+}
