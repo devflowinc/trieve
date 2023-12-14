@@ -1,8 +1,8 @@
 #![feature(ready_into_inner)]
 #[macro_use]
 extern crate diesel;
+
 use crate::{
-    errors::ServiceError,
     handlers::auth_handler::build_oidc_client,
     operators::{
         qdrant_operator::create_new_qdrant_collection_query, tantivy_operator::TantivyIndexMap,
@@ -17,9 +17,12 @@ use actix_web::{
     web::{self, PayloadConfig},
     App, HttpServer,
 };
+use candle_nn::{var_builder::SimpleBackend, VarBuilder};
+use candle_transformers::models::bert::{BertModel, Config, DTYPE};
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use pyo3::{types::PyDict, Py, PyAny, Python};
+use hf_hub::{api::sync::Api, Repo, RepoType};
+use tokenizers::{tokenizer::Tokenizer, PaddingParams, PaddingStrategy, TruncationParams};
 use tokio::sync::{RwLock, Semaphore};
 use utoipa::OpenApi;
 use utoipa_redoc::{Redoc, Servable};
@@ -58,53 +61,51 @@ macro_rules! get_env {
         ENV_VAR.as_str()
     }};
 }
-#[derive(Clone)]
 pub struct CrossEncoder {
-    tokenizer: Py<PyAny>,
-    model: Py<PyAny>,
+    tokenizer: Tokenizer,
+    model: BertModel,
 }
 
 fn initalize_cross_encoder() -> CrossEncoder {
-    let cross_encoder = Python::with_gil(|py| {
-        let transformers = py.import("transformers").unwrap();
+    let model_id = "cross-encoder/ms-marco-MiniLM-L-4-v2".to_string();
+    let revision = "refs/pr/1".to_string();
 
-        let tokenizer: Py<PyAny> = transformers
-            .getattr("AutoTokenizer")
-            .map_err(|e| ServiceError::BadRequest(format!("Could not get tokenizer: {}", e)))?
-            .call_method1::<&str, (&str,)>(
-                "from_pretrained",
-                ("cross-encoder/ms-marco-MiniLM-L-4-v2",),
-            )
-            .map_err(|e| ServiceError::BadRequest(format!("Could not load tokenizer: {}", e)))?
-            .into();
+    let repo = Repo::with_revision(model_id.clone(), RepoType::Model, revision);
+    let (config_filename, weights_filename) = {
+        let api = Api::new().expect("Failed to create API");
+        let api = api.repo(repo);
+        let config = api.get("config.json").expect("Failed to get config.json");
+        let weights = api
+            .get("model.safetensors")
+            .expect("Failed to get model.safetensors");
+        (config, weights)
+    };
+    let config = std::fs::read_to_string(config_filename).unwrap();
+    let config: Config = serde_json::from_str(&config).expect("Failed to parse config.json");
 
-        let onnxruntime = py.import("optimum.onnxruntime").map_err(|e| {
-            ServiceError::BadRequest(format!("Could not import onnxruntime: {}", e))
-        })?;
-        let model_kwargs = PyDict::new(py);
+    let mut tokenizer = Tokenizer::from_pretrained("sentence-transformers/all-MiniLM-L6-v2", None)
+        .expect("Error while load tokenizer");
 
-        model_kwargs
-            .set_item("export", true)
-            .map_err(|e| ServiceError::BadRequest(format!("Could not set onnx export: {}", e)))?;
-        model_kwargs
-            .set_item("force_download", false)
-            .map_err(|e| {
-                ServiceError::BadRequest(format!("Could not set force_download: {}", e))
-            })?;
+    let vb: candle_nn::var_builder::VarBuilderArgs<'_, Box<dyn SimpleBackend>> = unsafe {
+        VarBuilder::from_mmaped_safetensors(&[weights_filename], DTYPE, &candle_core::Device::Cpu)
+            .expect("Failed to load model")
+    };
 
-        let model: Py<PyAny> = onnxruntime
-            .getattr("ORTModelForSequenceClassification")
-            .map_err(|e| ServiceError::BadRequest(format!("Could not get model: {}", e)))?
-            .call_method::<&str, (&str,)>(
-                "from_pretrained",
-                ("cross-encoder/ms-marco-MiniLM-L-4-v2",),
-                Some(model_kwargs),
-            )
-            .map_err(|e| ServiceError::BadRequest(format!("Could not load model: {}", e)))?
-            .into();
-        Ok::<CrossEncoder, ServiceError>(CrossEncoder { tokenizer, model })
-    });
-    cross_encoder.unwrap()
+    let model = BertModel::load(vb, &config).expect("Failed to load model");
+    let tokenizer = tokenizer
+        .with_padding(Some(PaddingParams {
+            strategy: PaddingStrategy::BatchLongest,
+            ..Default::default()
+        }))
+        .with_truncation(Some(TruncationParams {
+            max_length: 512,
+            ..Default::default()
+        }))
+        .expect("Failed to set padding and truncation")
+        .clone()
+        .into();
+
+    CrossEncoder { tokenizer, model }
 }
 
 pub struct AppMutexStore {
@@ -268,7 +269,7 @@ pub async fn main() -> std::io::Result<()> {
     let pool: data::models::Pool = r2d2::Pool::builder()
         .build(manager)
         .expect("Failed to create pool.");
-    let cross_encoder = initalize_cross_encoder();
+    let cross_encoder = web::Data::new(initalize_cross_encoder());
 
     let redis_store = RedisSessionStore::new(redis_url).await.unwrap();
 
@@ -410,7 +411,7 @@ pub async fn main() -> std::io::Result<()> {
                             )
                             .service(
                                 web::resource("/search/{page}")
-                                    .app_data(web::Data::new(cross_encoder.clone()))
+                                    .app_data(cross_encoder.clone())
                                     .route(web::post().to(handlers::card_handler::search_card)),
                             )
                             .service(
