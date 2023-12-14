@@ -181,6 +181,7 @@ diesel::table! {
         user_count -> Int4,
         dataset_count -> Int4,
         message_count -> Int4,
+        amount -> Int8,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }

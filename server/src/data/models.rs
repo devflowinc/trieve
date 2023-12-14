@@ -897,6 +897,7 @@ pub struct StripePlan {
     pub user_count: i32,
     pub dataset_count: i32,
     pub message_count: i32,
+    pub amount: i64,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
@@ -909,6 +910,7 @@ impl StripePlan {
         user_count: i32,
         dataset_count: i32,
         message_count: i32,
+        amount: i64,
     ) -> Self {
         StripePlan {
             id: uuid::Uuid::new_v4(),
@@ -918,6 +920,7 @@ impl StripePlan {
             user_count,
             dataset_count,
             message_count,
+            amount,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
         }
