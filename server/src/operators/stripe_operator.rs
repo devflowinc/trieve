@@ -1,3 +1,7 @@
+use crate::{
+    data::models::{Pool, StripePlan, StripeSubscription},
+    errors::DefaultError,
+};
 use actix_web::web;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use stripe::{
@@ -5,10 +9,12 @@ use stripe::{
     CreatePaymentLinkAfterCompletionType, CreatePaymentLinkLineItems, PaymentLink,
 };
 
-use crate::{
-    data::models::{Pool, StripePlan, StripeSubscription},
-    errors::DefaultError,
-};
+pub fn get_stripe_client() -> stripe::Client {
+    let stripe_secret = std::env::var("STRIPE_SECRET").expect("STRIPE_SECRET must be set");
+    let stripe_client = stripe::Client::new(stripe_secret);
+
+    stripe_client
+}
 
 pub fn create_stripe_subscription_query(
     stripe_id: String,
@@ -100,8 +106,7 @@ pub async fn create_stripe_payment_link(
     metadata.insert("plan_id".to_string(), plan.id.to_string());
     create_payment_link.metadata = Some(metadata);
 
-    let stripe_secret = std::env::var("STRIPE_SECRET").expect("STRIPE_SECRET must be set");
-    let stripe_client = stripe::Client::new(stripe_secret);
+    let stripe_client = get_stripe_client();
 
     let payment_link = PaymentLink::create(&stripe_client, create_payment_link)
         .await
@@ -114,4 +119,58 @@ pub async fn create_stripe_payment_link(
         .url;
 
     Ok(payment_link)
+}
+
+pub fn get_subscription_by_id_query(
+    subscription_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<StripeSubscription, DefaultError> {
+    use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
+
+    let mut conn = pool.get().expect("Failed to get connection from pool");
+    let stripe_subscription: StripeSubscription =
+        stripe_subscriptions_columns::stripe_subscriptions
+            .filter(stripe_subscriptions_columns::id.eq(subscription_id))
+            .first(&mut conn)
+            .map_err(|e| {
+                log::error!("Failed to get stripe subscription: {}", e);
+                DefaultError {
+                    message: "Failed to get stripe subscription",
+                }
+            })?;
+
+    Ok(stripe_subscription)
+}
+
+pub async fn cancel_stripe_subscription(
+    subscription_stripe_id: String,
+) -> Result<(), DefaultError> {
+    let stripe_secret = std::env::var("STRIPE_SECRET").expect("STRIPE_SECRET must be set");
+    let stripe_client = reqwest::Client::new();
+    let stripe_response = stripe_client
+        .delete(&format!(
+            "https://api.stripe.com/v1/subscriptions/{}",
+            subscription_stripe_id
+        ))
+        .bearer_auth(stripe_secret)
+        .send()
+        .await
+        .map_err(|e| {
+            log::error!("Failed to cancel stripe subscription: {}", e);
+            DefaultError {
+                message: "Request to stripe failed",
+            }
+        })?;
+
+    if !stripe_response.status().is_success() {
+        log::error!(
+            "Failed to cancel stripe subscription: {}",
+            stripe_response.text().await.unwrap()
+        );
+        return Err(DefaultError {
+            message: "Request to stripe failed",
+        });
+    }
+
+    Ok(())
 }
