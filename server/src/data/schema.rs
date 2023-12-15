@@ -185,6 +185,7 @@ diesel::table! {
         organization_id -> Uuid,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        current_period_end -> Nullable<Timestamp>,
     }
 }
 
