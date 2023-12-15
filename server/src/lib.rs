@@ -5,7 +5,8 @@ extern crate diesel;
 use crate::{
     handlers::auth_handler::build_oidc_client,
     operators::{
-        qdrant_operator::create_new_qdrant_collection_query, tantivy_operator::TantivyIndexMap,
+        model_operator::initalize_cross_encoder,
+        qdrant_operator::create_new_qdrant_collection_query,
     },
 };
 use actix_cors::Cors;
@@ -17,13 +18,11 @@ use actix_web::{
     web::{self, PayloadConfig},
     App, HttpServer,
 };
-use candle_nn::{var_builder::SimpleBackend, VarBuilder};
-use candle_transformers::models::bert::{BertModel, Config, DTYPE};
+
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use hf_hub::{api::sync::Api, Repo, RepoType};
-use tokenizers::{tokenizer::Tokenizer, PaddingParams, PaddingStrategy, TruncationParams};
-use tokio::sync::{RwLock, Semaphore};
+
+use tokio::sync::Semaphore;
 use utoipa::OpenApi;
 use utoipa_redoc::{Redoc, Servable};
 
@@ -60,52 +59,6 @@ macro_rules! get_env {
         }
         ENV_VAR.as_str()
     }};
-}
-pub struct CrossEncoder {
-    tokenizer: Tokenizer,
-    model: BertModel,
-}
-
-fn initalize_cross_encoder() -> CrossEncoder {
-    let model_id = "cross-encoder/ms-marco-MiniLM-L-4-v2".to_string();
-    let revision = "refs/pr/1".to_string();
-
-    let repo = Repo::with_revision(model_id.clone(), RepoType::Model, revision);
-    let (config_filename, weights_filename) = {
-        let api = Api::new().expect("Failed to create API");
-        let api = api.repo(repo);
-        let config = api.get("config.json").expect("Failed to get config.json");
-        let weights = api
-            .get("model.safetensors")
-            .expect("Failed to get model.safetensors");
-        (config, weights)
-    };
-    let config = std::fs::read_to_string(config_filename).unwrap();
-    let config: Config = serde_json::from_str(&config).expect("Failed to parse config.json");
-
-    let mut tokenizer = Tokenizer::from_pretrained("sentence-transformers/all-MiniLM-L6-v2", None)
-        .expect("Error while load tokenizer");
-
-    let vb: candle_nn::var_builder::VarBuilderArgs<'_, Box<dyn SimpleBackend>> = unsafe {
-        VarBuilder::from_mmaped_safetensors(&[weights_filename], DTYPE, &candle_core::Device::Cpu)
-            .expect("Failed to load model")
-    };
-
-    let model = BertModel::load(vb, &config).expect("Failed to load model");
-    let tokenizer = tokenizer
-        .with_padding(Some(PaddingParams {
-            strategy: PaddingStrategy::BatchLongest,
-            ..Default::default()
-        }))
-        .with_truncation(Some(TruncationParams {
-            max_length: 512,
-            ..Default::default()
-        }))
-        .expect("Failed to set padding and truncation")
-        .clone()
-        .into();
-
-    CrossEncoder { tokenizer, model }
 }
 
 pub struct AppMutexStore {
@@ -269,19 +222,13 @@ pub async fn main() -> std::io::Result<()> {
     let pool: data::models::Pool = r2d2::Pool::builder()
         .build(manager)
         .expect("Failed to create pool.");
+
     let cross_encoder = web::Data::new(initalize_cross_encoder());
 
     let redis_store = RedisSessionStore::new(redis_url).await.unwrap();
 
-    let tantivy_index = web::Data::new(RwLock::new(TantivyIndexMap::new()));
     let oidc_client = build_oidc_client().await;
     run_migrations(&mut pool.get().unwrap());
-
-    tantivy_index
-        .write()
-        .await
-        .load_tantivy_indexes()
-        .expect("Failed to load datasets into tantivy");
 
     let _ = create_new_qdrant_collection_query().await.map_err(|err| {
         log::error!("Failed to create qdrant collection: {:?}", err);
@@ -302,7 +249,6 @@ pub async fn main() -> std::io::Result<()> {
             .app_data( web::JsonConfig::default().limit(134200000))
             .app_data(web::Data::new(pool.clone()))
             .app_data(app_mutex_store.clone())
-            .app_data(tantivy_index.clone())
             .app_data(web::Data::new(oidc_client.clone()))
             .wrap(
                 IdentityMiddleware::builder()

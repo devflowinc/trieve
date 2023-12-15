@@ -16,7 +16,7 @@ use crate::{
             get_message_by_sort_for_topic_query, get_messages_for_topic_query, get_topic_messages,
             user_owns_topic_query,
         },
-        qdrant_operator::create_embedding,
+        model_operator::create_embedding,
         search_operator::retrieve_qdrant_points_query,
     },
     AppMutexStore,
@@ -524,7 +524,7 @@ pub async fn stream_response(
         let embedding_vector = create_embedding(query.as_str(), app_mutex).await?;
 
         let search_card_query_results = retrieve_qdrant_points_query(
-            embedding_vector,
+            Some(embedding_vector),
             1,
             None,
             None,
@@ -532,6 +532,7 @@ pub async fn stream_response(
             None,
             Some(user_id),
             ParsedQuery {
+                query: query.to_string(),
                 quote_words: None,
                 negated_words: None,
             },

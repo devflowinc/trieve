@@ -9,7 +9,8 @@ use crate::operators::card_operator::*;
 use crate::operators::collection_operator::{
     create_card_bookmark_query, get_collection_by_id_query,
 };
-use crate::operators::qdrant_operator::{create_embedding, update_qdrant_point_query};
+use crate::operators::model_operator::{create_embedding, CrossEncoder};
+use crate::operators::qdrant_operator::update_qdrant_point_query;
 use crate::operators::qdrant_operator::{
     create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
 };
@@ -17,8 +18,7 @@ use crate::operators::search_operator::{
     global_unfiltered_top_match_query, search_full_text_cards, search_full_text_collections,
     search_hybrid_cards, search_semantic_cards, search_semantic_collections,
 };
-use crate::operators::tantivy_operator::TantivyIndexMap;
-use crate::{get_env, AppMutexStore, CrossEncoder};
+use crate::{get_env, AppMutexStore};
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
 use chrono::NaiveDateTime;
@@ -27,7 +27,6 @@ use openai_dive::v1::resources::chat::{ChatCompletionParameters, ChatMessage, Ro
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::process::Command;
-use tokio::sync::RwLock;
 use tokio_stream::StreamExt;
 use utoipa::{IntoParams, ToSchema};
 
@@ -132,7 +131,6 @@ pub async fn create_card(
     card: web::Json<CreateCardData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
-    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -292,15 +290,9 @@ pub async fn create_card(
             dataset.id,
         );
 
-        card_metadata = insert_card_metadata_query(
-            card_metadata,
-            card.file_uuid,
-            tantivy_index_map,
-            dataset.id,
-            pool1,
-        )
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        card_metadata = insert_card_metadata_query(card_metadata, card.file_uuid, pool1)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
         create_new_qdrant_point_query(
             qdrant_point_id,
@@ -344,7 +336,6 @@ pub async fn delete_card(
     card_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
-    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     user: LoggedUser,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -359,16 +350,9 @@ pub async fn delete_card(
     let card_metadata = user_owns_card(user.id, card_id_inner, dataset_id, pool).await?;
     let qdrant_point_id = card_metadata.qdrant_point_id;
 
-    delete_card_metadata_query(
-        card_id_inner,
-        qdrant_point_id,
-        tantivy_index_map,
-        app_mutex,
-        dataset_id,
-        pool1,
-    )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    delete_card_metadata_query(card_id_inner, qdrant_point_id, app_mutex, dataset_id, pool1)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -390,7 +374,6 @@ pub async fn delete_card_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
-    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     user: LoggedUser,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -410,7 +393,6 @@ pub async fn delete_card_by_tracking_id(
     delete_card_metadata_query(
         card_metadata.id,
         qdrant_point_id,
-        tantivy_index_map,
         app_mutex,
         dataset_id,
         pool1,
@@ -452,7 +434,6 @@ pub async fn update_card(
     card: web::Json<UpdateCardData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
-    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -510,7 +491,7 @@ pub async fn update_card(
         dataset_id,
     );
     let metadata1 = metadata.clone();
-    update_card_metadata_query(metadata, None, tantivy_index_map, dataset_id, pool2)
+    update_card_metadata_query(metadata, None, dataset_id, pool2)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -558,7 +539,6 @@ pub async fn update_card_by_tracking_id(
     card: web::Json<UpdateCardByTrackingIdData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
-    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -620,7 +600,7 @@ pub async fn update_card_by_tracking_id(
         dataset.id,
     );
     let metadata1 = metadata.clone();
-    update_card_metadata_query(metadata, None, tantivy_index_map, dataset.id, pool2)
+    update_card_metadata_query(metadata, None, dataset.id, pool2)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -668,6 +648,7 @@ pub struct SearchCardQueryResponseBody {
 
 #[derive(Clone)]
 pub struct ParsedQuery {
+    pub query: String,
     pub quote_words: Option<Vec<String>>,
     pub negated_words: Option<Vec<String>>,
 }
@@ -698,6 +679,7 @@ fn parse_query(query: String) -> ParsedQuery {
     };
 
     ParsedQuery {
+        query,
         quote_words,
         negated_words,
     }
@@ -724,7 +706,6 @@ pub async fn search_card(
     user: LoggedUser,
     pool: web::Data<Pool>,
     cross_encoder_init: web::Data<CrossEncoder>,
-    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -739,16 +720,8 @@ pub async fn search_card(
 
     let result_cards = match data.search_type.as_str() {
         "fulltext" => {
-            search_full_text_cards(
-                data,
-                parsed_query,
-                page,
-                pool,
-                tantivy_index_map,
-                current_user_id,
-                dataset_id,
-            )
-            .await?
+            search_full_text_cards(data, parsed_query, page, pool, current_user_id, dataset_id)
+                .await?
         }
         "hybrid" => {
             search_hybrid_cards(
@@ -758,7 +731,6 @@ pub async fn search_card(
                 pool,
                 current_user_id,
                 cross_encoder_init,
-                tantivy_index_map,
                 dataset_id,
                 app_mutex,
             )
@@ -835,7 +807,6 @@ pub async fn search_collections(
     page: Option<web::Path<u64>>,
     user: Option<LoggedUser>,
     pool: web::Data<Pool>,
-    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
     _required_user: RequireAuth,
     dataset: Dataset,
@@ -872,7 +843,6 @@ pub async fn search_collections(
                 collection,
                 page,
                 pool1,
-                tantivy_index_map,
                 current_user_id,
                 dataset_id,
             )
