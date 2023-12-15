@@ -2,9 +2,12 @@ use super::auth_handler::LoggedUser;
 use crate::{
     data::models::{Dataset, Pool},
     errors::ServiceError,
-    operators::dataset_operator::{
-        create_dataset_query, delete_dataset_by_id_query, get_dataset_by_id_query,
-        update_dataset_query,
+    operators::{
+        dataset_operator::{
+            delete_dataset_by_id_query, get_dataset_by_id_query, new_dataset_operation,
+            update_dataset_query, get_datasets_by_organization_id,
+        },
+        tantivy_operator::TantivyIndexMap,
     },
 };
 use actix_web::{web, FromRequest, HttpMessage, HttpResponse};
@@ -53,6 +56,7 @@ impl FromRequest for Dataset {
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct CreateDatasetRequest {
     pub dataset_name: String,
+    pub organization_id: uuid::Uuid,
 }
 
 #[utoipa::path(
@@ -71,12 +75,10 @@ pub async fn create_dataset(
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, ServiceError> {
-    let admin_email = std::env::var("ADMIN_USER_EMAIL").unwrap_or("".to_string());
-    if admin_email != user.email {
+    if user.organization_id != data.organization_id {
         return Err(ServiceError::Forbidden);
     }
-
-    let dataset = Dataset::from_details(data.dataset_name.clone(), user.organization_id);
+    let dataset = Dataset::from_details(data.dataset_name.clone(), data.organization_id);
 
     let d = create_dataset_query(dataset, pool).await?;
     Ok(HttpResponse::Ok().json(d))
@@ -150,11 +152,10 @@ pub async fn delete_dataset(
     tag = "dataset",
     request_body(content = GetDatasetRequest, description = "JSON request payload to get a dataset", content_type = "application/json"),
     responses(
-        (status = 200, description = "Dataset retrieved successfully", body = [Dataset]),
+        (status = 200, description = "Dataset retrieved successfully", body = Dataset),
         (status = 400, description = "Service error relating to retrieving the dataset", body = [DefaultError]),
     ),
 )]
-
 pub async fn get_dataset(
     pool: web::Data<Pool>,
     dataset_id: web::Path<uuid::Uuid>,
