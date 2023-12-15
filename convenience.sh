@@ -20,7 +20,7 @@ reset_s3_service() {
 
 # Function to set up the Python environment
 setup_python_environment() {
-    echo "Setting up the Python environment..."
+    echo "Setting up the Python environment..."`
     virtualenv venv
     source venv/bin/activate
     pip install -r ./server-python/requirements.txt

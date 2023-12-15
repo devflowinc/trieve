@@ -69,10 +69,7 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
         <div class="flex items-center space-x-2">
           <Show when={!currentUser()}>
             <div class="flex items-center space-x-3">
-              <a
-                href={`${apiHost}/auth?dataset_id=${dataset}`}
-                class="min-[420px]:text-lg"
-              >
+              <a href={`${apiHost}/auth`} class="min-[420px]:text-lg">
                 Login/Register
               </a>
             </div>

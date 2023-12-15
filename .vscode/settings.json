@@ -7,5 +7,7 @@
     "search/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}": "./search/.eslintrc.json",
     "chat/**/*": "./chat/tsconfig.json",
     "search/**/*": "./search/tsconfig.json"
-  }
+  },
+  "rust-analyzer.linkedProjects": ["./server/Cargo.toml"],
+  "rust-analyzer.showUnlinkedFileNotification": false
 }

@@ -1,9 +1,9 @@
-use super::tantivy_operator::TantivyIndexMap;
 use crate::data::models::{
     CardCollisions, CardFile, CardMetadataWithFileData, FullTextSearchResult,
 };
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
-use crate::operators::qdrant_operator::{create_embedding, get_qdrant_connection};
+use crate::operators::model_operator::create_embedding;
+use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::operators::search_operator::get_metadata_query;
 use crate::AppMutexStore;
 use crate::{
@@ -18,7 +18,6 @@ use itertools::Itertools;
 use qdrant_client::qdrant::{PointId, PointVectors};
 use serde::{Deserialize, Serialize};
 use simsearch::SimSearch;
-use tokio::sync::RwLock;
 
 #[derive(Serialize, Deserialize)]
 pub struct ScoredCardDTO {
@@ -346,8 +345,6 @@ pub fn get_metadata_from_ids_query(
 pub async fn insert_card_metadata_query(
     card_data: CardMetadata,
     file_uuid: Option<uuid::Uuid>,
-    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
-    given_dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<CardMetadata, DefaultError> {
     use crate::data::schema::card_files::dsl as card_files_columns;
@@ -372,17 +369,8 @@ pub async fn insert_card_metadata_query(
         Ok(())
     });
 
-    let tantivy_index_map = tantivy_index_map.read().await;
-
     match transaction_result {
-        Ok(_) => tantivy_index_map
-            .add_card(given_dataset_id.to_string().as_str(), card_data.clone())
-            .map_err(|e| {
-                log::info!("Failed to add card to index: {:?}", e);
-                DefaultError {
-                    message: "Failed to add card to index",
-                }
-            })?,
+        Ok(_) => (),
         Err(e) => {
             log::info!("Failed to insert card metadata: {:?}", e);
             return Err(DefaultError {
@@ -442,7 +430,6 @@ pub fn insert_duplicate_card_metadata_query(
 pub async fn update_card_metadata_query(
     card_data: CardMetadata,
     file_uuid: Option<uuid::Uuid>,
-    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
@@ -450,7 +437,6 @@ pub async fn update_card_metadata_query(
     use crate::data::schema::card_metadata::dsl as card_metadata_columns;
 
     let mut conn = pool.get().unwrap();
-    let card_data_1 = card_data.clone();
 
     let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
         diesel::update(
@@ -479,14 +465,7 @@ pub async fn update_card_metadata_query(
     });
 
     match transaction_result {
-        Ok(_) => {
-            let tantivy_index_map = tantivy_index_map.read().await;
-            tantivy_index_map
-                .update_card(dataset_uuid.to_string().as_str(), card_data_1)
-                .map_err(|_e| DefaultError {
-                    message: "Failed to add card to index",
-                })?
-        }
+        Ok(_) => (),
         Err(_) => {
             return Err(DefaultError {
                 message: "Failed to update card metadata",
@@ -505,7 +484,6 @@ enum TransactionResult {
 pub async fn delete_card_metadata_query(
     card_uuid: uuid::Uuid,
     qdrant_point_id: Option<uuid::Uuid>,
-    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     app_mutex: web::Data<AppMutexStore>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -675,14 +653,6 @@ pub async fn delete_card_metadata_query(
                             message: "Failed to delete card from qdrant",
                         })
                     });
-
-                let tantivy_index_map = tantivy_index_map.read().await;
-
-                tantivy_index_map
-                    .delete_card(dataset_uuid.to_string().as_str(), card_uuid)
-                    .map_err(|_e| DefaultError {
-                        message: "Failed to delete card from index",
-                    })?;
             }
             TransactionResult::CardCollisionDetected(latest_collision_metadata) => {
                 let qdrant = get_qdrant_connection().await?;
@@ -715,14 +685,6 @@ pub async fn delete_card_metadata_query(
                             message: "Failed to update card in qdrant",
                         })
                     });
-
-                let tantivy_index_map = tantivy_index_map.read().await;
-
-                tantivy_index_map
-                    .update_card(dataset_uuid.to_string().as_str(), latest_collision_metadata)
-                    .map_err(|_e| DefaultError {
-                        message: "Failed to update card in index",
-                    })?;
             }
         },
 
