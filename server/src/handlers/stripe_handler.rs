@@ -1,9 +1,12 @@
 use crate::{
     data::models::Pool,
     errors::ServiceError,
-    operators::stripe_operator::{
-        create_stripe_payment_link, create_stripe_plan_query, create_stripe_subscription_query,
-        get_plan_by_id_query,
+    operators::{
+        organization_operator::get_organization_by_id_query,
+        stripe_operator::{
+            create_stripe_payment_link, create_stripe_plan_query, create_stripe_subscription_query,
+            get_plan_by_id_query,
+        },
     },
 };
 use actix_web::{web, HttpRequest, HttpResponse};
@@ -44,10 +47,20 @@ pub async fn webhook(
                     .expect("Item must have a plan")
                     .id
                     .to_string();
-                    let customer_id = subscription.customer.id().to_string();
+                    let organization_id = subscription
+                        .metadata
+                        .get("organization_id")
+                        .expect("Subscription must have an organization_id metadata")
+                        .parse::<uuid::Uuid>()
+                        .expect("organization_id metadata must be a uuid");
 
-                    create_stripe_subscription_query(subscription_id, plan_id, customer_id, pool)
-                        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+                    create_stripe_subscription_query(
+                        subscription_id,
+                        plan_id,
+                        organization_id,
+                        pool,
+                    )
+                    .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
                 }
             }
             EventType::PlanCreated => {
@@ -85,6 +98,13 @@ pub async fn direct_to_payment_link(
     plan_id: web::Path<uuid::Uuid>,
     organization_id: web::Path<uuid::Uuid>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let organization_pool = pool.clone();
+    let organization_id_clone = organization_id.clone();
+    let _organization =
+        web::block(move || get_organization_by_id_query(organization_id_clone, organization_pool))
+            .await?
+            .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+
     let plan = web::block(move || get_plan_by_id_query(plan_id.into_inner(), pool))
         .await?
         .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
