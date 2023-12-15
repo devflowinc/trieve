@@ -188,6 +188,5 @@ pub async fn get_datasets_from_organization(
     let datasets = web::block(move || get_datasets_by_organization_id(organization_id.into(), pool))
         .await
         .map_err(|e| { ServiceError::InternalServerError(e.to_string()) })??;
-    log::error!("get_datasets_from_organization: {:?}", datasets);
     Ok(HttpResponse::Ok().json(datasets))
 }
