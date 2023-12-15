@@ -910,7 +910,7 @@ impl StripePlan {
 pub struct StripeSubscription {
     pub id: uuid::Uuid,
     pub stripe_id: String,
-    pub stripe_plan_id: String,
+    pub plan_id: uuid::Uuid,
     pub organization_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -919,13 +919,13 @@ pub struct StripeSubscription {
 impl StripeSubscription {
     pub fn from_details(
         stripe_id: String,
-        stripe_plan_id: String,
+        plan_id: uuid::Uuid,
         organization_id: uuid::Uuid,
     ) -> Self {
         StripeSubscription {
             id: uuid::Uuid::new_v4(),
             stripe_id,
-            stripe_plan_id,
+            plan_id,
             organization_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
