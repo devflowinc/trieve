@@ -162,3 +162,31 @@ pub async fn get_dataset(
     let d = get_dataset_by_id_query(dataset_id.into_inner(), pool).await?;
     Ok(HttpResponse::Ok().json(d))
 }
+
+#[utoipa::path(
+    get,
+    path = "/dataset/organization/{organization_id}",
+    context_path = "/api",
+    tag = "dataset",
+    request_body(content = GetDatasetRequest, description = "Get all Datasets from an organization", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Dataset retrieved successfully", body = Vec<Dataset>),
+        (status = 400, description = "Service error relating to retrieving the dataset", body = [DefaultError]),
+    ),
+)]
+pub async fn get_datasets_from_organization(
+    organization_id: web::Path<uuid::Uuid>,
+    user: LoggedUser,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let organization_id = organization_id.into_inner();
+    if organization_id != user.organization_id {
+        return Err(ServiceError::Forbidden.into());
+    }
+
+    let datasets = web::block(move || get_datasets_by_organization_id(organization_id.into(), pool))
+        .await
+        .map_err(|e| { ServiceError::InternalServerError(e.to_string()) })??;
+    log::error!("get_datasets_from_organization: {:?}", datasets);
+    Ok(HttpResponse::Ok().json(datasets))
+}
