@@ -866,28 +866,6 @@ impl Invitation {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
-#[diesel(table_name = stripe_customers)]
-pub struct StripeCustomer {
-    pub id: uuid::Uuid,
-    pub stripe_id: String,
-    pub email: String,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-}
-
-impl StripeCustomer {
-    pub fn from_details(stripe_id: String, email: String) -> Self {
-        StripeCustomer {
-            id: uuid::Uuid::new_v4(),
-            stripe_id,
-            email,
-            created_at: chrono::Utc::now().naive_local(),
-            updated_at: chrono::Utc::now().naive_local(),
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
 #[diesel(table_name = stripe_plans)]
 pub struct StripePlan {
     pub id: uuid::Uuid,
@@ -933,7 +911,7 @@ pub struct StripeSubscription {
     pub id: uuid::Uuid,
     pub stripe_id: String,
     pub stripe_plan_id: String,
-    pub stripe_customer_id: String,
+    pub organization_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
@@ -942,13 +920,13 @@ impl StripeSubscription {
     pub fn from_details(
         stripe_id: String,
         stripe_plan_id: String,
-        stripe_customer_id: String,
+        organization_id: uuid::Uuid,
     ) -> Self {
         StripeSubscription {
             id: uuid::Uuid::new_v4(),
             stripe_id,
             stripe_plan_id,
-            stripe_customer_id,
+            organization_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
         }

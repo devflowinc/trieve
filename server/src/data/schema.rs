@@ -163,16 +163,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    stripe_customers (id) {
-        id -> Uuid,
-        stripe_id -> Text,
-        email -> Text,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
-    }
-}
-
-diesel::table! {
     stripe_plans (id) {
         id -> Uuid,
         stripe_id -> Text,
@@ -192,7 +182,7 @@ diesel::table! {
         id -> Uuid,
         stripe_id -> Text,
         stripe_plan_id -> Text,
-        stripe_customer_id -> Text,
+        organization_id -> Uuid,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
@@ -271,6 +261,7 @@ diesel::joinable!(files -> datasets (dataset_id));
 diesel::joinable!(files -> users (user_id));
 diesel::joinable!(messages -> datasets (dataset_id));
 diesel::joinable!(messages -> topics (topic_id));
+diesel::joinable!(stripe_subscriptions -> organizations (organization_id));
 diesel::joinable!(topics -> datasets (dataset_id));
 diesel::joinable!(topics -> users (user_id));
 diesel::joinable!(user_collection_counts -> users (user_id));
@@ -292,7 +283,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     invitations,
     messages,
     organizations,
-    stripe_customers,
     stripe_plans,
     stripe_subscriptions,
     topics,
