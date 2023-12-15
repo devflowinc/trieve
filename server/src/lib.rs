@@ -534,6 +534,10 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(web::post().to(handlers::stripe_handler::webhook)),
                             )
                             .service(
+                                web::resource("/subscription/{subscription_id}")
+                                    .route(web::delete().to(handlers::stripe_handler::cancel_subscription)),
+                            )
+                            .service(
                                 web::resource("/payment_link/{plan_id}/{organization_id}")
                                     .route(web::get().to(handlers::stripe_handler::direct_to_payment_link)),
                             ),
