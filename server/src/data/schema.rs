@@ -181,7 +181,7 @@ diesel::table! {
     stripe_subscriptions (id) {
         id -> Uuid,
         stripe_id -> Text,
-        stripe_plan_id -> Text,
+        plan_id -> Uuid,
         organization_id -> Uuid,
         created_at -> Timestamp,
         updated_at -> Timestamp,
@@ -262,6 +262,7 @@ diesel::joinable!(files -> users (user_id));
 diesel::joinable!(messages -> datasets (dataset_id));
 diesel::joinable!(messages -> topics (topic_id));
 diesel::joinable!(stripe_subscriptions -> organizations (organization_id));
+diesel::joinable!(stripe_subscriptions -> stripe_plans (plan_id));
 diesel::joinable!(topics -> datasets (dataset_id));
 diesel::joinable!(topics -> users (user_id));
 diesel::joinable!(user_collection_counts -> users (user_id));

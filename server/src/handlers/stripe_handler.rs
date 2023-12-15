@@ -10,7 +10,9 @@ use crate::{
     },
 };
 use actix_web::{web, HttpRequest, HttpResponse};
+use serde::{Deserialize, Serialize};
 use stripe::{EventObject, EventType, Webhook};
+use utoipa::ToSchema;
 
 pub async fn webhook(
     req: HttpRequest,
@@ -33,29 +35,30 @@ pub async fn webhook(
         Webhook::construct_event(&payload_str, stripe_signature, &stripe_webhook_secret)
     {
         match event.type_ {
-            EventType::CustomerSubscriptionUpdated => {
-                if let EventObject::Subscription(subscription) = event.data.object {
-                    let subscription_id = subscription.id.to_string();
-                    let plan_id = <std::option::Option<stripe::Plan> as Clone>::clone(
-                        &subscription
-                            .items
-                            .data
-                            .first()
-                            .expect("Subscription must have at least one item")
-                            .plan,
-                    )
-                    .expect("Item must have a plan")
-                    .id
-                    .to_string();
-                    let organization_id = subscription
+            EventType::CheckoutSessionCompleted => {
+                if let EventObject::CheckoutSession(checkout_session) = event.data.object {
+                    let subscription_stripe_id = checkout_session
+                        .subscription
+                        .expect("Checkout session must have a subscription")
+                        .id()
+                        .to_string();
+
+                    let metadata = checkout_session
                         .metadata
+                        .expect("Checkout session must have metadata");
+                    let plan_id = metadata
+                        .get("plan_id")
+                        .expect("Checkout session must have a plan_id metadata")
+                        .parse::<uuid::Uuid>()
+                        .expect("plan_id metadata must be a uuid");
+                    let organization_id = metadata
                         .get("organization_id")
-                        .expect("Subscription must have an organization_id metadata")
+                        .expect("Checkout session must have an organization_id metadata")
                         .parse::<uuid::Uuid>()
                         .expect("organization_id metadata must be a uuid");
 
                     create_stripe_subscription_query(
-                        subscription_id,
+                        subscription_stripe_id,
                         plan_id,
                         organization_id,
                         pool,
@@ -79,6 +82,12 @@ pub async fn webhook(
     Ok(HttpResponse::Ok().finish())
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct GetDirectPaymentLink {
+    pub plan_id: uuid::Uuid,
+    pub organization_id: uuid::Uuid,
+}
+
 #[utoipa::path(
     get,
     path = "/stripe/payment_link/{plan_id}/{organization_id}",
@@ -95,21 +104,23 @@ pub async fn webhook(
 )]
 pub async fn direct_to_payment_link(
     pool: web::Data<Pool>,
-    plan_id: web::Path<uuid::Uuid>,
-    organization_id: web::Path<uuid::Uuid>,
+    path_data: web::Path<GetDirectPaymentLink>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_pool = pool.clone();
-    let organization_id_clone = organization_id.clone();
+
+    let plan_id = path_data.plan_id.clone();
+    let organization_id = path_data.organization_id.clone();
+    let organization_id_clone = path_data.organization_id.clone();
     let _organization =
         web::block(move || get_organization_by_id_query(organization_id_clone, organization_pool))
             .await?
             .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
-    let plan = web::block(move || get_plan_by_id_query(plan_id.into_inner(), pool))
+    let plan = web::block(move || get_plan_by_id_query(plan_id, pool))
         .await?
         .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
-    let payment_link = create_stripe_payment_link(plan, organization_id.into_inner())
+    let payment_link = create_stripe_payment_link(plan, organization_id)
         .await
         .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 

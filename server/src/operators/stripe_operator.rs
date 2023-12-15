@@ -12,14 +12,13 @@ use crate::{
 
 pub fn create_stripe_subscription_query(
     stripe_id: String,
-    stripe_plan_id: String,
+    plan_id: uuid::Uuid,
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
-    let stripe_subscription =
-        StripeSubscription::from_details(stripe_id, stripe_plan_id, organization_id);
+    let stripe_subscription = StripeSubscription::from_details(stripe_id, plan_id, organization_id);
 
     let mut conn = pool.get().expect("Failed to get connection from pool");
     diesel::insert_into(stripe_subscriptions_columns::stripe_subscriptions)
@@ -98,6 +97,7 @@ pub async fn create_stripe_payment_link(
     });
     let mut metadata = std::collections::HashMap::new();
     metadata.insert("organization_id".to_string(), organization_id.to_string());
+    metadata.insert("plan_id".to_string(), plan.id.to_string());
     create_payment_link.metadata = Some(metadata);
 
     let stripe_secret = std::env::var("STRIPE_SECRET").expect("STRIPE_SECRET must be set");
