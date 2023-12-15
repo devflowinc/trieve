@@ -40,10 +40,10 @@ impl FromRequest for Dataset {
             let dataset = get_dataset_by_id_query(dataset_id, pool).await?;
 
             let ext = req.extensions();
-            // let user = ext.get::<LoggedUser>().ok_or(ServiceError::Forbidden)?;
-            // if dataset.organization_id != user.organization_id {
-            //     return Err(ServiceError::Forbidden);
-            // }
+            let user = ext.get::<LoggedUser>().ok_or(ServiceError::Forbidden)?;
+            if dataset.organization_id != user.organization_id {
+                return Err(ServiceError::Forbidden);
+            }
 
             Ok::<Dataset, ServiceError>(dataset)
         })
