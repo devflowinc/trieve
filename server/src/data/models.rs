@@ -914,6 +914,7 @@ pub struct StripeSubscription {
     pub organization_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub current_period_end: Option<chrono::NaiveDateTime>,
 }
 
 impl StripeSubscription {
@@ -921,6 +922,7 @@ impl StripeSubscription {
         stripe_id: String,
         plan_id: uuid::Uuid,
         organization_id: uuid::Uuid,
+        current_period_end: Option<chrono::NaiveDateTime>,
     ) -> Self {
         StripeSubscription {
             id: uuid::Uuid::new_v4(),
@@ -929,6 +931,7 @@ impl StripeSubscription {
             organization_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
+            current_period_end,
         }
     }
 }

@@ -5,7 +5,9 @@ use crate::{
         organization_operator::get_organization_by_id_query,
         stripe_operator::{
             cancel_stripe_subscription, create_stripe_payment_link, create_stripe_plan_query,
-            create_stripe_subscription_query, get_plan_by_id_query, get_subscription_by_id_query,
+            create_stripe_subscription_query, delete_subscription_by_id_query,
+            get_option_subscription_by_organization_id_query, get_plan_by_id_query,
+            get_subscription_by_id_query, set_stripe_subscription_current_period_end,
         },
     },
 };
@@ -39,6 +41,7 @@ pub async fn webhook(
         match event.type_ {
             EventType::CheckoutSessionCompleted => {
                 if let EventObject::CheckoutSession(checkout_session) = event.data.object {
+                    let optional_subscription_pool = pool.clone();
                     let subscription_stripe_id = checkout_session
                         .subscription
                         .expect("Checkout session must have a subscription")
@@ -59,13 +62,40 @@ pub async fn webhook(
                         .parse::<uuid::Uuid>()
                         .expect("organization_id metadata must be a uuid");
 
-                    create_stripe_subscription_query(
-                        subscription_stripe_id,
-                        plan_id,
-                        organization_id,
-                        pool,
-                    )
+                    let fetch_subscription_organization_id = organization_id.clone();
+
+                    let optional_existing_subscription = web::block(move || {
+                        get_option_subscription_by_organization_id_query(
+                            fetch_subscription_organization_id,
+                            optional_subscription_pool,
+                        )
+                    })
+                    .await?
                     .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+
+                    if let Some(existing_subscription) = optional_existing_subscription {
+                        let delete_subscription_pool = pool.clone();
+
+                        web::block(move || {
+                            delete_subscription_by_id_query(
+                                existing_subscription.id,
+                                delete_subscription_pool,
+                            )
+                        })
+                        .await?
+                        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+                    }
+
+                    web::block(move || {
+                        create_stripe_subscription_query(
+                            subscription_stripe_id,
+                            plan_id,
+                            organization_id,
+                            pool,
+                        )
+                    })
+                    .await?
+                    .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?
                 }
             }
             EventType::PlanCreated => {
@@ -73,8 +103,29 @@ pub async fn webhook(
                     let plan_id = plan.id.to_string();
                     let plan_amount = plan.amount.expect("Plan must have an amount");
 
-                    create_stripe_plan_query(plan_id, plan_amount, pool)
+                    web::block(move || create_stripe_plan_query(plan_id, plan_amount, pool))
+                        .await?
                         .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+                }
+            }
+            EventType::CustomerSubscriptionDeleted => {
+                if let EventObject::Subscription(subscription) = event.data.object {
+                    let subscription_stripe_id = subscription.id.to_string();
+
+                    let current_period_end = chrono::NaiveDateTime::from_timestamp_micros(
+                        subscription.current_period_end,
+                    )
+                    .expect("Failed to convert current_period_end to NaiveDateTime");
+
+                    web::block(move || {
+                        set_stripe_subscription_current_period_end(
+                            subscription_stripe_id,
+                            current_period_end,
+                            pool,
+                        )
+                    })
+                    .await?
+                    .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
                 }
             }
             _ => {}
@@ -109,6 +160,18 @@ pub async fn direct_to_payment_link(
     path_data: web::Path<GetDirectPaymentLink>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_pool = pool.clone();
+    let subscription_pool = pool.clone();
+    let subscription_org_id = path_data.organization_id.clone();
+
+    let current_subscription = web::block(move || {
+        get_option_subscription_by_organization_id_query(subscription_org_id, subscription_pool)
+    })
+    .await?
+    .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+
+    if current_subscription.is_some_and(|s| s.current_period_end.is_none()) {
+        return Ok(HttpResponse::Conflict().finish());
+    }
 
     let plan_id = path_data.plan_id.clone();
     let organization_id = path_data.organization_id.clone();
