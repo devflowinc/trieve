@@ -122,6 +122,7 @@ pub async fn main() -> std::io::Result<()> {
             handlers::dataset_handler::update_dataset,
             handlers::dataset_handler::delete_dataset,
             handlers::dataset_handler::get_dataset,
+            handlers::dataset_handler::get_datasets_from_organization,
         ),
         components(
             schemas(
@@ -282,10 +283,17 @@ pub async fn main() -> std::io::Result<()> {
             .service(
                 web::scope("/api")
                     .service(
-                        web::resource("/dataset")
-                            .route(web::post().to(handlers::dataset_handler::create_dataset))
-                            .route(web::put().to(handlers::dataset_handler::update_dataset))
-                            .route(web::delete().to(handlers::dataset_handler::delete_dataset)),
+                        web::scope("/dataset")
+                            .service(
+                                web::resource("")
+                                    .route(web::post().to(handlers::dataset_handler::create_dataset))
+                                    .route(web::put().to(handlers::dataset_handler::update_dataset))
+                                    .route(web::delete().to(handlers::dataset_handler::delete_dataset))
+                            )
+                            .service(
+                                web::resource("/organization/{organization_id}")
+                                    .route(web::get().to(handlers::dataset_handler::get_datasets_from_organization)),
+                            ),
                     )
                     .service(
                         web::resource("/dataset/{dataset_id}")
