@@ -124,6 +124,7 @@ pub async fn main() -> std::io::Result<()> {
             handlers::dataset_handler::get_dataset,
             handlers::dataset_handler::get_datasets_from_organization,
             handlers::stripe_handler::direct_to_payment_link,
+            handlers::stripe_handler::cancel_subscription,
         ),
         components(
             schemas(

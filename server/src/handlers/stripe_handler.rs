@@ -194,6 +194,19 @@ pub async fn direct_to_payment_link(
         .finish())
 }
 
+#[utoipa::path(
+    delete,
+    path = "/stripe/subscription/{subscription_id}",
+    context_path = "/api",
+    tag = "stripe",
+    responses(
+        (status = 200, description = "Confirmation that the subscription was cancelled"),
+        (status = 400, description = "Service error relating to creating a URL for a stripe checkout page", body = [DefaultError]),
+    ),
+    params(
+        ("subscription_id" = Option<uuid>, Path, description = "id of the subscription you want to cancel"),
+    ),
+)]
 pub async fn cancel_subscription(
     subscription_id: web::Path<uuid::Uuid>,
     user: LoggedUser,
