@@ -5,29 +5,6 @@ use crate::{
 };
 use actix_web::web;
 use diesel::{ExpressionMethods, QueryDsl, SelectableHelper};
-use tokio::sync::RwLock;
-
-use super::tantivy_operator::TantivyIndexMap;
-
-/// Creates all indexes between Pg, Qdrant and tantivy
-pub async fn new_dataset_operation(
-    dataset: Dataset,
-    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
-    pool: web::Data<Pool>,
-) -> Result<Dataset, ServiceError> {
-    tantivy_index_map
-        .write()
-        .await
-        .create_index(&dataset.id.to_string())
-        .map_err(|err| {
-            ServiceError::BadRequest(format!(
-                "Failed to create tantivy index: {:?}",
-                err.to_string()
-            ))
-        })?;
-
-    create_dataset_query(dataset, pool).await
-}
 
 pub async fn create_dataset_query(
     new_dataset: Dataset,
@@ -81,21 +58,18 @@ pub async fn get_dataset_by_id_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get redis connection".to_string()))?;
 
-    let redis_dataset: Result<Dataset, ServiceError> = {
-        let dataset_json: String = redis::cmd("GET")
+    let redis_dataset: Result<String, ServiceError> = {
+        redis::cmd("GET")
             .arg(format!("dataset:{}", id))
             .query_async(&mut redis_conn)
             .await
-            .map_err(|_| {
-                ServiceError::BadRequest("Could not get dataset from redis".to_string())
-            })?;
-
-        serde_json::from_str::<Dataset>(&dataset_json)
-            .map_err(|_| ServiceError::BadRequest("Could not parse dataset from redis".to_string()))
+            .map_err(|_| ServiceError::BadRequest("Could not get dataset from redis".to_string()))
     };
 
     match redis_dataset {
-        Ok(dataset) => Ok(dataset),
+        Ok(dataset) => Ok(serde_json::from_str::<Dataset>(&dataset).map_err(|_| {
+            ServiceError::BadRequest("Could not parse dataset from redis".to_string())
+        })?),
         Err(_) => {
             use crate::data::schema::datasets::dsl as datasets_columns;
             let mut conn = pool.get().map_err(|_| {

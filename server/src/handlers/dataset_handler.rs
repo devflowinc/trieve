@@ -2,19 +2,15 @@ use super::auth_handler::LoggedUser;
 use crate::{
     data::models::{Dataset, Pool},
     errors::ServiceError,
-    operators::{
-        dataset_operator::{
-            delete_dataset_by_id_query, get_dataset_by_id_query, new_dataset_operation,
-            update_dataset_query,
-        },
-        tantivy_operator::TantivyIndexMap,
+    operators::dataset_operator::{
+        create_dataset_query, delete_dataset_by_id_query, get_dataset_by_id_query,
+        update_dataset_query,
     },
 };
 use actix_web::{web, FromRequest, HttpMessage, HttpResponse};
 use futures_util::Future;
 use serde::{Deserialize, Serialize};
 use std::pin::Pin;
-use tokio::sync::RwLock;
 use utoipa::ToSchema;
 
 impl FromRequest for Dataset {
@@ -44,10 +40,10 @@ impl FromRequest for Dataset {
             let dataset = get_dataset_by_id_query(dataset_id, pool).await?;
 
             let ext = req.extensions();
-            let user = ext.get::<LoggedUser>().ok_or(ServiceError::Forbidden)?;
-            if dataset.organization_id != user.organization_id {
-                return Err(ServiceError::Forbidden);
-            }
+            // let user = ext.get::<LoggedUser>().ok_or(ServiceError::Forbidden)?;
+            // if dataset.organization_id != user.organization_id {
+            //     return Err(ServiceError::Forbidden);
+            // }
 
             Ok::<Dataset, ServiceError>(dataset)
         })
@@ -72,7 +68,6 @@ pub struct CreateDatasetRequest {
 )]
 pub async fn create_dataset(
     data: web::Json<CreateDatasetRequest>,
-    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, ServiceError> {
@@ -83,7 +78,7 @@ pub async fn create_dataset(
 
     let dataset = Dataset::from_details(data.dataset_name.clone(), user.organization_id);
 
-    let d = new_dataset_operation(dataset, tantivy_index_map, pool).await?;
+    let d = create_dataset_query(dataset, pool).await?;
     Ok(HttpResponse::Ok().json(d))
 }
 

@@ -2,7 +2,7 @@ use super::card_operator::{
     find_relevant_sentence, get_collided_cards_query,
     get_metadata_and_collided_cards_from_point_ids_query, get_metadata_from_point_ids,
 };
-use super::tantivy_operator::TantivyIndexMap;
+use super::model_operator::create_embedding;
 use crate::data::models::{
     CardCollection, CardFileWithName, CardMetadataWithFileData, FullTextSearchResult, User, UserDTO,
 };
@@ -13,23 +13,19 @@ use crate::handlers::card_handler::{
     ParsedQuery, ScoreCardDTO, SearchCardData, SearchCardQueryResponseBody, SearchCollectionsData,
     SearchCollectionsResult,
 };
+use crate::operators::model_operator::CrossEncoder;
 use crate::operators::qdrant_operator::{
-    create_embedding, get_qdrant_connection, search_qdrant_query,
+    get_qdrant_connection, search_full_text_qdrant_query, search_semantic_qdrant_query,
 };
-use crate::CrossEncoder;
 use crate::{data::models::Pool, errors::DefaultError};
 use crate::{get_env, AppMutexStore};
 use actix_web::web;
 use candle_core::Tensor;
 use chrono::NaiveDateTime;
-use diesel::{
-    dsl::sql,
-    sql_types::{Int8, Text},
-};
+use diesel::{dsl::sql, sql_types::Text};
 use diesel::{
     BoolExpressionMethods, JoinOnDsl, NullableExpressionMethods, PgTextExpressionMethods,
 };
-use futures_util::TryFutureExt;
 use itertools::Itertools;
 
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
@@ -37,9 +33,7 @@ use qdrant_client::qdrant::{
     point_id::PointIdOptions, Condition, Filter, HasIdCondition, PointId, SearchPoints,
 };
 use serde::{Deserialize, Serialize};
-use std::cmp::max;
 use std::collections::HashSet;
-use tokio::sync::RwLock;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SearchResult {
@@ -55,7 +49,7 @@ pub struct SearchCardQueryResult {
 
 #[allow(clippy::too_many_arguments)]
 pub async fn retrieve_qdrant_points_query(
-    embedding_vector: Vec<f32>,
+    embedding_vector: Option<Vec<f32>>,
     page: u64,
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
@@ -238,7 +232,11 @@ pub async fn retrieve_qdrant_points_query(
         })),
     });
 
-    let point_ids = search_qdrant_query(page, filter, embedding_vector.clone(), dataset_id).await;
+    let point_ids = if let Some(embedding_vector) = embedding_vector {
+        search_semantic_qdrant_query(page, filter, embedding_vector, dataset_id).await
+    } else {
+        search_full_text_qdrant_query(page, filter, parsed_query.query, dataset_id).await
+    };
 
     Ok(SearchCardQueryResult {
         search_results: point_ids?,
@@ -267,6 +265,7 @@ pub async fn global_unfiltered_top_match_query(
         .search_points(&SearchPoints {
             collection_name: qdrant_collection,
             vector: embedding_vector,
+            vector_name: Some("dense_vectors".to_string()),
             limit: 1,
             with_payload: None,
             filter: Some(dataset_filter),
@@ -451,7 +450,7 @@ pub async fn search_card_collections_query(
     });
 
     let point_ids: Vec<SearchResult> =
-        search_qdrant_query(page, filter, embedding_vector, dataset_id).await?;
+        search_semantic_qdrant_query(page, filter, embedding_vector, dataset_id).await?;
 
     Ok(SearchCardQueryResult {
         search_results: point_ids,
@@ -599,215 +598,6 @@ pub struct FullTextDocIds {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn search_full_text_card_query(
-    user_query: String,
-    page: u64,
-    pool: web::Data<Pool>,
-    current_user_id: Option<uuid::Uuid>,
-    filters: Option<serde_json::Value>,
-    link: Option<Vec<String>>,
-    tag_set: Option<Vec<String>>,
-    time_range: Option<(String, String)>,
-    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
-    parsed_query: ParsedQuery,
-    dataset_id: uuid::Uuid,
-) -> Result<SearchCardQueryResult, DefaultError> {
-    let page = if page == 0 { 1 } else { page };
-    use crate::data::schema::card_collisions::dsl as card_collisions_columns;
-    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
-    let second_join = diesel::alias!(schema::card_metadata as second_join);
-    let mut conn = pool.get().unwrap();
-
-    let mut query = card_metadata_columns::card_metadata
-        .left_outer_join(
-            card_collisions_columns::card_collisions.on(card_metadata_columns::id
-                .eq(card_collisions_columns::card_id)
-                .and(card_metadata_columns::private.eq(false))),
-        )
-        .left_outer_join(
-            second_join.on(second_join
-                .field(schema::card_metadata::qdrant_point_id)
-                .eq(card_collisions_columns::collision_qdrant_id)
-                .and(second_join.field(schema::card_metadata::private).eq(true))),
-        )
-        .filter(
-            card_metadata_columns::private
-                .eq(false)
-                .or(card_metadata_columns::author_id
-                    .eq(current_user_id.unwrap_or(uuid::Uuid::nil())))
-                .and(
-                    second_join
-                        .field(schema::card_metadata::qdrant_point_id)
-                        .is_not_null()
-                        .or(card_metadata_columns::qdrant_point_id.is_not_null()),
-                ),
-        )
-        .filter(card_metadata_columns::dataset_id.eq(dataset_id))
-        .select((
-            (
-                card_metadata_columns::qdrant_point_id,
-                sql::<Int8>("count(*) OVER() AS full_count"),
-            ),
-            second_join
-                .field(schema::card_metadata::qdrant_point_id)
-                .nullable(),
-        ))
-        .distinct_on((
-            card_metadata_columns::qdrant_point_id,
-            second_join
-                .field(schema::card_metadata::qdrant_point_id)
-                .nullable(),
-        ))
-        .into_boxed();
-
-    let tag_set_inner = tag_set.unwrap_or_default();
-    let link_inner = link.unwrap_or_default();
-    if !tag_set_inner.is_empty() {
-        query = query.filter(card_metadata_columns::tag_set.ilike(format!(
-            "%{}%",
-            tag_set_inner.first().unwrap_or(&String::new())
-        )));
-    }
-
-    for tag in tag_set_inner.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
-    }
-
-    if !link_inner.is_empty() {
-        query = query.filter(card_metadata_columns::link.ilike(format!(
-            "%{}%",
-            link_inner.first().unwrap_or(&String::new())
-        )));
-    }
-    for link_url in link_inner.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::link.ilike(format!("%{}%", link_url)));
-    }
-
-    if let Some(time_range) = time_range {
-        if time_range.0 != "null" && time_range.1 != "null" {
-            query = query.filter(
-                card_metadata_columns::time_stamp
-                    .ge(
-                        NaiveDateTime::parse_from_str(&time_range.0, "%Y-%m-%d %H:%M:%S").map_err(
-                            |_| DefaultError {
-                                message: "Failed to parse time range",
-                            },
-                        )?,
-                    )
-                    .and(card_metadata_columns::time_stamp.le(
-                        NaiveDateTime::parse_from_str(&time_range.1, "%Y-%m-%d %H:%M:%S").map_err(
-                            |_| DefaultError {
-                                message: "Failed to parse time range",
-                            },
-                        )?,
-                    )),
-            );
-        } else if time_range.0 != "null" {
-            query = query.filter(card_metadata_columns::time_stamp.ge(
-                NaiveDateTime::parse_from_str(&time_range.0, "%Y-%m-%d %H:%M:%S").map_err(
-                    |_| DefaultError {
-                        message: "Failed to parse time range",
-                    },
-                )?,
-            ));
-        } else if time_range.1 != "null" {
-            query = query.filter(card_metadata_columns::time_stamp.le(
-                NaiveDateTime::parse_from_str(&time_range.1, "%Y-%m-%d %H:%M:%S").map_err(
-                    |_| DefaultError {
-                        message: "Failed to parse time range",
-                    },
-                )?,
-            ));
-        }
-    }
-
-    if let Some(serde_json::Value::Object(obj)) = &filters {
-        for key in obj.keys() {
-            let value = obj.get(key).expect("Value should exist");
-            match value {
-                serde_json::Value::Array(arr) => {
-                    query = query.filter(
-                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                            .ilike(format!("%{}%", arr.first().unwrap().as_str().unwrap_or(""))),
-                    );
-                    for item in arr.iter().skip(1) {
-                        query = query.or_filter(
-                            sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                                .ilike(format!("%{}%", item.as_str().unwrap_or(""))),
-                        );
-                    }
-                }
-                _ => {
-                    query = query.filter(
-                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
-                            .ilike(format!("%{}%", value.as_str().unwrap_or(""))),
-                    );
-                }
-            }
-        }
-    }
-
-    if let Some(quote_words) = parsed_query.quote_words {
-        for word in quote_words.iter() {
-            query = query.filter(card_metadata_columns::content.ilike(format!("%{}%", word)));
-        }
-    }
-
-    if let Some(negated_words) = parsed_query.negated_words {
-        for word in negated_words.iter() {
-            query = query.filter(card_metadata_columns::content.not_ilike(format!("%{}%", word)));
-        }
-    }
-
-    let matching_tantivy_ids: Vec<(FullTextDocIds, Option<uuid::Uuid>)> =
-        query.load(&mut conn).map_err(|_| DefaultError {
-            message: "Failed to load full-text searched cards",
-        })?;
-
-    let tantivy_index_map = tantivy_index_map.read().await;
-
-    let searched_cards = tantivy_index_map
-        .search_cards(
-            dataset_id.to_string().as_str(),
-            user_query.as_str(),
-            page,
-            Some(
-                matching_tantivy_ids
-                    .iter()
-                    .map(|card| {
-                        card.0
-                            .doc_ids
-                            .unwrap_or(card.1.unwrap_or(uuid::Uuid::nil()))
-                    })
-                    .collect::<Vec<uuid::Uuid>>(),
-            ),
-        )
-        .map_err(|e| {
-            log::info!("Failed to search cards {:?}", e);
-            DefaultError {
-                message: "Failed to load full-text searched cards",
-            }
-        })?;
-
-    let total_count = if searched_cards.is_empty() {
-        0
-    } else {
-        (matching_tantivy_ids
-            .first()
-            .expect("searched_cards should have a len of at least 1")
-            .0
-            .total_count as f64
-            / 10.0)
-            .ceil() as i64
-    };
-
-    Ok(SearchCardQueryResult {
-        search_results: searched_cards,
-        total_card_pages: max(1, total_count),
-    })
-}
-
-#[allow(clippy::too_many_arguments)]
 pub async fn search_full_text_collection_query(
     user_query: String,
     page: u64,
@@ -817,7 +607,6 @@ pub async fn search_full_text_collection_query(
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
     collection_id: uuid::Uuid,
-    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     parsed_query: ParsedQuery,
     dataset_uuid: uuid::Uuid,
 ) -> Result<SearchCardQueryResult, DefaultError> {
@@ -877,10 +666,7 @@ pub async fn search_full_text_collection_query(
         .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id))
         .filter(card_metadata_columns::dataset_id.eq(dataset_uuid))
         .select((
-            (
-                card_metadata_columns::qdrant_point_id,
-                sql::<Int8>("count(*) OVER() AS full_count"),
-            ),
+            card_metadata_columns::qdrant_point_id,
             second_join
                 .field(schema::card_metadata::qdrant_point_id)
                 .nullable(),
@@ -962,48 +748,35 @@ pub async fn search_full_text_collection_query(
         second_join.field(schema::card_metadata::qdrant_point_id),
     ));
 
-    let matching_tantivy_ids: Vec<(FullTextDocIds, Option<uuid::Uuid>)> =
+    let matching_qdrant_point_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
-            message: "Failed to load trigram searched cards",
-        })?;
-
-    let tantivy_index_map = tantivy_index_map.read().await;
-
-    let searched_cards = tantivy_index_map
-        .search_cards(
-            dataset_uuid.to_string().as_str(),
-            user_query.as_str(),
-            page,
-            Some(
-                matching_tantivy_ids
-                    .iter()
-                    .map(|card| {
-                        card.0
-                            .doc_ids
-                            .unwrap_or(card.1.unwrap_or(uuid::Uuid::nil()))
-                    })
-                    .collect::<Vec<uuid::Uuid>>(),
-            ),
-        )
-        .map_err(|_| DefaultError {
             message: "Failed to load full-text searched cards",
         })?;
 
-    let total_count = if searched_cards.is_empty() {
-        0
-    } else {
-        (matching_tantivy_ids
-            .first()
-            .expect("searched_cards should have a len of at least 1")
-            .0
-            .total_count as f64
-            / 10.0)
-            .ceil() as i64
-    };
+    let matching_point_ids: Vec<PointId> = matching_qdrant_point_ids
+        .iter()
+        .map(|uuid| {
+            uuid.0
+                .unwrap_or(uuid.1.unwrap_or(uuid::Uuid::nil()))
+                .to_string()
+        })
+        .collect::<HashSet<String>>()
+        .iter()
+        .map(|uuid| (*uuid).clone().into())
+        .collect::<Vec<PointId>>();
+
+    let mut filter = Filter::default();
+    filter.should.push(Condition {
+        condition_one_of: Some(HasId(HasIdCondition {
+            has_id: (matching_point_ids).to_vec(),
+        })),
+    });
+
+    let point_ids = search_full_text_qdrant_query(page, filter, user_query, dataset_uuid).await;
 
     Ok(SearchCardQueryResult {
-        search_results: searched_cards,
-        total_card_pages: max(1, total_count),
+        search_results: point_ids?,
+        total_card_pages: (matching_qdrant_point_ids.len() as f64 / 10.0).ceil() as i64,
     })
 }
 
@@ -1092,7 +865,7 @@ pub async fn search_semantic_cards(
     let embedding_vector = create_embedding(&data.content, app_mutex).await?;
 
     let search_card_query_results = retrieve_qdrant_points_query(
-        embedding_vector,
+        Some(embedding_vector),
         page,
         data.link.clone(),
         data.tag_set.clone(),
@@ -1119,35 +892,32 @@ pub async fn search_semantic_cards(
 
 pub async fn search_full_text_cards(
     data: web::Json<SearchCardData>,
-    parsed_query: ParsedQuery,
+    mut parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
-    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     current_user_id: Option<uuid::Uuid>,
     dataset_id: uuid::Uuid,
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
-    let pool1 = pool.clone();
-    let user_query = data
-        .content
+    parsed_query.query = parsed_query
+        .query
         .split_whitespace()
         .join(" AND ")
         .replace('\"', "");
-    let data_inner = data.clone();
-    let search_card_query_results = search_full_text_card_query(
-        user_query,
+
+    let search_card_query_results = retrieve_qdrant_points_query(
+        None,
         page,
-        pool1,
+        data.link.clone(),
+        data.tag_set.clone(),
+        data.time_range.clone(),
+        data.filters.clone(),
         current_user_id,
-        data_inner.filters,
-        data_inner.link,
-        data_inner.tag_set,
-        data_inner.time_range,
-        tantivy_index_map,
         parsed_query,
         dataset_id,
+        pool.clone(),
     )
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))
-    .await?;
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let result_cards =
         retrieve_cards_from_point_ids(search_card_query_results, data, current_user_id, pool)
@@ -1283,7 +1053,6 @@ pub async fn search_hybrid_cards(
     pool: web::Data<Pool>,
     current_user_id: Option<uuid::Uuid>,
     cross_encoder_init: web::Data<CrossEncoder>,
-    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     dataset_id: uuid::Uuid,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
@@ -1291,7 +1060,7 @@ pub async fn search_hybrid_cards(
     let pool1 = pool.clone();
 
     let search_card_query_results = retrieve_qdrant_points_query(
-        embedding_vector,
+        Some(embedding_vector),
         page,
         data.link.clone(),
         data.tag_set.clone(),
@@ -1308,7 +1077,6 @@ pub async fn search_hybrid_cards(
         parsed_query,
         page,
         pool,
-        tantivy_index_map,
         current_user_id,
         dataset_id,
     );
@@ -1540,7 +1308,6 @@ pub async fn search_full_text_collections(
     collection: CardCollection,
     page: u64,
     pool: web::Data<Pool>,
-    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     current_user_id: Option<uuid::Uuid>,
     dataset_id: uuid::Uuid,
 ) -> Result<SearchCollectionsResult, actix_web::Error> {
@@ -1556,7 +1323,6 @@ pub async fn search_full_text_collections(
         data_inner.link.clone(),
         data_inner.tag_set.clone(),
         data_inner.collection_id,
-        tantivy_index_map,
         parsed_query,
         dataset_id,
     )

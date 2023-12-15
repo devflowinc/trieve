@@ -2,12 +2,9 @@ use super::auth_handler::{LoggedUser, RequireAuth};
 use crate::{
     data::models::{Dataset, File, Pool},
     errors::ServiceError,
-    operators::{
-        file_operator::{
-            convert_doc_to_html_query, delete_file_query, get_file_query, get_user_file_query,
-            get_user_id_of_file_query, update_file_query,
-        },
-        tantivy_operator::TantivyIndexMap,
+    operators::file_operator::{
+        convert_doc_to_html_query, delete_file_query, get_file_query, get_user_file_query,
+        get_user_id_of_file_query, update_file_query,
     },
     AppMutexStore,
 };
@@ -22,7 +19,6 @@ use magick_rust::MagickWand;
 use pyo3::{types::PyDict, Python};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tokio::sync::RwLock;
 use utoipa::ToSchema;
 
 pub fn validate_file_name(s: String) -> Result<String, actix_web::Error> {
@@ -87,7 +83,6 @@ pub async fn upload_file_handler(
     data: web::Json<UploadFileData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
-    tantivy_index_map: web::Data<RwLock<TantivyIndexMap>>,
     dataset: Dataset,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -138,7 +133,6 @@ pub async fn upload_file_handler(
         upload_file_data.create_cards,
         upload_file_data.time_stamp,
         user,
-        tantivy_index_map,
         app_mutex,
         dataset,
         pool_inner,
