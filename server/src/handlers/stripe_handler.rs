@@ -4,8 +4,8 @@ use crate::{
     operators::{
         organization_operator::get_organization_by_id_query,
         stripe_operator::{
-            create_stripe_payment_link, create_stripe_plan_query, create_stripe_subscription_query,
-            get_plan_by_id_query,
+            cancel_stripe_subscription, create_stripe_payment_link, create_stripe_plan_query,
+            create_stripe_subscription_query, get_plan_by_id_query, get_subscription_by_id_query,
         },
     },
 };
@@ -13,6 +13,8 @@ use actix_web::{web, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
 use stripe::{EventObject, EventType, Webhook};
 use utoipa::ToSchema;
+
+use super::auth_handler::LoggedUser;
 
 pub async fn webhook(
     req: HttpRequest,
@@ -127,4 +129,31 @@ pub async fn direct_to_payment_link(
     Ok(HttpResponse::SeeOther()
         .insert_header(("Location", payment_link))
         .finish())
+}
+
+pub async fn cancel_subscription(
+    subscription_id: web::Path<uuid::Uuid>,
+    user: LoggedUser,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let subscription = web::block(move || {
+        get_subscription_by_id_query(subscription_id.into_inner(), pool.clone())
+    })
+    .await?
+    .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+
+    if subscription.organization_id != user.organization_id {
+        return Ok(HttpResponse::Forbidden().finish());
+    }
+
+    let _ = cancel_stripe_subscription(subscription.stripe_id)
+        .await
+        .map_err(|e| {
+            ServiceError::BadRequest(format!(
+                "Failed to cancel stripe subscription: {}",
+                e.message
+            ))
+        })?;
+
+    Ok(HttpResponse::Ok().finish())
 }
