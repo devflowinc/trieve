@@ -502,7 +502,7 @@ pub async fn get_me(
 pub async fn health_check(
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let result = operators::qdrant_operator::create_embedding("health check", app_mutex).await;
+    let result = operators::model_operator::create_embedding("health check", app_mutex).await;
 
     result?;
     Ok(HttpResponse::Ok().finish())
