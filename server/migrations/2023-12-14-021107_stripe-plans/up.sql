@@ -15,10 +15,8 @@ CREATE TABLE stripe_plans (
 CREATE TABLE stripe_subscriptions (
     id UUID NOT NULL UNIQUE PRIMARY KEY,
     stripe_id TEXT NOT NULL UNIQUE,
-    stripe_plan_id TEXT NOT NULL,
-    organization_id UUID NOT NULL,
+    plan_id UUID NOT NULL REFERENCES stripe_plans(id),
+    organization_id UUID NOT NULL REFERENCES organizations(id),
     created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
-    FOREIGN KEY (stripe_plan_id) REFERENCES stripe_plans(stripe_id),
-    FOREIGN KEY (organization_id) REFERENCES organizations(id)
+    updated_at TIMESTAMP NOT NULL
 );
