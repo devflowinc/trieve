@@ -5,7 +5,6 @@ use crate::{
         self,
         invitation_operator::get_invitation_by_id_query,
         organization_operator::{create_organization_query, get_org_from_dataset_id_query},
-        stripe_operator::create_stripe_customer_query,
         user_operator::{get_user_by_id_query, get_user_from_api_key_query},
     },
 };
@@ -376,8 +375,6 @@ pub async fn callback(
     pool: web::Data<Pool>,
     query: web::Query<OpCallback>,
 ) -> Result<HttpResponse, Error> {
-    let pool1 = pool.clone();
-
     let state: OpenIdConnectState = session
         .get(OIDC_SESSION_KEY)
         .map_err(|_| ServiceError::InternalServerError("Could not get OIDC Session".into()))?
@@ -467,8 +464,6 @@ pub async fn callback(
             .await?
         }
     };
-
-    let _ = create_stripe_customer_query(email.to_string(), pool1.clone()).await;
 
     let slim_user: SlimUser = SlimUser::from_details(user.0, user.1);
 
