@@ -147,10 +147,12 @@ pub async fn delete_dataset(
     path = "/dataset",
     context_path = "/api",
     tag = "dataset",
-    request_body(content = GetDatasetRequest, description = "JSON request payload to get a dataset", content_type = "application/json"),
     responses(
         (status = 200, description = "Dataset retrieved successfully", body = Dataset),
         (status = 400, description = "Service error relating to retrieving the dataset", body = [DefaultError]),
+    ),
+    params(
+        ("dataset_id" = uuid, Path, description = "id of the dataset you want to retrieve"),
     ),
 )]
 pub async fn get_dataset(
