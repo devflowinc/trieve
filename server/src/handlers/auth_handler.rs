@@ -170,12 +170,15 @@ pub async fn create_account(
                     "Could not find organization for dataset".to_string(),
                 )
             })?,
-        None => create_organization_query(user_id.to_string().as_str(), json!({}), pool.clone())
-            .map_err(|_| {
+        None => {
+            let mut org_name = email.split('@').collect::<Vec<&str>>()[0].to_string();
+            org_name.push_str("'s Organization");
+            create_organization_query(org_name.as_str(), json!({}), pool.clone()).map_err(|_| {
                 ServiceError::InternalServerError(
                     "Could not create organization for user".to_string(),
                 )
-            })?,
+            })?
+        }
     };
 
     let org_id = org.id;
