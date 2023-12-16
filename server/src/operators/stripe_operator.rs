@@ -12,9 +12,10 @@ pub async fn create_stripe_customer_query(
 ) -> Result<StripeCustomer, DefaultError> {
     use crate::data::schema::stripe_customers::dsl as stripe_customers_columns;
 
-    let mut create_stripe_customer_data =
-        stripe::generated::core::customer::CreateCustomer::default();
-    create_stripe_customer_data.email = Some(&email);
+    let create_stripe_customer_data = stripe::generated::core::customer::CreateCustomer {
+        email: Some(&email),
+        ..Default::default()
+    };
 
     let stripe_secret = std::env::var("STRIPE_SECRET").expect("STRIPE_SECRET must be set");
     let stripe_client = stripe::Client::new(stripe_secret);
