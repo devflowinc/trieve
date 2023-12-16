@@ -125,6 +125,7 @@ pub async fn main() -> std::io::Result<()> {
             handlers::dataset_handler::get_datasets_from_organization,
             handlers::stripe_handler::direct_to_payment_link,
             handlers::stripe_handler::cancel_subscription,
+            handlers::stripe_handler::update_subscription_plan,
         ),
         components(
             schemas(
@@ -175,6 +176,8 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::dataset_handler::CreateDatasetRequest,
                 handlers::dataset_handler::UpdateDatasetRequest,
                 handlers::dataset_handler::DeleteDatasetRequest,
+                handlers::stripe_handler::GetDirectPaymentLinkData,
+                handlers::stripe_handler::UpdateSubscriptionData,
                 data::models::SlimUser,
                 data::models::UserDTO,
                 data::models::Topic,
@@ -537,6 +540,10 @@ pub async fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/subscription/{subscription_id}")
                                     .route(web::delete().to(handlers::stripe_handler::cancel_subscription)),
+                            )
+                            .service(
+                                web::resource("/subscription_plan/{subscription_id}/{plan_id}")
+                                    .route(web::patch().to(handlers::stripe_handler::update_subscription_plan)),
                             )
                             .service(
                                 web::resource("/payment_link/{plan_id}/{organization_id}")

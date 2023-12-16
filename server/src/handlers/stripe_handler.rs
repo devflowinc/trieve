@@ -8,6 +8,7 @@ use crate::{
             create_stripe_subscription_query, delete_subscription_by_id_query,
             get_option_subscription_by_organization_id_query, get_plan_by_id_query,
             get_subscription_by_id_query, set_stripe_subscription_current_period_end,
+            update_stripe_subscription, update_stripe_subscription_plan_query,
         },
     },
 };
@@ -136,7 +137,7 @@ pub async fn webhook(
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct GetDirectPaymentLink {
+pub struct GetDirectPaymentLinkData {
     pub plan_id: uuid::Uuid,
     pub organization_id: uuid::Uuid,
 }
@@ -151,13 +152,13 @@ pub struct GetDirectPaymentLink {
         (status = 400, description = "Service error relating to creating a URL for a stripe checkout page", body = [DefaultError]),
     ),
     params(
-        ("plan_id" = Option<uuid>, Path, description = "id of the plan you want to subscribe to"),
-        ("organization_id" = Option<uuid>, Path, description = "id of the organization you want to subscribe to the plan"),
+        ("plan_id" = uuid, Path, description = "id of the plan you want to subscribe to"),
+        ("organization_id" = uuid, Path, description = "id of the organization you want to subscribe to the plan"),
     ),
 )]
 pub async fn direct_to_payment_link(
+    path_data: web::Path<GetDirectPaymentLinkData>,
     pool: web::Data<Pool>,
-    path_data: web::Path<GetDirectPaymentLink>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_pool = pool.clone();
     let subscription_pool = pool.clone();
@@ -204,7 +205,7 @@ pub async fn direct_to_payment_link(
         (status = 400, description = "Service error relating to creating a URL for a stripe checkout page", body = [DefaultError]),
     ),
     params(
-        ("subscription_id" = Option<uuid>, Path, description = "id of the subscription you want to cancel"),
+        ("subscription_id" = uuid, Path, description = "id of the subscription you want to cancel"),
     ),
 )]
 pub async fn cancel_subscription(
@@ -230,6 +231,72 @@ pub async fn cancel_subscription(
                 e.message
             ))
         })?;
+
+    Ok(HttpResponse::Ok().finish())
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct UpdateSubscriptionData {
+    pub subscription_id: uuid::Uuid,
+    pub plan_id: uuid::Uuid,
+}
+
+#[utoipa::path(
+    delete,
+    path = "/stripe/subscription_plan/{subscription_id}/{plan_id}",
+    context_path = "/api",
+    tag = "stripe",
+    responses(
+        (status = 200, description = "Confirmation that the subscription was updated to the new plan"),
+        (status = 400, description = "Service error relating to updating the subscription to the new plan", body = [DefaultError]),
+    ),
+    params(
+        ("subscription_id" = uuid, Path, description = "id of the subscription you want to update"),
+        ("plan_id" = uuid, Path, description = "id of the plan you want to subscribe to"),
+    ),
+)]
+pub async fn update_subscription_plan(
+    path_data: web::Path<UpdateSubscriptionData>,
+    user: LoggedUser,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let get_subscription_pool = pool.clone();
+    let get_plan_pool = pool.clone();
+    let update_subscription_plan_pool = pool.clone();
+
+    let subscription_id = path_data.subscription_id.clone();
+    let subscription =
+        web::block(move || get_subscription_by_id_query(subscription_id, get_subscription_pool))
+            .await?
+            .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+
+    if subscription.organization_id != user.organization_id {
+        return Ok(HttpResponse::Forbidden().finish());
+    }
+
+    let plan_id = path_data.plan_id.clone();
+    let plan = web::block(move || get_plan_by_id_query(plan_id, get_plan_pool))
+        .await?
+        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+
+    update_stripe_subscription(subscription.stripe_id, plan.stripe_id)
+        .await
+        .map_err(|e| {
+            ServiceError::BadRequest(format!(
+                "Failed to update stripe subscription: {}",
+                e.message
+            ))
+        })?;
+
+    web::block(move || {
+        update_stripe_subscription_plan_query(
+            subscription.id,
+            plan.id,
+            update_subscription_plan_pool,
+        )
+    })
+    .await?
+    .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
     Ok(HttpResponse::Ok().finish())
 }
