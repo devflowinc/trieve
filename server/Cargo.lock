@@ -818,7 +818,7 @@ dependencies = [
 [[package]]
 name = "candle-core"
 version = "0.3.1"
-source = "git+https://github.com/huggingface/candle.git#e60f9b5dfcab05db8c3c2dbf55fb52f10188aa02"
+source = "git+https://github.com/huggingface/candle.git#e12cbfd73b72ead1c38b2577947e62f8e18b02ae"
 dependencies = [
  "byteorder",
  "gemm",
@@ -838,7 +838,7 @@ dependencies = [
 [[package]]
 name = "candle-nn"
 version = "0.3.1"
-source = "git+https://github.com/huggingface/candle.git#e60f9b5dfcab05db8c3c2dbf55fb52f10188aa02"
+source = "git+https://github.com/huggingface/candle.git#e12cbfd73b72ead1c38b2577947e62f8e18b02ae"
 dependencies = [
  "candle-core",
  "half",
@@ -852,7 +852,7 @@ dependencies = [
 [[package]]
 name = "candle-transformers"
 version = "0.3.1"
-source = "git+https://github.com/huggingface/candle.git#e60f9b5dfcab05db8c3c2dbf55fb52f10188aa02"
+source = "git+https://github.com/huggingface/candle.git#e12cbfd73b72ead1c38b2577947e62f8e18b02ae"
 dependencies = [
  "byteorder",
  "candle-core",
@@ -1597,9 +1597,9 @@ dependencies = [
 
 [[package]]
 name = "eyre"
-version = "0.6.11"
+version = "0.6.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6267a1fa6f59179ea4afc8e50fd8612a3cc60bc858f786ff877a4a8cb042799"
+checksum = "8bbb8258be8305fb0237d7b295f47bb24ff1b136a535f473baf40e70468515aa"
 dependencies = [
  "indenter",
  "once_cell",
