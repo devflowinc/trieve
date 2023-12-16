@@ -242,3 +242,76 @@ pub async fn cancel_stripe_subscription(
 
     Ok(())
 }
+
+pub fn update_stripe_subscription_plan_query(
+    subscription_id: uuid::Uuid,
+    plan_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
+
+    let mut conn = pool.get().expect("Failed to get connection from pool");
+    diesel::update(
+        stripe_subscriptions_columns::stripe_subscriptions
+            .filter(stripe_subscriptions_columns::id.eq(subscription_id)),
+    )
+    .set(stripe_subscriptions_columns::plan_id.eq(plan_id))
+    .execute(&mut conn)
+    .map_err(|e| {
+        log::error!("Failed to update stripe subscription: {}", e);
+        DefaultError {
+            message: "Failed to update stripe subscription",
+        }
+    })?;
+
+    Ok(())
+}
+
+pub async fn update_stripe_subscription(
+    subscription_stripe_id: String,
+    plan_stripe_id: String,
+) -> Result<(), DefaultError> {
+    let stripe_client = get_stripe_client();
+
+    let stripe_subscription_id: stripe::SubscriptionId = subscription_stripe_id
+        .parse()
+        .expect("Failed to parse stripe subscription id");
+
+    let stripe_subscription =
+        stripe::Subscription::retrieve(&stripe_client, &stripe_subscription_id, &[])
+            .await
+            .map_err(|e| {
+                log::error!("Failed to retrieve stripe subscription: {}", e);
+                DefaultError {
+                    message: "Failed to retrieve stripe subscription",
+                }
+            })?;
+
+    let mut update_subscription_items: Vec<stripe::UpdateSubscriptionItems> = vec![];
+    let mut deleted_item = stripe::UpdateSubscriptionItems::default();
+    for stripe_item in stripe_subscription.items.data.iter() {
+        deleted_item.id = Some(stripe_item.id.to_string());
+        deleted_item.deleted = Some(true);
+        update_subscription_items.push(deleted_item.clone());
+    }
+
+    let mut new_stripe_item = stripe::UpdateSubscriptionItems::default();
+    new_stripe_item.price = Some(plan_stripe_id);
+    new_stripe_item.quantity = Some(1);
+    update_subscription_items.push(new_stripe_item);
+
+    let mut update_subscription = stripe::UpdateSubscription::default();
+    update_subscription.items = Some(update_subscription_items);
+
+    let _updated_stripe_subscription =
+        stripe::Subscription::update(&stripe_client, &stripe_subscription_id, update_subscription)
+            .await
+            .map_err(|e| {
+                log::error!("Failed to update stripe subscription: {}", e);
+                DefaultError {
+                    message: "Failed to update stripe subscription",
+                }
+            })?;
+
+    Ok(())
+}
