@@ -506,7 +506,6 @@ pub fn get_metadata_query(
                 user_columns::website,
                 user_columns::visible_email,
                 user_columns::api_key_hash,
-                user_columns::organization_id,
                 user_columns::name,
             )
                 .nullable(),
@@ -549,7 +548,6 @@ pub fn get_metadata_query(
                     website: user.website.clone(),
                     visible_email: user.visible_email,
                     created_at: user.created_at,
-                    organization_id: user.organization_id
                 });
 
             let card_with_file_name = file_ids

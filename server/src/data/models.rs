@@ -21,16 +21,11 @@ pub struct User {
     pub website: Option<String>,
     pub visible_email: bool,
     pub api_key_hash: Option<String>,
-    pub organization_id: uuid::Uuid,
     pub name: Option<String>,
 }
 
 impl User {
-    pub fn from_details<S: Into<String>>(
-        email: S,
-        name: Option<S>,
-        organization_id: uuid::Uuid,
-    ) -> Self {
+    pub fn from_details<S: Into<String>>(email: S, name: Option<S>) -> Self {
         User {
             id: uuid::Uuid::new_v4(),
             email: email.into(),
@@ -40,7 +35,6 @@ impl User {
             website: None,
             visible_email: true,
             api_key_hash: None,
-            organization_id,
             name: name.map(|n| n.into()),
         }
     }
@@ -49,7 +43,6 @@ impl User {
         id: T,
         email: S,
         name: Option<S>,
-        organization_id: uuid::Uuid,
     ) -> Self {
         User {
             id: id.into(),
@@ -60,7 +53,6 @@ impl User {
             website: None,
             visible_email: true,
             api_key_hash: None,
-            organization_id,
             name: name.map(|n| n.into()),
         }
     }
@@ -342,17 +334,19 @@ pub struct SlimUser {
     pub website: Option<String>,
     pub visible_email: bool,
     pub organization_id: uuid::Uuid,
+    pub role: UserRole,
 }
 
-impl From<User> for SlimUser {
-    fn from(user: User) -> Self {
+impl SlimUser {
+    pub fn from_details(user: User, user_org: UserOrganization) -> Self {
         SlimUser {
             id: user.id,
             email: user.email,
             username: user.username,
             website: user.website,
             visible_email: user.visible_email,
-            organization_id: user.organization_id,
+            organization_id: user_org.organization_id,
+            role: user_org.role.into(),
         }
     }
 }
@@ -365,25 +359,6 @@ pub struct UserDTO {
     pub website: Option<String>,
     pub visible_email: bool,
     pub created_at: chrono::NaiveDateTime,
-    pub organization_id: uuid::Uuid,
-}
-
-impl From<User> for UserDTO {
-    fn from(user: User) -> Self {
-        UserDTO {
-            id: user.id,
-            email: if user.visible_email {
-                Some(user.email)
-            } else {
-                None
-            },
-            username: user.username,
-            website: user.website,
-            visible_email: user.visible_email,
-            created_at: user.created_at,
-            organization_id: user.organization_id,
-        }
-    }
 }
 
 #[derive(
@@ -526,7 +501,6 @@ pub struct UserDTOWithCards {
     pub created_at: chrono::NaiveDateTime,
     pub total_cards_created: i64,
     pub cards: Vec<CardMetadataWithFileData>,
-    pub organization_id: uuid::Uuid,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, Default)]
@@ -972,6 +946,57 @@ impl StripeSubscription {
             stripe_id,
             stripe_plan_id,
             stripe_customer_id,
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+pub enum UserRole {
+    Owner = 2,
+    Admin = 1,
+    User = 0,
+}
+
+impl From<i32> for UserRole {
+    fn from(role: i32) -> Self {
+        match role {
+            2 => UserRole::Owner,
+            1 => UserRole::Admin,
+            _ => UserRole::User,
+        }
+    }
+}
+
+impl From<UserRole> for i32 {
+    fn from(role: UserRole) -> Self {
+        match role {
+            UserRole::Owner => 2,
+            UserRole::Admin => 1,
+            UserRole::User => 0,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[diesel(table_name = user_organizations)]
+pub struct UserOrganization {
+    pub id: uuid::Uuid,
+    pub user_id: uuid::Uuid,
+    pub organization_id: uuid::Uuid,
+    pub role: i32,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl UserOrganization {
+    pub fn from_details(user_id: uuid::Uuid, organization_id: uuid::Uuid, role: UserRole) -> Self {
+        UserOrganization {
+            id: uuid::Uuid::new_v4(),
+            user_id,
+            organization_id,
+            role: role.into(),
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
         }
