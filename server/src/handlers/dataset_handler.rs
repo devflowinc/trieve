@@ -2,12 +2,9 @@ use super::auth_handler::LoggedUser;
 use crate::{
     data::models::{Dataset, Pool},
     errors::ServiceError,
-    operators::{
-        dataset_operator::{
-            delete_dataset_by_id_query, get_dataset_by_id_query, new_dataset_operation,
-            update_dataset_query, get_datasets_by_organization_id,
-        },
-        tantivy_operator::TantivyIndexMap,
+    operators::dataset_operator::{
+        create_dataset_query, delete_dataset_by_id_query, get_dataset_by_id_query,
+        get_datasets_by_organization_id, update_dataset_query,
     },
 };
 use actix_web::{web, FromRequest, HttpMessage, HttpResponse};
@@ -185,8 +182,9 @@ pub async fn get_datasets_from_organization(
         return Err(ServiceError::Forbidden.into());
     }
 
-    let datasets = web::block(move || get_datasets_by_organization_id(organization_id.into(), pool))
-        .await
-        .map_err(|e| { ServiceError::InternalServerError(e.to_string()) })??;
+    let datasets =
+        web::block(move || get_datasets_by_organization_id(organization_id.into(), pool))
+            .await
+            .map_err(|e| ServiceError::InternalServerError(e.to_string()))??;
     Ok(HttpResponse::Ok().json(datasets))
 }
