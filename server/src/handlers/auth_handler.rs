@@ -1,5 +1,5 @@
 use crate::{
-    data::models::{Pool, SlimUser, User},
+    data::models::{Pool, SlimUser, User, UserOrganization, UserRole},
     errors::ServiceError,
     operators::{
         self,
@@ -159,9 +159,9 @@ pub async fn create_account(
     dataset_id: Option<uuid::Uuid>,
     inv_code: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<User, ServiceError> {
+) -> Result<(User, UserOrganization), ServiceError> {
     use crate::data::schema::users::dsl as users_columns;
-
+    let mut owner = false;
     let org = match dataset_id {
         Some(dataset_id) => get_org_from_dataset_id_query(dataset_id, pool.clone())
             .await
@@ -173,6 +173,7 @@ pub async fn create_account(
         None => {
             let mut org_name = email.split('@').collect::<Vec<&str>>()[0].to_string();
             org_name.push_str("'s Organization");
+            owner = true;
             create_organization_query(org_name.as_str(), json!({}), pool.clone()).map_err(|_| {
                 ServiceError::InternalServerError(
                     "Could not create organization for user".to_string(),
@@ -223,14 +224,31 @@ pub async fn create_account(
         }
     }
 
-    let user = User::from_details_with_id(user_id, email, Some(name), org_id);
-
+    let user = User::from_details_with_id(user_id, email, Some(name));
+    let user_org = if owner {
+        UserOrganization::from_details(user_id, org_id, UserRole::Owner)
+    } else {
+        UserOrganization::from_details(user_id, org_id, UserRole::User)
+    };
     let mut conn = pool.get().unwrap();
-    match diesel::insert_into(users_columns::users)
+    let user = match diesel::insert_into(users_columns::users)
         .values(&user)
         .execute(&mut conn)
     {
         Ok(_) => Ok(user),
+        Err(e) => {
+            log::error!("Failed to create account: {}", e);
+            Err(ServiceError::InternalServerError(
+                "Failed to create account".into(),
+            ))
+        }
+    }?;
+
+    match diesel::insert_into(crate::data::schema::user_organizations::dsl::user_organizations)
+        .values(&user_org)
+        .execute(&mut conn)
+    {
+        Ok(_) => Ok((user, user_org)),
         Err(e) => {
             log::error!("Failed to create account: {}", e);
             Err(ServiceError::InternalServerError(
@@ -452,7 +470,7 @@ pub async fn callback(
 
     let _ = create_stripe_customer_query(email.to_string(), pool1.clone()).await;
 
-    let slim_user: SlimUser = user.into();
+    let slim_user: SlimUser = SlimUser::from_details(user.0, user.1);
 
     let user_string = serde_json::to_string(&slim_user).map_err(|_| {
         ServiceError::InternalServerError("Failed to serialize user to JSON".into())
@@ -487,7 +505,7 @@ pub async fn get_me(
     let user_result = web::block(move || get_user_by_id_query(&user_query_id, pool)).await?;
 
     match user_result {
-        Ok(user) => Ok(HttpResponse::Ok().json(SlimUser::from(user))),
+        Ok(user) => Ok(HttpResponse::Ok().json(SlimUser::from_details(user.0, user.1))),
         Err(e) => Ok(HttpResponse::BadRequest().json(e)),
     }
 }
