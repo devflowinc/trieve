@@ -1,5 +1,6 @@
 use crate::data::models::{
     CardFileWithName, CardMetadata, CardMetadataWithFileData, SlimUser, UserDTOWithCards,
+    UserOrganization,
 };
 use crate::diesel::prelude::*;
 use crate::handlers::user_handler::UpdateUserData;
@@ -39,14 +40,17 @@ pub fn get_user_by_username_query(
 pub fn get_user_by_id_query(
     user_id: &uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<User, DefaultError> {
-    use crate::data::schema::users::dsl::*;
+) -> Result<(User, UserOrganization), DefaultError> {
+    use crate::data::schema::user_organizations::dsl as user_organizations_columns;
+    use crate::data::schema::users::dsl as users_columns;
 
     let mut conn = pool.get().unwrap();
 
-    let user: Option<User> = users
-        .filter(id.eq(user_id))
-        .first::<User>(&mut conn)
+    let user: Option<(User, UserOrganization)> = users_columns::users
+        .inner_join(user_organizations_columns::user_organizations)
+        .filter(users_columns::id.eq(user_id))
+        .select((User::as_select(), UserOrganization::as_select()))
+        .first::<(User, UserOrganization)>(&mut conn)
         .optional()
         .map_err(|_| DefaultError {
             message: "Error loading user",
@@ -210,7 +214,6 @@ pub fn get_user_with_cards_by_id_query(
         created_at: user.created_at,
         total_cards_created: total_cards_created_by_user,
         cards: card_metadata_with_score_and_file,
-        organization_id: user.organization_id,
     })
 }
 
@@ -218,7 +221,7 @@ pub fn update_user_query(
     user_id: &uuid::Uuid,
     new_user: &UpdateUserData,
     pool: web::Data<Pool>,
-) -> Result<SlimUser, DefaultError> {
+) -> Result<User, DefaultError> {
     use crate::data::schema::users::dsl::*;
 
     let mut conn = pool.get().unwrap();
@@ -258,7 +261,7 @@ pub fn update_user_query(
             message: "Error updating user",
         })?;
 
-    Ok(SlimUser::from(user))
+    Ok(user)
 }
 
 pub fn generate_api_key() -> String {
@@ -317,21 +320,23 @@ pub fn get_user_from_api_key_query(
     api_key: &str,
     pool: &web::Data<Pool>,
 ) -> Result<SlimUser, DefaultError> {
+    use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
 
     let api_key_hash = hash_password(api_key)?;
 
     let mut conn = pool.get().unwrap();
 
-    let user: Option<User> = users_columns::users
+    let user: Option<(User, UserOrganization)> = users_columns::users
+        .inner_join(user_organizations_columns::user_organizations)
         .filter(users_columns::api_key_hash.eq(api_key_hash))
-        .first::<User>(&mut conn)
+        .first::<(User, UserOrganization)>(&mut conn)
         .optional()
         .map_err(|_| DefaultError {
             message: "Error loading user",
         })?;
     match user {
-        Some(user) => Ok(SlimUser::from(user)),
+        Some(user) => Ok(SlimUser::from_details(user.0, user.1)),
         None => Err(DefaultError {
             message: "User not found",
         }),

@@ -228,6 +228,17 @@ diesel::table! {
 }
 
 diesel::table! {
+    user_organizations (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        organization_id -> Uuid,
+        role -> Int4,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     users (id) {
         id -> Uuid,
         email -> Text,
@@ -237,7 +248,6 @@ diesel::table! {
         website -> Nullable<Text>,
         visible_email -> Bool,
         api_key_hash -> Nullable<Text>,
-        organization_id -> Uuid,
         name -> Nullable<Text>,
     }
 }
@@ -264,7 +274,8 @@ diesel::joinable!(topics -> datasets (dataset_id));
 diesel::joinable!(topics -> users (user_id));
 diesel::joinable!(user_collection_counts -> users (user_id));
 diesel::joinable!(user_notification_counts -> users (user_uuid));
-diesel::joinable!(users -> organizations (organization_id));
+diesel::joinable!(user_organizations -> organizations (organization_id));
+diesel::joinable!(user_organizations -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     card_collection,
@@ -286,5 +297,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     topics,
     user_collection_counts,
     user_notification_counts,
+    user_organizations,
     users,
 );
