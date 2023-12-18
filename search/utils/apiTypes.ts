@@ -75,7 +75,6 @@ export interface CardCollectionDTO {
   id: string;
   name: string;
   description: string;
-  is_public: boolean;
 }
 
 export interface SlimCollection {
@@ -255,7 +254,6 @@ export interface CardCollectionDTO {
   author_id: string;
   name: string;
   description: string;
-  is_public: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -293,9 +291,7 @@ export const isCardCollectionDTO = (
     indirectHasOwnProperty(collection, "name") &&
     typeof (collection as CardCollectionDTO).name === "string" &&
     indirectHasOwnProperty(collection, "description") &&
-    typeof (collection as CardCollectionDTO).description === "string" &&
-    indirectHasOwnProperty(collection, "is_public") &&
-    typeof (collection as CardCollectionDTO).is_public === "boolean"
+    typeof (collection as CardCollectionDTO).description === "string"
   );
 };
 

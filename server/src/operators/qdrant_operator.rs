@@ -235,15 +235,6 @@ pub async fn update_qdrant_point_query(
         }
     };
 
-    let current_private = match current_point.payload.get("private") {
-        Some(private) => private.as_bool().unwrap_or(false),
-        None => false,
-    };
-
-    if !current_private {
-        return Ok(());
-    }
-
     let mut current_author_ids = match current_point.payload.get("authors") {
         Some(authors) => match authors.as_list() {
             Some(authors) => authors
