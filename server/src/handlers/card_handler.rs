@@ -152,7 +152,6 @@ pub async fn create_card(
     let pool2 = pool.clone();
     let pool3 = pool.clone();
 
-    let private = card.private.unwrap_or(false);
     let card_tracking_id = card
         .tracking_id
         .clone()
@@ -224,7 +223,6 @@ pub async fn create_card(
     if collision.is_some() {
         update_qdrant_point_query(
             None,
-            private,
             collision.expect("Collision must be some"),
             Some(user.id),
             None,
@@ -239,7 +237,6 @@ pub async fn create_card(
             &card.tag_set,
             user.id,
             None,
-            private,
             card.metadata.clone(),
             card_tracking_id,
             card.time_stamp
@@ -276,7 +273,6 @@ pub async fn create_card(
             &card.tag_set,
             user.id,
             Some(qdrant_point_id),
-            private,
             card.metadata.clone(),
             card_tracking_id,
             card.time_stamp
@@ -297,7 +293,6 @@ pub async fn create_card(
         create_new_qdrant_point_query(
             qdrant_point_id,
             embedding_vector,
-            private,
             card_metadata.clone(),
             Some(user.id),
             dataset.id,
@@ -464,7 +459,6 @@ pub async fn update_card(
         None => card_metadata.card_html,
     };
 
-    let private = card.private.unwrap_or(card_metadata.private);
     let card_id1 = card.card_uuid;
     let qdrant_point_id = web::block(move || get_qdrant_id_from_card_id_query(card_id1, pool1))
         .await?
@@ -478,7 +472,6 @@ pub async fn update_card(
         &card_metadata.tag_set,
         user.id,
         card_metadata.qdrant_point_id,
-        private,
         card.metadata.clone(),
         card_tracking_id,
         card.time_stamp
@@ -502,7 +495,6 @@ pub async fn update_card(
         } else {
             Some(metadata1)
         },
-        private,
         qdrant_point_id,
         Some(user.id),
         Some(embedding_vector),
@@ -573,7 +565,6 @@ pub async fn update_card_by_tracking_id(
         None => card_metadata.card_html,
     };
 
-    let private = card.private.unwrap_or(card_metadata.private);
     let card_id1 = card_metadata.id;
     let qdrant_point_id = web::block(move || get_qdrant_id_from_card_id_query(card_id1, pool1))
         .await?
@@ -587,7 +578,6 @@ pub async fn update_card_by_tracking_id(
         &card_metadata.tag_set,
         user.id,
         card_metadata.qdrant_point_id,
-        private,
         card.metadata.clone(),
         Some(tracking_id1),
         card.time_stamp
@@ -611,7 +601,6 @@ pub async fn update_card_by_tracking_id(
         } else {
             Some(metadata1)
         },
-        private,
         qdrant_point_id,
         Some(user.id),
         Some(embedding_vector),
@@ -713,41 +702,25 @@ pub async fn search_card(
         return Err(ServiceError::Forbidden.into());
     };
 
-    let current_user_id = Some(user.id);
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let dataset_id = dataset.id;
     let parsed_query = parse_query(data.content.clone());
 
     let result_cards = match data.search_type.as_str() {
-        "fulltext" => {
-            search_full_text_cards(data, parsed_query, page, pool, current_user_id, dataset_id)
-                .await?
-        }
+        "fulltext" => search_full_text_cards(data, parsed_query, page, pool, dataset_id).await?,
         "hybrid" => {
             search_hybrid_cards(
                 data,
                 parsed_query,
                 page,
                 pool,
-                current_user_id,
                 cross_encoder_init,
                 dataset_id,
                 app_mutex,
             )
             .await?
         }
-        _ => {
-            search_semantic_cards(
-                data,
-                parsed_query,
-                page,
-                pool,
-                current_user_id,
-                dataset_id,
-                app_mutex,
-            )
-            .await?
-        }
+        _ => search_semantic_cards(data, parsed_query, page, pool, dataset_id, app_mutex).await?,
     };
 
     Ok(HttpResponse::Ok().json(result_cards))
@@ -837,16 +810,8 @@ pub async fn search_collections(
 
     let result_cards = match data.search_type.as_str() {
         "fulltext" => {
-            search_full_text_collections(
-                data,
-                parsed_query,
-                collection,
-                page,
-                pool1,
-                current_user_id,
-                dataset_id,
-            )
-            .await?
+            search_full_text_collections(data, parsed_query, collection, page, pool1, dataset_id)
+                .await?
         }
         _ => {
             search_semantic_collections(
@@ -855,7 +820,6 @@ pub async fn search_collections(
                 collection,
                 page,
                 pool1,
-                current_user_id,
                 dataset_id,
                 app_mutex,
             )
@@ -894,14 +858,6 @@ pub async fn get_card_by_id(
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let current_user_id = Some(user.id);
-    if card.private && current_user_id.is_none() {
-        return Err(ServiceError::Unauthorized.into());
-    }
-    if card.private && Some(card.author_id) != current_user_id {
-        return Err(ServiceError::Forbidden.into());
-    }
-
     Ok(HttpResponse::Ok().json(card))
 }
 
@@ -934,14 +890,6 @@ pub async fn get_card_by_tracking_id(
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    let current_user_id = Some(user.id);
-    if card.private && current_user_id.is_none() {
-        return Err(ServiceError::Unauthorized.into());
-    }
-    if card.private && Some(card.author_id) != current_user_id {
-        return Err(ServiceError::Forbidden.into());
-    }
 
     Ok(HttpResponse::Ok().json(card))
 }

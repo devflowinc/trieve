@@ -61,7 +61,6 @@ pub struct CardMetadataWithQdrantId {
 
 pub fn get_metadata_and_collided_cards_from_point_ids_query(
     point_ids: Vec<uuid::Uuid>,
-    current_user_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<(Vec<CardMetadataWithFileData>, Vec<CardMetadataWithQdrantId>), DefaultError> {
     use crate::data::schema::card_collisions::dsl as card_collisions_columns;
@@ -71,22 +70,7 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
         let mut conn = pool.get().unwrap();
         let card_metadata: Vec<CardMetadata> = card_metadata_columns::card_metadata
             .filter(card_metadata_columns::qdrant_point_id.eq_any(&point_ids))
-            .select((
-                card_metadata_columns::id,
-                card_metadata_columns::content,
-                card_metadata_columns::link,
-                card_metadata_columns::author_id,
-                card_metadata_columns::qdrant_point_id,
-                card_metadata_columns::created_at,
-                card_metadata_columns::updated_at,
-                card_metadata_columns::tag_set,
-                card_metadata_columns::card_html,
-                card_metadata_columns::private,
-                card_metadata_columns::metadata,
-                card_metadata_columns::tracking_id,
-                card_metadata_columns::time_stamp,
-                card_metadata_columns::dataset_id,
-            ))
+            .select(CardMetadata::as_select())
             .limit(500)
             .load::<CardMetadata>(&mut conn)
             .map_err(|_| DefaultError {
@@ -108,31 +92,10 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
                         .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
                 )
                 .select((
-                    (
-                        card_metadata_columns::id,
-                        card_metadata_columns::content,
-                        card_metadata_columns::link,
-                        card_metadata_columns::author_id,
-                        card_metadata_columns::qdrant_point_id,
-                        card_metadata_columns::created_at,
-                        card_metadata_columns::updated_at,
-                        card_metadata_columns::tag_set,
-                        card_metadata_columns::card_html,
-                        card_metadata_columns::private,
-                        card_metadata_columns::metadata,
-                        card_metadata_columns::tracking_id,
-                        card_metadata_columns::time_stamp,
-                        card_metadata_columns::dataset_id,
-                    ),
+                    CardMetadata::as_select(),
                     (card_collisions_columns::collision_qdrant_id.assume_not_null()),
                 ))
                 .filter(card_collisions_columns::collision_qdrant_id.eq_any(point_ids))
-                .filter(
-                    card_metadata_columns::private
-                        .eq(false)
-                        .or(card_metadata_columns::author_id
-                            .eq(current_user_id.unwrap_or(uuid::Uuid::nil()))),
-                )
                 // TODO: Properly handle this and remove the arbitrary limit
                 .limit(500)
                 .load::<(CardMetadata, uuid::Uuid)>(&mut conn)
@@ -199,7 +162,6 @@ pub fn get_metadata_and_collided_cards_from_point_ids_query(
 
 pub fn get_collided_cards_query(
     point_ids: Vec<uuid::Uuid>,
-    current_user_id: Option<uuid::Uuid>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Vec<(CardMetadataWithFileData, uuid::Uuid)>, DefaultError> {
@@ -223,7 +185,6 @@ pub fn get_collided_cards_query(
             card_metadata_columns::updated_at,
             card_metadata_columns::tag_set,
             card_metadata_columns::card_html,
-            card_metadata_columns::private,
             card_metadata_columns::metadata,
             card_metadata_columns::tracking_id,
             card_metadata_columns::time_stamp,
@@ -233,11 +194,6 @@ pub fn get_collided_cards_query(
             card_collisions_columns::collision_qdrant_id
                 .eq_any(point_ids.clone())
                 .or(card_metadata_columns::qdrant_point_id.eq_any(point_ids)),
-        )
-        .filter(
-            card_metadata_columns::private
-                .eq(false)
-                .or(card_metadata_columns::author_id.eq(current_user_id.unwrap_or_default())),
         )
         .filter(card_metadata_columns::dataset_id.eq(dataset_uuid))
         // TODO: Properly handle this and remove the arbitrary limit
@@ -314,22 +270,7 @@ pub fn get_metadata_from_ids_query(
     let metadatas: Vec<CardMetadata> = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::id.eq_any(card_ids))
         .filter(card_metadata_columns::dataset_id.eq(dataset_uuid))
-        .select((
-            card_metadata_columns::id,
-            card_metadata_columns::content,
-            card_metadata_columns::link,
-            card_metadata_columns::author_id,
-            card_metadata_columns::qdrant_point_id,
-            card_metadata_columns::created_at,
-            card_metadata_columns::updated_at,
-            card_metadata_columns::tag_set,
-            card_metadata_columns::card_html,
-            card_metadata_columns::private,
-            card_metadata_columns::metadata,
-            card_metadata_columns::tracking_id,
-            card_metadata_columns::time_stamp,
-            card_metadata_columns::dataset_id,
-        ))
+        .select(CardMetadata::as_select())
         .load::<CardMetadata>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to load metadata",
@@ -448,7 +389,6 @@ pub async fn update_card_metadata_query(
             card_metadata_columns::link.eq(card_data.link),
             card_metadata_columns::card_html.eq(card_data.card_html),
             card_metadata_columns::content.eq(card_data.content),
-            card_metadata_columns::private.eq(card_data.private),
             card_metadata_columns::metadata.eq(card_data.metadata),
         ))
         .execute(conn)?;
@@ -546,14 +486,13 @@ pub async fn delete_card_metadata_query(
                     .load::<(CardCollisions, CardMetadata)>(conn)?;
 
             if !card_collisions.is_empty() {
-                // get the first collision that is public or the first collision if all are private
-                let latest_collision = match card_collisions.iter().find(|x| !x.1.private) {
+                // get the first collision as the latest collision
+                let latest_collision = match card_collisions.first() {
                     Some(x) => x.0.clone(),
                     None => card_collisions[0].0.clone(),
                 };
 
-                let latest_collision_metadata = match card_collisions.iter().find(|x| !x.1.private)
-                {
+                let latest_collision_metadata = match card_collisions.first() {
                     Some(x) => x.1.clone(),
                     None => card_collisions[0].1.clone(),
                 };

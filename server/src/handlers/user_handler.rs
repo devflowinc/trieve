@@ -40,18 +40,15 @@ pub struct GetUserWithCardsData {
 pub async fn get_user_with_cards_by_id(
     path_data: web::Path<GetUserWithCardsData>,
     dataset: Dataset,
-    user: Option<LoggedUser>,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_query_id = path_data.user_id;
-    let accessing_user_id = user.map(|user| user.id);
     let page = path_data.page;
 
-    let user_result = web::block(move || {
-        get_user_with_cards_by_id_query(user_query_id, accessing_user_id, dataset.id, &page, pool)
-    })
-    .await?;
+    let user_result =
+        web::block(move || get_user_with_cards_by_id_query(user_query_id, dataset.id, &page, pool))
+            .await?;
 
     match user_result {
         Ok(user_with_cards) => Ok(HttpResponse::Ok().json(user_with_cards)),
