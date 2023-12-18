@@ -4,7 +4,6 @@ use crate::{
     errors::ServiceError,
     operators::file_operator::{
         convert_doc_to_html_query, delete_file_query, get_file_query, get_user_file_query,
-        get_user_id_of_file_query, update_file_query,
     },
     AppMutexStore,
 };
@@ -35,20 +34,6 @@ pub fn validate_file_name(s: String) -> Result<String, actix_web::Error> {
     Err(ServiceError::BadRequest("Invalid file name".to_string()).into())
 }
 
-pub async fn user_owns_file(
-    user_id: uuid::Uuid,
-    file_id: uuid::Uuid,
-    pool: web::Data<Pool>,
-) -> Result<(), actix_web::Error> {
-    let author_id = web::block(move || get_user_id_of_file_query(file_id, pool))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    if author_id != user_id {
-        return Err(ServiceError::Forbidden.into());
-    }
-    Ok(())
-}
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct UploadFileData {
     pub base64_docx_file: String,
@@ -143,53 +128,6 @@ pub async fn upload_file_handler(
     Ok(HttpResponse::Ok().json(conversion_result))
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct UpdateFileData {
-    pub file_id: uuid::Uuid,
-    pub private: bool,
-}
-
-#[utoipa::path(
-    put,
-    path = "/file",
-    context_path = "/api",
-    tag = "file",
-    request_body(content = UpdateFileData, description = "JSON request payload to update a file", content_type = "application/json"),
-    responses(
-        (status = 204, description = "Confirmation that the file is updated"),
-        (status = 400, description = "Service error relating to initially processing the file", body = [DefaultError]),
-    ),
-)]
-pub async fn update_file_handler(
-    data: web::Json<UpdateFileData>,
-    pool: web::Data<Pool>,
-    user: LoggedUser,
-    dataset: Dataset,
-) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
-
-    let document_upload_feature =
-        std::env::var("DOCUMENT_UPLOAD_FEATURE").unwrap_or("off".to_string());
-
-    if document_upload_feature != "on" {
-        return Err(
-            ServiceError::BadRequest("Document upload feature is disabled".to_string()).into(),
-        );
-    }
-
-    let pool1 = pool.clone();
-
-    user_owns_file(user.id, data.file_id, pool).await?;
-
-    web::block(move || update_file_query(data.file_id, dataset.id, data.private, pool1))
-        .await?
-        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
-
-    Ok(HttpResponse::NoContent().finish())
-}
-
 #[utoipa::path(
     get,
     path = "/file/{file_id}",
@@ -220,9 +158,7 @@ pub async fn get_file_handler(
         );
     }
 
-    let user_id = Some(user.id);
-
-    let file = get_file_query(file_id.into_inner(), dataset.id, user_id, pool).await?;
+    let file = get_file_query(file_id.into_inner(), dataset.id, pool).await?;
 
     Ok(HttpResponse::Ok().json(file))
 }
@@ -244,13 +180,12 @@ pub async fn get_user_files_handler(
     user_id: web::Path<uuid::Uuid>,
     dataset: Dataset,
     pool: web::Data<Pool>,
-    user: Option<LoggedUser>,
+    _user: Option<LoggedUser>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let accessing_user_id = user.map(|u| u.id);
     let user_id = user_id.into_inner();
 
-    let files = get_user_file_query(user_id, accessing_user_id, dataset.id, pool).await?;
+    let files = get_user_file_query(user_id, dataset.id, pool).await?;
 
     Ok(HttpResponse::Ok().json(files))
 }
@@ -278,7 +213,7 @@ pub async fn delete_file_handler(
         return Err(ServiceError::Forbidden.into());
     };
 
-    delete_file_query(file_id.into_inner(), user.id, dataset.id, pool).await?;
+    delete_file_query(file_id.into_inner(), dataset.id, pool).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }

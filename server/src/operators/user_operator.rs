@@ -66,7 +66,6 @@ pub fn get_user_by_id_query(
 
 pub fn get_user_with_cards_by_id_query(
     user_id: uuid::Uuid,
-    accessing_user_id: Option<uuid::Uuid>,
     dataset_id: uuid::Uuid,
     page: &i64,
     pool: web::Data<Pool>,
@@ -92,33 +91,16 @@ pub fn get_user_with_cards_by_id_query(
         }),
     }?;
 
-    let mut total_cards_created_by_user = card_metadata_columns::card_metadata
+    let total_cards_created_by_user = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::author_id.eq(user.id))
         .filter(card_metadata_columns::dataset_id.eq(dataset_id))
         .into_boxed();
 
     //Ensure only user can see their own private cards on their page
-    let mut user_card_metadatas = card_metadata_columns::card_metadata
+    let user_card_metadatas = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::author_id.eq(user.id))
         .filter(card_metadata_columns::dataset_id.eq(dataset_id))
         .into_boxed();
-
-    match accessing_user_id {
-        Some(accessing_user_uuid) => {
-            if user_id != accessing_user_uuid {
-                user_card_metadatas =
-                    user_card_metadatas.filter(card_metadata_columns::private.eq(false));
-                total_cards_created_by_user =
-                    total_cards_created_by_user.filter(card_metadata_columns::private.eq(false));
-            }
-        }
-        None => {
-            user_card_metadatas =
-                user_card_metadatas.filter(card_metadata_columns::private.eq(false));
-            total_cards_created_by_user =
-                total_cards_created_by_user.filter(card_metadata_columns::private.eq(false));
-        }
-    }
 
     let total_cards_created_by_user = total_cards_created_by_user
         .count()
@@ -129,22 +111,7 @@ pub fn get_user_with_cards_by_id_query(
 
     let user_card_metadatas = user_card_metadatas
         .order(card_metadata_columns::updated_at.desc())
-        .select((
-            card_metadata_columns::id,
-            card_metadata_columns::content,
-            card_metadata_columns::link,
-            card_metadata_columns::author_id,
-            card_metadata_columns::qdrant_point_id,
-            card_metadata_columns::created_at,
-            card_metadata_columns::updated_at,
-            card_metadata_columns::tag_set,
-            card_metadata_columns::card_html,
-            card_metadata_columns::private,
-            card_metadata_columns::metadata,
-            card_metadata_columns::tracking_id,
-            card_metadata_columns::time_stamp,
-            card_metadata_columns::dataset_id,
-        ))
+        .select(CardMetadata::as_select())
         .limit(10)
         .offset((page - 1) * 10)
         .load::<CardMetadata>(&mut conn)
@@ -163,7 +130,6 @@ pub fn get_user_with_cards_by_id_query(
             ),
         )
         .inner_join(files_columns::files)
-        .filter(files_columns::private.eq(false))
         .filter(files_columns::dataset_id.eq(dataset_id))
         .select((
             card_files_columns::card_id,
@@ -191,7 +157,6 @@ pub fn get_user_with_cards_by_id_query(
                 created_at: metadata.created_at,
                 updated_at: metadata.updated_at,
                 tag_set: metadata.tag_set.clone(),
-                private: metadata.private,
                 file_name: card_with_file_name.map(|file| file.file_name.clone()),
                 file_id: card_with_file_name.map(|file| file.file_id),
                 metadata: metadata.metadata.clone(),

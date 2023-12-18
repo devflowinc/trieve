@@ -365,9 +365,6 @@ pub fn get_bookmarks_for_collection_query(
             .filter(
                 card_collection_bookmarks_columns::collection_id
                     .eq(collection)
-                    .and(card_metadata_columns::private.eq(false).or(
-                        card_metadata_columns::author_id.eq(current_user_id.unwrap_or_default()),
-                    ))
                     .and(card_collection_columns::dataset_id.eq(dataset_uuid))
                     .and(card_metadata_columns::dataset_id.eq(dataset_uuid)),
             )
@@ -382,7 +379,6 @@ pub fn get_bookmarks_for_collection_query(
                     card_metadata_columns::updated_at,
                     card_metadata_columns::tag_set,
                     card_metadata_columns::card_html,
-                    card_metadata_columns::private,
                     card_metadata_columns::metadata,
                     card_metadata_columns::tracking_id,
                     card_metadata_columns::time_stamp,

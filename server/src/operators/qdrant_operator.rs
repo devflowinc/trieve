@@ -151,7 +151,6 @@ pub async fn create_new_qdrant_collection_query() -> Result<(), ServiceError> {
 pub async fn create_new_qdrant_point_query(
     point_id: uuid::Uuid,
     embedding_vector: Vec<f32>,
-    private: bool,
     card_metadata: CardMetadata,
     author_id: Option<uuid::Uuid>,
     dataset_id: uuid::Uuid,
@@ -170,7 +169,7 @@ pub async fn create_new_qdrant_point_query(
         get_splade_doc_embedding(card_metadata.card_html.as_ref().unwrap_or(&"".to_string()))
             .await?;
 
-    let payload = json!({"private": private, "authors": vec![author_id.unwrap_or_default().to_string()], "tag_set": card_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": card_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "card_html": card_metadata.card_html.unwrap_or("".to_string()), "metadata": card_metadata.metadata.unwrap_or_default(), "time_stamp": card_metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string()})
+    let payload = json!({"authors": vec![author_id.unwrap_or_default().to_string()], "tag_set": card_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": card_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "card_html": card_metadata.card_html.unwrap_or("".to_string()), "metadata": card_metadata.metadata.unwrap_or_default(), "time_stamp": card_metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string()})
                 .try_into()
                 .expect("A json! Value must always be a valid Payload");
 
@@ -196,16 +195,11 @@ pub async fn create_new_qdrant_point_query(
 
 pub async fn update_qdrant_point_query(
     metadata: Option<CardMetadata>,
-    private: bool,
     point_id: uuid::Uuid,
     author_id: Option<uuid::Uuid>,
     updated_vector: Option<Vec<f32>>,
     dataset_id: uuid::Uuid,
 ) -> Result<(), actix_web::Error> {
-    if private && author_id.is_none() {
-        return Err(ServiceError::BadRequest("Private card must have an author".into()).into());
-    }
-
     let qdrant_point_id: Vec<PointId> = vec![point_id.to_string().into()];
 
     let qdrant = get_qdrant_connection()
@@ -274,9 +268,9 @@ pub async fn update_qdrant_point_query(
     }
 
     let payload = if let Some(metadata) = metadata {
-        json!({"private": private, "authors": current_author_ids, "tag_set": metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "card_html": metadata.card_html.unwrap_or("".to_string()), "metadata": metadata.metadata.unwrap_or_default(), "time_stamp": metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string()})
+        json!({"authors": current_author_ids, "tag_set": metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "card_html": metadata.card_html.unwrap_or("".to_string()), "metadata": metadata.metadata.unwrap_or_default(), "time_stamp": metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string()})
     } else {
-        json!({"private": private, "authors": current_author_ids, "tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "card_html": current_point.payload.get("card_html").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")), "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from(""))})
+        json!({"authors": current_author_ids, "tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "card_html": current_point.payload.get("card_html").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")), "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from(""))})
     };
     let points_selector = qdrant_point_id.into();
 

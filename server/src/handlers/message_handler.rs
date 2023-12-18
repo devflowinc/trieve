@@ -530,7 +530,6 @@ pub async fn stream_response(
             None,
             None,
             None,
-            Some(user_id),
             ParsedQuery {
                 query: query.to_string(),
                 quote_words: None,
@@ -553,32 +552,14 @@ pub async fn stream_response(
             .map(|card| card.point_id)
             .collect::<Vec<uuid::Uuid>>();
 
-        let (metadata_cards, collided_cards) = web::block(move || {
-            get_metadata_and_collided_cards_from_point_ids_query(retrieval_card_ids, None, pool2)
+        let (metadata_cards, _collided_cards) = web::block(move || {
+            get_metadata_and_collided_cards_from_point_ids_query(retrieval_card_ids, pool2)
         })
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-        let citation_cards: Vec<CardMetadataWithFileData> = metadata_cards
-            .iter()
-            .map(|card| {
-                if card.private
-                    && card
-                        .author
-                        .as_ref()
-                        .is_some_and(|author| author.id != user_id)
-                {
-                    let matching_collided_card = collided_cards
-                        .iter()
-                        .find(|card| !card.metadata.private)
-                        .expect("No public card metadata");
-
-                    matching_collided_card.metadata.clone()
-                } else {
-                    card.clone()
-                }
-            })
-            .collect();
+        let citation_cards: Vec<CardMetadataWithFileData> =
+            metadata_cards.iter().map(|card| card.clone()).collect();
 
         let highlighted_citation_cards = citation_cards
             .iter()
