@@ -1,4 +1,4 @@
-use super::auth_handler::{LoggedUser, RequireAuth};
+use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
     data::models::{Dataset, File, Pool},
     errors::ServiceError,
@@ -66,14 +66,10 @@ pub struct UploadFileResult {
 pub async fn upload_file_handler(
     data: web::Json<UploadFileData>,
     pool: web::Data<Pool>,
-    user: LoggedUser,
+    user: AdminOnly,
     dataset: Dataset,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
-
     let document_upload_feature =
         std::env::var("DOCUMENT_UPLOAD_FEATURE").unwrap_or("off".to_string());
 
@@ -115,7 +111,7 @@ pub async fn upload_file_handler(
         upload_file_data.metadata,
         upload_file_data.create_cards,
         upload_file_data.time_stamp,
-        user,
+        user.0,
         app_mutex,
         dataset,
         pool_inner,
@@ -142,13 +138,9 @@ pub async fn upload_file_handler(
 pub async fn get_file_handler(
     file_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-    user: LoggedUser,
+    _user: LoggedUser,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
-
     let download_enabled = std::env::var("DOCUMENT_DOWNLOAD_FEATURE").unwrap_or("off".to_string());
     if download_enabled != "on" {
         return Err(
@@ -179,7 +171,7 @@ pub async fn get_user_files_handler(
     dataset: Dataset,
     pool: web::Data<Pool>,
     _user: Option<LoggedUser>,
-    _required_user: RequireAuth,
+    _required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_id = user_id.into_inner();
 
@@ -204,13 +196,9 @@ pub async fn get_user_files_handler(
 pub async fn delete_file_handler(
     file_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-    user: LoggedUser,
+    _user: AdminOnly,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
-
     delete_file_query(file_id.into_inner(), dataset.id, pool).await?;
 
     Ok(HttpResponse::NoContent().finish())

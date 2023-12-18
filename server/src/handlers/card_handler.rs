@@ -1,4 +1,4 @@
-use super::auth_handler::{LoggedUser, RequireAuth};
+use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     CardCollection, CardCollectionBookmark, CardMetadata, CardMetadataWithFileData,
     ChatMessageProxy, Dataset, Pool,
@@ -129,24 +129,10 @@ pub struct ReturnCreatedCard {
 pub async fn create_card(
     card: web::Json<CreateCardData>,
     pool: web::Data<Pool>,
-    user: LoggedUser,
+    user: AdminOnly,
     app_mutex: web::Data<AppMutexStore>,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    }
-
-    let only_admin_can_create_cards =
-        std::env::var("ONLY_ADMIN_CAN_CREATE_CARDS").unwrap_or("off".to_string());
-
-    if only_admin_can_create_cards == "on" {
-        let admin_email = std::env::var("ADMIN_USER_EMAIL").unwrap_or("".to_string());
-        if admin_email != user.email {
-            return Err(ServiceError::Forbidden.into());
-        }
-    }
-
     let pool1 = pool.clone();
     let pool2 = pool.clone();
     let pool3 = pool.clone();
@@ -223,7 +209,7 @@ pub async fn create_card(
         update_qdrant_point_query(
             None,
             collision.expect("Collision must be some"),
-            Some(user.id),
+            Some(user.0.id),
             None,
             dataset.id,
         )
@@ -234,7 +220,7 @@ pub async fn create_card(
             &card.card_html,
             &card.link,
             &card.tag_set,
-            user.id,
+            user.0.id,
             None,
             card.metadata.clone(),
             card_tracking_id,
@@ -270,7 +256,7 @@ pub async fn create_card(
             &card.card_html,
             &card.link,
             &card.tag_set,
-            user.id,
+            user.0.id,
             Some(qdrant_point_id),
             card.metadata.clone(),
             card_tracking_id,
@@ -293,7 +279,7 @@ pub async fn create_card(
             qdrant_point_id,
             embedding_vector,
             card_metadata.clone(),
-            Some(user.id),
+            Some(user.0.id),
             dataset.id,
         )
         .await?;
@@ -330,18 +316,14 @@ pub async fn delete_card(
     card_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
-    user: LoggedUser,
+    user: AdminOnly,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    }
-
     let card_id_inner = card_id.into_inner();
     let dataset_id = dataset.id;
     let pool1 = pool.clone();
 
-    let card_metadata = user_owns_card(user.id, card_id_inner, dataset_id, pool).await?;
+    let card_metadata = user_owns_card(user.0.id, card_id_inner, dataset_id, pool).await?;
     let qdrant_point_id = card_metadata.qdrant_point_id;
 
     delete_card_metadata_query(card_id_inner, qdrant_point_id, app_mutex, dataset_id, pool1)
@@ -368,19 +350,15 @@ pub async fn delete_card_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
-    user: LoggedUser,
+    user: AdminOnly,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    }
-
     let tracking_id_inner = tracking_id.into_inner();
     let pool1 = pool.clone();
     let dataset_id = dataset.id;
 
     let card_metadata =
-        user_owns_card_tracking_id(user.id, tracking_id_inner, dataset_id, pool).await?;
+        user_owns_card_tracking_id(user.0.id, tracking_id_inner, dataset_id, pool).await?;
 
     let qdrant_point_id = card_metadata.qdrant_point_id;
 
@@ -426,18 +404,14 @@ pub struct CardHtmlUpdateError {
 pub async fn update_card(
     card: web::Json<UpdateCardData>,
     pool: web::Data<Pool>,
-    user: LoggedUser,
+    user: AdminOnly,
     app_mutex: web::Data<AppMutexStore>,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    }
-
     let pool1 = pool.clone();
     let pool2 = pool.clone();
     let dataset_id = dataset.id;
-    let card_metadata = user_owns_card(user.id, card.card_uuid, dataset_id, pool).await?;
+    let card_metadata = user_owns_card(user.0.id, card.card_uuid, dataset_id, pool).await?;
 
     let link = card
         .link
@@ -468,7 +442,7 @@ pub async fn update_card(
         &card_html,
         &Some(link),
         &card_metadata.tag_set,
-        user.id,
+        user.0.id,
         card_metadata.qdrant_point_id,
         card.metadata.clone(),
         card_tracking_id,
@@ -494,7 +468,7 @@ pub async fn update_card(
             Some(metadata1)
         },
         qdrant_point_id,
-        Some(user.id),
+        Some(user.0.id),
         Some(embedding_vector),
         dataset_id,
     )
@@ -527,14 +501,10 @@ pub struct UpdateCardByTrackingIdData {
 pub async fn update_card_by_tracking_id(
     card: web::Json<UpdateCardByTrackingIdData>,
     pool: web::Data<Pool>,
-    user: LoggedUser,
+    user: AdminOnly,
     app_mutex: web::Data<AppMutexStore>,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
-
     if card.tracking_id.is_empty() {
         return Err(ServiceError::BadRequest(
             "Tracking id must be provided to update by tracking_id".into(),
@@ -546,7 +516,8 @@ pub async fn update_card_by_tracking_id(
 
     let pool1 = pool.clone();
     let pool2 = pool.clone();
-    let card_metadata = user_owns_card_tracking_id(user.id, tracking_id, dataset.id, pool).await?;
+    let card_metadata =
+        user_owns_card_tracking_id(user.0.id, tracking_id, dataset.id, pool).await?;
 
     let link = card
         .link
@@ -573,7 +544,7 @@ pub async fn update_card_by_tracking_id(
         &card_html,
         &Some(link),
         &card_metadata.tag_set,
-        user.id,
+        user.0.id,
         card_metadata.qdrant_point_id,
         card.metadata.clone(),
         Some(tracking_id1),
@@ -599,7 +570,7 @@ pub async fn update_card_by_tracking_id(
             Some(metadata1)
         },
         qdrant_point_id,
-        Some(user.id),
+        Some(user.0.id),
         Some(embedding_vector),
         dataset.id,
     )
@@ -689,16 +660,12 @@ fn parse_query(query: String) -> ParsedQuery {
 pub async fn search_card(
     data: web::Json<SearchCardData>,
     page: Option<web::Path<u64>>,
-    user: LoggedUser,
+    _user: LoggedUser,
     pool: web::Data<Pool>,
     cross_encoder_init: web::Data<CrossEncoder>,
     app_mutex: web::Data<AppMutexStore>,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
-
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let dataset_id = dataset.id;
     let parsed_query = parse_query(data.content.clone());
@@ -777,7 +744,7 @@ pub async fn search_collections(
     page: Option<web::Path<u64>>,
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
-    _required_user: RequireAuth,
+    _required_user: LoggedUser,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
@@ -841,14 +808,10 @@ pub async fn search_collections(
 )]
 pub async fn get_card_by_id(
     card_id: web::Path<uuid::Uuid>,
-    user: LoggedUser,
+    _user: LoggedUser,
     pool: web::Data<Pool>,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    }
-
     let card =
         web::block(move || get_metadata_from_id_query(card_id.into_inner(), dataset.id, pool))
             .await?
@@ -872,15 +835,11 @@ pub async fn get_card_by_id(
 )]
 pub async fn get_card_by_tracking_id(
     tracking_id: web::Path<String>,
-    user: LoggedUser,
+    _user: LoggedUser,
     pool: web::Data<Pool>,
-    _required_user: RequireAuth,
+    _required_user: LoggedUser,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    }
-
     let card = web::block(move || {
         get_metadata_from_tracking_id_query(tracking_id.into_inner(), dataset.id, pool)
     })
@@ -909,13 +868,9 @@ pub struct RecommendCardsRequest {
 pub async fn get_recommended_cards(
     data: web::Json<RecommendCardsRequest>,
     pool: web::Data<Pool>,
-    user: LoggedUser,
+    _user: LoggedUser,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    }
-
     let positive_card_ids = data.positive_card_ids.clone();
 
     let recommended_qdrant_point_ids = recommend_qdrant_query(positive_card_ids, dataset.id)
@@ -957,13 +912,9 @@ pub struct GenerateCardsRequest {
 pub async fn generate_off_cards(
     data: web::Json<GenerateCardsRequest>,
     pool: web::Data<Pool>,
-    user: LoggedUser,
+    _user: LoggedUser,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    }
-
     let prev_messages = data.prev_messages.clone();
     let card_ids = data.card_ids.clone();
     let cards = web::block(move || get_metadata_from_ids_query(card_ids, dataset.id, pool))

@@ -1,4 +1,4 @@
-use super::auth_handler::RequireAuth;
+use super::auth_handler::{AdminOnly, OwnerOnly};
 use crate::{
     data::models::Pool,
     errors::ServiceError,
@@ -27,7 +27,7 @@ use utoipa::ToSchema;
 pub async fn get_organization_by_id(
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-    _required_user: RequireAuth,
+    _user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_id = organization_id.into_inner();
 
@@ -54,7 +54,7 @@ pub async fn get_organization_by_id(
 pub async fn delete_organization_by_id(
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-    _required_user: RequireAuth,
+    _user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_id = organization_id.into_inner();
 
@@ -86,7 +86,7 @@ pub struct UpdateOrganizationData {
 pub async fn update_organization(
     organization: web::Json<UpdateOrganizationData>,
     pool: web::Data<Pool>,
-    _required_user: RequireAuth,
+    _user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_update_data = organization.into_inner();
 
@@ -124,7 +124,7 @@ pub struct CreateOrganizationData {
 pub async fn create_organization(
     organization: web::Json<CreateOrganizationData>,
     pool: web::Data<Pool>,
-    _required_user: RequireAuth,
+    _user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_create_data = organization.into_inner();
 
