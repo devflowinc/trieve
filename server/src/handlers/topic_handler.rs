@@ -35,9 +35,6 @@ pub async fn create_topic(
     dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
     let data_inner = data.into_inner();
     let resolution = data_inner.resolution;
     let normal_chat = data_inner.normal_chat;
@@ -85,9 +82,6 @@ pub async fn delete_topic(
     dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
     let data_inner = data.into_inner();
     let topic_id = data_inner.topic_id;
     let pool_inner = pool.clone();
@@ -134,9 +128,6 @@ pub async fn update_topic(
     dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
     let data_inner = data.into_inner();
     let topic_id = data_inner.topic_id;
     let resolution = data_inner.resolution;
@@ -184,9 +175,6 @@ pub async fn get_all_topics(
     dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
     let topics =
         web::block(move || get_all_topics_for_user_query(user.id, dataset.id, &pool)).await?;
 

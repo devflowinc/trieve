@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use stripe::{EventObject, EventType, Webhook};
 use utoipa::ToSchema;
 
-use super::auth_handler::LoggedUser;
+use super::auth_handler::OwnerOnly;
 
 pub async fn webhook(
     req: HttpRequest,
@@ -210,7 +210,7 @@ pub async fn direct_to_payment_link(
 )]
 pub async fn cancel_subscription(
     subscription_id: web::Path<uuid::Uuid>,
-    user: LoggedUser,
+    user: OwnerOnly,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let subscription = web::block(move || {
@@ -219,7 +219,7 @@ pub async fn cancel_subscription(
     .await?
     .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
-    if subscription.organization_id != user.organization_id {
+    if subscription.organization_id != user.0.organization_id {
         return Ok(HttpResponse::Forbidden().finish());
     }
 
@@ -257,7 +257,7 @@ pub struct UpdateSubscriptionData {
 )]
 pub async fn update_subscription_plan(
     path_data: web::Path<UpdateSubscriptionData>,
-    user: LoggedUser,
+    user: OwnerOnly,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let get_subscription_pool = pool.clone();
@@ -270,7 +270,7 @@ pub async fn update_subscription_plan(
             .await?
             .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
-    if subscription.organization_id != user.organization_id {
+    if subscription.organization_id != user.0.organization_id {
         return Ok(HttpResponse::Forbidden().finish());
     }
 
