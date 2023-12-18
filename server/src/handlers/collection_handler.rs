@@ -43,7 +43,6 @@ pub async fn user_owns_collection(
 pub struct CreateCardCollectionData {
     pub name: String,
     pub description: String,
-    pub is_public: bool,
 }
 
 #[utoipa::path(
@@ -65,10 +64,8 @@ pub async fn create_card_collection(
 ) -> Result<HttpResponse, actix_web::Error> {
     let name = body.name.clone();
     let description = body.description.clone();
-    let is_public = body.is_public;
 
-    let collection =
-        CardCollection::from_details(user.id, name, is_public, description, dataset.id);
+    let collection = CardCollection::from_details(user.id, name, description, dataset.id);
     {
         let collection = collection.clone();
         web::block(move || create_collection_query(collection, pool))
@@ -106,17 +103,14 @@ pub struct UserCollectionQuery {
     ),
 )]
 pub async fn get_specific_user_card_collections(
-    user: Option<LoggedUser>,
     user_and_page: web::Path<UserCollectionQuery>,
     dataset: Dataset,
     pool: web::Data<Pool>,
     _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let accessing_user_id = user.map(|user| user.id);
     let collections = web::block(move || {
-        get_collections_for_specifc_user_query(
+        get_collections_for_specific_user_query(
             user_and_page.user_id,
-            accessing_user_id,
             user_and_page.page,
             dataset.id,
             pool,
@@ -132,7 +126,6 @@ pub async fn get_specific_user_card_collections(
                 id: collection.id,
                 author_id: collection.author_id,
                 name: collection.name.clone(),
-                is_public: collection.is_public,
                 description: collection.description.clone(),
                 created_at: collection.created_at,
                 updated_at: collection.updated_at,
@@ -184,7 +177,6 @@ pub async fn get_logged_in_user_card_collections(
                 id: collection.id,
                 author_id: collection.author_id,
                 name: collection.name.clone(),
-                is_public: collection.is_public,
                 description: collection.description.clone(),
                 created_at: collection.created_at,
                 updated_at: collection.updated_at,
@@ -241,7 +233,6 @@ pub struct UpdateCardCollectionData {
     pub collection_id: uuid::Uuid,
     pub name: Option<String>,
     pub description: Option<String>,
-    pub is_public: Option<bool>,
 }
 
 #[utoipa::path(
@@ -267,7 +258,6 @@ pub async fn update_card_collection(
 
     let name = body.name.clone();
     let description = body.description.clone();
-    let is_public = body.is_public;
     let collection_id = body.collection_id;
 
     let pool2 = pool.clone();
@@ -275,7 +265,7 @@ pub async fn update_card_collection(
     let collection = user_owns_collection(user.id, collection_id, dataset.id, pool).await?;
 
     web::block(move || {
-        update_card_collection_query(collection, name, description, is_public, dataset.id, pool2)
+        update_card_collection_query(collection, name, description, dataset.id, pool2)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -377,19 +367,11 @@ pub async fn get_all_bookmarks(
     let page = path_data.page.unwrap_or(1);
     let pool1 = pool.clone();
     let pool2 = pool.clone();
-    let current_user_id = Some(user.id);
     let dataset_id = dataset.id;
 
     let bookmarks = {
         web::block(move || {
-            get_bookmarks_for_collection_query(
-                collection_id,
-                page,
-                None,
-                current_user_id,
-                dataset_id,
-                pool2,
-            )
+            get_bookmarks_for_collection_query(collection_id, page, None, dataset_id, pool2)
         })
         .await?
         .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?
@@ -562,7 +544,7 @@ pub async fn generate_off_collection(
     body: web::Json<GenerateOffCollectionData>,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    user: LoggedUser,
+    _required_user: RequireAuth,
 ) -> Result<HttpResponse, actix_web::Error> {
     let request_data = body.into_inner();
     let collection_id = request_data.collection_id;
@@ -571,14 +553,7 @@ pub async fn generate_off_collection(
 
     let collection_bookmarks = {
         web::block(move || {
-            get_bookmarks_for_collection_query(
-                collection_id,
-                page,
-                Some(10),
-                Some(user.id),
-                dataset_id,
-                pool,
-            )
+            get_bookmarks_for_collection_query(collection_id, page, Some(10), dataset_id, pool)
         })
         .await??
         .metadata

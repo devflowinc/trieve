@@ -70,7 +70,6 @@ pub struct CreateCardData {
     pub card_html: Option<String>,
     pub link: Option<String>,
     pub tag_set: Option<String>,
-    pub private: Option<bool>,
     pub file_uuid: Option<uuid::Uuid>,
     pub metadata: Option<serde_json::Value>,
     pub card_vector: Option<Vec<f32>>,
@@ -403,7 +402,6 @@ pub struct UpdateCardData {
     card_uuid: uuid::Uuid,
     link: Option<String>,
     card_html: Option<String>,
-    private: Option<bool>,
     metadata: Option<serde_json::Value>,
     tracking_id: Option<String>,
     time_stamp: Option<String>,
@@ -510,7 +508,6 @@ pub struct UpdateCardByTrackingIdData {
     card_uuid: Option<uuid::Uuid>,
     link: Option<String>,
     card_html: Option<String>,
-    private: Option<bool>,
     metadata: Option<serde_json::Value>,
     tracking_id: String,
     time_stamp: Option<String>,
@@ -778,7 +775,6 @@ pub struct SearchCollectionsResult {
 pub async fn search_collections(
     data: web::Json<SearchCollectionsData>,
     page: Option<web::Path<u64>>,
-    user: Option<LoggedUser>,
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
     _required_user: RequireAuth,
@@ -788,9 +784,9 @@ pub async fn search_collections(
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let collection_id = data.collection_id;
     let dataset_id = dataset.id;
-
-    let current_user_id = user.map(|user| user.id);
-    let pool1 = pool.clone();
+    let full_text_search_pool: web::Data<
+        r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::prelude::PgConnection>>,
+    > = pool.clone();
 
     let collection = {
         web::block(move || get_collection_by_id_query(collection_id, dataset_id, pool))
@@ -799,19 +795,19 @@ pub async fn search_collections(
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?
     };
 
-    if !collection.is_public && current_user_id.is_none() {
-        return Err(ServiceError::Unauthorized.into());
-    }
-
-    if !collection.is_public && Some(collection.author_id) != current_user_id {
-        return Err(ServiceError::Forbidden.into());
-    }
     let parsed_query = parse_query(data.content.clone());
 
     let result_cards = match data.search_type.as_str() {
         "fulltext" => {
-            search_full_text_collections(data, parsed_query, collection, page, pool1, dataset_id)
-                .await?
+            search_full_text_collections(
+                data,
+                parsed_query,
+                collection,
+                page,
+                full_text_search_pool,
+                dataset_id,
+            )
+            .await?
         }
         _ => {
             search_semantic_collections(
@@ -819,7 +815,7 @@ pub async fn search_collections(
                 parsed_query,
                 collection,
                 page,
-                pool1,
+                full_text_search_pool,
                 dataset_id,
                 app_mutex,
             )

@@ -100,9 +100,8 @@ pub fn create_collection_and_add_bookmarks_query(
     Ok(new_collection)
 }
 
-pub fn get_collections_for_specifc_user_query(
+pub fn get_collections_for_specific_user_query(
     user_id: uuid::Uuid,
-    accessing_user_id: Option<uuid::Uuid>,
     page: u64,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -113,7 +112,7 @@ pub fn get_collections_for_specifc_user_query(
 
     let page = if page == 0 { 1 } else { page };
     let mut conn = pool.get().unwrap();
-    let mut collections = card_collection
+    let collections = card_collection
         .left_outer_join(
             collections_from_files_columns::collections_from_files
                 .on(id.eq(collections_from_files_columns::collection_id)),
@@ -126,7 +125,6 @@ pub fn get_collections_for_specifc_user_query(
             id,
             author_id,
             name,
-            is_public,
             description,
             created_at,
             updated_at,
@@ -137,15 +135,6 @@ pub fn get_collections_for_specifc_user_query(
         .filter(author_id.eq(user_id))
         .filter(dataset_id.eq(dataset_uuid))
         .into_boxed();
-
-    match accessing_user_id {
-        Some(accessing_user_uuid) => {
-            if user_id != accessing_user_uuid {
-                collections = collections.filter(is_public.eq(true));
-            }
-        }
-        None => collections = collections.filter(is_public.eq(true)),
-    }
 
     let collections = collections
         .limit(10)
@@ -185,7 +174,6 @@ pub fn get_collections_for_logged_in_user_query(
             id,
             author_id,
             name,
-            is_public,
             description,
             created_at,
             updated_at,
@@ -280,7 +268,6 @@ pub fn update_card_collection_query(
     collection: CardCollection,
     new_name: Option<String>,
     new_description: Option<String>,
-    new_is_public: Option<bool>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
@@ -296,7 +283,6 @@ pub fn update_card_collection_query(
     .set((
         name.eq(new_name.unwrap_or(collection.name)),
         description.eq(new_description.unwrap_or(collection.description)),
-        is_public.eq(new_is_public.unwrap_or(collection.is_public)),
     ))
     .execute(&mut conn)
     .map_err(|_err| DefaultError {
@@ -335,7 +321,6 @@ pub fn get_bookmarks_for_collection_query(
     collection: uuid::Uuid,
     page: u64,
     limit: Option<i64>,
-    current_user_id: Option<uuid::Uuid>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<CollectionsBookmarkQueryResult, ServiceError> {
@@ -389,7 +374,6 @@ pub fn get_bookmarks_for_collection_query(
                     card_collection_columns::id.assume_not_null(),
                     card_collection_columns::author_id.assume_not_null(),
                     card_collection_columns::name.assume_not_null(),
-                    card_collection_columns::is_public.assume_not_null(),
                     card_collection_columns::description.assume_not_null(),
                     card_collection_columns::created_at.assume_not_null(),
                     card_collection_columns::updated_at.assume_not_null(),
@@ -410,14 +394,6 @@ pub fn get_bookmarks_for_collection_query(
             .first::<CardCollection>(&mut conn)
             .map_err(|_err| ServiceError::BadRequest("Error getting collection".to_string()))?
     };
-
-    if !card_collection.is_public && current_user_id.is_none() {
-        Err(ServiceError::Unauthorized)?;
-    }
-
-    if !card_collection.is_public && Some(card_collection.author_id) != current_user_id {
-        Err(ServiceError::Forbidden)?;
-    }
 
     let converted_cards: Vec<FullTextSearchResult> = bookmark_metadata
         .iter()
@@ -467,11 +443,6 @@ pub fn get_collections_for_bookmark_query(
             card_collection_bookmarks_columns::card_collection_bookmarks
                 .on(card_collection_columns::id
                     .eq(card_collection_bookmarks_columns::collection_id)),
-        )
-        .filter(
-            card_collection_columns::is_public
-                .eq(true)
-                .or(card_collection_columns::author_id.eq(current_user_id.unwrap_or_default())),
         )
         .filter(card_collection_columns::dataset_id.eq(dataset_uuid))
         .filter(card_collection_bookmarks_columns::card_metadata_id.eq_any(card_ids))

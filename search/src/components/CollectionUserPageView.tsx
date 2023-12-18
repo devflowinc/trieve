@@ -160,9 +160,6 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
                         <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-300">
                           {collection.description}
                         </td>
-                        <td class="whitespace-nowrap px-3 py-4 text-center text-sm text-gray-900 dark:text-gray-300">
-                          {!collection.is_public ? "✓" : ""}
-                        </td>
                         <td class="whitespace-nowrap px-3 py-4 text-left text-sm text-gray-900 dark:text-gray-300">
                           {getLocalTime(
                             collection.created_at,
