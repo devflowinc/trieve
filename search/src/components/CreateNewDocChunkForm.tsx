@@ -20,7 +20,6 @@ export const CreateNewDocChunkForm = () => {
   const [errorFields, setErrorFields] = createSignal<string[]>([]);
   const [isSubmitting, setIsSubmitting] = createSignal(false);
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
-  const [_private, setPrivate] = createSignal(false);
   const [timestamp, setTimestamp] = createSignal("");
 
   const submitDocChunk = (e: Event) => {
@@ -51,7 +50,6 @@ export const CreateNewDocChunkForm = () => {
       card_html: cardHTMLContentValue,
       link: docChunkLinkValue,
       tag_set: tagSet(),
-      private: _private(),
     };
 
     if (timestamp()) {
@@ -239,14 +237,6 @@ export const CreateNewDocChunkForm = () => {
           </div>
           <textarea id="search-query-textarea" />
         </div>
-        <label>
-          <span class="mr-2 items-center align-middle">Private?</span>
-          <input
-            type="checkbox"
-            onChange={(e) => setPrivate(e.target.checked)}
-            class="h-4 w-4 rounded-sm	border-gray-300 bg-neutral-500 align-middle accent-turquoise focus:ring-neutral-200 dark:border-neutral-700 dark:focus:ring-neutral-600"
-          />
-        </label>
         <div class="flex flex-row items-center space-x-2">
           <button
             class="w-fit rounded bg-neutral-100 p-2 hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"

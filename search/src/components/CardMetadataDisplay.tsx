@@ -10,7 +10,7 @@ import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import sanitizeHtml from "sanitize-html";
 import { VsFileSymlinkFile } from "solid-icons/vs";
 import BookmarkPopover from "./BookmarkPopover";
-import { FiEdit, FiGlobe, FiLock, FiTrash } from "solid-icons/fi";
+import { FiEdit, FiTrash } from "solid-icons/fi";
 import { formatDate, sanitzerOptions } from "./ScoreCard";
 import { Tooltip } from "./Atoms/Tooltip";
 import CommunityBookmarkPopover from "./CommunityBookmarkPopover";
@@ -147,18 +147,6 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
         <div class="flex w-full flex-col items-center rounded-md bg-neutral-100 p-2 dark:bg-neutral-800">
           <div class="flex w-full flex-col space-y-2">
             <div class="flex h-fit items-center space-x-1">
-              <Show when={props.card.private}>
-                <Tooltip
-                  body={<FiLock class="h-5 w-5 text-green-500" />}
-                  tooltipText="Private. Only you can see this card."
-                />
-              </Show>
-              <Show when={!props.card.private}>
-                <Tooltip
-                  body={<FiGlobe class="h-5 w-5 text-green-500" />}
-                  tooltipText="Publicly visible"
-                />
-              </Show>
               <div class="flex-1" />
               <Tooltip
                 body={

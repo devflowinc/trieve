@@ -53,7 +53,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
   const cardMetadatasWithVotes: BookmarkDTO[] = [];
   const searchCardMetadatasWithVotes: ScoreCardDTO[] = [];
 
-  // Sometimes this will error server-side if the collection is private so we have to handle it
+  // Sometimes this will error server-side so we have to handle it
   try {
     if (
       props.defaultCollectionCards.metadata.bookmarks.length > 0 &&
@@ -514,18 +514,6 @@ export const CollectionPage = (props: CollectionPageProps) => {
                     });
                   }}
                 />
-                <span class="text-md font-semibold">Private?: </span>
-                <input
-                  type="checkbox"
-                  checked={!collectionInfo().is_public}
-                  onChange={(e) => {
-                    setCollectionInfo({
-                      ...collectionInfo(),
-                      is_public: !e.target.checked,
-                    });
-                  }}
-                  class="mt-1 h-4 w-4 items-center justify-start rounded-sm	border-gray-300 bg-neutral-500 align-middle accent-turquoise focus:ring-neutral-200 dark:border-neutral-700 dark:focus:ring-neutral-600"
-                />
               </div>
               <div class="mt-4 flex w-full max-w-6xl justify-end px-4 sm:px-8 md:px-20">
                 <button
@@ -779,7 +767,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
               <BiRegularXCircle class="mx-auto h-8 w-8 fill-current  !text-red-500" />
               <div class="mb-4 text-center text-xl font-bold">
                 Login or register to bookmark cards, vote, get recommend cards
-                or view private themes
+                or manage your collections
               </div>
               <div class="mx-auto flex w-fit flex-col space-y-3">
                 <a

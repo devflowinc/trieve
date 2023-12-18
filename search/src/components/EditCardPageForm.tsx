@@ -26,9 +26,6 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
   >("");
   const [formErrorFields, setFormErrorFields] = createSignal<string[]>([]);
   const [isUpdating, setIsUpdating] = createSignal(false);
-  const [_private, setPrivate] = createSignal(
-    initialCardMetadata?.private ?? false,
-  );
   const [cardHtml, setCardHtml] = createSignal<string>("");
   const [evidenceLink, setEvidenceLink] = createSignal<string>(
     initialCardMetadata?.link ?? "",
@@ -83,7 +80,6 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
         tracking_id: trackingId(),
         metadata: metadata(),
         card_html: cardHTMLContentValue,
-        private: _private(),
       }),
     }).then((response) => {
       if (response.ok) {
@@ -149,7 +145,6 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
           setTagSet(data.tag_set ?? "");
           setMetadata(data.metadata);
           setTrackingId(data.tracking_id);
-          setPrivate(data.private);
           setCardHtml(data.card_html ?? "");
           setTopLevelError("");
           setFetching(false);
@@ -328,15 +323,6 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
                 </div>
                 <textarea id="search-query-textarea" />
               </div>
-              <label>
-                <span class="mr-2 items-center align-middle">Private?</span>
-                <input
-                  type="checkbox"
-                  checked={_private()}
-                  onChange={(e) => setPrivate(e.target.checked)}
-                  class="h-4 w-4 rounded-sm	border-gray-300 bg-neutral-500 align-middle accent-turquoise focus:ring-neutral-200 dark:border-neutral-700 dark:focus:ring-neutral-600"
-                />
-              </label>
               <div class="flex flex-row items-center space-x-2">
                 <button
                   class="w-fit rounded bg-neutral-100 p-2 hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800"

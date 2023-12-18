@@ -45,7 +45,6 @@ export type CardMetadataWithVotes = Exclude<CardMetadata, "author"> & {
   total_upvotes: number;
   total_downvotes: number;
   vote_by_current_user: boolean | null;
-  private: boolean | null;
 };
 
 export const isCardMetadataWithVotes = (
@@ -376,7 +375,6 @@ export interface FileDTO {
   user_id: string;
   file_name: string;
   mime_type: string;
-  private: boolean;
   size: number;
   base64url_content: string;
 }
