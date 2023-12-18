@@ -63,7 +63,7 @@ pub async fn webhook(
                         .parse::<uuid::Uuid>()
                         .expect("organization_id metadata must be a uuid");
 
-                    let fetch_subscription_organization_id = organization_id.clone();
+                    let fetch_subscription_organization_id = organization_id;
 
                     let optional_existing_subscription = web::block(move || {
                         get_option_subscription_by_organization_id_query(
@@ -162,7 +162,7 @@ pub async fn direct_to_payment_link(
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_pool = pool.clone();
     let subscription_pool = pool.clone();
-    let subscription_org_id = path_data.organization_id.clone();
+    let subscription_org_id = path_data.organization_id;
 
     let current_subscription = web::block(move || {
         get_option_subscription_by_organization_id_query(subscription_org_id, subscription_pool)
@@ -174,9 +174,9 @@ pub async fn direct_to_payment_link(
         return Ok(HttpResponse::Conflict().finish());
     }
 
-    let plan_id = path_data.plan_id.clone();
-    let organization_id = path_data.organization_id.clone();
-    let organization_id_clone = path_data.organization_id.clone();
+    let plan_id = path_data.plan_id;
+    let organization_id = path_data.organization_id;
+    let organization_id_clone = path_data.organization_id;
     let _organization =
         web::block(move || get_organization_by_id_query(organization_id_clone, organization_pool))
             .await?
@@ -223,7 +223,7 @@ pub async fn cancel_subscription(
         return Ok(HttpResponse::Forbidden().finish());
     }
 
-    let _ = cancel_stripe_subscription(subscription.stripe_id)
+    cancel_stripe_subscription(subscription.stripe_id)
         .await
         .map_err(|e| {
             ServiceError::BadRequest(format!(
@@ -264,7 +264,7 @@ pub async fn update_subscription_plan(
     let get_plan_pool = pool.clone();
     let update_subscription_plan_pool = pool.clone();
 
-    let subscription_id = path_data.subscription_id.clone();
+    let subscription_id = path_data.subscription_id;
     let subscription =
         web::block(move || get_subscription_by_id_query(subscription_id, get_subscription_pool))
             .await?
@@ -274,7 +274,7 @@ pub async fn update_subscription_plan(
         return Ok(HttpResponse::Forbidden().finish());
     }
 
-    let plan_id = path_data.plan_id.clone();
+    let plan_id = path_data.plan_id;
     let plan = web::block(move || get_plan_by_id_query(plan_id, get_plan_pool))
         .await?
         .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;

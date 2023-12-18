@@ -6,14 +6,13 @@ use actix_web::web;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use stripe::{
     CreatePaymentLink, CreatePaymentLinkAfterCompletion, CreatePaymentLinkAfterCompletionRedirect,
-    CreatePaymentLinkAfterCompletionType, CreatePaymentLinkLineItems, PaymentLink,
+    CreatePaymentLinkAfterCompletionType, PaymentLink,
 };
 
 pub fn get_stripe_client() -> stripe::Client {
     let stripe_secret = std::env::var("STRIPE_SECRET").expect("STRIPE_SECRET must be set");
-    let stripe_client = stripe::Client::new(stripe_secret);
 
-    stripe_client
+    stripe::Client::new(stripe_secret)
 }
 
 pub fn create_stripe_subscription_query(
@@ -88,9 +87,11 @@ pub async fn create_stripe_payment_link(
     plan: StripePlan,
     organization_id: uuid::Uuid,
 ) -> Result<String, DefaultError> {
-    let mut payment_link_line_items = CreatePaymentLinkLineItems::default();
-    payment_link_line_items.quantity = 1;
-    payment_link_line_items.price = plan.stripe_id;
+    let payment_link_line_items = stripe::CreatePaymentLinkLineItems {
+        quantity: 1,
+        price: plan.stripe_id,
+        ..Default::default()
+    };
 
     let admin_dashboard_url =
         std::env::var("ADMIN_DASHBOARD_URL").expect("ADMIN_DASHBOARD_URL must be set");
@@ -295,13 +296,17 @@ pub async fn update_stripe_subscription(
         update_subscription_items.push(deleted_item.clone());
     }
 
-    let mut new_stripe_item = stripe::UpdateSubscriptionItems::default();
-    new_stripe_item.price = Some(plan_stripe_id);
-    new_stripe_item.quantity = Some(1);
+    let new_stripe_item = stripe::UpdateSubscriptionItems {
+        price: Some(plan_stripe_id),
+        quantity: Some(1),
+        ..Default::default()
+    };
     update_subscription_items.push(new_stripe_item);
 
-    let mut update_subscription = stripe::UpdateSubscription::default();
-    update_subscription.items = Some(update_subscription_items);
+    let update_subscription = stripe::UpdateSubscription::<'_> {
+        items: Some(update_subscription_items),
+        ..Default::default()
+    };
 
     let _updated_stripe_subscription =
         stripe::Subscription::update(&stripe_client, &stripe_subscription_id, update_subscription)
