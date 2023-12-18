@@ -82,7 +82,7 @@ impl FromRequest for AdminOnly {
         if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
             if let Ok(user_json) = identity.id() {
                 if let Ok(user) = serde_json::from_str::<LoggedUser>(&user_json) {
-                    if user.role > UserRole::Admin {
+                    if user.role >= UserRole::Admin {
                         return ready(Ok(AdminOnly(user)));
                     }
                 }
@@ -93,7 +93,7 @@ impl FromRequest for AdminOnly {
             if let Ok(authen_header) = authen_header.to_str() {
                 if let Some(pool) = req.app_data::<web::Data<Pool>>() {
                     if let Ok(user) = get_user_from_api_key_query(authen_header, pool) {
-                        if user.role > UserRole::Admin {
+                        if user.role >= UserRole::Admin {
                             return ready(Ok(AdminOnly(user)));
                         }
                     }
@@ -115,7 +115,7 @@ impl FromRequest for OwnerOnly {
         if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
             if let Ok(user_json) = identity.id() {
                 if let Ok(user) = serde_json::from_str::<LoggedUser>(&user_json) {
-                    if user.role > UserRole::Owner {
+                    if user.role >= UserRole::Owner {
                         return ready(Ok(OwnerOnly(user)));
                     }
                 }
@@ -126,7 +126,7 @@ impl FromRequest for OwnerOnly {
             if let Ok(authen_header) = authen_header.to_str() {
                 if let Some(pool) = req.app_data::<web::Data<Pool>>() {
                     if let Ok(user) = get_user_from_api_key_query(authen_header, pool) {
-                        if user.role > UserRole::Owner {
+                        if user.role >= UserRole::Owner {
                             return ready(Ok(OwnerOnly(user)));
                         }
                     }
