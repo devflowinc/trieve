@@ -55,7 +55,6 @@ pub async fn retrieve_qdrant_points_query(
     tag_set: Option<Vec<String>>,
     time_range: Option<(String, String)>,
     filters: Option<serde_json::Value>,
-    current_user_id: Option<uuid::Uuid>,
     parsed_query: ParsedQuery,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -72,27 +71,13 @@ pub async fn retrieve_qdrant_points_query(
 
     let mut query = card_metadata_columns::card_metadata
         .left_outer_join(
-            card_collisions_columns::card_collisions.on(card_metadata_columns::id
-                .eq(card_collisions_columns::card_id)
-                .and(card_metadata_columns::private.eq(false))),
+            card_collisions_columns::card_collisions
+                .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
         )
         .left_outer_join(
             second_join.on(second_join
                 .field(schema::card_metadata::qdrant_point_id)
-                .eq(card_collisions_columns::collision_qdrant_id)
-                .and(second_join.field(schema::card_metadata::private).eq(true))),
-        )
-        .filter(
-            card_metadata_columns::private
-                .eq(false)
-                .or(card_metadata_columns::author_id
-                    .eq(current_user_id.unwrap_or(uuid::Uuid::nil())))
-                .and(
-                    second_join
-                        .field(schema::card_metadata::qdrant_point_id)
-                        .is_not_null()
-                        .or(card_metadata_columns::qdrant_point_id.is_not_null()),
-                ),
+                .eq(card_collisions_columns::collision_qdrant_id)),
         )
         .filter(card_metadata_columns::dataset_id.eq(dataset_id))
         .select((
@@ -324,7 +309,6 @@ pub async fn search_card_collections_query(
     tag_set: Option<Vec<String>>,
     filters: Option<serde_json::Value>,
     collection_id: uuid::Uuid,
-    user_id: Option<uuid::Uuid>,
     dataset_id: uuid::Uuid,
     parsed_query: ParsedQuery,
 ) -> Result<SearchCardQueryResult, DefaultError> {
@@ -351,11 +335,6 @@ pub async fn search_card_collections_query(
             card_metadata_columns::qdrant_point_id,
             card_collisions_columns::collision_qdrant_id.nullable(),
         ))
-        .filter(
-            card_metadata_columns::private
-                .eq(false)
-                .or(card_metadata_columns::author_id.eq(user_id.unwrap_or(uuid::Uuid::nil()))),
-        )
         .filter(card_metadata_columns::dataset_id.eq(dataset_id))
         .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id))
         .distinct()
@@ -576,7 +555,6 @@ pub fn get_metadata_query(
                 qdrant_point_id,
                 created_at: metadata.created_at,
                 updated_at: metadata.updated_at,
-                private: metadata.private,
                 card_html: metadata.card_html,
                 file_id: card_with_file_name.map(|file| file.file_id),
                 file_name: card_with_file_name.map(|file| file.file_name.to_string()),
@@ -600,7 +578,6 @@ pub async fn search_full_text_collection_query(
     user_query: String,
     page: u64,
     pool: web::Data<Pool>,
-    current_user_id: Option<uuid::Uuid>,
     filters: Option<serde_json::Value>,
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
@@ -632,15 +609,13 @@ pub async fn search_full_text_collection_query(
     //     and (second_join.qdrant_point_id notnull or card_metadata.qdrant_point_id notnull);
     let mut query = card_metadata_columns::card_metadata
         .left_outer_join(
-            card_collisions_columns::card_collisions.on(card_metadata_columns::id
-                .eq(card_collisions_columns::card_id)
-                .and(card_metadata_columns::private.eq(false))),
+            card_collisions_columns::card_collisions
+                .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
         )
         .left_outer_join(
             second_join.on(second_join
                 .field(schema::card_metadata::qdrant_point_id)
-                .eq(card_collisions_columns::collision_qdrant_id)
-                .and(second_join.field(schema::card_metadata::private).eq(true))),
+                .eq(card_collisions_columns::collision_qdrant_id)),
         )
         .left_outer_join(
             card_collection_bookmarks_columns::card_collection_bookmarks.on(
@@ -648,18 +623,6 @@ pub async fn search_full_text_collection_query(
                     .eq(card_collection_bookmarks_columns::card_metadata_id)
                     .and(card_collection_bookmarks_columns::collection_id.eq(collection_id)),
             ),
-        )
-        .filter(
-            card_metadata_columns::private
-                .eq(false)
-                .or(card_metadata_columns::author_id
-                    .eq(current_user_id.unwrap_or(uuid::Uuid::nil())))
-                .and(
-                    second_join
-                        .field(schema::card_metadata::qdrant_point_id)
-                        .is_not_null()
-                        .or(card_metadata_columns::qdrant_point_id.is_not_null()),
-                ),
         )
         .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id))
         .filter(card_metadata_columns::dataset_id.eq(dataset_uuid))
@@ -782,7 +745,6 @@ pub async fn search_full_text_collection_query(
 pub async fn retrieve_cards_from_point_ids(
     search_card_query_results: SearchCardQueryResult,
     data: web::Json<SearchCardData>,
-    current_user_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
     let point_ids = search_card_query_results
@@ -792,7 +754,7 @@ pub async fn retrieve_cards_from_point_ids(
         .collect::<Vec<_>>();
 
     let (metadata_cards, collided_cards) =
-        get_metadata_and_collided_cards_from_point_ids_query(point_ids, current_user_id, pool)
+        get_metadata_and_collided_cards_from_point_ids_query(point_ids, pool)
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let score_cards: Vec<ScoreCardDTO> = search_card_query_results
@@ -810,7 +772,6 @@ pub async fn retrieve_cards_from_point_ids(
                     qdrant_point_id: uuid::Uuid::default(),
                     created_at: chrono::Utc::now().naive_local(),
                     updated_at: chrono::Utc::now().naive_local(),
-                    private: false,
                     file_id: None,
                     file_name: None,
                     content: "".to_string(),
@@ -830,14 +791,7 @@ pub async fn retrieve_cards_from_point_ids(
                 .map(|card| card.metadata.clone())
                 .collect();
 
-            if !card.private
-                || card
-                    .clone()
-                    .author
-                    .is_some_and(|author| Some(author.id) == current_user_id)
-            {
-                collided_cards.insert(0, card);
-            }
+            collided_cards.insert(0, card);
 
             ScoreCardDTO {
                 metadata: collided_cards,
@@ -856,7 +810,6 @@ pub async fn search_semantic_cards(
     parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
-    current_user_id: Option<uuid::Uuid>,
     dataset_id: uuid::Uuid,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
@@ -869,7 +822,6 @@ pub async fn search_semantic_cards(
         data.tag_set.clone(),
         data.time_range.clone(),
         data.filters.clone(),
-        current_user_id,
         parsed_query,
         dataset_id,
         pool.clone(),
@@ -877,13 +829,8 @@ pub async fn search_semantic_cards(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let result_cards = retrieve_cards_from_point_ids(
-        search_card_query_results,
-        data,
-        current_user_id,
-        pool.clone(),
-    )
-    .await?;
+    let result_cards =
+        retrieve_cards_from_point_ids(search_card_query_results, data, pool.clone()).await?;
 
     Ok(result_cards)
 }
@@ -893,7 +840,6 @@ pub async fn search_full_text_cards(
     mut parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
-    current_user_id: Option<uuid::Uuid>,
     dataset_id: uuid::Uuid,
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
     parsed_query.query = parsed_query
@@ -909,7 +855,6 @@ pub async fn search_full_text_cards(
         data.tag_set.clone(),
         data.time_range.clone(),
         data.filters.clone(),
-        current_user_id,
         parsed_query,
         dataset_id,
         pool.clone(),
@@ -917,9 +862,7 @@ pub async fn search_full_text_cards(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let result_cards =
-        retrieve_cards_from_point_ids(search_card_query_results, data, current_user_id, pool)
-            .await?;
+    let result_cards = retrieve_cards_from_point_ids(search_card_query_results, data, pool).await?;
 
     Ok(result_cards)
 }
@@ -1049,7 +992,6 @@ pub async fn search_hybrid_cards(
     parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
-    current_user_id: Option<uuid::Uuid>,
     cross_encoder_init: web::Data<CrossEncoder>,
     dataset_id: uuid::Uuid,
     app_mutex: web::Data<AppMutexStore>,
@@ -1064,7 +1006,6 @@ pub async fn search_hybrid_cards(
         data.tag_set.clone(),
         data.time_range.clone(),
         data.filters.clone(),
-        current_user_id,
         parsed_query.clone(),
         dataset_id,
         pool.clone(),
@@ -1075,7 +1016,6 @@ pub async fn search_hybrid_cards(
         parsed_query,
         page,
         pool,
-        current_user_id,
         dataset_id,
     );
 
@@ -1095,7 +1035,7 @@ pub async fn search_hybrid_cards(
         .collect::<Vec<_>>();
 
     let (metadata_cards, collided_cards) =
-        get_metadata_and_collided_cards_from_point_ids_query(point_ids, current_user_id, pool1)
+        get_metadata_and_collided_cards_from_point_ids_query(point_ids, pool1)
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let semantic_score_cards: Vec<ScoreCardDTO> = search_card_query_results
@@ -1113,7 +1053,6 @@ pub async fn search_hybrid_cards(
                     qdrant_point_id: uuid::Uuid::default(),
                     created_at: chrono::Utc::now().naive_local(),
                     updated_at: chrono::Utc::now().naive_local(),
-                    private: false,
                     file_id: None,
                     file_name: None,
                     content: "".to_string(),
@@ -1133,14 +1072,7 @@ pub async fn search_hybrid_cards(
                 .map(|card| card.metadata.clone())
                 .collect();
 
-            if !card.private
-                || card
-                    .clone()
-                    .author
-                    .is_some_and(|author| Some(author.id) == current_user_id)
-            {
-                collided_cards.insert(0, card);
-            }
+            collided_cards.insert(0, card);
 
             ScoreCardDTO {
                 metadata: collided_cards,
@@ -1199,7 +1131,6 @@ pub async fn search_semantic_collections(
     collection: CardCollection,
     page: u64,
     pool: web::Data<Pool>,
-    current_user_id: Option<uuid::Uuid>,
     dataset_id: uuid::Uuid,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<SearchCollectionsResult, actix_web::Error> {
@@ -1216,7 +1147,6 @@ pub async fn search_semantic_collections(
         data.tag_set.clone(),
         data.filters.clone(),
         data.collection_id,
-        current_user_id,
         dataset_id,
         parsed_query,
     )
@@ -1234,7 +1164,7 @@ pub async fn search_semantic_collections(
     let metadata_cards = get_metadata_from_point_ids(point_ids, pool3)
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let collided_cards = get_collided_cards_query(point_ids_1, current_user_id, dataset_id, pool1)
+    let collided_cards = get_collided_cards_query(point_ids_1, dataset_id, pool1)
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let score_cards: Vec<ScoreCardDTO> = search_card_query_results
@@ -1252,7 +1182,6 @@ pub async fn search_semantic_collections(
                     qdrant_point_id: uuid::Uuid::default(),
                     created_at: chrono::Utc::now().naive_local(),
                     updated_at: chrono::Utc::now().naive_local(),
-                    private: false,
                     file_id: None,
                     file_name: None,
                     content: "".to_string(),
@@ -1306,7 +1235,6 @@ pub async fn search_full_text_collections(
     collection: CardCollection,
     page: u64,
     pool: web::Data<Pool>,
-    current_user_id: Option<uuid::Uuid>,
     dataset_id: uuid::Uuid,
 ) -> Result<SearchCollectionsResult, actix_web::Error> {
     let data_inner = data.clone();
@@ -1316,7 +1244,6 @@ pub async fn search_full_text_collections(
         data_inner.content.clone(),
         page,
         pool,
-        current_user_id,
         data_inner.filters.clone(),
         data_inner.link.clone(),
         data_inner.tag_set.clone(),
@@ -1330,7 +1257,6 @@ pub async fn search_full_text_collections(
     let result_cards = retrieve_cards_from_point_ids(
         search_card_query_results,
         web::Json(data.clone().into()),
-        current_user_id,
         pool1,
     )
     .await?;

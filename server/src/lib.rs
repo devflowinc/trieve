@@ -105,7 +105,6 @@ pub async fn main() -> std::io::Result<()> {
             handlers::collection_handler::delete_bookmark,
             handlers::collection_handler::get_logged_in_user_card_collections,
             handlers::collection_handler::get_all_bookmarks,
-            handlers::file_handler::update_file_handler,
             handlers::file_handler::upload_file_handler,
             handlers::file_handler::get_file_handler,
             handlers::file_handler::delete_file_handler,
@@ -167,7 +166,6 @@ pub async fn main() -> std::io::Result<()> {
                 operators::collection_operator::BookmarkCollectionResult,
                 handlers::file_handler::UploadFileData,
                 handlers::file_handler::UploadFileResult,
-                handlers::file_handler::UpdateFileData,
                 handlers::notification_handler::NotificationId,
                 handlers::notification_handler::Notification,
                 handlers::organization_handler::CreateOrganizationData,
@@ -475,7 +473,6 @@ pub async fn main() -> std::io::Result<()> {
                         web::scope("/file")
                             .service(
                                 web::resource("")
-                                    .route(web::put().to(handlers::file_handler::update_file_handler))
                                     .route(web::post().to(handlers::file_handler::upload_file_handler)),
                             )
                             .service(

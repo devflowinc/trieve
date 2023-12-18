@@ -64,7 +64,6 @@ pub fn create_file_query(
     user_id: uuid::Uuid,
     file_name: &str,
     file_size: i64,
-    private: bool,
     tag_set: Option<String>,
     metadata: Option<serde_json::Value>,
     link: Option<String>,
@@ -79,7 +78,7 @@ pub fn create_file_query(
     })?;
 
     let new_file = File::from_details(
-        user_id, file_name, private, file_size, tag_set, metadata, link, time_stamp, dataset_id,
+        user_id, file_name, file_size, tag_set, metadata, link, time_stamp, dataset_id,
     );
 
     let created_file: File = diesel::insert_into(files_columns::files)
@@ -90,48 +89,6 @@ pub fn create_file_query(
         })?;
 
     Ok(created_file)
-}
-
-pub fn get_user_id_of_file_query(
-    file_id: uuid::Uuid,
-    pool: web::Data<Pool>,
-) -> Result<uuid::Uuid, DefaultError> {
-    use crate::data::schema::files::dsl as files_columns;
-    let mut conn = pool.get().map_err(|_| DefaultError {
-        message: "Could not get database connection",
-    })?;
-    let file: uuid::Uuid = files_columns::files
-        .filter(files_columns::id.eq(file_id))
-        .select(files_columns::user_id)
-        .first(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Could not find file",
-        })?;
-    Ok(file)
-}
-
-pub fn update_file_query(
-    file_id: uuid::Uuid,
-    dataset_id: uuid::Uuid,
-    private: bool,
-    pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
-    use crate::data::schema::files::dsl as files_columns;
-    let mut conn = pool.get().map_err(|_| DefaultError {
-        message: "Could not get database connection",
-    })?;
-
-    diesel::update(
-        files_columns::files
-            .filter(files_columns::id.eq(file_id))
-            .filter(files_columns::dataset_id.eq(dataset_id)),
-    )
-    .set(files_columns::private.eq(private))
-    .execute(&mut conn)
-    .map_err(|_| DefaultError {
-        message: "Could not update file, try again",
-    })?;
-    Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -246,7 +203,6 @@ pub async fn convert_doc_to_html_query(
             user.id,
             &file_name,
             file_size,
-            private,
             tag_set.clone(),
             Some(tika_metadata_response_json.clone()),
             link.clone(),
@@ -299,7 +255,6 @@ pub async fn convert_doc_to_html_query(
         file_metadata: File::from_details(
             user1.id,
             &file_name1,
-            private,
             file_data1.len().try_into().unwrap(),
             tag_set1,
             None,
@@ -454,7 +409,6 @@ pub async fn create_cards_with_handler(
 pub async fn get_file_query(
     file_uuid: uuid::Uuid,
     dataset_id: uuid::Uuid,
-    user_uuid: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<FileDTO, actix_web::Error> {
     use crate::data::schema::files::dsl as files_columns;
@@ -468,14 +422,6 @@ pub async fn get_file_query(
         .filter(files_columns::dataset_id.eq(dataset_id))
         .get_result(&mut conn)
         .map_err(|_| ServiceError::NotFound)?;
-
-    if file_metadata.private && user_uuid.is_none() {
-        return Err(ServiceError::Unauthorized.into());
-    }
-
-    if file_metadata.private && !user_uuid.is_some_and(|user_id| user_id == file_metadata.user_id) {
-        return Err(ServiceError::Forbidden.into());
-    }
 
     let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
     let file_data = bucket
@@ -498,7 +444,6 @@ pub async fn get_file_query(
 
 pub async fn get_user_file_query(
     user_uuid: uuid::Uuid,
-    accessing_user_uuid: Option<uuid::Uuid>,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Vec<File>, actix_web::Error> {
@@ -508,21 +453,9 @@ pub async fn get_user_file_query(
         .get()
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let mut boxed_query = files_columns::files
+    let file_metadata: Vec<File> = files_columns::files
         .filter(files_columns::user_id.eq(user_uuid))
         .filter(files_columns::dataset_id.eq(dataset_id))
-        .into_boxed();
-
-    match accessing_user_uuid {
-        Some(accessing_user_uuid) => {
-            if user_uuid != accessing_user_uuid {
-                boxed_query = boxed_query.filter(files_columns::private.eq(false));
-            }
-        }
-        None => boxed_query = boxed_query.filter(files_columns::private.eq(false)),
-    }
-
-    let file_metadata: Vec<File> = boxed_query
         .load(&mut conn)
         .map_err(|_| ServiceError::NotFound)?;
 
@@ -531,7 +464,6 @@ pub async fn get_user_file_query(
 
 pub async fn delete_file_query(
     file_uuid: uuid::Uuid,
-    user_uuid: uuid::Uuid,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), actix_web::Error> {
@@ -547,10 +479,6 @@ pub async fn delete_file_query(
         .filter(files_columns::dataset_id.eq(dataset_id))
         .get_result(&mut conn)
         .map_err(|_| ServiceError::NotFound)?;
-
-    if file_metadata.private && user_uuid != file_metadata.user_id {
-        return Err(ServiceError::Forbidden.into());
-    }
 
     let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
     bucket
