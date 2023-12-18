@@ -28,3 +28,4 @@ tmp
 temp
 .venv
 tantivy_index
+rustc-ice*
