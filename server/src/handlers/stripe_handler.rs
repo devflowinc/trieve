@@ -242,7 +242,7 @@ pub struct UpdateSubscriptionData {
 }
 
 #[utoipa::path(
-    delete,
+    patch,
     path = "/stripe/subscription_plan/{subscription_id}/{plan_id}",
     context_path = "/api",
     tag = "stripe",
