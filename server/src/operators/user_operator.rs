@@ -96,7 +96,6 @@ pub fn get_user_with_cards_by_id_query(
         .filter(card_metadata_columns::dataset_id.eq(dataset_id))
         .into_boxed();
 
-    //Ensure only user can see their own private cards on their page
     let user_card_metadatas = card_metadata_columns::card_metadata
         .filter(card_metadata_columns::author_id.eq(user.id))
         .filter(card_metadata_columns::dataset_id.eq(dataset_id))

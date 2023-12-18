@@ -98,7 +98,6 @@ pub async fn convert_doc_to_html_query(
     tag_set: Option<String>,
     description: Option<String>,
     link: Option<String>,
-    private: bool,
     metadata: Option<serde_json::Value>,
     create_cards: Option<bool>,
     time_stamp: Option<String>,
@@ -228,7 +227,6 @@ pub async fn convert_doc_to_html_query(
 
         let resp = create_cards_with_handler(
             tag_set,
-            private,
             file_name,
             created_file.id,
             description,
@@ -268,7 +266,6 @@ pub async fn convert_doc_to_html_query(
 #[allow(clippy::too_many_arguments)]
 pub async fn create_cards_with_handler(
     tag_set: Option<String>,
-    private: bool,
     file_name: String,
     created_file_id: uuid::Uuid,
     description: Option<String>,
@@ -341,7 +338,6 @@ pub async fn create_cards_with_handler(
             card_html: Some(card_html.clone()),
             link: link.clone(),
             tag_set: tag_set.clone(),
-            private: Some(private),
             file_uuid: Some(created_file_id),
             metadata: metadata.clone(),
             collection_id: None,
@@ -382,7 +378,6 @@ pub async fn create_cards_with_handler(
         CardCollection::from_details(
             user.id,
             format!("Collection for file {}", file_name),
-            !private,
             converted_description,
             dataset.id,
         ),
