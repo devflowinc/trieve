@@ -126,12 +126,6 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
                     </th>
                     <th
                       scope="col"
-                      class="px-3 py-3.5 text-center text-base font-semibold dark:text-white"
-                    >
-                      Private
-                    </th>
-                    <th
-                      scope="col"
                       class="px-3 py-3.5 text-left text-base font-semibold dark:text-white"
                     >
                       Created at

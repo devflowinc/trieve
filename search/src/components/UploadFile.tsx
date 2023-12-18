@@ -6,7 +6,6 @@ export const UploadFile = () => {
   const dataset = import.meta.env.PUBLIC_DATASET as string;
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const [file, setFile] = createSignal<File | undefined>();
-  const [_private, setPrivate] = createSignal(false);
   const [link, setLink] = createSignal("");
   const [tagSet, setTagSet] = createSignal("");
   const [isSubmitting, setIsSubmitting] = createSignal(false);
@@ -56,7 +55,6 @@ export const UploadFile = () => {
       base64_docx_file: base64File,
       file_name: file_name,
       file_mime_type: file_mime_type,
-      private: _private(),
       link: link(),
       tag_set: tagSet(),
     };
@@ -87,7 +85,6 @@ export const UploadFile = () => {
       }
       void response.json().then(() => {
         setFile(undefined);
-        setPrivate(false);
         setLink("");
         setTagSet("");
         setIsSubmitting(false);
@@ -186,14 +183,6 @@ export const UploadFile = () => {
             type="file"
             class="hidden"
             onChange={handleDirectUpload}
-          />
-        </label>
-        <label>
-          <span class="mr-2 items-center align-middle">Private?</span>
-          <input
-            type="checkbox"
-            onChange={(e) => setPrivate(e.target.checked)}
-            class="h-4 w-4 rounded-sm	border-gray-300 bg-neutral-500 align-middle accent-turquoise focus:ring-neutral-200 dark:border-neutral-700 dark:focus:ring-neutral-600"
           />
         </label>
         <div class="flex flex-row items-center space-x-2">
