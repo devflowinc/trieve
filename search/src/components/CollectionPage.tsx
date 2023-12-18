@@ -21,7 +21,7 @@ import {
 } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { BiRegularLogInCircle, BiRegularXCircle } from "solid-icons/bi";
-import { FiEdit, FiLock, FiTrash } from "solid-icons/fi";
+import { FiEdit, FiTrash } from "solid-icons/fi";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
 import { PaginationController } from "./Atoms/PaginationController";
 import { ScoreCardArray } from "./ScoreCardArray";
@@ -48,8 +48,7 @@ export interface CollectionPageProps {
 export const CollectionPage = (props: CollectionPageProps) => {
   const apiHost: string = import.meta.env.PUBLIC_API_HOST as string;
   const dataset = import.meta.env.PUBLIC_DATASET as string;
-  const alwaysRequireAuth: string = import.meta.env
-    .PUBLIC_ALWAYS_REQUIRE_AUTH as string;
+
   const cardMetadatasWithVotes: BookmarkDTO[] = [];
   const searchCardMetadatasWithVotes: ScoreCardDTO[] = [];
 
@@ -327,7 +326,6 @@ export const CollectionPage = (props: CollectionPageProps) => {
       collection_id: collectionInfo().id,
       name: collectionInfo().name,
       description: collectionInfo().description,
-      is_public: collectionInfo().is_public,
     };
     void fetch(`${apiHost}/card_collection`, {
       method: "PUT",
@@ -409,391 +407,349 @@ export const CollectionPage = (props: CollectionPageProps) => {
           </FullScreenModal>
         </Portal>
       </Show>
-      <Show
-        when={
-          !props.defaultCollectionCards.metadata.collection.is_public &&
-          !clientSideRequestFinished()
-        }
-      >
-        <div class="flex w-full flex-col items-center justify-center space-y-4">
-          <div class="animate-pulse text-xl">Loading collection...</div>
-          <div
-            class="text-primary inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-magenta border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-            role="status"
-          >
-            <span class="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
-              Loading...
-            </span>
-          </div>
-        </div>
-      </Show>
-      <Show
-        when={
-          props.defaultCollectionCards.metadata.collection.is_public ||
-          clientSideRequestFinished()
-        }
-      >
-        <div class="flex w-full flex-col items-center space-y-2">
-          <Show when={error().length == 0}>
-            <div class="flex w-full max-w-6xl items-center justify-end space-x-2 px-4 sm:px-8 md:px-20">
-              <Show
-                when={
-                  !cardCollections().find(
-                    (collection) => collection.id == collectionInfo().id,
-                  )?.is_public ||
-                  (!props.defaultCollectionCards.metadata.collection
-                    .is_public &&
-                    alwaysRequireAuth !== "on")
-                }
+      <div class="flex w-full flex-col items-center space-y-2">
+        <Show when={error().length == 0}>
+          <div class="flex w-full max-w-6xl items-center justify-end space-x-2 px-4 sm:px-8 md:px-20">
+            <Show
+              when={cardCollections().some(
+                (collection) => collection.id == collectionInfo().id,
+              )}
+            >
+              <button
+                classList={{
+                  "h-fit text-red-700 dark:text-red-400": true,
+                  "animate-pulse": deleting(),
+                }}
+                onClick={() => setShowConfirmCollectionmDeleteModal(true)}
               >
-                <FiLock class="text-green-500" />
-              </Show>
-              <Show
-                when={cardCollections().some(
-                  (collection) => collection.id == collectionInfo().id,
-                )}
-              >
-                <button
-                  classList={{
-                    "h-fit text-red-700 dark:text-red-400": true,
-                    "animate-pulse": deleting(),
-                  }}
-                  onClick={() => setShowConfirmCollectionmDeleteModal(true)}
-                >
-                  <FiTrash class="h-5 w-5" />
-                </button>
-                <button onClick={() => setEditing((prev) => !prev)}>
-                  <FiEdit class="h-5 w-5" />
-                </button>
-              </Show>
-            </div>
-            <Show when={!editing()}>
-              <div class="flex w-full items-center justify-center">
-                <h1 class="break-all text-center text-lg min-[320px]:text-xl sm:text-3xl">
-                  {collectionInfo().name}
-                </h1>
-              </div>
-              <Show
-                when={collectionInfo().description.length > 0 && !editing()}
-              >
-                <div class="mx-auto flex max-w-[300px] justify-items-center gap-x-2 md:max-w-fit">
-                  <div class="text-center text-lg font-semibold">
-                    Description:
-                  </div>
-                  <div class="line-clamp-1 flex w-full justify-start text-center text-lg">
-                    {collectionInfo().description}
-                  </div>
-                </div>
-              </Show>
+                <FiTrash class="h-5 w-5" />
+              </button>
+              <button onClick={() => setEditing((prev) => !prev)}>
+                <FiEdit class="h-5 w-5" />
+              </button>
             </Show>
-
-            <Show when={editing()}>
-              <div class="vertical-align-left mt-8 grid w-full max-w-6xl auto-rows-max grid-cols-[1fr,3fr] gap-y-2 px-4 sm:px-8 md:px-20">
-                <h1 class="text-md min-[320px]:text-md sm:text-md mt-10 text-left font-bold">
-                  Name:
-                </h1>
-                <input
-                  type="text"
-                  class="mt-10 max-h-fit w-full rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
-                  value={collectionInfo().name}
-                  onInput={(e) => {
-                    setCollectionInfo({
-                      ...collectionInfo(),
-                      name: e.target.value,
-                    });
-                  }}
-                />
-                <div class="text-md mr-2 font-semibold">Description:</div>
-                <textarea
-                  class="w-full justify-start rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
-                  value={collectionInfo().description}
-                  onInput={(e) => {
-                    setCollectionInfo({
-                      ...collectionInfo(),
-                      description: e.target.value,
-                    });
-                  }}
-                />
-              </div>
-              <div class="mt-4 flex w-full max-w-6xl justify-end px-4 sm:px-8 md:px-20">
-                <button
-                  classList={{
-                    "!pointer-events-auto relative max-h-10 mt-2 mr-2 items-end justify-end rounded-md p-2 text-center bg-red-500":
-                      true,
-                    "animate-pulse": fetchingCollections(),
-                  }}
-                  onClick={() => setEditing(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  classList={{
-                    "!pointer-events-auto relative max-h-10 mt-2 mr-2 items-end justify-end rounded-md p-2 text-center bg-green-500":
-                      true,
-                    "animate-pulse": fetchingCollections(),
-                  }}
-                  onClick={() => updateCollection()}
-                >
-                  Save
-                </button>
+          </div>
+          <Show when={!editing()}>
+            <div class="flex w-full items-center justify-center">
+              <h1 class="break-all text-center text-lg min-[320px]:text-xl sm:text-3xl">
+                {collectionInfo().name}
+              </h1>
+            </div>
+            <Show when={collectionInfo().description.length > 0 && !editing()}>
+              <div class="mx-auto flex max-w-[300px] justify-items-center gap-x-2 md:max-w-fit">
+                <div class="text-center text-lg font-semibold">
+                  Description:
+                </div>
+                <div class="line-clamp-1 flex w-full justify-start text-center text-lg">
+                  {collectionInfo().description}
+                </div>
               </div>
             </Show>
           </Show>
-          <div class="flex w-full max-w-6xl flex-col space-y-4 border-t border-neutral-500 px-4 sm:px-8 md:px-20">
-            <Show when={props.query != ""}>
-              <button
-                class="relative mx-auto ml-8 mt-8 h-fit max-h-[240px] rounded-md bg-neutral-100 p-2 dark:bg-neutral-700"
-                onClick={() =>
-                  (window.location.href = `/collection/${props.collectionID}`)
-                }
-              >
-                ← Back
-              </button>
-            </Show>
-            <Show when={metadatasWithVotes().length > 0}>
-              <div class="mx-auto w-full max-w-6xl">
-                <div
-                  classList={{
-                    "mx-auto w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]":
-                      true,
-                    "mt-8": props.query == "",
-                  }}
-                >
-                  <SearchForm
-                    query={props.query}
-                    filters={props.filters}
-                    searchType={props.searchType}
-                    collectionID={props.collectionID}
-                  />
-                </div>
-              </div>
-            </Show>
-            <Show when={props.query != ""}>
-              <div class="flex w-full flex-col items-center rounded-md p-2">
-                <div class="text-xl font-semibold">
-                  Search results for "{props.query}"
-                </div>
-              </div>
-            </Show>
-            <For
-              each={
-                props.query == ""
-                  ? metadatasWithVotes()
-                  : searchMetadatasWithVotes()
-              }
-            >
-              {(card) => (
-                <div class="mt-4">
-                  <ScoreCardArray
-                    totalCollectionPages={totalCollectionPages()}
-                    signedInUserId={user()?.id}
-                    cards={card.metadata}
-                    score={isScoreCardDTO(card) ? card.score : 0}
-                    collection={true}
-                    setShowModal={setShowNeedLoginModal}
-                    cardCollections={cardCollections()}
-                    bookmarks={bookmarks()}
-                    setOnDelete={setOnDelete}
-                    setShowConfirmModal={setShowConfirmDeleteModal}
-                    showExpand={clientSideRequestFinished()}
-                    setCardCollections={setCardCollections}
-                    setSelectedIds={setSelectedIds}
-                    selectedIds={selectedIds}
-                  />
-                </div>
-              )}
-            </For>
-            <div class="mx-auto my-12 flex items-center justify-center space-x-2">
-              <PaginationController
-                page={props.page}
-                totalPages={totalPages()}
+
+          <Show when={editing()}>
+            <div class="vertical-align-left mt-8 grid w-full max-w-6xl auto-rows-max grid-cols-[1fr,3fr] gap-y-2 px-4 sm:px-8 md:px-20">
+              <h1 class="text-md min-[320px]:text-md sm:text-md mt-10 text-left font-bold">
+                Name:
+              </h1>
+              <input
+                type="text"
+                class="mt-10 max-h-fit w-full rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
+                value={collectionInfo().name}
+                onInput={(e) => {
+                  setCollectionInfo({
+                    ...collectionInfo(),
+                    name: e.target.value,
+                  });
+                }}
+              />
+              <div class="text-md mr-2 font-semibold">Description:</div>
+              <textarea
+                class="w-full justify-start rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
+                value={collectionInfo().description}
+                onInput={(e) => {
+                  setCollectionInfo({
+                    ...collectionInfo(),
+                    description: e.target.value,
+                  });
+                }}
               />
             </div>
-            <Show when={recommendedCards().length > 0}>
-              <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
-                <div class="flex w-full flex-col items-center rounded-md p-2">
-                  <div class="text-xl font-semibold">Related Cards</div>
-                </div>
-                <For each={recommendedCards()}>
-                  {(card) => (
-                    <>
-                      <div class="mt-4">
-                        <CardMetadataDisplay
-                          totalCollectionPages={totalCollectionPages()}
-                          signedInUserId={user()?.id}
-                          viewingUserId={user()?.id}
-                          card={card}
-                          cardCollections={cardCollections()}
-                          bookmarks={bookmarks()}
-                          setShowModal={setShowNeedLoginModal}
-                          setShowConfirmModal={setShowConfirmDeleteModal}
-                          fetchCardCollections={fetchCardCollections}
-                          setCardCollections={setCardCollections}
-                          setOnDelete={setOnDelete}
-                          showExpand={true}
-                        />
-                      </div>
-                    </>
-                  )}
-                </For>
-              </div>
-            </Show>
-            <Show when={metadatasWithVotes().length > 0}>
-              <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
-                <button
-                  classList={{
-                    "w-full rounded  bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800":
-                      true,
-                    "animate-pulse": loadingRecommendations(),
-                  }}
-                  onClick={() =>
-                    fetchRecommendations(
-                      metadatasWithVotes().map(
-                        (m) => m.metadata[0].qdrant_point_id,
-                      ),
-                      recommendedCards(),
-                    )
-                  }
-                >
-                  {recommendedCards().length == 0 ? "Get" : "Get More"} Related
-                  Cards
-                </button>
-              </div>
-            </Show>
-            <Show when={error().length > 0}>
-              <div class="flex w-full flex-col items-center rounded-md p-2">
-                <div class="text-xl font-semibold text-red-500">{error()}</div>
-              </div>
-            </Show>
-            <Show
-              when={
-                metadatasWithVotes().length == 0 &&
-                searchMetadatasWithVotes().length == 0 &&
-                clientSideRequestFinished()
+            <div class="mt-4 flex w-full max-w-6xl justify-end px-4 sm:px-8 md:px-20">
+              <button
+                classList={{
+                  "!pointer-events-auto relative max-h-10 mt-2 mr-2 items-end justify-end rounded-md p-2 text-center bg-red-500":
+                    true,
+                  "animate-pulse": fetchingCollections(),
+                }}
+                onClick={() => setEditing(false)}
+              >
+                Cancel
+              </button>
+              <button
+                classList={{
+                  "!pointer-events-auto relative max-h-10 mt-2 mr-2 items-end justify-end rounded-md p-2 text-center bg-green-500":
+                    true,
+                  "animate-pulse": fetchingCollections(),
+                }}
+                onClick={() => updateCollection()}
+              >
+                Save
+              </button>
+            </div>
+          </Show>
+        </Show>
+        <div class="flex w-full max-w-6xl flex-col space-y-4 border-t border-neutral-500 px-4 sm:px-8 md:px-20">
+          <Show when={props.query != ""}>
+            <button
+              class="relative mx-auto ml-8 mt-8 h-fit max-h-[240px] rounded-md bg-neutral-100 p-2 dark:bg-neutral-700"
+              onClick={() =>
+                (window.location.href = `/collection/${props.collectionID}`)
               }
             >
-              <div class="flex w-full flex-col items-center rounded-md p-2">
-                <div class="text-xl font-semibold">
-                  This theme is currently empty
-                </div>
+              ← Back
+            </button>
+          </Show>
+          <Show when={metadatasWithVotes().length > 0}>
+            <div class="mx-auto w-full max-w-6xl">
+              <div
+                classList={{
+                  "mx-auto w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]":
+                    true,
+                  "mt-8": props.query == "",
+                }}
+              >
+                <SearchForm
+                  query={props.query}
+                  filters={props.filters}
+                  searchType={props.searchType}
+                  collectionID={props.collectionID}
+                />
               </div>
-            </Show>
-          </div>
-        </div>
-        <div>
-          <div
-            data-dial-init
-            class="group fixed bottom-6 right-6"
-            onMouseEnter={() => {
-              document
-                .getElementById("speed-dial-menu-text-outside-button")
-                ?.classList.remove("hidden");
-              document
-                .getElementById("speed-dial-menu-text-outside-button")
-                ?.classList.add("flex");
-            }}
-            onMouseLeave={() => {
-              document
-                .getElementById("speed-dial-menu-text-outside-button")
-                ?.classList.add("hidden");
-              document
-                .getElementById("speed-dial-menu-text-outside-button")
-                ?.classList.remove("flex");
-            }}
+            </div>
+          </Show>
+          <Show when={props.query != ""}>
+            <div class="flex w-full flex-col items-center rounded-md p-2">
+              <div class="text-xl font-semibold">
+                Search results for "{props.query}"
+              </div>
+            </div>
+          </Show>
+          <For
+            each={
+              props.query == ""
+                ? metadatasWithVotes()
+                : searchMetadatasWithVotes()
+            }
           >
-            <div
-              id="speed-dial-menu-text-outside-button"
-              class="mb-4 hidden flex-col items-center space-y-2"
-            >
+            {(card) => (
+              <div class="mt-4">
+                <ScoreCardArray
+                  totalCollectionPages={totalCollectionPages()}
+                  signedInUserId={user()?.id}
+                  cards={card.metadata}
+                  score={isScoreCardDTO(card) ? card.score : 0}
+                  collection={true}
+                  setShowModal={setShowNeedLoginModal}
+                  cardCollections={cardCollections()}
+                  bookmarks={bookmarks()}
+                  setOnDelete={setOnDelete}
+                  setShowConfirmModal={setShowConfirmDeleteModal}
+                  showExpand={clientSideRequestFinished()}
+                  setCardCollections={setCardCollections}
+                  setSelectedIds={setSelectedIds}
+                  selectedIds={selectedIds}
+                />
+              </div>
+            )}
+          </For>
+          <div class="mx-auto my-12 flex items-center justify-center space-x-2">
+            <PaginationController page={props.page} totalPages={totalPages()} />
+          </div>
+          <Show when={recommendedCards().length > 0}>
+            <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
+              <div class="flex w-full flex-col items-center rounded-md p-2">
+                <div class="text-xl font-semibold">Related Cards</div>
+              </div>
+              <For each={recommendedCards()}>
+                {(card) => (
+                  <>
+                    <div class="mt-4">
+                      <CardMetadataDisplay
+                        totalCollectionPages={totalCollectionPages()}
+                        signedInUserId={user()?.id}
+                        viewingUserId={user()?.id}
+                        card={card}
+                        cardCollections={cardCollections()}
+                        bookmarks={bookmarks()}
+                        setShowModal={setShowNeedLoginModal}
+                        setShowConfirmModal={setShowConfirmDeleteModal}
+                        fetchCardCollections={fetchCardCollections}
+                        setCardCollections={setCardCollections}
+                        setOnDelete={setOnDelete}
+                        showExpand={true}
+                      />
+                    </div>
+                  </>
+                )}
+              </For>
+            </div>
+          </Show>
+          <Show when={metadatasWithVotes().length > 0}>
+            <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
               <button
-                type="button"
-                class="relative h-[52px] w-[52px] items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
-                onClick={() => {
-                  const searchResults = searchMetadatasWithVotes();
-                  if (searchResults.length > 0) {
-                    setSelectedIds(
-                      searchResults
-                        .flatMap((c) => {
-                          return c.metadata.map((m) => m.id);
-                        })
-                        .slice(0, 10),
-                    );
-                    setOpenChat(true);
-                  } else {
-                    setSelectedIds(
-                      metadatasWithVotes()
-                        .flatMap((c) => {
-                          return c.metadata.map((m) => m.id);
-                        })
-                        .slice(0, 10),
-                    );
-                  }
-                  setOpenChat(true);
+                classList={{
+                  "w-full rounded  bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700 dark:hover:bg-neutral-800":
+                    true,
+                  "animate-pulse": loadingRecommendations(),
                 }}
+                onClick={() =>
+                  fetchRecommendations(
+                    metadatasWithVotes().map(
+                      (m) => m.metadata[0].qdrant_point_id,
+                    ),
+                    recommendedCards(),
+                  )
+                }
               >
-                <IoDocumentsOutline class="mx-auto h-7 w-7" />
-                <span class="font-sm absolute -left-[8.5rem] top-1/2 mb-px block -translate-y-1/2 break-words bg-white/30 text-sm backdrop-blur-xl dark:bg-black/30">
-                  Chat with all results
-                </span>
-              </button>
-              <button
-                type="button"
-                class="relative h-[52px] w-[52px] items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
-                onClick={() => {
-                  setOpenChat(true);
-                }}
-              >
-                <IoDocumentOutline class="mx-auto h-7 w-7" />
-                <span class="font-sm absolute -left-[10.85rem] top-1/2 mb-px block -translate-y-1/2 bg-white/30 text-sm backdrop-blur-xl dark:bg-black/30">
-                  Chat with selected results
-                </span>
+                {recommendedCards().length == 0 ? "Get" : "Get More"} Related
+                Cards
               </button>
             </div>
+          </Show>
+          <Show when={error().length > 0}>
+            <div class="flex w-full flex-col items-center rounded-md p-2">
+              <div class="text-xl font-semibold text-red-500">{error()}</div>
+            </div>
+          </Show>
+          <Show
+            when={
+              metadatasWithVotes().length == 0 &&
+              searchMetadatasWithVotes().length == 0 &&
+              clientSideRequestFinished()
+            }
+          >
+            <div class="flex w-full flex-col items-center rounded-md p-2">
+              <div class="text-xl font-semibold">
+                This theme is currently empty
+              </div>
+            </div>
+          </Show>
+        </div>
+      </div>
+      <div>
+        <div
+          data-dial-init
+          class="group fixed bottom-6 right-6"
+          onMouseEnter={() => {
+            document
+              .getElementById("speed-dial-menu-text-outside-button")
+              ?.classList.remove("hidden");
+            document
+              .getElementById("speed-dial-menu-text-outside-button")
+              ?.classList.add("flex");
+          }}
+          onMouseLeave={() => {
+            document
+              .getElementById("speed-dial-menu-text-outside-button")
+              ?.classList.add("hidden");
+            document
+              .getElementById("speed-dial-menu-text-outside-button")
+              ?.classList.remove("flex");
+          }}
+        >
+          <div
+            id="speed-dial-menu-text-outside-button"
+            class="mb-4 hidden flex-col items-center space-y-2"
+          >
             <button
               type="button"
-              class="flex h-14 w-14 items-center justify-center rounded-lg bg-magenta-500 text-white hover:bg-magenta-400 focus:outline-none focus:ring-4 focus:ring-magenta-300 dark:bg-magenta-500 dark:hover:bg-magenta-400 dark:focus:ring-magenta-600"
+              class="relative h-[52px] w-[52px] items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
+              onClick={() => {
+                const searchResults = searchMetadatasWithVotes();
+                if (searchResults.length > 0) {
+                  setSelectedIds(
+                    searchResults
+                      .flatMap((c) => {
+                        return c.metadata.map((m) => m.id);
+                      })
+                      .slice(0, 10),
+                  );
+                  setOpenChat(true);
+                } else {
+                  setSelectedIds(
+                    metadatasWithVotes()
+                      .flatMap((c) => {
+                        return c.metadata.map((m) => m.id);
+                      })
+                      .slice(0, 10),
+                  );
+                }
+                setOpenChat(true);
+              }}
             >
-              <AiOutlineRobot class="h-7 w-7" />
-              <span class="sr-only">Open actions menu</span>
+              <IoDocumentsOutline class="mx-auto h-7 w-7" />
+              <span class="font-sm absolute -left-[8.5rem] top-1/2 mb-px block -translate-y-1/2 break-words bg-white/30 text-sm backdrop-blur-xl dark:bg-black/30">
+                Chat with all results
+              </span>
+            </button>
+            <button
+              type="button"
+              class="relative h-[52px] w-[52px] items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
+              onClick={() => {
+                setOpenChat(true);
+              }}
+            >
+              <IoDocumentOutline class="mx-auto h-7 w-7" />
+              <span class="font-sm absolute -left-[10.85rem] top-1/2 mb-px block -translate-y-1/2 bg-white/30 text-sm backdrop-blur-xl dark:bg-black/30">
+                Chat with selected results
+              </span>
             </button>
           </div>
-        </div>
-        <Show when={showNeedLoginModal()}>
-          <FullScreenModal
-            isOpen={showNeedLoginModal}
-            setIsOpen={setShowNeedLoginModal}
+          <button
+            type="button"
+            class="flex h-14 w-14 items-center justify-center rounded-lg bg-magenta-500 text-white hover:bg-magenta-400 focus:outline-none focus:ring-4 focus:ring-magenta-300 dark:bg-magenta-500 dark:hover:bg-magenta-400 dark:focus:ring-magenta-600"
           >
-            <div class="min-w-[250px] sm:min-w-[300px]">
-              <BiRegularXCircle class="mx-auto h-8 w-8 fill-current  !text-red-500" />
-              <div class="mb-4 text-center text-xl font-bold">
-                Login or register to bookmark cards, vote, get recommend cards
-                or manage your collections
-              </div>
-              <div class="mx-auto flex w-fit flex-col space-y-3">
-                <a
-                  class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                  href={`${apiHost}/auth?dataset_id=${dataset}`}
-                >
-                  Login/Register
-                  <BiRegularLogInCircle class="h-6 w-6  fill-current" />
-                </a>
-              </div>
+            <AiOutlineRobot class="h-7 w-7" />
+            <span class="sr-only">Open actions menu</span>
+          </button>
+        </div>
+      </div>
+      <Show when={showNeedLoginModal()}>
+        <FullScreenModal
+          isOpen={showNeedLoginModal}
+          setIsOpen={setShowNeedLoginModal}
+        >
+          <div class="min-w-[250px] sm:min-w-[300px]">
+            <BiRegularXCircle class="mx-auto h-8 w-8 fill-current  !text-red-500" />
+            <div class="mb-4 text-center text-xl font-bold">
+              Login or register to bookmark cards, vote, get recommend cards or
+              manage your collections
             </div>
-          </FullScreenModal>
-        </Show>
-        <ConfirmModal
-          showConfirmModal={showConfirmDeleteModal}
-          setShowConfirmModal={setShowConfirmDeleteModal}
-          onConfirm={onDelete}
-          message="Are you sure you want to delete this card?"
-        />
-        <ConfirmModal
-          showConfirmModal={showConfirmCollectionDeleteModal}
-          setShowConfirmModal={setShowConfirmCollectionmDeleteModal}
-          onConfirm={onCollectionDelete}
-          message="Are you sure you want to delete this theme?"
-        />
+            <div class="mx-auto flex w-fit flex-col space-y-3">
+              <a
+                class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
+                href={`${apiHost}/auth?dataset_id=${dataset}`}
+              >
+                Login/Register
+                <BiRegularLogInCircle class="h-6 w-6  fill-current" />
+              </a>
+            </div>
+          </div>
+        </FullScreenModal>
       </Show>
+      <ConfirmModal
+        showConfirmModal={showConfirmDeleteModal}
+        setShowConfirmModal={setShowConfirmDeleteModal}
+        onConfirm={onDelete}
+        message="Are you sure you want to delete this card?"
+      />
+      <ConfirmModal
+        showConfirmModal={showConfirmCollectionDeleteModal}
+        setShowConfirmModal={setShowConfirmCollectionmDeleteModal}
+        onConfirm={onCollectionDelete}
+        message="Are you sure you want to delete this theme?"
+      />
     </>
   );
 };

@@ -218,7 +218,7 @@ pub async fn create_account(
             }
         } else {
             return Err(ServiceError::BadRequest(
-                "This organization is private".to_string(),
+                "This organization is not registerable".to_string(),
             ));
         }
     }

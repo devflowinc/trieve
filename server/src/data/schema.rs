@@ -5,7 +5,6 @@ diesel::table! {
         id -> Uuid,
         author_id -> Uuid,
         name -> Text,
-        is_public -> Bool,
         description -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,

@@ -53,7 +53,6 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
             id: c.id,
             name: c.name,
             description: "",
-            is_public: true,
             author_id: c.author_id,
             created_at: "",
             updated_at: "",
@@ -137,7 +136,6 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                     id: collection.id,
                     name: collection.name,
                     description: "",
-                    is_public: true,
                     author_id: collection.author_id,
                     created_at: "",
                     updated_at: "",
@@ -200,7 +198,6 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                   id: collection.id,
                   name: collection.name,
                   description: "",
-                  is_public: true,
                   author_id: collection.author_id,
                   created_at: "",
                   updated_at: "",
@@ -381,7 +378,6 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                             body: JSON.stringify({
                               name: title,
                               description: "",
-                              is_public: true,
                             }),
                           }).then(() => {
                             setRefetchingCardCollections(true);
