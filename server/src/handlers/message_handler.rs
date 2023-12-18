@@ -1,7 +1,4 @@
-use super::{
-    auth_handler::{LoggedUser, RequireAuth},
-    card_handler::ParsedQuery,
-};
+use super::{auth_handler::LoggedUser, card_handler::ParsedQuery};
 use crate::{
     data::models::{self, Dataset},
     data::models::{CardMetadataWithFileData, Pool},
@@ -60,9 +57,6 @@ pub async fn create_message_completion_handler(
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
     let create_message_data = data.into_inner();
     let pool1 = pool.clone();
     let pool2 = pool.clone();
@@ -153,10 +147,6 @@ pub async fn get_all_topic_messages(
     dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
-
     let second_pool = pool.clone();
     let topic_id: uuid::Uuid = messages_topic_id.into_inner();
     // check if the user owns the topic
@@ -204,10 +194,6 @@ pub async fn edit_message_handler(
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
-
     let topic_id = data.topic_id;
     let message_sort_order = data.message_sort_order;
     let new_message_content = &data.new_message_content;
@@ -262,9 +248,6 @@ pub async fn regenerate_message_handler(
     pool: web::Data<Pool>,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
     let topic_id = data.topic_id;
     let pool1 = pool.clone();
     let pool2 = pool.clone();
@@ -558,8 +541,7 @@ pub async fn stream_response(
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-        let citation_cards: Vec<CardMetadataWithFileData> =
-            metadata_cards.to_vec();
+        let citation_cards: Vec<CardMetadataWithFileData> = metadata_cards.to_vec();
 
         let highlighted_citation_cards = citation_cards
             .iter()
@@ -690,7 +672,7 @@ pub struct SuggestedQueriesResponse {
 )]
 pub async fn create_suggested_queries_handler(
     data: web::Json<SuggestedQueriesRequest>,
-    _required_user: RequireAuth,
+    _required_user: LoggedUser,
 ) -> Result<HttpResponse, ServiceError> {
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let client = Client {

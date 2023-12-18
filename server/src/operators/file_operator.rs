@@ -1,6 +1,7 @@
 use super::collection_operator::create_collection_and_add_bookmarks_query;
 use super::notification_operator::add_collection_created_notification_query;
 use crate::data::models::Dataset;
+use crate::handlers::auth_handler::AdminOnly;
 use crate::AppMutexStore;
 use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
 use crate::{
@@ -350,7 +351,7 @@ pub async fn create_cards_with_handler(
         match create_card(
             web_json_create_card_data,
             pool.clone(),
-            user.clone(),
+            AdminOnly(user.clone()),
             app_mutex.clone(),
             dataset.clone(),
         )

@@ -1,4 +1,4 @@
-use super::auth_handler::RequireAuth;
+use super::auth_handler::OwnerOnly;
 use crate::{
     data::models::{Dataset, Invitation, Pool},
     errors::{DefaultError, ServiceError},
@@ -40,7 +40,7 @@ pub async fn post_invitation(
     invitation_data: web::Json<InvitationData>,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    _required_user: RequireAuth,
+    _user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let invitation_data = invitation_data.into_inner();
     let email = invitation_data.email;

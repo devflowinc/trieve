@@ -1,4 +1,4 @@
-use super::auth_handler::LoggedUser;
+use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
     data::models::{Dataset, Pool},
     errors::ServiceError,
@@ -70,11 +70,12 @@ pub struct CreateDatasetRequest {
 pub async fn create_dataset(
     data: web::Json<CreateDatasetRequest>,
     pool: web::Data<Pool>,
-    user: LoggedUser,
+    user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    if user.organization_id != data.organization_id {
+    if user.0.organization_id != data.organization_id {
         return Err(ServiceError::Forbidden);
     }
+
     let dataset = Dataset::from_details(data.dataset_name.clone(), data.organization_id);
 
     let d = create_dataset_query(dataset, pool).await?;
@@ -101,13 +102,8 @@ pub struct UpdateDatasetRequest {
 pub async fn update_dataset(
     data: web::Json<UpdateDatasetRequest>,
     pool: web::Data<Pool>,
-    user: LoggedUser,
+    _user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let admin_email = std::env::var("ADMIN_USER_EMAIL").unwrap_or("".to_string());
-    if admin_email != user.email {
-        return Err(ServiceError::Forbidden);
-    }
-
     let d = update_dataset_query(data.dataset_id, data.dataset_name.clone(), pool).await?;
     Ok(HttpResponse::Ok().json(d))
 }
@@ -131,13 +127,8 @@ pub struct DeleteDatasetRequest {
 pub async fn delete_dataset(
     data: web::Json<DeleteDatasetRequest>,
     pool: web::Data<Pool>,
-    user: LoggedUser,
+    _user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let admin_email = std::env::var("ADMIN_USER_EMAIL").unwrap_or("".to_string());
-    if admin_email != user.email {
-        return Err(ServiceError::Forbidden);
-    }
-
     delete_dataset_by_id_query(data.dataset_id, pool).await?;
     Ok(HttpResponse::NoContent().finish())
 }
@@ -158,6 +149,7 @@ pub async fn delete_dataset(
 pub async fn get_dataset(
     pool: web::Data<Pool>,
     dataset_id: web::Path<uuid::Uuid>,
+    _user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
     let d = get_dataset_by_id_query(dataset_id.into_inner(), pool).await?;
     Ok(HttpResponse::Ok().json(d))
@@ -168,19 +160,21 @@ pub async fn get_dataset(
     path = "/dataset/organization/{organization_id}",
     context_path = "/api",
     tag = "dataset",
-    request_body(content = GetDatasetRequest, description = "Get all Datasets from an organization", content_type = "application/json"),
     responses(
         (status = 200, description = "Dataset retrieved successfully", body = Vec<Dataset>),
         (status = 400, description = "Service error relating to retrieving the dataset", body = [DefaultError]),
     ),
+    params(
+        ("organization_id" = uuid, Path, description = "id of the organization you want to retrieve datasets for"),
+    ),
 )]
 pub async fn get_datasets_from_organization(
     organization_id: web::Path<uuid::Uuid>,
-    user: LoggedUser,
+    user: AdminOnly,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_id = organization_id.into_inner();
-    if organization_id != user.organization_id {
+    if organization_id != user.0.organization_id {
         return Err(ServiceError::Forbidden.into());
     }
 
