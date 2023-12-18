@@ -1,4 +1,4 @@
-use super::auth_handler::{LoggedUser, RequireAuth};
+use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
     data::models::{
         CardCollection, CardCollectionAndFile, CardCollectionBookmark, CardMetadataWithFileData,
@@ -58,14 +58,14 @@ pub struct CreateCardCollectionData {
 )]
 pub async fn create_card_collection(
     body: web::Json<CreateCardCollectionData>,
-    user: LoggedUser,
+    user: AdminOnly,
     dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let name = body.name.clone();
     let description = body.description.clone();
 
-    let collection = CardCollection::from_details(user.id, name, description, dataset.id);
+    let collection = CardCollection::from_details(user.0.id, name, description, dataset.id);
     {
         let collection = collection.clone();
         web::block(move || create_collection_query(collection, pool))
@@ -106,7 +106,7 @@ pub async fn get_specific_user_card_collections(
     user_and_page: web::Path<UserCollectionQuery>,
     dataset: Dataset,
     pool: web::Data<Pool>,
-    _required_user: RequireAuth,
+    _required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let collections = web::block(move || {
         get_collections_for_specific_user_query(
@@ -160,10 +160,6 @@ pub async fn get_logged_in_user_card_collections(
     dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
-
     let collections = web::block(move || {
         get_collections_for_logged_in_user_query(user.id, page.into_inner(), dataset.id, pool)
     })
@@ -210,16 +206,12 @@ pub async fn delete_card_collection(
     data: web::Json<DeleteCollectionData>,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    user: LoggedUser,
+    user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
-
     let pool2 = pool.clone();
     let collection_id = data.collection_id;
 
-    user_owns_collection(user.id, collection_id, dataset.id, pool).await?;
+    user_owns_collection(user.0.id, collection_id, dataset.id, pool).await?;
 
     web::block(move || delete_collection_by_id_query(collection_id, dataset.id, pool2))
         .await?
@@ -250,19 +242,15 @@ pub async fn update_card_collection(
     body: web::Json<UpdateCardCollectionData>,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    user: LoggedUser,
+    user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
-
     let name = body.name.clone();
     let description = body.description.clone();
     let collection_id = body.collection_id;
 
     let pool2 = pool.clone();
 
-    let collection = user_owns_collection(user.id, collection_id, dataset.id, pool).await?;
+    let collection = user_owns_collection(user.0.id, collection_id, dataset.id, pool).await?;
 
     web::block(move || {
         update_card_collection_query(collection, name, description, dataset.id, pool2)
@@ -297,18 +285,14 @@ pub async fn add_bookmark(
     collection_id: web::Path<uuid::Uuid>,
     dataset: Dataset,
     pool: web::Data<Pool>,
-    user: LoggedUser,
+    user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
-
     let pool2 = pool.clone();
     let card_metadata_id = body.card_metadata_id;
     let collection_id = collection_id.into_inner();
     let dataset_id = dataset.id;
 
-    user_owns_collection(user.id, collection_id, dataset_id, pool).await?;
+    user_owns_collection(user.0.id, collection_id, dataset_id, pool).await?;
 
     web::block(move || {
         create_card_bookmark_query(
@@ -356,13 +340,9 @@ pub struct BookmarkCards {
 pub async fn get_all_bookmarks(
     path_data: web::Path<GetAllBookmarksData>,
     pool: web::Data<Pool>,
-    user: LoggedUser,
+    _user: LoggedUser,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
-
     let collection_id = path_data.collection_id;
     let page = path_data.page.unwrap_or(1);
     let pool1 = pool.clone();
@@ -461,7 +441,7 @@ pub async fn get_collections_card_is_in(
     pool: web::Data<Pool>,
     dataset: Dataset,
     user: Option<LoggedUser>,
-    _required_user: RequireAuth,
+    _required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let card_ids = data.card_ids.clone();
 
@@ -500,20 +480,16 @@ pub async fn delete_bookmark(
     collection_id: web::Path<uuid::Uuid>,
     body: web::Json<RemoveBookmarkData>,
     pool: web::Data<Pool>,
-    user: LoggedUser,
+    user: AdminOnly,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if user.organization_id != dataset.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    };
-
     let pool1 = pool.clone();
     let collection_id = collection_id.into_inner();
     let bookmark_id = body.card_metadata_id;
     let dataset_id = dataset.id;
 
     let pool = pool.clone();
-    user_owns_collection(user.id, collection_id, dataset_id, pool1).await?;
+    user_owns_collection(user.0.id, collection_id, dataset_id, pool1).await?;
 
     web::block(move || delete_bookmark_query(bookmark_id, collection_id, dataset_id, pool))
         .await?
@@ -544,7 +520,7 @@ pub async fn generate_off_collection(
     body: web::Json<GenerateOffCollectionData>,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    _required_user: RequireAuth,
+    _required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let request_data = body.into_inner();
     let collection_id = request_data.collection_id;

@@ -1,4 +1,4 @@
-use super::auth_handler::{LoggedUser, RequireAuth};
+use super::auth_handler::LoggedUser;
 use crate::{
     data::models::{Dataset, Pool},
     errors::{DefaultError, ServiceError},
@@ -41,7 +41,7 @@ pub async fn get_user_with_cards_by_id(
     path_data: web::Path<GetUserWithCardsData>,
     dataset: Dataset,
     pool: web::Data<Pool>,
-    _required_user: RequireAuth,
+    _required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_query_id = path_data.user_id;
     let page = path_data.page;

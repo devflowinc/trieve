@@ -191,6 +191,7 @@ pub async fn main() -> std::io::Result<()> {
                 data::models::FileUploadCompletedNotificationWithName,
                 data::models::Organization,
                 data::models::Dataset,
+                data::models::UserRole,
                 errors::DefaultError,
             )
         ),
