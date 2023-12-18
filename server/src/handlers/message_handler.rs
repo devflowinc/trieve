@@ -559,7 +559,7 @@ pub async fn stream_response(
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
         let citation_cards: Vec<CardMetadataWithFileData> =
-            metadata_cards.iter().map(|card| card.clone()).collect();
+            metadata_cards.to_vec();
 
         let highlighted_citation_cards = citation_cards
             .iter()
