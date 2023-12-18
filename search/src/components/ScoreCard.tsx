@@ -18,7 +18,7 @@ import { RiOthersCharacterRecognitionLine } from "solid-icons/ri";
 import BookmarkPopover from "./BookmarkPopover";
 import { VsFileSymlinkFile } from "solid-icons/vs";
 import sanitizeHtml from "sanitize-html";
-import { FiEdit, FiLock, FiTrash, FiCheck } from "solid-icons/fi";
+import { FiEdit, FiTrash, FiCheck } from "solid-icons/fi";
 import {
   FaRegularFileCode,
   FaRegularFileImage,
@@ -214,12 +214,6 @@ const ScoreCard = (props: ScoreCardProps) => {
         >
           <div class="flex w-full flex-col space-y-2">
             <div class="flex h-fit items-center space-x-1">
-              <Show when={props.card.private}>
-                <Tooltip
-                  body={<FiLock class="h-5 w-5 text-green-500" />}
-                  tooltipText="Private. Only you can see this card."
-                />
-              </Show>
               <Show when={!props.chat}>
                 <input
                   id="default-checkbox"

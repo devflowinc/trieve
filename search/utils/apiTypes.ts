@@ -12,7 +12,6 @@ export interface CardMetadata {
   file_id: string | null;
   file_name: string | null;
   metadata: Record<string, never> | null;
-  private?: boolean;
 }
 
 export const indirectHasOwnProperty = (obj: unknown, prop: string): boolean => {
@@ -48,7 +47,6 @@ export const isCardMetadata = (card: unknown): card is CardMetadata => {
 export type CardMetadataWithVotes = Exclude<CardMetadata, "author"> & {
   author: UserDTO | null;
   author_id: UserDTO | null;
-  private: boolean | null;
 };
 
 export const isCardMetadataWithVotes = (
@@ -355,7 +353,6 @@ export interface FileDTO {
   user_id: string;
   file_name: string;
   mime_type: string;
-  private: boolean;
   size: number;
   base64url_content: string;
 }
