@@ -120,6 +120,7 @@ pub async fn delete_dataset_by_id_query(
 pub async fn update_dataset_query(
     id: uuid::Uuid,
     name: String,
+    configuration: serde_json::Value,
     pool: web::Data<Pool>,
 ) -> Result<Dataset, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
@@ -128,11 +129,13 @@ pub async fn update_dataset_query(
         .get()
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
+    // TODO update columns that are not listed
     let new_dataset: Dataset =
         diesel::update(datasets_columns::datasets.filter(datasets_columns::id.eq(id)))
             .set((
                 datasets_columns::name.eq(name),
                 datasets_columns::updated_at.eq(diesel::dsl::now),
+                datasets_columns::configuration.eq(configuration),
             ))
             .get_result(&mut conn)
             .map_err(|_| ServiceError::BadRequest("Failed to update dataset".to_string()))?;

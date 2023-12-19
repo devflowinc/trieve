@@ -54,6 +54,7 @@ impl FromRequest for Dataset {
 pub struct CreateDatasetRequest {
     pub dataset_name: String,
     pub organization_id: uuid::Uuid,
+    pub configuration: serde_json::Value,
 }
 
 #[utoipa::path(
@@ -76,7 +77,7 @@ pub async fn create_dataset(
         return Err(ServiceError::Forbidden);
     }
 
-    let dataset = Dataset::from_details(data.dataset_name.clone(), data.organization_id);
+    let dataset = Dataset::from_details(data.dataset_name.clone(), data.organization_id, data.configuration.clone());
 
     let d = create_dataset_query(dataset, pool).await?;
     Ok(HttpResponse::Ok().json(d))
@@ -86,6 +87,7 @@ pub async fn create_dataset(
 pub struct UpdateDatasetRequest {
     pub dataset_id: uuid::Uuid,
     pub dataset_name: String,
+    pub configuration: serde_json::Value,
 }
 
 #[utoipa::path(
@@ -104,7 +106,7 @@ pub async fn update_dataset(
     pool: web::Data<Pool>,
     _user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let d = update_dataset_query(data.dataset_id, data.dataset_name.clone(), pool).await?;
+    let d = update_dataset_query(data.dataset_id, data.dataset_name.clone(), data.configuration.clone(), pool).await?;
     Ok(HttpResponse::Ok().json(d))
 }
 
