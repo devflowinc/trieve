@@ -18,7 +18,7 @@ use crate::operators::search_operator::{
     global_unfiltered_top_match_query, search_full_text_cards, search_full_text_collections,
     search_hybrid_cards, search_semantic_cards, search_semantic_collections,
 };
-use crate::{get_env, AppMutexStore};
+use crate::get_env;
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
 use chrono::NaiveDateTime;
@@ -130,7 +130,6 @@ pub async fn create_card(
     card: web::Json<CreateCardData>,
     pool: web::Data<Pool>,
     user: AdminOnly,
-    app_mutex: web::Data<AppMutexStore>,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
@@ -150,7 +149,7 @@ pub async fn create_card(
     let embedding_vector = if let Some(embedding_vector) = card.card_vector.clone() {
         embedding_vector
     } else {
-        create_embedding(&content, app_mutex, Some(dataset_config.clone())).await?
+        create_embedding(&content, dataset_config.clone()).await?
     };
 
     let first_semantic_result =
@@ -312,7 +311,6 @@ pub async fn create_card(
 pub async fn delete_card(
     card_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-    app_mutex: web::Data<AppMutexStore>,
     user: AdminOnly,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -322,7 +320,7 @@ pub async fn delete_card(
     let card_metadata = user_owns_card(user.0.id, card_id_inner, dataset_id, pool).await?;
     let qdrant_point_id = card_metadata.qdrant_point_id;
 
-    delete_card_metadata_query(card_id_inner, qdrant_point_id, app_mutex, dataset, pool1)
+    delete_card_metadata_query(card_id_inner, qdrant_point_id, dataset, pool1)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -345,7 +343,6 @@ pub async fn delete_card(
 pub async fn delete_card_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
-    app_mutex: web::Data<AppMutexStore>,
     user: AdminOnly,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -358,7 +355,7 @@ pub async fn delete_card_by_tracking_id(
 
     let qdrant_point_id = card_metadata.qdrant_point_id;
 
-    delete_card_metadata_query(card_metadata.id, qdrant_point_id, app_mutex, dataset, pool1)
+    delete_card_metadata_query(card_metadata.id, qdrant_point_id, dataset, pool1)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -395,7 +392,6 @@ pub async fn update_card(
     card: web::Json<UpdateCardData>,
     pool: web::Data<Pool>,
     user: AdminOnly,
-    app_mutex: web::Data<AppMutexStore>,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
@@ -416,8 +412,7 @@ pub async fn update_card(
 
     let embedding_vector = create_embedding(
         &new_content,
-        app_mutex,
-        Some(DatasetConfiguration::from_json(dataset.configuration)),
+        DatasetConfiguration::from_json(dataset.configuration),
     )
     .await?;
 
@@ -497,7 +492,6 @@ pub async fn update_card_by_tracking_id(
     card: web::Json<UpdateCardByTrackingIdData>,
     pool: web::Data<Pool>,
     user: AdminOnly,
-    app_mutex: web::Data<AppMutexStore>,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     if card.tracking_id.is_empty() {
@@ -523,8 +517,7 @@ pub async fn update_card_by_tracking_id(
 
     let embedding_vector = create_embedding(
         &new_content,
-        app_mutex,
-        Some(DatasetConfiguration::from_json(dataset.configuration)),
+        DatasetConfiguration::from_json(dataset.configuration),
     )
     .await?;
 
@@ -663,7 +656,6 @@ pub async fn search_card(
     _user: LoggedUser,
     pool: web::Data<Pool>,
     cross_encoder_init: web::Data<CrossEncoder>,
-    app_mutex: web::Data<AppMutexStore>,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
@@ -680,11 +672,10 @@ pub async fn search_card(
                 pool,
                 cross_encoder_init,
                 dataset,
-                app_mutex,
             )
             .await?
         }
-        _ => search_semantic_cards(data, parsed_query, page, pool, dataset, app_mutex).await?,
+        _ => search_semantic_cards(data, parsed_query, page, pool, dataset).await?,
     };
 
     Ok(HttpResponse::Ok().json(result_cards))
@@ -743,7 +734,6 @@ pub async fn search_collections(
     data: web::Json<SearchCollectionsData>,
     page: Option<web::Path<u64>>,
     pool: web::Data<Pool>,
-    app_mutex: web::Data<AppMutexStore>,
     _required_user: LoggedUser,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -784,7 +774,6 @@ pub async fn search_collections(
                 page,
                 full_text_search_pool,
                 dataset,
-                app_mutex,
             )
             .await?
         }
@@ -927,13 +916,7 @@ pub async fn generate_off_cards(
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let dataset_config = DatasetConfiguration::from_json(dataset.configuration);
-    let base_url = if dataset_config.USE_CUSTOM_MODEL.unwrap_or(false) {
-        dataset_config
-            .OPENAI_BASE_URL
-            .unwrap_or("https://api.openai.com/v1".into())
-    } else {
-        "https://api.openai.com/v1".into()
-    };
+    let base_url = dataset_config.EMBEDDING_BASE_URL.unwrap_or("https://api.openai.com/v1".into());
 
     let client = Client {
         api_key: openai_api_key,

@@ -1,5 +1,8 @@
+use crate::get_env;
 use crate::{
-    data::models::{Pool, SlimUser, User, UserOrganization, UserRole},
+    data::models::{
+        Dataset, DatasetConfiguration, Pool, SlimUser, User, UserOrganization, UserRole,
+    },
     errors::ServiceError,
     operators::{
         self,
@@ -8,7 +11,6 @@ use crate::{
         user_operator::{get_user_by_id_query, get_user_from_api_key_query},
     },
 };
-use crate::{get_env, AppMutexStore};
 use actix_identity::Identity;
 use actix_session::Session;
 use actix_web::{
@@ -547,10 +549,12 @@ pub async fn get_me(
         (status = 400, description = "Service error relating to making an embedding or overall service health", body = [DefaultError]),
     ),
 )]
-pub async fn health_check(
-    app_mutex: web::Data<AppMutexStore>,
-) -> Result<HttpResponse, actix_web::Error> {
-    let result = operators::model_operator::create_embedding("health check", app_mutex, None).await;
+pub async fn health_check(dataset: Dataset) -> Result<HttpResponse, actix_web::Error> {
+    let result = operators::model_operator::create_embedding(
+        "health check",
+        DatasetConfiguration::from_json(dataset.configuration),
+    )
+    .await;
 
     result?;
     Ok(HttpResponse::Ok().finish())

@@ -1,4 +1,3 @@
-use actix_web::web;
 use candle_nn::{var_builder::SimpleBackend, VarBuilder};
 use candle_transformers::models::bert::{
     BertModel, Config as BertModelConfig, DTYPE as BertModelDTYPE,
@@ -9,7 +8,7 @@ use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use serde::{Deserialize, Serialize};
 use tokenizers::{tokenizer::Tokenizer, PaddingParams, PaddingStrategy, TruncationParams}; // a fast, portable hash library
 
-use crate::{data::models::DatasetConfiguration, errors::ServiceError, get_env, AppMutexStore};
+use crate::{data::models::DatasetConfiguration, errors::ServiceError, get_env};
 
 pub struct CrossEncoder {
     pub tokenizer: Tokenizer,
@@ -65,49 +64,14 @@ pub fn initalize_cross_encoder() -> CrossEncoder {
 
 pub async fn create_embedding(
     message: &str,
-    app_mutex: web::Data<AppMutexStore>,
-    dataset_config: Option<DatasetConfiguration>,
-) -> Result<Vec<f32>, actix_web::Error> {
-    //TODO: make custom embedding pull from dataset config instead of env var and make openai embedding pull from dataset config instead of env var
-    match &app_mutex.into_inner().embedding_semaphore {
-        Some(semaphore) => {
-            let lease = semaphore.acquire().await.unwrap();
-            if let Some(dataset_config) = dataset_config {
-                if dataset_config.USE_CUSTOM_EMBED.unwrap_or(false) {
-                    let result =
-                        create_openai_embedding(message, dataset_config.OPENAI_BASE_URL).await;
-                    drop(lease);
-                    return result;
-                }
-            }
-
-            let result = create_openai_embedding(message, None).await;
-            drop(lease);
-            result
-        }
-        _ => {
-            if let Some(dataset_config) = dataset_config {
-                if dataset_config.USE_CUSTOM_EMBED.unwrap_or(false) {
-                    let result =
-                        create_openai_embedding(message, dataset_config.OPENAI_BASE_URL).await;
-                    return result;
-                }
-            }
-
-            create_openai_embedding(message, None).await
-        }
-    }
-}
-
-pub async fn create_openai_embedding(
-    message: &str,
-    base_url: Option<String>,
+    dataset_config: DatasetConfiguration,
 ) -> Result<Vec<f32>, actix_web::Error> {
     let open_ai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+    let base_url = dataset_config.EMBEDDING_BASE_URL.unwrap_or("https://api.openai.com/v1".to_string());
     let client = Client {
         http_client: reqwest::Client::new(),
         api_key: open_ai_api_key,
-        base_url: base_url.unwrap_or("https://api.openai.com/v1".to_string()),
+        base_url
     };
 
     // Vectorize
