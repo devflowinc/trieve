@@ -77,25 +77,21 @@ pub async fn webhook(
                     if let Some(existing_subscription) = optional_existing_subscription {
                         let delete_subscription_pool = pool.clone();
 
-                        web::block(move || {
-                            delete_subscription_by_id_query(
-                                existing_subscription.id,
-                                delete_subscription_pool,
-                            )
-                        })
-                        .await?
+                        delete_subscription_by_id_query(
+                            existing_subscription.id,
+                            delete_subscription_pool,
+                        )
+                        .await
                         .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
                     }
 
-                    web::block(move || {
-                        create_stripe_subscription_query(
-                            subscription_stripe_id,
-                            plan_id,
-                            organization_id,
-                            pool,
-                        )
-                    })
-                    .await?
+                    create_stripe_subscription_query(
+                        subscription_stripe_id,
+                        plan_id,
+                        organization_id,
+                        pool,
+                    )
+                    .await
                     .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?
                 }
             }
@@ -118,14 +114,12 @@ pub async fn webhook(
                     )
                     .expect("Failed to convert current_period_end to NaiveDateTime");
 
-                    web::block(move || {
-                        set_stripe_subscription_current_period_end(
-                            subscription_stripe_id,
-                            current_period_end,
-                            pool,
-                        )
-                    })
-                    .await?
+                    set_stripe_subscription_current_period_end(
+                        subscription_stripe_id,
+                        current_period_end,
+                        pool,
+                    )
+                    .await
                     .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
                 }
             }
@@ -288,15 +282,9 @@ pub async fn update_subscription_plan(
             ))
         })?;
 
-    web::block(move || {
-        update_stripe_subscription_plan_query(
-            subscription.id,
-            plan.id,
-            update_subscription_plan_pool,
-        )
-    })
-    .await?
-    .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    update_stripe_subscription_plan_query(subscription.id, plan.id, update_subscription_plan_pool)
+        .await
+        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
     Ok(HttpResponse::Ok().finish())
 }

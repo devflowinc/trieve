@@ -21,7 +21,7 @@ pub async fn load_organization_with_subscription_and_plans_redis_query(
         message: "Could not get database connection",
     })?;
 
-    let organizations: Vec<(Organization, Option<StripePlan>, Option<StripeSubscription>)> =
+    let org_plan_subs: Vec<(Organization, Option<StripePlan>, Option<StripeSubscription>)> =
         organizations_columns::organizations
             .left_outer_join(stripe_subscriptions_columns::stripe_subscriptions)
             .left_outer_join(
@@ -38,7 +38,7 @@ pub async fn load_organization_with_subscription_and_plans_redis_query(
                 message: "Could not find organizations",
             })?;
 
-    let orgs_with_subs_and_plans: Vec<OrganizationWithSubscriptionAndPlan> = organizations
+    let orgs_with_subs_and_plans: Vec<OrganizationWithSubscriptionAndPlan> = org_plan_subs
         .into_iter()
         .map(|(org, plan, sub)| {
             OrganizationWithSubscriptionAndPlan::from_components(org, plan, sub)
