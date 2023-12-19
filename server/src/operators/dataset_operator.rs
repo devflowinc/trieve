@@ -171,9 +171,9 @@ pub fn get_datasets_by_organization_id(
 ) -> Result<Vec<Dataset>, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
 
-    let mut conn = pool.get().map_err(|_| {
-        ServiceError::BadRequest("Could not get database connection".to_string())
-    })?;
+    let mut conn = pool
+        .get()
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     let dataset = datasets_columns::datasets
         .filter(datasets_columns::organization_id.eq(id.into_inner()))

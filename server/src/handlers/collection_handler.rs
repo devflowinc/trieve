@@ -600,9 +600,10 @@ pub async fn generate_off_collection(
 
     let openai_api_key = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
     let dataset_config = DatasetConfiguration::from_json(dataset.configuration);
-    let base_url = dataset_config.EMBEDDING_BASE_URL.clone().unwrap_or(
-        "https://api.openai.com".into(),
-    );
+    let base_url = dataset_config
+        .EMBEDDING_BASE_URL
+        .clone()
+        .unwrap_or("https://api.openai.com".into());
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
