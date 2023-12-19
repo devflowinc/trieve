@@ -1004,7 +1004,7 @@ impl OrganizationWithSubscriptionAndPlan {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, ToSchema, Ord, PartialOrd)]
 pub enum UserRole {
     Owner = 2,
     Admin = 1,
