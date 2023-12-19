@@ -1,5 +1,6 @@
 use crate::data::models::{
-    CardCollisions, CardFile, CardMetadataWithFileData, FullTextSearchResult,
+    CardCollisions, CardFile, CardMetadataWithFileData, Dataset, DatasetConfiguration,
+    FullTextSearchResult,
 };
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::operators::model_operator::create_embedding;
@@ -425,11 +426,11 @@ pub async fn delete_card_metadata_query(
     card_uuid: uuid::Uuid,
     qdrant_point_id: Option<uuid::Uuid>,
     app_mutex: web::Data<AppMutexStore>,
-    dataset_uuid: uuid::Uuid,
+    dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
-    let card_metadata = get_metadata_from_id_query(card_uuid, dataset_uuid, pool.clone())?;
-    if card_metadata.dataset_id != dataset_uuid {
+    let card_metadata = get_metadata_from_id_query(card_uuid, dataset.id, pool.clone())?;
+    if card_metadata.dataset_id != dataset.id {
         return Err(DefaultError {
             message: "Card does not belong to dataset",
         });
@@ -465,7 +466,7 @@ pub async fn delete_card_metadata_query(
                 diesel::delete(
                     card_metadata_columns::card_metadata
                         .filter(card_metadata_columns::id.eq(card_uuid))
-                        .filter(card_metadata_columns::dataset_id.eq(dataset_uuid)),
+                        .filter(card_metadata_columns::dataset_id.eq(dataset.id)),
                 )
                 .execute(conn)?;
 
@@ -480,7 +481,7 @@ pub async fn delete_card_metadata_query(
                                 .eq(card_collisions_columns::collision_qdrant_id)),
                     )
                     .filter(card_metadata_columns::id.eq(card_uuid))
-                    .filter(card_metadata_columns::dataset_id.eq(dataset_uuid))
+                    .filter(card_metadata_columns::dataset_id.eq(dataset.id))
                     .select((CardCollisions::as_select(), CardMetadata::as_select()))
                     .order_by(card_collisions_columns::created_at.asc())
                     .load::<(CardCollisions, CardMetadata)>(conn)?;
@@ -523,7 +524,7 @@ pub async fn delete_card_metadata_query(
                 diesel::delete(
                     card_metadata_columns::card_metadata
                         .filter(card_metadata_columns::id.eq(card_uuid))
-                        .filter(card_metadata_columns::dataset_id.eq(dataset_uuid)),
+                        .filter(card_metadata_columns::dataset_id.eq(dataset.id)),
                 )
                 .execute(conn)?;
 
@@ -531,7 +532,7 @@ pub async fn delete_card_metadata_query(
                 diesel::update(
                     card_metadata_columns::card_metadata
                         .filter(card_metadata_columns::id.eq(latest_collision.card_id))
-                        .filter(card_metadata_columns::dataset_id.eq(dataset_uuid)),
+                        .filter(card_metadata_columns::dataset_id.eq(dataset.id)),
                 )
                 .set((
                     card_metadata_columns::qdrant_point_id.eq(latest_collision.collision_qdrant_id),
@@ -563,7 +564,7 @@ pub async fn delete_card_metadata_query(
             diesel::delete(
                 card_metadata_columns::card_metadata
                     .filter(card_metadata_columns::id.eq(card_uuid))
-                    .filter(card_metadata_columns::dataset_id.eq(dataset_uuid)),
+                    .filter(card_metadata_columns::dataset_id.eq(dataset.id)),
             )
             .execute(conn)?;
 
@@ -600,11 +601,17 @@ pub async fn delete_card_metadata_query(
                     .clone()
                     .unwrap_or(latest_collision_metadata.content.clone());
 
-                let new_embedding_vector = create_embedding(collision_content.as_str(), app_mutex)
-                    .await
-                    .map_err(|_e| DefaultError {
-                        message: "Failed to create embedding for card",
-                    })?;
+                let new_embedding_vector = create_embedding(
+                    collision_content.as_str(),
+                    app_mutex,
+                    Some(DatasetConfiguration::from_json(
+                        dataset.configuration.clone(),
+                    )),
+                )
+                .await
+                .map_err(|_e| DefaultError {
+                    message: "Failed to create embedding for card",
+                })?;
 
                 let _ = qdrant
                     .update_vectors_blocking(

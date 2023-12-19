@@ -5,6 +5,7 @@ use chrono::NaiveDateTime;
 use diesel::{expression::ValidGrouping, r2d2::ConnectionManager, PgConnection};
 use openai_dive::v1::resources::chat::{ChatMessage, Role};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use utoipa::ToSchema;
 
 // type alias to use in multiple places
@@ -779,7 +780,11 @@ pub struct Dataset {
 }
 
 impl Dataset {
-    pub fn from_details(name: String, organization_id: uuid::Uuid, configuration: serde_json::Value) -> Self {
+    pub fn from_details(
+        name: String,
+        organization_id: uuid::Uuid,
+        configuration: serde_json::Value,
+    ) -> Self {
         Dataset {
             id: uuid::Uuid::new_v4(),
             name,
@@ -791,6 +796,7 @@ impl Dataset {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[allow(non_snake_case)]
 pub struct DatasetConfiguration {
     pub DOCUMENT_UPLOAD_FEATURE: Option<bool>,
@@ -799,17 +805,60 @@ pub struct DatasetConfiguration {
     pub RAG_PROMPT: Option<String>,
     pub N_RETRIEVALS_TO_INCLUDE: Option<usize>,
     pub DUPLICATE_DISTANCE_THRESHOLD: Option<f32>,
+    pub EMBEDDING_SIZE: Option<usize>,
+    pub USE_CUSTOM_EMBED: Option<bool>,
+    pub USE_CUSTOM_MODEL: Option<bool>,
 }
 
 impl DatasetConfiguration {
     pub fn from_json(configuration: serde_json::Value) -> Self {
+        let default_config = json!({});
+        let configuration = configuration
+            .as_object()
+            .unwrap_or(default_config.as_object().unwrap());
+
         DatasetConfiguration {
-            DOCUMENT_UPLOAD_FEATURE: configuration["DOCUMENT_UPLOAD_FEATURE"].as_bool(),
-            DOCUMENT_DOWNLOAD_FEATURE: configuration["DOCUMENT_DOWNLOAD_FEATURE"].as_bool(),
-            OPENAI_BASE_URL: configuration["OPENAI_BASE_URL"].as_str().map(|s| s.to_string()),
-            RAG_PROMPT: configuration["RAG_PROMPT"].as_str().map(|s| s.to_string()),
-            N_RETRIEVALS_TO_INCLUDE: configuration["N_RETRIEVALS_TO_INCLUDE"].as_u64().map(|u| u as usize),
-            DUPLICATE_DISTANCE_THRESHOLD: configuration["DUPLICATE_DISTANCE_THRESHOLD"].as_f64().map(|f| f as f32),
+            DOCUMENT_UPLOAD_FEATURE: configuration
+                .get("DOCUMENT_UPLOAD_FEATURE")
+                .unwrap_or(&json!(false))
+                .as_bool(),
+            DOCUMENT_DOWNLOAD_FEATURE: configuration
+                .get("DOCUMENT_DOWNLOAD_FEATURE")
+                .unwrap_or(&json!(false))
+                .as_bool(),
+            OPENAI_BASE_URL: configuration
+                .get("OPENAI_BASE_URL")
+                .unwrap_or(&json!("https://api.openai.com".to_string()))
+                .as_str()
+                .map(|s| s.to_string()),
+            RAG_PROMPT: configuration
+                .get("RAG_PROMPT")
+                .unwrap_or(&json!("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string()))
+                .as_str()
+                .map(|s| s.to_string()),
+            N_RETRIEVALS_TO_INCLUDE: configuration
+                .get("N_RETRIEVALS_TO_INCLUDE")
+                .unwrap_or(&json!(3))
+                .as_u64()
+                .map(|u| u as usize),
+            DUPLICATE_DISTANCE_THRESHOLD: configuration
+                .get("DUPLICATE_DISTANCE_THRESHOLD")
+                .unwrap_or(&json!(0.95))
+                .as_f64()
+                .map(|f| f as f32),
+            EMBEDDING_SIZE: configuration
+                .get("EMBEDDING_SIZE")
+                .unwrap_or(&json!(1536))
+                .as_u64()
+                .map(|u| u as usize),
+            USE_CUSTOM_EMBED: configuration
+                .get("USE_EMBED_SERVER")
+                .unwrap_or(&json!(false))
+                .as_bool(),
+            USE_CUSTOM_MODEL: configuration
+                .get("USE_CUSTOM_MODEL")
+                .unwrap_or(&json!(false))
+                .as_bool(),
         }
     }
 }

@@ -4,7 +4,8 @@ use super::card_operator::{
 };
 use super::model_operator::create_embedding;
 use crate::data::models::{
-    CardCollection, CardFileWithName, CardMetadataWithFileData, FullTextSearchResult, User, UserDTO,
+    CardCollection, CardFileWithName, CardMetadataWithFileData, Dataset, DatasetConfiguration,
+    FullTextSearchResult, User, UserDTO,
 };
 use crate::data::schema::{self};
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
@@ -246,11 +247,23 @@ pub async fn global_unfiltered_top_match_query(
         .must
         .push(Condition::matches("dataset_id", dataset_id.to_string()));
 
+    let vector_name = match embedding_vector.len() {
+        384 => "384_vectors",
+        768 => "768_vectors",
+        1024 => "1024_vectors",
+        1536 => "1536_vectors",
+        _ => {
+            return Err(DefaultError {
+                message: "Invalid embedding vector size",
+            })
+        }
+    };
+
     let data = qdrant
         .search_points(&SearchPoints {
             collection_name: qdrant_collection,
             vector: embedding_vector,
-            vector_name: Some("dense_vectors".to_string()),
+            vector_name: Some(vector_name.to_string()),
             limit: 1,
             with_payload: None,
             filter: Some(dataset_filter),
@@ -810,10 +823,17 @@ pub async fn search_semantic_cards(
     parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
-    dataset_id: uuid::Uuid,
+    dataset: Dataset,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
-    let embedding_vector = create_embedding(&data.content, app_mutex).await?;
+    let embedding_vector = create_embedding(
+        &data.content,
+        app_mutex,
+        Some(DatasetConfiguration::from_json(
+            dataset.configuration.clone(),
+        )),
+    )
+    .await?;
 
     let search_card_query_results = retrieve_qdrant_points_query(
         Some(embedding_vector),
@@ -823,7 +843,7 @@ pub async fn search_semantic_cards(
         data.time_range.clone(),
         data.filters.clone(),
         parsed_query,
-        dataset_id,
+        dataset.id,
         pool.clone(),
     )
     .await
@@ -993,10 +1013,17 @@ pub async fn search_hybrid_cards(
     page: u64,
     pool: web::Data<Pool>,
     cross_encoder_init: web::Data<CrossEncoder>,
-    dataset_id: uuid::Uuid,
+    dataset: Dataset,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
-    let embedding_vector = create_embedding(&data.content, app_mutex).await?;
+    let embedding_vector = create_embedding(
+        &data.content,
+        app_mutex,
+        Some(DatasetConfiguration::from_json(
+            dataset.configuration.clone(),
+        )),
+    )
+    .await?;
     let pool1 = pool.clone();
 
     let search_card_query_results = retrieve_qdrant_points_query(
@@ -1007,7 +1034,7 @@ pub async fn search_hybrid_cards(
         data.time_range.clone(),
         data.filters.clone(),
         parsed_query.clone(),
-        dataset_id,
+        dataset.id,
         pool.clone(),
     );
 
@@ -1016,7 +1043,7 @@ pub async fn search_hybrid_cards(
         parsed_query,
         page,
         pool,
-        dataset_id,
+        dataset.id,
     );
 
     let (search_card_query_results, full_text_handler_results) =
@@ -1131,10 +1158,17 @@ pub async fn search_semantic_collections(
     collection: CardCollection,
     page: u64,
     pool: web::Data<Pool>,
-    dataset_id: uuid::Uuid,
+    dataset: Dataset,
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<SearchCollectionsResult, actix_web::Error> {
-    let embedding_vector: Vec<f32> = create_embedding(&data.content, app_mutex).await?;
+    let embedding_vector: Vec<f32> = create_embedding(
+        &data.content,
+        app_mutex,
+        Some(DatasetConfiguration::from_json(
+            dataset.configuration.clone(),
+        )),
+    )
+    .await?;
     let pool1 = pool.clone();
     let pool2 = pool.clone();
     let pool3 = pool.clone();
@@ -1147,7 +1181,7 @@ pub async fn search_semantic_collections(
         data.tag_set.clone(),
         data.filters.clone(),
         data.collection_id,
-        dataset_id,
+        dataset.id,
         parsed_query,
     )
     .await
@@ -1164,7 +1198,7 @@ pub async fn search_semantic_collections(
     let metadata_cards = get_metadata_from_point_ids(point_ids, pool3)
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let collided_cards = get_collided_cards_query(point_ids_1, dataset_id, pool1)
+    let collided_cards = get_collided_cards_query(point_ids_1, dataset.id, pool1)
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let score_cards: Vec<ScoreCardDTO> = search_card_query_results
