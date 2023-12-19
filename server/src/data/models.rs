@@ -775,14 +775,16 @@ pub struct Dataset {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub organization_id: uuid::Uuid,
+    pub configuration: serde_json::Value,
 }
 
 impl Dataset {
-    pub fn from_details(name: String, organization_id: uuid::Uuid) -> Self {
+    pub fn from_details(name: String, organization_id: uuid::Uuid, configuration: serde_json::Value) -> Self {
         Dataset {
             id: uuid::Uuid::new_v4(),
             name,
             organization_id,
+            configuration,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
         }
