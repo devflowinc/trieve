@@ -1,9 +1,13 @@
 use crate::{
-    data::models::{Pool, StripePlan, StripeSubscription},
+    data::models::{
+        Organization, OrganizationWithSubscriptionAndPlan, Pool, StripePlan, StripeSubscription,
+    },
     errors::DefaultError,
 };
 use actix_web::web;
-use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+use diesel::{
+    ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl, RunQueryDsl, Table,
+};
 use stripe::{
     CreatePaymentLink, CreatePaymentLinkAfterCompletion, CreatePaymentLinkAfterCompletionRedirect,
     CreatePaymentLinkAfterCompletionType, PaymentLink,
@@ -15,7 +19,66 @@ pub fn get_stripe_client() -> stripe::Client {
     stripe::Client::new(stripe_secret)
 }
 
-pub fn create_stripe_subscription_query(
+pub async fn refresh_redis_org_plan_sub(
+    organization_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::organizations::dsl as organizations_columns;
+    use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
+    use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
+
+    let mut conn = pool.get().expect("Failed to get connection from pool");
+    let org_plan_sub: (Organization, Option<StripePlan>, Option<StripeSubscription>) =
+        organizations_columns::organizations
+            .left_outer_join(stripe_subscriptions_columns::stripe_subscriptions)
+            .left_outer_join(
+                stripe_plans_columns::stripe_plans
+                    .on(stripe_plans_columns::id.eq(stripe_subscriptions_columns::plan_id)),
+            )
+            .select((
+                organizations_columns::organizations::all_columns(),
+                stripe_plans_columns::stripe_plans::all_columns().nullable(),
+                stripe_subscriptions_columns::stripe_subscriptions::all_columns().nullable(),
+            ))
+            .filter(organizations_columns::id.eq(organization_id))
+            .first::<(Organization, Option<StripePlan>, Option<StripeSubscription>)>(&mut conn)
+            .map_err(|_| DefaultError {
+                message: "Could not find organizations",
+            })?;
+    let org_plan_sub = OrganizationWithSubscriptionAndPlan::from_components(
+        org_plan_sub.0,
+        org_plan_sub.1,
+        org_plan_sub.2,
+    );
+
+    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
+    let client = redis::Client::open(redis_url).map_err(|_| DefaultError {
+        message: "Could not create redis client",
+    })?;
+    let mut redis_conn = client
+        .get_async_connection()
+        .await
+        .map_err(|_| DefaultError {
+            message: "Could not create redis client",
+        })?;
+
+    redis::cmd("SET")
+        .arg(format!("organization:{}", org_plan_sub.id))
+        .arg(
+            serde_json::to_string(&org_plan_sub).map_err(|_| DefaultError {
+                message: "Could not stringify organization",
+            })?,
+        )
+        .query_async(&mut redis_conn)
+        .await
+        .map_err(|_| DefaultError {
+            message: "Could not set organization in redis",
+        })?;
+
+    Ok(())
+}
+
+pub async fn create_stripe_subscription_query(
     stripe_id: String,
     plan_id: uuid::Uuid,
     organization_id: uuid::Uuid,
@@ -36,6 +99,8 @@ pub fn create_stripe_subscription_query(
                 message: "Failed to insert stripe subscription",
             }
         })?;
+
+    refresh_redis_org_plan_sub(stripe_subscription.organization_id, pool).await?;
 
     Ok(())
 }
@@ -144,24 +209,26 @@ pub fn get_subscription_by_id_query(
     Ok(stripe_subscription)
 }
 
-pub fn delete_subscription_by_id_query(
+pub async fn delete_subscription_by_id_query(
     subscription_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
     let mut conn = pool.get().expect("Failed to get connection from pool");
-    diesel::delete(
+    let deleted_subscription: StripeSubscription = diesel::delete(
         stripe_subscriptions_columns::stripe_subscriptions
             .filter(stripe_subscriptions_columns::id.eq(subscription_id)),
     )
-    .execute(&mut conn)
+    .get_result::<StripeSubscription>(&mut conn)
     .map_err(|e| {
         log::error!("Failed to delete stripe subscription: {}", e);
         DefaultError {
             message: "Failed to delete stripe subscription",
         }
     })?;
+
+    refresh_redis_org_plan_sub(deleted_subscription.organization_id, pool).await?;
 
     Ok(())
 }
@@ -187,7 +254,7 @@ pub fn get_option_subscription_by_organization_id_query(
     Ok(stripe_subscriptions.into_iter().next())
 }
 
-pub fn set_stripe_subscription_current_period_end(
+pub async fn set_stripe_subscription_current_period_end(
     stripe_subscription_id: String,
     current_period_end: chrono::NaiveDateTime,
     pool: web::Data<Pool>,
@@ -195,18 +262,20 @@ pub fn set_stripe_subscription_current_period_end(
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
     let mut conn = pool.get().expect("Failed to get connection from pool");
-    diesel::update(
+    let updated_subscription: StripeSubscription = diesel::update(
         stripe_subscriptions_columns::stripe_subscriptions
             .filter(stripe_subscriptions_columns::stripe_id.eq(stripe_subscription_id)),
     )
     .set(stripe_subscriptions_columns::current_period_end.eq(current_period_end))
-    .execute(&mut conn)
+    .get_result(&mut conn)
     .map_err(|e| {
         log::error!("Failed to update stripe subscription: {}", e);
         DefaultError {
             message: "Failed to update stripe subscription",
         }
     })?;
+
+    refresh_redis_org_plan_sub(updated_subscription.organization_id, pool).await?;
 
     Ok(())
 }
@@ -244,7 +313,7 @@ pub async fn cancel_stripe_subscription(
     Ok(())
 }
 
-pub fn update_stripe_subscription_plan_query(
+pub async fn update_stripe_subscription_plan_query(
     subscription_id: uuid::Uuid,
     plan_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -252,18 +321,20 @@ pub fn update_stripe_subscription_plan_query(
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
     let mut conn = pool.get().expect("Failed to get connection from pool");
-    diesel::update(
+    let updated_subscription: StripeSubscription = diesel::update(
         stripe_subscriptions_columns::stripe_subscriptions
             .filter(stripe_subscriptions_columns::id.eq(subscription_id)),
     )
     .set(stripe_subscriptions_columns::plan_id.eq(plan_id))
-    .execute(&mut conn)
+    .get_result::<StripeSubscription>(&mut conn)
     .map_err(|e| {
         log::error!("Failed to update stripe subscription: {}", e);
         DefaultError {
             message: "Failed to update stripe subscription",
         }
     })?;
+
+    refresh_redis_org_plan_sub(updated_subscription.organization_id, pool).await?;
 
     Ok(())
 }
@@ -308,15 +379,14 @@ pub async fn update_stripe_subscription(
         ..Default::default()
     };
 
-    let _updated_stripe_subscription =
-        stripe::Subscription::update(&stripe_client, &stripe_subscription_id, update_subscription)
-            .await
-            .map_err(|e| {
-                log::error!("Failed to update stripe subscription: {}", e);
-                DefaultError {
-                    message: "Failed to update stripe subscription",
-                }
-            })?;
+    stripe::Subscription::update(&stripe_client, &stripe_subscription_id, update_subscription)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to update stripe subscription: {}", e);
+            DefaultError {
+                message: "Failed to update stripe subscription",
+            }
+        })?;
 
     Ok(())
 }
