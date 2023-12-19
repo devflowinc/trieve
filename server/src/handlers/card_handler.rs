@@ -4,6 +4,7 @@ use crate::data::models::{
     ChatMessageProxy, Dataset, DatasetConfiguration, Pool,
 };
 use crate::errors::ServiceError;
+use crate::get_env;
 use crate::operators::card_operator::get_metadata_from_id_query;
 use crate::operators::card_operator::*;
 use crate::operators::collection_operator::{
@@ -18,7 +19,6 @@ use crate::operators::search_operator::{
     global_unfiltered_top_match_query, search_full_text_cards, search_full_text_collections,
     search_hybrid_cards, search_semantic_cards, search_semantic_collections,
 };
-use crate::get_env;
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
 use chrono::NaiveDateTime;
@@ -665,15 +665,7 @@ pub async fn search_card(
     let result_cards = match data.search_type.as_str() {
         "fulltext" => search_full_text_cards(data, parsed_query, page, pool, dataset_id).await?,
         "hybrid" => {
-            search_hybrid_cards(
-                data,
-                parsed_query,
-                page,
-                pool,
-                cross_encoder_init,
-                dataset,
-            )
-            .await?
+            search_hybrid_cards(data, parsed_query, page, pool, cross_encoder_init, dataset).await?
         }
         _ => search_semantic_cards(data, parsed_query, page, pool, dataset).await?,
     };
@@ -916,7 +908,9 @@ pub async fn generate_off_cards(
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let dataset_config = DatasetConfiguration::from_json(dataset.configuration);
-    let base_url = dataset_config.EMBEDDING_BASE_URL.unwrap_or("https://api.openai.com/v1".into());
+    let base_url = dataset_config
+        .EMBEDDING_BASE_URL
+        .unwrap_or("https://api.openai.com/v1".into());
 
     let client = Client {
         api_key: openai_api_key,
