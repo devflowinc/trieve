@@ -6,7 +6,7 @@ use crate::{
     handlers::auth_handler::build_oidc_client,
     operators::{
         model_operator::initalize_cross_encoder,
-        qdrant_operator::create_new_qdrant_collection_query, dataset_operator::load_datasets_redis_query, organization_operator::load_organization_with_subscription_and_plans_redis_query,
+        qdrant_operator::create_new_qdrant_collection_query, 
     },
 };
 use actix_cors::Cors;
@@ -109,7 +109,6 @@ pub async fn main() -> std::io::Result<()> {
             handlers::notification_handler::mark_all_notifications_as_read,
             handlers::auth_handler::health_check,
             handlers::organization_handler::get_organization_by_id,
-            handlers::organization_handler::delete_organization_by_id,
             handlers::organization_handler::update_organization,
             handlers::organization_handler::create_organization,
             handlers::dataset_handler::create_dataset,
@@ -223,11 +222,6 @@ pub async fn main() -> std::io::Result<()> {
     let pool: data::models::Pool = r2d2::Pool::builder()
         .build(manager)
         .expect("Failed to create pool.");
-
-    load_datasets_redis_query(pool.clone()).await.expect("Failed to load datasets into redis");
-    load_organization_with_subscription_and_plans_redis_query(pool.clone())
-        .await
-        .expect("Failed to load organizations into redis");
 
     let cross_encoder = web::Data::new(initalize_cross_encoder());
 
@@ -507,7 +501,6 @@ pub async fn main() -> std::io::Result<()> {
                         .service(
                             web::resource("/{organization_id}")
                                 .route(web::get().to(handlers::organization_handler::get_organization_by_id))
-                                .route(web::delete().to(handlers::organization_handler::delete_organization_by_id))
                         )
                         .service(
                             web::resource("")
