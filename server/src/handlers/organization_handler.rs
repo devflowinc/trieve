@@ -3,8 +3,7 @@ use crate::{
     data::models::Pool,
     errors::ServiceError,
     operators::organization_operator::{
-        create_organization_query, delete_organization_by_id_query, get_organization_by_id_query,
-        update_organization_query,
+        create_organization_query, get_organization_by_id_query, update_organization_query,
     },
 };
 use actix_web::{web, HttpResponse};
@@ -36,33 +35,6 @@ pub async fn get_organization_by_id(
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(organization))
-}
-
-#[utoipa::path(
-    delete,
-    path = "/organization/{organization_id}",
-    context_path = "/api",
-    tag = "organization",
-    responses(
-        (status = 204, description = "Confirmation that the organization with the requested id was deleted"),
-        (status = 400, description = "Service error relating to deleting the organization by id", body = [DefaultError]),
-    ),
-    params(
-        ("organization_id" = Option<uuid>, Path, description = "id of the organization you want to delete")
-    ),
-)]
-pub async fn delete_organization_by_id(
-    organization_id: web::Path<uuid::Uuid>,
-    pool: web::Data<Pool>,
-    _user: OwnerOnly,
-) -> Result<HttpResponse, actix_web::Error> {
-    let organization_id = organization_id.into_inner();
-
-    delete_organization_by_id_query(organization_id, pool)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    Ok(HttpResponse::NoContent().finish())
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
