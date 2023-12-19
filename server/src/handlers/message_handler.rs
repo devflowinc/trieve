@@ -373,7 +373,7 @@ pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<Strin
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let dataset_config = DatasetConfiguration::from_json(dataset.configuration.clone());
     let base_url = dataset_config
-        .EMBEDDING_BASE_URL
+        .LLM_BASE_URL
         .unwrap_or("https://api.openai.com/v1".into());
     let client = Client {
         api_key: openai_api_key,
