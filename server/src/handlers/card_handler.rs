@@ -1,7 +1,7 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     CardCollection, CardCollectionBookmark, CardMetadata, CardMetadataWithFileData,
-    ChatMessageProxy, Dataset, Pool,
+    ChatMessageProxy, Dataset, DatasetConfiguration, Pool,
 };
 use crate::errors::ServiceError;
 use crate::operators::card_operator::get_metadata_from_id_query;
@@ -163,9 +163,8 @@ pub async fn create_card(
                 ))
             })?;
 
-    let duplicate_distance_threshold = std::env::var("DUPLICATE_DISTANCE_THRESHOLD")
-        .unwrap_or("0.95".to_string())
-        .parse::<f32>()
+    let duplicate_distance_threshold = DatasetConfiguration::from_json(dataset.configuration)
+        .DUPLICATE_DISTANCE_THRESHOLD
         .unwrap_or(0.95);
 
     if first_semantic_result.score >= duplicate_distance_threshold {
@@ -926,7 +925,7 @@ pub async fn generate_off_cards(
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
-        base_url: std::env::var("OPENAI_BASE_URL")
+        base_url: DatasetConfiguration::from_json(dataset.configuration).OPENAI_BASE_URL
             .map(|url| {
                 if url.is_empty() {
                     "https://api.openai.com/v1".to_string()
