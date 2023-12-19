@@ -16,7 +16,6 @@ use crate::{
         model_operator::create_embedding,
         search_operator::retrieve_qdrant_points_query,
     },
-    AppMutexStore,
 };
 use actix::Arbiter;
 use actix_web::{
@@ -55,7 +54,6 @@ pub async fn create_message_completion_handler(
     user: LoggedUser,
     dataset: Dataset,
     pool: web::Data<Pool>,
-    app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let create_message_data = data.into_inner();
     let pool1 = pool.clone();
@@ -124,7 +122,6 @@ pub async fn create_message_completion_handler(
         user.id,
         topic_id,
         dataset.id,
-        app_mutex,
         dataset,
         pool4,
     )
@@ -193,7 +190,6 @@ pub async fn edit_message_handler(
     user: LoggedUser,
     dataset: Dataset,
     pool: web::Data<Pool>,
-    app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
     let message_sort_order = data.message_sort_order;
@@ -226,7 +222,6 @@ pub async fn edit_message_handler(
         user,
         dataset,
         third_pool,
-        app_mutex,
     )
     .await
 }
@@ -247,7 +242,6 @@ pub async fn regenerate_message_handler(
     user: LoggedUser,
     dataset: Dataset,
     pool: web::Data<Pool>,
-    app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
     let pool1 = pool.clone();
@@ -283,7 +277,6 @@ pub async fn regenerate_message_handler(
             user.id,
             topic_id,
             dataset_id,
-            app_mutex,
             dataset,
             pool3,
         )
@@ -342,7 +335,6 @@ pub async fn regenerate_message_handler(
         user.id,
         topic_id,
         dataset_id,
-        app_mutex,
         dataset,
         pool3,
     )
@@ -380,13 +372,7 @@ pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<Strin
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let dataset_config = DatasetConfiguration::from_json(dataset.configuration.clone());
-    let base_url = if dataset_config.USE_CUSTOM_MODEL.unwrap_or(false) {
-        dataset_config
-            .OPENAI_BASE_URL
-            .unwrap_or("https://api.openai.com/v1".into())
-    } else {
-        "https://api.openai.com/v1".into()
-    };
+    let base_url = dataset_config.EMBEDDING_BASE_URL.unwrap_or("https://api.openai.com/v1".into());
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
@@ -418,7 +404,6 @@ pub async fn stream_response(
     user_id: uuid::Uuid,
     topic_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
-    app_mutex: web::Data<AppMutexStore>,
     dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -431,14 +416,7 @@ pub async fn stream_response(
         .collect();
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
-    let base_url = if dataset_config.USE_CUSTOM_MODEL.unwrap_or(false) {
-        dataset_config
-            .OPENAI_BASE_URL
-            .clone()
-            .unwrap_or("https://api.openai.com/v1".into())
-    } else {
-        "https://api.openai.com/v1".into()
-    };
+    let base_url = dataset_config.EMBEDDING_BASE_URL.clone().unwrap_or("https://api.openai.com/v1".into());
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
@@ -512,7 +490,7 @@ pub async fn stream_response(
             .clone()
             .unwrap_or("".to_string());
         let embedding_vector =
-            create_embedding(query.as_str(), app_mutex, Some(dataset_config.clone())).await?;
+            create_embedding(query.as_str(), dataset_config.clone()).await?;
 
         let search_card_query_results = retrieve_qdrant_points_query(
             Some(embedding_vector),
@@ -682,13 +660,10 @@ pub async fn create_suggested_queries_handler(
 ) -> Result<HttpResponse, ServiceError> {
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let dataset_config = DatasetConfiguration::from_json(dataset.configuration);
-    let base_url = if dataset_config.USE_CUSTOM_MODEL.unwrap_or(false) {
-        dataset_config
-            .OPENAI_BASE_URL
-            .unwrap_or("https://api.openai.com/v1".into())
-    } else {
-        "https://api.openai.com/v1".into()
-    };
+    let base_url = dataset_config
+            .EMBEDDING_BASE_URL
+            .unwrap_or("https://api.openai.com/v1".into());
+
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
