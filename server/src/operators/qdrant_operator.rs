@@ -43,9 +43,6 @@ pub async fn create_new_qdrant_collection_query() -> Result<(), ServiceError> {
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let embedding_size = std::env::var("EMBEDDING_SIZE").unwrap_or("1536".to_owned());
-    let embedding_size = embedding_size.parse::<u64>().unwrap_or(1536);
-
     let mut sparse_vector_config = HashMap::new();
     sparse_vector_config.insert(
         "sparse_vectors".to_string(),
@@ -63,16 +60,48 @@ pub async fn create_new_qdrant_collection_query() -> Result<(), ServiceError> {
             vectors_config: Some(VectorsConfig {
                 config: Some(qdrant_client::qdrant::vectors_config::Config::ParamsMap(
                     VectorParamsMap {
-                        map: HashMap::from([(
-                            "dense_vectors".to_string(),
-                            VectorParams {
-                                size: embedding_size,
-                                distance: Distance::Cosine.into(),
-                                hnsw_config: None,
-                                quantization_config: None,
-                                on_disk: None,
-                            },
-                        )]),
+                        map: HashMap::from([
+                            (
+                                "384_vectors".to_string(),
+                                VectorParams {
+                                    size: 384,
+                                    distance: Distance::Cosine.into(),
+                                    hnsw_config: None,
+                                    quantization_config: None,
+                                    on_disk: None,
+                                },
+                            ),
+                            (
+                                "768_vectors".to_string(),
+                                VectorParams {
+                                    size: 768,
+                                    distance: Distance::Cosine.into(),
+                                    hnsw_config: None,
+                                    quantization_config: None,
+                                    on_disk: None,
+                                },
+                            ),
+                            (
+                                "1024_vectors".to_string(),
+                                VectorParams {
+                                    size: 1024,
+                                    distance: Distance::Cosine.into(),
+                                    hnsw_config: None,
+                                    quantization_config: None,
+                                    on_disk: None,
+                                },
+                            ),
+                            (
+                                "1536_vectors".to_string(),
+                                VectorParams {
+                                    size: 1536,
+                                    distance: Distance::Cosine.into(),
+                                    hnsw_config: None,
+                                    quantization_config: None,
+                                    on_disk: None,
+                                },
+                            ),
+                        ]),
                     },
                 )),
             }),
@@ -173,10 +202,18 @@ pub async fn create_new_qdrant_point_query(
                 .try_into()
                 .expect("A json! Value must always be a valid Payload");
 
+    let vector_name = match embedding_vector.len() {
+        384 => "384_vectors",
+        768 => "768_vectors",
+        1024 => "1024_vectors",
+        1536 => "1536_vectors",
+        _ => return Err(ServiceError::BadRequest("Invalid embedding vector size".into()).into()),
+    };
+
     let point = PointStruct::new(
         point_id.clone().to_string(),
         HashMap::from([
-            ("dense_vectors".to_string(), Vector::from(embedding_vector)),
+            (vector_name.to_string(), Vector::from(embedding_vector)),
             ("sparse_vectors".to_string(), Vector::from(splade_vector)),
         ]),
         payload,
@@ -258,17 +295,30 @@ pub async fn update_qdrant_point_query(
         current_author_ids.push(author_id.unwrap().to_string());
     }
 
-    let payload = if let Some(metadata) = metadata {
+    let payload = if let Some(metadata) = metadata.clone() {
         json!({"authors": current_author_ids, "tag_set": metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "card_html": metadata.card_html.unwrap_or("".to_string()), "metadata": metadata.metadata.unwrap_or_default(), "time_stamp": metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string()})
     } else {
         json!({"authors": current_author_ids, "tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "card_html": current_point.payload.get("card_html").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")), "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from(""))})
     };
     let points_selector = qdrant_point_id.into();
 
-    if let Some(embedding_vector) = updated_vector {
+    if let Some(updated_vector) = updated_vector {
+        let splade_vector = get_splade_doc_embedding(&metadata.unwrap().content).await?;
+        let vector_name = match updated_vector.len() {
+            384 => "384_vectors",
+            768 => "768_vectors",
+            1024 => "1024_vectors",
+            1536 => "1536_vectors",
+            _ => {
+                return Err(ServiceError::BadRequest("Invalid embedding vector size".into()).into())
+            }
+        };
         let point = PointStruct::new(
             point_id.clone().to_string(),
-            embedding_vector,
+            HashMap::from([
+                (vector_name.to_string(), Vector::from(updated_vector)),
+                ("sparse_vectors".to_string(), Vector::from(splade_vector)),
+            ]),
             payload
                 .try_into()
                 .expect("A json! value must always be a valid Payload"),
@@ -318,11 +368,23 @@ pub async fn search_semantic_qdrant_query(
         .must
         .push(Condition::matches("dataset_id", dataset_id.to_string()));
 
+    let vector_name = match embedding_vector.len() {
+        384 => "384_vectors",
+        768 => "768_vectors",
+        1024 => "1024_vectors",
+        1536 => "1536_vectors",
+        _ => {
+            return Err(DefaultError {
+                message: "Invalid embedding vector size",
+            })
+        }
+    };
+
     let data = qdrant
         .search_points(&SearchPoints {
             collection_name: qdrant_collection.to_string(),
             vector: embedding_vector,
-            vector_name: Some("dense_vectors".to_string()),
+            vector_name: Some(vector_name.to_string()),
             limit: 10,
             offset: Some((page - 1) * 10),
             with_payload: None,
@@ -437,6 +499,7 @@ pub async fn delete_qdrant_point_id_query(
 pub async fn recommend_qdrant_query(
     positive_ids: Vec<uuid::Uuid>,
     dataset_id: uuid::Uuid,
+    embed_size: usize,
 ) -> Result<Vec<uuid::Uuid>, DefaultError> {
     let collection_name = dataset_id.to_string();
 
@@ -448,6 +511,18 @@ pub async fn recommend_qdrant_query(
         "dataset_id",
         dataset_id.to_string(),
     )]));
+
+    let vector_name = match embed_size {
+        384 => "384_vectors",
+        768 => "768_vectors",
+        1024 => "1024_vectors",
+        1536 => "1536_vectors",
+        _ => {
+            return Err(DefaultError {
+                message: "Invalid embedding vector size",
+            })
+        }
+    };
 
     let recommend_points = RecommendPoints {
         collection_name,
@@ -461,7 +536,7 @@ pub async fn recommend_qdrant_query(
         params: None,
         score_threshold: None,
         offset: None,
-        using: Some("dense_vectors".to_string()),
+        using: Some(vector_name.to_string()),
         with_vectors: None,
         lookup_from: None,
         read_consistency: None,
