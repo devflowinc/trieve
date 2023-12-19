@@ -2,7 +2,7 @@ use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
     data::models::{
         CardCollection, CardCollectionAndFile, CardCollectionBookmark, CardMetadataWithFileData,
-        Dataset, Pool,
+        Dataset, DatasetConfiguration, Pool,
     },
     errors::ServiceError,
     operators::{card_operator::get_collided_cards_query, collection_operator::*},
@@ -598,8 +598,20 @@ pub async fn generate_off_collection(
         tool_choice: None,
     };
 
-    let open_ai_api_key = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
-    let client = Client::new(open_ai_api_key);
+    let openai_api_key = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
+    let dataset_config = DatasetConfiguration::from_json(dataset.configuration);
+    let base_url = if dataset_config.USE_CUSTOM_MODEL.unwrap_or(false) {
+        dataset_config
+            .OPENAI_BASE_URL
+            .unwrap_or("https://api.openai.com/v1".into())
+    } else {
+        "https://api.openai.com/v1".into()
+    };
+    let client = Client {
+        api_key: openai_api_key,
+        http_client: reqwest::Client::new(),
+        base_url,
+    };
 
     let (s, _r) = unbounded::<String>();
     let stream = client

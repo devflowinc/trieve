@@ -379,18 +379,18 @@ pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<Strin
     };
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+    let dataset_config = DatasetConfiguration::from_json(dataset.configuration.clone());
+    let base_url = if dataset_config.USE_CUSTOM_MODEL.unwrap_or(false) {
+        dataset_config
+            .OPENAI_BASE_URL
+            .unwrap_or("https://api.openai.com/v1".into())
+    } else {
+        "https://api.openai.com/v1".into()
+    };
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
-        base_url: DatasetConfiguration::from_json(dataset.configuration.clone()).OPENAI_BASE_URL
-            .map(|url| {
-                if url.is_empty() {
-                    "https://api.openai.com/v1".to_string()
-                } else {
-                    url
-                }
-            })
-            .unwrap_or("https://api.openai.com/v1".into()),
+        base_url,
     };
 
     let query = client
@@ -431,19 +431,20 @@ pub async fn stream_response(
         .collect();
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+    let base_url = if dataset_config.USE_CUSTOM_MODEL.unwrap_or(false) {
+        dataset_config
+            .OPENAI_BASE_URL
+            .clone()
+            .unwrap_or("https://api.openai.com/v1".into())
+    } else {
+        "https://api.openai.com/v1".into()
+    };
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
-        base_url: dataset_config.OPENAI_BASE_URL
-            .map(|url| {
-                if url.is_empty() {
-                    "https://api.openai.com/v1".to_string()
-                } else {
-                    url
-                }
-            })
-            .unwrap_or("https://api.openai.com/v1".into()),
+        base_url,
     };
+
     let next_message_order = move || {
         let messages_len = messages.len();
         if messages_len == 0 {
@@ -461,7 +462,7 @@ pub async fn stream_response(
     let mut citation_cards_stringified1 = citation_cards_stringified.clone();
 
     if !normal_chat {
-        let rag_prompt = dataset_config.RAG_PROMPT.unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string());
+        let rag_prompt = dataset_config.RAG_PROMPT.clone().unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string());
 
         // find evidence for the counter-argument
         let counter_arg_parameters = ChatCompletionParameters {
@@ -510,7 +511,8 @@ pub async fn stream_response(
             .content
             .clone()
             .unwrap_or("".to_string());
-        let embedding_vector = create_embedding(query.as_str(), app_mutex).await?;
+        let embedding_vector =
+            create_embedding(query.as_str(), app_mutex, Some(dataset_config.clone())).await?;
 
         let search_card_query_results = retrieve_qdrant_points_query(
             Some(embedding_vector),
@@ -529,7 +531,7 @@ pub async fn stream_response(
         )
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-        let n_retrievals_to_include = DatasetConfiguration::from_json(dataset.configuration).N_RETRIEVALS_TO_INCLUDE.unwrap_or(3);
+        let n_retrievals_to_include = dataset_config.N_RETRIEVALS_TO_INCLUDE.unwrap_or(3);
 
         let retrieval_card_ids = search_card_query_results
             .search_results
@@ -679,18 +681,18 @@ pub async fn create_suggested_queries_handler(
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, ServiceError> {
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+    let dataset_config = DatasetConfiguration::from_json(dataset.configuration);
+    let base_url = if dataset_config.USE_CUSTOM_MODEL.unwrap_or(false) {
+        dataset_config
+            .OPENAI_BASE_URL
+            .unwrap_or("https://api.openai.com/v1".into())
+    } else {
+        "https://api.openai.com/v1".into()
+    };
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
-        base_url: DatasetConfiguration::from_json(dataset.configuration).OPENAI_BASE_URL
-            .map(|url| {
-                if url.is_empty() {
-                    "https://api.openai.com/v1".to_string()
-                } else {
-                    url
-                }
-            })
-            .unwrap_or("https://api.openai.com/v1".into()),
+        base_url,
     };
     let query = format!("generate 3 suggested queries based off this query a user made. Your only response should be the 3 queries which are comma seperated and are just text and you do not add any other context or information about the queries.  Here is the query: {}", data.query);
     let message = ChatMessage {

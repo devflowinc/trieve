@@ -146,11 +146,11 @@ pub async fn create_card(
     let mut collision: Option<uuid::Uuid> = None;
 
     let content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
-
+    let dataset_config = DatasetConfiguration::from_json(dataset.configuration);
     let embedding_vector = if let Some(embedding_vector) = card.card_vector.clone() {
         embedding_vector
     } else {
-        create_embedding(&content, app_mutex).await?
+        create_embedding(&content, app_mutex, Some(dataset_config.clone())).await?
     };
 
     let first_semantic_result =
@@ -163,9 +163,7 @@ pub async fn create_card(
                 ))
             })?;
 
-    let duplicate_distance_threshold = DatasetConfiguration::from_json(dataset.configuration)
-        .DUPLICATE_DISTANCE_THRESHOLD
-        .unwrap_or(0.95);
+    let duplicate_distance_threshold = dataset_config.DUPLICATE_DISTANCE_THRESHOLD.unwrap_or(0.95);
 
     if first_semantic_result.score >= duplicate_distance_threshold {
         //Sets collision to collided card id
@@ -319,13 +317,12 @@ pub async fn delete_card(
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let card_id_inner = card_id.into_inner();
-    let dataset_id = dataset.id;
     let pool1 = pool.clone();
-
+    let dataset_id = dataset.id;
     let card_metadata = user_owns_card(user.0.id, card_id_inner, dataset_id, pool).await?;
     let qdrant_point_id = card_metadata.qdrant_point_id;
 
-    delete_card_metadata_query(card_id_inner, qdrant_point_id, app_mutex, dataset_id, pool1)
+    delete_card_metadata_query(card_id_inner, qdrant_point_id, app_mutex, dataset, pool1)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -361,15 +358,9 @@ pub async fn delete_card_by_tracking_id(
 
     let qdrant_point_id = card_metadata.qdrant_point_id;
 
-    delete_card_metadata_query(
-        card_metadata.id,
-        qdrant_point_id,
-        app_mutex,
-        dataset_id,
-        pool1,
-    )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    delete_card_metadata_query(card_metadata.id, qdrant_point_id, app_mutex, dataset, pool1)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -423,7 +414,12 @@ pub async fn update_card(
 
     let new_content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
 
-    let embedding_vector = create_embedding(&new_content, app_mutex).await?;
+    let embedding_vector = create_embedding(
+        &new_content,
+        app_mutex,
+        Some(DatasetConfiguration::from_json(dataset.configuration)),
+    )
+    .await?;
 
     let card_html = match card.card_html.clone() {
         Some(card_html) => Some(card_html),
@@ -525,7 +521,12 @@ pub async fn update_card_by_tracking_id(
 
     let new_content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
 
-    let embedding_vector = create_embedding(&new_content, app_mutex).await?;
+    let embedding_vector = create_embedding(
+        &new_content,
+        app_mutex,
+        Some(DatasetConfiguration::from_json(dataset.configuration)),
+    )
+    .await?;
 
     let card_html = match card.card_html.clone() {
         Some(card_html) => Some(card_html),
@@ -678,12 +679,12 @@ pub async fn search_card(
                 page,
                 pool,
                 cross_encoder_init,
-                dataset_id,
+                dataset,
                 app_mutex,
             )
             .await?
         }
-        _ => search_semantic_cards(data, parsed_query, page, pool, dataset_id, app_mutex).await?,
+        _ => search_semantic_cards(data, parsed_query, page, pool, dataset, app_mutex).await?,
     };
 
     Ok(HttpResponse::Ok().json(result_cards))
@@ -782,7 +783,7 @@ pub async fn search_collections(
                 collection,
                 page,
                 full_text_search_pool,
-                dataset_id,
+                dataset,
                 app_mutex,
             )
             .await?
@@ -871,12 +872,16 @@ pub async fn get_recommended_cards(
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
     let positive_card_ids = data.positive_card_ids.clone();
+    let embed_size = DatasetConfiguration::from_json(dataset.configuration)
+        .EMBEDDING_SIZE
+        .unwrap_or(1536);
 
-    let recommended_qdrant_point_ids = recommend_qdrant_query(positive_card_ids, dataset.id)
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!("Could not get recommended cards: {}", err))
-        })?;
+    let recommended_qdrant_point_ids =
+        recommend_qdrant_query(positive_card_ids, dataset.id, embed_size)
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!("Could not get recommended cards: {}", err))
+            })?;
 
     let recommended_card_metadatas =
         web::block(move || get_metadata_from_point_ids(recommended_qdrant_point_ids, pool))
@@ -921,19 +926,19 @@ pub async fn generate_off_cards(
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+    let dataset_config = DatasetConfiguration::from_json(dataset.configuration);
+    let base_url = if dataset_config.USE_CUSTOM_MODEL.unwrap_or(false) {
+        dataset_config
+            .OPENAI_BASE_URL
+            .unwrap_or("https://api.openai.com/v1".into())
+    } else {
+        "https://api.openai.com/v1".into()
+    };
 
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
-        base_url: DatasetConfiguration::from_json(dataset.configuration).OPENAI_BASE_URL
-            .map(|url| {
-                if url.is_empty() {
-                    "https://api.openai.com/v1".to_string()
-                } else {
-                    url
-                }
-            })
-            .unwrap_or("https://api.openai.com/v1".into()),
+        base_url,
     };
 
     let mut messages: Vec<ChatMessage> = prev_messages
