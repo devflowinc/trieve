@@ -60,9 +60,12 @@ def compute_vector(text, tokenizer, model):
 
 class EncodeRequest(BaseModel):
     input: str
+    model: str
+    encoding_format: str
+    user: str
 
 
-@app.post("/encode")
+@app.post("/embeddings")
 async def encode(encodingRequest: EncodeRequest):
     # normalize embeddings
     sentence_embeddings = angle.encode(
@@ -70,8 +73,19 @@ async def encode(encodingRequest: EncodeRequest):
     )
     return JSONResponse(
         content={
-            "embeddings": sentence_embeddings.tolist(),
-            "status": 200,
+            "object": "list",
+            "data": [
+                {
+                    "object": "embedding",
+                    "embedding": sentence_embeddings.tolist(),
+                    "index": 0,
+                }
+            ],
+            "model": encodingRequest.model,
+            "usage": {
+                "prompt_tokens": 0,
+                "total_tokens": 0,
+            },
         }
     )
 
