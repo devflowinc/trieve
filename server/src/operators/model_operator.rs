@@ -99,16 +99,6 @@ pub async fn create_embedding(
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CustomDenseEmbedData {
-    pub input: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CustomDenseEmbedResponse {
-    pub embeddings: Vec<f32>,
-}
-
 pub async fn create_openai_embedding(
     message: &str,
     base_url: Option<String>,
