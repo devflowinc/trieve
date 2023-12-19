@@ -22,7 +22,6 @@ use actix_web::{
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
-use tokio::sync::Semaphore;
 use utoipa::OpenApi;
 use utoipa_redoc::{Redoc, Servable};
 
@@ -59,10 +58,6 @@ macro_rules! get_env {
         }
         ENV_VAR.as_str()
     }};
-}
-
-pub struct AppMutexStore {
-    pub embedding_semaphore: Option<Semaphore>,
 }
 
 #[actix_web::main]
@@ -240,21 +235,11 @@ pub async fn main() -> std::io::Result<()> {
         log::error!("Failed to create qdrant collection: {:?}", err);
     });
 
-    let app_mutex_store = web::Data::new(AppMutexStore {
-        embedding_semaphore: std::env::var("EMBEDDING_SEMAPHORE_SIZE")
-            .map(|size| match size.parse::<usize>() {
-                Ok(size) => Some(Semaphore::new(size)),
-                Err(_) => None,
-            })
-            .unwrap_or(None),
-    });
-
     HttpServer::new(move || {
         App::new()
             .app_data(PayloadConfig::new(134200000))
             .app_data( web::JsonConfig::default().limit(134200000))
             .app_data(web::Data::new(pool.clone()))
-            .app_data(app_mutex_store.clone())
             .app_data(web::Data::new(oidc_client.clone()))
             .wrap(
                 IdentityMiddleware::builder()
