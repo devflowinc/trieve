@@ -19,7 +19,7 @@ use crate::operators::qdrant_operator::{
     get_qdrant_connection, search_full_text_qdrant_query, search_semantic_qdrant_query,
 };
 use crate::{data::models::Pool, errors::DefaultError};
-use crate::{get_env, AppMutexStore};
+use crate::get_env;
 use actix_web::web;
 use candle_core::Tensor;
 use chrono::NaiveDateTime;
@@ -824,14 +824,12 @@ pub async fn search_semantic_cards(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    app_mutex: web::Data<AppMutexStore>,
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
     let embedding_vector = create_embedding(
         &data.content,
-        app_mutex,
-        Some(DatasetConfiguration::from_json(
+        DatasetConfiguration::from_json(
             dataset.configuration.clone(),
-        )),
+        ),
     )
     .await?;
 
@@ -1014,14 +1012,12 @@ pub async fn search_hybrid_cards(
     pool: web::Data<Pool>,
     cross_encoder_init: web::Data<CrossEncoder>,
     dataset: Dataset,
-    app_mutex: web::Data<AppMutexStore>,
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
     let embedding_vector = create_embedding(
         &data.content,
-        app_mutex,
-        Some(DatasetConfiguration::from_json(
+        DatasetConfiguration::from_json(
             dataset.configuration.clone(),
-        )),
+        ),
     )
     .await?;
     let pool1 = pool.clone();
@@ -1159,14 +1155,12 @@ pub async fn search_semantic_collections(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    app_mutex: web::Data<AppMutexStore>,
 ) -> Result<SearchCollectionsResult, actix_web::Error> {
     let embedding_vector: Vec<f32> = create_embedding(
         &data.content,
-        app_mutex,
-        Some(DatasetConfiguration::from_json(
+        DatasetConfiguration::from_json(
             dataset.configuration.clone(),
-        )),
+        ),
     )
     .await?;
     let pool1 = pool.clone();

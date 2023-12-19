@@ -5,7 +5,6 @@ use crate::{
     operators::file_operator::{
         convert_doc_to_html_query, delete_file_query, get_file_query, get_user_file_query,
     },
-    AppMutexStore,
 };
 use actix_files::NamedFile;
 use actix_web::{http::header::ContentDisposition, web, HttpResponse};
@@ -68,7 +67,6 @@ pub async fn upload_file_handler(
     pool: web::Data<Pool>,
     user: AdminOnly,
     dataset: Dataset,
-    app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let document_upload_feature =
         DatasetConfiguration::from_json(dataset.configuration.clone()).DOCUMENT_UPLOAD_FEATURE.unwrap_or(false);
@@ -112,7 +110,6 @@ pub async fn upload_file_handler(
         upload_file_data.create_cards,
         upload_file_data.time_stamp,
         user.0,
-        app_mutex,
         dataset,
         pool_inner,
     )
