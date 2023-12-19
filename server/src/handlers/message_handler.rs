@@ -1,6 +1,6 @@
 use super::{auth_handler::LoggedUser, card_handler::ParsedQuery};
 use crate::{
-    data::models::{self, Dataset},
+    data::models::{self, Dataset, DatasetConfiguration},
     data::models::{CardMetadataWithFileData, Pool},
     errors::{DefaultError, ServiceError},
     get_env,
@@ -125,6 +125,7 @@ pub async fn create_message_completion_handler(
         topic_id,
         dataset.id,
         app_mutex,
+        dataset,
         pool4,
     )
     .await
@@ -283,6 +284,7 @@ pub async fn regenerate_message_handler(
             topic_id,
             dataset_id,
             app_mutex,
+            dataset,
             pool3,
         )
         .await;
@@ -341,12 +343,13 @@ pub async fn regenerate_message_handler(
         topic_id,
         dataset_id,
         app_mutex,
+        dataset,
         pool3,
     )
     .await
 }
 
-pub async fn get_topic_string(prompt: String) -> Result<String, DefaultError> {
+pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<String, DefaultError> {
     let prompt_topic_message = ChatMessage {
         role: Role::User,
         content: Some(format!(
@@ -379,7 +382,7 @@ pub async fn get_topic_string(prompt: String) -> Result<String, DefaultError> {
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
-        base_url: std::env::var("OPENAI_BASE_URL")
+        base_url: DatasetConfiguration::from_json(dataset.configuration.clone()).OPENAI_BASE_URL
             .map(|url| {
                 if url.is_empty() {
                     "https://api.openai.com/v1".to_string()
@@ -408,6 +411,7 @@ pub async fn get_topic_string(prompt: String) -> Result<String, DefaultError> {
     Ok(topic)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn stream_response(
     normal_chat: bool,
     messages: Vec<models::Message>,
@@ -415,9 +419,11 @@ pub async fn stream_response(
     topic_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     app_mutex: web::Data<AppMutexStore>,
+    dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool2 = pool.clone();
+    let dataset_config = DatasetConfiguration::from_json(dataset.configuration.clone());
 
     let openai_messages: Vec<ChatMessage> = messages
         .iter()
@@ -428,7 +434,7 @@ pub async fn stream_response(
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
-        base_url: std::env::var("OPENAI_BASE_URL")
+        base_url: dataset_config.OPENAI_BASE_URL
             .map(|url| {
                 if url.is_empty() {
                     "https://api.openai.com/v1".to_string()
@@ -455,7 +461,7 @@ pub async fn stream_response(
     let mut citation_cards_stringified1 = citation_cards_stringified.clone();
 
     if !normal_chat {
-        let rag_prompt = std::env::var("RAG_PROMPT").unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string());
+        let rag_prompt = dataset_config.RAG_PROMPT.unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string());
 
         // find evidence for the counter-argument
         let counter_arg_parameters = ChatCompletionParameters {
@@ -523,10 +529,7 @@ pub async fn stream_response(
         )
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-        let n_retrievals_to_include = std::env::var("N_RETRIEVALS_TO_INCLUDE")
-            .unwrap_or("3".to_string())
-            .parse::<usize>()
-            .expect("N_RETRIEVALS_TO_INCLUDE must be a number");
+        let n_retrievals_to_include = DatasetConfiguration::from_json(dataset.configuration).N_RETRIEVALS_TO_INCLUDE.unwrap_or(3);
 
         let retrieval_card_ids = search_card_query_results
             .search_results
@@ -672,13 +675,14 @@ pub struct SuggestedQueriesResponse {
 )]
 pub async fn create_suggested_queries_handler(
     data: web::Json<SuggestedQueriesRequest>,
+    dataset: Dataset,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, ServiceError> {
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
-        base_url: std::env::var("OPENAI_BASE_URL")
+        base_url: DatasetConfiguration::from_json(dataset.configuration).OPENAI_BASE_URL
             .map(|url| {
                 if url.is_empty() {
                     "https://api.openai.com/v1".to_string()

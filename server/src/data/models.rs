@@ -791,6 +791,29 @@ impl Dataset {
     }
 }
 
+#[allow(non_snake_case)]
+pub struct DatasetConfiguration {
+    pub DOCUMENT_UPLOAD_FEATURE: Option<bool>,
+    pub DOCUMENT_DOWNLOAD_FEATURE: Option<bool>,
+    pub OPENAI_BASE_URL: Option<String>,
+    pub RAG_PROMPT: Option<String>,
+    pub N_RETRIEVALS_TO_INCLUDE: Option<usize>,
+    pub DUPLICATE_DISTANCE_THRESHOLD: Option<f32>,
+}
+
+impl DatasetConfiguration {
+    pub fn from_json(configuration: serde_json::Value) -> Self {
+        DatasetConfiguration {
+            DOCUMENT_UPLOAD_FEATURE: configuration["DOCUMENT_UPLOAD_FEATURE"].as_bool(),
+            DOCUMENT_DOWNLOAD_FEATURE: configuration["DOCUMENT_DOWNLOAD_FEATURE"].as_bool(),
+            OPENAI_BASE_URL: configuration["OPENAI_BASE_URL"].as_str().map(|s| s.to_string()),
+            RAG_PROMPT: configuration["RAG_PROMPT"].as_str().map(|s| s.to_string()),
+            N_RETRIEVALS_TO_INCLUDE: configuration["N_RETRIEVALS_TO_INCLUDE"].as_u64().map(|u| u as usize),
+            DUPLICATE_DISTANCE_THRESHOLD: configuration["DUPLICATE_DISTANCE_THRESHOLD"].as_f64().map(|f| f as f32),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[diesel(table_name = organizations)]
 pub struct Organization {
