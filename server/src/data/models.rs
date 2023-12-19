@@ -902,7 +902,9 @@ impl Invitation {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
+#[derive(
+    Debug, Serialize, Deserialize, Selectable, Clone, Queryable, Insertable, ValidGrouping,
+)]
 #[diesel(table_name = stripe_plans)]
 pub struct StripePlan {
     pub id: uuid::Uuid,
@@ -942,7 +944,9 @@ impl StripePlan {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
+#[derive(
+    Debug, Serialize, Deserialize, Selectable, Clone, Queryable, Insertable, ValidGrouping,
+)]
 #[diesel(table_name = stripe_subscriptions)]
 pub struct StripeSubscription {
     pub id: uuid::Uuid,
@@ -973,7 +977,34 @@ impl StripeSubscription {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, ToSchema, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct OrganizationWithSubscriptionAndPlan {
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub configuration: serde_json::Value,
+    pub registerable: Option<bool>,
+    pub plan: Option<StripePlan>,
+    pub subscription: Option<StripeSubscription>,
+}
+
+impl OrganizationWithSubscriptionAndPlan {
+    pub fn from_components(
+        organization: Organization,
+        plan: Option<StripePlan>,
+        subscription: Option<StripeSubscription>,
+    ) -> Self {
+        OrganizationWithSubscriptionAndPlan {
+            id: organization.id,
+            name: organization.name,
+            configuration: organization.configuration,
+            registerable: organization.registerable,
+            plan,
+            subscription,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub enum UserRole {
     Owner = 2,
     Admin = 1,
