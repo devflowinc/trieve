@@ -207,11 +207,13 @@ pub async fn create_account(
             let mut org_name = email.split('@').collect::<Vec<&str>>()[0].to_string();
             org_name.push_str("'s Organization");
             owner = true;
-            create_organization_query(org_name.as_str(), json!({}), pool.clone()).map_err(|_| {
-                ServiceError::InternalServerError(
-                    "Could not create organization for user".to_string(),
-                )
-            })?
+            create_organization_query(org_name.as_str(), json!({}), pool.clone())
+                .await
+                .map_err(|_| {
+                    ServiceError::InternalServerError(
+                        "Could not create organization for user".to_string(),
+                    )
+                })?
         }
     };
 
