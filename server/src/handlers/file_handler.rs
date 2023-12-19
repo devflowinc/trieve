@@ -1,6 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
-    data::models::{Dataset, File, Pool, DatasetConfiguration},
+    data::models::{Dataset, DatasetConfiguration, File, Pool},
     errors::ServiceError,
     operators::file_operator::{
         convert_doc_to_html_query, delete_file_query, get_file_query, get_user_file_query,
@@ -68,8 +68,9 @@ pub async fn upload_file_handler(
     user: AdminOnly,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let document_upload_feature =
-        DatasetConfiguration::from_json(dataset.configuration.clone()).DOCUMENT_UPLOAD_FEATURE.unwrap_or(false);
+    let document_upload_feature = DatasetConfiguration::from_json(dataset.configuration.clone())
+        .DOCUMENT_UPLOAD_FEATURE
+        .unwrap_or(false);
 
     if document_upload_feature {
         return Err(
@@ -138,7 +139,9 @@ pub async fn get_file_handler(
     _user: LoggedUser,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let download_enabled = DatasetConfiguration::from_json(dataset.configuration).DOCUMENT_DOWNLOAD_FEATURE.unwrap_or(false);
+    let download_enabled = DatasetConfiguration::from_json(dataset.configuration)
+        .DOCUMENT_DOWNLOAD_FEATURE
+        .unwrap_or(false);
     if download_enabled {
         return Err(
             ServiceError::BadRequest("Document download feature is disabled".to_string()).into(),

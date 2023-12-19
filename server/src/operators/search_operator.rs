@@ -10,6 +10,7 @@ use crate::data::models::{
 use crate::data::schema::{self};
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::errors::ServiceError;
+use crate::get_env;
 use crate::handlers::card_handler::{
     ParsedQuery, ScoreCardDTO, SearchCardData, SearchCardQueryResponseBody, SearchCollectionsData,
     SearchCollectionsResult,
@@ -19,7 +20,6 @@ use crate::operators::qdrant_operator::{
     get_qdrant_connection, search_full_text_qdrant_query, search_semantic_qdrant_query,
 };
 use crate::{data::models::Pool, errors::DefaultError};
-use crate::get_env;
 use actix_web::web;
 use candle_core::Tensor;
 use chrono::NaiveDateTime;
@@ -827,9 +827,7 @@ pub async fn search_semantic_cards(
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
     let embedding_vector = create_embedding(
         &data.content,
-        DatasetConfiguration::from_json(
-            dataset.configuration.clone(),
-        ),
+        DatasetConfiguration::from_json(dataset.configuration.clone()),
     )
     .await?;
 
@@ -1015,9 +1013,7 @@ pub async fn search_hybrid_cards(
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
     let embedding_vector = create_embedding(
         &data.content,
-        DatasetConfiguration::from_json(
-            dataset.configuration.clone(),
-        ),
+        DatasetConfiguration::from_json(dataset.configuration.clone()),
     )
     .await?;
     let pool1 = pool.clone();
@@ -1158,9 +1154,7 @@ pub async fn search_semantic_collections(
 ) -> Result<SearchCollectionsResult, actix_web::Error> {
     let embedding_vector: Vec<f32> = create_embedding(
         &data.content,
-        DatasetConfiguration::from_json(
-            dataset.configuration.clone(),
-        ),
+        DatasetConfiguration::from_json(dataset.configuration.clone()),
     )
     .await?;
     let pool1 = pool.clone();

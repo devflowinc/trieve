@@ -533,7 +533,6 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(web::get().to(handlers::stripe_handler::direct_to_payment_link)),
                             ),
                     )
-            
             )
     })
     .bind(("0.0.0.0", 8090))?
