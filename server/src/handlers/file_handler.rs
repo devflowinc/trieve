@@ -1,6 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
-    data::models::{Dataset, File, Pool},
+    data::models::{Dataset, File, Pool, DatasetConfiguration},
     errors::ServiceError,
     operators::file_operator::{
         convert_doc_to_html_query, delete_file_query, get_file_query, get_user_file_query,
@@ -71,9 +71,9 @@ pub async fn upload_file_handler(
     app_mutex: web::Data<AppMutexStore>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let document_upload_feature =
-        std::env::var("DOCUMENT_UPLOAD_FEATURE").unwrap_or("off".to_string());
+        DatasetConfiguration::from_json(dataset.configuration.clone()).DOCUMENT_UPLOAD_FEATURE.unwrap_or(false);
 
-    if document_upload_feature != "on" {
+    if document_upload_feature {
         return Err(
             ServiceError::BadRequest("Document upload feature is disabled".to_string()).into(),
         );
@@ -141,8 +141,8 @@ pub async fn get_file_handler(
     _user: LoggedUser,
     dataset: Dataset,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let download_enabled = std::env::var("DOCUMENT_DOWNLOAD_FEATURE").unwrap_or("off".to_string());
-    if download_enabled != "on" {
+    let download_enabled = DatasetConfiguration::from_json(dataset.configuration).DOCUMENT_DOWNLOAD_FEATURE.unwrap_or(false);
+    if download_enabled {
         return Err(
             ServiceError::BadRequest("Document download feature is disabled".to_string()).into(),
         );
