@@ -372,7 +372,9 @@ pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<Strin
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let dataset_config = DatasetConfiguration::from_json(dataset.configuration.clone());
-    let base_url = dataset_config.EMBEDDING_BASE_URL.unwrap_or("https://api.openai.com/v1".into());
+    let base_url = dataset_config
+        .EMBEDDING_BASE_URL
+        .unwrap_or("https://api.openai.com/v1".into());
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
@@ -416,7 +418,10 @@ pub async fn stream_response(
         .collect();
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
-    let base_url = dataset_config.EMBEDDING_BASE_URL.clone().unwrap_or("https://api.openai.com/v1".into());
+    let base_url = dataset_config
+        .EMBEDDING_BASE_URL
+        .clone()
+        .unwrap_or("https://api.openai.com/v1".into());
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
@@ -489,8 +494,7 @@ pub async fn stream_response(
             .content
             .clone()
             .unwrap_or("".to_string());
-        let embedding_vector =
-            create_embedding(query.as_str(), dataset_config.clone()).await?;
+        let embedding_vector = create_embedding(query.as_str(), dataset_config.clone()).await?;
 
         let search_card_query_results = retrieve_qdrant_points_query(
             Some(embedding_vector),
@@ -661,8 +665,8 @@ pub async fn create_suggested_queries_handler(
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let dataset_config = DatasetConfiguration::from_json(dataset.configuration);
     let base_url = dataset_config
-            .EMBEDDING_BASE_URL
-            .unwrap_or("https://api.openai.com/v1".into());
+        .EMBEDDING_BASE_URL
+        .unwrap_or("https://api.openai.com/v1".into());
 
     let client = Client {
         api_key: openai_api_key,
