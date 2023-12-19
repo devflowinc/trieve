@@ -6,7 +6,6 @@ use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::operators::model_operator::create_embedding;
 use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::operators::search_operator::get_metadata_query;
-use crate::AppMutexStore;
 use crate::{
     data::models::{CardMetadata, Pool},
     errors::DefaultError,
@@ -425,7 +424,6 @@ enum TransactionResult {
 pub async fn delete_card_metadata_query(
     card_uuid: uuid::Uuid,
     qdrant_point_id: Option<uuid::Uuid>,
-    app_mutex: web::Data<AppMutexStore>,
     dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
@@ -603,10 +601,9 @@ pub async fn delete_card_metadata_query(
 
                 let new_embedding_vector = create_embedding(
                     collision_content.as_str(),
-                    app_mutex,
-                    Some(DatasetConfiguration::from_json(
+                    DatasetConfiguration::from_json(
                         dataset.configuration.clone(),
-                    )),
+                    ),
                 )
                 .await
                 .map_err(|_e| DefaultError {
