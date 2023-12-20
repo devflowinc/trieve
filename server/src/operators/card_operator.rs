@@ -175,21 +175,7 @@ pub fn get_collided_cards_query(
             card_collisions_columns::card_collisions
                 .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
         )
-        .select((
-            card_metadata_columns::id,
-            card_metadata_columns::content,
-            card_metadata_columns::link,
-            card_metadata_columns::author_id,
-            card_metadata_columns::qdrant_point_id,
-            card_metadata_columns::created_at,
-            card_metadata_columns::updated_at,
-            card_metadata_columns::tag_set,
-            card_metadata_columns::card_html,
-            card_metadata_columns::metadata,
-            card_metadata_columns::tracking_id,
-            card_metadata_columns::time_stamp,
-            card_metadata_columns::dataset_id,
-        ))
+        .select(CardMetadata::as_select())
         .filter(
             card_collisions_columns::collision_qdrant_id
                 .eq_any(point_ids.clone())
