@@ -161,6 +161,7 @@ pub fn get_user_with_cards_by_id_query(
                 metadata: metadata.metadata.clone(),
                 tracking_id: metadata.tracking_id.clone(),
                 time_stamp: metadata.time_stamp,
+                weight: metadata.weight
             }
         })
         .collect();

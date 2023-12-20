@@ -345,6 +345,7 @@ pub async fn create_cards_with_handler(
             tracking_id: None,
             time_stamp: time_stamp.clone(),
             card_vector: None,
+            weight: None,
         };
         let web_json_create_card_data = web::Json(create_card_data);
 

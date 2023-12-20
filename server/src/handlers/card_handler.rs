@@ -76,6 +76,7 @@ pub struct CreateCardData {
     pub tracking_id: Option<String>,
     pub collection_id: Option<uuid::Uuid>,
     pub time_stamp: Option<String>,
+    pub weight: Option<f64>,
 }
 
 pub fn convert_html(html: &str) -> String {
@@ -233,6 +234,7 @@ pub async fn create_card(
                 })
                 .transpose()?,
             dataset.id,
+            card.weight.unwrap_or(1.0),
         );
         card_metadata = web::block(move || {
             insert_duplicate_card_metadata_query(
@@ -269,6 +271,7 @@ pub async fn create_card(
                 })
                 .transpose()?,
             dataset.id,
+            card.weight.unwrap_or(1.0),
         );
 
         card_metadata = insert_card_metadata_query(card_metadata, card.file_uuid, pool1)
@@ -383,6 +386,7 @@ pub struct UpdateCardData {
     metadata: Option<serde_json::Value>,
     tracking_id: Option<String>,
     time_stamp: Option<String>,
+    weight: Option<f64>,
 }
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct CardHtmlUpdateError {
@@ -454,6 +458,7 @@ pub async fn update_card(
             })
             .transpose()?,
         dataset_id,
+        card.weight.unwrap_or(1.0),
     );
     let metadata1 = metadata.clone();
     update_card_metadata_query(metadata, None, dataset_id, pool2)
@@ -485,6 +490,7 @@ pub struct UpdateCardByTrackingIdData {
     metadata: Option<serde_json::Value>,
     tracking_id: String,
     time_stamp: Option<String>,
+    weight: Option<f64>,
 }
 
 #[utoipa::path(
@@ -556,6 +562,7 @@ pub async fn update_card_by_tracking_id(
             })
             .transpose()?,
         dataset.id,
+        card.weight.unwrap_or(1.0),
     );
     let metadata1 = metadata.clone();
     update_card_metadata_query(metadata, None, dataset.id, pool2)
@@ -587,6 +594,7 @@ pub struct SearchCardData {
     pub tag_set: Option<Vec<String>>,
     pub time_range: Option<(String, String)>,
     pub filters: Option<serde_json::Value>,
+    pub date_bias: Option<bool>,
     pub cross_encoder: Option<bool>,
     pub weights: Option<(f64, f64)>,
 }
@@ -700,6 +708,7 @@ pub struct SearchCollectionsData {
     pub collection_id: uuid::Uuid,
     #[param(inline)]
     pub search_type: String,
+    pub date_bias: Option<bool>,
 }
 
 impl From<SearchCollectionsData> for SearchCardData {
@@ -713,6 +722,7 @@ impl From<SearchCollectionsData> for SearchCardData {
             cross_encoder: None,
             weights: None,
             search_type: data.search_type,
+            date_bias: data.date_bias,
         }
     }
 }

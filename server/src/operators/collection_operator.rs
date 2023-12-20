@@ -367,6 +367,7 @@ pub fn get_bookmarks_for_collection_query(
                     card_metadata_columns::metadata,
                     card_metadata_columns::tracking_id,
                     card_metadata_columns::time_stamp,
+                    card_metadata_columns::weight,
                     sql::<Int8>("count(*) OVER() AS full_count"),
                 ),
                 card_collisions_columns::collision_qdrant_id.nullable(),

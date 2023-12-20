@@ -561,6 +561,7 @@ pub fn get_metadata_query(
                 metadata: metadata.metadata,
                 tracking_id: metadata.tracking_id,
                 time_stamp: metadata.time_stamp,
+                weight: metadata.weight
             }
         })
         .collect();
@@ -744,7 +745,7 @@ pub async fn search_full_text_collection_query(
 /// Retrieve cards from point ids, DOES NOT GUARD AGAINST DATASET ACCESS PERMISSIONS
 pub async fn retrieve_cards_from_point_ids(
     search_card_query_results: SearchCardQueryResult,
-    data: web::Json<SearchCardData>,
+    data: &web::Json<SearchCardData>,
     pool: web::Data<Pool>,
 ) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
     let point_ids = search_card_query_results
@@ -781,6 +782,7 @@ pub async fn retrieve_cards_from_point_ids(
                     metadata: None,
                     tracking_id: None,
                     time_stamp: None,
+                    weight: 1.0,
                 },
             };
 
@@ -803,6 +805,34 @@ pub async fn retrieve_cards_from_point_ids(
         score_cards,
         total_card_pages: search_card_query_results.total_card_pages,
     })
+}
+
+pub fn rerank_cards(cards: Vec<ScoreCardDTO>, date_bias: Option<bool>) -> Vec<ScoreCardDTO> {
+    let mut reranked_cards = Vec::new();
+    cards.into_iter().for_each(|mut card| {
+        card.score *= card.metadata[0].weight;
+        reranked_cards.push(card);
+    });
+
+    if date_bias.is_some() && date_bias.unwrap() {
+        reranked_cards.iter_mut().for_each(|card| {
+            if let Some(time_stamp) = card.metadata[0].time_stamp {
+                let time_stamp = time_stamp.timestamp();
+                let now = chrono::Utc::now().timestamp();
+                let time_diff = now - time_stamp;
+                let time_diff = time_diff as f64 / 60.0 / 60.0 / 24.0;
+                card.score *= f64::max(0.0, 1.0 - time_diff * 0.1);
+            }
+        });
+    }
+
+    reranked_cards.sort_by(|a, b| {
+        b.score
+            .partial_cmp(&a.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    reranked_cards
 }
 
 pub async fn search_semantic_cards(
@@ -829,8 +859,10 @@ pub async fn search_semantic_cards(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let result_cards =
-        retrieve_cards_from_point_ids(search_card_query_results, data, pool.clone()).await?;
+    let mut result_cards =
+        retrieve_cards_from_point_ids(search_card_query_results, &data, pool.clone()).await?;
+
+    result_cards.score_cards = rerank_cards(result_cards.score_cards, data.date_bias);
 
     Ok(result_cards)
 }
@@ -862,7 +894,10 @@ pub async fn search_full_text_cards(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let result_cards = retrieve_cards_from_point_ids(search_card_query_results, data, pool).await?;
+    let mut result_cards =
+        retrieve_cards_from_point_ids(search_card_query_results, &data, pool).await?;
+
+    result_cards.score_cards = rerank_cards(result_cards.score_cards, data.date_bias);
 
     Ok(result_cards)
 }
@@ -1062,6 +1097,7 @@ pub async fn search_hybrid_cards(
                     metadata: None,
                     tracking_id: None,
                     time_stamp: None,
+                    weight: 1.0,
                 },
             };
 
@@ -1081,47 +1117,49 @@ pub async fn search_hybrid_cards(
         })
         .collect();
 
-    if data.cross_encoder.unwrap_or(false) {
+    let mut result_cards = if data.cross_encoder.unwrap_or(false) {
         let combined_results = semantic_score_cards
             .into_iter()
             .chain(full_text_handler_results.score_cards.into_iter())
             .unique_by(|score_card| score_card.metadata[0].id)
             .collect::<Vec<ScoreCardDTO>>();
-        Ok(SearchCardQueryResponseBody {
+        SearchCardQueryResponseBody {
             score_cards: cross_encoder(combined_results, data.content.clone(), cross_encoder_init)?,
             total_card_pages: search_card_query_results.total_card_pages,
-        })
+        }
     } else if let Some(weights) = data.weights {
         if weights.0 == 1.0 {
-            Ok(SearchCardQueryResponseBody {
+            SearchCardQueryResponseBody {
                 score_cards: semantic_score_cards,
                 total_card_pages: search_card_query_results.total_card_pages,
-            })
+            }
         } else if weights.1 == 1.0 {
-            Ok(SearchCardQueryResponseBody {
+            SearchCardQueryResponseBody {
                 score_cards: full_text_handler_results.score_cards,
                 total_card_pages: full_text_handler_results.total_card_pages,
-            })
+            }
         } else {
-            Ok(SearchCardQueryResponseBody {
+            SearchCardQueryResponseBody {
                 score_cards: reciprocal_rank_fusion(
                     semantic_score_cards,
                     full_text_handler_results.score_cards,
                     data.weights,
                 ),
                 total_card_pages: search_card_query_results.total_card_pages,
-            })
+            }
         }
     } else {
-        Ok(SearchCardQueryResponseBody {
+        SearchCardQueryResponseBody {
             score_cards: reciprocal_rank_fusion(
                 semantic_score_cards,
                 full_text_handler_results.score_cards,
                 data.weights,
             ),
             total_card_pages: search_card_query_results.total_card_pages,
-        })
-    }
+        }
+    };
+    result_cards.score_cards = rerank_cards(result_cards.score_cards, data.date_bias);
+    Ok(result_cards)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1167,7 +1205,7 @@ pub async fn search_semantic_collections(
     let collided_cards = get_collided_cards_query(point_ids_1, dataset_id, pool1)
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let score_cards: Vec<ScoreCardDTO> = search_card_query_results
+    let mut score_cards: Vec<ScoreCardDTO> = search_card_query_results
         .search_results
         .iter()
         .map(|search_result| {
@@ -1191,6 +1229,7 @@ pub async fn search_semantic_collections(
                     metadata: None,
                     tracking_id: None,
                     time_stamp: None,
+                    weight: 1.0,
                 },
             };
             card = find_relevant_sentence(card.clone(), data.content.clone()).unwrap_or(card);
@@ -1221,6 +1260,7 @@ pub async fn search_semantic_collections(
         })
         .collect();
 
+    score_cards = rerank_cards(score_cards, data.date_bias);
     Ok(SearchCollectionsResult {
         bookmarks: score_cards,
         collection,
@@ -1254,12 +1294,14 @@ pub async fn search_full_text_collections(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let result_cards = retrieve_cards_from_point_ids(
+    let mut result_cards = retrieve_cards_from_point_ids(
         search_card_query_results,
-        web::Json(data.clone().into()),
+        &web::Json(data.clone().into()),
         pool1,
     )
     .await?;
+
+    result_cards.score_cards = rerank_cards(result_cards.score_cards, data.date_bias);
 
     Ok(SearchCollectionsResult {
         bookmarks: result_cards.score_cards,

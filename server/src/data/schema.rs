@@ -57,6 +57,7 @@ diesel::table! {
         tracking_id -> Nullable<Text>,
         time_stamp -> Nullable<Timestamp>,
         dataset_id -> Uuid,
+        weight -> Float8,
     }
 }
 
