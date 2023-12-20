@@ -1,6 +1,6 @@
 use crate::{
     data::models::{
-        Organization, OrganizationWithSubscriptionAndPlan, Pool, StripePlan, StripeSubscription,
+        Organization, OrganizationWithSubAndPlan, Pool, StripePlan, StripeSubscription,
     },
     errors::DefaultError,
     operators::stripe_operator::refresh_redis_org_plan_sub,
@@ -69,7 +69,7 @@ pub async fn update_organization_query(
 pub async fn get_organization_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Organization, DefaultError> {
+) -> Result<OrganizationWithSubAndPlan, DefaultError> {
     let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
     let redis_client = redis::Client::open(redis_url).map_err(|_| DefaultError {
         message: "Could not create redis client",
@@ -89,13 +89,13 @@ pub async fn get_organization_by_id_query(
             message: "Could not get dataset from redis",
         });
 
-    let organization = match redis_organization {
+    let org_plan_sub = match redis_organization {
         Ok(organization_str) => {
             let org_with_plan_sub =
-                serde_json::from_str::<OrganizationWithSubscriptionAndPlan>(&organization_str)
+                serde_json::from_str::<OrganizationWithSubAndPlan>(&organization_str)
                     .expect("Could not deserialize org with sub and plan from redis");
 
-            Organization::from_org_with_plan_sub(org_with_plan_sub)
+            org_with_plan_sub
         }
         Err(_) => {
             use crate::data::schema::organizations::dsl as organizations_columns;
@@ -127,8 +127,8 @@ pub async fn get_organization_by_id_query(
                         message: "Could not find organizations",
                     })?;
 
-            let org_with_plan_sub: OrganizationWithSubscriptionAndPlan =
-                OrganizationWithSubscriptionAndPlan::from_components(
+            let org_with_plan_sub: OrganizationWithSubAndPlan =
+                OrganizationWithSubAndPlan::from_components(
                     org_plan_sub.0,
                     org_plan_sub.1,
                     org_plan_sub.2,
@@ -158,11 +158,11 @@ pub async fn get_organization_by_id_query(
                     message: "Could not set organization in redis",
                 })?;
 
-            Organization::from_org_with_plan_sub(org_with_plan_sub)
+            org_with_plan_sub
         }
     };
 
-    Ok(organization)
+    Ok(org_plan_sub)
 }
 
 pub async fn get_org_from_dataset_id_query(

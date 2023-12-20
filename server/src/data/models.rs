@@ -848,6 +848,21 @@ impl DatasetConfiguration {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct DatasetAndOrgWithSubAndPlan {
+    pub dataset: Dataset,
+    pub organization: OrganizationWithSubAndPlan,
+}
+
+impl DatasetAndOrgWithSubAndPlan {
+    pub fn from_components(dataset: Dataset, organization: OrganizationWithSubAndPlan) -> Self {
+        DatasetAndOrgWithSubAndPlan {
+            dataset,
+            organization,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[diesel(table_name = organizations)]
 pub struct Organization {
@@ -871,7 +886,7 @@ impl Organization {
         }
     }
 
-    pub fn from_org_with_plan_sub(org_plan_sub: OrganizationWithSubscriptionAndPlan) -> Self {
+    pub fn from_org_with_plan_sub(org_plan_sub: OrganizationWithSubAndPlan) -> Self {
         Organization {
             id: org_plan_sub.id,
             name: org_plan_sub.name,
@@ -989,7 +1004,7 @@ impl StripeSubscription {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-pub struct OrganizationWithSubscriptionAndPlan {
+pub struct OrganizationWithSubAndPlan {
     pub id: uuid::Uuid,
     pub name: String,
     pub configuration: serde_json::Value,
@@ -1000,13 +1015,13 @@ pub struct OrganizationWithSubscriptionAndPlan {
     pub subscription: Option<StripeSubscription>,
 }
 
-impl OrganizationWithSubscriptionAndPlan {
+impl OrganizationWithSubAndPlan {
     pub fn from_components(
         organization: Organization,
         plan: Option<StripePlan>,
         subscription: Option<StripeSubscription>,
     ) -> Self {
-        OrganizationWithSubscriptionAndPlan {
+        OrganizationWithSubAndPlan {
             id: organization.id,
             name: organization.name,
             configuration: organization.configuration,

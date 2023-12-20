@@ -1,6 +1,6 @@
 use super::auth_handler::OwnerOnly;
 use crate::{
-    data::models::{Dataset, Invitation, Pool},
+    data::models::{Dataset, DatasetAndOrgWithSubAndPlan, Invitation, Pool},
     errors::{DefaultError, ServiceError},
     operators::invitation_operator::{create_invitation_query, send_invitation},
 };
@@ -39,7 +39,7 @@ pub async fn post_invitation(
     request: HttpRequest,
     invitation_data: web::Json<InvitationData>,
     pool: web::Data<Pool>,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let invitation_data = invitation_data.into_inner();
@@ -64,7 +64,7 @@ pub async fn post_invitation(
     let invitation = create_invitation(
         host_name,
         email,
-        dataset,
+        dataset_org_plan_sub.dataset,
         invitation_data.redirect_uri,
         pool,
     )
