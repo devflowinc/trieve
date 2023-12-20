@@ -1,3 +1,4 @@
+from typing import Optional
 from angle_emb import AnglE, Prompts
 import uvicorn
 import torch
@@ -61,8 +62,8 @@ def compute_vector(text, tokenizer, model):
 class EncodeRequest(BaseModel):
     input: str
     model: str
-    encoding_format: str
-    user: str
+    encoding_format: Optional[str] = None
+    user: Optional[str] = None
 
 
 @app.post("/embeddings")
@@ -77,7 +78,7 @@ async def encode(encodingRequest: EncodeRequest):
             "data": [
                 {
                     "object": "embedding",
-                    "embedding": sentence_embeddings.tolist(),
+                    "embedding": sentence_embeddings.tolist()[0],
                     "index": 0,
                 }
             ],
