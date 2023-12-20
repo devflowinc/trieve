@@ -49,22 +49,18 @@ pub async fn get_dataset_by_id_query(
 ) -> Result<Dataset, ServiceError> {
     // Check cache first
     let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
-
-    let client = redis::Client::open(redis_url)
+    let redis_client = redis::Client::open(redis_url)
         .map_err(|_| ServiceError::BadRequest("Could not create redis client".to_string()))?;
-
-    let mut redis_conn = client
+    let mut redis_conn = redis_client
         .get_async_connection()
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get redis connection".to_string()))?;
 
-    let redis_dataset: Result<String, ServiceError> = {
-        redis::cmd("GET")
-            .arg(format!("dataset:{}", id))
-            .query_async(&mut redis_conn)
-            .await
-            .map_err(|_| ServiceError::BadRequest("Could not get dataset from redis".to_string()))
-    };
+    let redis_dataset: Result<String, ServiceError> = redis::cmd("GET")
+        .arg(format!("dataset:{}", id))
+        .query_async(&mut redis_conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get dataset from redis".to_string()));
 
     match redis_dataset {
         Ok(dataset) => Ok(serde_json::from_str::<Dataset>(&dataset).map_err(|_| {
