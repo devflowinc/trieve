@@ -1,7 +1,7 @@
 use super::{auth_handler::LoggedUser, card_handler::ParsedQuery};
 use crate::{
     data::models::{self, DatasetAndOrgWithSubAndPlan, DatasetConfiguration},
-    data::models::{CardMetadataWithFileData, Pool},
+    data::models::{CardMetadataWithFileData, Dataset, Pool},
     errors::{DefaultError, ServiceError},
     get_env,
     operators::{
@@ -122,7 +122,7 @@ pub async fn create_message_completion_handler(
         previous_messages,
         user.id,
         topic_id,
-        dataset_org_plan_sub.dataset.id,
+        dataset_org_plan_sub.dataset,
         pool4,
     )
     .await
@@ -295,8 +295,7 @@ pub async fn regenerate_message_handler(
             previous_messages,
             user.id,
             topic_id,
-            dataset_id,
-            dataset,
+            dataset_org_plan_sub.dataset,
             pool3,
         )
         .await;
@@ -353,8 +352,7 @@ pub async fn regenerate_message_handler(
         previous_messages_to_regenerate,
         user.id,
         topic_id,
-        dataset_id,
-        dataset,
+        dataset_org_plan_sub.dataset,
         pool3,
     )
     .await
@@ -424,7 +422,6 @@ pub async fn stream_response(
     messages: Vec<models::Message>,
     user_id: uuid::Uuid,
     topic_id: uuid::Uuid,
-    dataset_id: uuid::Uuid,
     dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -527,7 +524,7 @@ pub async fn stream_response(
                 quote_words: None,
                 negated_words: None,
             },
-            dataset_id,
+            dataset.id,
             pool.clone(),
         )
         .await
@@ -630,7 +627,7 @@ pub async fn stream_response(
             "assistant".to_string(),
             None,
             Some(chunk_v.len().try_into().unwrap()),
-            dataset_id,
+            dataset.id,
         );
 
         let _ = create_message_query(new_message, user_id, &pool);
@@ -678,11 +675,12 @@ pub struct SuggestedQueriesResponse {
 )]
 pub async fn create_suggested_queries_handler(
     data: web::Json<SuggestedQueriesRequest>,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, ServiceError> {
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
-    let dataset_config = DatasetConfiguration::from_json(dataset.configuration);
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.configuration);
     let base_url = dataset_config
         .EMBEDDING_BASE_URL
         .unwrap_or("https://api.openai.com/v1".into());
