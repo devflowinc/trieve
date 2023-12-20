@@ -1,6 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
-    data::models::{Dataset, DatasetConfiguration, File, Pool},
+    data::models::{DatasetAndOrgWithSubAndPlan, DatasetConfiguration, File, Pool},
     errors::ServiceError,
     operators::file_operator::{
         convert_doc_to_html_query, delete_file_query, get_file_query, get_user_file_query,
@@ -66,7 +66,7 @@ pub async fn upload_file_handler(
     data: web::Json<UploadFileData>,
     pool: web::Data<Pool>,
     user: AdminOnly,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let document_upload_feature = DatasetConfiguration::from_json(dataset.configuration.clone())
         .DOCUMENT_UPLOAD_FEATURE
@@ -111,7 +111,7 @@ pub async fn upload_file_handler(
         upload_file_data.create_cards,
         upload_file_data.time_stamp,
         user.0,
-        dataset,
+        dataset_org_plan_sub,
         pool_inner,
     )
     .await
@@ -137,7 +137,7 @@ pub async fn get_file_handler(
     file_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     _user: LoggedUser,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let download_enabled = DatasetConfiguration::from_json(dataset.configuration)
         .DOCUMENT_DOWNLOAD_FEATURE
@@ -148,7 +148,7 @@ pub async fn get_file_handler(
         );
     }
 
-    let file = get_file_query(file_id.into_inner(), dataset.id, pool).await?;
+    let file = get_file_query(file_id.into_inner(), dataset_org_plan_sub.dataset.id, pool).await?;
 
     Ok(HttpResponse::Ok().json(file))
 }
@@ -168,14 +168,14 @@ pub async fn get_file_handler(
 )]
 pub async fn get_user_files_handler(
     user_id: web::Path<uuid::Uuid>,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     _user: Option<LoggedUser>,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_id = user_id.into_inner();
 
-    let files = get_user_file_query(user_id, dataset.id, pool).await?;
+    let files = get_user_file_query(user_id, dataset_org_plan_sub.dataset.id, pool).await?;
 
     Ok(HttpResponse::Ok().json(files))
 }
@@ -197,9 +197,9 @@ pub async fn delete_file_handler(
     file_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     _user: AdminOnly,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    delete_file_query(file_id.into_inner(), dataset.id, pool).await?;
+    delete_file_query(file_id.into_inner(), dataset_org_plan_sub.dataset.id, pool).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }

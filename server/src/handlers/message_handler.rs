@@ -1,6 +1,6 @@
 use super::{auth_handler::LoggedUser, card_handler::ParsedQuery};
 use crate::{
-    data::models::{self, Dataset, DatasetConfiguration},
+    data::models::{self, DatasetAndOrgWithSubAndPlan, DatasetConfiguration},
     data::models::{CardMetadataWithFileData, Pool},
     errors::{DefaultError, ServiceError},
     get_env,
@@ -52,7 +52,7 @@ pub struct CreateMessageData {
 pub async fn create_message_completion_handler(
     data: web::Json<CreateMessageData>,
     user: LoggedUser,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let create_message_data = data.into_inner();
@@ -69,17 +69,18 @@ pub async fn create_message_completion_handler(
         "user".to_string(),
         None,
         None,
-        dataset.id,
+        dataset_org_plan_sub.dataset.id,
     );
 
-    let user_topic =
-        web::block(move || user_owns_topic_query(user.id, topic_id, dataset.id, &pool1))
-            .await?
-            .map_err(|_e| ServiceError::Unauthorized)?;
+    let user_topic = web::block(move || {
+        user_owns_topic_query(user.id, topic_id, dataset_org_plan_sub.dataset.id, &pool1)
+    })
+    .await?
+    .map_err(|_e| ServiceError::Unauthorized)?;
 
     // get the previous messages
     let mut previous_messages =
-        web::block(move || get_topic_messages(topic_id, dataset.id, &pool2))
+        web::block(move || get_topic_messages(topic_id, dataset_org_plan_sub.dataset.id, &pool2))
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -109,7 +110,7 @@ pub async fn create_message_completion_handler(
             previous_messages,
             new_message,
             user.id,
-            dataset.id,
+            dataset_org_plan_sub.dataset.id,
             &pool3,
         )
     })
@@ -121,8 +122,7 @@ pub async fn create_message_completion_handler(
         previous_messages,
         user.id,
         topic_id,
-        dataset.id,
-        dataset,
+        dataset_org_plan_sub.dataset.id,
         pool4,
     )
     .await
@@ -142,19 +142,27 @@ pub async fn create_message_completion_handler(
 pub async fn get_all_topic_messages(
     user: LoggedUser,
     messages_topic_id: web::Path<uuid::Uuid>,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let second_pool = pool.clone();
     let topic_id: uuid::Uuid = messages_topic_id.into_inner();
     // check if the user owns the topic
-    let _user_topic =
-        web::block(move || user_owns_topic_query(user.id, topic_id, dataset.id, &second_pool))
-            .await?
-            .map_err(|_e| ServiceError::Unauthorized)?;
+    let _user_topic = web::block(move || {
+        user_owns_topic_query(
+            user.id,
+            topic_id,
+            dataset_org_plan_sub.dataset.id,
+            &second_pool,
+        )
+    })
+    .await?
+    .map_err(|_e| ServiceError::Unauthorized)?;
 
-    let messages =
-        web::block(move || get_messages_for_topic_query(topic_id, dataset.id, &pool)).await?;
+    let messages = web::block(move || {
+        get_messages_for_topic_query(topic_id, dataset_org_plan_sub.dataset.id, &pool)
+    })
+    .await?;
 
     match messages {
         Ok(messages) => Ok(HttpResponse::Ok().json(messages)),
@@ -188,7 +196,7 @@ pub struct EditMessageData {
 pub async fn edit_message_handler(
     data: web::Json<EditMessageData>,
     user: LoggedUser,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
@@ -198,7 +206,12 @@ pub async fn edit_message_handler(
     let third_pool = pool.clone();
 
     let message_from_sort_order_result = web::block(move || {
-        get_message_by_sort_for_topic_query(topic_id, dataset.id, message_sort_order, &pool)
+        get_message_by_sort_for_topic_query(
+            topic_id,
+            dataset_org_plan_sub.dataset.id,
+            message_sort_order,
+            &pool,
+        )
     })
     .await?;
 
@@ -210,7 +223,13 @@ pub async fn edit_message_handler(
     };
 
     let _ = web::block(move || {
-        delete_message_query(&user.id, message_id, topic_id, dataset.id, &second_pool)
+        delete_message_query(
+            &user.id,
+            message_id,
+            topic_id,
+            dataset_org_plan_sub.dataset.id,
+            &second_pool,
+        )
     })
     .await?;
 
@@ -220,7 +239,7 @@ pub async fn edit_message_handler(
             topic_id,
         }),
         user,
-        dataset,
+        dataset_org_plan_sub,
         third_pool,
     )
     .await
@@ -240,14 +259,14 @@ pub async fn edit_message_handler(
 pub async fn regenerate_message_handler(
     data: web::Json<RegenerateMessageData>,
     user: LoggedUser,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
     let pool1 = pool.clone();
     let pool2 = pool.clone();
     let pool3 = pool.clone();
-    let dataset_id = dataset.id;
+    let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let user_topic =
         web::block(move || user_owns_topic_query(user.id, topic_id, dataset_id, &pool1))

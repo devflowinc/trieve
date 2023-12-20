@@ -1,6 +1,6 @@
 use super::auth_handler::LoggedUser;
 use crate::{
-    data::models::{Dataset, FileUploadCompletedNotificationWithName, Pool},
+    data::models::{DatasetAndOrgWithSubAndPlan, FileUploadCompletedNotificationWithName, Pool},
     errors::ServiceError,
     operators::notification_operator::{
         get_notifications_query, mark_all_notifications_as_read_query,
@@ -32,16 +32,22 @@ pub enum Notification {
 )]
 pub async fn get_notifications(
     user: LoggedUser,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     page: web::Path<i64>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_id = user.id;
 
-    let notifications =
-        web::block(move || get_notifications_query(user_id, dataset.id, page.into_inner(), pool))
-            .await?
-            .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+    let notifications = web::block(move || {
+        get_notifications_query(
+            user_id,
+            dataset_org_plan_sub.dataset.id,
+            page.into_inner(),
+            pool,
+        )
+    })
+    .await?
+    .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
 
     Ok(HttpResponse::Ok().json(notifications))
 }
@@ -64,7 +70,7 @@ pub struct NotificationId {
 )]
 pub async fn mark_notification_as_read(
     user: LoggedUser,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     notification_id: web::Json<NotificationId>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -73,7 +79,7 @@ pub async fn mark_notification_as_read(
     web::block(move || {
         mark_notification_as_read_query(
             user_id,
-            dataset.id,
+            dataset_org_plan_sub.dataset.id,
             notification_id.into_inner().notification_id,
             pool,
         )
@@ -96,14 +102,16 @@ pub async fn mark_notification_as_read(
 )]
 pub async fn mark_all_notifications_as_read(
     user: LoggedUser,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_id = user.id;
 
-    web::block(move || mark_all_notifications_as_read_query(user_id, dataset.id, pool))
-        .await?
-        .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+    web::block(move || {
+        mark_all_notifications_as_read_query(user_id, dataset_org_plan_sub.dataset.id, pool)
+    })
+    .await?
+    .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
 
     Ok(HttpResponse::NoContent().into())
 }

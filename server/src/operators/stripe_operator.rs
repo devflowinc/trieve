@@ -1,6 +1,6 @@
 use crate::{
     data::models::{
-        Organization, OrganizationWithSubscriptionAndPlan, Pool, StripePlan, StripeSubscription,
+        Organization, OrganizationWithSubAndPlan, Pool, StripePlan, StripeSubscription,
     },
     errors::DefaultError,
 };
@@ -45,7 +45,7 @@ pub async fn refresh_redis_org_plan_sub(
             .map_err(|_| DefaultError {
                 message: "Could not find organizations",
             })?;
-    let org_plan_sub = OrganizationWithSubscriptionAndPlan::from_components(
+    let org_plan_sub = OrganizationWithSubAndPlan::from_components(
         org_plan_sub.0,
         org_plan_sub.1,
         org_plan_sub.2,

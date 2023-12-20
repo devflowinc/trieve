@@ -2,21 +2,12 @@ use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
     data::models::{
         CardCollection, CardCollectionAndFile, CardCollectionBookmark, CardMetadataWithFileData,
-        Dataset, DatasetConfiguration, Pool,
+        DatasetAndOrgWithSubAndPlan, DatasetConfiguration, Pool,
     },
     errors::ServiceError,
     operators::{card_operator::get_collided_cards_query, collection_operator::*},
 };
-use actix_web::{
-    web::{self, Bytes},
-    HttpResponse,
-};
-use crossbeam_channel::unbounded;
-use futures_util::StreamExt;
-use openai_dive::v1::{
-    api::Client,
-    resources::chat::{ChatCompletionParameters, ChatMessage, Role},
-};
+use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use utoipa::ToSchema;
@@ -59,13 +50,18 @@ pub struct CreateCardCollectionData {
 pub async fn create_card_collection(
     body: web::Json<CreateCardCollectionData>,
     user: AdminOnly,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let name = body.name.clone();
     let description = body.description.clone();
 
-    let collection = CardCollection::from_details(user.0.id, name, description, dataset.id);
+    let collection = CardCollection::from_details(
+        user.0.id,
+        name,
+        description,
+        dataset_org_plan_sub.dataset.id,
+    );
     {
         let collection = collection.clone();
         web::block(move || create_collection_query(collection, pool))
@@ -104,7 +100,7 @@ pub struct UserCollectionQuery {
 )]
 pub async fn get_specific_user_card_collections(
     user_and_page: web::Path<UserCollectionQuery>,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -112,7 +108,7 @@ pub async fn get_specific_user_card_collections(
         get_collections_for_specific_user_query(
             user_and_page.user_id,
             user_and_page.page,
-            dataset.id,
+            dataset_org_plan_sub.dataset.id,
             pool,
         )
     })
@@ -157,11 +153,16 @@ pub async fn get_specific_user_card_collections(
 pub async fn get_logged_in_user_card_collections(
     user: LoggedUser,
     page: web::Path<u64>,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let collections = web::block(move || {
-        get_collections_for_logged_in_user_query(user.id, page.into_inner(), dataset.id, pool)
+        get_collections_for_logged_in_user_query(
+            user.id,
+            page.into_inner(),
+            dataset_org_plan_sub.dataset.id,
+            pool,
+        )
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -205,17 +206,25 @@ pub struct DeleteCollectionData {
 pub async fn delete_card_collection(
     data: web::Json<DeleteCollectionData>,
     pool: web::Data<Pool>,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool2 = pool.clone();
     let collection_id = data.collection_id;
 
-    user_owns_collection(user.0.id, collection_id, dataset.id, pool).await?;
+    user_owns_collection(
+        user.0.id,
+        collection_id,
+        dataset_org_plan_sub.dataset.id,
+        pool,
+    )
+    .await?;
 
-    web::block(move || delete_collection_by_id_query(collection_id, dataset.id, pool2))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    web::block(move || {
+        delete_collection_by_id_query(collection_id, dataset_org_plan_sub.dataset.id, pool2)
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -241,7 +250,7 @@ pub struct UpdateCardCollectionData {
 pub async fn update_card_collection(
     body: web::Json<UpdateCardCollectionData>,
     pool: web::Data<Pool>,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let name = body.name.clone();
@@ -250,10 +259,22 @@ pub async fn update_card_collection(
 
     let pool2 = pool.clone();
 
-    let collection = user_owns_collection(user.0.id, collection_id, dataset.id, pool).await?;
+    let collection = user_owns_collection(
+        user.0.id,
+        collection_id,
+        dataset_org_plan_sub.dataset.id,
+        pool,
+    )
+    .await?;
 
     web::block(move || {
-        update_card_collection_query(collection, name, description, dataset.id, pool2)
+        update_card_collection_query(
+            collection,
+            name,
+            description,
+            dataset_org_plan_sub.dataset.id,
+            pool2,
+        )
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -283,14 +304,14 @@ pub struct AddCardToCollectionData {
 pub async fn add_bookmark(
     body: web::Json<AddCardToCollectionData>,
     collection_id: web::Path<uuid::Uuid>,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool2 = pool.clone();
     let card_metadata_id = body.card_metadata_id;
     let collection_id = collection_id.into_inner();
-    let dataset_id = dataset.id;
+    let dataset_id = dataset_org_plan_sub.dataset.id;
 
     user_owns_collection(user.0.id, collection_id, dataset_id, pool).await?;
 
@@ -341,13 +362,13 @@ pub async fn get_all_bookmarks(
     path_data: web::Path<GetAllBookmarksData>,
     pool: web::Data<Pool>,
     _user: LoggedUser,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let collection_id = path_data.collection_id;
     let page = path_data.page.unwrap_or(1);
     let pool1 = pool.clone();
     let pool2 = pool.clone();
-    let dataset_id = dataset.id;
+    let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let bookmarks = {
         web::block(move || {
@@ -439,13 +460,13 @@ pub struct GetCollectionsForCardsData {
 pub async fn get_collections_card_is_in(
     data: web::Json<GetCollectionsForCardsData>,
     pool: web::Data<Pool>,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     user: Option<LoggedUser>,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let card_ids = data.card_ids.clone();
 
-    let dataset_id = dataset.id;
+    let dataset_id = dataset_org_plan_sub.dataset.id;
     let current_user_id = user.map(|user| user.id);
 
     let collections = web::block(move || {
@@ -481,12 +502,12 @@ pub async fn delete_bookmark(
     body: web::Json<RemoveBookmarkData>,
     pool: web::Data<Pool>,
     user: AdminOnly,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
     let collection_id = collection_id.into_inner();
     let bookmark_id = body.card_metadata_id;
-    let dataset_id = dataset.id;
+    let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let pool = pool.clone();
     user_owns_collection(user.0.id, collection_id, dataset_id, pool1).await?;
@@ -503,133 +524,4 @@ pub struct GenerateOffCollectionData {
     pub collection_id: uuid::Uuid,
     pub page: Option<u64>,
     pub query: Option<String>,
-}
-
-#[utoipa::path(
-    post,
-    path = "/card_collection/generate",
-    context_path = "/api",
-    tag = "card_collection",
-    request_body(content = GenerateOffCollectionData, description = "JSON request payload to generate off of a CardCollection", content_type = "application/json"),
-    responses(
-        (status = 200, description = "This will be a HTTP stream, check the chat or search UI for an example how to process this"),
-        (status = 400, description = "Service error relating to generating off the CardCollection", body = [DefaultError]),
-    ),
-)]
-pub async fn generate_off_collection(
-    body: web::Json<GenerateOffCollectionData>,
-    pool: web::Data<Pool>,
-    dataset: Dataset,
-    _required_user: LoggedUser,
-) -> Result<HttpResponse, actix_web::Error> {
-    let request_data = body.into_inner();
-    let collection_id = request_data.collection_id;
-    let page = request_data.page.unwrap_or(1);
-    let dataset_id = dataset.id;
-
-    let collection_bookmarks = {
-        web::block(move || {
-            get_bookmarks_for_collection_query(collection_id, page, Some(10), dataset_id, pool)
-        })
-        .await??
-        .metadata
-    };
-
-    let query = request_data.query.unwrap_or(
-        "Now, provide a multi paragraph summary of the information I provided.".to_string(),
-    );
-
-    let mut messages: Vec<ChatMessage> = Vec::new();
-    messages.push(ChatMessage {
-        role: Role::User,
-        content: Some("I am going to provide several pieces of information for you to use in response to a request or question. You will not respond until I ask you to.".to_string()),
-        tool_calls: None,
-        name: None,
-        tool_call_id: None,
-    });
-    messages.push(ChatMessage {
-        role: Role::Assistant,
-        content: Some(
-            "Understood, I will not reply until I receive a direct request or question."
-                .to_string(),
-        ),
-        tool_calls: None,
-        name: None,
-        tool_call_id: None,
-    });
-    collection_bookmarks.iter().for_each(|bookmark| {
-        messages.push(ChatMessage {
-            role: Role::User,
-            content: Some(bookmark.content.clone()),
-            tool_calls: None,
-            name: None,
-            tool_call_id: None,
-        });
-        messages.push(ChatMessage {
-            role: Role::Assistant,
-            content: Some("".to_string()),
-            tool_calls: None,
-            name: None,
-            tool_call_id: None,
-        });
-    });
-    messages.push(ChatMessage {
-        role: Role::User,
-        content: Some(query),
-        tool_calls: None,
-        name: None,
-        tool_call_id: None,
-    });
-
-    let summary_completion_param = ChatCompletionParameters {
-        model: "gpt-3.5-turbo".into(),
-        messages,
-        temperature: None,
-        top_p: None,
-        n: None,
-        stop: None,
-        max_tokens: None,
-        presence_penalty: Some(0.8),
-        frequency_penalty: Some(0.8),
-        logit_bias: None,
-        user: None,
-        respsonse_format: None,
-        tools: None,
-        tool_choice: None,
-    };
-
-    let openai_api_key = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
-    let dataset_config = DatasetConfiguration::from_json(dataset.configuration);
-    let base_url = dataset_config
-        .LLM_BASE_URL
-        .clone()
-        .unwrap_or("https://api.openai.com".into());
-    let client = Client {
-        api_key: openai_api_key,
-        http_client: reqwest::Client::new(),
-        base_url,
-    };
-
-    let (s, _r) = unbounded::<String>();
-    let stream = client
-        .chat()
-        .create_stream(summary_completion_param)
-        .await
-        .expect("Failed to create chat");
-
-    Ok(HttpResponse::Ok().streaming(stream.map(
-        move |response| -> Result<Bytes, actix_web::Error> {
-            if let Ok(response) = response {
-                let chat_content = response.choices[0].delta.content.clone();
-                if let Some(message) = chat_content.clone() {
-                    let _ = s.send(message);
-                }
-                return Ok(Bytes::from(chat_content.unwrap_or("".to_string())));
-            }
-            Err(ServiceError::InternalServerError(
-                "Model Response Error. Please try again later".into(),
-            )
-            .into())
-        },
-    )))
 }
