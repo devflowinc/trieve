@@ -1,7 +1,7 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     CardCollection, CardCollectionBookmark, CardMetadata, CardMetadataWithFileData,
-    ChatMessageProxy, Dataset, DatasetConfiguration, Pool,
+    ChatMessageProxy, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, Pool,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -131,7 +131,7 @@ pub async fn create_card(
     card: web::Json<CreateCardData>,
     pool: web::Data<Pool>,
     user: AdminOnly,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
     let pool2 = pool.clone();
@@ -153,15 +153,17 @@ pub async fn create_card(
         create_embedding(&content, dataset_config.clone()).await?
     };
 
-    let first_semantic_result =
-        global_unfiltered_top_match_query(embedding_vector.clone(), dataset.id)
-            .await
-            .map_err(|err| {
-                ServiceError::BadRequest(format!(
-                    "Could not get semantic similarity for collision check: {}",
-                    err.message
-                ))
-            })?;
+    let first_semantic_result = global_unfiltered_top_match_query(
+        embedding_vector.clone(),
+        dataset_org_plan_sub.dataset.id,
+    )
+    .await
+    .map_err(|err| {
+        ServiceError::BadRequest(format!(
+            "Could not get semantic similarity for collision check: {}",
+            err.message
+        ))
+    })?;
 
     let duplicate_distance_threshold = dataset_config.DUPLICATE_DISTANCE_THRESHOLD.unwrap_or(0.95);
 
@@ -177,13 +179,16 @@ pub async fn create_card(
         match score_card_result {
             Ok(card_results) => {
                 if card_results.is_empty() {
-                    delete_qdrant_point_id_query(first_semantic_result.point_id, dataset.id)
-                        .await
-                        .map_err(|_| {
-                            ServiceError::BadRequest(
-                                "Could not delete qdrant point id. Please try again.".into(),
-                            )
-                        })?;
+                    delete_qdrant_point_id_query(
+                        first_semantic_result.point_id,
+                        dataset_org_plan_sub.dataset.id,
+                    )
+                    .await
+                    .map_err(|_| {
+                        ServiceError::BadRequest(
+                            "Could not delete qdrant point id. Please try again.".into(),
+                        )
+                    })?;
 
                     return Err(ServiceError::BadRequest(
                         "There was a data inconsistency issue. Please try again.".into(),
@@ -208,7 +213,7 @@ pub async fn create_card(
             collision.expect("Collision must be some"),
             Some(user.0.id),
             None,
-            dataset.id,
+            dataset_org_plan_sub.dataset.id,
         )
         .await?;
 
@@ -229,8 +234,7 @@ pub async fn create_card(
                     })
                 })
                 .transpose()?,
-            dataset.id,
-            card.weight.unwrap_or(1.0),
+            dataset_org_plan_sub.dataset.id,
         );
         card_metadata = web::block(move || {
             insert_duplicate_card_metadata_query(
@@ -266,8 +270,7 @@ pub async fn create_card(
                     })
                 })
                 .transpose()?,
-            dataset.id,
-            card.weight.unwrap_or(1.0),
+            dataset_org_plan_sub.dataset.id,
         );
 
         card_metadata = insert_card_metadata_query(card_metadata, card.file_uuid, pool1)
@@ -279,7 +282,7 @@ pub async fn create_card(
             embedding_vector,
             card_metadata.clone(),
             Some(user.0.id),
-            dataset.id,
+            dataset_org_plan_sub.dataset.id,
         )
         .await?;
     }
@@ -315,9 +318,10 @@ pub async fn delete_card(
     card_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     user: AdminOnly,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let card_id_inner = card_id.into_inner();
+    let dataset_id = dataset_org_plan_sub.dataset.id;
     let pool1 = pool.clone();
     let dataset_id = dataset.id;
     let card_metadata = user_owns_card(user.0.id, card_id_inner, dataset_id, pool).await?;
@@ -347,11 +351,11 @@ pub async fn delete_card_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
     user: AdminOnly,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let tracking_id_inner = tracking_id.into_inner();
     let pool1 = pool.clone();
-    let dataset_id = dataset.id;
+    let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let card_metadata =
         user_owns_card_tracking_id(user.0.id, tracking_id_inner, dataset_id, pool).await?;
@@ -396,11 +400,11 @@ pub async fn update_card(
     card: web::Json<UpdateCardData>,
     pool: web::Data<Pool>,
     user: AdminOnly,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
     let pool2 = pool.clone();
-    let dataset_id = dataset.id;
+    let dataset_id = dataset_org_plan_sub.dataset.id;
     let card_metadata = user_owns_card(user.0.id, card.card_uuid, dataset_id, pool).await?;
 
     let link = card
@@ -498,7 +502,7 @@ pub async fn update_card_by_tracking_id(
     card: web::Json<UpdateCardByTrackingIdData>,
     pool: web::Data<Pool>,
     user: AdminOnly,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     if card.tracking_id.is_empty() {
         return Err(ServiceError::BadRequest(
@@ -511,8 +515,13 @@ pub async fn update_card_by_tracking_id(
 
     let pool1 = pool.clone();
     let pool2 = pool.clone();
-    let card_metadata =
-        user_owns_card_tracking_id(user.0.id, tracking_id, dataset.id, pool).await?;
+    let card_metadata = user_owns_card_tracking_id(
+        user.0.id,
+        tracking_id,
+        dataset_org_plan_sub.dataset.id,
+        pool,
+    )
+    .await?;
 
     let link = card
         .link
@@ -554,11 +563,11 @@ pub async fn update_card_by_tracking_id(
                     .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))
             })
             .transpose()?,
-        dataset.id,
+        dataset_org_plan_sub.dataset.id,
         card.weight.unwrap_or(1.0),
     );
     let metadata1 = metadata.clone();
-    update_card_metadata_query(metadata, None, dataset.id, pool2)
+    update_card_metadata_query(metadata, None, dataset_org_plan_sub.dataset.id, pool2)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -572,7 +581,7 @@ pub async fn update_card_by_tracking_id(
         qdrant_point_id,
         Some(user.0.id),
         Some(embedding_vector),
-        dataset.id,
+        dataset_org_plan_sub.dataset.id,
     )
     .await?;
 
@@ -664,10 +673,10 @@ pub async fn search_card(
     _user: LoggedUser,
     pool: web::Data<Pool>,
     cross_encoder_init: web::Data<CrossEncoder>,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
-    let dataset_id = dataset.id;
+    let dataset_id = dataset_org_plan_sub.dataset.id;
     let parsed_query = parse_query(data.content.clone());
 
     let result_cards = match data.search_type.as_str() {
@@ -737,12 +746,12 @@ pub async fn search_collections(
     page: Option<web::Path<u64>>,
     pool: web::Data<Pool>,
     _required_user: LoggedUser,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
     let collection_id = data.collection_id;
-    let dataset_id = dataset.id;
+    let dataset_id = dataset_org_plan_sub.dataset.id;
     let full_text_search_pool: web::Data<
         r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::prelude::PgConnection>>,
     > = pool.clone();
@@ -801,12 +810,13 @@ pub async fn get_card_by_id(
     card_id: web::Path<uuid::Uuid>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let card =
-        web::block(move || get_metadata_from_id_query(card_id.into_inner(), dataset.id, pool))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let card = web::block(move || {
+        get_metadata_from_id_query(card_id.into_inner(), dataset_org_plan_sub.dataset.id, pool)
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(card))
 }
@@ -829,10 +839,14 @@ pub async fn get_card_by_tracking_id(
     _user: LoggedUser,
     pool: web::Data<Pool>,
     _required_user: LoggedUser,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let card = web::block(move || {
-        get_metadata_from_tracking_id_query(tracking_id.into_inner(), dataset.id, pool)
+        get_metadata_from_tracking_id_query(
+            tracking_id.into_inner(),
+            dataset_org_plan_sub.dataset.id,
+            pool,
+        )
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -860,19 +874,20 @@ pub async fn get_recommended_cards(
     data: web::Json<RecommendCardsRequest>,
     pool: web::Data<Pool>,
     _user: LoggedUser,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let positive_card_ids = data.positive_card_ids.clone();
     let embed_size = DatasetConfiguration::from_json(dataset.configuration)
         .EMBEDDING_SIZE
         .unwrap_or(1536);
 
-    let recommended_qdrant_point_ids =
-        recommend_qdrant_query(positive_card_ids, dataset.id, embed_size)
-            .await
-            .map_err(|err| {
-                ServiceError::BadRequest(format!("Could not get recommended cards: {}", err))
-            })?;
+    let recommended_qdrant_point_ids = recommend_qdrant_query(
+        positive_card_ids,
+        dataset_org_plan_sub.dataset.id,
+        embed_size,
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(format!("Could not get recommended cards: {}", err)))?;
 
     let recommended_card_metadatas =
         web::block(move || get_metadata_from_point_ids(recommended_qdrant_point_ids, pool))
@@ -908,13 +923,15 @@ pub async fn generate_off_cards(
     data: web::Json<GenerateCardsRequest>,
     pool: web::Data<Pool>,
     _user: LoggedUser,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let prev_messages = data.prev_messages.clone();
     let card_ids = data.card_ids.clone();
-    let cards = web::block(move || get_metadata_from_ids_query(card_ids, dataset.id, pool))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let cards = web::block(move || {
+        get_metadata_from_ids_query(card_ids, dataset_org_plan_sub.dataset.id, pool)
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let dataset_config = DatasetConfiguration::from_json(dataset.configuration);

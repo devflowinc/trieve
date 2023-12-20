@@ -1,6 +1,6 @@
 use super::auth_handler::LoggedUser;
 use crate::{
-    data::models::{Dataset, Pool},
+    data::models::{DatasetAndOrgWithSubAndPlan, Pool},
     errors::{DefaultError, ServiceError},
     operators::user_operator::{
         get_user_with_cards_by_id_query, set_user_api_key_query, update_user_query,
@@ -39,16 +39,17 @@ pub struct GetUserWithCardsData {
 )]
 pub async fn get_user_with_cards_by_id(
     path_data: web::Path<GetUserWithCardsData>,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_query_id = path_data.user_id;
     let page = path_data.page;
 
-    let user_result =
-        web::block(move || get_user_with_cards_by_id_query(user_query_id, dataset.id, &page, pool))
-            .await?;
+    let user_result = web::block(move || {
+        get_user_with_cards_by_id_query(user_query_id, dataset_org_plan_sub.dataset.id, &page, pool)
+    })
+    .await?;
 
     match user_result {
         Ok(user_with_cards) => Ok(HttpResponse::Ok().json(user_with_cards)),
