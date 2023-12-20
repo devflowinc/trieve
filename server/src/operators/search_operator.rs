@@ -23,6 +23,7 @@ use crate::{data::models::Pool, errors::DefaultError};
 use actix_web::web;
 use candle_core::Tensor;
 use chrono::NaiveDateTime;
+use dateparser::DateTimeUtc;
 use diesel::{dsl::sql, sql_types::Text};
 use diesel::{
     BoolExpressionMethods, JoinOnDsl, NullableExpressionMethods, PgTextExpressionMethods,
@@ -123,37 +124,55 @@ pub async fn retrieve_qdrant_points_query(
         if time_range.0 != "null" && time_range.1 != "null" {
             query = query.filter(
                 card_metadata_columns::time_stamp
-                    .ge(
-                        NaiveDateTime::parse_from_str(&time_range.0, "%Y-%m-%d %H:%M:%S").map_err(
-                            |_| DefaultError {
+                    .ge(time_range
+                        .0
+                        .clone()
+                        .parse::<DateTimeUtc>()
+                        .map_err(|_| DefaultError {
+                            message: "Failed to parse time range",
+                        })?
+                        .0
+                        .with_timezone(&chrono::Local)
+                        .naive_local())
+                    .and(
+                        card_metadata_columns::time_stamp.le(time_range
+                            .1
+                            .clone()
+                            .parse::<DateTimeUtc>()
+                            .map_err(|_| DefaultError {
                                 message: "Failed to parse time range",
-                            },
-                        )?,
-                    )
-                    .and(card_metadata_columns::time_stamp.le(
-                        NaiveDateTime::parse_from_str(&time_range.1, "%Y-%m-%d %H:%M:%S").map_err(
-                            |_| DefaultError {
-                                message: "Failed to parse time range",
-                            },
-                        )?,
-                    )),
+                            })?
+                            .0
+                            .with_timezone(&chrono::Local)
+                            .naive_local()),
+                    ),
             );
         } else if time_range.0 != "null" {
-            query = query.filter(card_metadata_columns::time_stamp.ge(
-                NaiveDateTime::parse_from_str(&time_range.0, "%Y-%m-%d %H:%M:%S").map_err(
-                    |_| DefaultError {
+            query = query.filter(
+                card_metadata_columns::time_stamp.ge(time_range
+                    .0
+                    .clone()
+                    .parse::<DateTimeUtc>()
+                    .map_err(|_| DefaultError {
                         message: "Failed to parse time range",
-                    },
-                )?,
-            ));
+                    })?
+                    .0
+                    .with_timezone(&chrono::Local)
+                    .naive_local()),
+            );
         } else if time_range.1 != "null" {
-            query = query.filter(card_metadata_columns::time_stamp.le(
-                NaiveDateTime::parse_from_str(&time_range.1, "%Y-%m-%d %H:%M:%S").map_err(
-                    |_| DefaultError {
+            query = query.filter(
+                card_metadata_columns::time_stamp.le(time_range
+                    .1
+                    .clone()
+                    .parse::<DateTimeUtc>()
+                    .map_err(|_| DefaultError {
                         message: "Failed to parse time range",
-                    },
-                )?,
-            ));
+                    })?
+                    .0
+                    .with_timezone(&chrono::Local)
+                    .naive_local()),
+            );
         }
     }
 
