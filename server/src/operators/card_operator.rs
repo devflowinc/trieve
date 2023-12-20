@@ -376,6 +376,8 @@ pub async fn update_card_metadata_query(
             card_metadata_columns::card_html.eq(card_data.card_html),
             card_metadata_columns::content.eq(card_data.content),
             card_metadata_columns::metadata.eq(card_data.metadata),
+            card_metadata_columns::tag_set.eq(card_data.tag_set),
+            card_metadata_columns::weight.eq(card_data.weight),
         ))
         .execute(conn)?;
 
