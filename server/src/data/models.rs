@@ -833,22 +833,45 @@ impl DatasetConfiguration {
             .unwrap_or(default_config.as_object().unwrap());
 
         DatasetConfiguration {
-            DOCUMENT_UPLOAD_FEATURE: configuration["DOCUMENT_UPLOAD_FEATURE"].as_bool(),
-            DOCUMENT_DOWNLOAD_FEATURE: configuration["DOCUMENT_DOWNLOAD_FEATURE"].as_bool(),
-            LLM_BASE_URL: configuration["OPENAI_BASE_URL"]
+            DOCUMENT_UPLOAD_FEATURE: configuration
+                .get("DOCUMENT_UPLOAD_FEATURE")
+                .unwrap_or(&json!(false))
+                .as_bool(),
+            DOCUMENT_DOWNLOAD_FEATURE: configuration
+                .get("DOCUMENT_DOWNLOAD_FEATURE")
+                .unwrap_or(&json!(false))
+                .as_bool(),
+            LLM_BASE_URL: configuration
+                .get("LLM_BASE_URL")
+                .unwrap_or(&json!("https://api.openai.com".to_string()))
                 .as_str()
                 .map(|s| s.to_string()),
-            EMBEDDING_BASE_URL: configuration["OPENAI_BASE_URL"]
+            EMBEDDING_BASE_URL: configuration
+                .get("EMBEDDING_BASE_URL")
+                .unwrap_or(&json!("https://api.openai.com/v1".to_string()))
                 .as_str()
                 .map(|s| s.to_string()),
-            RAG_PROMPT: configuration["RAG_PROMPT"].as_str().map(|s| s.to_string()),
-            N_RETRIEVALS_TO_INCLUDE: configuration["N_RETRIEVALS_TO_INCLUDE"]
+            RAG_PROMPT: configuration
+                .get("RAG_PROMPT")
+                .unwrap_or(&json!("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string()))
+                .as_str()
+                .map(|s| s.to_string()),
+            N_RETRIEVALS_TO_INCLUDE: configuration
+                .get("N_RETRIEVALS_TO_INCLUDE")
+                .unwrap_or(&json!(3))
                 .as_u64()
                 .map(|u| u as usize),
-            DUPLICATE_DISTANCE_THRESHOLD: configuration["DUPLICATE_DISTANCE_THRESHOLD"]
+            DUPLICATE_DISTANCE_THRESHOLD: configuration
+                .get("DUPLICATE_DISTANCE_THRESHOLD")
+                .unwrap_or(&json!(0.95))
                 .as_f64()
                 .map(|f| f as f32),
-            EMBEDDING_SIZE: configuration["EMBEDDING_SIZE"].as_u64().map(|u| u as usize),
+            EMBEDDING_SIZE: configuration
+                .get("EMBEDDING_SIZE")
+                .unwrap_or(&json!(1536))
+                .as_u64()
+                .map(|u| u as usize),
+
         }
     }
 }
