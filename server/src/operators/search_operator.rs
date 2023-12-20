@@ -34,6 +34,7 @@ use qdrant_client::qdrant::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use std::f32::consts::E;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SearchResult {
@@ -820,8 +821,8 @@ pub fn rerank_cards(cards: Vec<ScoreCardDTO>, date_bias: Option<bool>) -> Vec<Sc
                 let time_stamp = time_stamp.timestamp();
                 let now = chrono::Utc::now().timestamp();
                 let time_diff = now - time_stamp;
-                let time_diff = time_diff as f64 / 60.0 / 60.0 / 24.0;
-                card.score *= f64::max(0.0, 1.0 - time_diff * 0.1);
+                let time_diff = time_diff as f32 / 60.0 / 60.0 / 24.0;
+                card.score *= E.powf(-0.1 * time_diff) as f64;
             }
         });
     }
