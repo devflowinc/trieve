@@ -1,4 +1,4 @@
-use super::auth_handler::{AdminOnly, OwnerOnly};
+use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
     data::models::{Dataset, DatasetAndOrgWithSubAndPlan, Pool},
     errors::ServiceError,
@@ -46,10 +46,10 @@ impl FromRequest for DatasetAndOrgWithSubAndPlan {
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
             let ext = req.extensions();
-            // let user = ext.get::<LoggedUser>().ok_or(ServiceError::Forbidden)?;
-            // if dataset.organization_id != user.organization_id {
-            //     return Err(ServiceError::Forbidden);
-            // }
+            let user = ext.get::<LoggedUser>().ok_or(ServiceError::Forbidden)?;
+            if dataset.organization_id != user.organization_id {
+                return Err(ServiceError::Forbidden);
+            }
 
             Ok::<DatasetAndOrgWithSubAndPlan, ServiceError>(
                 DatasetAndOrgWithSubAndPlan::from_components(dataset, org_plan_sub),
