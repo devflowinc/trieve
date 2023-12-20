@@ -1,8 +1,7 @@
+use crate::data::models::DatasetAndOrgWithSubAndPlan;
 use crate::get_env;
 use crate::{
-    data::models::{
-        Dataset, DatasetConfiguration, Pool, SlimUser, User, UserOrganization, UserRole,
-    },
+    data::models::{DatasetConfiguration, Pool, SlimUser, User, UserOrganization, UserRole},
     errors::ServiceError,
     operators::{
         self,
@@ -551,10 +550,12 @@ pub async fn get_me(
         (status = 400, description = "Service error relating to making an embedding or overall service health", body = [DefaultError]),
     ),
 )]
-pub async fn health_check(dataset: Dataset) -> Result<HttpResponse, actix_web::Error> {
+pub async fn health_check(
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, actix_web::Error> {
     let result = operators::model_operator::create_embedding(
         "health check",
-        DatasetConfiguration::from_json(dataset.configuration),
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.configuration),
     )
     .await;
 
