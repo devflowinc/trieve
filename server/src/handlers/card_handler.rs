@@ -146,7 +146,8 @@ pub async fn create_card(
     let mut collision: Option<uuid::Uuid> = None;
 
     let content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
-    let dataset_config = DatasetConfiguration::from_json(dataset.configuration);
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.configuration);
     let embedding_vector = if let Some(embedding_vector) = card.card_vector.clone() {
         embedding_vector
     } else {
@@ -235,6 +236,7 @@ pub async fn create_card(
                 })
                 .transpose()?,
             dataset_org_plan_sub.dataset.id,
+            0.0,
         );
         card_metadata = web::block(move || {
             insert_duplicate_card_metadata_query(
@@ -271,6 +273,7 @@ pub async fn create_card(
                 })
                 .transpose()?,
             dataset_org_plan_sub.dataset.id,
+            0.0,
         );
 
         card_metadata = insert_card_metadata_query(card_metadata, card.file_uuid, pool1)
@@ -321,15 +324,19 @@ pub async fn delete_card(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let card_id_inner = card_id.into_inner();
-    let dataset_id = dataset_org_plan_sub.dataset.id;
     let pool1 = pool.clone();
-    let dataset_id = dataset.id;
+    let dataset_id = dataset_org_plan_sub.dataset.id;
     let card_metadata = user_owns_card(user.0.id, card_id_inner, dataset_id, pool).await?;
     let qdrant_point_id = card_metadata.qdrant_point_id;
 
-    delete_card_metadata_query(card_id_inner, qdrant_point_id, dataset, pool1)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    delete_card_metadata_query(
+        card_id_inner,
+        qdrant_point_id,
+        dataset_org_plan_sub.dataset,
+        pool1,
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -362,9 +369,14 @@ pub async fn delete_card_by_tracking_id(
 
     let qdrant_point_id = card_metadata.qdrant_point_id;
 
-    delete_card_metadata_query(card_metadata.id, qdrant_point_id, dataset, pool1)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    delete_card_metadata_query(
+        card_metadata.id,
+        qdrant_point_id,
+        dataset_org_plan_sub.dataset,
+        pool1,
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -420,7 +432,7 @@ pub async fn update_card(
 
     let embedding_vector = create_embedding(
         &new_content,
-        DatasetConfiguration::from_json(dataset.configuration),
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.configuration),
     )
     .await?;
 
@@ -532,7 +544,7 @@ pub async fn update_card_by_tracking_id(
 
     let embedding_vector = create_embedding(
         &new_content,
-        DatasetConfiguration::from_json(dataset.configuration),
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.configuration),
     )
     .await?;
 
@@ -682,9 +694,20 @@ pub async fn search_card(
     let result_cards = match data.search_type.as_str() {
         "fulltext" => search_full_text_cards(data, parsed_query, page, pool, dataset_id).await?,
         "hybrid" => {
-            search_hybrid_cards(data, parsed_query, page, pool, cross_encoder_init, dataset).await?
+            search_hybrid_cards(
+                data,
+                parsed_query,
+                page,
+                pool,
+                cross_encoder_init,
+                dataset_org_plan_sub.dataset,
+            )
+            .await?
         }
-        _ => search_semantic_cards(data, parsed_query, page, pool, dataset).await?,
+        _ => {
+            search_semantic_cards(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
+                .await?
+        }
     };
 
     Ok(HttpResponse::Ok().json(result_cards))
@@ -784,7 +807,7 @@ pub async fn search_collections(
                 collection,
                 page,
                 full_text_search_pool,
-                dataset,
+                dataset_org_plan_sub.dataset,
             )
             .await?
         }
@@ -877,7 +900,7 @@ pub async fn get_recommended_cards(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let positive_card_ids = data.positive_card_ids.clone();
-    let embed_size = DatasetConfiguration::from_json(dataset.configuration)
+    let embed_size = DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.configuration)
         .EMBEDDING_SIZE
         .unwrap_or(1536);
 
@@ -934,7 +957,8 @@ pub async fn generate_off_cards(
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
-    let dataset_config = DatasetConfiguration::from_json(dataset.configuration);
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.configuration);
     let base_url = dataset_config
         .LLM_BASE_URL
         .unwrap_or("https://api.openai.com/v1".into());

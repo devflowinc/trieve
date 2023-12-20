@@ -45,7 +45,7 @@ pub async fn create_topic(
         }));
     }
 
-    let topic_resolution = get_topic_string(resolution, &dataset)
+    let topic_resolution = get_topic_string(resolution, &dataset_org_plan_sub.dataset)
         .await
         .map_err(|e| ServiceError::BadRequest(format!("Error getting topic string: {}", e)))?;
 
