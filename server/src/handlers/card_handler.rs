@@ -440,7 +440,7 @@ pub async fn update_card(
         .clone()
         .filter(|card_tracking| !card_tracking.is_empty());
 
-    let new_content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
+    let new_content = convert_html(card.card_html.as_ref().unwrap_or(&card_metadata.content));
 
     let embedding_vector = create_embedding(
         &new_content,
@@ -466,7 +466,8 @@ pub async fn update_card(
         &card_metadata.tag_set,
         user.0.id,
         card_metadata.qdrant_point_id,
-        card.metadata.clone(),
+        <std::option::Option<serde_json::Value> as Clone>::clone(&card.metadata)
+            .or(card_metadata.metadata),
         card_tracking_id,
         card.time_stamp
             .clone()
@@ -479,7 +480,8 @@ pub async fn update_card(
                     .with_timezone(&chrono::Local)
                     .naive_local())
             })
-            .transpose()?,
+            .transpose()?
+            .or(card_metadata.time_stamp),
         dataset_id,
         card.weight.unwrap_or(1.0),
     );
@@ -557,7 +559,7 @@ pub async fn update_card_by_tracking_id(
         .clone()
         .unwrap_or_else(|| card_metadata.link.clone().unwrap_or_default());
 
-    let new_content = convert_html(card.card_html.as_ref().unwrap_or(&"".to_string()));
+    let new_content = convert_html(card.card_html.as_ref().unwrap_or(&card_metadata.content));
 
     let embedding_vector = create_embedding(
         &new_content,
@@ -583,7 +585,8 @@ pub async fn update_card_by_tracking_id(
         &card_metadata.tag_set,
         user.0.id,
         card_metadata.qdrant_point_id,
-        card.metadata.clone(),
+        <std::option::Option<serde_json::Value> as Clone>::clone(&card.metadata)
+            .or(card_metadata.metadata),
         Some(tracking_id1),
         card.time_stamp
             .clone()
@@ -596,7 +599,8 @@ pub async fn update_card_by_tracking_id(
                     .with_timezone(&chrono::Local)
                     .naive_local())
             })
-            .transpose()?,
+            .transpose()?
+            .or(card_metadata.time_stamp),
         dataset_org_plan_sub.dataset.id,
         card.weight.unwrap_or(1.0),
     );

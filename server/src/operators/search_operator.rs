@@ -22,7 +22,6 @@ use crate::operators::qdrant_operator::{
 use crate::{data::models::Pool, errors::DefaultError};
 use actix_web::web;
 use candle_core::Tensor;
-use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
 use diesel::{dsl::sql, sql_types::Text};
 use diesel::{
