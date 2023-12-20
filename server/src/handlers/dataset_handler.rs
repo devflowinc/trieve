@@ -1,4 +1,4 @@
-use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
+use super::auth_handler::{AdminOnly, OwnerOnly};
 use crate::{
     data::models::{Dataset, DatasetAndOrgWithSubAndPlan, Pool},
     errors::ServiceError,
