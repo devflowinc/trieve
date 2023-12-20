@@ -870,6 +870,17 @@ impl Organization {
             registerable: Some(true),
         }
     }
+
+    pub fn from_org_with_plan_sub(org_plan_sub: OrganizationWithSubscriptionAndPlan) -> Self {
+        Organization {
+            id: org_plan_sub.id,
+            name: org_plan_sub.name,
+            configuration: org_plan_sub.configuration,
+            created_at: org_plan_sub.created_at,
+            updated_at: org_plan_sub.updated_at,
+            registerable: org_plan_sub.registerable,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
@@ -982,6 +993,8 @@ pub struct OrganizationWithSubscriptionAndPlan {
     pub id: uuid::Uuid,
     pub name: String,
     pub configuration: serde_json::Value,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
     pub registerable: Option<bool>,
     pub plan: Option<StripePlan>,
     pub subscription: Option<StripeSubscription>,
@@ -998,6 +1011,8 @@ impl OrganizationWithSubscriptionAndPlan {
             name: organization.name,
             configuration: organization.configuration,
             registerable: organization.registerable,
+            created_at: organization.created_at,
+            updated_at: organization.updated_at,
             plan,
             subscription,
         }
