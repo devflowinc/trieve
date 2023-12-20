@@ -194,6 +194,7 @@ pub struct CardMetadataWithCount {
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
+    pub weight: f64,
     pub count: i64,
 }
 
@@ -213,6 +214,7 @@ pub struct CardMetadata {
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
     pub dataset_id: uuid::Uuid,
+    pub weight: f64,
 }
 
 impl CardMetadata {
@@ -228,6 +230,7 @@ impl CardMetadata {
         tracking_id: Option<String>,
         time_stamp: Option<NaiveDateTime>,
         dataset_id: uuid::Uuid,
+        weight: f64,
     ) -> Self {
         CardMetadata {
             id: uuid::Uuid::new_v4(),
@@ -243,6 +246,7 @@ impl CardMetadata {
             tracking_id,
             time_stamp,
             dataset_id,
+            weight,
         }
     }
 }
@@ -261,6 +265,7 @@ impl CardMetadata {
         tracking_id: Option<String>,
         time_stamp: Option<NaiveDateTime>,
         dataset_id: uuid::Uuid,
+        weight: f64,
     ) -> Self {
         CardMetadata {
             id: id.into(),
@@ -276,6 +281,7 @@ impl CardMetadata {
             tracking_id,
             time_stamp,
             dataset_id,
+            weight,
         }
     }
 }
@@ -318,6 +324,7 @@ pub struct CardMetadataWithFileData {
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
+    pub weight: f64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -507,6 +514,7 @@ pub struct FullTextSearchResult {
     pub time_stamp: Option<NaiveDateTime>,
     pub score: Option<f64>,
     pub count: i64,
+    pub weight: f64,
 }
 
 impl From<CardMetadata> for FullTextSearchResult {
@@ -526,6 +534,7 @@ impl From<CardMetadata> for FullTextSearchResult {
             tracking_id: card.tracking_id,
             time_stamp: card.time_stamp,
             count: 0,
+            weight: card.weight,
         }
     }
 }
@@ -547,6 +556,7 @@ impl From<&CardMetadata> for FullTextSearchResult {
             time_stamp: card.time_stamp,
             metadata: card.metadata.clone(),
             count: 0,
+            weight: card.weight,
         }
     }
 }
@@ -568,6 +578,7 @@ impl From<CardMetadataWithCount> for FullTextSearchResult {
             tracking_id: card.tracking_id,
             time_stamp: card.time_stamp,
             count: card.count,
+            weight: card.weight,
         }
     }
 }
