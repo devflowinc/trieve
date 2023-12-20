@@ -1,6 +1,6 @@
 use super::auth_handler::{AdminOnly, OwnerOnly};
 use crate::{
-    data::models::Pool,
+    data::models::{Organization, Pool},
     errors::ServiceError,
     operators::organization_operator::{
         create_organization_query, get_organization_by_id_query, update_organization_query,
@@ -30,11 +30,11 @@ pub async fn get_organization_by_id(
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_id = organization_id.into_inner();
 
-    let organization = get_organization_by_id_query(organization_id, pool)
+    let org_plan_sub = get_organization_by_id_query(organization_id, pool)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    Ok(HttpResponse::Ok().json(organization))
+    Ok(HttpResponse::Ok().json(Organization::from_org_with_plan_sub(org_plan_sub)))
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]

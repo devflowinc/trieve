@@ -1,6 +1,6 @@
 use super::collection_operator::create_collection_and_add_bookmarks_query;
 use super::notification_operator::add_collection_created_notification_query;
-use crate::data::models::Dataset;
+use crate::data::models::DatasetAndOrgWithSubAndPlan;
 use crate::handlers::auth_handler::AdminOnly;
 use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
 use crate::{
@@ -102,14 +102,14 @@ pub async fn convert_doc_to_html_query(
     create_cards: Option<bool>,
     time_stamp: Option<String>,
     user: LoggedUser,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<UploadFileResult, DefaultError> {
     let user1 = user.clone();
     let file_name1 = file_name.clone();
     let file_data1 = file_data.clone();
     let tag_set1 = tag_set.clone();
-    let dataset1 = dataset.clone();
+    let dataset_org_plan_sub1 = dataset_org_plan_sub.clone();
 
     tokio::spawn(async move {
         let new_id = uuid::Uuid::new_v4();
@@ -205,7 +205,7 @@ pub async fn convert_doc_to_html_query(
             Some(tika_metadata_response_json.clone()),
             link.clone(),
             time_stamp.clone(),
-            dataset1.id,
+            dataset_org_plan_sub1.dataset.id,
             pool.clone(),
         )?;
 
@@ -235,7 +235,7 @@ pub async fn convert_doc_to_html_query(
             user,
             temp_html_file_path_buf,
             glob_string,
-            dataset1,
+            dataset_org_plan_sub1,
             pool,
         )
         .await;
@@ -256,7 +256,7 @@ pub async fn convert_doc_to_html_query(
             None,
             None,
             None,
-            dataset.id,
+            dataset_org_plan_sub.dataset.id,
         ),
     })
 }
@@ -273,7 +273,7 @@ pub async fn create_cards_with_handler(
     user: LoggedUser,
     temp_html_file_path_buf: PathBuf,
     glob_string: String,
-    dataset: Dataset,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     let parser_command =
@@ -349,7 +349,7 @@ pub async fn create_cards_with_handler(
             web_json_create_card_data,
             pool.clone(),
             AdminOnly(user.clone()),
-            dataset.clone(),
+            dataset_org_plan_sub.clone(),
         )
         .await
         {
@@ -376,11 +376,11 @@ pub async fn create_cards_with_handler(
             user.id,
             format!("Collection for file {}", file_name),
             converted_description,
-            dataset.id,
+            dataset_org_plan_sub.dataset.id,
         ),
         card_ids,
         created_file_id,
-        dataset.id,
+        dataset_org_plan_sub.dataset.id,
         pool1,
     ) {
         Ok(collection) => (collection_id = collection.id,),

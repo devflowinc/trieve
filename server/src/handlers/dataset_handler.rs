@@ -1,10 +1,13 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
-    data::models::{Dataset, Pool},
+    data::models::{Dataset, DatasetAndOrgWithSubAndPlan, Pool},
     errors::ServiceError,
-    operators::dataset_operator::{
-        create_dataset_query, delete_dataset_by_id_query, get_dataset_by_id_query,
-        get_datasets_by_organization_id, update_dataset_query,
+    operators::{
+        dataset_operator::{
+            create_dataset_query, delete_dataset_by_id_query, get_dataset_by_id_query,
+            get_datasets_by_organization_id, update_dataset_query,
+        },
+        organization_operator::get_organization_by_id_query,
     },
 };
 use actix_web::{web, FromRequest, HttpMessage, HttpResponse};
@@ -13,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use std::pin::Pin;
 use utoipa::ToSchema;
 
-impl FromRequest for Dataset {
+impl FromRequest for DatasetAndOrgWithSubAndPlan {
     type Error = ServiceError;
     type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
 
@@ -37,7 +40,10 @@ impl FromRequest for Dataset {
                 .parse::<uuid::Uuid>()
                 .map_err(|_| ServiceError::BadRequest("Dataset must be valid UUID".to_string()))?;
 
-            let dataset = get_dataset_by_id_query(dataset_id, pool).await?;
+            let dataset = get_dataset_by_id_query(dataset_id, pool.clone()).await?;
+            let org_plan_sub = get_organization_by_id_query(dataset.organization_id, pool.clone())
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
             let ext = req.extensions();
             let user = ext.get::<LoggedUser>().ok_or(ServiceError::Forbidden)?;
@@ -45,7 +51,9 @@ impl FromRequest for Dataset {
                 return Err(ServiceError::Forbidden);
             }
 
-            Ok::<Dataset, ServiceError>(dataset)
+            Ok::<DatasetAndOrgWithSubAndPlan, ServiceError>(
+                DatasetAndOrgWithSubAndPlan::from_components(dataset, org_plan_sub),
+            )
         })
     }
 }
