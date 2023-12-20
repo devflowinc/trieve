@@ -1,7 +1,8 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
 use super::schema::*;
-use chrono::NaiveDateTime;
+use chrono::{DateTime, NaiveDateTime};
+use dateparser::DateTimeUtc;
 use diesel::{expression::ValidGrouping, r2d2::ConnectionManager, PgConnection};
 use openai_dive::v1::resources::chat::{ChatMessage, Role};
 use serde::{Deserialize, Serialize};
@@ -624,7 +625,11 @@ impl File {
             metadata,
             link,
             time_stamp: time_stamp.map(|ts| {
-                chrono::NaiveDateTime::parse_from_str(&ts, "%Y-%m-%d %H:%M:%S").unwrap_or_default()
+                ts.parse::<DateTimeUtc>()
+                    .unwrap_or(DateTimeUtc(DateTime::default()))
+                    .0
+                    .with_timezone(&chrono::Local)
+                    .naive_local()
             }),
             dataset_id,
         }
