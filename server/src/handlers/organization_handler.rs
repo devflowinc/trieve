@@ -30,8 +30,8 @@ pub async fn get_organization_by_id(
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_id = organization_id.into_inner();
 
-    let organization = web::block(move || get_organization_by_id_query(organization_id, pool))
-        .await?
+    let organization = get_organization_by_id_query(organization_id, pool)
+        .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(organization))
