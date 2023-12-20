@@ -2,7 +2,7 @@ use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
     data::models::{
         CardCollection, CardCollectionAndFile, CardCollectionBookmark, CardMetadataWithFileData,
-        DatasetAndOrgWithSubAndPlan, DatasetConfiguration, Pool,
+        DatasetAndOrgWithSubAndPlan, Pool,
     },
     errors::ServiceError,
     operators::{card_operator::get_collided_cards_query, collection_operator::*},
