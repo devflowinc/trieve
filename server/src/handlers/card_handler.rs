@@ -22,6 +22,7 @@ use crate::operators::search_operator::{
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
 use chrono::NaiveDateTime;
+use dateparser::DateTimeUtc;
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{ChatCompletionParameters, ChatMessage, Role};
 use regex::Regex;
@@ -230,9 +231,15 @@ pub async fn create_card(
             card.time_stamp
                 .clone()
                 .map(|ts| -> Result<NaiveDateTime, ServiceError> {
-                    NaiveDateTime::parse_from_str(&ts, "%Y-%m-%d %H:%M:%S").map_err(|e| {
-                        ServiceError::BadRequest(format!("Invalid timestamp format {}", e))
-                    })
+                    //TODO: change all ts parsing to this crate
+                    Ok(ts
+                        .parse::<DateTimeUtc>()
+                        .map_err(|_| {
+                            ServiceError::BadRequest("Invalid timestamp format".to_string())
+                        })?
+                        .0
+                        .with_timezone(&chrono::Local)
+                        .naive_local())
                 })
                 .transpose()?,
             dataset_org_plan_sub.dataset.id,
@@ -267,9 +274,14 @@ pub async fn create_card(
             card.time_stamp
                 .clone()
                 .map(|ts| -> Result<NaiveDateTime, ServiceError> {
-                    NaiveDateTime::parse_from_str(&ts, "%Y-%m-%d %H:%M:%S").map_err(|e| {
-                        ServiceError::BadRequest(format!("Invalid timestamp format {}", e))
-                    })
+                    Ok(ts
+                        .parse::<DateTimeUtc>()
+                        .map_err(|_| {
+                            ServiceError::BadRequest("Invalid timestamp format".to_string())
+                        })?
+                        .0
+                        .with_timezone(&chrono::Local)
+                        .naive_local())
                 })
                 .transpose()?,
             dataset_org_plan_sub.dataset.id,
@@ -459,8 +471,13 @@ pub async fn update_card(
         card.time_stamp
             .clone()
             .map(|ts| -> Result<NaiveDateTime, ServiceError> {
-                NaiveDateTime::parse_from_str(&ts, "%Y-%m-%d %H:%M:%S")
-                    .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))
+                //TODO: change all ts parsing to this crate
+                Ok(ts
+                    .parse::<DateTimeUtc>()
+                    .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))?
+                    .0
+                    .with_timezone(&chrono::Local)
+                    .naive_local())
             })
             .transpose()?,
         dataset_id,
@@ -571,8 +588,13 @@ pub async fn update_card_by_tracking_id(
         card.time_stamp
             .clone()
             .map(|ts| -> Result<NaiveDateTime, ServiceError> {
-                NaiveDateTime::parse_from_str(&ts, "%Y-%m-%d %H:%M:%S")
-                    .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))
+                //TODO: change all ts parsing to this crate
+                Ok(ts
+                    .parse::<DateTimeUtc>()
+                    .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))?
+                    .0
+                    .with_timezone(&chrono::Local)
+                    .naive_local())
             })
             .transpose()?,
         dataset_org_plan_sub.dataset.id,
