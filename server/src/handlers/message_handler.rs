@@ -65,7 +65,7 @@ pub async fn create_message_completion_handler(
             .map_err(|err| ServiceError::InternalServerError(err.message.to_string()))?;
 
     if org_message_count
-        > dataset_org_plan_sub
+        >= dataset_org_plan_sub
             .organization
             .plan
             .unwrap_or(StripePlan::default())
