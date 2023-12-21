@@ -105,7 +105,7 @@ pub fn get_user_with_cards_by_id_query(
         .count()
         .get_result(&mut conn)
         .map_err(|_| DefaultError {
-            message: "Error loading user cards",
+            message: "Error loading user cards count",
         })?;
 
     let user_card_metadatas = user_card_metadatas
