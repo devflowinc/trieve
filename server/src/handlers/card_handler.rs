@@ -139,7 +139,7 @@ pub async fn create_card(
     let pool2 = pool.clone();
     let pool3 = pool.clone();
     let count_pool = pool.clone();
-    let count_dataset_id = dataset_org_plan_sub.dataset.id.clone();
+    let count_dataset_id = dataset_org_plan_sub.dataset.id;
 
     let card_count =
         web::block(move || get_row_count_for_dataset_id_query(count_dataset_id, count_pool))
