@@ -1,9 +1,12 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
-    data::models::{DatasetAndOrgWithSubAndPlan, DatasetConfiguration, File, Pool},
+    data::models::{DatasetAndOrgWithSubAndPlan, DatasetConfiguration, File, Pool, StripePlan},
     errors::ServiceError,
-    operators::file_operator::{
-        convert_doc_to_html_query, delete_file_query, get_file_query, get_user_file_query,
+    operators::{
+        file_operator::{
+            convert_doc_to_html_query, delete_file_query, get_file_query, get_user_file_query,
+        },
+        organization_operator::get_file_size_sum_org,
     },
 };
 use actix_files::NamedFile;
@@ -79,6 +82,24 @@ pub async fn upload_file_handler(
         );
     }
 
+    let file_size_sum_pool = pool.clone();
+    let file_size_sum_org_id = dataset_org_plan_sub.organization.id.clone();
+    let file_size_sum =
+        web::block(move || get_file_size_sum_org(file_size_sum_org_id, file_size_sum_pool))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    if file_size_sum
+        > dataset_org_plan_sub
+            .clone()
+            .organization
+            .plan
+            .unwrap_or(StripePlan::default())
+            .file_storage
+            .into()
+    {
+        return Err(ServiceError::BadRequest("File size limit reached".to_string()).into());
+    }
+
     let upload_file_data = data.into_inner();
     let pool_inner = pool.clone();
 
@@ -112,7 +133,7 @@ pub async fn upload_file_handler(
         upload_file_data.create_cards,
         upload_file_data.time_stamp,
         user.0,
-        dataset_org_plan_sub,
+        dataset_org_plan_sub.clone(),
         pool_inner,
     )
     .await
