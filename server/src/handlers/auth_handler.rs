@@ -1,5 +1,6 @@
 use crate::data::models::DatasetAndOrgWithSubAndPlan;
 use crate::get_env;
+use crate::operators::user_operator::create_user_query;
 use crate::{
     data::models::{DatasetConfiguration, Pool, SlimUser, User, UserOrganization, UserRole},
     errors::ServiceError,
@@ -15,7 +16,6 @@ use actix_session::Session;
 use actix_web::{
     dev::Payload, web, Error, FromRequest, HttpMessage as _, HttpRequest, HttpResponse,
 };
-use diesel::prelude::*;
 use oauth2::reqwest::async_http_client;
 use oauth2::{
     AuthUrl, AuthorizationCode, ClientSecret, CsrfToken, PkceCodeChallenge, PkceCodeVerifier,
@@ -192,7 +192,6 @@ pub async fn create_account(
     inv_code: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<(User, UserOrganization), ServiceError> {
-    use crate::data::schema::users::dsl as users_columns;
     let mut owner = false;
     let org = match dataset_id {
         Some(dataset_id) => get_org_from_dataset_id_query(dataset_id, pool.clone())
@@ -258,38 +257,15 @@ pub async fn create_account(
         }
     }
 
-    let user = User::from_details_with_id(user_id, email, Some(name));
-    let user_org = if owner {
-        UserOrganization::from_details(user_id, org_id, UserRole::Owner)
-    } else {
-        UserOrganization::from_details(user_id, org_id, UserRole::User)
-    };
-    let mut conn = pool.get().unwrap();
-    let user = match diesel::insert_into(users_columns::users)
-        .values(&user)
-        .execute(&mut conn)
-    {
-        Ok(_) => Ok(user),
-        Err(e) => {
-            log::error!("Failed to create account: {}", e);
-            Err(ServiceError::InternalServerError(
-                "Failed to create account".into(),
-            ))
-        }
-    }?;
+    let user_org =
+        web::block(move || create_user_query(user_id, email, Some(name), owner, org_id, pool))
+            .await
+            .map_err(|_| {
+                ServiceError::InternalServerError("Blocking error creating user".to_string())
+            })?
+            .map_err(|err| ServiceError::InternalServerError(err.message.to_string()))?;
 
-    match diesel::insert_into(crate::data::schema::user_organizations::dsl::user_organizations)
-        .values(&user_org)
-        .execute(&mut conn)
-    {
-        Ok(_) => Ok((user, user_org)),
-        Err(e) => {
-            log::error!("Failed to create account: {}", e);
-            Err(ServiceError::InternalServerError(
-                "Failed to create account".into(),
-            ))
-        }
-    }
+    Ok(user_org)
 }
 
 #[utoipa::path(
