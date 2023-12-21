@@ -1,6 +1,6 @@
 use crate::data::models::{
-    CardCollisions, CardFile, CardMetadataWithFileData, Dataset, DatasetConfiguration,
-    FullTextSearchResult,
+    CardCollisions, CardFile, CardMetadataCount, CardMetadataWithFileData, Dataset,
+    DatasetConfiguration, FullTextSearchResult,
 };
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::operators::model_operator::create_embedding;
@@ -714,4 +714,23 @@ pub fn find_relevant_sentence(
             .join(". "),
     );
     Ok(new_output)
+}
+
+pub fn get_row_count_for_dataset_id_query(
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<CardMetadataCount, DefaultError> {
+    use crate::data::schema::card_metadata_counts::dsl as card_metadata_counts_columns;
+
+    let mut conn = pool.get().expect("Failed to get connection to db");
+
+    let card_metadata_count = card_metadata_counts_columns::card_metadata_counts
+        .filter(card_metadata_counts_columns::dataset_id.eq(dataset_id))
+        .select(CardMetadataCount::as_select())
+        .first::<CardMetadataCount>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to locate count_for_dataset_id",
+        })?;
+
+    Ok(card_metadata_count)
 }

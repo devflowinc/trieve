@@ -8,7 +8,7 @@ CREATE TABLE user_collection_counts (
 CREATE OR REPLACE FUNCTION update_collection_counts()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
+    IF TG_OP = 'INSERT' THEN
         INSERT INTO user_collection_counts (id, user_id, collection_count)
         VALUES (NEW.id, NEW.author_id, 1)
         ON CONFLICT (user_id) DO UPDATE
