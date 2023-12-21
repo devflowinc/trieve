@@ -1,18 +1,19 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
-    data::models::{Dataset, DatasetAndOrgWithSubAndPlan, Pool},
+    data::models::{Dataset, DatasetAndOrgWithSubAndPlan, Pool, StripePlan},
     errors::ServiceError,
     operators::{
         dataset_operator::{
             create_dataset_query, delete_dataset_by_id_query, get_dataset_by_id_query,
             get_datasets_by_organization_id, update_dataset_query,
         },
-        organization_operator::get_organization_by_id_query,
+        organization_operator::{get_org_dataset_count, get_organization_by_id_query},
     },
 };
 use actix_web::{web, FromRequest, HttpMessage, HttpResponse};
 use futures_util::Future;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::pin::Pin;
 use utoipa::ToSchema;
 
@@ -83,6 +84,31 @@ pub async fn create_dataset(
 ) -> Result<HttpResponse, ServiceError> {
     if user.0.organization_id != data.organization_id {
         return Err(ServiceError::Forbidden);
+    }
+
+    let org_pool = pool.clone();
+
+    let organization_sub_plan =
+        get_organization_by_id_query(data.organization_id, org_pool.clone())
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let dataset_count = web::block(move || get_org_dataset_count(user.0.organization_id, org_pool))
+        .await
+        .map_err(|_| {
+            ServiceError::BadRequest("Blocking error getting org dataset count".to_string())
+        })?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    if dataset_count
+        > organization_sub_plan
+            .plan
+            .unwrap_or(StripePlan::default())
+            .dataset_count
+            .into()
+    {
+        return Ok(HttpResponse::UpgradeRequired()
+            .json(json!({"message": "Your plan must be upgraded to create additional datasets"})));
     }
 
     let dataset = Dataset::from_details(
