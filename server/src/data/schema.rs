@@ -62,6 +62,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    card_metadata_counts (id) {
+        id -> Uuid,
+        dataset_id -> Uuid,
+        total_rows -> Int8,
+    }
+}
+
+diesel::table! {
     collections_from_files (id) {
         id -> Uuid,
         collection_id -> Uuid,
@@ -251,6 +259,7 @@ diesel::joinable!(card_files -> card_metadata (card_id));
 diesel::joinable!(card_files -> files (file_id));
 diesel::joinable!(card_metadata -> datasets (dataset_id));
 diesel::joinable!(card_metadata -> users (author_id));
+diesel::joinable!(card_metadata_counts -> datasets (dataset_id));
 diesel::joinable!(collections_from_files -> card_collection (collection_id));
 diesel::joinable!(collections_from_files -> files (file_id));
 diesel::joinable!(cut_cards -> users (user_id));
@@ -276,6 +285,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     card_collisions,
     card_files,
     card_metadata,
+    card_metadata_counts,
     collections_from_files,
     cut_cards,
     datasets,
