@@ -190,10 +190,11 @@ services:
       - KC_DATABASE_URL=jdbc:postgresql://localhost:5434/keycloak
       - KC_DB_USERNAME=postgres
       - KC_DB_PASSWORD=password
-    entrypoint: "/opt/keycloak/bin/kc.sh start-dev --import-realm"
+    entrypoint: "/opt/keycloak/bin/kc.sh start-dev --import-realm --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false"
     volumes:
       - keycloak-data:/opt/keycloak/data
-      - ./server/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - ./keycloak/themes/arguflow:/opt/keycloak/themes/arguflow
     ports:
       - 8080:8080
     networks:
