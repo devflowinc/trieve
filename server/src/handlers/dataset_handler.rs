@@ -101,7 +101,7 @@ pub async fn create_dataset(
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if dataset_count
-        > organization_sub_plan
+        >= organization_sub_plan
             .plan
             .unwrap_or(StripePlan::default())
             .dataset_count

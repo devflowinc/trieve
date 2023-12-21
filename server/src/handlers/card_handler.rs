@@ -147,7 +147,7 @@ pub async fn create_card(
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if card_count.total_rows
-        > dataset_org_plan_sub
+        >= dataset_org_plan_sub
             .organization
             .plan
             .unwrap_or(StripePlan::default())
