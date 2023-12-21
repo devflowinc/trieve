@@ -7,8 +7,8 @@ use crate::{
 };
 use actix_web::web;
 use diesel::{
-    ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl, RunQueryDsl,
-    SelectableHelper, Table,
+    dsl::sql, sql_types::BigInt, ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl,
+    RunQueryDsl, SelectableHelper, Table,
 };
 
 pub async fn create_organization_query(
@@ -236,19 +236,19 @@ pub fn get_message_org_count(
 ) -> Result<i64, DefaultError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
     use crate::data::schema::messages::dsl as messages_columns;
-    use crate::data::schema::user_organizations::dsl as user_organizations_columns;
+    use crate::data::schema::organizations::dsl as organizations_columns;
 
     let mut conn = pool.get().map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
-    let messages_count = user_organizations_columns::user_organizations
-        .filter(user_organizations_columns::id.eq(organization_id))
-        .left_join(
+    let messages_count = organizations_columns::organizations
+        .filter(organizations_columns::id.eq(organization_id))
+        .inner_join(
             datasets_columns::datasets
-                .on(user_organizations_columns::id.eq(datasets_columns::organization_id)),
+                .on(organizations_columns::id.eq(datasets_columns::organization_id)),
         )
-        .left_join(
+        .inner_join(
             messages_columns::messages.on(datasets_columns::id.eq(messages_columns::dataset_id)),
         )
         .count()
@@ -258,4 +258,34 @@ pub fn get_message_org_count(
         })?;
 
     Ok(messages_count)
+}
+
+pub fn get_file_size_sum_org(
+    organization_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<i64, DefaultError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+    use crate::data::schema::files::dsl as files_columns;
+    use crate::data::schema::organizations::dsl as organizations_columns;
+
+    let mut conn = pool.get().map_err(|_| DefaultError {
+        message: "Could not get database connection",
+    })?;
+
+    let file_size_sums: Vec<i64> = organizations_columns::organizations
+        .filter(organizations_columns::id.eq(organization_id))
+        .inner_join(
+            datasets_columns::datasets
+                .on(organizations_columns::id.eq(datasets_columns::organization_id)),
+        )
+        .inner_join(files_columns::files.on(datasets_columns::id.eq(files_columns::dataset_id)))
+        .select(sql::<BigInt>("SUM(files.size)"))
+        .load(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Error loading message organization count",
+        })?;
+
+    let aggregate_file_size = file_size_sums.iter().sum();
+
+    Ok(aggregate_file_size)
 }
