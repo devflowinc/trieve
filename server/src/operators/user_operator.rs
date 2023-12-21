@@ -1,6 +1,6 @@
 use crate::data::models::{
     CardFileWithName, CardMetadata, CardMetadataWithFileData, SlimUser, UserDTOWithCards,
-    UserOrganization,
+    UserOrganization, UserRole,
 };
 use crate::diesel::prelude::*;
 use crate::handlers::user_handler::UpdateUserData;
@@ -161,7 +161,7 @@ pub fn get_user_with_cards_by_id_query(
                 metadata: metadata.metadata.clone(),
                 tracking_id: metadata.tracking_id.clone(),
                 time_stamp: metadata.time_stamp,
-                weight: metadata.weight
+                weight: metadata.weight,
             }
         })
         .collect();
@@ -306,4 +306,42 @@ pub fn get_user_from_api_key_query(
             message: "User not found",
         }),
     }
+}
+
+pub fn create_user_query(
+    user_id: uuid::Uuid,
+    email: String,
+    name: Option<String>,
+    owner: bool,
+    org_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(User, UserOrganization), DefaultError> {
+    use crate::data::schema::user_organizations::dsl as user_organizations_columns;
+    use crate::data::schema::users::dsl as users_columns;
+
+    let user = User::from_details_with_id(user_id, email, name);
+    let user_org = if owner {
+        UserOrganization::from_details(user_id, org_id, UserRole::Owner)
+    } else {
+        UserOrganization::from_details(user_id, org_id, UserRole::User)
+    };
+    let mut conn = pool.get().unwrap();
+
+    let user_org = conn
+        .transaction::<_, diesel::result::Error, _>(|conn| {
+            let user = diesel::insert_into(users_columns::users)
+                .values(&user)
+                .get_result::<User>(conn)?;
+
+            let user_org = diesel::insert_into(user_organizations_columns::user_organizations)
+                .values(&user_org)
+                .get_result::<UserOrganization>(conn)?;
+
+            Ok((user, user_org))
+        })
+        .map_err(|_| DefaultError {
+            message: "Failed to create user, likely that organization_id is invalid",
+        })?;
+
+    Ok(user_org)
 }
