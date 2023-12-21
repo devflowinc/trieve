@@ -187,3 +187,24 @@ pub async fn get_org_from_dataset_id_query(
 
     Ok(organization)
 }
+
+pub fn get_org_dataset_count(
+    organization_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<i64, DefaultError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+
+    let mut conn = pool.get().map_err(|_| DefaultError {
+        message: "Could not get database connection",
+    })?;
+
+    let dataset_count = datasets_columns::datasets
+        .filter(datasets_columns::organization_id.eq(organization_id))
+        .count()
+        .get_result(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Error loading org datasets count",
+        })?;
+
+    Ok(dataset_count)
+}
