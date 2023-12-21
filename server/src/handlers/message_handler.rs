@@ -58,7 +58,7 @@ pub async fn create_message_completion_handler(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let message_count_pool = pool.clone();
-    let message_count_org_id = dataset_org_plan_sub.organization.id.clone();
+    let message_count_org_id = dataset_org_plan_sub.organization.id;
     let org_message_count =
         web::block(move || get_message_org_count(message_count_org_id, message_count_pool))
             .await?

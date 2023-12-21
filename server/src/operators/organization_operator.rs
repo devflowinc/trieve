@@ -91,11 +91,10 @@ pub async fn get_organization_by_id_query(
 
     let org_plan_sub = match redis_organization {
         Ok(organization_str) => {
-            let org_with_plan_sub =
-                serde_json::from_str::<OrganizationWithSubAndPlan>(&organization_str)
-                    .expect("Could not deserialize org with sub and plan from redis");
+            
 
-            org_with_plan_sub
+            serde_json::from_str::<OrganizationWithSubAndPlan>(&organization_str)
+                    .expect("Could not deserialize org with sub and plan from redis")
         }
         Err(_) => {
             use crate::data::schema::organizations::dsl as organizations_columns;
