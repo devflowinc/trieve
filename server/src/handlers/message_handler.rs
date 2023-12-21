@@ -1,7 +1,7 @@
 use super::{auth_handler::LoggedUser, card_handler::ParsedQuery};
 use crate::{
     data::models::{self, DatasetAndOrgWithSubAndPlan, DatasetConfiguration},
-    data::models::{CardMetadataWithFileData, Dataset, Pool},
+    data::models::{CardMetadataWithFileData, Dataset, Pool, StripePlan},
     errors::{DefaultError, ServiceError},
     get_env,
     operators::{
@@ -14,6 +14,7 @@ use crate::{
             user_owns_topic_query,
         },
         model_operator::create_embedding,
+        organization_operator::get_message_org_count,
         search_operator::retrieve_qdrant_points_query,
     },
 };
@@ -29,6 +30,7 @@ use openai_dive::v1::{
     resources::chat::{ChatCompletionParameters, ChatMessage, Role},
 };
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use tokio_stream::StreamExt;
 use utoipa::ToSchema;
 
@@ -55,6 +57,26 @@ pub async fn create_message_completion_handler(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let message_count_pool = pool.clone();
+    let message_count_org_id = dataset_org_plan_sub.organization.id.clone();
+    let org_message_count =
+        web::block(move || get_message_org_count(message_count_org_id, message_count_pool))
+            .await?
+            .map_err(|err| ServiceError::InternalServerError(err.message.to_string()))?;
+
+    if org_message_count
+        > dataset_org_plan_sub
+            .organization
+            .plan
+            .unwrap_or(StripePlan::default())
+            .message_count
+            .into()
+    {
+        return Ok(HttpResponse::UpgradeRequired().json(json!({
+            "message": "To create more message completions, you must upgrade your plan"
+        })));
+    }
+
     let create_message_data = data.into_inner();
     let pool1 = pool.clone();
     let pool2 = pool.clone();
