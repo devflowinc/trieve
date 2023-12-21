@@ -228,7 +228,7 @@ pub async fn create_account(
         })?
         .map_err(|err| ServiceError::InternalServerError(err.message.to_string()))?;
     if user_org_count
-        > org_plan_sub
+        >= org_plan_sub
             .plan
             .unwrap_or(StripePlan::default())
             .user_count
