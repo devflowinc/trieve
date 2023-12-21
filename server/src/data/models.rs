@@ -1135,3 +1135,13 @@ pub struct CardMetadataCount {
     pub dataset_id: uuid::Uuid,
     pub total_rows: i64,
 }
+
+impl CardMetadataCount {
+    pub fn from_details(dataset_id: uuid::Uuid, total_rows: i64) -> Self {
+        CardMetadataCount {
+            id: uuid::Uuid::new_v4(),
+            dataset_id,
+            total_rows,
+        }
+    }
+}

@@ -724,13 +724,34 @@ pub fn get_row_count_for_dataset_id_query(
 
     let mut conn = pool.get().expect("Failed to get connection to db");
 
-    let card_metadata_count = card_metadata_counts_columns::card_metadata_counts
+    let card_metadata_count_result = card_metadata_counts_columns::card_metadata_counts
         .filter(card_metadata_counts_columns::dataset_id.eq(dataset_id))
         .select(CardMetadataCount::as_select())
-        .first::<CardMetadataCount>(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to locate count_for_dataset_id",
-        })?;
+        .first::<CardMetadataCount>(&mut conn);
+
+    let card_metadata_count = match card_metadata_count_result {
+        Ok(card_metadata_count) => card_metadata_count,
+        Err(_) => create_row_count_for_dataset_id_query(dataset_id, pool)?,
+    };
+
+    Ok(card_metadata_count)
+}
+
+pub fn create_row_count_for_dataset_id_query(
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<CardMetadataCount, DefaultError> {
+    use crate::data::schema::card_metadata_counts::dsl as card_metadata_counts_columns;
+
+    let mut conn = pool.get().expect("Failed to get connection to db");
+
+    let card_metadata_count =
+        diesel::insert_into(card_metadata_counts_columns::card_metadata_counts)
+            .values(&CardMetadataCount::from_details(dataset_id, 0))
+            .get_result::<CardMetadataCount>(&mut conn)
+            .map_err(|_| DefaultError {
+                message: "Could not create card_metadadta_count, likely dataset_id conflict",
+            })?;
 
     Ok(card_metadata_count)
 }
