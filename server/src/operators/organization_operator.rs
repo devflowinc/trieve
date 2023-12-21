@@ -208,3 +208,24 @@ pub fn get_org_dataset_count(
 
     Ok(dataset_count)
 }
+
+pub fn get_user_org_count(
+    organization_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<i64, DefaultError> {
+    use crate::data::schema::user_organizations::dsl as user_organizations_columns;
+
+    let mut conn = pool.get().map_err(|_| DefaultError {
+        message: "Could not get database connection",
+    })?;
+
+    let user_count = user_organizations_columns::user_organizations
+        .filter(user_organizations_columns::organization_id.eq(organization_id))
+        .count()
+        .get_result(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Error loading org user count",
+        })?;
+
+    Ok(user_count)
+}
