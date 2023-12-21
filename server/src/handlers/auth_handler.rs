@@ -1,5 +1,6 @@
-use crate::data::models::DatasetAndOrgWithSubAndPlan;
+use crate::data::models::{DatasetAndOrgWithSubAndPlan, StripePlan};
 use crate::get_env;
+use crate::operators::organization_operator::{get_organization_by_id_query, get_user_org_count};
 use crate::operators::user_operator::create_user_query;
 use crate::{
     data::models::{DatasetConfiguration, Pool, SlimUser, User, UserOrganization, UserRole},
@@ -214,6 +215,29 @@ pub async fn create_account(
                 })?
         }
     };
+    let org_plan_sub = get_organization_by_id_query(org.id, pool.clone())
+        .await
+        .map_err(|_| {
+            ServiceError::InternalServerError("Could not find organization for user".to_string())
+        })?;
+    let user_org_count_pool = pool.clone();
+    let user_org_count = web::block(move || get_user_org_count(user_id, user_org_count_pool))
+        .await
+        .map_err(|_| {
+            ServiceError::InternalServerError("Blocking error getting org user count".to_string())
+        })?
+        .map_err(|err| ServiceError::InternalServerError(err.message.to_string()))?;
+    if user_org_count
+        > org_plan_sub
+            .plan
+            .unwrap_or(StripePlan::default())
+            .user_count
+            .into()
+    {
+        return Err(ServiceError::BadRequest(
+            "User limit reached for organization, must upgrade plan to add more users".to_string(),
+        ));
+    }
 
     let org_id = org.id;
 
