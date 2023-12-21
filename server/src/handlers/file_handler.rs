@@ -89,7 +89,7 @@ pub async fn upload_file_handler(
     .await?
     .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
     if file_size_sum
-        > dataset_org_plan_sub
+        >= dataset_org_plan_sub
             .clone()
             .organization
             .plan
