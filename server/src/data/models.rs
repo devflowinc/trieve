@@ -996,6 +996,21 @@ impl StripePlan {
             updated_at: chrono::Utc::now().naive_local(),
         }
     }
+
+    pub fn default() -> Self {
+        StripePlan {
+            id: uuid::Uuid::default(),
+            stripe_id: "".to_string(),
+            card_count: 1000,
+            file_storage: 0,
+            user_count: 5,
+            dataset_count: 1,
+            message_count: 1000,
+            amount: 0,
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
+        }
+    }
 }
 
 #[derive(
@@ -1111,4 +1126,12 @@ impl UserOrganization {
             updated_at: chrono::Utc::now().naive_local(),
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[diesel(table_name = card_metadata_counts)]
+pub struct CardMetadataCount {
+    pub id: uuid::Uuid,
+    pub dataset_id: uuid::Uuid,
+    pub total_rows: i64,
 }

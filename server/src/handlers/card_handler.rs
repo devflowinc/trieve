@@ -1,7 +1,7 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     CardCollection, CardCollectionBookmark, CardMetadata, CardMetadataWithFileData,
-    ChatMessageProxy, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, Pool,
+    ChatMessageProxy, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, Pool, StripePlan,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -27,6 +27,7 @@ use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{ChatCompletionParameters, ChatMessage, Role};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::process::Command;
 use tokio_stream::StreamExt;
 use utoipa::{IntoParams, ToSchema};
@@ -137,6 +138,25 @@ pub async fn create_card(
     let pool1 = pool.clone();
     let pool2 = pool.clone();
     let pool3 = pool.clone();
+    let count_pool = pool.clone();
+    let count_dataset_id = dataset_org_plan_sub.dataset.id.clone();
+
+    let card_count =
+        web::block(move || get_row_count_for_dataset_id_query(count_dataset_id, count_pool))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    if card_count.total_rows
+        > dataset_org_plan_sub
+            .organization
+            .plan
+            .unwrap_or(StripePlan::default())
+            .card_count
+            .into()
+    {
+        return Ok(HttpResponse::UpgradeRequired()
+            .json(json!({"message": "Must upgrade your plan to add more chunks"})));
+    }
 
     let card_tracking_id = card
         .tracking_id
