@@ -229,3 +229,33 @@ pub fn get_user_org_count(
 
     Ok(user_count)
 }
+
+pub fn get_message_org_count(
+    organization_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<i64, DefaultError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+    use crate::data::schema::messages::dsl as messages_columns;
+    use crate::data::schema::user_organizations::dsl as user_organizations_columns;
+
+    let mut conn = pool.get().map_err(|_| DefaultError {
+        message: "Could not get database connection",
+    })?;
+
+    let messages_count = user_organizations_columns::user_organizations
+        .filter(user_organizations_columns::id.eq(organization_id))
+        .left_join(
+            datasets_columns::datasets
+                .on(user_organizations_columns::id.eq(datasets_columns::organization_id)),
+        )
+        .left_join(
+            messages_columns::messages.on(datasets_columns::id.eq(messages_columns::dataset_id)),
+        )
+        .count()
+        .get_result(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Error loading message organization count",
+        })?;
+
+    Ok(messages_count)
+}

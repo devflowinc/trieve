@@ -6,7 +6,7 @@ use crate::{
     handlers::auth_handler::build_oidc_client,
     operators::{
         model_operator::initalize_cross_encoder,
-        qdrant_operator::create_new_qdrant_collection_query, 
+        qdrant_operator::create_new_qdrant_collection_query,
     },
 };
 use actix_cors::Cors;
@@ -18,10 +18,8 @@ use actix_web::{
     web::{self, PayloadConfig},
     App, HttpServer,
 };
-
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-
 use utoipa::OpenApi;
 use utoipa_redoc::{Redoc, Servable};
 
