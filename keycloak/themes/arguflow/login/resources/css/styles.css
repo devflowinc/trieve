@@ -1,15 +1,26 @@
 :root {
-  --textColor: #f6f5f7;
-  --textOffColor: #7c858d;
-  --baseColor: rgb(18 18 20);
+  --textColor: #7c858d;
+  --textOffColor: #f6f5f7;
+  --baseColor: rgb(255 255 255);
   --baseDarkColor: #1e2b36;
-  --baseLightColor: #262626;
+  --baseLightColor: rgb(255 255 255);
   --secColor: rgb(64 64 64);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --textColor: #f6f5f7;
+    --textOffColor: #7c858d;
+    --baseColor: rgb(18, 18, 18);
+    --baseDarkColor: #1e2b36;
+    --baseLightColor: #262626;
+    --secColor: rgb(64 64 64);
+  }
 }
 
 body {
   background: var(--baseColor) !important;
-  color: var(--textColor);
+  color: var(--textColor) !important;
   font-size: 18px;
 }
 
@@ -30,6 +41,11 @@ body {
   font-size: 26px;
   text-transform: uppercase;
   font-weight: 600;
+  color: var(--textColor);
+}
+
+#kc-header-wrapper {
+  color: var(--textColor);
 }
 
 /* Login Form */
@@ -58,7 +74,7 @@ body {
 
 #kc-form-options .checkbox {
   font-size: 16px;
-  color: var(--textOffColor);
+  color: var(--textColor);
   margin-bottom: 0;
 }
 
@@ -91,7 +107,7 @@ body {
   border: none;
   padding: 22px 30px;
   font-size: 18px;
-  color: var(--textColor);
+  color: #f6f5f7;
 
   border-radius: 32px;
   background: rgb(163 62 181);
