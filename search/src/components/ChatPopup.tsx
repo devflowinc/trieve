@@ -159,7 +159,7 @@ const ChatPopup = (props: LayoutProps) => {
     });
   };
 
-  const messageChs = createMemo(() => {
+  const messageChunks = createMemo(() => {
     const selectedIds = props.selectedIds();
     const chunks = props.chunks();
 
