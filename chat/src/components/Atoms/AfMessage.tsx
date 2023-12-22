@@ -8,8 +8,8 @@ import {
   createMemo,
   createSignal,
 } from "solid-js";
-import { CardMetadataWithVotes } from "~/utils/apiTypes";
-import ScoreCard, { sanitzerOptions } from "../ScoreCard";
+import { ChunkMetadataWithVotes } from "~/utils/apiTypes";
+import ScoreChunk, { sanitzerOptions } from "../ScoreChunk";
 import sanitizeHtml from "sanitize-html";
 
 export interface AfMessageProps {
@@ -28,10 +28,10 @@ export const AfMessage = (props: AfMessageProps) => {
     window.innerWidth < 450 ? true : false,
   );
   const [editingMessageContent, setEditingMessageContent] = createSignal("");
-  const [cardMetadatas, setCardMetadatas] = createSignal<
-    CardMetadataWithVotes[]
+  const [chunkMetadatas, setChunkMetadatas] = createSignal<
+    ChunkMetadataWithVotes[]
   >([]);
-  const [metadata, setMetadata] = createSignal<CardMetadataWithVotes[]>([]);
+  const [metadata, setMetadata] = createSignal<ChunkMetadataWithVotes[]>([]);
 
   createEffect(() => {
     setEditingMessageContent(props.content);
@@ -45,7 +45,7 @@ export const AfMessage = (props: AfMessageProps) => {
     const split_content = props.content.split("||");
     let content = props.content;
     if (split_content.length > 1) {
-      setCardMetadatas(JSON.parse(split_content[0]));
+      setChunkMetadatas(JSON.parse(split_content[0]));
       content = split_content[1].replace(
         /\[([^,\]]+)/g,
         (_, content: string) => {
@@ -78,26 +78,26 @@ export const AfMessage = (props: AfMessageProps) => {
     const bracketRe = /\[(.*?)\]/g;
     const numRe = /\d+/g;
     let match;
-    let cardNums;
-    const cardNumList = [];
+    let chunkNums;
+    const chunkNumList = [];
 
     while ((match = bracketRe.exec(displayMessage().content)) !== null) {
-      const cardIndex = match[0];
-      while ((cardNums = numRe.exec(cardIndex)) !== null) {
-        for (const num1 of cardNums) {
-          const cardNum = parseInt(num1);
-          cardNumList.push(cardNum);
+      const chunkIndex = match[0];
+      while ((chunkNums = numRe.exec(chunkIndex)) !== null) {
+        for (const num1 of chunkNums) {
+          const chunkNum = parseInt(num1);
+          chunkNumList.push(chunkNum);
         }
       }
     }
-    cardNumList.sort((a, b) => a - b);
-    for (const num of cardNumList) {
-      const card = cardMetadatas()[num - 1];
-      if (!metadata().includes(card)) {
-        // the linter does not understand that the card can sometimes be undefined or null
+    chunkNumList.sort((a, b) => a - b);
+    for (const num of chunkNumList) {
+      const chunk = chunkMetadatas()[num - 1];
+      if (!metadata().includes(chunk)) {
+        // the linter does not understand that the chunk can sometimes be undefined or null
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        if (!card) return;
-        setMetadata((prev) => [...prev, card]);
+        if (!chunk) return;
+        setMetadata((prev) => [...prev, chunk]);
       }
     }
   });
@@ -130,7 +130,7 @@ export const AfMessage = (props: AfMessageProps) => {
                 classList={{
                   "w-full": true,
                   "flex flex-col gap-y-8 items-start lg:gap-4 lg:grid lg:grid-cols-3 flex-col-reverse lg:flex-row":
-                    !!cardMetadatas(),
+                    !!chunkMetadatas(),
                 }}
               >
                 <div class="col-span-2 whitespace-pre-line text-neutral-800 dark:text-neutral-50">
@@ -152,14 +152,14 @@ export const AfMessage = (props: AfMessageProps) => {
                 </Show>
                 <Show when={metadata()}>
                   <div class="max-h-[600px] w-full flex-col space-y-3 overflow-scroll overflow-x-hidden scrollbar-thin scrollbar-track-neutral-200 dark:scrollbar-track-zinc-700">
-                    <For each={cardMetadatas()}>
-                      {(card, i) => (
-                        <ScoreCard
+                    <For each={chunkMetadatas()}>
+                      {(chunk, i) => (
+                        <ScoreChunk
                           signedInUserId={undefined}
-                          cardCollections={[]}
+                          chunkCollections={[]}
                           totalCollectionPages={1}
                           collection={undefined}
-                          card={card}
+                          chunk={chunk}
                           counter={(i() + 1).toString()}
                           initialExpanded={false}
                           bookmarks={[]}
