@@ -34,7 +34,10 @@ try {
     throw new Error("Invalid chunk metadata");
   }
 
-  specificChunks = { metadata: specificChunkJson, status: specificChunk.status };
+  specificChunks = {
+    metadata: specificChunkJson,
+    status: specificChunk.status,
+  };
 
   title = `${(specificChunks.metadata?.content ?? "")
     .split(/ +/)
@@ -57,5 +60,4 @@ try {
   />
   <div class="flex-1"></div>
   <Footer />
-</SearchLayout>
-../../components/SingleChunkPage
+</SearchLayout>../../components/SingleChunkPage
