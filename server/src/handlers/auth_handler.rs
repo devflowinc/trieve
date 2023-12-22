@@ -3,7 +3,7 @@ use crate::get_env;
 use crate::operators::organization_operator::{get_organization_by_id_query, get_user_org_count};
 use crate::operators::user_operator::create_user_query;
 use crate::{
-    data::models::{DatasetConfiguration, Pool, SlimUser, User, UserOrganization, UserRole},
+    data::models::{Pool, ServerDatasetConfiguration, SlimUser, User, UserOrganization, UserRole},
     errors::ServiceError,
     operators::{
         self,
@@ -555,7 +555,7 @@ pub async fn health_check(
 ) -> Result<HttpResponse, actix_web::Error> {
     let result = operators::model_operator::create_embedding(
         "health check",
-        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.configuration),
+        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration),
     )
     .await;
 

@@ -1,6 +1,6 @@
 use super::{auth_handler::LoggedUser, chunk_handler::ParsedQuery};
 use crate::{
-    data::models::{self, DatasetAndOrgWithSubAndPlan, DatasetConfiguration},
+    data::models::{self, DatasetAndOrgWithSubAndPlan, ServerDatasetConfiguration},
     data::models::{ChunkMetadataWithFileData, Dataset, Pool, StripePlan},
     errors::{DefaultError, ServiceError},
     get_env,
@@ -410,7 +410,8 @@ pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<Strin
     };
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
-    let dataset_config = DatasetConfiguration::from_json(dataset.configuration.clone());
+    let dataset_config =
+        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
     let base_url = dataset_config
         .LLM_BASE_URL
         .unwrap_or("https://api.openai.com/v1".into());
@@ -448,7 +449,8 @@ pub async fn stream_response(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool2 = pool.clone();
-    let dataset_config = DatasetConfiguration::from_json(dataset.configuration.clone());
+    let dataset_config =
+        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     let openai_messages: Vec<ChatMessage> = messages
         .iter()
@@ -702,7 +704,7 @@ pub async fn create_suggested_queries_handler(
 ) -> Result<HttpResponse, ServiceError> {
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let dataset_config =
-        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.configuration);
+        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
     let base_url = dataset_config
         .EMBEDDING_BASE_URL
         .unwrap_or("https://api.openai.com/v1".into());
