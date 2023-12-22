@@ -8,7 +8,11 @@ use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
 use serde::{Deserialize, Serialize};
 use tokenizers::{tokenizer::Tokenizer, PaddingParams, PaddingStrategy, TruncationParams}; // a fast, portable hash library
 
-use crate::{data::models::DatasetConfiguration, errors::ServiceError, get_env};
+use crate::{
+    data::models::ServerDatasetConfiguration,
+    errors::ServiceError,
+    get_env,
+};
 
 pub struct CrossEncoder {
     pub tokenizer: Tokenizer,
@@ -64,7 +68,7 @@ pub fn initalize_cross_encoder() -> CrossEncoder {
 
 pub async fn create_embedding(
     message: &str,
-    dataset_config: DatasetConfiguration,
+    dataset_config: ServerDatasetConfiguration,
 ) -> Result<Vec<f32>, actix_web::Error> {
     let open_ai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let base_url = dataset_config

@@ -116,7 +116,8 @@ pub async fn delete_dataset_by_id_query(
 pub async fn update_dataset_query(
     id: uuid::Uuid,
     name: String,
-    configuration: serde_json::Value,
+    server_configuration: serde_json::Value,
+    client_configuration: serde_json::Value,
     pool: web::Data<Pool>,
 ) -> Result<Dataset, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
@@ -131,7 +132,8 @@ pub async fn update_dataset_query(
             .set((
                 datasets_columns::name.eq(name),
                 datasets_columns::updated_at.eq(diesel::dsl::now),
-                datasets_columns::configuration.eq(configuration),
+                datasets_columns::server_configuration.eq(server_configuration),
+                datasets_columns::client_configuration.eq(client_configuration),
             ))
             .get_result(&mut conn)
             .map_err(|_| ServiceError::BadRequest("Failed to update dataset".to_string()))?;

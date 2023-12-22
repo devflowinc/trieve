@@ -1,6 +1,8 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
-    data::models::{DatasetAndOrgWithSubAndPlan, DatasetConfiguration, File, Pool, StripePlan},
+    data::models::{
+        DatasetAndOrgWithSubAndPlan, File, Pool, ServerDatasetConfiguration, StripePlan,
+    },
     errors::ServiceError,
     operators::{
         file_operator::{
@@ -71,10 +73,11 @@ pub async fn upload_file_handler(
     user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let document_upload_feature =
-        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.configuration.clone())
-            .DOCUMENT_UPLOAD_FEATURE
-            .unwrap_or(false);
+    let document_upload_feature = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    )
+    .DOCUMENT_UPLOAD_FEATURE
+    .unwrap_or(false);
 
     if document_upload_feature {
         return Err(
@@ -162,7 +165,7 @@ pub async fn get_file_handler(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let download_enabled =
-        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.configuration)
+        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration)
             .DOCUMENT_DOWNLOAD_FEATURE
             .unwrap_or(false);
     if download_enabled {

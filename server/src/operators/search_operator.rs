@@ -4,16 +4,16 @@ use super::chunk_operator::{
 };
 use super::model_operator::create_embedding;
 use crate::data::models::{
-    ChunkCollection, ChunkFileWithName, ChunkMetadataWithFileData, Dataset, DatasetConfiguration,
-    FullTextSearchResult, User, UserDTO,
+    ChunkCollection, ChunkFileWithName, ChunkMetadataWithFileData, Dataset, FullTextSearchResult,
+    ServerDatasetConfiguration, User, UserDTO,
 };
 use crate::data::schema::{self};
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::errors::ServiceError;
 use crate::get_env;
 use crate::handlers::chunk_handler::{
-    ParsedQuery, ScoreChunkDTO, SearchCollectionsData, SearchCollectionsResult, SearchChunkData,
-    SearchChunkQueryResponseBody,
+    ParsedQuery, ScoreChunkDTO, SearchChunkData, SearchChunkQueryResponseBody,
+    SearchCollectionsData, SearchCollectionsResult,
 };
 use crate::operators::model_operator::CrossEncoder;
 use crate::operators::qdrant_operator::{
@@ -878,7 +878,7 @@ pub async fn search_semantic_chunks(
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let embedding_vector = create_embedding(
         &data.content,
-        DatasetConfiguration::from_json(dataset.configuration.clone()),
+        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
     )
     .await?;
 
@@ -1069,7 +1069,7 @@ pub async fn search_hybrid_chunks(
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let embedding_vector = create_embedding(
         &data.content,
-        DatasetConfiguration::from_json(dataset.configuration.clone()),
+        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
     )
     .await?;
     let pool1 = pool.clone();
@@ -1217,7 +1217,7 @@ pub async fn search_semantic_collections(
 ) -> Result<SearchCollectionsResult, actix_web::Error> {
     let embedding_vector: Vec<f32> = create_embedding(
         &data.content,
-        DatasetConfiguration::from_json(dataset.configuration.clone()),
+        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
     )
     .await?;
     let pool1 = pool.clone();

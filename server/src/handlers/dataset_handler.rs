@@ -63,7 +63,8 @@ impl FromRequest for DatasetAndOrgWithSubAndPlan {
 pub struct CreateDatasetRequest {
     pub dataset_name: String,
     pub organization_id: uuid::Uuid,
-    pub configuration: serde_json::Value,
+    pub server_configuration: serde_json::Value,
+    pub client_configuration: serde_json::Value,
 }
 
 #[utoipa::path(
@@ -114,7 +115,8 @@ pub async fn create_dataset(
     let dataset = Dataset::from_details(
         data.dataset_name.clone(),
         data.organization_id,
-        data.configuration.clone(),
+        data.server_configuration.clone(),
+        data.client_configuration.clone(),
     );
 
     let d = create_dataset_query(dataset, pool).await?;
@@ -124,8 +126,9 @@ pub async fn create_dataset(
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct UpdateDatasetRequest {
     pub dataset_id: uuid::Uuid,
-    pub dataset_name: String,
-    pub configuration: serde_json::Value,
+    pub dataset_name: Option<String>,
+    pub server_configuration: Option<serde_json::Value>,
+    pub client_configuration: Option<serde_json::Value>,
 }
 
 #[utoipa::path(
@@ -144,10 +147,16 @@ pub async fn update_dataset(
     pool: web::Data<Pool>,
     _user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
+    let curr_dataset = get_dataset_by_id_query(data.dataset_id, pool.clone()).await?;
     let d = update_dataset_query(
         data.dataset_id,
-        data.dataset_name.clone(),
-        data.configuration.clone(),
+        data.dataset_name.clone().unwrap_or(curr_dataset.name),
+        data.server_configuration
+            .clone()
+            .unwrap_or(curr_dataset.server_configuration),
+        data.client_configuration
+            .clone()
+            .unwrap_or(curr_dataset.client_configuration),
         pool,
     )
     .await?;

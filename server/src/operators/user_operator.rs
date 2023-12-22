@@ -3,7 +3,7 @@ use crate::data::models::{
     UserOrganization, UserRole,
 };
 use crate::diesel::prelude::*;
-use crate::handlers::user_handler::UpdateUserData;
+use crate::handlers::auth_handler::LoggedUser;
 use crate::{
     data::models::{Pool, User},
     errors::DefaultError,
@@ -183,21 +183,24 @@ pub fn get_user_with_chunks_by_id_query(
 }
 
 pub fn update_user_query(
-    user_id: &uuid::Uuid,
-    new_user: &UpdateUserData,
+    user: &LoggedUser,
+    username: &Option<String>,
+    website: &Option<String>,
+    visible_email: bool,
     pool: web::Data<Pool>,
 ) -> Result<User, DefaultError> {
-    use crate::data::schema::users::dsl::*;
+    use crate::data::schema::users::dsl as user_columns;
 
     let mut conn = pool.get().unwrap();
 
-    if new_user.username.clone().unwrap_or("".to_string()) != "" {
-        let user_by_username =
-            get_user_by_username_query(&new_user.username.clone().unwrap(), pool);
+    if username.clone().is_some()
+        && username.clone().unwrap() != user.username.clone().unwrap_or("".to_string())
+    {
+        let user_by_username = get_user_by_username_query(&username.clone().unwrap(), pool);
 
         if let Ok(old_user) = user_by_username {
             if !(old_user.username.is_some()
-                && old_user.username.unwrap() == new_user.username.clone().unwrap())
+                && old_user.username.unwrap() == username.clone().unwrap())
             {
                 return Err(DefaultError {
                     message: "That username is already taken",
@@ -206,20 +209,11 @@ pub fn update_user_query(
         }
     }
 
-    let new_user_name: Option<String> = new_user
-        .username
-        .clone()
-        .filter(|user_name| !user_name.is_empty());
-    let new_user_website: Option<String> = new_user
-        .website
-        .clone()
-        .filter(|user_website| !user_website.is_empty());
-
-    let user: User = diesel::update(users.filter(id.eq(user_id)))
+    let user: User = diesel::update(user_columns::users.filter(user_columns::id.eq(user.id)))
         .set((
-            username.eq(&new_user_name),
-            website.eq(&new_user_website),
-            visible_email.eq(&new_user.visible_email),
+            user_columns::username.eq(username),
+            user_columns::website.eq(website),
+            user_columns::visible_email.eq(&visible_email),
         ))
         .get_result(&mut conn)
         .map_err(|_| DefaultError {
