@@ -1,7 +1,7 @@
 import { JSX, Show, createEffect, createSignal } from "solid-js";
 import {
-  isActixCardUpdateError,
-  isCardMetadataWithVotes,
+  isActixChunkUpdateError,
+  isChunkMetadataWithVotes,
 } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import {
@@ -9,16 +9,16 @@ import {
   BiRegularQuestionMark,
   BiRegularXCircle,
 } from "solid-icons/bi";
-import type { SingleCardPageProps } from "./SingleCardPage";
+import type { SingleChunkPageProps } from "./SingleChunkPage";
 import type { TinyMCE } from "../../public/tinymce/tinymce";
 import sanitize from "sanitize-html";
-import { sanitzerOptions } from "./ScoreCard";
+import { sanitzerOptions } from "./ScoreChunk";
 import { Tooltip } from "./Atoms/Tooltip";
 
-export const EditCardPageForm = (props: SingleCardPageProps) => {
+export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const dataset = import.meta.env.PUBLIC_DATASET as string;
-  const initialCardMetadata = props.defaultResultCard.metadata;
+  const initialChunkMetadata = props.defaultResultChunk.metadata;
 
   const [topLevelError, setTopLevelError] = createSignal("");
   const [formErrorText, setFormErrorText] = createSignal<
@@ -26,38 +26,38 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
   >("");
   const [formErrorFields, setFormErrorFields] = createSignal<string[]>([]);
   const [isUpdating, setIsUpdating] = createSignal(false);
-  const [cardHtml, setCardHtml] = createSignal<string>("");
+  const [chunkHtml, setChunkHtml] = createSignal<string>("");
   const [evidenceLink, setEvidenceLink] = createSignal<string>(
-    initialCardMetadata?.link ?? "",
+    initialChunkMetadata?.link ?? "",
   );
   const [tagSet, setTagSet] = createSignal<string>(
-    initialCardMetadata?.tag_set ?? "",
+    initialChunkMetadata?.tag_set ?? "",
   );
-  const [metadata, setMetadata] = createSignal(initialCardMetadata?.metadata);
+  const [metadata, setMetadata] = createSignal(initialChunkMetadata?.metadata);
   const [trackingId, setTrackingId] = createSignal(
-    initialCardMetadata?.tracking_id,
+    initialChunkMetadata?.tracking_id,
   );
   const [fetching, setFetching] = createSignal(true);
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
 
-  if (props.defaultResultCard.status == 401) {
-    setTopLevelError("You are not authorized to view this card.");
+  if (props.defaultResultChunk.status == 401) {
+    setTopLevelError("You are not authorized to view this chunk.");
   }
-  if (props.defaultResultCard.status == 404) {
-    setTopLevelError("This card could not be found.");
+  if (props.defaultResultChunk.status == 404) {
+    setTopLevelError("This chunk could not be found.");
   }
 
   const updateEvidence = () => {
-    const cardHTMLContentValue =
+    const chunkHTMLContentValue =
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       (window as any).tinymce.activeEditor.getContent() as unknown as string;
     const evidenceLinkValue = evidenceLink();
-    const curCardId = props.cardId;
+    const curChunkId = props.chunkId;
 
-    if (!cardHTMLContentValue) {
+    if (!chunkHTMLContentValue) {
       const errors: string[] = [];
-      const errorMessage = "Card content cannot be empty";
-      errors.push("cardContent");
+      const errorMessage = "Chunk content cannot be empty";
+      errors.push("chunkContent");
       setFormErrorText(errorMessage);
       setFormErrorFields(errors);
       return;
@@ -66,7 +66,7 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
     setFormErrorFields([]);
     setIsUpdating(true);
 
-    void fetch(`${apiHost}/card/update`, {
+    void fetch(`${apiHost}/chunk/update`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -74,16 +74,16 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
       },
       credentials: "include",
       body: JSON.stringify({
-        card_uuid: curCardId,
+        chunk_uuid: curChunkId,
         link: evidenceLinkValue,
         tag_set: tagSet(),
         tracking_id: trackingId(),
         metadata: metadata(),
-        card_html: cardHTMLContentValue,
+        chunk_html: chunkHTMLContentValue,
       }),
     }).then((response) => {
       if (response.ok) {
-        window.location.href = `/card/${curCardId ?? ""}`;
+        window.location.href = `/chunk/${curChunkId ?? ""}`;
         return;
       }
 
@@ -93,21 +93,21 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
         return;
       }
       if (response.status === 403) {
-        setFormErrorText("You are not authorized to edit this card.");
+        setFormErrorText("You are not authorized to edit this chunk.");
         setIsUpdating(false);
         return;
       }
 
       void response.json().then((data) => {
-        const cardReturnData = data as unknown;
+        const chunkReturnData = data as unknown;
         if (!response.ok) {
           setIsUpdating(false);
-          if (isActixCardUpdateError(cardReturnData)) {
+          if (isActixChunkUpdateError(chunkReturnData)) {
             setFormErrorText(
               <div class="flex flex-col text-red-500">
-                <span>{cardReturnData.message}</span>
+                <span>{chunkReturnData.message}</span>
                 <span class="whitespace-pre-line">
-                  {cardReturnData.changed_content}
+                  {chunkReturnData.changed_content}
                 </span>
               </div>,
             );
@@ -117,7 +117,7 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
       });
     });
 
-    if (formErrorFields().includes("cardContent")) {
+    if (formErrorFields().includes("chunkContent")) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
       (window as any).tinymce.activeEditor.focus();
     }
@@ -125,7 +125,7 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
 
   createEffect(() => {
     setFetching(true);
-    void fetch(`${apiHost}/card/${props.cardId ?? ""}`, {
+    void fetch(`${apiHost}/chunk/${props.chunkId ?? ""}`, {
       method: "GET",
       headers: {
         "AF-Dataset": dataset,
@@ -134,9 +134,9 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          console.log(isCardMetadataWithVotes(data));
-          if (!isCardMetadataWithVotes(data)) {
-            setTopLevelError("This card could not be found.");
+          console.log(isChunkMetadataWithVotes(data));
+          if (!isChunkMetadataWithVotes(data)) {
+            setTopLevelError("This chunk could not be found.");
             setFetching(false);
             return;
           }
@@ -145,7 +145,7 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
           setTagSet(data.tag_set ?? "");
           setMetadata(data.metadata);
           setTrackingId(data.tracking_id);
-          setCardHtml(data.card_html ?? "");
+          setChunkHtml(data.chunk_html ?? "");
           setTopLevelError("");
           setFetching(false);
         });
@@ -167,7 +167,7 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
     if (!textareaItem) {
       return;
     }
-    textareaItem.innerHTML = sanitize(cardHtml(), sanitzerOptions);
+    textareaItem.innerHTML = sanitize(chunkHtml(), sanitzerOptions);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
     const tinyMCE: TinyMCE = (window as any).tinymce as TinyMCE;
@@ -311,7 +311,7 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
               </div>
               <div class="flex flex-col space-y-2">
                 <div class="flex items-center space-x-2">
-                  <div>Card Content*</div>
+                  <div>Chunk Content*</div>
                   <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
                     <Tooltip
                       body={
@@ -347,7 +347,7 @@ export const EditCardPageForm = (props: SingleCardPageProps) => {
           <div class="min-w-[250px] sm:min-w-[300px]">
             <BiRegularXCircle class="mx-auto h-8 w-8 fill-current !text-red-500" />
             <div class="mb-4 text-xl font-bold">
-              Cannot edit cards without an account
+              Cannot edit chunks without an account
             </div>
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a

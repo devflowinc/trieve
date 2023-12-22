@@ -14,14 +14,14 @@ import { FiSend, FiStopCircle } from "solid-icons/fi";
 import {
   type Message,
   messageRoleFromIndex,
-  ScoreCardDTO,
+  ScoreChunkDTO,
   UserDTO,
 } from "../../utils/apiTypes";
 import { AfMessage } from "./Atoms/AfMessage";
 
 export interface LayoutProps {
   selectedIds: Accessor<string[]>;
-  cards: Accessor<ScoreCardDTO[]>;
+  chunks: Accessor<ScoreChunkDTO[]>;
   setShowNeedLoginModal: Setter<boolean>;
   setOpenChat: Setter<boolean>;
   user: Accessor<UserDTO | undefined>;
@@ -97,7 +97,7 @@ const ChatPopup = (props: LayoutProps) => {
       ];
       return [...prev, ...newMessages];
     });
-    const messages_no_cards = messages()
+    const messages_no_chunks = messages()
       .map((message) => {
         return {
           role: message.role,
@@ -107,11 +107,11 @@ const ChatPopup = (props: LayoutProps) => {
       .filter((item) => item.content !== "");
 
     const body: object = {
-      prev_messages: messages_no_cards,
-      card_ids: props.selectedIds(),
+      prev_messages: messages_no_chunks,
+      chunk_ids: props.selectedIds(),
     };
     try {
-      const res = await fetch(`${api_host}/card/generate`, {
+      const res = await fetch(`${api_host}/chunk/generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -159,11 +159,11 @@ const ChatPopup = (props: LayoutProps) => {
     });
   };
 
-  const messageCards = createMemo(() => {
+  const messageChs = createMemo(() => {
     const selectedIds = props.selectedIds();
-    const cards = props.cards();
+    const chunks = props.chunks();
 
-    return cards.filter((card) => selectedIds.includes(card.metadata[0].id));
+    return chunks.filter((chunk) => selectedIds.includes(chunk.metadata[0].id));
   });
 
   return (
@@ -190,7 +190,7 @@ const ChatPopup = (props: LayoutProps) => {
                 return (
                   <AfMessage
                     user={props.user}
-                    cards={messageCards}
+                    chunks={messageChunks}
                     role={messageRoleFromIndex(idx())}
                     content={message.content}
                     streamingCompletion={streamingCompletion}

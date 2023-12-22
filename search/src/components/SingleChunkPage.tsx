@@ -1,45 +1,45 @@
 import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
 import {
   isUserDTO,
-  type CardCollectionDTO,
-  type CardMetadataWithVotes,
+  type ChunkCollectionDTO,
+  type ChunkMetadataWithVotes,
   type UserDTO,
-  isCardMetadataWithVotes,
-  SingleCardDTO,
-  CardBookmarksDTO,
-  isCardCollectionPageDTO,
-  CardMetadata,
-  ScoreCardDTO,
+  isChunkMetadataWithVotes,
+  SingleChunkDTO,
+  ChunkBookmarksDTO,
+  isChunkCollectionPageDTO,
+  ChunkMetadata,
+  ScoreChunkDTO,
 } from "../../utils/apiTypes";
-import ScoreCard from "./ScoreCard";
+import ScoreChunk from "./ScoreChunk";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { BiRegularLogIn, BiRegularXCircle } from "solid-icons/bi";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
-import CardMetadataDisplay from "./CardMetadataDisplay";
+import ChunkMetadataDisplay from "./ChunkMetadataDisplay";
 import { Portal } from "solid-js/web";
 import ChatPopup from "./ChatPopup";
 import { AiOutlineRobot } from "solid-icons/ai";
 import { IoDocumentOutline } from "solid-icons/io";
 
-export interface SingleCardPageProps {
-  cardId: string | undefined;
-  defaultResultCard: SingleCardDTO;
+export interface SingleChunkPageProps {
+  chunkId: string | undefined;
+  defaultResultChunk: SingleChunkDTO;
 }
-export const SingleCardPage = (props: SingleCardPageProps) => {
+export const SingleChunkPage = (props: SingleChunkPageProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const dataset = import.meta.env.PUBLIC_DATASET as string;
-  const initialCardMetadata = props.defaultResultCard.metadata;
+  const initialChunkMetadata = props.defaultResultChunk.metadata;
 
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
-  const [cardMetadata, setCardMetadata] =
-    createSignal<CardMetadataWithVotes | null>(initialCardMetadata);
+  const [chunkMetadata, setChunkMetadata] =
+    createSignal<ChunkMetadataWithVotes | null>(initialChunkMetadata);
   const [error, setError] = createSignal("");
   const [fetching, setFetching] = createSignal(true);
-  const [cardCollections, setCardCollections] = createSignal<
-    CardCollectionDTO[]
+  const [chunkCollections, setChunkCollections] = createSignal<
+    ChunkCollectionDTO[]
   >([]);
   const [user, setUser] = createSignal<UserDTO | undefined>();
-  const [bookmarks, setBookmarks] = createSignal<CardBookmarksDTO[]>([]);
+  const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
     createSignal(false);
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
@@ -49,25 +49,25 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
     createSignal(false);
   const [loadingRecommendations, setLoadingRecommendations] =
     createSignal(false);
-  const [recommendedCards, setRecommendedCards] = createSignal<CardMetadata[]>(
-    [],
-  );
+  const [recommendedChunks, setRecommendedChunks] = createSignal<
+    ChunkMetadata[]
+  >([]);
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
-  const [scoreCard, setScoreCard] = createSignal<ScoreCardDTO[]>([]);
+  const [scoreChunk, setScoreChunk] = createSignal<ScoreChunkDTO[]>([]);
 
-  if (props.defaultResultCard.status == 401) {
-    setError("You are not authorized to view this card.");
+  if (props.defaultResultChunk.status == 401) {
+    setError("You are not authorized to view this chunk.");
   }
-  if (props.defaultResultCard.status == 404) {
-    setError("This card could not be found.");
+  if (props.defaultResultChunk.status == 404) {
+    setError("This chunk could not be found.");
   }
 
-  // Fetch the card collections for the auth'ed user
-  const fetchCardCollections = () => {
+  // Fetch the chunk collections for the auth'ed user
+  const fetchChunkCollections = () => {
     if (!user()) return;
 
-    void fetch(`${apiHost}/card_collection/1`, {
+    void fetch(`${apiHost}/chunk_collection/1`, {
       method: "GET",
       credentials: "include",
       headers: {
@@ -76,8 +76,8 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          if (isCardCollectionPageDTO(data)) {
-            setCardCollections(data.collections);
+          if (isChunkCollectionPageDTO(data)) {
+            setChunkCollections(data.collections);
             setTotalCollectionPages(data.total_pages);
           }
         });
@@ -86,7 +86,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
   };
 
   const fetchBookmarks = () => {
-    void fetch(`${apiHost}/card_collection/bookmark`, {
+    void fetch(`${apiHost}/chunk_collection/bookmark`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -94,12 +94,12 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
         "AF-Dataset": dataset,
       },
       body: JSON.stringify({
-        card_ids: cardMetadata()?.id ? [cardMetadata()?.id] : [],
+        chunk_ids: chunkMetadata()?.id ? [chunkMetadata()?.id] : [],
       }),
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          setBookmarks(data as CardBookmarksDTO[]);
+          setBookmarks(data as ChunkBookmarksDTO[]);
         });
       }
     });
@@ -107,10 +107,10 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
 
   const fetchRecommendations = (
     ids: string[],
-    prev_recommendations: CardMetadata[],
+    prev_recommendations: ChunkMetadata[],
   ) => {
     setLoadingRecommendations(true);
-    void fetch(`${apiHost}/card/recommend`, {
+    void fetch(`${apiHost}/chunk/recommend`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -118,13 +118,13 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
         "AF-Dataset": dataset,
       },
       body: JSON.stringify({
-        positive_card_ids: ids,
+        positive_chunk_ids: ids,
         limit: prev_recommendations.length + 10,
       }),
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          const typed_data = data as CardMetadata[];
+          const typed_data = data as ChunkMetadata[];
           const deduped_data = typed_data.filter((d) => {
             return !prev_recommendations.some((c) => c.id == d.id);
           });
@@ -133,7 +133,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
             ...deduped_data,
           ];
           setLoadingRecommendations(false);
-          setRecommendedCards(new_recommendations);
+          setRecommendedChunks(new_recommendations);
         });
       }
       if (response.status == 401) {
@@ -144,7 +144,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
   };
 
   createEffect(() => {
-    fetchCardCollections();
+    fetchChunkCollections();
     fetchBookmarks();
   });
 
@@ -164,7 +164,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
 
   createEffect(() => {
     setFetching(true);
-    void fetch(`${apiHost}/card/${props.cardId ?? ""}`, {
+    void fetch(`${apiHost}/chunk/${props.chunkId ?? ""}`, {
       method: "GET",
       credentials: "include",
       headers: {
@@ -173,25 +173,25 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          if (!isCardMetadataWithVotes(data)) {
-            setError("This card could not be found.");
+          if (!isChunkMetadataWithVotes(data)) {
+            setError("This chunk could not be found.");
             setFetching(false);
             return;
           }
 
-          setCardMetadata(data);
-          setScoreCard([{ metadata: [data], score: 0 }]);
+          setChunkMetadata(data);
+          setScoreChunk([{ metadata: [data], score: 0 }]);
           setError("");
         });
       }
       if (response.status == 403) {
-        setError("You are not authorized to view this card.");
+        setError("You are not authorized to view this chunk.");
       }
       if (response.status == 404) {
-        setError("This card could not be found.");
+        setError("This chunk could not be found.");
       }
       if (response.status == 401) {
-        setError("Sign in to view this card.");
+        setError("Sign in to view this chunk.");
         setShowNeedLoginModal(true);
       }
       setClientSideRequestFinished(true);
@@ -199,29 +199,29 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
     });
   });
 
-  const getCard = createMemo(() => {
+  const getChunk = createMemo(() => {
     if (error().length > 0) {
       return null;
     }
-    const curCardMetadata = cardMetadata();
-    if (!curCardMetadata) {
+    const curChunkMetadata = chunkMetadata();
+    if (!curChunkMetadata) {
       return null;
     }
 
     return (
-      <ScoreCard
+      <ScoreChunk
         totalCollectionPages={totalCollectionPages()}
         signedInUserId={user()?.id}
-        card={curCardMetadata}
+        chunk={curChunkMetadata}
         score={0}
         setShowModal={setShowNeedLoginModal}
-        cardCollections={cardCollections()}
+        chunkCollections={chunkCollections()}
         bookmarks={bookmarks()}
         setOnDelete={setOnDelete}
         setShowConfirmModal={setShowConfirmDeleteModal}
         initialExpanded={true}
         showExpand={clientSideRequestFinished()}
-        setCardCollections={setCardCollections}
+        setChunkCollections={setChunkCollections}
         counter={"0"}
         total={1}
         begin={0}
@@ -237,11 +237,11 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
       <Show when={openChat()}>
         <Portal>
           <FullScreenModal isOpen={openChat} setIsOpen={setOpenChat}>
-            <Show when={cardMetadata()}>
+            <Show when={chunkMetadata()}>
               <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto rounded-md scrollbar-thin">
                 <ChatPopup
                   user={user}
-                  cards={scoreCard}
+                  chunks={scoreChunk}
                   selectedIds={selectedIds}
                   setShowNeedLoginModal={setShowNeedLoginModal}
                   setOpenChat={setOpenChat}
@@ -258,7 +258,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
               <div class="text-xl font-bold text-red-500">{error()}</div>
             </div>
           </Show>
-          <Show when={!cardMetadata() && fetching()}>
+          <Show when={!chunkMetadata() && fetching()}>
             <div class="flex w-full flex-col items-center justify-center space-y-4">
               <div class="animate-pulse text-xl">Loading document chunk...</div>
               <div
@@ -271,29 +271,29 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
               </div>
             </div>
           </Show>
-          {getCard()}
-          <Show when={cardMetadata()}>
-            <Show when={recommendedCards().length > 0}>
+          {getChunk()}
+          <Show when={chunkMetadata()}>
+            <Show when={recommendedChunks().length > 0}>
               <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
                 <div class="flex w-full flex-col items-center rounded-md p-2">
-                  <div class="text-xl font-semibold">Related Cards</div>
+                  <div class="text-xl font-semibold">Related Chunks</div>
                 </div>
 
-                <For each={recommendedCards()}>
-                  {(card) => (
+                <For each={recommendedChunks()}>
+                  {(chunk) => (
                     <>
                       <div class="mt-4">
-                        <CardMetadataDisplay
+                        <ChunkMetadataDisplay
                           totalCollectionPages={totalCollectionPages()}
                           signedInUserId={user()?.id}
                           viewingUserId={user()?.id}
-                          card={card}
-                          cardCollections={cardCollections()}
+                          chunk={chunk}
+                          chunkCollections={chunkCollections()}
                           bookmarks={bookmarks()}
                           setShowModal={setShowNeedLoginModal}
                           setShowConfirmModal={setShowConfirmDeleteModal}
-                          fetchCardCollections={fetchCardCollections}
-                          setCardCollections={setCardCollections}
+                          fetchChunkCollections={fetchChunkCollections}
+                          setChunkCollections={setChunkCollections}
                           setOnDelete={setOnDelete}
                           showExpand={true}
                         />
@@ -312,13 +312,13 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
                 }}
                 onClick={() =>
                   fetchRecommendations(
-                    [cardMetadata()?.qdrant_point_id ?? ""],
-                    recommendedCards(),
+                    [chunkMetadata()?.qdrant_point_id ?? ""],
+                    recommendedChunks(),
                   )
                 }
               >
-                {recommendedCards().length == 0 ? "Get" : "Get More"} Related
-                Cards
+                {recommendedChunks().length == 0 ? "Get" : "Get More"} Related
+                Chunks
               </button>
             </div>
           </Show>
@@ -353,7 +353,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
               type="button"
               class="relative h-[52px] w-[52px] items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
               onClick={() => {
-                setSelectedIds([cardMetadata()?.id ?? ""]);
+                setSelectedIds([chunkMetadata()?.id ?? ""]);
                 setOpenChat(true);
               }}
             >
@@ -380,8 +380,8 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
           <div class="min-w-[250px] sm:min-w-[300px]">
             <BiRegularXCircle class="mx-auto h-8 w-8 fill-current !text-red-500" />
             <div class="mb-4 text-center text-xl font-bold dark:text-white">
-              You must be signed in to vote, bookmark, get recommended cards, or
-              view this card it if it's private
+              You must be signed in to vote, bookmark, get recommended chunks,
+              or view this chunk it if it's private
             </div>
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
@@ -399,7 +399,7 @@ export const SingleCardPage = (props: SingleCardPageProps) => {
         showConfirmModal={showConfirmDeleteModal}
         setShowConfirmModal={setShowConfirmDeleteModal}
         onConfirm={onDelete}
-        message="Are you sure you want to delete this card?"
+        message="Are you sure you want to delete this chunk?"
       />
     </>
   );

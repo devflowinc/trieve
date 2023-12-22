@@ -8,26 +8,26 @@ import {
 } from "solid-js";
 import {
   isUserDTO,
-  type CardCollectionDTO,
+  type ChunkCollectionDTO,
   type UserDTO,
-  type CardCollectionBookmarkDTO,
-  CardBookmarksDTO,
+  type ChunkCollectionBookmarkDTO,
+  ChunkBookmarksDTO,
   BookmarkDTO,
-  ScoreCardDTO,
-  CardCollectionSearchDTO,
-  isScoreCardDTO,
-  isCardCollectionPageDTO,
-  CardMetadata,
+  ScoreChunkDTO,
+  ChunkCollectionSearchDTO,
+  isScoreChunkDTO,
+  isChunkCollectionPageDTO,
+  ChunkMetadata,
 } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { BiRegularLogInCircle, BiRegularXCircle } from "solid-icons/bi";
 import { FiEdit, FiTrash } from "solid-icons/fi";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
 import { PaginationController } from "./Atoms/PaginationController";
-import { ScoreCardArray } from "./ScoreCardArray";
+import { ScoreChunkArray } from "./ScoreChunkArray";
 import SearchForm from "./SearchForm";
 import type { Filters } from "./ResultsPage";
-import CardMetadataDisplay from "./CardMetadataDisplay";
+import ChunkMetadataDisplay from "./ChunkMetadataDisplay";
 import { Portal } from "solid-js/web";
 import ChatPopup from "./ChatPopup";
 import { AiOutlineRobot } from "solid-icons/ai";
@@ -35,8 +35,8 @@ import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
 
 export interface CollectionPageProps {
   collectionID: string;
-  defaultCollectionCards: {
-    metadata: CardCollectionBookmarkDTO | CardCollectionSearchDTO;
+  defaultCollectionChunks: {
+    metadata: ChunkCollectionBookmarkDTO | ChunkCollectionSearchDTO;
     status: number;
   };
   page: number;
@@ -49,24 +49,25 @@ export const CollectionPage = (props: CollectionPageProps) => {
   const apiHost: string = import.meta.env.PUBLIC_API_HOST as string;
   const dataset = import.meta.env.PUBLIC_DATASET as string;
 
-  const cardMetadatasWithVotes: BookmarkDTO[] = [];
-  const searchCardMetadatasWithVotes: ScoreCardDTO[] = [];
+  const chunkMetadatasWithVotes: BookmarkDTO[] = [];
+  const searchChunkMetadatasWithVotes: ScoreChunkDTO[] = [];
 
   // Sometimes this will error server-side so we have to handle it
   try {
     if (
-      props.defaultCollectionCards.metadata.bookmarks.length > 0 &&
-      !isScoreCardDTO(props.defaultCollectionCards.metadata.bookmarks[0])
+      props.defaultCollectionChunks.metadata.bookmarks.length > 0 &&
+      !isScoreChunkDTO(props.defaultCollectionChunks.metadata.bookmarks[0])
     ) {
-      cardMetadatasWithVotes.push(
-        ...(props.defaultCollectionCards.metadata.bookmarks as BookmarkDTO[]),
+      chunkMetadatasWithVotes.push(
+        ...(props.defaultCollectionChunks.metadata.bookmarks as BookmarkDTO[]),
       );
     } else if (
-      props.defaultCollectionCards.metadata.bookmarks.length > 0 &&
-      isScoreCardDTO(props.defaultCollectionCards.metadata.bookmarks[0])
+      props.defaultCollectionChunks.metadata.bookmarks.length > 0 &&
+      isScoreChunkDTO(props.defaultCollectionChunks.metadata.bookmarks[0])
     ) {
-      searchCardMetadatasWithVotes.push(
-        ...(props.defaultCollectionCards.metadata.bookmarks as ScoreCardDTO[]),
+      searchChunkMetadatasWithVotes.push(
+        ...(props.defaultCollectionChunks.metadata
+          .bookmarks as ScoreChunkDTO[]),
       );
     }
   } catch (e) {
@@ -76,32 +77,32 @@ export const CollectionPage = (props: CollectionPageProps) => {
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
   const [metadatasWithVotes, setMetadatasWithVotes] = createSignal<
     BookmarkDTO[]
-  >(cardMetadatasWithVotes);
+  >(chunkMetadatasWithVotes);
   const [searchMetadatasWithVotes, setSearchMetadatasWithVotes] = createSignal<
-    ScoreCardDTO[]
-  >(searchCardMetadatasWithVotes);
+    ScoreChunkDTO[]
+  >(searchChunkMetadatasWithVotes);
   const [clientSideRequestFinished, setClientSideRequestFinished] =
     createSignal(false);
-  const [collectionInfo, setCollectionInfo] = createSignal<CardCollectionDTO>(
-    props.defaultCollectionCards.metadata.collection,
+  const [collectionInfo, setCollectionInfo] = createSignal<ChunkCollectionDTO>(
+    props.defaultCollectionChunks.metadata.collection,
   );
-  const [cardCollections, setCardCollections] = createSignal<
-    CardCollectionDTO[]
+  const [chunkCollections, setChunkCollections] = createSignal<
+    ChunkCollectionDTO[]
   >([]);
-  const [bookmarks, setBookmarks] = createSignal<CardBookmarksDTO[]>([]);
+  const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [error, setError] = createSignal("");
   const [fetchingCollections, setFetchingCollections] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
   const [editing, setEditing] = createSignal(false);
   const [user, setUser] = createSignal<UserDTO | undefined>();
   const [totalPages, setTotalPages] = createSignal(
-    props.defaultCollectionCards.metadata.total_pages,
+    props.defaultCollectionChunks.metadata.total_pages,
   );
   const [loadingRecommendations, setLoadingRecommendations] =
     createSignal(false);
-  const [recommendedCards, setRecommendedCards] = createSignal<CardMetadata[]>(
-    [],
-  );
+  const [recommendedChunks, setRecommendedChunks] = createSignal<
+    ChunkMetadata[]
+  >([]);
 
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
     createSignal(false);
@@ -162,7 +163,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
     let collection_id: string | null = null;
     if (props.query === "") {
       void fetch(
-        `${apiHost}/card_collection/${props.collectionID}/${props.page}`,
+        `${apiHost}/chunk_collection/${props.collectionID}/${props.page}`,
         {
           method: "GET",
           credentials: "include",
@@ -174,7 +175,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
       ).then((response) => {
         if (response.ok) {
           void response.json().then((data) => {
-            const collectionBookmarks = data as CardCollectionBookmarkDTO;
+            const collectionBookmarks = data as ChunkCollectionBookmarkDTO;
             collection_id = collectionBookmarks.collection.id;
             setCollectionInfo(collectionBookmarks.collection);
             setTotalPages(collectionBookmarks.total_pages);
@@ -195,7 +196,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
         setClientSideRequestFinished(true);
       });
     } else {
-      void fetch(`${apiHost}/card_collection/search/${props.page}`, {
+      void fetch(`${apiHost}/chunk_collection/search/${props.page}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -215,7 +216,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
       }).then((response) => {
         if (response.ok) {
           void response.json().then((data) => {
-            const collectionBookmarks = data as CardCollectionSearchDTO;
+            const collectionBookmarks = data as ChunkCollectionSearchDTO;
             collection_id = collectionBookmarks.collection.id;
             setCollectionInfo(collectionBookmarks.collection);
             setTotalPages(collectionBookmarks.total_pages);
@@ -237,12 +238,12 @@ export const CollectionPage = (props: CollectionPageProps) => {
       });
     }
 
-    fetchCardCollections();
+    fetchChunkCollections();
 
     setOnCollectionDelete(() => {
       return () => {
         setDeleting(true);
-        void fetch(`${apiHost}/card_collection`, {
+        void fetch(`${apiHost}/chunk_collection`, {
           method: "DELETE",
           credentials: "include",
           headers: {
@@ -277,10 +278,10 @@ export const CollectionPage = (props: CollectionPageProps) => {
     );
   });
 
-  // Fetch the card collections for the auth'ed user
-  const fetchCardCollections = () => {
+  // Fetch the chunk collections for the auth'ed user
+  const fetchChunkCollections = () => {
     if (!user()) return;
-    void fetch(`${apiHost}/card_collection/1`, {
+    void fetch(`${apiHost}/chunk_collection/1`, {
       method: "GET",
       credentials: "include",
       headers: {
@@ -289,8 +290,8 @@ export const CollectionPage = (props: CollectionPageProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          if (isCardCollectionPageDTO(data)) {
-            setCardCollections(data.collections);
+          if (isChunkCollectionPageDTO(data)) {
+            setChunkCollections(data.collections);
             setTotalCollectionPages(data.total_pages);
           }
         });
@@ -299,7 +300,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
   };
 
   const fetchBookmarks = () => {
-    void fetch(`${apiHost}/card_collection/bookmark`, {
+    void fetch(`${apiHost}/chunk_collection/bookmark`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -307,14 +308,14 @@ export const CollectionPage = (props: CollectionPageProps) => {
         "AF-Dataset": dataset,
       },
       body: JSON.stringify({
-        card_ids: metadatasWithVotes().flatMap((m) => {
+        chunk_ids: metadatasWithVotes().flatMap((m) => {
           return m.metadata.map((c) => c.id);
         }),
       }),
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          setBookmarks(data as CardBookmarksDTO[]);
+          setBookmarks(data as ChunkBookmarksDTO[]);
         });
       }
     });
@@ -327,7 +328,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
       name: collectionInfo().name,
       description: collectionInfo().description,
     };
-    void fetch(`${apiHost}/card_collection`, {
+    void fetch(`${apiHost}/chunk_collection`, {
       method: "PUT",
       credentials: "include",
       body: JSON.stringify(body),
@@ -348,10 +349,10 @@ export const CollectionPage = (props: CollectionPageProps) => {
 
   const fetchRecommendations = (
     ids: string[],
-    prev_recommendations: CardMetadata[],
+    prev_recommendations: ChunkMetadata[],
   ) => {
     setLoadingRecommendations(true);
-    void fetch(`${apiHost}/card/recommend`, {
+    void fetch(`${apiHost}/chunk/recommend`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -359,13 +360,13 @@ export const CollectionPage = (props: CollectionPageProps) => {
         "AF-Dataset": dataset,
       },
       body: JSON.stringify({
-        positive_card_ids: ids,
+        positive_chunk_ids: ids,
         limit: prev_recommendations.length + 10,
       }),
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          const typed_data = data as CardMetadata[];
+          const typed_data = data as ChunkMetadata[];
           const deduped_data = typed_data.filter((d) => {
             return !prev_recommendations.some((c) => c.id == d.id);
           });
@@ -374,7 +375,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
             ...deduped_data,
           ];
           setLoadingRecommendations(false);
-          setRecommendedCards(new_recommendations);
+          setRecommendedChunks(new_recommendations);
         });
       }
       if (response.status == 401) {
@@ -398,7 +399,9 @@ export const CollectionPage = (props: CollectionPageProps) => {
             <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto rounded-md scrollbar-thin">
               <ChatPopup
                 user={user}
-                cards={() => metadatasWithVotes() as unknown as ScoreCardDTO[]}
+                chunks={() =>
+                  metadatasWithVotes() as unknown as ScoreChunkDTO[]
+                }
                 selectedIds={selectedIds}
                 setShowNeedLoginModal={setShowNeedLoginModal}
                 setOpenChat={setOpenChat}
@@ -411,7 +414,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
         <Show when={error().length == 0}>
           <div class="flex w-full max-w-6xl items-center justify-end space-x-2 px-4 sm:px-8 md:px-20">
             <Show
-              when={cardCollections().some(
+              when={chunkCollections().some(
                 (collection) => collection.id == collectionInfo().id,
               )}
             >
@@ -542,21 +545,21 @@ export const CollectionPage = (props: CollectionPageProps) => {
                 : searchMetadatasWithVotes()
             }
           >
-            {(card) => (
+            {(chunk) => (
               <div class="mt-4">
-                <ScoreCardArray
+                <ScoreChunkArray
                   totalCollectionPages={totalCollectionPages()}
                   signedInUserId={user()?.id}
-                  cards={card.metadata}
-                  score={isScoreCardDTO(card) ? card.score : 0}
+                  chunks={chunk.metadata}
+                  score={isScoreChunkDTO(chunk) ? chunk.score : 0}
                   collection={true}
                   setShowModal={setShowNeedLoginModal}
-                  cardCollections={cardCollections()}
+                  chunkCollections={chunkCollections()}
                   bookmarks={bookmarks()}
                   setOnDelete={setOnDelete}
                   setShowConfirmModal={setShowConfirmDeleteModal}
                   showExpand={clientSideRequestFinished()}
-                  setCardCollections={setCardCollections}
+                  setChunkCollections={setChunkCollections}
                   setSelectedIds={setSelectedIds}
                   selectedIds={selectedIds}
                 />
@@ -566,26 +569,26 @@ export const CollectionPage = (props: CollectionPageProps) => {
           <div class="mx-auto my-12 flex items-center justify-center space-x-2">
             <PaginationController page={props.page} totalPages={totalPages()} />
           </div>
-          <Show when={recommendedCards().length > 0}>
+          <Show when={recommendedChunks().length > 0}>
             <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
               <div class="flex w-full flex-col items-center rounded-md p-2">
-                <div class="text-xl font-semibold">Related Cards</div>
+                <div class="text-xl font-semibold">Related Chunks</div>
               </div>
-              <For each={recommendedCards()}>
-                {(card) => (
+              <For each={recommendedChunks()}>
+                {(chunk) => (
                   <>
                     <div class="mt-4">
-                      <CardMetadataDisplay
+                      <ChunkMetadataDisplay
                         totalCollectionPages={totalCollectionPages()}
                         signedInUserId={user()?.id}
                         viewingUserId={user()?.id}
-                        card={card}
-                        cardCollections={cardCollections()}
+                        chunk={chunk}
+                        chunkCollections={chunkCollections()}
                         bookmarks={bookmarks()}
                         setShowModal={setShowNeedLoginModal}
                         setShowConfirmModal={setShowConfirmDeleteModal}
-                        fetchCardCollections={fetchCardCollections}
-                        setCardCollections={setCardCollections}
+                        fetchChunkCollections={fetchChunkCollections}
+                        setChunkCollections={setChunkCollections}
                         setOnDelete={setOnDelete}
                         showExpand={true}
                       />
@@ -608,12 +611,12 @@ export const CollectionPage = (props: CollectionPageProps) => {
                     metadatasWithVotes().map(
                       (m) => m.metadata[0].qdrant_point_id,
                     ),
-                    recommendedCards(),
+                    recommendedChunks(),
                   )
                 }
               >
-                {recommendedCards().length == 0 ? "Get" : "Get More"} Related
-                Cards
+                {recommendedChunks().length == 0 ? "Get" : "Get More"} Related
+                Chunks
               </button>
             </div>
           </Show>
@@ -723,8 +726,8 @@ export const CollectionPage = (props: CollectionPageProps) => {
           <div class="min-w-[250px] sm:min-w-[300px]">
             <BiRegularXCircle class="mx-auto h-8 w-8 fill-current  !text-red-500" />
             <div class="mb-4 text-center text-xl font-bold">
-              Login or register to bookmark cards, vote, get recommend cards or
-              manage your collections
+              Login or register to bookmark chunks, vote, get recommend chunks
+              or manage your collections
             </div>
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
@@ -742,7 +745,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
         showConfirmModal={showConfirmDeleteModal}
         setShowConfirmModal={setShowConfirmDeleteModal}
         onConfirm={onDelete}
-        message="Are you sure you want to delete this card?"
+        message="Are you sure you want to delete this chunk?"
       />
       <ConfirmModal
         showConfirmModal={showConfirmCollectionDeleteModal}

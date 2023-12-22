@@ -7,7 +7,7 @@ export const SuggestedQueries = (props: { query: string }) => {
   const dataset = import.meta.env.PUBLIC_DATASET as string;
 
   createEffect(() => {
-    void fetch(`${apiHost}/card/gen_suggestions`, {
+    void fetch(`${apiHost}/chunk/gen_suggestions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

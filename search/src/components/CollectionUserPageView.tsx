@@ -1,28 +1,28 @@
 import { FiTrash } from "solid-icons/fi";
 import {
-  isCardCollectionPageDTO,
-  type CardCollectionDTO,
+  isChunkCollectionPageDTO,
+  type ChunkCollectionDTO,
   type UserDTO,
-  type UserDTOWithVotesAndCards,
+  type UserDTOWithVotesAndChunks,
 } from "../../utils/apiTypes";
 import { For, Setter, Show, createEffect, createSignal } from "solid-js";
 import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
-import { getLocalTime } from "./CardMetadataDisplay";
+import { getLocalTime } from "./ChunkMetadataDisplay";
 import { Transition } from "solid-headless";
 
 export interface CollectionUserPageViewProps {
-  user: UserDTOWithVotesAndCards | undefined;
+  user: UserDTOWithVotesAndChunks | undefined;
   loggedUser: UserDTO | undefined;
   setOnDelete: Setter<() => void>;
   setShowConfirmModal: Setter<boolean>;
-  initialCollections?: CardCollectionDTO[];
+  initialCollections?: ChunkCollectionDTO[];
   initialCollectionPageCount?: number;
 }
 
 export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const dataset = import.meta.env.PUBLIC_DATASET as string;
-  const [collections, setCollections] = createSignal<CardCollectionDTO[]>([]);
+  const [collections, setCollections] = createSignal<ChunkCollectionDTO[]>([]);
   const [collectionPage, setCollectionPage] = createSignal(1);
   const [collectionPageCount, setCollectionPageCount] = createSignal(1);
   const [deleting, setDeleting] = createSignal(false);
@@ -44,7 +44,7 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          if (isCardCollectionPageDTO(data)) {
+          if (isChunkCollectionPageDTO(data)) {
             setCollections(data.collections);
             setCollectionPageCount(
               data.total_pages == 0 ? 1 : data.total_pages,
@@ -57,13 +57,13 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
     });
   });
 
-  const deleteCollection = (collection: CardCollectionDTO) => {
+  const deleteCollection = (collection: ChunkCollectionDTO) => {
     if (props.user?.id !== collection.author_id) return;
 
     props.setOnDelete(() => {
       return () => {
         setDeleting(true);
-        void fetch(`${apiHost}/card_collection`, {
+        void fetch(`${apiHost}/chunk_collection`, {
           method: "DELETE",
           credentials: "include",
           headers: {
