@@ -9,9 +9,9 @@ import {
 } from "solid-js";
 import {
   indirectHasOwnProperty,
-  type CardBookmarksDTO,
-  type CardCollectionDTO,
-  type CardMetadataWithVotes,
+  type ChunkBookmarksDTO,
+  type ChunkCollectionDTO,
+  type ChunkMetadataWithVotes,
 } from "../../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import { RiOthersCharacterRecognitionLine } from "solid-icons/ri";
@@ -49,20 +49,20 @@ export const formatDate = (date: Date) => {
   return `${formattedMonth}/${formattedDay}/${year}`;
 };
 
-export interface ScoreCardProps {
+export interface ScoreChunkProps {
   signedInUserId?: string;
-  cardCollections?: CardCollectionDTO[];
+  chunkCollections?: ChunkCollectionDTO[];
   totalCollectionPages?: number;
   collection?: boolean;
-  card: CardMetadataWithVotes;
+  chunk: ChunkMetadataWithVotes;
   score: number;
   setShowModal?: Setter<boolean>;
   setOnDelete?: Setter<() => void>;
   setShowConfirmModal?: Setter<boolean>;
   initialExpanded?: boolean;
-  bookmarks?: CardBookmarksDTO[];
+  bookmarks?: ChunkBookmarksDTO[];
   showExpand?: boolean;
-  setCardCollections?: Setter<CardCollectionDTO[]>;
+  setChunkCollections?: Setter<ChunkCollectionDTO[]>;
   counter: string;
   order?: string;
   total: number;
@@ -73,7 +73,7 @@ export interface ScoreCardProps {
   chat?: boolean;
 }
 
-const ScoreCard = (props: ScoreCardProps) => {
+const ScoreChunk = (props: ScoreChunkProps) => {
   const dataset = import.meta.env.PUBLIC_DATASET as string;
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 
@@ -108,19 +108,19 @@ const ScoreCard = (props: ScoreCardProps) => {
 
     if (
       !imgRangeStartKey ||
-      !props.card.metadata ||
-      !indirectHasOwnProperty(props.card.metadata, imgRangeStartKey) ||
-      !indirectHasOwnProperty(props.card.metadata, imgRangeEndKey)
+      !props.chunk.metadata ||
+      !indirectHasOwnProperty(props.chunk.metadata, imgRangeStartKey) ||
+      !indirectHasOwnProperty(props.chunk.metadata, imgRangeEndKey)
     ) {
       return null;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    const imgRangeStartVal = (props.card.metadata as any)[
+    const imgRangeStartVal = (props.chunk.metadata as any)[
       imgRangeStartKey
     ] as unknown as string;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    const imgRangeEndVal = (props.card.metadata as any)[
+    const imgRangeEndVal = (props.chunk.metadata as any)[
       imgRangeEndKey
     ] as unknown as string;
     const imgRangeStart = parseInt(imgRangeStartVal.replace(/\D+/g, ""), 10);
@@ -144,18 +144,18 @@ const ScoreCard = (props: ScoreCardProps) => {
     setShowPropsModal(false);
   });
 
-  const deleteCard = () => {
+  const deleteChunk = () => {
     if (!props.setOnDelete) return;
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (props.signedInUserId !== props.card.author?.id) return;
+    if (props.signedInUserId !== props.chunk.author?.id) return;
 
-    const curCardMetadataId = props.card.id;
+    const curChunkMetadataId = props.chunk.id;
 
     props.setOnDelete(() => {
       return () => {
         setDeleting(true);
-        void fetch(`${apiHost}/card/${curCardMetadataId}`, {
+        void fetch(`${apiHost}/chunk/${curChunkMetadataId}`, {
           method: "DELETE",
           headers: {
             "AF-Dataset": dataset,
@@ -167,7 +167,7 @@ const ScoreCard = (props: ScoreCardProps) => {
             setDeleted(true);
             return;
           }
-          alert("Failed to delete card");
+          alert("Failed to delete chunk");
         });
       };
     });
@@ -175,14 +175,14 @@ const ScoreCard = (props: ScoreCardProps) => {
     props.setShowConfirmModal?.(true);
   };
 
-  const copyCard = () => {
+  const copyChunk = () => {
     navigator.clipboard
       .write([
         new ClipboardItem({
-          "text/html": new Blob([props.card.card_html ?? ""], {
+          "text/html": new Blob([props.chunk.chunk_html ?? ""], {
             type: "text/html",
           }),
-          "text/plain": new Blob([props.card.content], {
+          "text/plain": new Blob([props.chunk.content], {
             type: "text/plain",
           }),
         }),
@@ -199,7 +199,7 @@ const ScoreCard = (props: ScoreCardProps) => {
   };
 
   const useExpand = createMemo(() => {
-    return props.card.content.split(" ").length > 20 * linesBeforeShowMore;
+    return props.chunk.content.split(" ").length > 20 * linesBeforeShowMore;
   });
 
   return (
@@ -209,7 +209,7 @@ const ScoreCard = (props: ScoreCardProps) => {
           class="mx-auto flex w-full max-w-[calc(100%-32px)] flex-col items-center rounded-md bg-neutral-100 p-2 dark:!bg-neutral-800 min-[360px]:max-w-[calc(100%-64px)]"
           id={
             "doc_" +
-            (props.chat ? (props.order ?? "") + props.counter : props.card.id)
+            (props.chat ? (props.order ?? "") + props.counter : props.chunk.id)
           }
         >
           <div class="flex w-full flex-col space-y-2">
@@ -219,15 +219,15 @@ const ScoreCard = (props: ScoreCardProps) => {
                   id="default-checkbox"
                   type="checkbox"
                   onClick={() => {
-                    const cardId = props.card.id;
+                    const chunkId = props.chunk.id;
                     props.setSelectedIds((prev) => {
-                      if (prev.includes(cardId)) {
-                        return prev.filter((id) => id !== cardId);
+                      if (prev.includes(chunkId)) {
+                        return prev.filter((id) => id !== chunkId);
                       }
-                      return [...prev, cardId];
+                      return [...prev, chunkId];
                     });
                   }}
-                  checked={props.selectedIds().includes(props.card.id)}
+                  checked={props.selectedIds().includes(props.chunk.id)}
                   class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-green-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
                 />
               </Show>
@@ -273,7 +273,7 @@ const ScoreCard = (props: ScoreCardProps) => {
                         imgInformation()?.imgRangePrefix ?? ""
                       }/${
                         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                        props.card.metadata?.file_name ??
+                        props.chunk.metadata?.file_name ??
                         imgInformation()?.imgRangeStart ??
                         "Arguflow PDF From Range"
                       }/false`}
@@ -297,7 +297,7 @@ const ScoreCard = (props: ScoreCardProps) => {
                         imgInformation()?.imgRangePrefix ?? ""
                       }/${
                         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                        props.card.metadata?.file_name ??
+                        props.chunk.metadata?.file_name ??
                         imgInformation()?.imgRangeStart ??
                         "Arguflow PDF From Range"
                       }/true`}
@@ -312,7 +312,7 @@ const ScoreCard = (props: ScoreCardProps) => {
               />
               <Tooltip
                 body={
-                  <Show when={Object.keys(props.card.metadata ?? {}).length}>
+                  <Show when={Object.keys(props.chunk.metadata ?? {}).length}>
                     <button
                       class="h-fit"
                       onClick={() => setShowMetadata(true)}
@@ -328,7 +328,7 @@ const ScoreCard = (props: ScoreCardProps) => {
                 body={
                   <>
                     <Show when={!copied()}>
-                      <button class="h-fit" onClick={() => copyCard()}>
+                      <button class="h-fit" onClick={() => copyChunk()}>
                         <AiOutlineCopy class="h-5 w-5 fill-current" />
                       </button>
                     </Show>
@@ -342,7 +342,7 @@ const ScoreCard = (props: ScoreCardProps) => {
               <Show
                 when={
                   props.setOnDelete &&
-                  props.signedInUserId == props.card.author?.id
+                  props.signedInUserId == props.chunk.author?.id
                 }
               >
                 <button
@@ -351,19 +351,19 @@ const ScoreCard = (props: ScoreCardProps) => {
                     "animate-pulse": deleting(),
                   }}
                   title="Delete"
-                  onClick={() => deleteCard()}
+                  onClick={() => deleteChunk()}
                 >
                   <FiTrash class="h-5 w-5" />
                 </button>
               </Show>
-              <Show when={props.signedInUserId == props.card.author?.id}>
-                <a title="Edit" href={`/card/edit/${props.card.id}`}>
+              <Show when={props.signedInUserId == props.chunk.author?.id}>
+                <a title="Edit" href={`/chunk/edit/${props.chunk.id}`}>
                   <FiEdit class="h-5 w-5" />
                 </a>
               </Show>
               <Tooltip
                 body={
-                  <a title="Open" href={`/card/${props.card.id}`}>
+                  <a title="Open" href={`/chunk/${props.chunk.id}`}>
                     <VsFileSymlinkFile class="h-5 w-5 fill-current" />
                   </a>
                 }
@@ -373,25 +373,25 @@ const ScoreCard = (props: ScoreCardProps) => {
                 {(bookmarks) => (
                   <CommunityBookmarkPopover
                     bookmarks={bookmarks().filter(
-                      (bookmark) => bookmark.card_uuid === props.card.id,
+                      (bookmark) => bookmark.chunk_uuid === props.chunk.id,
                     )}
                   />
                 )}
               </Show>
-              <Show when={props.cardCollections}>
-                {(cardCollections) => (
+              <Show when={props.chunkCollections}>
+                {(chunkCollections) => (
                   <BookmarkPopover
                     signedInUserId={props.signedInUserId}
                     totalCollectionPages={props.totalCollectionPages ?? 0}
-                    cardCollections={cardCollections()}
-                    cardMetadata={props.card}
+                    chunkCollections={chunkCollections()}
+                    chunkMetadata={props.chunk}
                     setLoginModal={props.setShowModal}
                     bookmarks={
                       props.bookmarks?.filter(
-                        (bookmark) => bookmark.card_uuid === props.card.id,
+                        (bookmark) => bookmark.chunk_uuid === props.chunk.id,
                       ) ?? []
                     }
-                    setCardCollections={props.setCardCollections}
+                    setChunkCollections={props.setChunkCollections}
                   />
                 )}
               </Show>
@@ -400,30 +400,30 @@ const ScoreCard = (props: ScoreCardProps) => {
               <For each={frontMatterVals}>
                 {(frontMatterVal) => (
                   <>
-                    <Show when={props.card.link && frontMatterVal == "link"}>
+                    <Show when={props.chunk.link && frontMatterVal == "link"}>
                       <a
                         class="line-clamp-1 w-fit break-all text-magenta-500 underline dark:text-turquoise-400"
                         target="_blank"
-                        href={props.card.link ?? ""}
+                        href={props.chunk.link ?? ""}
                       >
-                        {props.card.link}
+                        {props.chunk.link}
                       </a>
                     </Show>
                     <Show
-                      when={props.card.tag_set && frontMatterVal == "tag_set"}
+                      when={props.chunk.tag_set && frontMatterVal == "tag_set"}
                     >
                       <div class="flex space-x-2">
                         <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                           Tag Set:{" "}
                         </span>
                         <span class="line-clamp-1 break-all">
-                          {props.card.tag_set}
+                          {props.chunk.tag_set}
                         </span>
                       </div>
                     </Show>
                     <Show
                       when={
-                        props.card.time_stamp && frontMatterVal == "time_stamp"
+                        props.chunk.time_stamp && frontMatterVal == "time_stamp"
                       }
                     >
                       <div class="flex space-x-2">
@@ -431,7 +431,7 @@ const ScoreCard = (props: ScoreCardProps) => {
                           Time Stamp:{" "}
                         </span>
                         <span class="line-clamp-1 break-all">
-                          {formatDate(new Date(props.card.time_stamp ?? ""))}
+                          {formatDate(new Date(props.chunk.time_stamp ?? ""))}
                         </span>
                       </div>
                     </Show>
@@ -441,13 +441,13 @@ const ScoreCard = (props: ScoreCardProps) => {
                         frontMatterVal !== "link" &&
                         frontMatterVal !== "tag_set" &&
                         frontMatterVal !== "time_stamp" &&
-                        props.card.metadata &&
+                        props.chunk.metadata &&
                         indirectHasOwnProperty(
-                          props.card.metadata,
+                          props.chunk.metadata,
                           frontMatterVal,
                         ) &&
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                        (props.card.metadata as any)[frontMatterVal]
+                        (props.chunk.metadata as any)[frontMatterVal]
                       }
                     >
                       <div class="flex space-x-2">
@@ -455,13 +455,13 @@ const ScoreCard = (props: ScoreCardProps) => {
                           {frontMatterVal}:{" "}
                         </span>
                         <span class="line-clamp-1 break-all">
-                          {props.card.metadata &&
+                          {props.chunk.metadata &&
                             indirectHasOwnProperty(
-                              props.card.metadata,
+                              props.chunk.metadata,
                               frontMatterVal,
                             ) &&
                             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
-                            (props.card.metadata as any)[
+                            (props.chunk.metadata as any)[
                               frontMatterVal
                             ].replace(/ +/g, " ")}
                         </span>
@@ -492,8 +492,8 @@ const ScoreCard = (props: ScoreCardProps) => {
             }
             // eslint-disable-next-line solid/no-innerhtml
             innerHTML={sanitizeHtml(
-              props.card.card_html !== undefined
-                ? props.card.card_html
+              props.chunk.chunk_html !== undefined
+                ? props.chunk.chunk_html
                     .replaceAll("line-height", "lh")
                     .replace("\n", " ")
                     .replace(`<br>`, " ")
@@ -552,20 +552,20 @@ const ScoreCard = (props: ScoreCardProps) => {
       <Show when={showMetadata()}>
         <FullScreenModal isOpen={showMetadata} setIsOpen={setShowMetadata}>
           <div class="flex max-h-[60vh] max-w-[75vw] flex-col space-y-2 overflow-auto scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600">
-            <For each={Object.keys(props.card.metadata ?? {})}>
+            <For each={Object.keys(props.chunk.metadata ?? {})}>
               {(metadataKey) => (
                 <div class="flex flex-wrap space-x-2">
                   <span>{`"${metadataKey}":`}</span>
                   <span>{`"${
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/restrict-template-expressions
-                    typeof (props.card.metadata as any)[metadataKey] ===
+                    typeof (props.chunk.metadata as any)[metadataKey] ===
                     "object"
                       ? JSON.stringify(
                           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                          (props.card.metadata as any)[metadataKey],
+                          (props.chunk.metadata as any)[metadataKey],
                         )
                       : // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                        (props.card.metadata as any)[metadataKey]
+                        (props.chunk.metadata as any)[metadataKey]
                   }"`}</span>
                 </div>
               )}
@@ -577,4 +577,4 @@ const ScoreCard = (props: ScoreCardProps) => {
   );
 };
 
-export default ScoreCard;
+export default ScoreChunk;

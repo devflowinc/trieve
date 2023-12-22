@@ -1,56 +1,56 @@
 ---
 import Footer from "../../components/Footer.astro";
 import SearchLayout from "../../layouts/SearchLayout.astro";
-import { SingleCardPage } from "../../components/SingleCardPage";
+import { SingleChunkPage } from "../../components/SingleChunkPage";
 import {
-  isCardMetadataWithVotes,
-  type CardMetadataWithVotes,
-  type SingleCardDTO,
+  isChunkMetadataWithVotes,
+  type ChunkMetadataWithVotes,
+  type SingleChunkDTO,
 } from "../../../utils/apiTypes";
 
 const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
 const dataset = import.meta.env.PUBLIC_DATASET as string;
 
-const { cardId } = Astro.params;
+const { chunkId } = Astro.params;
 
 let title = "Arguflow Search";
-let specificCards: SingleCardDTO;
+let specificChunks: SingleChunkDTO;
 
 try {
   if (alwaysRequireAuth === "on") {
     throw new Error("Auth always required");
   }
 
-  const specificCard = await fetch(`${apiHost}/card/${cardId ?? ""}`, {
+  const specificChunk = await fetch(`${apiHost}/chunk/${chunkId ?? ""}`, {
     method: "GET",
     headers: {
       "AF-Dataset": dataset,
     },
   });
-  const specificCardJson = (await specificCard.json()) as unknown;
+  const specificChunkJson = (await specificChunk.json()) as unknown;
 
-  if (!isCardMetadataWithVotes(specificCardJson)) {
-    throw new Error("Invalid card metadata");
+  if (!isChunkMetadataWithVotes(specificChunkJson)) {
+    throw new Error("Invalid chunk metadata");
   }
 
-  specificCards = { metadata: specificCardJson, status: specificCard.status };
+  specificChunks = { metadata: specificChunkJson, status: specificChunk.status };
 
-  title = `${(specificCards.metadata?.content ?? "")
+  title = `${(specificChunks.metadata?.content ?? "")
     .split(/ +/)
     .slice(0, 5)
     .join(" ")} | Arguflow Search`;
 } catch (e) {
-  specificCards = { metadata: null, status: 404 };
+  specificChunks = { metadata: null, status: 404 };
   title = "Arguflow Search";
 }
 ---
 
 <SearchLayout title={title}>
-  <SingleCardPage
-    cardId={cardId}
-    defaultResultCard={specificCards as {
-      metadata: CardMetadataWithVotes;
+  <SingleChunkPage
+    chunkId={chunkId}
+    defaultResultChunk={specificChunks as {
+      metadata: ChunkMetadataWithVotes;
       status: number;
     }}
     client:load
@@ -58,3 +58,4 @@ try {
   <div class="flex-1"></div>
   <Footer />
 </SearchLayout>
+../../components/SingleChunkPage

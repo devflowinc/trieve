@@ -1,39 +1,39 @@
 import { Show, createEffect, createSignal, For } from "solid-js";
 import {
   isUserDTO,
-  type CardCollectionDTO,
+  type ChunkCollectionDTO,
   type UserDTO,
-  type UserDTOWithVotesAndCards,
-  CardBookmarksDTO,
-  isCardCollectionPageDTO,
+  type UserDTOWithVotesAndChunks,
+  ChunkBookmarksDTO,
+  isChunkCollectionPageDTO,
 } from "../../utils/apiTypes";
-import CardMetadataDisplay, { getLocalTime } from "./CardMetadataDisplay";
+import ChunkMetadataDisplay, { getLocalTime } from "./ChunkMetadataDisplay";
 import { PaginationController } from "./Atoms/PaginationController";
 import { CollectionUserPageView } from "./CollectionUserPageView";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { BiRegularLogIn, BiRegularXCircle } from "solid-icons/bi";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
 
-export interface UserCardDisplayProps {
+export interface UserChunkDisplayProps {
   id: string;
   page: number;
-  initialUser?: UserDTOWithVotesAndCards | null;
-  initialUserCollections?: CardCollectionDTO[];
+  initialUser?: UserDTOWithVotesAndChunks | null;
+  initialUserCollections?: ChunkCollectionDTO[];
   initialUserCollectionPageCount?: number;
 }
 
-export const UserCardDisplay = (props: UserCardDisplayProps) => {
+export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const dataset = import.meta.env.PUBLIC_DATASET as string;
 
-  const [user, setUser] = createSignal<UserDTOWithVotesAndCards>();
+  const [user, setUser] = createSignal<UserDTOWithVotesAndChunks>();
   const [clientSideRequestFinished, setClientSideRequestFinished] =
     createSignal(false);
   const [loggedUser, setLoggedUser] = createSignal<UserDTO>();
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
   const [showConfirmModal, setShowConfirmModal] = createSignal(false);
-  const [cardCollections, setCardCollections] = createSignal<
-    CardCollectionDTO[]
+  const [chunkCollections, setChunkCollections] = createSignal<
+    ChunkCollectionDTO[]
   >([]);
 
   props.initialUser && setUser(props.initialUser);
@@ -46,7 +46,7 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
     showConfirmCollectionDeleteModal,
     setShowConfirmCollectionmDeleteModal,
   ] = createSignal(false);
-  const [bookmarks, setBookmarks] = createSignal<CardBookmarksDTO[]>([]);
+  const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
 
   createEffect(() => {
@@ -72,7 +72,7 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          setUser(data as UserDTOWithVotesAndCards);
+          setUser(data as UserDTOWithVotesAndChunks);
         });
       }
       setClientSideRequestFinished(true);
@@ -80,12 +80,12 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
   });
 
   createEffect(() => {
-    fetchCardCollections();
+    fetchChunkCollections();
     fetchBookmarks();
   });
 
   const fetchBookmarks = () => {
-    void fetch(`${apiHost}/card_collection/bookmark`, {
+    void fetch(`${apiHost}/chunk_collection/bookmark`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -93,23 +93,23 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
         "AF-Dataset": dataset,
       },
       body: JSON.stringify({
-        card_ids: user()?.cards.map((c) => c.id)
-          ? user()?.cards.map((c) => c.id)
+        chunk_ids: user()?.chunks.map((c) => c.id)
+          ? user()?.chunks.map((c) => c.id)
           : [],
       }),
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          setBookmarks(data as CardBookmarksDTO[]);
+          setBookmarks(data as ChunkBookmarksDTO[]);
         });
       }
     });
   };
 
-  const fetchCardCollections = () => {
+  const fetchChunkCollections = () => {
     if (!user()) return;
 
-    void fetch(`${apiHost}/card_collection/1`, {
+    void fetch(`${apiHost}/chunk_collection/1`, {
       method: "GET",
       credentials: "include",
       headers: {
@@ -118,8 +118,8 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          if (isCardCollectionPageDTO(data)) {
-            setCardCollections(data.collections);
+          if (isChunkCollectionPageDTO(data)) {
+            setChunkCollections(data.collections);
             setTotalCollectionPages(data.total_pages);
           }
         });
@@ -172,10 +172,10 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
               </div>
             </>
           )}
-          <div class="font-semibold">Cards Created:</div>
+          <div class="font-semibold">Chunks Created:</div>
           <div class="flex w-full justify-start">
             <Show when={user() != null}>
-              {user()?.total_cards_created.toLocaleString()}
+              {user()?.total_chunks_created.toLocaleString()}
             </Show>
           </div>
           <div class="font-semibold">Date Joined:</div>
@@ -193,25 +193,25 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
             setShowConfirmModal={setShowConfirmCollectionmDeleteModal}
           />
         </div>
-        <Show when={(user()?.cards.length ?? 0) > 0}>
+        <Show when={(user()?.chunks.length ?? 0) > 0}>
           <div class="mb-4 mt-4 flex flex-col border-t border-neutral-500 pt-4 text-xl">
-            <span>Cards:</span>
+            <span>Chunks:</span>
           </div>
           <div class="flex w-full flex-col space-y-4">
             <div class="flex w-full flex-col space-y-4">
-              <For each={user()?.cards}>
-                {(card) => (
+              <For each={user()?.chunks}>
+                {(chunk) => (
                   <div class="w-full">
-                    <CardMetadataDisplay
+                    <ChunkMetadataDisplay
                       totalCollectionPages={totalCollectionPages()}
                       setShowConfirmModal={setShowConfirmModal}
                       signedInUserId={loggedUser()?.id}
                       viewingUserId={props.id}
-                      card={card}
+                      chunk={chunk}
                       setShowModal={setShowNeedLoginModal}
-                      cardCollections={cardCollections()}
-                      fetchCardCollections={fetchCardCollections}
-                      setCardCollections={setCardCollections}
+                      chunkCollections={chunkCollections()}
+                      fetchChunkCollections={fetchChunkCollections}
+                      setChunkCollections={setChunkCollections}
                       setOnDelete={setOnDelete}
                       bookmarks={bookmarks()}
                       showExpand={clientSideRequestFinished()}
@@ -224,7 +224,7 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
           <div class="mx-auto my-12 flex items-center justify-center space-x-2">
             <PaginationController
               page={props.page}
-              totalPages={Math.ceil((user()?.total_cards_created ?? 0) / 25)}
+              totalPages={Math.ceil((user()?.total_chunks_created ?? 0) / 25)}
             />
           </div>
         </Show>
@@ -237,7 +237,7 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
           <div class="min-w-[250px] sm:min-w-[300px]">
             <BiRegularXCircle class="mx-auto h-8 w-8 fill-current !text-red-500" />
             <div class="mb-4 text-center text-xl font-bold dark:text-white">
-              You must be signed in to vote, bookmark, or view this card it if
+              You must be signed in to vote, bookmark, or view this chunk it if
               it's private
             </div>
             <div class="mx-auto flex w-fit flex-col space-y-3">
@@ -256,7 +256,7 @@ export const UserCardDisplay = (props: UserCardDisplayProps) => {
         showConfirmModal={showConfirmModal}
         setShowConfirmModal={setShowConfirmModal}
         onConfirm={onDelete}
-        message={"Are you sure you want to delete this card?"}
+        message={"Are you sure you want to delete this chunk?"}
       />
       <ConfirmModal
         showConfirmModal={showConfirmCollectionDeleteModal}
