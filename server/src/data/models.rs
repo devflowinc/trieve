@@ -182,7 +182,7 @@ impl Message {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
-pub struct CardMetadataWithCount {
+pub struct ChunkMetadataWithCount {
     pub id: uuid::Uuid,
     pub content: String,
     pub link: Option<String>,
@@ -191,7 +191,7 @@ pub struct CardMetadataWithCount {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub tag_set: Option<String>,
-    pub card_html: Option<String>,
+    pub chunk_html: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
@@ -200,8 +200,8 @@ pub struct CardMetadataWithCount {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
-#[diesel(table_name = card_metadata)]
-pub struct CardMetadata {
+#[diesel(table_name = chunk_metadata)]
+pub struct ChunkMetadata {
     pub id: uuid::Uuid,
     pub content: String,
     pub link: Option<String>,
@@ -210,7 +210,7 @@ pub struct CardMetadata {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub tag_set: Option<String>,
-    pub card_html: Option<String>,
+    pub chunk_html: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
@@ -218,11 +218,11 @@ pub struct CardMetadata {
     pub weight: f64,
 }
 
-impl CardMetadata {
+impl ChunkMetadata {
     #[allow(clippy::too_many_arguments)]
     pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(
         content: S,
-        card_html: &Option<String>,
+        chunk_html: &Option<String>,
         link: &Option<String>,
         tag_set: &Option<String>,
         author_id: T,
@@ -233,10 +233,10 @@ impl CardMetadata {
         dataset_id: uuid::Uuid,
         weight: f64,
     ) -> Self {
-        CardMetadata {
+        ChunkMetadata {
             id: uuid::Uuid::new_v4(),
             content: content.into(),
-            card_html: card_html.clone(),
+            chunk_html: chunk_html.clone(),
             link: link.clone(),
             author_id: author_id.into(),
             qdrant_point_id,
@@ -252,12 +252,12 @@ impl CardMetadata {
     }
 }
 
-impl CardMetadata {
+impl ChunkMetadata {
     #[allow(clippy::too_many_arguments)]
     pub fn from_details_with_id<S: Into<String>, T: Into<uuid::Uuid>>(
         id: T,
         content: S,
-        card_html: &Option<String>,
+        chunk_html: &Option<String>,
         link: &Option<String>,
         tag_set: &Option<String>,
         author_id: T,
@@ -268,10 +268,10 @@ impl CardMetadata {
         dataset_id: uuid::Uuid,
         weight: f64,
     ) -> Self {
-        CardMetadata {
+        ChunkMetadata {
             id: id.into(),
             content: content.into(),
-            card_html: card_html.clone(),
+            chunk_html: chunk_html.clone(),
             link: link.clone(),
             author_id: author_id.into(),
             qdrant_point_id,
@@ -288,20 +288,20 @@ impl CardMetadata {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Selectable, Insertable, Clone)]
-#[diesel(table_name = card_collisions)]
-pub struct CardCollisions {
+#[diesel(table_name = chunk_collisions)]
+pub struct ChunkCollisions {
     pub id: uuid::Uuid,
-    pub card_id: uuid::Uuid,
+    pub chunk_id: uuid::Uuid,
     pub collision_qdrant_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
 
-impl CardCollisions {
-    pub fn from_details<T: Into<uuid::Uuid>>(card_id: T, collision_id: T) -> Self {
-        CardCollisions {
+impl ChunkCollisions {
+    pub fn from_details<T: Into<uuid::Uuid>>(chunk_id: T, collision_id: T) -> Self {
+        ChunkCollisions {
             id: uuid::Uuid::new_v4(),
-            card_id: card_id.into(),
+            chunk_id: chunk_id.into(),
             collision_qdrant_id: Some(collision_id.into()),
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
@@ -310,11 +310,11 @@ impl CardCollisions {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct CardMetadataWithFileData {
+pub struct ChunkMetadataWithFileData {
     pub id: uuid::Uuid,
     pub author: Option<UserDTO>,
     pub content: String,
-    pub card_html: Option<String>,
+    pub chunk_html: Option<String>,
     pub link: Option<String>,
     pub qdrant_point_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
@@ -366,8 +366,8 @@ pub struct UserDTO {
 #[derive(
     Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema,
 )]
-#[diesel(table_name = card_collection)]
-pub struct CardCollection {
+#[diesel(table_name = chunk_collection)]
+pub struct ChunkCollection {
     pub id: uuid::Uuid,
     pub author_id: uuid::Uuid,
     pub name: String,
@@ -377,14 +377,14 @@ pub struct CardCollection {
     pub dataset_id: uuid::Uuid,
 }
 
-impl CardCollection {
+impl ChunkCollection {
     pub fn from_details(
         author_id: uuid::Uuid,
         name: String,
         description: String,
         dataset_id: uuid::Uuid,
     ) -> Self {
-        CardCollection {
+        ChunkCollection {
             id: uuid::Uuid::new_v4(),
             author_id,
             name,
@@ -405,7 +405,7 @@ pub struct SlimCollection {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Queryable, ToSchema)]
-pub struct CardCollectionAndFile {
+pub struct ChunkCollectionAndFile {
     pub id: uuid::Uuid,
     pub author_id: uuid::Uuid,
     pub name: String,
@@ -416,7 +416,7 @@ pub struct CardCollectionAndFile {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Queryable)]
-pub struct CardCollectionAndFileWithCount {
+pub struct ChunkCollectionAndFileWithCount {
     pub id: uuid::Uuid,
     pub author_id: uuid::Uuid,
     pub name: String,
@@ -427,9 +427,9 @@ pub struct CardCollectionAndFileWithCount {
     pub collection_count: Option<i32>,
 }
 
-impl From<CardCollectionAndFileWithCount> for CardCollectionAndFile {
-    fn from(collection: CardCollectionAndFileWithCount) -> Self {
-        CardCollectionAndFile {
+impl From<ChunkCollectionAndFileWithCount> for ChunkCollectionAndFile {
+    fn from(collection: ChunkCollectionAndFileWithCount) -> Self {
+        ChunkCollectionAndFile {
             id: collection.id,
             author_id: collection.author_id,
             name: collection.name,
@@ -444,21 +444,21 @@ impl From<CardCollectionAndFileWithCount> for CardCollectionAndFile {
 #[derive(
     Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema,
 )]
-#[diesel(table_name = card_collection_bookmarks)]
-pub struct CardCollectionBookmark {
+#[diesel(table_name = chunk_collection_bookmarks)]
+pub struct ChunkCollectionBookmark {
     pub id: uuid::Uuid,
     pub collection_id: uuid::Uuid,
-    pub card_metadata_id: uuid::Uuid,
+    pub chunk_metadata_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
 
-impl CardCollectionBookmark {
-    pub fn from_details(collection_id: uuid::Uuid, card_metadata_id: uuid::Uuid) -> Self {
-        CardCollectionBookmark {
+impl ChunkCollectionBookmark {
+    pub fn from_details(collection_id: uuid::Uuid, chunk_metadata_id: uuid::Uuid) -> Self {
+        ChunkCollectionBookmark {
             id: uuid::Uuid::new_v4(),
             collection_id,
-            card_metadata_id,
+            chunk_metadata_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
         }
@@ -488,15 +488,15 @@ impl FileCollection {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct UserDTOWithCards {
+pub struct UserDTOWithChunks {
     pub id: uuid::Uuid,
     pub email: Option<String>,
     pub username: Option<String>,
     pub website: Option<String>,
     pub visible_email: bool,
     pub created_at: chrono::NaiveDateTime,
-    pub total_cards_created: i64,
-    pub cards: Vec<CardMetadataWithFileData>,
+    pub total_chunks_created: i64,
+    pub chunks: Vec<ChunkMetadataWithFileData>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, Default)]
@@ -509,7 +509,7 @@ pub struct FullTextSearchResult {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub tag_set: Option<String>,
-    pub card_html: Option<String>,
+    pub chunk_html: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
@@ -518,68 +518,68 @@ pub struct FullTextSearchResult {
     pub weight: f64,
 }
 
-impl From<CardMetadata> for FullTextSearchResult {
-    fn from(card: CardMetadata) -> Self {
+impl From<ChunkMetadata> for FullTextSearchResult {
+    fn from(chunk: ChunkMetadata) -> Self {
         FullTextSearchResult {
-            id: card.id,
-            content: card.content,
-            link: card.link,
-            author_id: card.author_id,
-            qdrant_point_id: card.qdrant_point_id,
-            created_at: card.created_at,
-            updated_at: card.updated_at,
-            tag_set: card.tag_set,
-            card_html: card.card_html,
+            id: chunk.id,
+            content: chunk.content,
+            link: chunk.link,
+            author_id: chunk.author_id,
+            qdrant_point_id: chunk.qdrant_point_id,
+            created_at: chunk.created_at,
+            updated_at: chunk.updated_at,
+            tag_set: chunk.tag_set,
+            chunk_html: chunk.chunk_html,
             score: None,
-            metadata: card.metadata,
-            tracking_id: card.tracking_id,
-            time_stamp: card.time_stamp,
+            metadata: chunk.metadata,
+            tracking_id: chunk.tracking_id,
+            time_stamp: chunk.time_stamp,
             count: 0,
-            weight: card.weight,
+            weight: chunk.weight,
         }
     }
 }
 
-impl From<&CardMetadata> for FullTextSearchResult {
-    fn from(card: &CardMetadata) -> Self {
+impl From<&ChunkMetadata> for FullTextSearchResult {
+    fn from(chunk: &ChunkMetadata) -> Self {
         FullTextSearchResult {
-            id: card.id,
-            content: card.content.clone(),
-            link: card.link.clone(),
-            author_id: card.author_id,
-            qdrant_point_id: card.qdrant_point_id,
-            created_at: card.created_at,
-            updated_at: card.updated_at,
-            tag_set: card.tag_set.clone(),
-            card_html: card.card_html.clone(),
+            id: chunk.id,
+            content: chunk.content.clone(),
+            link: chunk.link.clone(),
+            author_id: chunk.author_id,
+            qdrant_point_id: chunk.qdrant_point_id,
+            created_at: chunk.created_at,
+            updated_at: chunk.updated_at,
+            tag_set: chunk.tag_set.clone(),
+            chunk_html: chunk.chunk_html.clone(),
             score: None,
-            tracking_id: card.tracking_id.clone(),
-            time_stamp: card.time_stamp,
-            metadata: card.metadata.clone(),
+            tracking_id: chunk.tracking_id.clone(),
+            time_stamp: chunk.time_stamp,
+            metadata: chunk.metadata.clone(),
             count: 0,
-            weight: card.weight,
+            weight: chunk.weight,
         }
     }
 }
 
-impl From<CardMetadataWithCount> for FullTextSearchResult {
-    fn from(card: CardMetadataWithCount) -> Self {
+impl From<ChunkMetadataWithCount> for FullTextSearchResult {
+    fn from(chunk: ChunkMetadataWithCount) -> Self {
         FullTextSearchResult {
-            id: card.id,
-            content: card.content,
-            link: card.link,
-            author_id: card.author_id,
-            qdrant_point_id: card.qdrant_point_id,
-            created_at: card.created_at,
-            updated_at: card.updated_at,
-            tag_set: card.tag_set,
-            card_html: card.card_html,
+            id: chunk.id,
+            content: chunk.content,
+            link: chunk.link,
+            author_id: chunk.author_id,
+            qdrant_point_id: chunk.qdrant_point_id,
+            created_at: chunk.created_at,
+            updated_at: chunk.updated_at,
+            tag_set: chunk.tag_set,
+            chunk_html: chunk.chunk_html,
             score: None,
-            metadata: card.metadata,
-            tracking_id: card.tracking_id,
-            time_stamp: card.time_stamp,
-            count: card.count,
-            weight: card.weight,
+            metadata: chunk.metadata,
+            tracking_id: chunk.tracking_id,
+            time_stamp: chunk.time_stamp,
+            count: chunk.count,
+            weight: chunk.weight,
         }
     }
 }
@@ -666,20 +666,20 @@ impl From<File> for FileDTO {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone)]
-#[diesel(table_name = card_files)]
-pub struct CardFile {
+#[diesel(table_name = chunk_files)]
+pub struct ChunkFile {
     pub id: uuid::Uuid,
-    pub card_id: uuid::Uuid,
+    pub chunk_id: uuid::Uuid,
     pub file_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
 
-impl CardFile {
-    pub fn from_details(card_id: uuid::Uuid, file_id: uuid::Uuid) -> Self {
-        CardFile {
+impl ChunkFile {
+    pub fn from_details(chunk_id: uuid::Uuid, file_id: uuid::Uuid) -> Self {
+        ChunkFile {
             id: uuid::Uuid::new_v4(),
-            card_id,
+            chunk_id,
             file_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
@@ -688,8 +688,8 @@ impl CardFile {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Queryable)]
-pub struct CardFileWithName {
-    pub card_id: uuid::Uuid,
+pub struct ChunkFileWithName {
+    pub chunk_id: uuid::Uuid,
     pub file_id: uuid::Uuid,
     pub file_name: String,
 }
@@ -742,28 +742,6 @@ impl FileUploadCompletedNotificationWithName {
             user_read: notification.user_read,
             created_at: notification.created_at,
             updated_at: notification.updated_at,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
-#[diesel(table_name = cut_cards)]
-pub struct CutCard {
-    pub id: uuid::Uuid,
-    pub user_id: uuid::Uuid,
-    pub cut_card_content: String,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-}
-
-impl CutCard {
-    pub fn from_details(user_id: uuid::Uuid, cut_card_content: String) -> Self {
-        CutCard {
-            id: uuid::Uuid::new_v4(),
-            user_id,
-            cut_card_content,
-            created_at: chrono::Utc::now().naive_local(),
-            updated_at: chrono::Utc::now().naive_local(),
         }
     }
 }
@@ -963,7 +941,7 @@ impl Invitation {
 pub struct StripePlan {
     pub id: uuid::Uuid,
     pub stripe_id: String,
-    pub card_count: i32,
+    pub chunk_count: i32,
     pub file_storage: i32,
     pub user_count: i32,
     pub dataset_count: i32,
@@ -976,7 +954,7 @@ pub struct StripePlan {
 impl StripePlan {
     pub fn from_details(
         stripe_id: String,
-        card_count: i32,
+        chunk_count: i32,
         file_storage: i32,
         user_count: i32,
         dataset_count: i32,
@@ -986,7 +964,7 @@ impl StripePlan {
         StripePlan {
             id: uuid::Uuid::new_v4(),
             stripe_id,
-            card_count,
+            chunk_count,
             file_storage,
             user_count,
             dataset_count,
@@ -1001,7 +979,7 @@ impl StripePlan {
         StripePlan {
             id: uuid::Uuid::default(),
             stripe_id: "".to_string(),
-            card_count: 1000,
+            chunk_count: 1000,
             file_storage: 0,
             user_count: 5,
             dataset_count: 1,
@@ -1129,16 +1107,16 @@ impl UserOrganization {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
-#[diesel(table_name = card_metadata_counts)]
-pub struct CardMetadataCount {
+#[diesel(table_name = chunk_metadata_counts)]
+pub struct ChunkMetadataCount {
     pub id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
     pub total_rows: i64,
 }
 
-impl CardMetadataCount {
+impl ChunkMetadataCount {
     pub fn from_details(dataset_id: uuid::Uuid, total_rows: i64) -> Self {
-        CardMetadataCount {
+        ChunkMetadataCount {
             id: uuid::Uuid::new_v4(),
             dataset_id,
             total_rows,

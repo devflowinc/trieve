@@ -1,5 +1,5 @@
 -- This file should undo anything in `up.sql`
-DROP TRIGGER IF EXISTS update_collection_counts_trigger ON card_collection;
+DROP TRIGGER IF EXISTS update_collection_counts_trigger ON chunk_collection;
 
 -- Drop the function
 DROP FUNCTION IF EXISTS update_collection_counts();

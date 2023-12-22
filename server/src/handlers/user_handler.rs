@@ -3,7 +3,7 @@ use crate::{
     data::models::{DatasetAndOrgWithSubAndPlan, Pool},
     errors::{DefaultError, ServiceError},
     operators::user_operator::{
-        get_user_with_cards_by_id_query, set_user_api_key_query, update_user_query,
+        get_user_with_chunks_by_id_query, set_user_api_key_query, update_user_query,
     },
 };
 use actix_web::{web, HttpResponse};
@@ -18,7 +18,7 @@ pub struct UpdateUserData {
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
-pub struct GetUserWithCardsData {
+pub struct GetUserWithChunksData {
     pub user_id: uuid::Uuid,
     pub page: i64,
 }
@@ -29,16 +29,16 @@ pub struct GetUserWithCardsData {
     context_path = "/api",
     tag = "user",
     responses(
-        (status = 200, description = "JSON body representing the cards made by a given user with their cards", body = [UserDTOWithCards]),
-        (status = 400, description = "Service error relating to getting the cards for the given user", body = [DefaultError]),
+        (status = 200, description = "JSON body representing the chunks made by a given user with their chunks", body = [UserDTOWithchunks]),
+        (status = 400, description = "Service error relating to getting the chunks for the given user", body = [DefaultError]),
     ),
     params(
         ("user_id" = uuid::Uuid, description = "The id of the user to fetch"),
-        ("page" = i64, description = "The page of cards to fetch"),
+        ("page" = i64, description = "The page of chunks to fetch"),
     ),
 )]
-pub async fn get_user_with_cards_by_id(
-    path_data: web::Path<GetUserWithCardsData>,
+pub async fn get_user_with_chunks_by_id(
+    path_data: web::Path<GetUserWithChunksData>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     _required_user: LoggedUser,
@@ -47,12 +47,12 @@ pub async fn get_user_with_cards_by_id(
     let page = path_data.page;
 
     let user_result = web::block(move || {
-        get_user_with_cards_by_id_query(user_query_id, dataset_org_plan_sub.dataset.id, &page, pool)
+        get_user_with_chunks_by_id_query(user_query_id, dataset_org_plan_sub.dataset.id, &page, pool)
     })
     .await?;
 
     match user_result {
-        Ok(user_with_cards) => Ok(HttpResponse::Ok().json(user_with_cards)),
+        Ok(user_with_chunks) => Ok(HttpResponse::Ok().json(user_with_chunks)),
         Err(e) => Err(ServiceError::BadRequest(e.message.into()).into()),
     }
 }

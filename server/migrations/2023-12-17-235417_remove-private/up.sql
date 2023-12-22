@@ -1,6 +1,6 @@
 -- Your SQL goes here
 ALTER TABLE
-    card_metadata DROP COLUMN private;
+    chunk_metadata DROP COLUMN private;
 
 ALTER TABLE
     files DROP COLUMN private;

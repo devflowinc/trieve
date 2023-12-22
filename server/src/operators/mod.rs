@@ -1,4 +1,4 @@
-pub mod card_operator;
+pub mod chunk_operator;
 pub mod collection_operator;
 pub mod dataset_operator;
 pub mod email_operator;
