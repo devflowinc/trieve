@@ -3,7 +3,7 @@ use super::{
     search_operator::SearchResult,
 };
 use crate::{
-    data::models::CardMetadata,
+    data::models::ChunkMetadata,
     errors::{DefaultError, ServiceError},
     get_env,
 };
@@ -159,7 +159,7 @@ pub async fn create_new_qdrant_collection_query() -> Result<(), ServiceError> {
     qdrant_client
         .create_field_index(
             qdrant_collection.clone(),
-            "card_html",
+            "chunk_html",
             FieldType::Text,
             Some(&PayloadIndexParams {
                 index_params: Some(IndexParams::TextIndexParams(TextIndexParams {
@@ -180,7 +180,7 @@ pub async fn create_new_qdrant_collection_query() -> Result<(), ServiceError> {
 pub async fn create_new_qdrant_point_query(
     point_id: uuid::Uuid,
     embedding_vector: Vec<f32>,
-    card_metadata: CardMetadata,
+    chunk_metadata: ChunkMetadata,
     author_id: Option<uuid::Uuid>,
     dataset_id: uuid::Uuid,
 ) -> Result<(), actix_web::Error> {
@@ -194,11 +194,15 @@ pub async fn create_new_qdrant_point_query(
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let splade_vector =
-        get_splade_doc_embedding(card_metadata.card_html.as_ref().unwrap_or(&"".to_string()))
-            .await?;
+    let splade_vector = get_splade_doc_embedding(
+        chunk_metadata
+            .chunk_html
+            .as_ref()
+            .unwrap_or(&"".to_string()),
+    )
+    .await?;
 
-    let payload = json!({"authors": vec![author_id.unwrap_or_default().to_string()], "tag_set": card_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": card_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "card_html": card_metadata.card_html.unwrap_or("".to_string()), "metadata": card_metadata.metadata.unwrap_or_default(), "time_stamp": card_metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string()})
+    let payload = json!({"authors": vec![author_id.unwrap_or_default().to_string()], "tag_set": chunk_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": chunk_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "chunk_html": chunk_metadata.chunk_html.unwrap_or("".to_string()), "metadata": chunk_metadata.metadata.unwrap_or_default(), "time_stamp": chunk_metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string()})
                 .try_into()
                 .expect("A json! Value must always be a valid Payload");
 
@@ -223,15 +227,15 @@ pub async fn create_new_qdrant_point_query(
         .upsert_points_blocking(qdrant_collection, None, vec![point], None)
         .await
         .map_err(|err| {
-            log::info!("Failed inserting card to qdrant {:?}", err);
-            ServiceError::BadRequest("Failed inserting card to qdrant".into())
+            log::info!("Failed inserting chunk to qdrant {:?}", err);
+            ServiceError::BadRequest("Failed inserting chunk to qdrant".into())
         })?;
 
     Ok(())
 }
 
 pub async fn update_qdrant_point_query(
-    metadata: Option<CardMetadata>,
+    metadata: Option<ChunkMetadata>,
     point_id: uuid::Uuid,
     author_id: Option<uuid::Uuid>,
     updated_vector: Option<Vec<f32>>,
@@ -266,7 +270,7 @@ pub async fn update_qdrant_point_query(
         Some(point) => point,
         None => {
             return Err(ServiceError::BadRequest(
-                "Failed getting vec.first card from qdrant".into(),
+                "Failed getting vec.first chunk from qdrant".into(),
             )
             .into())
         }
@@ -296,9 +300,9 @@ pub async fn update_qdrant_point_query(
     }
 
     let payload = if let Some(metadata) = metadata.clone() {
-        json!({"authors": current_author_ids, "tag_set": metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "card_html": metadata.card_html.unwrap_or("".to_string()), "metadata": metadata.metadata.unwrap_or_default(), "time_stamp": metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string()})
+        json!({"authors": current_author_ids, "tag_set": metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "chunk_html": metadata.chunk_html.unwrap_or("".to_string()), "metadata": metadata.metadata.unwrap_or_default(), "time_stamp": metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string()})
     } else {
-        json!({"authors": current_author_ids, "tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "card_html": current_point.payload.get("card_html").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")), "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from(""))})
+        json!({"authors": current_author_ids, "tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "chunk_html": current_point.payload.get("chunk_html").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")), "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from(""))})
     };
     let points_selector = qdrant_point_id.into();
 
@@ -327,7 +331,7 @@ pub async fn update_qdrant_point_query(
         qdrant
             .upsert_points(qdrant_collection, None, vec![point], None)
             .await
-            .map_err(|_err| ServiceError::BadRequest("Failed upserting card in qdrant".into()))?;
+            .map_err(|_err| ServiceError::BadRequest("Failed upserting chunk in qdrant".into()))?;
 
         return Ok(());
     }
@@ -344,7 +348,7 @@ pub async fn update_qdrant_point_query(
         )
         .await
         .map_err(|_err| {
-            ServiceError::BadRequest("Failed updating card payload in qdrant".into())
+            ServiceError::BadRequest("Failed updating chunk payload in qdrant".into())
         })?;
 
     Ok(())

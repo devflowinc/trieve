@@ -47,7 +47,7 @@ pub fn get_notifications_query(
     page: i64,
     pool: web::Data<Pool>,
 ) -> Result<NotificationReturn, DefaultError> {
-    use crate::data::schema::card_collection::dsl as card_collection_columns;
+    use crate::data::schema::chunk_collection::dsl as chunk_collection_columns;
     use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
     use crate::data::schema::user_notification_counts::dsl as user_notification_counts_columns;
 
@@ -56,9 +56,9 @@ pub fn get_notifications_query(
     let file_upload_completed =
         file_upload_completed_notifications_columns::file_upload_completed_notifications
             .left_outer_join(
-                card_collection_columns::card_collection
+                chunk_collection_columns::chunk_collection
                     .on(file_upload_completed_notifications_columns::collection_uuid
-                        .eq(card_collection_columns::id)),
+                        .eq(chunk_collection_columns::id)),
             )
             .left_outer_join(
                 user_notification_counts_columns::user_notification_counts
@@ -69,7 +69,7 @@ pub fn get_notifications_query(
             .filter(file_upload_completed_notifications_columns::dataset_id.eq(dataset_id))
             .select((
                 FileUploadCompletedNotification::as_select(),
-                card_collection_columns::name.nullable(),
+                chunk_collection_columns::name.nullable(),
                 user_notification_counts_columns::notification_count.nullable(),
             ))
             .order(file_upload_completed_notifications_columns::created_at.desc())
