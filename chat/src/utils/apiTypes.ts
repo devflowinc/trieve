@@ -1,83 +1,77 @@
-export interface CardMetadata {
+export interface ChunkMetadata {
   id: string;
   content: string;
-  card_html?: string;
+  chunk_html?: string;
   link: string | null;
   qdrant_point_id: string;
   created_at: string;
   updated_at: string;
   tag_set: string | null;
-  file_id: string | null;
-  file_name: string | null;
-  metadata: object | null;
   tracking_id: string | null;
   time_stamp: string | null;
+  file_id: string | null;
+  file_name: string | null;
+  metadata: Record<string, never> | null;
 }
 
 export const indirectHasOwnProperty = (obj: unknown, prop: string): boolean => {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 };
 
-export const isCardMetadata = (card: unknown): card is CardMetadata => {
-  if (typeof card !== "object" || card === null) return false;
+export interface APIRequest {
+  api_key: string;
+}
+
+export const isChunkMetadata = (chunk: unknown): chunk is ChunkMetadata => {
+  if (typeof chunk !== "object" || chunk === null) return false;
 
   return (
-    indirectHasOwnProperty(card, "id") &&
-    typeof (card as CardMetadata).id === "string" &&
-    indirectHasOwnProperty(card, "content") &&
-    typeof (card as CardMetadata).content === "string" &&
-    indirectHasOwnProperty(card, "qdrant_point_id") &&
-    typeof (card as CardMetadata).qdrant_point_id === "string" &&
-    indirectHasOwnProperty(card, "created_at") &&
-    typeof (card as CardMetadata).created_at === "string" &&
-    indirectHasOwnProperty(card, "updated_at") &&
-    typeof (card as CardMetadata).updated_at === "string" &&
-    indirectHasOwnProperty(card, "tag_set") &&
-    (typeof (card as CardMetadata).tag_set === "string" ||
-      (card as CardMetadata).tag_set === null) &&
-    (typeof (card as CardMetadata).metadata === "object" ||
-      (card as CardMetadata).metadata === null)
+    indirectHasOwnProperty(chunk, "id") &&
+    typeof (chunk as ChunkMetadata).id === "string" &&
+    indirectHasOwnProperty(chunk, "content") &&
+    typeof (chunk as ChunkMetadata).content === "string" &&
+    indirectHasOwnProperty(chunk, "qdrant_point_id") &&
+    typeof (chunk as ChunkMetadata).qdrant_point_id === "string" &&
+    indirectHasOwnProperty(chunk, "created_at") &&
+    typeof (chunk as ChunkMetadata).created_at === "string" &&
+    indirectHasOwnProperty(chunk, "updated_at") &&
+    typeof (chunk as ChunkMetadata).updated_at === "string" &&
+    indirectHasOwnProperty(chunk, "tag_set") &&
+    (typeof (chunk as ChunkMetadata).tag_set === "string" ||
+      (chunk as ChunkMetadata).tag_set === null) &&
+    (typeof (chunk as ChunkMetadata).metadata === "object" ||
+      (chunk as ChunkMetadata).metadata === null)
   );
 };
 
-export type CardMetadataWithVotes = Exclude<CardMetadata, "author"> & {
+export type ChunkMetadataWithVotes = Exclude<ChunkMetadata, "author"> & {
   author: UserDTO | null;
-  total_upvotes: number;
-  total_downvotes: number;
-  vote_by_current_user: boolean | null;
+  author_id: UserDTO | null;
 };
 
-export const isCardMetadataWithVotes = (
-  card: unknown,
-): card is CardMetadataWithVotes => {
-  if (typeof card !== "object" || card === null) return false;
+export const isChunkMetadataWithVotes = (
+  chunk: unknown,
+): chunk is ChunkMetadataWithVotes => {
+  if (typeof chunk !== "object" || chunk === null) return false;
 
   return (
-    indirectHasOwnProperty(card, "id") &&
-    typeof (card as CardMetadataWithVotes).id === "string" &&
-    indirectHasOwnProperty(card, "author") &&
-    (isUserDTO((card as CardMetadataWithVotes).author) ||
-      (card as CardMetadataWithVotes).author === null) &&
-    indirectHasOwnProperty(card, "content") &&
-    typeof (card as CardMetadataWithVotes).content === "string" &&
-    indirectHasOwnProperty(card, "qdrant_point_id") &&
-    typeof (card as CardMetadataWithVotes).qdrant_point_id === "string" &&
-    indirectHasOwnProperty(card, "total_upvotes") &&
-    typeof (card as CardMetadataWithVotes).total_upvotes === "number" &&
-    indirectHasOwnProperty(card, "total_downvotes") &&
-    typeof (card as CardMetadataWithVotes).total_downvotes === "number" &&
-    indirectHasOwnProperty(card, "vote_by_current_user") &&
-    (typeof (card as CardMetadataWithVotes).vote_by_current_user ===
-      "boolean" ||
-      (card as CardMetadataWithVotes).vote_by_current_user === null) &&
-    indirectHasOwnProperty(card, "created_at") &&
-    typeof (card as CardMetadataWithVotes).created_at === "string" &&
-    indirectHasOwnProperty(card, "updated_at") &&
-    typeof (card as CardMetadataWithVotes).updated_at === "string"
+    indirectHasOwnProperty(chunk, "id") &&
+    typeof (chunk as ChunkMetadataWithVotes).id === "string" &&
+    indirectHasOwnProperty(chunk, "author_id") &&
+    (typeof (chunk as ChunkMetadataWithVotes).author_id == "string" ||
+      (chunk as ChunkMetadataWithVotes).author_id === null) &&
+    indirectHasOwnProperty(chunk, "content") &&
+    typeof (chunk as ChunkMetadataWithVotes).content === "string" &&
+    indirectHasOwnProperty(chunk, "qdrant_point_id") &&
+    typeof (chunk as ChunkMetadataWithVotes).qdrant_point_id === "string" &&
+    indirectHasOwnProperty(chunk, "created_at") &&
+    typeof (chunk as ChunkMetadataWithVotes).created_at === "string" &&
+    indirectHasOwnProperty(chunk, "updated_at") &&
+    typeof (chunk as ChunkMetadataWithVotes).updated_at === "string"
   );
 };
 
-export interface CardCollectionDTO {
+export interface ChunkCollectionDTO {
   id: string;
   name: string;
   description: string;
@@ -90,32 +84,32 @@ export interface SlimCollection {
   of_current_user: boolean;
 }
 
-export interface CardBookmarksDTO {
-  card_uuid: string;
+export interface ChunkBookmarksDTO {
+  chunk_uuid: string;
   slim_collections: [SlimCollection];
 }
 
-export interface CardsWithTotalPagesDTO {
-  score_cards: ScoreCardDTO[];
-  total_card_pages: number;
+export interface ChunksWithTotalPagesDTO {
+  score_chunks: ScoreChunkDTO[];
+  total_chunk_pages: number;
 }
 
-export interface ScoreCardDTO {
-  metadata: [CardMetadataWithVotes];
+export interface ScoreChunkDTO {
+  metadata: [ChunkMetadataWithVotes];
   score: number;
 }
 
-export const isScoreCardDTO = (card: unknown): card is ScoreCardDTO => {
-  if (typeof card !== "object" || card === null) return false;
+export const isScoreChunkDTO = (chunk: unknown): chunk is ScoreChunkDTO => {
+  if (typeof chunk !== "object" || chunk === null) return false;
 
   return (
-    indirectHasOwnProperty(card, "metadata") &&
-    Array.isArray((card as ScoreCardDTO).metadata) &&
-    (card as ScoreCardDTO).metadata.every((val) =>
-      isCardMetadataWithVotes(val),
+    indirectHasOwnProperty(chunk, "metadata") &&
+    Array.isArray((chunk as ScoreChunkDTO).metadata) &&
+    (chunk as ScoreChunkDTO).metadata.every((val) =>
+      isChunkMetadataWithVotes(val),
     ) &&
-    indirectHasOwnProperty(card, "score") &&
-    typeof (card as ScoreCardDTO).score === "number"
+    indirectHasOwnProperty(chunk, "score") &&
+    typeof (chunk as ScoreChunkDTO).score === "number"
   );
 };
 
@@ -134,17 +128,17 @@ export const isActixApiDefaultError = (
   );
 };
 
-export type ActixCardUpdateError = ActixApiDefaultError & {
+export type ActixChunkUpdateError = ActixApiDefaultError & {
   changed_content: string;
 };
 
-export const isActixCardUpdateError = (
+export const isActixChunkUpdateError = (
   data: unknown,
-): data is ActixCardUpdateError => {
+): data is ActixChunkUpdateError => {
   return (
     isActixApiDefaultError(data) &&
     indirectHasOwnProperty(data, "changed_content") &&
-    typeof (data as ActixCardUpdateError).changed_content === "string"
+    typeof (data as ActixChunkUpdateError).changed_content === "string"
   );
 };
 
@@ -182,7 +176,6 @@ export const getReferralTokenArray = (): string[] => {
   return [];
 };
 
-// Called SlimUser in the backend - ai-editor
 export interface UserDTO {
   id: string;
   email: string | null;
@@ -211,38 +204,26 @@ export const isUserDTO = (user: unknown): user is UserDTO => {
   );
 };
 
-export type UserDTOWithVotesAndCards = UserDTO & {
+export type UserDTOWithVotesAndChunks = UserDTO & {
   created_at: string;
-  cards: CardMetadataWithVotes[];
-  total_cards_created: number;
-  total_upvotes_received: number;
-  total_downvotes_received: number;
-  total_votes_cast: number;
+  chunks: ChunkMetadataWithVotes[];
+  total_chunks_created: number;
 };
 
-export const isUserDTOWithVotesAndCards = (
+export const isUserDTOWithVotesAndChunks = (
   user: unknown,
-): user is UserDTOWithVotesAndCards => {
+): user is UserDTOWithVotesAndChunks => {
   if (typeof user !== "object" || user === null) return false;
 
   return (
     isUserDTO(user) &&
-    (user as UserDTOWithVotesAndCards).cards.every((card) =>
-      isCardMetadata(card),
+    (user as UserDTOWithVotesAndChunks).chunks.every((chunk) =>
+      isChunkMetadata(chunk),
     ) &&
     indirectHasOwnProperty(user, "created_at") &&
-    typeof (user as UserDTOWithVotesAndCards).created_at === "string" &&
-    indirectHasOwnProperty(user, "total_cards_created") &&
-    typeof (user as UserDTOWithVotesAndCards).total_cards_created ===
-      "number" &&
-    indirectHasOwnProperty(user, "total_upvotes_received") &&
-    typeof (user as UserDTOWithVotesAndCards).total_upvotes_received ===
-      "number" &&
-    indirectHasOwnProperty(user, "total_downvotes_received") &&
-    typeof (user as UserDTOWithVotesAndCards).total_downvotes_received ===
-      "number" &&
-    indirectHasOwnProperty(user, "total_votes_cast") &&
-    typeof (user as UserDTOWithVotesAndCards).total_votes_cast === "number"
+    typeof (user as UserDTOWithVotesAndChunks).created_at === "string" &&
+    indirectHasOwnProperty(user, "total_chunks_created") &&
+    typeof (user as UserDTOWithVotesAndChunks).total_chunks_created === "number"
   );
 };
 
@@ -267,7 +248,7 @@ export const isUserDTOWithScore = (user: unknown): user is UserDTOWithScore => {
   );
 };
 
-export interface CardCollectionDTO {
+export interface ChunkCollectionDTO {
   id: string;
   author_id: string;
   name: string;
@@ -276,93 +257,89 @@ export interface CardCollectionDTO {
   updated_at: string;
 }
 
-export interface CardCollectionPageDTO {
-  collections: CardCollectionDTO[];
+export interface ChunkCollectionPageDTO {
+  collections: ChunkCollectionDTO[];
   total_pages: number;
 }
 
-export const isCardCollectionPageDTO = (
+export const isChunkCollectionPageDTO = (
   collectionPage: unknown,
-): collectionPage is CardCollectionPageDTO => {
+): collectionPage is ChunkCollectionPageDTO => {
   if (typeof collectionPage !== "object" || collectionPage === null)
     return false;
 
   return (
     indirectHasOwnProperty(collectionPage, "collections") &&
-    Array.isArray((collectionPage as CardCollectionPageDTO).collections) &&
-    (collectionPage as CardCollectionPageDTO).collections.every((collection) =>
-      isCardCollectionDTO(collection),
+    Array.isArray((collectionPage as ChunkCollectionPageDTO).collections) &&
+    (collectionPage as ChunkCollectionPageDTO).collections.every((collection) =>
+      isChunkCollectionDTO(collection),
     ) &&
     indirectHasOwnProperty(collectionPage, "total_pages") &&
-    typeof (collectionPage as CardCollectionPageDTO).total_pages === "number"
+    typeof (collectionPage as ChunkCollectionPageDTO).total_pages === "number"
   );
 };
 
-export const isCardCollectionDTO = (
+export const isChunkCollectionDTO = (
   collection: unknown,
-): collection is CardCollectionDTO => {
+): collection is ChunkCollectionDTO => {
   if (typeof collection !== "object" || collection === null) return false;
 
   return (
     indirectHasOwnProperty(collection, "id") &&
-    typeof (collection as CardCollectionDTO).id === "string" &&
+    typeof (collection as ChunkCollectionDTO).id === "string" &&
     indirectHasOwnProperty(collection, "name") &&
-    typeof (collection as CardCollectionDTO).name === "string" &&
+    typeof (collection as ChunkCollectionDTO).name === "string" &&
     indirectHasOwnProperty(collection, "description") &&
-    typeof (collection as CardCollectionDTO).description === "string"
+    typeof (collection as ChunkCollectionDTO).description === "string"
   );
 };
 
-export interface CardCollectionBookmarkDTO {
+export interface ChunkCollectionBookmarkDTO {
   bookmarks: BookmarkDTO[];
-  collection: CardCollectionDTO;
+  collection: ChunkCollectionDTO;
   total_pages: number;
 }
 
-export interface CardCollectionSearchDTO {
-  bookmarks: ScoreCardDTO[];
-  collection: CardCollectionDTO;
+export interface ChunkCollectionSearchDTO {
+  bookmarks: ScoreChunkDTO[];
+  collection: ChunkCollectionDTO;
   total_pages: number;
 }
 
-export const isCardCollectionSearchDTO = (
+export const isChunkCollectionSearchDTO = (
   collection: unknown,
-): collection is CardCollectionSearchDTO => {
+): collection is ChunkCollectionSearchDTO => {
   if (typeof collection !== "object" || collection === null) return false;
 
   return (
     indirectHasOwnProperty(collection, "bookmarks") &&
-    isScoreCardDTO((collection as CardCollectionSearchDTO).bookmarks[0]) &&
+    isScoreChunkDTO((collection as ChunkCollectionSearchDTO).bookmarks[0]) &&
     indirectHasOwnProperty(collection, "collection") &&
-    isCardCollectionDTO((collection as CardCollectionSearchDTO).collection) &&
+    isChunkCollectionDTO((collection as ChunkCollectionSearchDTO).collection) &&
     indirectHasOwnProperty(collection, "total_pages") &&
-    typeof (collection as CardCollectionSearchDTO).total_pages === "number"
+    typeof (collection as ChunkCollectionSearchDTO).total_pages === "number"
   );
 };
 export interface BookmarkDTO {
-  metadata: [CardMetadataWithVotes];
+  metadata: [ChunkMetadataWithVotes];
 }
-export interface CreateCardDTO {
+export interface CreateChunkDTO {
   message?: string;
-  card_metadata: CardMetadataWithVotes;
+  chunk_metadata: ChunkMetadataWithVotes;
   duplicate: boolean;
 }
 
-export interface CardCountDTO {
-  total_count: number;
-}
-
-export interface SingleCardDTO {
-  metadata: CardMetadataWithVotes | null;
+export interface SingleChunkDTO {
+  metadata: ChunkMetadataWithVotes | null;
   status: number;
 }
 
-export interface CardCollectionBookmarksDTO {
-  bookmarks: CardMetadataWithVotes[];
-  collection: CardCollectionDTO;
+export interface ChunkCollectionBookmarksDTO {
+  bookmarks: ChunkMetadataWithVotes[];
+  collection: ChunkCollectionDTO;
 }
-export interface CardCollectionBookmarksWithStatusDTO {
-  metadata: CardCollectionBookmarkDTO | CardCollectionSearchDTO;
+export interface ChunkCollectionBookmarksWithStatusDTO {
+  metadata: ChunkCollectionBookmarkDTO | ChunkCollectionSearchDTO;
   status: number;
 }
 
@@ -419,3 +396,18 @@ export interface NotificationWithPagesDTO {
   total_pages: number;
   full_count: number;
 }
+
+export interface Message {
+  role: "assistant" | "user";
+  content: string;
+}
+
+export const messageRoleFromIndex = (idx: number) => {
+  if (idx == 0) {
+    return "system";
+  }
+  if (idx % 2 == 0) {
+    return "assistant";
+  }
+  return "user";
+};

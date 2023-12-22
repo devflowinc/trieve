@@ -1,9 +1,9 @@
 import { For, Show, createMemo, createSignal } from "solid-js";
 import {
   indirectHasOwnProperty,
-  type CardBookmarksDTO,
-  type CardCollectionDTO,
-  type CardMetadataWithVotes,
+  type ChunkBookmarksDTO,
+  type ChunkCollectionDTO,
+  type ChunkMetadataWithVotes,
 } from "../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import { VsFileSymlinkFile } from "solid-icons/vs";
@@ -35,16 +35,16 @@ export const formatDate = (date: Date) => {
   return `${formattedMonth}/${formattedDay}/${year}`;
 };
 
-export interface ScoreCardProps {
+export interface ScoreChunkProps {
   signedInUserId?: string;
-  cardCollections: CardCollectionDTO[];
+  chunkCollections: ChunkCollectionDTO[];
   totalCollectionPages: number;
   collection?: boolean;
-  card: CardMetadataWithVotes;
+  chunk: ChunkMetadataWithVotes;
   counter: string;
   order?: string;
   initialExpanded?: boolean;
-  bookmarks: CardBookmarksDTO[];
+  bookmarks: ChunkBookmarksDTO[];
   showExpand?: boolean;
 }
 
@@ -60,7 +60,7 @@ export const getLocalTime = (strDate: string | Date) => {
   return localTime;
 };
 
-const ScoreCard = (props: ScoreCardProps) => {
+const ScoreChunk = (props: ScoreChunkProps) => {
   const frontMatterVals = (
     (import.meta.env.VITE_FRONTMATTER_VALS as string | undefined) ??
     "link,tag_set,time_stamp"
@@ -81,14 +81,14 @@ const ScoreCard = (props: ScoreCardProps) => {
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
   const [copied, setCopied] = createSignal(false);
 
-  const copyCard = () => {
+  const copyChunk = () => {
     navigator.clipboard
       .write([
         new ClipboardItem({
-          "text/html": new Blob([props.card.card_html ?? ""], {
+          "text/html": new Blob([props.chunk.chunk_html ?? ""], {
             type: "text/html",
           }),
-          "text/plain": new Blob([props.card.content], {
+          "text/plain": new Blob([props.chunk.content], {
             type: "text/plain",
           }),
         }),
@@ -105,7 +105,7 @@ const ScoreCard = (props: ScoreCardProps) => {
   };
 
   const useExpand = createMemo(() => {
-    return props.card.content.split(" ").length > 20 * linesBeforeShowMore;
+    return props.chunk.content.split(" ").length > 20 * linesBeforeShowMore;
   });
 
   return (
@@ -122,7 +122,7 @@ const ScoreCard = (props: ScoreCardProps) => {
           <span class="font-semibold">Doc: {props.counter}</span>
           <div class="flex-1" />
           <Show when={!copied()}>
-            <button class="h-fit" onClick={() => copyCard()}>
+            <button class="h-fit" onClick={() => copyChunk()}>
               <AiOutlineCopy class="h-5 w-5 fill-current" />
             </button>
           </Show>
@@ -131,7 +131,7 @@ const ScoreCard = (props: ScoreCardProps) => {
           </Show>
           <a
             title="Open"
-            href={`${searchURL}/card/${props.card.id}`}
+            href={`${searchURL}/chunk/${props.chunk.id}`}
             target="_blank"
           >
             <VsFileSymlinkFile class="h-5 w-5 fill-current" />
@@ -141,34 +141,36 @@ const ScoreCard = (props: ScoreCardProps) => {
           <For each={frontMatterVals}>
             {(frontMatterVal) => (
               <>
-                <Show when={props.card.link && frontMatterVal == "link"}>
+                <Show when={props.chunk.link && frontMatterVal == "link"}>
                   <a
                     class="dark:text-turquoise-400 line-clamp-1 w-fit break-all text-magenta-400 underline"
                     target="_blank"
-                    href={props.card.link ?? ""}
+                    href={props.chunk.link ?? ""}
                   >
-                    {props.card.link}
+                    {props.chunk.link}
                   </a>
                 </Show>
-                <Show when={props.card.tag_set && frontMatterVal == "tag_set"}>
+                <Show when={props.chunk.tag_set && frontMatterVal == "tag_set"}>
                   <div class="flex space-x-2">
                     <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                       Tag Set:{" "}
                     </span>
                     <span class="line-clamp-1 break-all">
-                      {props.card.tag_set}
+                      {props.chunk.tag_set}
                     </span>
                   </div>
                 </Show>
                 <Show
-                  when={props.card.time_stamp && frontMatterVal == "time_stamp"}
+                  when={
+                    props.chunk.time_stamp && frontMatterVal == "time_stamp"
+                  }
                 >
                   <div class="flex space-x-2">
                     <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                       Time Stamp:{" "}
                     </span>
                     <span class="line-clamp-1 break-all">
-                      {formatDate(new Date(props.card.time_stamp ?? ""))}
+                      {formatDate(new Date(props.chunk.time_stamp ?? ""))}
                     </span>
                   </div>
                 </Show>
@@ -178,13 +180,13 @@ const ScoreCard = (props: ScoreCardProps) => {
                     frontMatterVal !== "link" &&
                     frontMatterVal !== "tag_set" &&
                     frontMatterVal !== "time_stamp" &&
-                    props.card.metadata &&
+                    props.chunk.metadata &&
                     indirectHasOwnProperty(
-                      props.card.metadata,
+                      props.chunk.metadata,
                       frontMatterVal,
                     ) &&
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                    (props.card.metadata as any)[frontMatterVal]
+                    (props.chunk.metadata as any)[frontMatterVal]
                   }
                 >
                   <div class="flex space-x-2">
@@ -192,13 +194,13 @@ const ScoreCard = (props: ScoreCardProps) => {
                       {frontMatterVal}:{" "}
                     </span>
                     <span class="line-clamp-1 break-all">
-                      {props.card.metadata &&
+                      {props.chunk.metadata &&
                         indirectHasOwnProperty(
-                          props.card.metadata,
+                          props.chunk.metadata,
                           frontMatterVal,
                         ) &&
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
-                        (props.card.metadata as any)[frontMatterVal].replace(
+                        (props.chunk.metadata as any)[frontMatterVal].replace(
                           / +/g,
                           " ",
                         )}
@@ -224,8 +226,8 @@ const ScoreCard = (props: ScoreCardProps) => {
         }
         // eslint-disable-next-line solid/no-innerhtml, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
         innerHTML={sanitizeHtml(
-          props.card.card_html !== undefined
-            ? props.card.card_html
+          props.chunk.chunk_html !== undefined
+            ? props.chunk.chunk_html
                 .replaceAll("line-height", "lh")
                 .replace("\n", " ")
                 .replace(`<br>`, " ")
@@ -260,4 +262,4 @@ const ScoreCard = (props: ScoreCardProps) => {
   );
 };
 
-export default ScoreCard;
+export default ScoreChunk;
