@@ -2,7 +2,7 @@ use super::collection_operator::create_collection_and_add_bookmarks_query;
 use super::notification_operator::add_collection_created_notification_query;
 use crate::data::models::DatasetAndOrgWithSubAndPlan;
 use crate::handlers::auth_handler::AdminOnly;
-use crate::{data::models::CardCollection, handlers::card_handler::ReturnCreatedCard};
+use crate::{data::models::ChunkCollection, handlers::chunk_handler::ReturnCreatedChunk};
 use crate::{
     data::models::FileDTO,
     diesel::{ExpressionMethods, QueryDsl},
@@ -10,14 +10,14 @@ use crate::{
 };
 use crate::{
     data::models::FileUploadCompletedNotification, diesel::Connection, get_env,
-    handlers::card_handler::convert_html,
+    handlers::chunk_handler::convert_html,
 };
 use crate::{
     data::models::{File, Pool},
     errors::DefaultError,
     handlers::{
         auth_handler::LoggedUser,
-        card_handler::{create_card, CreateCardData},
+        chunk_handler::{create_chunk, CreateChunkData},
         file_handler::UploadFileResult,
     },
 };
@@ -99,7 +99,7 @@ pub async fn convert_doc_to_html_query(
     description: Option<String>,
     link: Option<String>,
     metadata: Option<serde_json::Value>,
-    create_cards: Option<bool>,
+    create_chunks: Option<bool>,
     time_stamp: Option<String>,
     user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -220,11 +220,11 @@ pub async fn convert_doc_to_html_query(
                 }
             })?;
 
-        if create_cards.is_some_and(|create_cards_bool| !create_cards_bool) {
+        if create_chunks.is_some_and(|create_chunks_bool| !create_chunks_bool) {
             return Ok(());
         }
 
-        let resp = create_cards_with_handler(
+        let resp = create_chunks_with_handler(
             tag_set,
             file_name,
             created_file.id,
@@ -241,7 +241,7 @@ pub async fn convert_doc_to_html_query(
         .await;
 
         if resp.is_err() {
-            log::error!("Create cards with handler failed {:?}", resp);
+            log::error!("Create chunks with handler failed {:?}", resp);
         }
 
         Ok(())
@@ -262,7 +262,7 @@ pub async fn convert_doc_to_html_query(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn create_cards_with_handler(
+pub async fn create_chunks_with_handler(
     tag_set: Option<String>,
     file_name: String,
     created_file_id: uuid::Uuid,
@@ -301,38 +301,38 @@ pub async fn create_cards_with_handler(
         }
     };
 
-    let parsed_cards_command_output = Command::new(parser_command).arg(file_path_str).output();
+    let parsed_chunks_command_output = Command::new(parser_command).arg(file_path_str).output();
 
     delete_html_file()?;
 
-    let raw_parsed_cards = match parsed_cards_command_output {
-        Ok(parsed_cards_command_output) => parsed_cards_command_output.stdout,
+    let raw_parsed_chunks = match parsed_chunks_command_output {
+        Ok(parsed_chunks_command_output) => parsed_chunks_command_output.stdout,
         Err(_) => {
-            log::error!("HANDLER Could not parse cards");
+            log::error!("HANDLER Could not parse chunks");
             return Err(DefaultError {
-                message: "Could not parse cards",
+                message: "Could not parse chunks",
             });
         }
     };
 
-    // raw_parsed_cards can be serialized to a vector of Strings
-    let card_htmls: Vec<String> = match serde_json::from_slice(&raw_parsed_cards) {
-        Ok(card_htmls) => card_htmls,
+    // raw_parsed_chunks can be serialized to a vector of Strings
+    let chunk_htmls: Vec<String> = match serde_json::from_slice(&raw_parsed_chunks) {
+        Ok(chunk_htmls) => chunk_htmls,
         Err(err) => {
-            log::error!("HANDLER Could not deserialize card_htmls {:?}", err);
+            log::error!("HANDLER Could not deserialize chunk_htmls {:?}", err);
             return Err(DefaultError {
-                message: "Could not deserialize card_htmls",
+                message: "Could not deserialize chunk_htmls",
             });
         }
     };
 
-    let mut card_ids: Vec<uuid::Uuid> = [].to_vec();
+    let mut chunk_ids: Vec<uuid::Uuid> = [].to_vec();
 
     let pool1 = pool.clone();
 
-    for card_html in card_htmls {
-        let create_card_data = CreateCardData {
-            card_html: Some(card_html.clone()),
+    for chunk_html in chunk_htmls {
+        let create_chunk_data = CreateChunkData {
+            chunk_html: Some(chunk_html.clone()),
             link: link.clone(),
             tag_set: tag_set.clone(),
             file_uuid: Some(created_file_id),
@@ -340,13 +340,13 @@ pub async fn create_cards_with_handler(
             collection_id: None,
             tracking_id: None,
             time_stamp: time_stamp.clone(),
-            card_vector: None,
+            chunk_vector: None,
             weight: None,
         };
-        let web_json_create_card_data = web::Json(create_card_data);
+        let web_json_create_chunk_data = web::Json(create_chunk_data);
 
-        match create_card(
-            web_json_create_card_data,
+        match create_chunk(
+            web_json_create_chunk_data,
             pool.clone(),
             AdminOnly(user.clone()),
             dataset_org_plan_sub.clone(),
@@ -355,30 +355,30 @@ pub async fn create_cards_with_handler(
         {
             Ok(response) => {
                 if response.status().is_success() {
-                    let card_metadata: ReturnCreatedCard = serde_json::from_slice(
+                    let chunk_metadata: ReturnCreatedChunk = serde_json::from_slice(
                         response.into_body().try_into_bytes().unwrap().as_ref(),
                     )
                     .map_err(|_err| DefaultError {
-                        message: "Error creating card metadata's for file",
+                        message: "Error creating chunk metadata's for file",
                     })?;
-                    card_ids.push(card_metadata.card_metadata.id);
+                    chunk_ids.push(chunk_metadata.chunk_metadata.id);
                 }
             }
             Err(error) => {
-                log::error!("Error creating card: {:?}", error.to_string());
+                log::error!("Error creating chunk: {:?}", error.to_string());
             }
         }
     }
     let converted_description = convert_html(&description.unwrap_or("".to_string()));
     let collection_id;
     match create_collection_and_add_bookmarks_query(
-        CardCollection::from_details(
+        ChunkCollection::from_details(
             user.id,
             format!("Collection for file {}", file_name),
             converted_description,
             dataset_org_plan_sub.dataset.id,
         ),
-        card_ids,
+        chunk_ids,
         created_file_id,
         dataset_org_plan_sub.dataset.id,
         pool1,
@@ -459,7 +459,7 @@ pub async fn delete_file_query(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), actix_web::Error> {
-    use crate::data::schema::card_files::dsl as card_files_columns;
+    use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::files::dsl as files_columns;
 
     let mut conn = pool
@@ -487,7 +487,7 @@ pub async fn delete_file_query(
         .execute(conn)?;
 
         diesel::delete(
-            card_files_columns::card_files.filter(card_files_columns::file_id.eq(file_uuid)),
+            chunk_files_columns::chunk_files.filter(chunk_files_columns::file_id.eq(file_uuid)),
         )
         .execute(conn)?;
 

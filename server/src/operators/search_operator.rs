@@ -1,19 +1,19 @@
-use super::card_operator::{
-    find_relevant_sentence, get_collided_cards_query,
-    get_metadata_and_collided_cards_from_point_ids_query, get_metadata_from_point_ids,
+use super::chunk_operator::{
+    find_relevant_sentence, get_collided_chunks_query,
+    get_metadata_and_collided_chunks_from_point_ids_query, get_metadata_from_point_ids,
 };
 use super::model_operator::create_embedding;
 use crate::data::models::{
-    CardCollection, CardFileWithName, CardMetadataWithFileData, Dataset, DatasetConfiguration,
+    ChunkCollection, ChunkFileWithName, ChunkMetadataWithFileData, Dataset, DatasetConfiguration,
     FullTextSearchResult, User, UserDTO,
 };
 use crate::data::schema::{self};
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::errors::ServiceError;
 use crate::get_env;
-use crate::handlers::card_handler::{
-    ParsedQuery, ScoreCardDTO, SearchCardData, SearchCardQueryResponseBody, SearchCollectionsData,
-    SearchCollectionsResult,
+use crate::handlers::chunk_handler::{
+    ParsedQuery, ScoreChunkDTO, SearchCollectionsData, SearchCollectionsResult, SearchChunkData,
+    SearchChunkQueryResponseBody,
 };
 use crate::operators::model_operator::CrossEncoder;
 use crate::operators::qdrant_operator::{
@@ -44,9 +44,9 @@ pub struct SearchResult {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct SearchCardQueryResult {
+pub struct SearchchunkQueryResult {
     pub search_results: Vec<SearchResult>,
-    pub total_card_pages: i64,
+    pub total_chunk_pages: i64,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -60,38 +60,38 @@ pub async fn retrieve_qdrant_points_query(
     parsed_query: ParsedQuery,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<SearchCardQueryResult, DefaultError> {
+) -> Result<SearchchunkQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
 
     // TODO: Talk to Qdrant team about how to force substring match on a field instead of keyword match
-    // TEMPORARY: Using postgres to qdrant_point_id's for cards that match filter conditions
+    // TEMPORARY: Using postgres to qdrant_point_id's for chunks that match filter conditions
     // NOTE: Replacement function for native qdrant filters at https://gist.github.com/skeptrunedev/3ede217aa78d6462c5c52c63d0318764
-    use crate::data::schema::card_collisions::dsl as card_collisions_columns;
-    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
-    let second_join = diesel::alias!(schema::card_metadata as second_join);
+    use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+    let second_join = diesel::alias!(schema::chunk_metadata as second_join);
     let mut conn = pool.get().unwrap();
 
-    let mut query = card_metadata_columns::card_metadata
+    let mut query = chunk_metadata_columns::chunk_metadata
         .left_outer_join(
-            card_collisions_columns::card_collisions
-                .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
+            chunk_collisions_columns::chunk_collisions
+                .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
         )
         .left_outer_join(
             second_join.on(second_join
-                .field(schema::card_metadata::qdrant_point_id)
-                .eq(card_collisions_columns::collision_qdrant_id)),
+                .field(schema::chunk_metadata::qdrant_point_id)
+                .eq(chunk_collisions_columns::collision_qdrant_id)),
         )
-        .filter(card_metadata_columns::dataset_id.eq(dataset_id))
+        .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
         .select((
-            card_metadata_columns::qdrant_point_id,
+            chunk_metadata_columns::qdrant_point_id,
             second_join
-                .field(schema::card_metadata::qdrant_point_id)
+                .field(schema::chunk_metadata::qdrant_point_id)
                 .nullable(),
         ))
         .distinct_on((
-            card_metadata_columns::qdrant_point_id,
+            chunk_metadata_columns::qdrant_point_id,
             second_join
-                .field(schema::card_metadata::qdrant_point_id)
+                .field(schema::chunk_metadata::qdrant_point_id)
                 .nullable(),
         ))
         .into_boxed();
@@ -99,30 +99,30 @@ pub async fn retrieve_qdrant_points_query(
     let tag_set_inner = tag_set.unwrap_or_default();
     let link_inner = link.unwrap_or_default();
     if !tag_set_inner.is_empty() {
-        query = query.filter(card_metadata_columns::tag_set.ilike(format!(
+        query = query.filter(chunk_metadata_columns::tag_set.ilike(format!(
             "%{}%",
             tag_set_inner.first().unwrap_or(&String::new())
         )));
     }
 
     for tag in tag_set_inner.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
+        query = query.or_filter(chunk_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
     }
 
     if !link_inner.is_empty() {
-        query = query.filter(card_metadata_columns::link.ilike(format!(
+        query = query.filter(chunk_metadata_columns::link.ilike(format!(
             "%{}%",
             link_inner.first().unwrap_or(&String::new())
         )));
     }
     for link_url in link_inner.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::link.ilike(format!("%{}%", link_url)));
+        query = query.or_filter(chunk_metadata_columns::link.ilike(format!("%{}%", link_url)));
     }
 
     if let Some(time_range) = time_range {
         if time_range.0 != "null" && time_range.1 != "null" {
             query = query.filter(
-                card_metadata_columns::time_stamp
+                chunk_metadata_columns::time_stamp
                     .ge(time_range
                         .0
                         .clone()
@@ -134,7 +134,7 @@ pub async fn retrieve_qdrant_points_query(
                         .with_timezone(&chrono::Local)
                         .naive_local())
                     .and(
-                        card_metadata_columns::time_stamp.le(time_range
+                        chunk_metadata_columns::time_stamp.le(time_range
                             .1
                             .clone()
                             .parse::<DateTimeUtc>()
@@ -148,7 +148,7 @@ pub async fn retrieve_qdrant_points_query(
             );
         } else if time_range.0 != "null" {
             query = query.filter(
-                card_metadata_columns::time_stamp.ge(time_range
+                chunk_metadata_columns::time_stamp.ge(time_range
                     .0
                     .clone()
                     .parse::<DateTimeUtc>()
@@ -161,7 +161,7 @@ pub async fn retrieve_qdrant_points_query(
             );
         } else if time_range.1 != "null" {
             query = query.filter(
-                card_metadata_columns::time_stamp.le(time_range
+                chunk_metadata_columns::time_stamp.le(time_range
                     .1
                     .clone()
                     .parse::<DateTimeUtc>()
@@ -181,19 +181,19 @@ pub async fn retrieve_qdrant_points_query(
             match value {
                 serde_json::Value::Array(arr) => {
                     query = query.filter(
-                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                        sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
                             .ilike(format!("%{}%", arr.first().unwrap().as_str().unwrap_or(""))),
                     );
                     for item in arr.iter().skip(1) {
                         query = query.or_filter(
-                            sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                            sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
                                 .ilike(format!("%{}%", item.as_str().unwrap_or(""))),
                         );
                     }
                 }
                 _ => {
                     query = query.filter(
-                        sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                        sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
                             .ilike(format!("%{}%", value.as_str().unwrap_or(""))),
                     );
                 }
@@ -203,19 +203,19 @@ pub async fn retrieve_qdrant_points_query(
 
     if let Some(quote_words) = parsed_query.quote_words {
         for word in quote_words.iter() {
-            query = query.filter(card_metadata_columns::content.ilike(format!("%{}%", word)));
+            query = query.filter(chunk_metadata_columns::content.ilike(format!("%{}%", word)));
         }
     }
 
     if let Some(negated_words) = parsed_query.negated_words {
         for word in negated_words.iter() {
-            query = query.filter(card_metadata_columns::content.not_ilike(format!("%{}%", word)));
+            query = query.filter(chunk_metadata_columns::content.not_ilike(format!("%{}%", word)));
         }
     }
 
     let matching_qdrant_point_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
-            message: "Failed to load full-text searched cards",
+            message: "Failed to load full-text searched chunks",
         })?;
 
     let matching_point_ids: Vec<PointId> = matching_qdrant_point_ids
@@ -243,9 +243,9 @@ pub async fn retrieve_qdrant_points_query(
         search_full_text_qdrant_query(page, filter, parsed_query.query, dataset_id).await
     };
 
-    Ok(SearchCardQueryResult {
+    Ok(SearchchunkQueryResult {
         search_results: point_ids?,
-        total_card_pages: (matching_qdrant_point_ids.len() as f64 / 10.0).ceil() as i64,
+        total_chunk_pages: (matching_qdrant_point_ids.len() as f64 / 10.0).ceil() as i64,
     })
 }
 
@@ -322,7 +322,7 @@ pub async fn global_unfiltered_top_match_query(
                 })
             }
         },
-        // This only happens when there are no cards in the database
+        // This only happens when there are no chunks in the database
         None => SearchResult {
             score: 0.0,
             point_id: uuid::Uuid::nil(),
@@ -333,7 +333,7 @@ pub async fn global_unfiltered_top_match_query(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn search_card_collections_query(
+pub async fn search_chunk_collections_query(
     embedding_vector: Vec<f32>,
     page: u64,
     pool: web::Data<Pool>,
@@ -343,49 +343,49 @@ pub async fn search_card_collections_query(
     collection_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     parsed_query: ParsedQuery,
-) -> Result<SearchCardQueryResult, DefaultError> {
+) -> Result<SearchchunkQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
-    use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
-    use crate::data::schema::card_collisions::dsl as card_collisions_columns;
-    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+    use crate::data::schema::chunk_collection_bookmarks::dsl as chunk_collection_bookmarks_columns;
+    use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let mut conn = pool.get().unwrap();
 
-    let mut query = card_metadata_columns::card_metadata
+    let mut query = chunk_metadata_columns::chunk_metadata
         .left_outer_join(
-            card_collisions_columns::card_collisions
-                .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
+            chunk_collisions_columns::chunk_collisions
+                .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
         )
         .left_outer_join(
-            card_collection_bookmarks_columns::card_collection_bookmarks.on(
-                card_metadata_columns::id
-                    .eq(card_collection_bookmarks_columns::card_metadata_id)
-                    .and(card_collection_bookmarks_columns::collection_id.eq(collection_id)),
+            chunk_collection_bookmarks_columns::chunk_collection_bookmarks.on(
+                chunk_metadata_columns::id
+                    .eq(chunk_collection_bookmarks_columns::chunk_metadata_id)
+                    .and(chunk_collection_bookmarks_columns::collection_id.eq(collection_id)),
             ),
         )
         .select((
-            card_metadata_columns::qdrant_point_id,
-            card_collisions_columns::collision_qdrant_id.nullable(),
+            chunk_metadata_columns::qdrant_point_id,
+            chunk_collisions_columns::collision_qdrant_id.nullable(),
         ))
-        .filter(card_metadata_columns::dataset_id.eq(dataset_id))
-        .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id))
+        .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
+        .filter(chunk_collection_bookmarks_columns::collection_id.eq(collection_id))
         .distinct()
         .into_boxed();
     let tag_set_inner = tag_set.unwrap_or_default();
     let link_inner = link.unwrap_or_default();
 
     if let Some(tag) = tag_set_inner.first() {
-        query = query.filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
+        query = query.filter(chunk_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
     }
     for tag in tag_set_inner.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
+        query = query.or_filter(chunk_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
     }
 
     if let Some(link_inner) = link_inner.first() {
-        query = query.filter(card_metadata_columns::link.ilike(format!("%{}%", link_inner)));
+        query = query.filter(chunk_metadata_columns::link.ilike(format!("%{}%", link_inner)));
     }
     for link_url in link_inner.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::link.ilike(format!("%{}%", link_url)));
+        query = query.or_filter(chunk_metadata_columns::link.ilike(format!("%{}%", link_url)));
     }
 
     if let Some(serde_json::Value::Object(obj)) = &filters {
@@ -396,7 +396,7 @@ pub async fn search_card_collections_query(
                         if let Some(first_val) = arr.first() {
                             if let Some(string_val) = first_val.as_str() {
                                 query = query.filter(
-                                    sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                                    sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
                                         .ilike(format!("%{}%", string_val)),
                                 );
                             }
@@ -405,7 +405,7 @@ pub async fn search_card_collections_query(
                         for item in arr.iter().skip(1) {
                             if let Some(string_val) = item.as_str() {
                                 query = query.or_filter(
-                                    sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                                    sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
                                         .ilike(format!("%{}%", string_val)),
                                 );
                             }
@@ -413,7 +413,7 @@ pub async fn search_card_collections_query(
                     }
                     serde_json::Value::String(string_val) => {
                         query = query.filter(
-                            sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                            sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
                                 .ilike(format!("%{}%", string_val)),
                         );
                     }
@@ -425,13 +425,13 @@ pub async fn search_card_collections_query(
 
     if let Some(quote_words) = parsed_query.quote_words {
         for word in quote_words.iter() {
-            query = query.filter(card_metadata_columns::content.ilike(format!("%{}%", word)));
+            query = query.filter(chunk_metadata_columns::content.ilike(format!("%{}%", word)));
         }
     }
 
     if let Some(negated_words) = parsed_query.negated_words {
         for word in negated_words.iter() {
-            query = query.filter(card_metadata_columns::content.not_ilike(format!("%{}%", word)));
+            query = query.filter(chunk_metadata_columns::content.not_ilike(format!("%{}%", word)));
         }
     }
 
@@ -463,48 +463,50 @@ pub async fn search_card_collections_query(
     let point_ids: Vec<SearchResult> =
         search_semantic_qdrant_query(page, filter, embedding_vector, dataset_id).await?;
 
-    Ok(SearchCardQueryResult {
+    Ok(SearchchunkQueryResult {
         search_results: point_ids,
-        total_card_pages: (filtered_option_ids.len() as f64 / 10.0).ceil() as i64,
+        total_chunk_pages: (filtered_option_ids.len() as f64 / 10.0).ceil() as i64,
     })
 }
 
 pub fn get_metadata_query(
-    card_metadata: Vec<FullTextSearchResult>,
+    chunk_metadata: Vec<FullTextSearchResult>,
     mut conn: r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::PgConnection>>,
-) -> Result<Vec<CardMetadataWithFileData>, DefaultError> {
-    use crate::data::schema::card_collisions::dsl as card_collisions_columns;
-    use crate::data::schema::card_files::dsl as card_files_columns;
-    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+) -> Result<Vec<ChunkMetadataWithFileData>, DefaultError> {
+    use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
+    use crate::data::schema::chunk_files::dsl as chunk_files_columns;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::files::dsl as files_columns;
     use crate::data::schema::users::dsl as user_columns;
 
-    let all_datas = card_metadata_columns::card_metadata
+    let all_datas = chunk_metadata_columns::chunk_metadata
         .filter(
-            card_metadata_columns::id.eq_any(
-                card_metadata
+            chunk_metadata_columns::id.eq_any(
+                chunk_metadata
                     .iter()
-                    .map(|card| card.id)
+                    .map(|chunk| chunk.id)
                     .collect::<Vec<uuid::Uuid>>()
                     .as_slice(),
             ),
         )
         .left_outer_join(
-            user_columns::users.on(card_metadata_columns::author_id.eq(user_columns::id)),
+            user_columns::users.on(chunk_metadata_columns::author_id.eq(user_columns::id)),
         )
         .left_outer_join(
-            card_files_columns::card_files
-                .on(card_metadata_columns::id.eq(card_files_columns::card_id)),
+            chunk_files_columns::chunk_files
+                .on(chunk_metadata_columns::id.eq(chunk_files_columns::chunk_id)),
         )
-        .left_outer_join(files_columns::files.on(card_files_columns::file_id.eq(files_columns::id)))
         .left_outer_join(
-            card_collisions_columns::card_collisions
-                .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
+            files_columns::files.on(chunk_files_columns::file_id.eq(files_columns::id)),
+        )
+        .left_outer_join(
+            chunk_collisions_columns::chunk_collisions
+                .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
         )
         .select((
             (
-                card_files_columns::card_id,
-                card_files_columns::file_id,
+                chunk_files_columns::chunk_id,
+                chunk_files_columns::file_id,
                 files_columns::file_name,
             )
                 .nullable(),
@@ -521,12 +523,12 @@ pub fn get_metadata_query(
             )
                 .nullable(),
             (
-                card_metadata_columns::id,
-                card_collisions_columns::collision_qdrant_id.nullable(),
+                chunk_metadata_columns::id,
+                chunk_collisions_columns::collision_qdrant_id.nullable(),
             ),
         ))
         .load::<(
-            Option<CardFileWithName>,
+            Option<ChunkFileWithName>,
             Option<User>,
             (uuid::Uuid, Option<uuid::Uuid>),
         )>(&mut conn)
@@ -535,16 +537,16 @@ pub fn get_metadata_query(
         })?;
 
     #[allow(clippy::type_complexity)]
-    let (file_ids, card_creators, card_collisions): (
-        Vec<Option<CardFileWithName>>,
+    let (file_ids, chunk_creators, chunk_collisions): (
+        Vec<Option<ChunkFileWithName>>,
         Vec<Option<User>>,
         Vec<(uuid::Uuid, Option<uuid::Uuid>)>,
     ) = itertools::multiunzip(all_datas);
 
-    let card_metadata_with_file_id: Vec<CardMetadataWithFileData> = card_metadata
+    let chunk_metadata_with_file_id: Vec<ChunkMetadataWithFileData> = chunk_metadata
         .into_iter()
         .map(|metadata| {
-            let author = card_creators
+            let author = chunk_creators
                 .iter()
                 .flatten()
                 .find(|user| user.id == metadata.author_id)
@@ -561,24 +563,24 @@ pub fn get_metadata_query(
                     created_at: user.created_at,
                 });
 
-            let card_with_file_name = file_ids
+            let chunk_with_file_name = file_ids
                 .iter()
                 .flatten()
-                .find(|file| file.card_id == metadata.id);
+                .find(|file| file.chunk_id == metadata.id);
 
             let qdrant_point_id = match metadata.qdrant_point_id {
                 Some(id) => id,
                 None => {
-                    card_collisions
+                    chunk_collisions
                                     .iter()
-                                    .find(|collision| collision.0 == metadata.id) // Match card id
-                                    .expect("Qdrant point id does not exist for root card or collision")
+                                    .find(|collision| collision.0 == metadata.id) // Match chunk id
+                                    .expect("Qdrant point id does not exist for root chunk or collision")
                                     .1
                                     .expect("Collision Qdrant point id must exist if there is no root qdrant point id")
                 },
             };
 
-            CardMetadataWithFileData {
+            ChunkMetadataWithFileData {
                 id: metadata.id,
                 content: metadata.content,
                 link: metadata.link,
@@ -587,9 +589,9 @@ pub fn get_metadata_query(
                 qdrant_point_id,
                 created_at: metadata.created_at,
                 updated_at: metadata.updated_at,
-                card_html: metadata.card_html,
-                file_id: card_with_file_name.map(|file| file.file_id),
-                file_name: card_with_file_name.map(|file| file.file_name.to_string()),
+                chunk_html: metadata.chunk_html,
+                file_id: chunk_with_file_name.map(|file| file.file_id),
+                file_name: chunk_with_file_name.map(|file| file.file_name.to_string()),
                 metadata: metadata.metadata,
                 tracking_id: metadata.tracking_id,
                 time_stamp: metadata.time_stamp,
@@ -597,7 +599,7 @@ pub fn get_metadata_query(
             }
         })
         .collect();
-    Ok(card_metadata_with_file_id)
+    Ok(chunk_metadata_with_file_id)
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable)]
@@ -617,58 +619,58 @@ pub async fn search_full_text_collection_query(
     collection_id: uuid::Uuid,
     parsed_query: ParsedQuery,
     dataset_uuid: uuid::Uuid,
-) -> Result<SearchCardQueryResult, DefaultError> {
+) -> Result<SearchchunkQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
-    use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
-    use crate::data::schema::card_collisions::dsl as card_collisions_columns;
-    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+    use crate::data::schema::chunk_collection_bookmarks::dsl as chunk_collection_bookmarks_columns;
+    use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    let second_join = diesel::alias!(schema::card_metadata as second_join);
+    let second_join = diesel::alias!(schema::chunk_metadata as second_join);
 
     let mut conn = pool.get().unwrap();
     // SELECT
-    //     card_metadata.qdrant_point_id,
+    //     chunk_metadata.qdrant_point_id,
     //     second_join.qdrant_point_id
     // FROM
-    //     card_metadata
-    // LEFT OUTER JOIN card_collisions ON
-    //     card_metadata.id = card_collisions.card_id
-    //     AND card_metadata.private = false
-    // LEFT OUTER JOIN card_metadata AS second_join ON
-    //     second_join.qdrant_point_id = card_collisions.collision_qdrant_id
+    //     chunk_metadata
+    // LEFT OUTER JOIN chunk_collisions ON
+    //     chunk_metadata.id = chunk_collisions.chunk_id
+    //     AND chunk_metadata.private = false
+    // LEFT OUTER JOIN chunk_metadata AS second_join ON
+    //     second_join.qdrant_point_id = chunk_collisions.collision_qdrant_id
     //     AND second_join.private = true
     // WHERE
-    //     card_metadata.private = false
-    //     and (second_join.qdrant_point_id notnull or card_metadata.qdrant_point_id notnull);
-    let mut query = card_metadata_columns::card_metadata
+    //     chunk_metadata.private = false
+    //     and (second_join.qdrant_point_id notnull or chunk_metadata.qdrant_point_id notnull);
+    let mut query = chunk_metadata_columns::chunk_metadata
         .left_outer_join(
-            card_collisions_columns::card_collisions
-                .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
+            chunk_collisions_columns::chunk_collisions
+                .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
         )
         .left_outer_join(
             second_join.on(second_join
-                .field(schema::card_metadata::qdrant_point_id)
-                .eq(card_collisions_columns::collision_qdrant_id)),
+                .field(schema::chunk_metadata::qdrant_point_id)
+                .eq(chunk_collisions_columns::collision_qdrant_id)),
         )
         .left_outer_join(
-            card_collection_bookmarks_columns::card_collection_bookmarks.on(
-                card_metadata_columns::id
-                    .eq(card_collection_bookmarks_columns::card_metadata_id)
-                    .and(card_collection_bookmarks_columns::collection_id.eq(collection_id)),
+            chunk_collection_bookmarks_columns::chunk_collection_bookmarks.on(
+                chunk_metadata_columns::id
+                    .eq(chunk_collection_bookmarks_columns::chunk_metadata_id)
+                    .and(chunk_collection_bookmarks_columns::collection_id.eq(collection_id)),
             ),
         )
-        .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id))
-        .filter(card_metadata_columns::dataset_id.eq(dataset_uuid))
+        .filter(chunk_collection_bookmarks_columns::collection_id.eq(collection_id))
+        .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid))
         .select((
-            card_metadata_columns::qdrant_point_id,
+            chunk_metadata_columns::qdrant_point_id,
             second_join
-                .field(schema::card_metadata::qdrant_point_id)
+                .field(schema::chunk_metadata::qdrant_point_id)
                 .nullable(),
         ))
         .distinct_on((
-            card_metadata_columns::qdrant_point_id,
+            chunk_metadata_columns::qdrant_point_id,
             second_join
-                .field(schema::card_metadata::qdrant_point_id)
+                .field(schema::chunk_metadata::qdrant_point_id)
                 .nullable(),
         ))
         .into_boxed();
@@ -677,17 +679,17 @@ pub async fn search_full_text_collection_query(
     let link_inner = link.unwrap_or_default();
 
     if let Some(tag) = tag_set_inner.first() {
-        query = query.filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
+        query = query.filter(chunk_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
     }
     for tag in tag_set_inner.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
+        query = query.or_filter(chunk_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
     }
 
     if let Some(link_inner) = link_inner.first() {
-        query = query.filter(card_metadata_columns::link.ilike(format!("%{}%", link_inner)));
+        query = query.filter(chunk_metadata_columns::link.ilike(format!("%{}%", link_inner)));
     }
     for link_url in link_inner.iter().skip(1) {
-        query = query.or_filter(card_metadata_columns::link.ilike(format!("%{}%", link_url)));
+        query = query.or_filter(chunk_metadata_columns::link.ilike(format!("%{}%", link_url)));
     }
 
     if let Some(serde_json::Value::Object(obj)) = &filters {
@@ -698,7 +700,7 @@ pub async fn search_full_text_collection_query(
                         if let Some(first_val) = arr.first() {
                             if let Some(string_val) = first_val.as_str() {
                                 query = query.filter(
-                                    sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                                    sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
                                         .ilike(format!("%{}%", string_val)),
                                 );
                             }
@@ -707,7 +709,7 @@ pub async fn search_full_text_collection_query(
                         for item in arr.iter().skip(1) {
                             if let Some(string_val) = item.as_str() {
                                 query = query.or_filter(
-                                    sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                                    sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
                                         .ilike(format!("%{}%", string_val)),
                                 );
                             }
@@ -715,7 +717,7 @@ pub async fn search_full_text_collection_query(
                     }
                     serde_json::Value::String(string_val) => {
                         query = query.filter(
-                            sql::<Text>(&format!("card_metadata.metadata->>'{}'", key))
+                            sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
                                 .ilike(format!("%{}%", string_val)),
                         );
                     }
@@ -727,24 +729,24 @@ pub async fn search_full_text_collection_query(
 
     if let Some(quote_words) = parsed_query.quote_words {
         for word in quote_words.iter() {
-            query = query.filter(card_metadata_columns::content.ilike(format!("%{}%", word)));
+            query = query.filter(chunk_metadata_columns::content.ilike(format!("%{}%", word)));
         }
     }
 
     if let Some(negated_words) = parsed_query.negated_words {
         for word in negated_words.iter() {
-            query = query.filter(card_metadata_columns::content.not_ilike(format!("%{}%", word)));
+            query = query.filter(chunk_metadata_columns::content.not_ilike(format!("%{}%", word)));
         }
     }
 
     query = query.order((
-        card_metadata_columns::qdrant_point_id,
-        second_join.field(schema::card_metadata::qdrant_point_id),
+        chunk_metadata_columns::qdrant_point_id,
+        second_join.field(schema::chunk_metadata::qdrant_point_id),
     ));
 
     let matching_qdrant_point_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
         query.load(&mut conn).map_err(|_| DefaultError {
-            message: "Failed to load full-text searched cards",
+            message: "Failed to load full-text searched chunks",
         })?;
 
     let matching_point_ids: Vec<PointId> = matching_qdrant_point_ids
@@ -768,38 +770,38 @@ pub async fn search_full_text_collection_query(
 
     let point_ids = search_full_text_qdrant_query(page, filter, user_query, dataset_uuid).await;
 
-    Ok(SearchCardQueryResult {
+    Ok(SearchchunkQueryResult {
         search_results: point_ids?,
-        total_card_pages: (matching_qdrant_point_ids.len() as f64 / 10.0).ceil() as i64,
+        total_chunk_pages: (matching_qdrant_point_ids.len() as f64 / 10.0).ceil() as i64,
     })
 }
 
-/// Retrieve cards from point ids, DOES NOT GUARD AGAINST DATASET ACCESS PERMISSIONS
-pub async fn retrieve_cards_from_point_ids(
-    search_card_query_results: SearchCardQueryResult,
-    data: &web::Json<SearchCardData>,
+/// Retrieve chunks from point ids, DOES NOT GUARD AGAINST DATASET ACCESS PERMISSIONS
+pub async fn retrieve_chunks_from_point_ids(
+    search_chunk_query_results: SearchchunkQueryResult,
+    data: &web::Json<SearchChunkData>,
     pool: web::Data<Pool>,
-) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
-    let point_ids = search_card_query_results
+) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
+    let point_ids = search_chunk_query_results
         .search_results
         .iter()
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
-    let (metadata_cards, collided_cards) =
-        get_metadata_and_collided_cards_from_point_ids_query(point_ids, pool)
+    let (metadata_chunks, collided_chunks) =
+        get_metadata_and_collided_chunks_from_point_ids_query(point_ids, pool)
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let score_cards: Vec<ScoreCardDTO> = search_card_query_results
+    let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
         .search_results
         .iter()
         .map(|search_result| {
-            let mut card: CardMetadataWithFileData = match metadata_cards
+            let mut chunk: ChunkMetadataWithFileData = match metadata_chunks
                 .iter()
-                .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
+                .find(|metadata_chunk| metadata_chunk.qdrant_point_id == search_result.point_id)
             {
-                Some(metadata_card) => metadata_card.clone(),
-                None => CardMetadataWithFileData {
+                Some(metadata_chunk) => metadata_chunk.clone(),
+                None => ChunkMetadataWithFileData {
                     id: uuid::Uuid::default(),
                     author: None,
                     qdrant_point_id: uuid::Uuid::default(),
@@ -808,7 +810,7 @@ pub async fn retrieve_cards_from_point_ids(
                     file_id: None,
                     file_name: None,
                     content: "".to_string(),
-                    card_html: Some("".to_string()),
+                    chunk_html: Some("".to_string()),
                     link: Some("".to_string()),
                     tag_set: Some("".to_string()),
                     metadata: None,
@@ -818,69 +820,69 @@ pub async fn retrieve_cards_from_point_ids(
                 },
             };
 
-            card = find_relevant_sentence(card.clone(), data.content.clone()).unwrap_or(card);
-            let mut collided_cards: Vec<CardMetadataWithFileData> = collided_cards
+            chunk = find_relevant_sentence(chunk.clone(), data.content.clone()).unwrap_or(chunk);
+            let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
                 .iter()
-                .filter(|card| card.qdrant_id == search_result.point_id)
-                .map(|card| card.metadata.clone())
+                .filter(|chunk| chunk.qdrant_id == search_result.point_id)
+                .map(|chunk| chunk.metadata.clone())
                 .collect();
 
-            collided_cards.insert(0, card);
+            collided_chunks.insert(0, chunk);
 
-            ScoreCardDTO {
-                metadata: collided_cards,
+            ScoreChunkDTO {
+                metadata: collided_chunks,
                 score: search_result.score.into(),
             }
         })
         .collect();
-    Ok(SearchCardQueryResponseBody {
-        score_cards,
-        total_card_pages: search_card_query_results.total_card_pages,
+    Ok(SearchChunkQueryResponseBody {
+        score_chunks,
+        total_chunk_pages: search_chunk_query_results.total_chunk_pages,
     })
 }
 
-pub fn rerank_cards(cards: Vec<ScoreCardDTO>, date_bias: Option<bool>) -> Vec<ScoreCardDTO> {
-    let mut reranked_cards = Vec::new();
-    cards.into_iter().for_each(|mut card| {
-        card.score *= card.metadata[0].weight;
-        reranked_cards.push(card);
+pub fn rerank_chunks(chunks: Vec<ScoreChunkDTO>, date_bias: Option<bool>) -> Vec<ScoreChunkDTO> {
+    let mut reranked_chunks = Vec::new();
+    chunks.into_iter().for_each(|mut chunk| {
+        chunk.score *= chunk.metadata[0].weight;
+        reranked_chunks.push(chunk);
     });
 
     if date_bias.is_some() && date_bias.unwrap() {
-        reranked_cards.iter_mut().for_each(|card| {
-            if let Some(time_stamp) = card.metadata[0].time_stamp {
+        reranked_chunks.iter_mut().for_each(|chunk| {
+            if let Some(time_stamp) = chunk.metadata[0].time_stamp {
                 let time_stamp = time_stamp.timestamp();
                 let now = chrono::Utc::now().timestamp();
                 let time_diff = now - time_stamp;
                 let time_diff = time_diff as f32 / 60.0 / 60.0 / 24.0;
-                card.score *= E.powf(-0.1 * time_diff) as f64;
+                chunk.score *= E.powf(-0.1 * time_diff) as f64;
             }
         });
     }
 
-    reranked_cards.sort_by(|a, b| {
+    reranked_chunks.sort_by(|a, b| {
         b.score
             .partial_cmp(&a.score)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
-    reranked_cards
+    reranked_chunks
 }
 
-pub async fn search_semantic_cards(
-    data: web::Json<SearchCardData>,
+pub async fn search_semantic_chunks(
+    data: web::Json<SearchChunkData>,
     parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
-) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
+) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let embedding_vector = create_embedding(
         &data.content,
         DatasetConfiguration::from_json(dataset.configuration.clone()),
     )
     .await?;
 
-    let search_card_query_results = retrieve_qdrant_points_query(
+    let search_chunk_query_results = retrieve_qdrant_points_query(
         Some(embedding_vector),
         page,
         data.link.clone(),
@@ -894,28 +896,28 @@ pub async fn search_semantic_cards(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let mut result_cards =
-        retrieve_cards_from_point_ids(search_card_query_results, &data, pool.clone()).await?;
+    let mut result_chunks =
+        retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
 
-    result_cards.score_cards = rerank_cards(result_cards.score_cards, data.date_bias);
+    result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
 
-    Ok(result_cards)
+    Ok(result_chunks)
 }
 
-pub async fn search_full_text_cards(
-    data: web::Json<SearchCardData>,
+pub async fn search_full_text_chunks(
+    data: web::Json<SearchChunkData>,
     mut parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
     dataset_id: uuid::Uuid,
-) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
+) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     parsed_query.query = parsed_query
         .query
         .split_whitespace()
         .join(" AND ")
         .replace('\"', "");
 
-    let search_card_query_results = retrieve_qdrant_points_query(
+    let search_chunk_query_results = retrieve_qdrant_points_query(
         None,
         page,
         data.link.clone(),
@@ -929,29 +931,29 @@ pub async fn search_full_text_cards(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let mut result_cards =
-        retrieve_cards_from_point_ids(search_card_query_results, &data, pool).await?;
+    let mut result_chunks =
+        retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool).await?;
 
-    result_cards.score_cards = rerank_cards(result_cards.score_cards, data.date_bias);
+    result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
 
-    Ok(result_cards)
+    Ok(result_chunks)
 }
 
 fn cross_encoder(
-    results: Vec<ScoreCardDTO>,
+    results: Vec<ScoreChunkDTO>,
     query: String,
     cross_encoder_init: web::Data<CrossEncoder>,
-) -> Result<Vec<ScoreCardDTO>, actix_web::Error> {
+) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
     let paired_results = results
         .clone()
         .into_iter()
-        .map(|score_card| {
+        .map(|score_chunk| {
             (
                 query.clone(),
-                score_card.metadata[0]
-                    .card_html
+                score_chunk.metadata[0]
+                    .chunk_html
                     .clone()
-                    .unwrap_or(score_card.metadata[0].content.clone()),
+                    .unwrap_or(score_chunk.metadata[0].content.clone()),
             )
         })
         .collect::<Vec<(String, String)>>();
@@ -994,7 +996,7 @@ fn cross_encoder(
 
     let mut sim_scores_argsort: Vec<usize> = (0..scores.len()).collect();
     sim_scores_argsort.sort_by(|&a, &b| scores[b].partial_cmp(&scores[a]).unwrap());
-    let mut sorted_corpus: Vec<ScoreCardDTO> = sim_scores_argsort
+    let mut sorted_corpus: Vec<ScoreChunkDTO> = sim_scores_argsort
         .iter()
         .map(|&idx| results[idx].clone())
         .collect();
@@ -1014,18 +1016,18 @@ fn cross_encoder(
 }
 
 fn reciprocal_rank_fusion(
-    semantic_results: Vec<ScoreCardDTO>,
-    full_text_results: Vec<ScoreCardDTO>,
+    semantic_results: Vec<ScoreChunkDTO>,
+    full_text_results: Vec<ScoreChunkDTO>,
     weights: Option<(f64, f64)>,
-) -> Vec<ScoreCardDTO> {
-    let mut fused_ranking: Vec<ScoreCardDTO> = Vec::new();
+) -> Vec<ScoreChunkDTO> {
+    let mut fused_ranking: Vec<ScoreChunkDTO> = Vec::new();
     let weights = weights.unwrap_or((1.0, 1.0));
     // Iterate through the union of the two result sets
     for mut document in full_text_results
         .clone()
         .into_iter()
         .chain(semantic_results.clone().into_iter())
-        .unique_by(|card| card.metadata[0].id)
+        .unique_by(|chunk| chunk.metadata[0].id)
     {
         // Find the rank of the document in each result set
         let rank_semantic = semantic_results
@@ -1057,14 +1059,14 @@ fn reciprocal_rank_fusion(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn search_hybrid_cards(
-    data: web::Json<SearchCardData>,
+pub async fn search_hybrid_chunks(
+    data: web::Json<SearchChunkData>,
     parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
     cross_encoder_init: web::Data<CrossEncoder>,
     dataset: Dataset,
-) -> Result<SearchCardQueryResponseBody, actix_web::Error> {
+) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let embedding_vector = create_embedding(
         &data.content,
         DatasetConfiguration::from_json(dataset.configuration.clone()),
@@ -1072,7 +1074,7 @@ pub async fn search_hybrid_cards(
     .await?;
     let pool1 = pool.clone();
 
-    let search_card_query_results = retrieve_qdrant_points_query(
+    let search_chunk_query_results = retrieve_qdrant_points_query(
         Some(embedding_vector),
         page,
         data.link.clone(),
@@ -1084,7 +1086,7 @@ pub async fn search_hybrid_cards(
         pool.clone(),
     );
 
-    let full_text_handler_results = search_full_text_cards(
+    let full_text_handler_results = search_full_text_chunks(
         web::Json(data.clone()),
         parsed_query,
         page,
@@ -1092,35 +1094,35 @@ pub async fn search_hybrid_cards(
         dataset.id,
     );
 
-    let (search_card_query_results, full_text_handler_results) =
-        futures::join!(search_card_query_results, full_text_handler_results);
+    let (search_chunk_query_results, full_text_handler_results) =
+        futures::join!(search_chunk_query_results, full_text_handler_results);
 
-    let search_card_query_results =
-        search_card_query_results.map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let search_chunk_query_results =
+        search_chunk_query_results.map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let full_text_handler_results =
         full_text_handler_results.map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    let point_ids = search_card_query_results
+    let point_ids = search_chunk_query_results
         .search_results
         .iter()
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
-    let (metadata_cards, collided_cards) =
-        get_metadata_and_collided_cards_from_point_ids_query(point_ids, pool1)
+    let (metadata_chunks, collided_chunks) =
+        get_metadata_and_collided_chunks_from_point_ids_query(point_ids, pool1)
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let semantic_score_cards: Vec<ScoreCardDTO> = search_card_query_results
+    let semantic_score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
         .search_results
         .iter()
         .map(|search_result| {
-            let mut card: CardMetadataWithFileData = match metadata_cards
+            let mut chunk: ChunkMetadataWithFileData = match metadata_chunks
                 .iter()
-                .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
+                .find(|metadata_chunk| metadata_chunk.qdrant_point_id == search_result.point_id)
             {
-                Some(metadata_card) => metadata_card.clone(),
-                None => CardMetadataWithFileData {
+                Some(metadata_chunk) => metadata_chunk.clone(),
+                None => ChunkMetadataWithFileData {
                     id: uuid::Uuid::default(),
                     author: None,
                     qdrant_point_id: uuid::Uuid::default(),
@@ -1129,7 +1131,7 @@ pub async fn search_hybrid_cards(
                     file_id: None,
                     file_name: None,
                     content: "".to_string(),
-                    card_html: Some("".to_string()),
+                    chunk_html: Some("".to_string()),
                     link: Some("".to_string()),
                     tag_set: Some("".to_string()),
                     metadata: None,
@@ -1139,72 +1141,76 @@ pub async fn search_hybrid_cards(
                 },
             };
 
-            card = find_relevant_sentence(card.clone(), data.content.clone()).unwrap_or(card);
-            let mut collided_cards: Vec<CardMetadataWithFileData> = collided_cards
+            chunk = find_relevant_sentence(chunk.clone(), data.content.clone()).unwrap_or(chunk);
+            let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
                 .iter()
-                .filter(|card| card.qdrant_id == search_result.point_id)
-                .map(|card| card.metadata.clone())
+                .filter(|chunk| chunk.qdrant_id == search_result.point_id)
+                .map(|chunk| chunk.metadata.clone())
                 .collect();
 
-            collided_cards.insert(0, card);
+            collided_chunks.insert(0, chunk);
 
-            ScoreCardDTO {
-                metadata: collided_cards,
+            ScoreChunkDTO {
+                metadata: collided_chunks,
                 score: search_result.score as f64 * 0.5,
             }
         })
         .collect();
 
-    let mut result_cards = if data.cross_encoder.unwrap_or(false) {
-        let combined_results = semantic_score_cards
+    let mut result_chunks = if data.cross_encoder.unwrap_or(false) {
+        let combined_results = semantic_score_chunks
             .into_iter()
-            .chain(full_text_handler_results.score_cards.into_iter())
-            .unique_by(|score_card| score_card.metadata[0].id)
-            .collect::<Vec<ScoreCardDTO>>();
-        SearchCardQueryResponseBody {
-            score_cards: cross_encoder(combined_results, data.content.clone(), cross_encoder_init)?,
-            total_card_pages: search_card_query_results.total_card_pages,
+            .chain(full_text_handler_results.score_chunks.into_iter())
+            .unique_by(|score_chunk| score_chunk.metadata[0].id)
+            .collect::<Vec<ScoreChunkDTO>>();
+        SearchChunkQueryResponseBody {
+            score_chunks: cross_encoder(
+                combined_results,
+                data.content.clone(),
+                cross_encoder_init,
+            )?,
+            total_chunk_pages: search_chunk_query_results.total_chunk_pages,
         }
     } else if let Some(weights) = data.weights {
         if weights.0 == 1.0 {
-            SearchCardQueryResponseBody {
-                score_cards: semantic_score_cards,
-                total_card_pages: search_card_query_results.total_card_pages,
+            SearchChunkQueryResponseBody {
+                score_chunks: semantic_score_chunks,
+                total_chunk_pages: search_chunk_query_results.total_chunk_pages,
             }
         } else if weights.1 == 1.0 {
-            SearchCardQueryResponseBody {
-                score_cards: full_text_handler_results.score_cards,
-                total_card_pages: full_text_handler_results.total_card_pages,
+            SearchChunkQueryResponseBody {
+                score_chunks: full_text_handler_results.score_chunks,
+                total_chunk_pages: full_text_handler_results.total_chunk_pages,
             }
         } else {
-            SearchCardQueryResponseBody {
-                score_cards: reciprocal_rank_fusion(
-                    semantic_score_cards,
-                    full_text_handler_results.score_cards,
+            SearchChunkQueryResponseBody {
+                score_chunks: reciprocal_rank_fusion(
+                    semantic_score_chunks,
+                    full_text_handler_results.score_chunks,
                     data.weights,
                 ),
-                total_card_pages: search_card_query_results.total_card_pages,
+                total_chunk_pages: search_chunk_query_results.total_chunk_pages,
             }
         }
     } else {
-        SearchCardQueryResponseBody {
-            score_cards: reciprocal_rank_fusion(
-                semantic_score_cards,
-                full_text_handler_results.score_cards,
+        SearchChunkQueryResponseBody {
+            score_chunks: reciprocal_rank_fusion(
+                semantic_score_chunks,
+                full_text_handler_results.score_chunks,
                 data.weights,
             ),
-            total_card_pages: search_card_query_results.total_card_pages,
+            total_chunk_pages: search_chunk_query_results.total_chunk_pages,
         }
     };
-    result_cards.score_cards = rerank_cards(result_cards.score_cards, data.date_bias);
-    Ok(result_cards)
+    result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
+    Ok(result_chunks)
 }
 
 #[allow(clippy::too_many_arguments)]
 pub async fn search_semantic_collections(
     data: web::Json<SearchCollectionsData>,
     parsed_query: ParsedQuery,
-    collection: CardCollection,
+    collection: ChunkCollection,
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
@@ -1218,7 +1224,7 @@ pub async fn search_semantic_collections(
     let pool2 = pool.clone();
     let pool3 = pool.clone();
 
-    let search_card_query_results = search_card_collections_query(
+    let search_chunk_query_results = search_chunk_collections_query(
         embedding_vector,
         page,
         pool2,
@@ -1232,7 +1238,7 @@ pub async fn search_semantic_collections(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let point_ids = search_card_query_results
+    let point_ids = search_chunk_query_results
         .search_results
         .iter()
         .map(|point| point.point_id)
@@ -1240,22 +1246,22 @@ pub async fn search_semantic_collections(
 
     let point_ids_1 = point_ids.clone();
 
-    let metadata_cards = get_metadata_from_point_ids(point_ids, pool3)
+    let metadata_chunks = get_metadata_from_point_ids(point_ids, pool3)
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let collided_cards = get_collided_cards_query(point_ids_1, dataset.id, pool1)
+    let collided_chunks = get_collided_chunks_query(point_ids_1, dataset.id, pool1)
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let mut score_cards: Vec<ScoreCardDTO> = search_card_query_results
+    let mut score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
         .search_results
         .iter()
         .map(|search_result| {
-            let mut card: CardMetadataWithFileData = match metadata_cards
+            let mut chunk: ChunkMetadataWithFileData = match metadata_chunks
                 .iter()
-                .find(|metadata_card| metadata_card.qdrant_point_id == search_result.point_id)
+                .find(|metadata_chunk| metadata_chunk.qdrant_point_id == search_result.point_id)
             {
-                Some(metadata_card) => metadata_card.clone(),
-                None => CardMetadataWithFileData {
+                Some(metadata_chunk) => metadata_chunk.clone(),
+                None => ChunkMetadataWithFileData {
                     id: uuid::Uuid::default(),
                     author: None,
                     qdrant_point_id: uuid::Uuid::default(),
@@ -1264,7 +1270,7 @@ pub async fn search_semantic_collections(
                     file_id: None,
                     file_name: None,
                     content: "".to_string(),
-                    card_html: Some("".to_string()),
+                    chunk_html: Some("".to_string()),
                     link: Some("".to_string()),
                     tag_set: Some("".to_string()),
                     metadata: None,
@@ -1273,39 +1279,39 @@ pub async fn search_semantic_collections(
                     weight: 1.0,
                 },
             };
-            card = find_relevant_sentence(card.clone(), data.content.clone()).unwrap_or(card);
+            chunk = find_relevant_sentence(chunk.clone(), data.content.clone()).unwrap_or(chunk);
 
-            let mut collided_cards: Vec<CardMetadataWithFileData> = collided_cards
+            let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
                 .iter()
-                .filter(|card| card.1 == search_result.point_id)
-                .map(|card| card.0.clone())
+                .filter(|chunk| chunk.1 == search_result.point_id)
+                .map(|chunk| chunk.0.clone())
                 .collect();
 
-            collided_cards.insert(0, card);
-            // remove duplicates from collided cards
+            collided_chunks.insert(0, chunk);
+            // remove duplicates from collided chunks
             let mut seen_ids = HashSet::new();
             let mut i = 0;
-            while i < collided_cards.len() {
-                if seen_ids.contains(&collided_cards[i].id) {
-                    collided_cards.remove(i);
+            while i < collided_chunks.len() {
+                if seen_ids.contains(&collided_chunks[i].id) {
+                    collided_chunks.remove(i);
                 } else {
-                    seen_ids.insert(collided_cards[i].id);
+                    seen_ids.insert(collided_chunks[i].id);
                     i += 1;
                 }
             }
 
-            ScoreCardDTO {
-                metadata: collided_cards,
+            ScoreChunkDTO {
+                metadata: collided_chunks,
                 score: search_result.score.into(),
             }
         })
         .collect();
 
-    score_cards = rerank_cards(score_cards, data.date_bias);
+    score_chunks = rerank_chunks(score_chunks, data.date_bias);
     Ok(SearchCollectionsResult {
-        bookmarks: score_cards,
+        bookmarks: score_chunks,
         collection,
-        total_pages: search_card_query_results.total_card_pages,
+        total_pages: search_chunk_query_results.total_chunk_pages,
     })
 }
 
@@ -1313,7 +1319,7 @@ pub async fn search_semantic_collections(
 pub async fn search_full_text_collections(
     data: web::Json<SearchCollectionsData>,
     parsed_query: ParsedQuery,
-    collection: CardCollection,
+    collection: ChunkCollection,
     page: u64,
     pool: web::Data<Pool>,
     dataset_id: uuid::Uuid,
@@ -1321,7 +1327,7 @@ pub async fn search_full_text_collections(
     let data_inner = data.clone();
     let pool1 = pool.clone();
 
-    let search_card_query_results = search_full_text_collection_query(
+    let search_chunk_query_results = search_full_text_collection_query(
         data_inner.content.clone(),
         page,
         pool,
@@ -1335,18 +1341,18 @@ pub async fn search_full_text_collections(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let mut result_cards = retrieve_cards_from_point_ids(
-        search_card_query_results,
+    let mut result_chunks = retrieve_chunks_from_point_ids(
+        search_chunk_query_results,
         &web::Json(data.clone().into()),
         pool1,
     )
     .await?;
 
-    result_cards.score_cards = rerank_cards(result_cards.score_cards, data.date_bias);
+    result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
 
     Ok(SearchCollectionsResult {
-        bookmarks: result_cards.score_cards,
+        bookmarks: result_chunks.score_chunks,
         collection,
-        total_pages: result_cards.total_card_pages,
+        total_pages: result_chunks.total_chunk_pages,
     })
 }

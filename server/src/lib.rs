@@ -75,28 +75,28 @@ pub async fn main() -> std::io::Result<()> {
             handlers::message_handler::get_all_topic_messages,
             handlers::message_handler::edit_message_handler,
             handlers::message_handler::regenerate_message_handler,
-            handlers::card_handler::create_card,
-            handlers::card_handler::update_card,
-            handlers::card_handler::delete_card,
-            handlers::card_handler::get_recommended_cards,
+            handlers::chunk_handler::create_chunk,
+            handlers::chunk_handler::update_chunk,
+            handlers::chunk_handler::delete_chunk,
+            handlers::chunk_handler::get_recommended_chunks,
             handlers::message_handler::create_suggested_queries_handler,
-            handlers::card_handler::update_card_by_tracking_id,
-            handlers::card_handler::search_card,
-            handlers::card_handler::generate_off_cards,
-            handlers::card_handler::get_card_by_tracking_id,
-            handlers::card_handler::delete_card_by_tracking_id,
-            handlers::card_handler::get_card_by_id,
+            handlers::chunk_handler::update_chunk_by_tracking_id,
+            handlers::chunk_handler::search_chunk,
+            handlers::chunk_handler::generate_off_chunks,
+            handlers::chunk_handler::get_chunk_by_tracking_id,
+            handlers::chunk_handler::delete_chunk_by_tracking_id,
+            handlers::chunk_handler::get_chunk_by_id,
             handlers::user_handler::update_user,
             handlers::user_handler::set_user_api_key,
-            handlers::user_handler::get_user_with_cards_by_id,
+            handlers::user_handler::get_user_with_chunks_by_id,
             handlers::file_handler::get_user_files_handler,
-            handlers::collection_handler::get_specific_user_card_collections,
-            handlers::collection_handler::create_card_collection,
-            handlers::collection_handler::delete_card_collection,
-            handlers::collection_handler::update_card_collection,
+            handlers::collection_handler::get_specific_user_chunk_collections,
+            handlers::collection_handler::create_chunk_collection,
+            handlers::collection_handler::delete_chunk_collection,
+            handlers::collection_handler::update_chunk_collection,
             handlers::collection_handler::add_bookmark,
             handlers::collection_handler::delete_bookmark,
-            handlers::collection_handler::get_logged_in_user_card_collections,
+            handlers::collection_handler::get_logged_in_user_chunk_collections,
             handlers::collection_handler::get_all_bookmarks,
             handlers::file_handler::upload_file_handler,
             handlers::file_handler::get_file_handler,
@@ -129,31 +129,31 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::message_handler::EditMessageData,
                 handlers::message_handler::SuggestedQueriesRequest,
                 handlers::message_handler::SuggestedQueriesResponse,
-                handlers::card_handler::CreateCardData,
-                handlers::card_handler::ReturnCreatedCard,
-                handlers::card_handler::UpdateCardData,
-                handlers::card_handler::RecommendCardsRequest,
-                handlers::card_handler::UpdateCardByTrackingIdData,
-                handlers::card_handler::SearchCardQueryResponseBody,
-                handlers::card_handler::GenerateCardsRequest,
-                handlers::card_handler::SearchCardData,
-                handlers::card_handler::ScoreCardDTO,
-                handlers::card_handler::SearchCollectionsData,
-                handlers::card_handler::SearchCollectionsResult,
+                handlers::chunk_handler::CreateChunkData,
+                handlers::chunk_handler::ReturnCreatedChunk,
+                handlers::chunk_handler::UpdateChunkData,
+                handlers::chunk_handler::RecommendChunksRequest,
+                handlers::chunk_handler::UpdateChunkByTrackingIdData,
+                handlers::chunk_handler::SearchChunkQueryResponseBody,
+                handlers::chunk_handler::GenerateChunksRequest,
+                handlers::chunk_handler::SearchChunkData,
+                handlers::chunk_handler::ScoreChunkDTO,
+                handlers::chunk_handler::SearchCollectionsData,
+                handlers::chunk_handler::SearchCollectionsResult,
                 handlers::user_handler::UpdateUserData,
-                handlers::user_handler::GetUserWithCardsData,
+                handlers::user_handler::GetUserWithChunksData,
                 handlers::user_handler::SetUserApiKeyResponse,
                 handlers::collection_handler::CollectionData,
                 handlers::collection_handler::UserCollectionQuery,
-                handlers::collection_handler::CreateCardCollectionData,
+                handlers::collection_handler::CreateChunkCollectionData,
                 handlers::collection_handler::DeleteCollectionData,
-                handlers::collection_handler::UpdateCardCollectionData,
-                handlers::collection_handler::AddCardToCollectionData,
-                handlers::collection_handler::GetCollectionsForCardsData,
+                handlers::collection_handler::UpdateChunkCollectionData,
+                handlers::collection_handler::AddChunkToCollectionData,
+                handlers::collection_handler::GetCollectionsForChunksData,
                 handlers::collection_handler::RemoveBookmarkData,
                 handlers::collection_handler::GenerateOffCollectionData,
                 handlers::collection_handler::GetAllBookmarksData,
-                handlers::collection_handler::BookmarkCards,
+                handlers::collection_handler::BookmarkChunks,
                 handlers::collection_handler::BookmarkData,
                 operators::collection_operator::BookmarkCollectionResult,
                 handlers::file_handler::UploadFileData,
@@ -172,13 +172,13 @@ pub async fn main() -> std::io::Result<()> {
                 data::models::UserDTO,
                 data::models::Topic,
                 data::models::Message,
-                data::models::CardMetadata,
-                data::models::CardMetadataWithFileData,
+                data::models::ChunkMetadata,
+                data::models::ChunkMetadataWithFileData,
                 data::models::ChatMessageProxy,
-                data::models::UserDTOWithCards,
+                data::models::UserDTOWithChunks,
                 data::models::File,
-                data::models::CardCollectionAndFile,
-                data::models::CardCollection,
+                data::models::ChunkCollection,
+                data::models::ChunkCollectionAndFile,
                 data::models::FileDTO,
                 data::models::FileUploadCompletedNotificationWithName,
                 data::models::Organization,
@@ -191,9 +191,9 @@ pub async fn main() -> std::io::Result<()> {
             (name = "auth", description = "Authentication endpoint"),
             (name = "topic", description = "Topic chat endpoint"),
             (name = "message", description = "Message chat endpoint"),
-            (name = "card", description = "Card endpoint"),
+            (name = "chunk", description = "chunk endpoint"),
             (name = "user", description = "User endpoint"),
-            (name = "card_collection", description = "Card collection endpoint"),
+            (name = "chunk_collection", description = "chunk collection endpoint"),
             (name = "file", description = "File endpoint"),
             (name = "notifications", description = "Notifications endpoint"),
             (name = "health", description = "Health check endpoint"),
@@ -328,23 +328,23 @@ pub async fn main() -> std::io::Result<()> {
                         ),
                     )
                     .service(
-                        web::scope("/card")
+                        web::scope("/chunk")
                             .service(
                                 web::resource("")
-                                    .route(web::post().to(handlers::card_handler::create_card)),
+                                    .route(web::post().to(handlers::chunk_handler::create_chunk)),
                             )
                             .service(
                                 web::resource("/recommend").route(
-                                    web::post().to(handlers::card_handler::get_recommended_cards),
+                                    web::post().to(handlers::chunk_handler::get_recommended_chunks),
                                 ),
                             )
                             .service(
                                 web::resource("/update")
-                                    .route(web::put().to(handlers::card_handler::update_card)),
+                                    .route(web::put().to(handlers::chunk_handler::update_chunk)),
                             )
                             .service(
                                 web::resource("/search")
-                                    .route(web::post().to(handlers::card_handler::search_card)),
+                                    .route(web::post().to(handlers::chunk_handler::search_chunk)),
                             )
                             .service(
                                 web::resource("/gen_suggestions")
@@ -353,25 +353,25 @@ pub async fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/search/{page}")
                                     .app_data(cross_encoder.clone())
-                                    .route(web::post().to(handlers::card_handler::search_card)),
+                                    .route(web::post().to(handlers::chunk_handler::search_chunk)),
                             )
                             .service(
                                 web::resource("/generate")
-                                .route(web::post().to(handlers::card_handler::generate_off_cards)),
+                                .route(web::post().to(handlers::chunk_handler::generate_off_chunks)),
                             )
                             .service(
                                 web::resource("/tracking_id/update")
-                                    .route(web::put().to(handlers::card_handler::update_card_by_tracking_id)),
+                                    .route(web::put().to(handlers::chunk_handler::update_chunk_by_tracking_id)),
                             )
                             .service(
                                 web::resource("/tracking_id/{tracking_id}")
-                                    .route(web::get().to(handlers::card_handler::get_card_by_tracking_id))
-                                    .route(web::delete().to(handlers::card_handler::delete_card_by_tracking_id))
+                                    .route(web::get().to(handlers::chunk_handler::get_chunk_by_tracking_id))
+                                    .route(web::delete().to(handlers::chunk_handler::delete_chunk_by_tracking_id))
                             )
                             .service(
-                                web::resource("/{card_id}")
-                                    .route(web::get().to(handlers::card_handler::get_card_by_id))
-                                    .route(web::delete().to(handlers::card_handler::delete_card)),
+                                web::resource("/{chunk_id}")
+                                    .route(web::get().to(handlers::chunk_handler::get_chunk_by_id))
+                                    .route(web::delete().to(handlers::chunk_handler::delete_chunk)),
                             )
                     ).service(
                         web::scope("/user")
@@ -386,45 +386,45 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(web::get().to(handlers::file_handler::get_user_files_handler)),
                             )
                             .service(web::resource("/{user_id}/{page}")
-                                .route(web::get().to(handlers::user_handler::get_user_with_cards_by_id)),
+                                .route(web::get().to(handlers::user_handler::get_user_with_chunks_by_id)),
                             )
                             .service(
                                 web::resource("/collections/{user_id}/{page}").route(
                                     web::get().to(
-                                        handlers::collection_handler::get_specific_user_card_collections,
+                                        handlers::collection_handler::get_specific_user_chunk_collections,
                                     ),
                                 ),
                             ),
                     )
                     .service(
-                        web::scope("/card_collection")
+                        web::scope("/chunk_collection")
                             .service(
                                 web::resource("")
                                     .route(
                                         web::post().to(
-                                            handlers::collection_handler::create_card_collection,
+                                            handlers::collection_handler::create_chunk_collection,
                                         ),
                                     )
                                     .route(
                                         web::delete().to(
-                                            handlers::collection_handler::delete_card_collection,
+                                            handlers::collection_handler::delete_chunk_collection,
                                         ),
                                     )
                                     .route(
                                         web::put().to(
-                                            handlers::collection_handler::update_card_collection,
+                                            handlers::collection_handler::update_chunk_collection,
                                         ),
                                     ),
                             )
                             .service(
                                 web::resource("/bookmark").route(
                                     web::post().to(
-                                        handlers::collection_handler::get_collections_card_is_in,
+                                        handlers::collection_handler::get_collections_chunk_is_in,
                                     ),
                                 ),
                             )
                             .service(
-                                web::resource("/{page_or_card_collection_id}")
+                                web::resource("/{page_or_chunk_collection_id}")
                                     .route(
                                         web::post().to(handlers::collection_handler::add_bookmark),
                                     )
@@ -433,12 +433,12 @@ pub async fn main() -> std::io::Result<()> {
                                             .to(handlers::collection_handler::delete_bookmark),
                                     ).route(
                                         web::get()
-                                            .to(handlers::collection_handler::get_logged_in_user_card_collections)),
+                                            .to(handlers::collection_handler::get_logged_in_user_chunk_collections)),
                             )
                             .service(
                                 web::resource("/search/{page}")                                    
                                 .route(
-                                    web::post().to(handlers::card_handler::search_collections),
+                                    web::post().to(handlers::chunk_handler::search_collections),
                                 ),
                             )
                             .service(web::resource("/{collection_id}/{page}").route(

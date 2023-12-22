@@ -1,7 +1,7 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    card_collection (id) {
+    chunk_collection (id) {
         id -> Uuid,
         author_id -> Uuid,
         name -> Text,
@@ -13,19 +13,19 @@ diesel::table! {
 }
 
 diesel::table! {
-    card_collection_bookmarks (id) {
+    chunk_collection_bookmarks (id) {
         id -> Uuid,
         collection_id -> Uuid,
-        card_metadata_id -> Uuid,
+        chunk_metadata_id -> Uuid,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
 }
 
 diesel::table! {
-    card_collisions (id) {
+    chunk_collisions (id) {
         id -> Uuid,
-        card_id -> Uuid,
+        chunk_id -> Uuid,
         collision_qdrant_id -> Nullable<Uuid>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
@@ -33,9 +33,9 @@ diesel::table! {
 }
 
 diesel::table! {
-    card_files (id) {
+    chunk_files (id) {
         id -> Uuid,
-        card_id -> Uuid,
+        chunk_id -> Uuid,
         file_id -> Uuid,
         created_at -> Timestamp,
         updated_at -> Timestamp,
@@ -43,7 +43,7 @@ diesel::table! {
 }
 
 diesel::table! {
-    card_metadata (id) {
+    chunk_metadata (id) {
         id -> Uuid,
         content -> Text,
         link -> Nullable<Text>,
@@ -52,7 +52,7 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         tag_set -> Nullable<Text>,
-        card_html -> Nullable<Text>,
+        chunk_html -> Nullable<Text>,
         metadata -> Nullable<Jsonb>,
         tracking_id -> Nullable<Text>,
         time_stamp -> Nullable<Timestamp>,
@@ -62,7 +62,7 @@ diesel::table! {
 }
 
 diesel::table! {
-    card_metadata_counts (id) {
+    chunk_metadata_counts (id) {
         id -> Uuid,
         dataset_id -> Uuid,
         total_rows -> Int8,
@@ -80,10 +80,10 @@ diesel::table! {
 }
 
 diesel::table! {
-    cut_cards (id) {
+    cut_chunks (id) {
         id -> Uuid,
         user_id -> Uuid,
-        cut_card_content -> Text,
+        cut_chunk_content -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
@@ -173,7 +173,7 @@ diesel::table! {
     stripe_plans (id) {
         id -> Uuid,
         stripe_id -> Text,
-        card_count -> Int4,
+        chunk_count -> Int4,
         file_storage -> Int4,
         user_count -> Int4,
         dataset_count -> Int4,
@@ -251,20 +251,20 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(card_collection -> datasets (dataset_id));
-diesel::joinable!(card_collection -> users (author_id));
-diesel::joinable!(card_collection_bookmarks -> card_collection (collection_id));
-diesel::joinable!(card_collection_bookmarks -> card_metadata (card_metadata_id));
-diesel::joinable!(card_files -> card_metadata (card_id));
-diesel::joinable!(card_files -> files (file_id));
-diesel::joinable!(card_metadata -> datasets (dataset_id));
-diesel::joinable!(card_metadata -> users (author_id));
-diesel::joinable!(card_metadata_counts -> datasets (dataset_id));
-diesel::joinable!(collections_from_files -> card_collection (collection_id));
+diesel::joinable!(chunk_collection -> datasets (dataset_id));
+diesel::joinable!(chunk_collection -> users (author_id));
+diesel::joinable!(chunk_collection_bookmarks -> chunk_collection (collection_id));
+diesel::joinable!(chunk_collection_bookmarks -> chunk_metadata (chunk_metadata_id));
+diesel::joinable!(chunk_files -> chunk_metadata (chunk_id));
+diesel::joinable!(chunk_files -> files (file_id));
+diesel::joinable!(chunk_metadata -> datasets (dataset_id));
+diesel::joinable!(chunk_metadata -> users (author_id));
+diesel::joinable!(chunk_metadata_counts -> datasets (dataset_id));
+diesel::joinable!(collections_from_files -> chunk_collection (collection_id));
 diesel::joinable!(collections_from_files -> files (file_id));
-diesel::joinable!(cut_cards -> users (user_id));
+diesel::joinable!(cut_chunks -> users (user_id));
 diesel::joinable!(datasets -> organizations (organization_id));
-diesel::joinable!(file_upload_completed_notifications -> card_collection (collection_uuid));
+diesel::joinable!(file_upload_completed_notifications -> chunk_collection (collection_uuid));
 diesel::joinable!(file_upload_completed_notifications -> datasets (dataset_id));
 diesel::joinable!(files -> datasets (dataset_id));
 diesel::joinable!(files -> users (user_id));
@@ -280,14 +280,14 @@ diesel::joinable!(user_organizations -> organizations (organization_id));
 diesel::joinable!(user_organizations -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    card_collection,
-    card_collection_bookmarks,
-    card_collisions,
-    card_files,
-    card_metadata,
-    card_metadata_counts,
+    chunk_collection,
+    chunk_collection_bookmarks,
+    chunk_collisions,
+    chunk_files,
+    chunk_metadata,
+    chunk_metadata_counts,
     collections_from_files,
-    cut_cards,
+    cut_chunks,
     datasets,
     file_upload_completed_notifications,
     files,

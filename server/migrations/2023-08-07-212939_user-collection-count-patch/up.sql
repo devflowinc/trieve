@@ -1,5 +1,5 @@
 -- Drop previous
-DROP TRIGGER IF EXISTS update_collection_counts_trigger ON card_collection;
+DROP TRIGGER IF EXISTS update_collection_counts_trigger ON chunk_collection;
 
 -- Drop the function
 DROP FUNCTION IF EXISTS update_collection_counts();
@@ -32,10 +32,10 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER update_collection_counts_trigger
-AFTER INSERT OR UPDATE OR DELETE ON card_collection
+AFTER INSERT OR UPDATE OR DELETE ON chunk_collection
 FOR EACH ROW
 EXECUTE FUNCTION update_collection_counts();
 
 INSERT INTO user_collection_counts (id, user_id, collection_count)
-SELECT DISTINCT ON (author_id) gen_random_uuid(), author_id, (SELECT COUNT(*) FROM card_collection c2 WHERE c2.author_id = card_collection.author_id)
-FROM card_collection;
+SELECT DISTINCT ON (author_id) gen_random_uuid(), author_id, (SELECT COUNT(*) FROM chunk_collection c2 WHERE c2.author_id = chunk_collection.author_id)
+FROM chunk_collection;

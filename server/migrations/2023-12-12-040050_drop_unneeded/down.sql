@@ -16,16 +16,16 @@ CREATE TABLE password_resets (
 );
 
 
-ALTER TABLE card_metadata ADD COLUMN IF NOT EXISTS card_metadata_tsvector tsvector;
+ALTER TABLE chunk_metadata ADD COLUMN IF NOT EXISTS chunk_metadata_tsvector tsvector;
 
 CREATE FUNCTION IF NOT EXISTS update_tsvector() RETURNS TRIGGER AS $$
 BEGIN
-    NEW.card_metadata_tsvector := to_tsvector(NEW.content);
+    NEW.chunk_metadata_tsvector := to_tsvector(NEW.content);
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER IF NOT EXISTS update_tsvector_trigger
-BEFORE INSERT ON card_metadata
+BEFORE INSERT ON chunk_metadata
 FOR EACH ROW
 EXECUTE FUNCTION update_tsvector();

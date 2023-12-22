@@ -1,12 +1,12 @@
-use super::{auth_handler::LoggedUser, card_handler::ParsedQuery};
+use super::{auth_handler::LoggedUser, chunk_handler::ParsedQuery};
 use crate::{
     data::models::{self, DatasetAndOrgWithSubAndPlan, DatasetConfiguration},
-    data::models::{CardMetadataWithFileData, Dataset, Pool, StripePlan},
+    data::models::{ChunkMetadataWithFileData, Dataset, Pool, StripePlan},
     errors::{DefaultError, ServiceError},
     get_env,
     operators::{
-        card_operator::{
-            find_relevant_sentence, get_metadata_and_collided_cards_from_point_ids_query,
+        chunk_operator::{
+            find_relevant_sentence, get_metadata_and_collided_chunks_from_point_ids_query,
         },
         message_operator::{
             create_message_query, create_topic_message_query, delete_message_query,
@@ -479,8 +479,8 @@ pub async fn stream_response(
         .expect("There needs to be at least 1 prior message")
         .content
         .clone();
-    let mut citation_cards_stringified = "".to_string();
-    let mut citation_cards_stringified1 = citation_cards_stringified.clone();
+    let mut citation_chunks_stringified = "".to_string();
+    let mut citation_chunks_stringified1 = citation_chunks_stringified.clone();
 
     if !normal_chat {
         let rag_prompt = dataset_config.RAG_PROMPT.clone().unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string());
@@ -534,7 +534,7 @@ pub async fn stream_response(
             .unwrap_or("".to_string());
         let embedding_vector = create_embedding(query.as_str(), dataset_config.clone()).await?;
 
-        let search_card_query_results = retrieve_qdrant_points_query(
+        let search_chunk_query_results = retrieve_qdrant_points_query(
             Some(embedding_vector),
             1,
             None,
@@ -553,36 +553,36 @@ pub async fn stream_response(
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
         let n_retrievals_to_include = dataset_config.N_RETRIEVALS_TO_INCLUDE.unwrap_or(3);
 
-        let retrieval_card_ids = search_card_query_results
+        let retrieval_chunk_ids = search_chunk_query_results
             .search_results
             .iter()
             .take(n_retrievals_to_include)
-            .map(|card| card.point_id)
+            .map(|chunk| chunk.point_id)
             .collect::<Vec<uuid::Uuid>>();
 
-        let (metadata_cards, _collided_cards) = web::block(move || {
-            get_metadata_and_collided_cards_from_point_ids_query(retrieval_card_ids, pool2)
+        let (metadata_chunks, _collided_chunks) = web::block(move || {
+            get_metadata_and_collided_chunks_from_point_ids_query(retrieval_chunk_ids, pool2)
         })
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-        let citation_cards: Vec<CardMetadataWithFileData> = metadata_cards.to_vec();
+        let citation_chunks: Vec<ChunkMetadataWithFileData> = metadata_chunks.to_vec();
 
-        let highlighted_citation_cards = citation_cards
+        let highlighted_citation_chunks = citation_chunks
             .iter()
-            .map(|card| {
-                find_relevant_sentence(card.clone(), query.to_string()).unwrap_or(card.clone())
+            .map(|chunk| {
+                find_relevant_sentence(chunk.clone(), query.to_string()).unwrap_or(chunk.clone())
             })
-            .collect::<Vec<CardMetadataWithFileData>>();
+            .collect::<Vec<ChunkMetadataWithFileData>>();
 
-        citation_cards_stringified = serde_json::to_string(&highlighted_citation_cards)
-            .expect("Failed to serialize citation cards");
-        citation_cards_stringified1 = citation_cards_stringified.clone();
+        citation_chunks_stringified = serde_json::to_string(&highlighted_citation_chunks)
+            .expect("Failed to serialize citation chunks");
+        citation_chunks_stringified1 = citation_chunks_stringified.clone();
 
-        let rag_content = citation_cards
+        let rag_content = citation_chunks
             .iter()
             .enumerate()
-            .map(|(idx, card)| format!("Doc {}: {}", idx + 1, card.content.clone()))
+            .map(|(idx, chunk)| format!("Doc {}: {}", idx + 1, chunk.content.clone()))
             .collect::<Vec<String>>()
             .join("\n\n");
 
@@ -633,9 +633,9 @@ pub async fn stream_response(
     let (s, r) = unbounded::<String>();
     let stream = client.chat().create_stream(parameters).await.unwrap();
 
-    if !citation_cards_stringified.is_empty() {
-        citation_cards_stringified = format!("{}||", citation_cards_stringified);
-        citation_cards_stringified1 = citation_cards_stringified.clone();
+    if !citation_chunks_stringified.is_empty() {
+        citation_chunks_stringified = format!("{}||", citation_chunks_stringified);
+        citation_chunks_stringified1 = citation_chunks_stringified.clone();
     }
 
     Arbiter::new().spawn(async move {
@@ -643,7 +643,7 @@ pub async fn stream_response(
         let completion = chunk_v.join("");
 
         let new_message = models::Message::from_details(
-            format!("{}{}", citation_cards_stringified, completion),
+            format!("{}{}", citation_chunks_stringified, completion),
             topic_id,
             next_message_order().try_into().unwrap(),
             "assistant".to_string(),
@@ -655,7 +655,7 @@ pub async fn stream_response(
         let _ = create_message_query(new_message, user_id, &pool);
     });
 
-    let new_stream = stream::iter(vec![Ok(Bytes::from(citation_cards_stringified1))]);
+    let new_stream = stream::iter(vec![Ok(Bytes::from(citation_chunks_stringified1))]);
 
     Ok(HttpResponse::Ok().streaming(new_stream.chain(stream.map(
         move |response| -> Result<Bytes, actix_web::Error> {
@@ -686,13 +686,13 @@ pub struct SuggestedQueriesResponse {
 
 #[utoipa::path(
     post,
-    path = "/card/gen_suggestions",
+    path = "/chunk/gen_suggestions",
     context_path = "/api",
-    tag = "card",
+    tag = "chunk",
     request_body(content = SuggestedQueriesRequest, description = "JSON request payload to get alternative suggested queries", content_type = "application/json"),
     responses(
         (status = 200, description = "A JSON object containing a list of alternative suggested queries", body = [SuggestedQueriesResponse]),
-        (status = 400, description = "Service error relating to to updating card, likely due to conflicting tracking_id", body = [DefaultError]),
+        (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = [DefaultError]),
     )
 )]
 pub async fn create_suggested_queries_handler(
