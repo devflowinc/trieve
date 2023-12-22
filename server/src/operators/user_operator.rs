@@ -1,5 +1,5 @@
 use crate::data::models::{
-    CardFileWithName, CardMetadata, CardMetadataWithFileData, SlimUser, UserDTOWithCards,
+    ChunkFileWithName, ChunkMetadata, ChunkMetadataWithFileData, SlimUser, UserDTOWithChunks,
     UserOrganization, UserRole,
 };
 use crate::diesel::prelude::*;
@@ -64,14 +64,14 @@ pub fn get_user_by_id_query(
     }
 }
 
-pub fn get_user_with_cards_by_id_query(
+pub fn get_user_with_chunks_by_id_query(
     user_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     page: &i64,
     pool: web::Data<Pool>,
-) -> Result<UserDTOWithCards, DefaultError> {
-    use crate::data::schema::card_files::dsl as card_files_columns;
-    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+) -> Result<UserDTOWithChunks, DefaultError> {
+    use crate::data::schema::chunk_files::dsl as chunk_files_columns;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::files::dsl as files_columns;
     use crate::data::schema::users::dsl as user_columns;
 
@@ -91,39 +91,39 @@ pub fn get_user_with_cards_by_id_query(
         }),
     }?;
 
-    let total_cards_created_by_user = card_metadata_columns::card_metadata
-        .filter(card_metadata_columns::author_id.eq(user.id))
-        .filter(card_metadata_columns::dataset_id.eq(dataset_id))
+    let total_chunks_created_by_user = chunk_metadata_columns::chunk_metadata
+        .filter(chunk_metadata_columns::author_id.eq(user.id))
+        .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
         .into_boxed();
 
-    let user_card_metadatas = card_metadata_columns::card_metadata
-        .filter(card_metadata_columns::author_id.eq(user.id))
-        .filter(card_metadata_columns::dataset_id.eq(dataset_id))
+    let user_chunk_metadatas = chunk_metadata_columns::chunk_metadata
+        .filter(chunk_metadata_columns::author_id.eq(user.id))
+        .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
         .into_boxed();
 
-    let total_cards_created_by_user = total_cards_created_by_user
+    let total_chunks_created_by_user = total_chunks_created_by_user
         .count()
         .get_result(&mut conn)
         .map_err(|_| DefaultError {
-            message: "Error loading user cards count",
-        })?;
+        message: "Error loading user chunks count",
+    })?;
 
-    let user_card_metadatas = user_card_metadatas
-        .order(card_metadata_columns::updated_at.desc())
-        .select(CardMetadata::as_select())
+    let user_chunk_metadatas = user_chunk_metadatas
+        .order(chunk_metadata_columns::updated_at.desc())
+        .select(ChunkMetadata::as_select())
         .limit(10)
         .offset((page - 1) * 10)
-        .load::<CardMetadata>(&mut conn)
+        .load::<ChunkMetadata>(&mut conn)
         .map_err(|_| DefaultError {
-            message: "Error loading user cards",
+            message: "Error loading user chunks",
         })?;
 
-    let file_ids: Vec<CardFileWithName> = card_files_columns::card_files
+    let file_ids: Vec<ChunkFileWithName> = chunk_files_columns::chunk_files
         .filter(
-            card_files_columns::card_id.eq_any(
-                user_card_metadatas
+            chunk_files_columns::chunk_id.eq_any(
+                user_chunk_metadatas
                     .iter()
-                    .map(|card| card.id)
+                    .map(|chunk| chunk.id)
                     .collect::<Vec<uuid::Uuid>>()
                     .as_slice(),
             ),
@@ -131,33 +131,33 @@ pub fn get_user_with_cards_by_id_query(
         .inner_join(files_columns::files)
         .filter(files_columns::dataset_id.eq(dataset_id))
         .select((
-            card_files_columns::card_id,
-            card_files_columns::file_id,
+            chunk_files_columns::chunk_id,
+            chunk_files_columns::file_id,
             files_columns::file_name,
         ))
-        .load::<CardFileWithName>(&mut conn)
+        .load::<ChunkFileWithName>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
 
-    let card_metadata_with_score_and_file: Vec<CardMetadataWithFileData> = (user_card_metadatas)
+    let chunk_metadata_with_score_and_file: Vec<ChunkMetadataWithFileData> = (user_chunk_metadatas)
         .iter()
         .map(|metadata| {
             let author = None;
-            let card_with_file_name = file_ids.iter().find(|file| file.card_id == metadata.id);
+            let chunk_with_file_name = file_ids.iter().find(|file| file.chunk_id == metadata.id);
 
-            CardMetadataWithFileData {
+            ChunkMetadataWithFileData {
                 id: metadata.id,
                 content: metadata.content.clone(),
                 link: metadata.link.clone(),
                 author,
                 qdrant_point_id: metadata.qdrant_point_id.unwrap_or(uuid::Uuid::nil()),
-                card_html: metadata.card_html.clone(),
+                chunk_html: metadata.chunk_html.clone(),
                 created_at: metadata.created_at,
                 updated_at: metadata.updated_at,
                 tag_set: metadata.tag_set.clone(),
-                file_name: card_with_file_name.map(|file| file.file_name.clone()),
-                file_id: card_with_file_name.map(|file| file.file_id),
+                file_name: chunk_with_file_name.map(|file| file.file_name.clone()),
+                file_id: chunk_with_file_name.map(|file| file.file_id),
                 metadata: metadata.metadata.clone(),
                 tracking_id: metadata.tracking_id.clone(),
                 time_stamp: metadata.time_stamp,
@@ -166,7 +166,7 @@ pub fn get_user_with_cards_by_id_query(
         })
         .collect();
 
-    Ok(UserDTOWithCards {
+    Ok(UserDTOWithChunks {
         id: user.id,
         email: if user.visible_email {
             Some(user.email)
@@ -177,8 +177,8 @@ pub fn get_user_with_cards_by_id_query(
         website: user.website,
         visible_email: user.visible_email,
         created_at: user.created_at,
-        total_cards_created: total_cards_created_by_user,
-        cards: card_metadata_with_score_and_file,
+        total_chunks_created: total_chunks_created_by_user,
+        chunks: chunk_metadata_with_score_and_file,
     })
 }
 

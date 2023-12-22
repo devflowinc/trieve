@@ -1,11 +1,11 @@
 use crate::{
-    data::models::{CardCollection, Pool},
+    data::models::{ChunkCollection, Pool},
     errors::DefaultError,
 };
 use crate::{
     data::models::{
-        CardCollectionAndFileWithCount, CardCollectionBookmark, CardMetadataWithCount,
-        CardMetadataWithFileData, FileCollection, FullTextSearchResult, SlimCollection,
+        ChunkCollectionAndFileWithCount, ChunkCollectionBookmark, ChunkMetadataWithCount,
+        ChunkMetadataWithFileData, FileCollection, FullTextSearchResult, SlimCollection,
     },
     diesel::{Connection, ExpressionMethods, QueryDsl, RunQueryDsl},
     errors::ServiceError,
@@ -19,14 +19,14 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 pub fn create_collection_query(
-    new_collection: CardCollection,
+    new_collection: ChunkCollection,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
-    use crate::data::schema::card_collection::dsl::*;
+    use crate::data::schema::chunk_collection::dsl::*;
 
     let mut conn = pool.get().unwrap();
 
-    diesel::insert_into(card_collection)
+    diesel::insert_into(chunk_collection)
         .values(&new_collection)
         .execute(&mut conn)
         .map_err(|err| {
@@ -40,39 +40,39 @@ pub fn create_collection_query(
 }
 
 pub fn create_collection_and_add_bookmarks_query(
-    new_collection: CardCollection,
+    new_collection: ChunkCollection,
     bookmark_ids: Vec<uuid::Uuid>,
     created_file_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<CardCollection, DefaultError> {
-    use crate::data::schema::card_collection::dsl::*;
+) -> Result<ChunkCollection, DefaultError> {
+    use crate::data::schema::chunk_collection::dsl::*;
 
     let mut conn = pool.get().unwrap();
 
-    card_collection
+    chunk_collection
         .filter(dataset_id.eq(given_dataset_id))
         .filter(id.eq(new_collection.id))
-        .first::<CardCollection>(&mut conn)
+        .first::<ChunkCollection>(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Collection not found, likely incorrect dataset_id",
         })?;
 
     let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
-        diesel::insert_into(card_collection)
+        diesel::insert_into(chunk_collection)
             .values(&new_collection)
             .execute(conn)?;
 
-        use crate::data::schema::card_collection_bookmarks::dsl::*;
+        use crate::data::schema::chunk_collection_bookmarks::dsl::*;
 
-        diesel::insert_into(card_collection_bookmarks)
+        diesel::insert_into(chunk_collection_bookmarks)
             .values(
                 bookmark_ids
                     .iter()
                     .map(|bookmark| {
-                        CardCollectionBookmark::from_details(new_collection.id, *bookmark)
+                        ChunkCollectionBookmark::from_details(new_collection.id, *bookmark)
                     })
-                    .collect::<Vec<CardCollectionBookmark>>(),
+                    .collect::<Vec<ChunkCollectionBookmark>>(),
             )
             .execute(conn)?;
 
@@ -105,14 +105,14 @@ pub fn get_collections_for_specific_user_query(
     page: u64,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<CardCollectionAndFileWithCount>, DefaultError> {
-    use crate::data::schema::card_collection::dsl::*;
+) -> Result<Vec<ChunkCollectionAndFileWithCount>, DefaultError> {
+    use crate::data::schema::chunk_collection::dsl::*;
     use crate::data::schema::collections_from_files::dsl as collections_from_files_columns;
     use crate::data::schema::user_collection_counts::dsl as user_collection_count_columns;
 
     let page = if page == 0 { 1 } else { page };
     let mut conn = pool.get().unwrap();
-    let collections = card_collection
+    let collections = chunk_collection
         .left_outer_join(
             collections_from_files_columns::collections_from_files
                 .on(id.eq(collections_from_files_columns::collection_id)),
@@ -139,7 +139,7 @@ pub fn get_collections_for_specific_user_query(
     let collections = collections
         .limit(10)
         .offset(((page - 1) * 10).try_into().unwrap_or(0))
-        .load::<CardCollectionAndFileWithCount>(&mut conn)
+        .load::<ChunkCollectionAndFileWithCount>(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Error getting collections",
         })?;
@@ -152,8 +152,8 @@ pub fn get_collections_for_logged_in_user_query(
     page: u64,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<CardCollectionAndFileWithCount>, DefaultError> {
-    use crate::data::schema::card_collection::dsl::*;
+) -> Result<Vec<ChunkCollectionAndFileWithCount>, DefaultError> {
+    use crate::data::schema::chunk_collection::dsl::*;
     use crate::data::schema::collections_from_files::dsl as collections_from_files_columns;
     use crate::data::schema::user_collection_counts::dsl as user_collection_count_columns;
 
@@ -161,7 +161,7 @@ pub fn get_collections_for_logged_in_user_query(
 
     let mut conn = pool.get().unwrap();
 
-    let collections = card_collection
+    let collections = chunk_collection
         .left_outer_join(
             collections_from_files_columns::collections_from_files
                 .on(id.eq(collections_from_files_columns::collection_id)),
@@ -185,7 +185,7 @@ pub fn get_collections_for_logged_in_user_query(
         .order(updated_at.desc())
         .limit(5)
         .offset(((page - 1) * 5).try_into().unwrap_or(0))
-        .load::<CardCollectionAndFileWithCount>(&mut conn)
+        .load::<ChunkCollectionAndFileWithCount>(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Error getting collections",
         })?;
@@ -197,15 +197,15 @@ pub fn get_collection_by_id_query(
     collection_id: uuid::Uuid,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<CardCollection, DefaultError> {
-    use crate::data::schema::card_collection::dsl::*;
+) -> Result<ChunkCollection, DefaultError> {
+    use crate::data::schema::chunk_collection::dsl::*;
 
     let mut conn = pool.get().unwrap();
 
-    let collection = card_collection
+    let collection = chunk_collection
         .filter(dataset_id.eq(dataset_uuid))
         .filter(id.eq(collection_id))
-        .first::<CardCollection>(&mut conn)
+        .first::<ChunkCollection>(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Collection not found",
         })?;
@@ -218,8 +218,8 @@ pub fn delete_collection_by_id_query(
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
-    use crate::data::schema::card_collection::dsl as card_collection_columns;
-    use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
+    use crate::data::schema::chunk_collection::dsl as chunk_collection_columns;
+    use crate::data::schema::chunk_collection_bookmarks::dsl as chunk_collection_bookmarks_columns;
     use crate::data::schema::collections_from_files::dsl as collections_from_files_columns;
     use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
 
@@ -241,15 +241,15 @@ pub fn delete_collection_by_id_query(
         .execute(conn)?;
 
         diesel::delete(
-            card_collection_bookmarks_columns::card_collection_bookmarks
-                .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id)),
+            chunk_collection_bookmarks_columns::chunk_collection_bookmarks
+                .filter(chunk_collection_bookmarks_columns::collection_id.eq(collection_id)),
         )
         .execute(conn)?;
 
         diesel::delete(
-            card_collection_columns::card_collection
-                .filter(card_collection_columns::id.eq(collection_id))
-                .filter(card_collection_columns::dataset_id.eq(dataset_uuid)),
+            chunk_collection_columns::chunk_collection
+                .filter(chunk_collection_columns::id.eq(collection_id))
+                .filter(chunk_collection_columns::dataset_id.eq(dataset_uuid)),
         )
         .execute(conn)?;
 
@@ -264,19 +264,19 @@ pub fn delete_collection_by_id_query(
     }
 }
 
-pub fn update_card_collection_query(
-    collection: CardCollection,
+pub fn update_chunk_collection_query(
+    collection: ChunkCollection,
     new_name: Option<String>,
     new_description: Option<String>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
-    use crate::data::schema::card_collection::dsl::*;
+    use crate::data::schema::chunk_collection::dsl::*;
 
     let mut conn = pool.get().unwrap();
 
     diesel::update(
-        card_collection
+        chunk_collection
             .filter(id.eq(collection.id))
             .filter(dataset_id.eq(dataset_uuid)),
     )
@@ -292,15 +292,15 @@ pub fn update_card_collection_query(
     Ok(())
 }
 
-pub fn create_card_bookmark_query(
+pub fn create_chunk_bookmark_query(
     pool: web::Data<Pool>,
-    bookmark: CardCollectionBookmark,
+    bookmark: ChunkCollectionBookmark,
 ) -> Result<(), DefaultError> {
-    use crate::data::schema::card_collection_bookmarks::dsl::*;
+    use crate::data::schema::chunk_collection_bookmarks::dsl::*;
 
     let mut conn = pool.get().unwrap();
 
-    diesel::insert_into(card_collection_bookmarks)
+    diesel::insert_into(chunk_collection_bookmarks)
         .values(&bookmark)
         .execute(&mut conn)
         .map_err(|_err| {
@@ -313,8 +313,8 @@ pub fn create_card_bookmark_query(
     Ok(())
 }
 pub struct CollectionsBookmarkQueryResult {
-    pub metadata: Vec<CardMetadataWithFileData>,
-    pub collection: CardCollection,
+    pub metadata: Vec<ChunkMetadataWithFileData>,
+    pub collection: ChunkCollection,
     pub total_pages: i64,
 }
 pub fn get_bookmarks_for_collection_query(
@@ -324,91 +324,93 @@ pub fn get_bookmarks_for_collection_query(
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<CollectionsBookmarkQueryResult, ServiceError> {
-    use crate::data::schema::card_collection::dsl as card_collection_columns;
-    use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
-    use crate::data::schema::card_collisions::dsl as card_collisions_columns;
-    use crate::data::schema::card_metadata::dsl as card_metadata_columns;
+    use crate::data::schema::chunk_collection::dsl as chunk_collection_columns;
+    use crate::data::schema::chunk_collection_bookmarks::dsl as chunk_collection_bookmarks_columns;
+    use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     let page = if page == 0 { 1 } else { page };
     let limit = limit.unwrap_or(10);
 
     let mut conn = pool.get().unwrap();
 
-    let bookmark_metadata: Vec<(CardMetadataWithCount, Option<uuid::Uuid>, CardCollection)> =
-        card_metadata_columns::card_metadata
+    let bookmark_metadata: Vec<(ChunkMetadataWithCount, Option<uuid::Uuid>, ChunkCollection)> =
+        chunk_metadata_columns::chunk_metadata
             .left_join(
-                card_collection_bookmarks_columns::card_collection_bookmarks
-                    .on(card_collection_bookmarks_columns::card_metadata_id
-                        .eq(card_metadata_columns::id)),
+                chunk_collection_bookmarks_columns::chunk_collection_bookmarks
+                    .on(chunk_collection_bookmarks_columns::chunk_metadata_id
+                        .eq(chunk_metadata_columns::id)),
             )
-            .left_join(card_collection_columns::card_collection.on(
-                card_collection_columns::id.eq(card_collection_bookmarks_columns::collection_id),
+            .left_join(chunk_collection_columns::chunk_collection.on(
+                chunk_collection_columns::id.eq(chunk_collection_bookmarks_columns::collection_id),
             ))
             .left_join(
-                card_collisions_columns::card_collisions
-                    .on(card_metadata_columns::id.eq(card_collisions_columns::card_id)),
+                chunk_collisions_columns::chunk_collisions
+                    .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
             )
             .filter(
-                card_collection_bookmarks_columns::collection_id
+                chunk_collection_bookmarks_columns::collection_id
                     .eq(collection)
-                    .and(card_collection_columns::dataset_id.eq(dataset_uuid))
-                    .and(card_metadata_columns::dataset_id.eq(dataset_uuid)),
+                    .and(chunk_collection_columns::dataset_id.eq(dataset_uuid))
+                    .and(chunk_metadata_columns::dataset_id.eq(dataset_uuid)),
             )
             .select((
                 (
-                    card_metadata_columns::id,
-                    card_metadata_columns::content,
-                    card_metadata_columns::link,
-                    card_metadata_columns::author_id,
-                    card_metadata_columns::qdrant_point_id,
-                    card_metadata_columns::created_at,
-                    card_metadata_columns::updated_at,
-                    card_metadata_columns::tag_set,
-                    card_metadata_columns::card_html,
-                    card_metadata_columns::metadata,
-                    card_metadata_columns::tracking_id,
-                    card_metadata_columns::time_stamp,
-                    card_metadata_columns::weight,
+                    chunk_metadata_columns::id,
+                    chunk_metadata_columns::content,
+                    chunk_metadata_columns::link,
+                    chunk_metadata_columns::author_id,
+                    chunk_metadata_columns::qdrant_point_id,
+                    chunk_metadata_columns::created_at,
+                    chunk_metadata_columns::updated_at,
+                    chunk_metadata_columns::tag_set,
+                    chunk_metadata_columns::chunk_html,
+                    chunk_metadata_columns::metadata,
+                    chunk_metadata_columns::tracking_id,
+                    chunk_metadata_columns::time_stamp,
+                    chunk_metadata_columns::weight,
                     sql::<Int8>("count(*) OVER() AS full_count"),
                 ),
-                card_collisions_columns::collision_qdrant_id.nullable(),
+                chunk_collisions_columns::collision_qdrant_id.nullable(),
                 (
-                    card_collection_columns::id.assume_not_null(),
-                    card_collection_columns::author_id.assume_not_null(),
-                    card_collection_columns::name.assume_not_null(),
-                    card_collection_columns::description.assume_not_null(),
-                    card_collection_columns::created_at.assume_not_null(),
-                    card_collection_columns::updated_at.assume_not_null(),
-                    card_collection_columns::dataset_id.assume_not_null(),
+                    chunk_collection_columns::id.assume_not_null(),
+                    chunk_collection_columns::author_id.assume_not_null(),
+                    chunk_collection_columns::name.assume_not_null(),
+                    chunk_collection_columns::description.assume_not_null(),
+                    chunk_collection_columns::created_at.assume_not_null(),
+                    chunk_collection_columns::updated_at.assume_not_null(),
+                    chunk_collection_columns::dataset_id.assume_not_null(),
                 ),
             ))
             .limit(limit)
             .offset(((page - 1) * limit as u64).try_into().unwrap_or(0))
-            .load::<(CardMetadataWithCount, Option<uuid::Uuid>, CardCollection)>(&mut conn)
+            .load::<(ChunkMetadataWithCount, Option<uuid::Uuid>, ChunkCollection)>(&mut conn)
             .map_err(|_err| ServiceError::BadRequest("Error getting bookmarks".to_string()))?;
 
-    let card_collection = if let Some(bookmark) = bookmark_metadata.first() {
+    let chunk_collection = if let Some(bookmark) = bookmark_metadata.first() {
         bookmark.2.clone()
     } else {
-        card_collection_columns::card_collection
-            .filter(card_collection_columns::id.eq(collection))
-            .filter(card_collection_columns::dataset_id.eq(dataset_uuid))
-            .first::<CardCollection>(&mut conn)
+        chunk_collection_columns::chunk_collection
+            .filter(chunk_collection_columns::id.eq(collection))
+            .filter(chunk_collection_columns::dataset_id.eq(dataset_uuid))
+            .first::<ChunkCollection>(&mut conn)
             .map_err(|_err| ServiceError::BadRequest("Error getting collection".to_string()))?
     };
 
-    let converted_cards: Vec<FullTextSearchResult> = bookmark_metadata
+    let converted_chunks: Vec<FullTextSearchResult> = bookmark_metadata
         .iter()
-        .map(|(card, collided_id, _card_collection)| match collided_id {
-            Some(id) => {
-                let mut card = card.clone();
-                card.qdrant_point_id = Some(*id);
-                <CardMetadataWithCount as Into<FullTextSearchResult>>::into(card)
-            }
-            None => <CardMetadataWithCount as Into<FullTextSearchResult>>::into(card.clone()),
-        })
+        .map(
+            |(chunk, collided_id, _chunk_collection)| match collided_id {
+                Some(id) => {
+                    let mut chunk = chunk.clone();
+                    chunk.qdrant_point_id = Some(*id);
+                    <ChunkMetadataWithCount as Into<FullTextSearchResult>>::into(chunk)
+                }
+                None => <ChunkMetadataWithCount as Into<FullTextSearchResult>>::into(chunk.clone()),
+            },
+        )
         .collect::<Vec<FullTextSearchResult>>();
 
-    let card_metadata_with_file_id = get_metadata_query(converted_cards, conn)
+    let chunk_metadata_with_file_id = get_metadata_query(converted_chunks, conn)
         .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
     let total_pages = match bookmark_metadata.first() {
@@ -417,41 +419,41 @@ pub fn get_bookmarks_for_collection_query(
     };
 
     Ok(CollectionsBookmarkQueryResult {
-        metadata: card_metadata_with_file_id,
-        collection: card_collection,
+        metadata: chunk_metadata_with_file_id,
+        collection: chunk_collection,
         total_pages,
     })
 }
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct BookmarkCollectionResult {
-    pub card_uuid: uuid::Uuid,
+    pub chunk_uuid: uuid::Uuid,
     pub slim_collections: Vec<SlimCollection>,
 }
 
 pub fn get_collections_for_bookmark_query(
-    card_ids: Vec<uuid::Uuid>,
+    chunk_ids: Vec<uuid::Uuid>,
     current_user_id: Option<uuid::Uuid>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Vec<BookmarkCollectionResult>, DefaultError> {
-    use crate::data::schema::card_collection::dsl as card_collection_columns;
-    use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
+    use crate::data::schema::chunk_collection::dsl as chunk_collection_columns;
+    use crate::data::schema::chunk_collection_bookmarks::dsl as chunk_collection_bookmarks_columns;
 
     let mut conn = pool.get().unwrap();
 
-    let collections: Vec<(SlimCollection, uuid::Uuid)> = card_collection_columns::card_collection
+    let collections: Vec<(SlimCollection, uuid::Uuid)> = chunk_collection_columns::chunk_collection
         .left_join(
-            card_collection_bookmarks_columns::card_collection_bookmarks
-                .on(card_collection_columns::id
-                    .eq(card_collection_bookmarks_columns::collection_id)),
+            chunk_collection_bookmarks_columns::chunk_collection_bookmarks
+                .on(chunk_collection_columns::id
+                    .eq(chunk_collection_bookmarks_columns::collection_id)),
         )
-        .filter(card_collection_columns::dataset_id.eq(dataset_uuid))
-        .filter(card_collection_bookmarks_columns::card_metadata_id.eq_any(card_ids))
+        .filter(chunk_collection_columns::dataset_id.eq(dataset_uuid))
+        .filter(chunk_collection_bookmarks_columns::chunk_metadata_id.eq_any(chunk_ids))
         .select((
-            card_collection_columns::id,
-            card_collection_columns::name,
-            card_collection_columns::author_id,
-            card_collection_bookmarks_columns::card_metadata_id.nullable(),
+            chunk_collection_columns::id,
+            chunk_collection_columns::name,
+            chunk_collection_columns::author_id,
+            chunk_collection_bookmarks_columns::chunk_metadata_id.nullable(),
         ))
         .limit(1000)
         .load::<(uuid::Uuid, String, uuid::Uuid, Option<uuid::Uuid>)>(&mut conn)
@@ -459,15 +461,15 @@ pub fn get_collections_for_bookmark_query(
             message: "Error getting bookmarks",
         })?
         .into_iter()
-        .map(|(id, name, author_id, card_id)| match card_id {
-            Some(card_id) => (
+        .map(|(id, name, author_id, chunk_id)| match chunk_id {
+            Some(chunk_id) => (
                 SlimCollection {
                     id,
                     name,
                     author_id,
                     of_current_user: author_id == current_user_id.unwrap_or_default(),
                 },
-                card_id,
+                chunk_id,
             ),
             None => (
                 SlimCollection {
@@ -487,14 +489,14 @@ pub fn get_collections_for_bookmark_query(
                 return acc;
             }
 
-            //check if card in output already
-            if let Some(output_item) = acc.iter_mut().find(|x| x.card_uuid == item.1) {
+            //check if chunk in output already
+            if let Some(output_item) = acc.iter_mut().find(|x| x.chunk_uuid == item.1) {
                 //if it is, add collection to it
                 output_item.slim_collections.push(item.0);
             } else {
                 //if not make new output item
                 acc.push(BookmarkCollectionResult {
-                    card_uuid: item.1,
+                    chunk_uuid: item.1,
                     slim_collections: vec![item.0],
                 });
             }
@@ -509,23 +511,23 @@ pub fn delete_bookmark_query(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
-    use crate::data::schema::card_collection::dsl as card_collection_columns;
-    use crate::data::schema::card_collection_bookmarks::dsl as card_collection_bookmarks_columns;
+    use crate::data::schema::chunk_collection::dsl as chunk_collection_columns;
+    use crate::data::schema::chunk_collection_bookmarks::dsl as chunk_collection_bookmarks_columns;
 
     let mut conn = pool.get().unwrap();
 
-    card_collection_columns::card_collection
-        .filter(card_collection_columns::id.eq(collection_id))
-        .filter(card_collection_columns::dataset_id.eq(dataset_id))
-        .first::<CardCollection>(&mut conn)
+    chunk_collection_columns::chunk_collection
+        .filter(chunk_collection_columns::id.eq(collection_id))
+        .filter(chunk_collection_columns::dataset_id.eq(dataset_id))
+        .first::<ChunkCollection>(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Collection not found, likely incorrect dataset_id",
         })?;
 
     diesel::delete(
-        card_collection_bookmarks_columns::card_collection_bookmarks
-            .filter(card_collection_bookmarks_columns::card_metadata_id.eq(bookmark_id))
-            .filter(card_collection_bookmarks_columns::collection_id.eq(collection_id)),
+        chunk_collection_bookmarks_columns::chunk_collection_bookmarks
+            .filter(chunk_collection_bookmarks_columns::chunk_metadata_id.eq(bookmark_id))
+            .filter(chunk_collection_bookmarks_columns::collection_id.eq(collection_id)),
     )
     .execute(&mut conn)
     .map_err(|_err| {

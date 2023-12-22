@@ -1,11 +1,11 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
     data::models::{
-        CardCollection, CardCollectionAndFile, CardCollectionBookmark, CardMetadataWithFileData,
-        DatasetAndOrgWithSubAndPlan, Pool,
+        ChunkCollection, ChunkCollectionAndFile, ChunkCollectionBookmark,
+        ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan, Pool,
     },
     errors::ServiceError,
-    operators::{card_operator::get_collided_cards_query, collection_operator::*},
+    operators::{chunk_operator::get_collided_chunks_query, collection_operator::*},
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -17,7 +17,7 @@ pub async fn user_owns_collection(
     collection_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<CardCollection, actix_web::Error> {
+) -> Result<ChunkCollection, actix_web::Error> {
     let collection =
         web::block(move || get_collection_by_id_query(collection_id, dataset_id, pool))
             .await?
@@ -31,24 +31,24 @@ pub async fn user_owns_collection(
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]
-pub struct CreateCardCollectionData {
+pub struct CreateChunkCollectionData {
     pub name: String,
     pub description: String,
 }
 
 #[utoipa::path(
     post,
-    path = "/card_collection",
+    path = "/chunk_collection",
     context_path = "/api",
-    tag = "card_collection",
-    request_body(content = CreateCardCollectionData, description = "JSON request payload to cretea a CardCollection", content_type = "application/json"),
+    tag = "chunk_collection",
+    request_body(content = CreatechunkCollectionData, description = "JSON request payload to cretea a chunkCollection", content_type = "application/json"),
     responses(
-        (status = 200, description = "Returns the created CardCollection", body = [CardCollection]),
-        (status = 400, description = "Service error relating to creating the CardCollection", body = [DefaultError]),
+        (status = 200, description = "Returns the created chunkCollection", body = [chunkCollection]),
+        (status = 400, description = "Service error relating to creating the chunkCollection", body = [DefaultError]),
     ),
 )]
-pub async fn create_card_collection(
-    body: web::Json<CreateCardCollectionData>,
+pub async fn create_chunk_collection(
+    body: web::Json<CreateChunkCollectionData>,
     user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
@@ -56,7 +56,7 @@ pub async fn create_card_collection(
     let name = body.name.clone();
     let description = body.description.clone();
 
-    let collection = CardCollection::from_details(
+    let collection = ChunkCollection::from_details(
         user.0.id,
         name,
         description,
@@ -74,7 +74,7 @@ pub async fn create_card_collection(
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct CollectionData {
-    pub collections: Vec<CardCollectionAndFile>,
+    pub collections: Vec<ChunkCollectionAndFile>,
     pub total_pages: i64,
 }
 
@@ -98,7 +98,7 @@ pub struct UserCollectionQuery {
         ("page" = i64, description = "The page of collections to fetch"),
     ),
 )]
-pub async fn get_specific_user_card_collections(
+pub async fn get_specific_user_chunk_collections(
     user_and_page: web::Path<UserCollectionQuery>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
@@ -118,7 +118,7 @@ pub async fn get_specific_user_card_collections(
     Ok(HttpResponse::Ok().json(CollectionData {
         collections: collections
             .iter()
-            .map(|collection| CardCollectionAndFile {
+            .map(|collection| ChunkCollectionAndFile {
                 id: collection.id,
                 author_id: collection.author_id,
                 name: collection.name.clone(),
@@ -139,18 +139,18 @@ pub async fn get_specific_user_card_collections(
 
 #[utoipa::path(
     get,
-    path = "/card_collection/{page_or_card_collection_id}",
+    path = "/chunk_collection/{page_or_chunk_collection_id}",
     context_path = "/api",
-    tag = "card_collection",
+    tag = "chunk_collection",
     responses(
         (status = 200, description = "The page of collections for the auth'ed user", body = [CollectionData]),
         (status = 400, description = "Service error relating to getting the collections for the auth'ed user", body = [DefaultError]),
     ),
     params(
-        ("page_or_card_collection_id" = u64, description = "The page of collections to fetch"),
+        ("page_or_chunk_collection_id" = u64, description = "The page of collections to fetch"),
     ),
 )]
-pub async fn get_logged_in_user_card_collections(
+pub async fn get_logged_in_user_chunk_collections(
     user: LoggedUser,
     page: web::Path<u64>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -170,7 +170,7 @@ pub async fn get_logged_in_user_card_collections(
     Ok(HttpResponse::Ok().json(CollectionData {
         collections: collections
             .iter()
-            .map(|collection| CardCollectionAndFile {
+            .map(|collection| ChunkCollectionAndFile {
                 id: collection.id,
                 author_id: collection.author_id,
                 name: collection.name.clone(),
@@ -194,16 +194,16 @@ pub struct DeleteCollectionData {
 
 #[utoipa::path(
     delete,
-    path = "/card_collection",
+    path = "/chunk_collection",
     context_path = "/api",
-    tag = "card_collection",
-    request_body(content = DeleteCollectionData, description = "JSON request payload to delete a CardCollection", content_type = "application/json"),
+    tag = "chunk_collection",
+    request_body(content = DeleteCollectionData, description = "JSON request payload to delete a chunkCollection", content_type = "application/json"),
     responses(
-        (status = 204, description = "Confirmation that the CardCollection was deleted"),
-        (status = 400, description = "Service error relating to deleting the CardCollection", body = [DefaultError]),
+        (status = 204, description = "Confirmation that the chunkCollection was deleted"),
+        (status = 400, description = "Service error relating to deleting the chunkCollection", body = [DefaultError]),
     ),
 )]
-pub async fn delete_card_collection(
+pub async fn delete_chunk_collection(
     data: web::Json<DeleteCollectionData>,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -230,7 +230,7 @@ pub async fn delete_card_collection(
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]
-pub struct UpdateCardCollectionData {
+pub struct UpdateChunkCollectionData {
     pub collection_id: uuid::Uuid,
     pub name: Option<String>,
     pub description: Option<String>,
@@ -238,17 +238,17 @@ pub struct UpdateCardCollectionData {
 
 #[utoipa::path(
     put,
-    path = "/card_collection",
+    path = "/chunk_collection",
     context_path = "/api",
-    tag = "card_collection",
-    request_body(content = UpdateCardCollectionData, description = "JSON request payload to update a CardCollection", content_type = "application/json"),
+    tag = "chunk_collection",
+    request_body(content = UpdateChunkCollectionData, description = "JSON request payload to update a chunkCollection", content_type = "application/json"),
     responses(
-        (status = 204, description = "Confirmation that the CardCollection was updated"),
-        (status = 400, description = "Service error relating to updating the CardCollection", body = [DefaultError]),
+        (status = 204, description = "Confirmation that the chunkCollection was updated"),
+        (status = 400, description = "Service error relating to updating the chunkCollection", body = [DefaultError]),
     ),
 )]
-pub async fn update_card_collection(
-    body: web::Json<UpdateCardCollectionData>,
+pub async fn update_chunk_collection(
+    body: web::Json<UpdateChunkCollectionData>,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     user: AdminOnly,
@@ -268,7 +268,7 @@ pub async fn update_card_collection(
     .await?;
 
     web::block(move || {
-        update_card_collection_query(
+        update_chunk_collection_query(
             collection,
             name,
             description,
@@ -283,42 +283,42 @@ pub async fn update_card_collection(
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]
-pub struct AddCardToCollectionData {
-    pub card_metadata_id: uuid::Uuid,
+pub struct AddChunkToCollectionData {
+    pub chunk_metadata_id: uuid::Uuid,
 }
 
 #[utoipa::path(
     post,
-    path = "/card_collection/{page_or_card_collection_id}",
+    path = "/chunk_collection/{page_or_chunk_collection_id}",
     context_path = "/api",
-    tag = "card_collection",
-    request_body(content = AddCardToCollectionData, description = "JSON request payload to add a card to a collection (bookmark it)", content_type = "application/json"),
+    tag = "chunk_collection",
+    request_body(content = AddChunkToCollectionData, description = "JSON request payload to add a chunk to a collection (bookmark it)", content_type = "application/json"),
     responses(
-        (status = 204, description = "Confirmation that the card was added to the collection"),
-        (status = 400, description = "Service error relating to getting the collections that the card is in", body = [DefaultError]),
+        (status = 204, description = "Confirmation that the chunk was added to the collection"),
+        (status = 400, description = "Service error relating to getting the collections that the chunk is in", body = [DefaultError]),
     ),
     params(
-        ("page_or_card_collection_id" = uuid::Uuid, description = "The id of the collection to add the card to"),
+        ("page_or_chunk_collection_id" = uuid::Uuid, description = "The id of the collection to add the chunk to"),
     ),
 )]
 pub async fn add_bookmark(
-    body: web::Json<AddCardToCollectionData>,
+    body: web::Json<AddChunkToCollectionData>,
     collection_id: web::Path<uuid::Uuid>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool2 = pool.clone();
-    let card_metadata_id = body.card_metadata_id;
+    let chunk_metadata_id = body.chunk_metadata_id;
     let collection_id = collection_id.into_inner();
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
     user_owns_collection(user.0.id, collection_id, dataset_id, pool).await?;
 
     web::block(move || {
-        create_card_bookmark_query(
+        create_chunk_bookmark_query(
             pool2,
-            CardCollectionBookmark::from_details(collection_id, card_metadata_id),
+            ChunkCollectionBookmark::from_details(collection_id, chunk_metadata_id),
         )
     })
     .await?
@@ -328,8 +328,8 @@ pub async fn add_bookmark(
 }
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct BookmarkData {
-    pub bookmarks: Vec<BookmarkCards>,
-    pub collection: CardCollection,
+    pub bookmarks: Vec<BookmarkChunks>,
+    pub collection: ChunkCollection,
     pub total_pages: i64,
 }
 
@@ -340,22 +340,22 @@ pub struct GetAllBookmarksData {
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]
-pub struct BookmarkCards {
-    pub metadata: Vec<CardMetadataWithFileData>,
+pub struct BookmarkChunks {
+    pub metadata: Vec<ChunkMetadataWithFileData>,
 }
 
 #[utoipa::path(
     get,
-    path = "/card_collection/{collection_id}/{page}",
+    path = "/chunk_collection/{collection_id}/{page}",
     context_path = "/api",
-    tag = "card_collection",
+    tag = "chunk_collection",
     responses(
-        (status = 200, description = "Bookmark'ed cards present within the specified collection", body = [BookmarkData]),
-        (status = 400, description = "Service error relating to getting the collections that the card is in", body = [DefaultError]),
+        (status = 200, description = "Bookmark'ed chunks present within the specified collection", body = [BookmarkData]),
+        (status = 400, description = "Service error relating to getting the collections that the chunk is in", body = [DefaultError]),
     ),
     params(
-        ("collection_id" = uuid::Uuid, description = "The id of the collection to get the cards from"),
-        ("page" = u64, description = "The page of cards to get from the collection"),
+        ("collection_id" = uuid::Uuid, description = "The id of the collection to get the chunks from"),
+        ("page" = u64, description = "The page of chunks to get from the collection"),
     ),
 )]
 pub async fn get_all_bookmarks(
@@ -384,93 +384,93 @@ pub async fn get_all_bookmarks(
         .map(|point| point.qdrant_point_id)
         .collect::<Vec<uuid::Uuid>>();
 
-    let collided_cards = {
-        web::block(move || get_collided_cards_query(point_ids, dataset_id, pool1))
+    let collided_chunks = {
+        web::block(move || get_collided_chunks_query(point_ids, dataset_id, pool1))
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?
     };
 
-    let collection_cards = bookmarks
+    let collection_chunks = bookmarks
         .metadata
         .iter()
         .map(|search_result| {
-            let mut collided_cards: Vec<CardMetadataWithFileData> = collided_cards
+            let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
                 .iter()
-                .filter(|card| {
-                    card.1 == search_result.qdrant_point_id && card.0.id != search_result.id
+                .filter(|chunk| {
+                    chunk.1 == search_result.qdrant_point_id && chunk.0.id != search_result.id
                 })
-                .map(|card| card.0.clone())
+                .map(|chunk| chunk.0.clone())
                 .collect();
 
-            // de-duplicate collided cards by removing cards with the same metadata: Option<serde_json::Value>
+            // de-duplicate collided chunks by removing chunks with the same metadata: Option<serde_json::Value>
             let mut seen_metadata = HashSet::new();
             let mut i = 0;
-            while i < collided_cards.len() {
-                let metadata_string = serde_json::to_string(&collided_cards[i].metadata).unwrap();
+            while i < collided_chunks.len() {
+                let metadata_string = serde_json::to_string(&collided_chunks[i].metadata).unwrap();
 
                 if seen_metadata.contains(&metadata_string) {
-                    collided_cards.remove(i);
+                    collided_chunks.remove(i);
                 } else {
                     seen_metadata.insert(metadata_string);
                     i += 1;
                 }
             }
 
-            collided_cards.insert(0, search_result.clone());
+            collided_chunks.insert(0, search_result.clone());
 
-            // Move the card that was searched for to the front of the list
-            let (matching, others): (Vec<_>, Vec<_>) = collided_cards
+            // Move the chunk that was searched for to the front of the list
+            let (matching, others): (Vec<_>, Vec<_>) = collided_chunks
                 .clone()
                 .into_iter()
                 .partition(|item| item.id == search_result.id);
 
-            collided_cards.clear();
-            collided_cards.extend(matching);
-            collided_cards.extend(others);
+            collided_chunks.clear();
+            collided_chunks.extend(matching);
+            collided_chunks.extend(others);
 
-            BookmarkCards {
-                metadata: collided_cards,
+            BookmarkChunks {
+                metadata: collided_chunks,
             }
         })
         .collect();
 
     Ok(HttpResponse::Ok().json(BookmarkData {
-        bookmarks: collection_cards,
+        bookmarks: collection_chunks,
         collection: bookmarks.collection,
         total_pages: bookmarks.total_pages,
     }))
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]
-pub struct GetCollectionsForCardsData {
-    pub card_ids: Vec<uuid::Uuid>,
+pub struct GetCollectionsForChunksData {
+    pub chunk_ids: Vec<uuid::Uuid>,
 }
 
 #[utoipa::path(
     post,
-    path = "/card_collection/bookmark",
+    path = "/chunk_collection/bookmark",
     context_path = "/api",
-    tag = "card_collection",
-    request_body(content = GetCollectionsForCardsData, description = "JSON request payload to get the collections that a card is in", content_type = "application/json"),
+    tag = "chunk_collection",
+    request_body(content = GetCollectionsForChunksData, description = "JSON request payload to get the collections that a chunk is in", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON body representing the collections that the card is in", body = [Vec<BookmarkCollectionResult>]),
-        (status = 400, description = "Service error relating to getting the collections that the card is in", body = [DefaultError]),
+        (status = 200, description = "JSON body representing the collections that the chunk is in", body = [Vec<BookmarkCollectionResult>]),
+        (status = 400, description = "Service error relating to getting the collections that the chunk is in", body = [DefaultError]),
     ),
 )]
-pub async fn get_collections_card_is_in(
-    data: web::Json<GetCollectionsForCardsData>,
+pub async fn get_collections_chunk_is_in(
+    data: web::Json<GetCollectionsForChunksData>,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     user: Option<LoggedUser>,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let card_ids = data.card_ids.clone();
+    let chunk_ids = data.chunk_ids.clone();
 
     let dataset_id = dataset_org_plan_sub.dataset.id;
     let current_user_id = user.map(|user| user.id);
 
     let collections = web::block(move || {
-        get_collections_for_bookmark_query(card_ids, current_user_id, dataset_id, pool)
+        get_collections_for_bookmark_query(chunk_ids, current_user_id, dataset_id, pool)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -480,21 +480,21 @@ pub async fn get_collections_card_is_in(
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct RemoveBookmarkData {
-    pub card_metadata_id: uuid::Uuid,
+    pub chunk_metadata_id: uuid::Uuid,
 }
 
 #[utoipa::path(
     delete,
-    path = "/card_collection/{page_or_card_collection_id}",
+    path = "/chunk_collection/{page_or_chunk_collection_id}",
     context_path = "/api",
-    tag = "card_collection",
-    request_body(content = RemoveBookmarkData, description = "JSON request payload to remove a card to a collection (un-bookmark it)", content_type = "application/json"),
+    tag = "chunk_collection",
+    request_body(content = RemoveBookmarkData, description = "JSON request payload to remove a chunk to a collection (un-bookmark it)", content_type = "application/json"),
     responses(
-        (status = 204, description = "Confirmation that the card was removed to the collection"),
-        (status = 400, description = "Service error relating to removing the card from the collection", body = [DefaultError]),
+        (status = 204, description = "Confirmation that the chunk was removed to the collection"),
+        (status = 400, description = "Service error relating to removing the chunk from the collection", body = [DefaultError]),
     ),
     params(
-        ("page_or_card_collection_id" = uuid::Uuid, description = "The id of the collection to remove the bookmark'ed card from"),
+        ("page_or_chunk_collection_id" = uuid::Uuid, description = "The id of the collection to remove the bookmark'ed chunk from"),
     ),
 )]
 pub async fn delete_bookmark(
@@ -506,7 +506,7 @@ pub async fn delete_bookmark(
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
     let collection_id = collection_id.into_inner();
-    let bookmark_id = body.card_metadata_id;
+    let bookmark_id = body.chunk_metadata_id;
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let pool = pool.clone();

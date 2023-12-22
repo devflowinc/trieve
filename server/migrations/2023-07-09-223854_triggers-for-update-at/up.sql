@@ -1,6 +1,6 @@
 -- Your SQL goes here
-ALTER TABLE card_verification ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT NOW();
-ALTER TABLE card_verification ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT NOW();
+ALTER TABLE chunk_verification ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT NOW();
+ALTER TABLE chunk_verification ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT NOW();
 
 
 CREATE OR REPLACE FUNCTION update_updated_at()
@@ -21,37 +21,37 @@ $$ LANGUAGE plpgsql;
 
 
 CREATE TRIGGER update_updated_at
-BEFORE UPDATE ON card_collection
+BEFORE UPDATE ON chunk_collection
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at();
 
 CREATE TRIGGER update_updated_at
-BEFORE UPDATE ON card_collection_bookmarks
+BEFORE UPDATE ON chunk_collection_bookmarks
 FOR EACH ROW
 EXECUTE FUNCTION update_main_table_updated_at();
 
 CREATE TRIGGER update_updated_at
-BEFORE UPDATE ON card_collisions
+BEFORE UPDATE ON chunk_collisions
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at();
 
 CREATE TRIGGER update_updated_at
-BEFORE UPDATE ON card_files
+BEFORE UPDATE ON chunk_files
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at();
 
 CREATE TRIGGER update_updated_at
-BEFORE UPDATE ON card_metadata
+BEFORE UPDATE ON chunk_metadata
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at();
 
 CREATE TRIGGER update_updated_at
-BEFORE UPDATE ON card_verification
+BEFORE UPDATE ON chunk_verification
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at();
 
 CREATE TRIGGER update_updated_at
-BEFORE UPDATE ON card_votes
+BEFORE UPDATE ON chunk_votes
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at();
 

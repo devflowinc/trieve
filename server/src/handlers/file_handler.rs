@@ -46,7 +46,7 @@ pub struct UploadFileData {
     pub link: Option<String>,
     pub time_stamp: Option<String>,
     pub metadata: Option<serde_json::Value>,
-    pub create_cards: Option<bool>,
+    pub create_chunks: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -130,7 +130,7 @@ pub async fn upload_file_handler(
         decoded_description_file_data,
         upload_file_data.link,
         upload_file_data.metadata,
-        upload_file_data.create_cards,
+        upload_file_data.create_chunks,
         upload_file_data.time_stamp,
         user.0,
         dataset_org_plan_sub.clone(),
