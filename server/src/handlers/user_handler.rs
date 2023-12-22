@@ -14,7 +14,7 @@ use utoipa::ToSchema;
 pub struct UpdateUserData {
     pub username: Option<String>,
     pub website: Option<String>,
-    pub visible_email: bool,
+    pub visible_email: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
@@ -76,15 +76,23 @@ pub async fn update_user(
     let update_user_data = data.into_inner();
 
     if update_user_data.username.clone().unwrap_or("".to_string()) == ""
-        && !update_user_data.visible_email
+        && !update_user_data.visible_email.unwrap_or(user.visible_email)
     {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
             message: "You must provide a username or make your email visible",
         }));
     }
 
-    let user_result =
-        web::block(move || update_user_query(&user.id, &update_user_data, pool)).await?;
+    let user_result = web::block(move || {
+        update_user_query(
+            &user.clone(),
+            &update_user_data.username.clone().or(user.username),
+            &update_user_data.website.or(user.website),
+            update_user_data.visible_email.unwrap_or(user.visible_email),
+            pool,
+        )
+    })
+    .await?;
 
     match user_result {
         Ok(slim_user) => Ok(HttpResponse::Ok().json(slim_user)),

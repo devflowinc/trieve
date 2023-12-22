@@ -1,7 +1,8 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkCollection, ChunkCollectionBookmark, ChunkMetadata,
-    ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, Pool, StripePlan,
+    ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration,
+    StripePlan,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -168,7 +169,7 @@ pub async fn create_chunk(
 
     let content = convert_html(chunk.chunk_html.as_ref().unwrap_or(&"".to_string()));
     let dataset_config =
-        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.configuration);
+        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
     let embedding_vector = if let Some(embedding_vector) = chunk.chunk_vector.clone() {
         embedding_vector
     } else {
@@ -466,7 +467,7 @@ pub async fn update_chunk(
 
     let embedding_vector = create_embedding(
         &new_content,
-        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.configuration),
+        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration),
     )
     .await?;
 
@@ -586,7 +587,7 @@ pub async fn update_chunk_by_tracking_id(
 
     let embedding_vector = create_embedding(
         &new_content,
-        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.configuration),
+        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration),
     )
     .await?;
 
@@ -950,9 +951,10 @@ pub async fn get_recommended_chunks(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let positive_chunk_ids = data.positive_chunk_ids.clone();
-    let embed_size = DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.configuration)
-        .EMBEDDING_SIZE
-        .unwrap_or(1536);
+    let embed_size =
+        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.configuration)
+            .EMBEDDING_SIZE
+            .unwrap_or(1536);
 
     let recommended_qdrant_point_ids = recommend_qdrant_query(
         positive_chunk_ids,
@@ -1010,7 +1012,7 @@ pub async fn generate_off_chunks(
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let dataset_config =
-        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.configuration);
+        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
     let base_url = dataset_config
         .LLM_BASE_URL
         .unwrap_or("https://api.openai.com/v1".into());

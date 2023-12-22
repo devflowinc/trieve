@@ -770,20 +770,23 @@ pub struct Dataset {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub organization_id: uuid::Uuid,
-    pub configuration: serde_json::Value,
+    pub server_configuration: serde_json::Value,
+    pub client_configuration: serde_json::Value,
 }
 
 impl Dataset {
     pub fn from_details(
         name: String,
         organization_id: uuid::Uuid,
-        configuration: serde_json::Value,
+        server_configuration: serde_json::Value,
+        client_configuration: serde_json::Value,
     ) -> Self {
         Dataset {
             id: uuid::Uuid::new_v4(),
             name,
             organization_id,
-            configuration,
+            server_configuration,
+            client_configuration,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
         }
@@ -792,7 +795,7 @@ impl Dataset {
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[allow(non_snake_case)]
-pub struct DatasetConfiguration {
+pub struct ServerDatasetConfiguration {
     pub DOCUMENT_UPLOAD_FEATURE: Option<bool>,
     pub DOCUMENT_DOWNLOAD_FEATURE: Option<bool>,
     pub LLM_BASE_URL: Option<String>,
@@ -803,14 +806,14 @@ pub struct DatasetConfiguration {
     pub EMBEDDING_SIZE: Option<usize>,
 }
 
-impl DatasetConfiguration {
+impl ServerDatasetConfiguration {
     pub fn from_json(configuration: serde_json::Value) -> Self {
         let default_config = json!({});
         let configuration = configuration
             .as_object()
             .unwrap_or(default_config.as_object().unwrap());
 
-        DatasetConfiguration {
+        ServerDatasetConfiguration {
             DOCUMENT_UPLOAD_FEATURE: configuration
                 .get("DOCUMENT_UPLOAD_FEATURE")
                 .unwrap_or(&json!(false))
