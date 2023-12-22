@@ -8,10 +8,10 @@ import {
 } from "solid-headless";
 import { RiSystemAddFill } from "solid-icons/ri";
 import {
-  isCardCollectionPageDTO,
-  type CardBookmarksDTO,
-  type CardCollectionDTO,
-  type CardMetadata,
+  isChunkCollectionPageDTO,
+  type ChunkBookmarksDTO,
+  type ChunkCollectionDTO,
+  type ChunkMetadata,
 } from "../../utils/apiTypes";
 import InputRowsForm from "./Atoms/InputRowsForm";
 import { VsBookmark } from "solid-icons/vs";
@@ -19,33 +19,33 @@ import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
 
 export interface BookmarkPopoverProps {
   signedInUserId: string | undefined;
-  cardMetadata: CardMetadata;
-  cardCollections: CardCollectionDTO[];
+  chunkMetadata: ChunkMetadata;
+  chunkCollections: ChunkCollectionDTO[];
   totalCollectionPages: number;
   setLoginModal?: Setter<boolean>;
-  bookmarks: CardBookmarksDTO[];
-  setCardCollections?: Setter<CardCollectionDTO[]>;
+  bookmarks: ChunkBookmarksDTO[];
+  setChunkCollections?: Setter<ChunkCollectionDTO[]>;
 }
 
 const BookmarkPopover = (props: BookmarkPopoverProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const dataset = import.meta.env.PUBLIC_DATASET as string;
 
-  const [refetchingCardCollections, setRefetchingCardCollections] =
+  const [refetchingChunkCollections, setRefetchingChunkCollections] =
     createSignal(false);
   const [refetchingBookmarks, setRefetchingBookmarks] = createSignal(false);
   const [showCollectionForm, setShowCollectionForm] = createSignal(false);
   const [notLoggedIn, setNotLoggedIn] = createSignal(false);
   const [collectionFormTitle, setCollectionFormTitle] = createSignal("");
   const [usingPanel, setUsingPanel] = createSignal(false);
-  const [bookmarks, setBookmarks] = createSignal<CardBookmarksDTO[]>([]);
+  const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [localCollectionPage, setLocalCollectionPage] = createSignal(1);
-  const [localCardCollections, setLocalCardCollections] = createSignal<
-    CardCollectionDTO[]
+  const [localChunkCollections, setLocalChunkCollections] = createSignal<
+    ChunkCollectionDTO[]
   >([]);
 
   createEffect(() => {
-    const collectionsToAdd: CardCollectionDTO[] = [];
+    const collectionsToAdd: ChunkCollectionDTO[] = [];
     props.bookmarks.forEach((b) => {
       b.slim_collections.forEach((c) => {
         c.of_current_user &&
@@ -61,7 +61,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
     });
 
     setBookmarks(props.bookmarks);
-    setLocalCardCollections([...collectionsToAdd, ...props.cardCollections]);
+    setLocalChunkCollections([...collectionsToAdd, ...props.chunkCollections]);
   });
 
   createEffect((prevPage) => {
@@ -70,9 +70,9 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
       return curPage;
     }
 
-    const cardBookmarks = bookmarks();
-    const setCardCollections = props.setCardCollections;
-    refetchCollections(curPage, cardBookmarks, setCardCollections);
+    const chunkBookmarks = bookmarks();
+    const setChunkCollections = props.setChunkCollections;
+    refetchCollections(curPage, chunkBookmarks, setChunkCollections);
 
     return curPage;
   }, 1);
@@ -81,15 +81,15 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
     if (props.signedInUserId === undefined) {
       return;
     }
-    if (!refetchingCardCollections()) {
+    if (!refetchingChunkCollections()) {
       return;
     }
 
     const curPage = localCollectionPage();
-    const cardBookmarks = bookmarks();
-    const setCardCollections = props.setCardCollections;
-    refetchCollections(curPage, cardBookmarks, setCardCollections);
-    setRefetchingCardCollections(false);
+    const chunkBookmarks = bookmarks();
+    const setChunkCollections = props.setChunkCollections;
+    refetchCollections(curPage, chunkBookmarks, setChunkCollections);
+    setRefetchingChunkCollections(false);
   });
 
   createEffect(() => {
@@ -107,32 +107,32 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
 
   const refetchCollections = (
     curPage: number,
-    cardBookmarks: CardBookmarksDTO[],
-    setCardCollections: Setter<CardCollectionDTO[]> | undefined,
+    chunkBookmarks: ChunkBookmarksDTO[],
+    setChunkCollections: Setter<ChunkCollectionDTO[]> | undefined,
   ) => {
-    void fetch(`${apiHost}/card_collection/${localCollectionPage()}`, {
+    void fetch(`${apiHost}/chunk_collection/${localCollectionPage()}`, {
       method: "GET",
       headers: {
         "AF-Dataset": dataset,
       },
       credentials: "include",
     }).then((response) => {
-      if (!setCardCollections) return;
+      if (!setChunkCollections) return;
 
       if (response.ok) {
         void response.json().then((data) => {
-          if (isCardCollectionPageDTO(data)) {
+          if (isChunkCollectionPageDTO(data)) {
             if (curPage !== 1) {
-              setLocalCardCollections(data.collections);
+              setLocalChunkCollections(data.collections);
               return;
             }
 
-            const collectionsToAdd: CardCollectionDTO[] = [];
+            const collectionsToAdd: ChunkCollectionDTO[] = [];
 
-            cardBookmarks.forEach((cardBookmark) => {
-              cardBookmark.slim_collections.forEach((collection) => {
+            chunkBookmarks.forEach((chunkBookmark) => {
+              chunkBookmark.slim_collections.forEach((collection) => {
                 if (collection.of_current_user) {
-                  const cardCollection: CardCollectionDTO = {
+                  const chunkCollection: ChunkCollectionDTO = {
                     id: collection.id,
                     name: collection.name,
                     description: "",
@@ -141,7 +141,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                     updated_at: "",
                   };
 
-                  collectionsToAdd.push(cardCollection);
+                  collectionsToAdd.push(chunkCollection);
                 }
               });
             });
@@ -155,8 +155,8 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
             });
 
             const updatedCollections = [...collectionsToAdd, ...deDupedPrev];
-            setLocalCardCollections(updatedCollections);
-            setCardCollections(updatedCollections);
+            setLocalChunkCollections(updatedCollections);
+            setChunkCollections(updatedCollections);
           }
         });
       }
@@ -168,7 +168,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
   };
 
   const refetchBookmarks = (curPage: number) => {
-    void fetch(`${apiHost}/card_collection/bookmark`, {
+    void fetch(`${apiHost}/chunk_collection/bookmark`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -176,25 +176,25 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
         "AF-Dataset": dataset,
       },
       body: JSON.stringify({
-        card_ids: [props.cardMetadata.id],
+        chunk_ids: [props.chunkMetadata.id],
       }),
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          const cardBookmarks = data as CardBookmarksDTO[];
+          const chunkBookmarks = data as ChunkBookmarksDTO[];
 
-          setBookmarks(data as CardBookmarksDTO[]);
+          setBookmarks(data as ChunkBookmarksDTO[]);
 
           if (curPage !== 1) {
             return;
           }
 
-          const collectionsToAdd: CardCollectionDTO[] = [];
+          const collectionsToAdd: ChunkCollectionDTO[] = [];
 
-          cardBookmarks.forEach((cardBookmark) => {
-            cardBookmark.slim_collections.forEach((collection) => {
+          chunkBookmarks.forEach((chunkBookmark) => {
+            chunkBookmark.slim_collections.forEach((collection) => {
               if (collection.of_current_user) {
-                const cardCollection: CardCollectionDTO = {
+                const chunkCollection: ChunkCollectionDTO = {
                   id: collection.id,
                   name: collection.name,
                   description: "",
@@ -203,12 +203,12 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                   updated_at: "",
                 };
 
-                collectionsToAdd.push(cardCollection);
+                collectionsToAdd.push(chunkCollection);
               }
             });
           });
 
-          setLocalCardCollections((prev) => {
+          setLocalChunkCollections((prev) => {
             const deDupedPrev = prev.filter((collection) => {
               return (
                 collectionsToAdd.find(
@@ -258,11 +258,11 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
             >
               <Menu class=" flex w-full flex-col justify-end space-y-2 overflow-hidden rounded bg-white py-4 shadow-2xl dark:bg-shark-700">
                 <div class="mb-3 w-full px-4 text-center text-lg font-bold">
-                  Manage Themes For This Card
+                  Manage Themes For This Chunk
                 </div>
                 <MenuItem as="button" aria-label="Empty" />
                 <div class="max-w-screen mx-1 max-h-[20vh] transform justify-end space-y-2 overflow-y-auto rounded px-4 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-600 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-400">
-                  <For each={localCardCollections()}>
+                  <For each={localChunkCollections()}>
                     {(collection, idx) => {
                       return (
                         <>
@@ -290,7 +290,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                               }
                               onChange={(e) => {
                                 void fetch(
-                                  `${apiHost}/card_collection/${collection.id}`,
+                                  `${apiHost}/chunk_collection/${collection.id}`,
                                   {
                                     method: e.currentTarget.checked
                                       ? "POST"
@@ -301,7 +301,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                                     },
                                     credentials: "include",
                                     body: JSON.stringify({
-                                      card_metadata_id: props.cardMetadata.id,
+                                      chunk_metadata_id: props.chunkMetadata.id,
                                     }),
                                   },
                                 ).then((response) => {
@@ -368,7 +368,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                         onCreate={() => {
                           const title = collectionFormTitle();
                           if (title.trim() == "") return;
-                          void fetch(`${apiHost}/card_collection`, {
+                          void fetch(`${apiHost}/chunk_collection`, {
                             method: "POST",
                             headers: {
                               "Content-Type": "application/json",
@@ -380,7 +380,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                               description: "",
                             }),
                           }).then(() => {
-                            setRefetchingCardCollections(true);
+                            setRefetchingChunkCollections(true);
                             setShowCollectionForm(false);
                             setCollectionFormTitle("");
                             setState(true);

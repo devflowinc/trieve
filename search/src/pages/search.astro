@@ -2,7 +2,7 @@
 import SearchLayout from "../layouts/SearchLayout.astro";
 import Footer from "../components/Footer.astro";
 import ResultsPage, { Filters } from "../components/ResultsPage";
-import type { CardsWithTotalPagesDTO } from "../../utils/apiTypes";
+import type { ChunksWithTotalPagesDTO } from "../../utils/apiTypes";
 import SearchForm from "../components/SearchForm";
 import { SuggestedQueries } from "../components/SuggestedQueries";
 
@@ -47,9 +47,9 @@ const dataTypeFilters: Filters = {
   metadataFilters,
 };
 
-let initialScoreCards: CardsWithTotalPagesDTO = {
-  score_cards: [],
-  total_card_pages: 0,
+let initialScoreChunks: ChunksWithTotalPagesDTO = {
+  score_chunks: [],
+  total_chunk_pages: 0,
 };
 
 try {
@@ -87,8 +87,8 @@ try {
     }
   }
 
-  const initialScoreCardsResult = await fetch(
-    `${apiHost}/card/search/${page}`,
+  const initialScoreChunksResult = await fetch(
+    `${apiHost}/chunk/search/${page}`,
     {
       method: "POST",
       headers: {
@@ -100,15 +100,15 @@ try {
     },
   );
 
-  if (!initialScoreCardsResult.ok) {
+  if (!initialScoreChunksResult.ok) {
     throw new Error(
-      `Failed to fetch initial score cards: ${initialScoreCardsResult.status}`,
+      `Failed to fetch initial score chunks: ${initialScoreChunksResult.status}`,
     );
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const initialScoreCardsJson = await initialScoreCardsResult.json();
-  initialScoreCards = initialScoreCardsJson as CardsWithTotalPagesDTO;
+  const initialScoreChunksJson = await initialScoreChunksResult.json();
+  initialScoreChunks = initialScoreChunksJson as ChunksWithTotalPagesDTO;
 } catch (e) {
   console.error(e);
 }
@@ -152,7 +152,7 @@ try {
     page={page}
     query={query}
     filters={dataTypeFilters}
-    defaultResultCards={initialScoreCards}
+    defaultResultChunks={initialScoreChunks}
     searchType={searchType}
     weight={weight}
     client:load

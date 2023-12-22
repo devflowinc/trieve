@@ -1,13 +1,13 @@
 ---
 import {
-  CardCollectionDTO,
-  UserDTOWithVotesAndCards,
-  isCardCollectionPageDTO,
-  isUserDTOWithVotesAndCards,
+  ChunkCollectionDTO,
+  UserDTOWithVotesAndChunks,
+  isChunkCollectionPageDTO,
+  isUserDTOWithVotesAndChunks,
 } from "../../../utils/apiTypes";
 import Footer from "../../components/Footer.astro";
 import SearchLayout from "../../layouts/SearchLayout.astro";
-import { UserCardDisplay } from "../../components/UserCardDisplay";
+import { UserCardDisplay } from "../../components/UserChunkDisplay";
 
 const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
@@ -19,9 +19,9 @@ const requestParams = Astro.request.url.split("?")[1];
 const params = new URLSearchParams(requestParams);
 const page = Number(params.get("page")) || 1;
 
-let user: UserDTOWithVotesAndCards | null = null;
+let user: UserDTOWithVotesAndChunks | null = null;
 let title = "User Profile";
-let userCollections: CardCollectionDTO[] | null = null;
+let userCollections: ChunkCollectionDTO[] | null = null;
 let userCollectionPageCount = 1;
 
 try {
@@ -58,7 +58,7 @@ try {
   }
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const maybeUser = await queryResult.json();
-  if (isUserDTOWithVotesAndCards(maybeUser)) {
+  if (isUserDTOWithVotesAndChunks(maybeUser)) {
     user = maybeUser;
     title = user.username ?? user.email ?? "";
     title += " | Arguflow Search";
@@ -69,7 +69,7 @@ try {
   if (collectionsResult.ok) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const maybeCollections = await collectionsResult.json();
-    if (isCardCollectionPageDTO(maybeCollections)) {
+    if (isChunkCollectionPageDTO(maybeCollections)) {
       userCollections = maybeCollections.collections;
       userCollectionPageCount =
         maybeCollections.total_pages == 0 ? 1 : maybeCollections.total_pages;
@@ -94,3 +94,4 @@ try {
   <div class="flex-1"></div>
   <Footer />
 </SearchLayout>
+../../components/UserChunkDisplay

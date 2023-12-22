@@ -6,7 +6,7 @@ import {
 import { JSX, Show, createEffect, createSignal } from "solid-js";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import type { TinyMCE } from "../../public/tinymce/tinymce";
-import { CreateCardDTO, isActixApiDefaultError } from "../../utils/apiTypes";
+import { CreateChunkDTO, isActixApiDefaultError } from "../../utils/apiTypes";
 import { Tooltip } from "./Atoms/Tooltip";
 
 export const CreateNewDocChunkForm = () => {
@@ -25,18 +25,18 @@ export const CreateNewDocChunkForm = () => {
   const submitDocChunk = (e: Event) => {
     e.preventDefault();
 
-    const cardHTMLContentValue =
+    const chunkHTMLContentValue =
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       (window as any).tinymce.activeEditor.getContent() as unknown as string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-    const cardTextContentValue = (window as any).tinyMCE.activeEditor.getBody()
+    const chunkTextContentValue = (window as any).tinyMCE.activeEditor.getBody()
       .textContent as unknown as string;
     const docChunkLinkValue = docChunkLink();
 
-    if (!cardTextContentValue) {
+    if (!chunkTextContentValue) {
       const errors: string[] = [];
-      if (!cardTextContentValue) {
-        errors.push("cardContent");
+      if (!chunkTextContentValue) {
+        errors.push("chunkContent");
       }
       setErrorFields(errors);
       return;
@@ -47,7 +47,7 @@ export const CreateNewDocChunkForm = () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const requestBody: any = {
-      card_html: cardHTMLContentValue,
+      chunk_html: chunkHTMLContentValue,
       link: docChunkLinkValue,
       tag_set: tagSet(),
     };
@@ -57,7 +57,7 @@ export const CreateNewDocChunkForm = () => {
       requestBody.time_stamp = timestamp() + " 00:00:00";
     }
 
-    void fetch(`${apiHost}/card`, {
+    void fetch(`${apiHost}/chunk`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -73,19 +73,19 @@ export const CreateNewDocChunkForm = () => {
       }
 
       void response.json().then((data) => {
-        const cardReturnData = data as CreateCardDTO;
+        const chunkReturnData = data as CreateChunkDTO;
         if (!response.ok) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           isActixApiDefaultError(data) && setErrorText(data.message);
           setIsSubmitting(false);
         }
 
-        window.location.href = `/card/${cardReturnData.card_metadata.id}`;
+        window.location.href = `/chunk/${chunkReturnData.chunk_metadata.id}`;
         return;
       });
     });
 
-    if (errorFields().includes("cardContent")) {
+    if (errorFields().includes("chunkContent")) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
       (window as any).tinymce.activeEditor.focus();
     }
@@ -225,7 +225,7 @@ export const CreateNewDocChunkForm = () => {
         </div>
         <div class="flex flex-col space-y-2">
           <div class="flex items-center space-x-2">
-            <div>Card Content*</div>
+            <div>Chunk Content*</div>
             <div class="h-4.5 w-4.5 rounded-full border border-black dark:border-white">
               <Tooltip
                 body={

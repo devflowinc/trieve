@@ -3,9 +3,9 @@ import Footer from "../../components/Footer.astro";
 import SearchLayout from "../../layouts/SearchLayout.astro";
 import { CollectionPage } from "../../components/CollectionPage";
 import type {
-  CardCollectionBookmarkDTO,
-  CardCollectionBookmarksWithStatusDTO,
-  CardCollectionSearchDTO,
+  ChunkCollectionBookmarkDTO,
+  ChunkCollectionBookmarksWithStatusDTO,
+  ChunkCollectionSearchDTO,
 } from "../../../utils/apiTypes";
 import type { Filters } from "../../components/ResultsPage";
 
@@ -48,7 +48,7 @@ const dataTypeFilters: Filters = {
 };
 
 const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-let collectionCards: CardCollectionBookmarksWithStatusDTO = {
+let collectionChunks: ChunkCollectionBookmarksWithStatusDTO = {
   metadata: {
     bookmarks: [],
     collection: {
@@ -73,8 +73,8 @@ try {
   }
 
   if (query === "") {
-    const collectionCardResponse = await fetch(
-      `${apiHost}/card_collection/${collectionID}/${page}`,
+    const collectionChunkResponse = await fetch(
+      `${apiHost}/chunk_collection/${collectionID}/${page}`,
       {
         method: "GET",
         headers: {
@@ -82,26 +82,26 @@ try {
         },
       },
     );
-    if (!collectionCardResponse.ok) {
+    if (!collectionChunkResponse.ok) {
       throw new Error(
-        `Failed to fetch collection cards: ${collectionCardResponse.status} ${collectionCardResponse.statusText}`,
+        `Failed to fetch collection chunks: ${collectionChunkResponse.status} ${collectionChunkResponse.statusText}`,
       );
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const collectionCardJson: CardCollectionBookmarkDTO =
-      await collectionCardResponse.json();
-    collectionCards = {
-      metadata: collectionCardJson,
-      status: collectionCardResponse.status,
+    const collectionChunkJson: ChunkCollectionBookmarkDTO =
+      await collectionChunkResponse.json();
+    collectionChunks = {
+      metadata: collectionChunkJson,
+      status: collectionChunkResponse.status,
     };
-    title = `${collectionCards.metadata.collection.name} | ` + title;
-    if (collectionCards.metadata.collection.description !== "") {
-      description = collectionCards.metadata.collection.description;
+    title = `${collectionChunks.metadata.collection.name} | ` + title;
+    if (collectionChunks.metadata.collection.description !== "") {
+      description = collectionChunks.metadata.collection.description;
     }
   } else {
-    const collectionCardResponse = await fetch(
-      `${apiHost}/card_collection/search/${page}`,
+    const collectionChunkResponse = await fetch(
+      `${apiHost}/chunk_collection/search/${page}`,
       {
         method: "POST",
         headers: {
@@ -122,18 +122,18 @@ try {
         }),
       },
     );
-    if (!collectionCardResponse.ok) {
+    if (!collectionChunkResponse.ok) {
       throw new Error(
-        `Failed to fetch collection cards: ${collectionCardResponse.status} ${collectionCardResponse.statusText}`,
+        `Failed to fetch collection chunks: ${collectionChunkResponse.status} ${collectionChunkResponse.statusText}`,
       );
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const collectionCardJson: CardCollectionSearchDTO =
-      await collectionCardResponse.json();
-    collectionCards = {
-      metadata: collectionCardJson,
-      status: collectionCardResponse.status,
+    const collectionChunkJson: ChunkCollectionSearchDTO =
+      await collectionChunkResponse.json();
+    collectionChunks = {
+      metadata: collectionChunkJson,
+      status: collectionChunkResponse.status,
     };
     title = `🔍${query} | ` + title;
   }
@@ -146,7 +146,7 @@ try {
   <CollectionPage
     collectionID={collectionID}
     page={page}
-    defaultCollectionCards={collectionCards}
+    defaultCollectionChunks={collectionChunks}
     query={query}
     filters={dataTypeFilters}
     searchType={searchType}

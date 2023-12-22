@@ -5,8 +5,8 @@
 import { BiSolidUserRectangle } from "solid-icons/bi";
 import { AiFillRobot } from "solid-icons/ai";
 import { Accessor, For, Show, createEffect, createSignal } from "solid-js";
-import type { UserDTO, ScoreCardDTO } from "../../../utils/apiTypes";
-import ScoreCard, { sanitzerOptions } from "../ScoreCard";
+import type { UserDTO, ScoreChunkDTO } from "../../../utils/apiTypes";
+import ScoreChunk, { sanitzerOptions } from "../ScoreChunk";
 import sanitizeHtml from "sanitize-html";
 
 export interface AfMessageProps {
@@ -14,13 +14,13 @@ export interface AfMessageProps {
   content: string;
   streamingCompletion: Accessor<boolean>;
   user: Accessor<UserDTO | undefined>;
-  cards: Accessor<ScoreCardDTO[]>;
+  chunks: Accessor<ScoreChunkDTO[]>;
   order: number;
 }
 
 export const AfMessage = (props: AfMessageProps) => {
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
-  const [metadata, setMetadata] = createSignal<ScoreCardDTO[]>([]);
+  const [metadata, setMetadata] = createSignal<ScoreChunkDTO[]>([]);
   const [content, setContent] = createSignal<string>("");
 
   createEffect(() => {
@@ -33,27 +33,27 @@ export const AfMessage = (props: AfMessageProps) => {
     const bracketRe = /\[(.*?)\]/g;
     const numRe = /\d+/g;
     let match;
-    let cardNums;
-    const cardNumList = [];
+    let chunkNums;
+    const chunkNumList = [];
 
     while ((match = bracketRe.exec(props.content)) !== null) {
-      const cardIndex = match[0];
-      while ((cardNums = numRe.exec(cardIndex)) !== null) {
-        for (const num1 of cardNums) {
-          const cardNum = parseInt(num1);
-          cardNumList.push(cardNum);
+      const chunkIndex = match[0];
+      while ((chunkNums = numRe.exec(chunkIndex)) !== null) {
+        for (const num1 of chunkNums) {
+          const chunkNum = parseInt(num1);
+          chunkNumList.push(chunkNum);
         }
       }
     }
-    cardNumList.sort((a, b) => a - b);
-    for (const num of cardNumList) {
-      const card = props.cards()[num - 1];
-      card.score = num;
-      if (!metadata().includes(card)) {
-        // the linter does not understand that the card can sometimes be undefined or null
+    chunkNumList.sort((a, b) => a - b);
+    for (const num of chunkNumList) {
+      const chunk = props.chunks()[num - 1];
+      chunk.score = num;
+      if (!metadata().includes(chunk)) {
+        // the linter does not understand that the chunk can sometimes be undefined or null
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        if (!card) return;
-        setMetadata((prev) => [...prev, card]);
+        if (!chunk) return;
+        setMetadata((prev) => [...prev, chunk]);
       }
     }
     setContent(
@@ -107,13 +107,13 @@ export const AfMessage = (props: AfMessageProps) => {
               <Show when={props.role == "assistant" && metadata().length > 0}>
                 <div class="max-h-[600px] w-full flex-col space-y-3 overflow-scroll overflow-x-hidden scrollbar-thin scrollbar-track-neutral-200 dark:scrollbar-track-zinc-700">
                   <For each={metadata()}>
-                    {(card) => (
-                      <ScoreCard
+                    {(chunk) => (
+                      <ScoreChunk
                         collection={undefined}
-                        card={card.metadata[0]}
+                        chunk={chunk.metadata[0]}
                         score={0}
                         showExpand={!props.streamingCompletion()}
-                        counter={card.score.toString()}
+                        counter={chunk.score.toString()}
                         order={props.order.toString()}
                         begin={undefined}
                         end={undefined}

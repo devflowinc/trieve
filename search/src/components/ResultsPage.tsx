@@ -8,18 +8,18 @@ import {
 } from "solid-js";
 import {
   isUserDTO,
-  type CardCollectionDTO,
-  type CardsWithTotalPagesDTO,
-  type ScoreCardDTO,
+  type ChunkCollectionDTO,
+  type ChunksWithTotalPagesDTO,
+  type ScoreChunkDTO,
   type UserDTO,
-  CardBookmarksDTO,
-  isCardCollectionPageDTO,
+  ChunkBookmarksDTO,
+  isChunkCollectionPageDTO,
 } from "../../utils/apiTypes";
 import { BiRegularLogIn, BiRegularXCircle } from "solid-icons/bi";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { PaginationController } from "./Atoms/PaginationController";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
-import { ScoreCardArray } from "./ScoreCardArray";
+import { ScoreChunkArray } from "./ScoreChunkArray";
 import { Portal } from "solid-js/web";
 import { AiOutlineRobot } from "solid-icons/ai";
 import ChatPopup from "./ChatPopup";
@@ -35,7 +35,7 @@ export interface Filters {
 export interface ResultsPageProps {
   query: string;
   page: number;
-  defaultResultCards: CardsWithTotalPagesDTO;
+  defaultResultChunks: ChunksWithTotalPagesDTO;
   filters: Filters;
   searchType: string;
   weight?: string;
@@ -44,15 +44,15 @@ export interface ResultsPageProps {
 const ResultsPage = (props: ResultsPageProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const dataset = import.meta.env.PUBLIC_DATASET as string;
-  const initialResultCards = props.defaultResultCards.score_cards;
-  const initialTotalPages = props.defaultResultCards.total_card_pages;
+  const initialResultChunks = props.defaultResultChunks.score_chunks;
+  const initialTotalPages = props.defaultResultChunks.total_chunk_pages;
 
-  const [cardCollections, setCardCollections] = createSignal<
-    CardCollectionDTO[]
+  const [chunkCollections, setChunkCollections] = createSignal<
+    ChunkCollectionDTO[]
   >([]);
   const [user, setUser] = createSignal<UserDTO | undefined>();
-  const [resultCards, setResultCards] =
-    createSignal<ScoreCardDTO[]>(initialResultCards);
+  const [resultChunks, setResultChunks] =
+    createSignal<ScoreChunkDTO[]>(initialResultChunks);
   const [clientSideRequestFinished, setClientSideRequestFinished] =
     createSignal(false);
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
@@ -61,15 +61,15 @@ const ResultsPage = (props: ResultsPageProps) => {
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const [onDelete, setOnDelete] = createSignal(() => {});
-  const [bookmarks, setBookmarks] = createSignal<CardBookmarksDTO[]>([]);
+  const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [totalPages, setTotalPages] = createSignal(initialTotalPages);
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
 
-  const fetchCardCollections = () => {
+  const fetchChunkCollections = () => {
     if (!user()) return;
 
-    void fetch(`${apiHost}/card_collection/1`, {
+    void fetch(`${apiHost}/chunk_collection/1`, {
       method: "GET",
       credentials: "include",
       headers: {
@@ -78,8 +78,8 @@ const ResultsPage = (props: ResultsPageProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          if (isCardCollectionPageDTO(data)) {
-            setCardCollections(data.collections);
+          if (isChunkCollectionPageDTO(data)) {
+            setChunkCollections(data.collections);
             setTotalCollectionPages(data.total_pages);
           }
         });
@@ -88,7 +88,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   };
 
   const fetchBookmarks = () => {
-    void fetch(`${apiHost}/card_collection/bookmark`, {
+    void fetch(`${apiHost}/chunk_collection/bookmark`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -96,15 +96,15 @@ const ResultsPage = (props: ResultsPageProps) => {
         "AF-Dataset": dataset,
       },
       body: JSON.stringify({
-        card_ids: resultCards().flatMap((c) => {
+        chunk_ids: resultChunks().flatMap((c) => {
           return c.metadata.map((m) => m.id);
         }),
       }),
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          const cardBookmarks = data as CardBookmarksDTO[];
-          setBookmarks(cardBookmarks);
+          const chunkBookmarks = data as ChunkBookmarksDTO[];
+          setBookmarks(chunkBookmarks);
         });
       }
     });
@@ -155,7 +155,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       }
     }
 
-    void fetch(`${apiHost}/card/search/${props.page}`, {
+    void fetch(`${apiHost}/chunk/search/${props.page}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -168,10 +168,10 @@ const ResultsPage = (props: ResultsPageProps) => {
       if (response.ok) {
         void response.json().then((data) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          const result = data.score_cards as ScoreCardDTO[];
-          setResultCards(result);
+          const result = data.score_chunks as ScoreChunkDTO[];
+          setResultChunks(result);
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          setTotalPages(data.total_card_pages);
+          setTotalPages(data.total_chunk_pages);
           setClientSideRequestFinished(true);
         });
       } else {
@@ -182,7 +182,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       }
     });
 
-    fetchCardCollections();
+    fetchChunkCollections();
 
     onCleanup(() => {
       abortController.abort();
@@ -207,7 +207,7 @@ const ResultsPage = (props: ResultsPageProps) => {
             <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto rounded-md scrollbar-thin">
               <ChatPopup
                 user={user}
-                cards={resultCards}
+                chunks={resultChunks}
                 selectedIds={selectedIds}
                 setShowNeedLoginModal={setShowNeedLoginModal}
                 setOpenChat={setOpenChat}
@@ -217,7 +217,9 @@ const ResultsPage = (props: ResultsPageProps) => {
         </Portal>
       </Show>
       <div class="mt-12 flex w-full flex-col items-center space-y-4">
-        <Show when={resultCards().length === 0 && !clientSideRequestFinished()}>
+        <Show
+          when={resultChunks().length === 0 && !clientSideRequestFinished()}
+        >
           <div
             class="text-primary inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-magenta border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
             role="status"
@@ -227,7 +229,7 @@ const ResultsPage = (props: ResultsPageProps) => {
             </span>
           </div>
         </Show>
-        <Show when={resultCards().length === 0 && clientSideRequestFinished()}>
+        <Show when={resultChunks().length === 0 && clientSideRequestFinished()}>
           <button
             onClick={() => {
               window.location.href = `/search?q=${props.query}&page=${
@@ -239,21 +241,21 @@ const ResultsPage = (props: ResultsPageProps) => {
           </button>
         </Show>
         <div class="flex w-full max-w-6xl flex-col space-y-4 px-1 min-[360px]:px-4 sm:px-8 md:px-20">
-          <For each={resultCards()}>
-            {(card) => (
+          <For each={resultChunks()}>
+            {(chunk) => (
               <div>
-                <ScoreCardArray
+                <ScoreChunkArray
                   totalCollectionPages={totalCollectionPages()}
                   signedInUserId={user()?.id}
-                  cardCollections={cardCollections()}
-                  cards={card.metadata}
-                  score={card.score}
+                  chunkCollections={chunkCollections()}
+                  chunks={chunk.metadata}
+                  score={chunk.score}
                   setShowModal={setShowNeedLoginModal}
                   bookmarks={bookmarks()}
                   setOnDelete={setOnDelete}
                   setShowConfirmModal={setShowConfirmDeleteModal}
                   showExpand={clientSideRequestFinished()}
-                  setCardCollections={setCardCollections}
+                  setChunkCollections={setChunkCollections}
                   setSelectedIds={setSelectedIds}
                   selectedIds={selectedIds}
                 />
@@ -262,11 +264,11 @@ const ResultsPage = (props: ResultsPageProps) => {
           </For>
         </div>
       </div>
-      <Show when={resultCards().length > 0}>
+      <Show when={resultChunks().length > 0}>
         <div class="mx-auto my-12 flex items-center space-x-2">
           <PaginationController
             page={props.page}
-            totalPages={resultCards().length < 10 ? props.page : totalPages()}
+            totalPages={resultChunks().length < 10 ? props.page : totalPages()}
           />
         </div>
       </Show>
@@ -300,7 +302,7 @@ const ResultsPage = (props: ResultsPageProps) => {
               class="relative h-[52px] w-[52px] items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
               onClick={() => {
                 setSelectedIds(
-                  resultCards()
+                  resultChunks()
                     .flatMap((c) => {
                       return c.metadata.map((m) => m.id);
                     })
@@ -362,7 +364,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         showConfirmModal={showConfirmDeleteModal}
         setShowConfirmModal={setShowConfirmDeleteModal}
         onConfirm={onDelete}
-        message="Are you sure you want to delete this card?"
+        message="Are you sure you want to delete this chunk?"
       />
     </>
   );
