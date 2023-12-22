@@ -1,17 +1,18 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { For, Setter, Show, createMemo, createSignal } from "solid-js";
 import {
   indirectHasOwnProperty,
-  type CardBookmarksDTO,
-  type CardCollectionDTO,
-  type CardMetadataWithVotes,
-  CardMetadata,
+  type ChunkBookmarksDTO,
+  type ChunkCollectionDTO,
+  type ChunkMetadataWithVotes,
+  ChunkMetadata,
 } from "../../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import sanitizeHtml from "sanitize-html";
 import { VsFileSymlinkFile } from "solid-icons/vs";
 import BookmarkPopover from "./BookmarkPopover";
 import { FiEdit, FiTrash } from "solid-icons/fi";
-import { formatDate, sanitzerOptions } from "./ScoreCard";
+import { formatDate, sanitzerOptions } from "./ScoreChunk";
 import { Tooltip } from "./Atoms/Tooltip";
 import CommunityBookmarkPopover from "./CommunityBookmarkPopover";
 import {
@@ -34,22 +35,22 @@ export const getLocalTime = (strDate: string | Date) => {
   return localTime;
 };
 
-export interface CardMetadataDisplayProps {
+export interface ChunkMetadataDisplayProps {
   totalCollectionPages: number;
   signedInUserId?: string;
   viewingUserId?: string;
-  card: CardMetadataWithVotes | CardMetadata;
-  cardCollections: CardCollectionDTO[];
-  bookmarks: CardBookmarksDTO[];
+  chunk: ChunkMetadataWithVotes | ChunkMetadata;
+  chunkCollections: ChunkCollectionDTO[];
+  bookmarks: ChunkBookmarksDTO[];
   setShowModal: Setter<boolean>;
   setShowConfirmModal: Setter<boolean>;
-  fetchCardCollections: () => void;
-  setCardCollections: Setter<CardCollectionDTO[]>;
+  fetchChunkCollections: () => void;
+  setChunkCollections: Setter<ChunkCollectionDTO[]>;
   setOnDelete: Setter<() => void>;
   showExpand?: boolean;
 }
 
-const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
+const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const frontMatterVals = (
     (import.meta.env.PUBLIC_FRONTMATTER_VALS as string | undefined) ??
@@ -76,12 +77,12 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
   const onDelete = () => {
     const dataset = import.meta.env.PUBLIC_DATASET as string;
     if (props.signedInUserId !== props.viewingUserId) return;
-    const curCardId = props.card.id;
+    const curChunkId = props.chunk.id;
 
     props.setOnDelete(() => {
       return () => {
         setDeleting(true);
-        void fetch(`${apiHost}/card/${curCardId}`, {
+        void fetch(`${apiHost}/chunk/${curChunkId}`, {
           method: "DELETE",
           credentials: "include",
           headers: {
@@ -93,7 +94,7 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
             setDeleted(true);
             return;
           }
-          alert("Failed to delete card");
+          alert("Failed to delete chunk");
         });
       };
     });
@@ -108,19 +109,19 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
 
     if (
       !imgRangeStartKey ||
-      !props.card.metadata ||
-      !indirectHasOwnProperty(props.card.metadata, imgRangeStartKey) ||
-      !indirectHasOwnProperty(props.card.metadata, imgRangeEndKey)
+      !props.chunk.metadata ||
+      !indirectHasOwnProperty(props.chunk.metadata, imgRangeStartKey) ||
+      !indirectHasOwnProperty(props.chunk.metadata, imgRangeEndKey)
     ) {
       return null;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    const imgRangeStartVal = (props.card.metadata as any)[
+    const imgRangeStartVal = (props.chunk.metadata as any)[
       imgRangeStartKey
     ] as unknown as string;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    const imgRangeEndVal = (props.card.metadata as any)[
+    const imgRangeEndVal = (props.chunk.metadata as any)[
       imgRangeEndKey
     ] as unknown as string;
     const imgRangeStart = parseInt(imgRangeStartVal.replace(/\D+/g, ""), 10);
@@ -138,7 +139,7 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
   });
 
   const useExpand = createMemo(() => {
-    return props.card.content.split(" ").length > 20 * linesBeforeShowMore;
+    return props.chunk.content.split(" ").length > 20 * linesBeforeShowMore;
   });
 
   return (
@@ -173,7 +174,7 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                         imgInformation()?.imgRangePrefix ?? ""
                       }/${
                         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                        props.card.metadata?.file_name ??
+                        props.chunk.metadata?.file_name ??
                         imgInformation()?.imgRangeStart ??
                         "Arguflow PDF From Range"
                       }/false`}
@@ -197,7 +198,7 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                         imgInformation()?.imgRangePrefix ?? ""
                       }/${
                         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                        props.card.metadata?.file_name ??
+                        props.chunk.metadata?.file_name ??
                         imgInformation()?.imgRangeStart ??
                         "Arguflow PDF From Range"
                       }/true`}
@@ -212,7 +213,7 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
               />
               <Tooltip
                 body={
-                  <Show when={Object.keys(props.card.metadata ?? {}).length}>
+                  <Show when={Object.keys(props.chunk.metadata ?? {}).length}>
                     <button
                       class="h-fit"
                       onClick={() => setShowMetadata(true)}
@@ -237,13 +238,13 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                 </button>
               </Show>
               <Show when={props.signedInUserId == props.viewingUserId}>
-                <a title="Edit" href={`/card/edit/${props.card.id}`}>
+                <a title="Edit" href={`/chunk/edit/${props.chunk.id}`}>
                   <FiEdit class="h-5 w-5" />
                 </a>
               </Show>
               <Tooltip
                 body={
-                  <a title="Open" href={`/card/${props.card.id}`}>
+                  <a title="Open" href={`/chunk/${props.chunk.id}`}>
                     <VsFileSymlinkFile class="h-5 w-5 fill-current" />
                   </a>
                 }
@@ -251,50 +252,50 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
               />
               <CommunityBookmarkPopover
                 bookmarks={props.bookmarks.filter(
-                  (bookmark) => bookmark.card_uuid == props.card.id,
+                  (bookmark) => bookmark.chunk_uuid == props.chunk.id,
                 )}
               />
 
               <BookmarkPopover
                 signedInUserId={props.signedInUserId}
                 totalCollectionPages={props.totalCollectionPages}
-                cardCollections={props.cardCollections}
-                cardMetadata={props.card}
+                chunkCollections={props.chunkCollections}
+                chunkMetadata={props.chunk}
                 setLoginModal={props.setShowModal}
                 bookmarks={props.bookmarks.filter(
-                  (bookmark) => bookmark.card_uuid == props.card.id,
+                  (bookmark) => bookmark.chunk_uuid == props.chunk.id,
                 )}
-                setCardCollections={props.setCardCollections}
+                setChunkCollections={props.setChunkCollections}
               />
             </div>
             <div class="flex w-full flex-col">
               <For each={frontMatterVals}>
                 {(frontMatterVal) => (
                   <>
-                    <Show when={props.card.link && frontMatterVal == "link"}>
+                    <Show when={props.chunk.link && frontMatterVal == "link"}>
                       <a
                         class="line-clamp-1 w-fit break-all text-magenta-500 underline dark:text-turquoise-400"
                         target="_blank"
-                        href={props.card.link ?? ""}
+                        href={props.chunk.link ?? ""}
                       >
-                        {props.card.link}
+                        {props.chunk.link}
                       </a>
                     </Show>
                     <Show
-                      when={props.card.tag_set && frontMatterVal == "tag_set"}
+                      when={props.chunk.tag_set && frontMatterVal == "tag_set"}
                     >
                       <div class="flex space-x-2">
                         <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                           Tag Set:{" "}
                         </span>
                         <span class="line-clamp-1 break-all">
-                          {props.card.tag_set}
+                          {props.chunk.tag_set}
                         </span>
                       </div>
                     </Show>
                     <Show
                       when={
-                        props.card.time_stamp && frontMatterVal == "time_stamp"
+                        props.chunk.time_stamp && frontMatterVal == "time_stamp"
                       }
                     >
                       <div class="flex space-x-2">
@@ -302,7 +303,7 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                           Time Stamp:{" "}
                         </span>
                         <span class="line-clamp-1 break-all">
-                          {formatDate(new Date(props.card.time_stamp ?? ""))}
+                          {formatDate(new Date(props.chunk.time_stamp ?? ""))}
                         </span>
                       </div>
                     </Show>
@@ -312,13 +313,13 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                         frontMatterVal !== "link" &&
                         frontMatterVal !== "tag_set" &&
                         frontMatterVal !== "time_stamp" &&
-                        props.card.metadata &&
+                        props.chunk.metadata &&
                         indirectHasOwnProperty(
-                          props.card.metadata,
+                          props.chunk.metadata,
                           frontMatterVal,
                         ) &&
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                        (props.card.metadata as any)[frontMatterVal]
+                        (props.chunk.metadata as any)[frontMatterVal]
                       }
                     >
                       <div class="flex space-x-2">
@@ -326,13 +327,13 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
                           {frontMatterVal}:{" "}
                         </span>
                         <span class="line-clamp-1 break-all">
-                          {props.card.metadata &&
+                          {props.chunk.metadata &&
                             indirectHasOwnProperty(
-                              props.card.metadata,
+                              props.chunk.metadata,
                               frontMatterVal,
                             ) &&
                             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
-                            (props.card.metadata as any)[
+                            (props.chunk.metadata as any)[
                               frontMatterVal
                             ].replace(/ +/g, " ")}
                         </span>
@@ -357,13 +358,14 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
             }
             // eslint-disable-next-line solid/no-innerhtml
             innerHTML={sanitizeHtml(
-              props.card.card_html !== undefined
-                ? props.card.card_html
+              props.chunk.chunk_html !== undefined
+                ? props.chunk.chunk_html
                     .replaceAll("line-height", "lh")
                     .replace("\n", " ")
                     .replace(`<br>`, " ")
                     .replace(`\\n`, " ")
                 : "",
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
               sanitzerOptions,
             )}
           />
@@ -417,20 +419,20 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
       <Show when={showMetadata()}>
         <FullScreenModal isOpen={showMetadata} setIsOpen={setShowMetadata}>
           <div class="flex max-h-[60vh] max-w-[75vw] flex-col space-y-2 overflow-auto scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600">
-            <For each={Object.keys(props.card.metadata ?? {})}>
+            <For each={Object.keys(props.chunk.metadata ?? {})}>
               {(metadataKey) => (
                 <div class="flex flex-wrap space-x-2">
                   <span>{`"${metadataKey}":`}</span>
                   <span>{`"${
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/restrict-template-expressions
-                    typeof (props.card.metadata as any)[metadataKey] ===
+                    typeof (props.chunk.metadata as any)[metadataKey] ===
                     "object"
                       ? JSON.stringify(
                           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                          (props.card.metadata as any)[metadataKey],
+                          (props.chunk.metadata as any)[metadataKey],
                         )
                       : // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                        (props.card.metadata as any)[metadataKey]
+                        (props.chunk.metadata as any)[metadataKey]
                   }"`}</span>
                 </div>
               )}
@@ -442,4 +444,4 @@ const CardMetadataDisplay = (props: CardMetadataDisplayProps) => {
   );
 };
 
-export default CardMetadataDisplay;
+export default ChunkMetadataDisplay;

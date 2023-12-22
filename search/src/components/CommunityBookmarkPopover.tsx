@@ -6,11 +6,11 @@ import {
   PopoverButton,
   PopoverPanel,
 } from "solid-headless";
-import type { CardBookmarksDTO } from "../../utils/apiTypes";
+import type { ChunkBookmarksDTO } from "../../utils/apiTypes";
 import { VsOrganization } from "solid-icons/vs";
 
 export interface CommunityBookmarkPopoverProps {
-  bookmarks: CardBookmarksDTO[];
+  bookmarks: ChunkBookmarksDTO[];
 }
 
 const CommunityBookmarkPopover = (props: CommunityBookmarkPopoverProps) => {

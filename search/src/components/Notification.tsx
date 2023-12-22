@@ -4,7 +4,7 @@ import {
   isFileUploadCompleteNotificationDTO,
 } from "../../utils/apiTypes";
 import { VsCheck } from "solid-icons/vs";
-import { getLocalTime } from "./CardMetadataDisplay";
+import { getLocalTime } from "./ChunkMetadataDisplay";
 
 export const getTimeIn12HourFormat = (date: Date): string => {
   return date.toLocaleString("en-US", {
