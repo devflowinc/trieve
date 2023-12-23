@@ -1,2 +1,2 @@
 -- Your SQL goes here
-DROP TABLE IF EXISTS chunk_votes;
+DROP TABLE IF EXISTS card_votes;
