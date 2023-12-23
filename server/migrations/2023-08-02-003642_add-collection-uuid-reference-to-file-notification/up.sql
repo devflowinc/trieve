@@ -20,7 +20,7 @@ DROP TABLE file_upload_completed_notifications;
 CREATE TABLE file_upload_completed_notifications (
     id UUID PRIMARY KEY,
     user_uuid UUID NOT NULL,
-    collection_uuid UUID NOT NULL REFERENCES chunk_collection(id),
+    collection_uuid UUID NOT NULL REFERENCES card_collection(id),
     user_read boolean NOT NULL DEFAULT false,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
