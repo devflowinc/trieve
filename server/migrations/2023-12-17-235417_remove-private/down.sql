@@ -1,6 +1,6 @@
 -- This file should undo anything in `up.sql`
 ALTER TABLE
-    chunk_metadata
+    card_metadata
 ADD
     COLUMN private boolean NOT NULL DEFAULT false;
 
