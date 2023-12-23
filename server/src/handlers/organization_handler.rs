@@ -40,8 +40,8 @@ pub async fn get_organization_by_id(
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct UpdateOrganizationData {
     organization_uuid: uuid::Uuid,
-    name: String,
-    configuration: serde_json::Value,
+    name: Option<String>,
+    configuration: Option<serde_json::Value>,
 }
 
 #[utoipa::path(
@@ -61,11 +61,20 @@ pub async fn update_organization(
     _user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_update_data = organization.into_inner();
+    let old_organization =
+        get_organization_by_id_query(organization_update_data.organization_uuid, pool.clone())
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let updated_organization = update_organization_query(
         organization_update_data.organization_uuid,
-        organization_update_data.name.as_str(),
-        organization_update_data.configuration,
+        organization_update_data
+            .name
+            .unwrap_or(old_organization.name)
+            .as_str(),
+        organization_update_data
+            .configuration
+            .unwrap_or(old_organization.configuration),
         pool,
     )
     .await
