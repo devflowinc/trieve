@@ -5,8 +5,8 @@ CREATE INDEX idx_files_private ON files (private);
 CREATE INDEX idx_files_created_at ON files (created_at);
 CREATE INDEX idx_files_updated_at ON files (updated_at);
 
--- Adding indices to the 'chunk_files' table
-CREATE INDEX idx_chunk_files_chunk_id ON chunk_files (chunk_id);
-CREATE INDEX idx_chunk_files_file_id ON chunk_files (file_id);
-CREATE INDEX idx_chunk_files_created_at ON chunk_files (created_at);
-CREATE INDEX idx_chunk_files_updated_at ON chunk_files (updated_at);
+-- Adding indices to the 'card_files' table
+CREATE INDEX idx_card_files_card_id ON card_files (card_id);
+CREATE INDEX idx_card_files_file_id ON card_files (file_id);
+CREATE INDEX idx_card_files_created_at ON card_files (created_at);
+CREATE INDEX idx_card_files_updated_at ON card_files (updated_at);

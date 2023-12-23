@@ -23,11 +23,11 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER update_collection_counts_trigger
-AFTER INSERT OR UPDATE OR DELETE ON chunk_collection
+AFTER INSERT OR UPDATE OR DELETE ON card_collection
 FOR EACH ROW
 EXECUTE FUNCTION update_collection_counts();
 
 -- Initialize user_collection_counts with existing data
 INSERT INTO user_collection_counts (id, user_id, collection_count)
-SELECT DISTINCT ON (author_id) gen_random_uuid(), author_id, (SELECT COUNT(*) FROM chunk_collection WHERE author_id = author_id)
-FROM chunk_collection;
+SELECT DISTINCT ON (author_id) gen_random_uuid(), author_id, (SELECT COUNT(*) FROM card_collection WHERE author_id = author_id)
+FROM card_collection;

@@ -2,7 +2,7 @@
 CREATE TABLE stripe_plans (
     id UUID NOT NULL UNIQUE PRIMARY KEY,
     stripe_id TEXT NOT NULL UNIQUE,
-    chunk_count INTEGER NOT NULL DEFAULT 0,
+    card_count INTEGER NOT NULL DEFAULT 0,
     file_storage INTEGER NOT NULL DEFAULT 0,
     user_count INTEGER NOT NULL DEFAULT 0,
     dataset_count INTEGER NOT NULL DEFAULT 0,
