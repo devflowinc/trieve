@@ -1,3 +1,5 @@
+import type { ComboboxSection } from "../src/components/Atoms/ComboboxChecklist";
+
 export interface ChunkMetadata {
   id: string;
   content: string;
@@ -410,4 +412,44 @@ export const messageRoleFromIndex = (idx: number) => {
     return "assistant";
   }
   return "user";
+};
+
+export interface ClientEnvsConfiguration {
+  PUBLIC_CREATE_EVIDENCE_FEATURE: boolean;
+  PUBLIC_SEARCH_QUERIES: string;
+  PUBLIC_FRONTMATTER_VALS: string;
+  PUBLIC_LINES_BEFORE_SHOW_MORE: number;
+  PUBLIC_DATE_RANGE_VALUE: string;
+  PUBLIC_FILTER_ITEMS: ComboboxSection[];
+  PUBLIC_SUGGESTED_QUERIES: string;
+}
+
+export const isClientEnvsConfiguration = (
+  config: unknown,
+): config is ClientEnvsConfiguration => {
+  if (typeof config !== "object" || config === null) return false;
+
+  return (
+    indirectHasOwnProperty(config, "PUBLIC_CREATE_EVIDENCE_FEATURE") &&
+    typeof (config as ClientEnvsConfiguration)
+      .PUBLIC_CREATE_EVIDENCE_FEATURE === "boolean" &&
+    indirectHasOwnProperty(config, "PUBLIC_SEARCH_QUERIES") &&
+    typeof (config as ClientEnvsConfiguration).PUBLIC_SEARCH_QUERIES ===
+      "string" &&
+    indirectHasOwnProperty(config, "PUBLIC_FRONTMATTER_VALS") &&
+    typeof (config as ClientEnvsConfiguration).PUBLIC_FRONTMATTER_VALS ===
+      "string" &&
+    indirectHasOwnProperty(config, "PUBLIC_LINES_BEFORE_SHOW_MORE") &&
+    typeof (config as ClientEnvsConfiguration).PUBLIC_LINES_BEFORE_SHOW_MORE ===
+      "number" &&
+    indirectHasOwnProperty(config, "PUBLIC_DATE_RANGE_VALUE") &&
+    typeof (config as ClientEnvsConfiguration).PUBLIC_DATE_RANGE_VALUE ===
+      "string" &&
+    indirectHasOwnProperty(config, "PUBLIC_FILTER_ITEMS") &&
+    typeof (config as ClientEnvsConfiguration).PUBLIC_FILTER_ITEMS ===
+      "object" &&
+    indirectHasOwnProperty(config, "PUBLIC_SUGGESTED_QUERIES") &&
+    typeof (config as ClientEnvsConfiguration).PUBLIC_SUGGESTED_QUERIES ===
+      "string"
+  );
 };

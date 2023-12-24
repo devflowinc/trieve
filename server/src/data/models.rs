@@ -857,6 +857,64 @@ impl ServerDatasetConfiguration {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[allow(non_snake_case)]
+pub struct ClientDatasetConfiguration {
+    pub PUBLIC_CREATE_EVIDENCE_FEATURE: Option<bool>,
+    pub PUBLIC_SEARCH_QUERIES: Option<String>,
+    pub PUBLIC_FRONTMATTER_VALS: Option<String>,
+    pub PUBLIC_LINES_BEFORE_SHOW_MORE: Option<usize>,
+    pub PUBLIC_DATE_RANGE_VALUE: Option<String>,
+    pub PUBLIC_FILTER_ITEMS: Option<serde_json::Value>,
+    pub PUBLIC_SUGGESTED_QUERIES: Option<String>,
+}
+
+impl ClientDatasetConfiguration {
+    pub fn from_json(configuration: serde_json::Value) -> Self {
+        let default_config = json!({});
+        let configuration = configuration
+            .as_object()
+            .unwrap_or(default_config.as_object().unwrap());
+
+        ClientDatasetConfiguration {
+            PUBLIC_CREATE_EVIDENCE_FEATURE: configuration
+                .get("PUBLIC_CREATE_EVIDENCE_FEATURE")
+                .unwrap_or(&json!(false))
+                .as_bool(),
+            PUBLIC_SEARCH_QUERIES: configuration
+                .get("PUBLIC_SEARCH_QUERIES")
+                .unwrap_or(&json!(""))
+                .as_str()
+                .map(|s| s.to_string()),
+            PUBLIC_FRONTMATTER_VALS: configuration
+                .get("PUBLIC_FRONTMATTER_VALS")
+                .unwrap_or(&json!(""))
+                .as_str()
+                .map(|s| s.to_string()),
+            PUBLIC_LINES_BEFORE_SHOW_MORE: configuration
+                .get("PUBLIC_LINES_BEFORE_SHOW_MORE")
+                .unwrap_or(&json!(3))
+                .as_u64()
+                .map(|u| u as usize),
+            PUBLIC_DATE_RANGE_VALUE: configuration
+                .get("PUBLIC_DATE_RANGE_VALUE")
+                .unwrap_or(&json!(""))
+                .as_str()
+                .map(|s| s.to_string()),
+            PUBLIC_FILTER_ITEMS: configuration
+                .get("PUBLIC_FILTER_ITEMS")
+                .unwrap_or(&json!([]))
+                .as_array()
+                .map(|a| serde_json::Value::Array(a.clone())),
+            PUBLIC_SUGGESTED_QUERIES: configuration
+                .get("PUBLIC_SUGGESTED_QUERIES")
+                .unwrap_or(&json!(""))
+                .as_str()
+                .map(|s| s.to_string()),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct DatasetAndOrgWithSubAndPlan {
     pub dataset: Dataset,
