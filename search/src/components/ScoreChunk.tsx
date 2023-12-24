@@ -12,6 +12,7 @@ import {
   type ChunkBookmarksDTO,
   type ChunkCollectionDTO,
   type ChunkMetadataWithVotes,
+  ClientEnvsConfiguration,
 } from "../../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import { RiOthersCharacterRecognitionLine } from "solid-icons/ri";
@@ -76,22 +77,17 @@ export interface ScoreChunkProps {
 const ScoreChunk = (props: ScoreChunkProps) => {
   const dataset = import.meta.env.PUBLIC_DATASET as string;
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const envs = JSON.parse(
+    localStorage.getItem("clientConfig") ?? "{}",
+  ) as ClientEnvsConfiguration;
 
   const frontMatterVals = (
-    (import.meta.env.PUBLIC_FRONTMATTER_VALS as string | undefined) ??
+    (envs.PUBLIC_FRONTMATTER_VALS as string | undefined) ??
     "link,tag_set,time_stamp"
   ).split(",");
 
-  const linesBeforeShowMore = (() => {
-    const parsedLinesBeforeShowMore = Number.parseInt(
-      (import.meta.env.PUBLIC_LINES_BEFORE_SHOW_MORE as string | undefined) ??
-        "4",
-      10,
-    );
-    return Number.isNaN(parsedLinesBeforeShowMore)
-      ? 4
-      : parsedLinesBeforeShowMore;
-  })();
+  const linesBeforeShowMore =
+    (envs.PUBLIC_LINES_BEFORE_SHOW_MORE as number | undefined) ?? 10;
 
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
   const [showPropsModal, setShowPropsModal] = createSignal(false);

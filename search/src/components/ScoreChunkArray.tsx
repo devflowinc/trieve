@@ -3,6 +3,7 @@ import { Show, createSignal, onMount } from "solid-js";
 import type {
   ChunkMetadataWithVotes,
   ChunkCollectionDTO,
+  ClientEnvsConfiguration,
 } from "../../utils/apiTypes";
 import type { ScoreChunkProps } from "./ScoreChunk";
 import { FiChevronLeft, FiChevronRight } from "solid-icons/fi";
@@ -16,9 +17,12 @@ export type ScoreChunkAraryProps = Omit<
   setChunkCollections: Setter<ChunkCollectionDTO[]>;
 };
 
-export const ScoreChunkArray = (props: ScoreChunkAraryProps) => {
+export const ScoreChunkArray = (props: ScoreChunkProps) => {
+  const envs = JSON.parse(
+    localStorage.getItem("clientConfig") ?? "{}",
+  ) as ClientEnvsConfiguration;
   const dateValue =
-    (import.meta.env.PUBLIC_DATE_RANGE_VALUE as string | undefined) ?? "Date";
+    (envs.PUBLIC_DATE_RANGE_VALUE as string | undefined) ?? "Date";
 
   const [curChunk, setCurChunk] = createSignal(0);
   const [beginTime, setBeginTime] = createSignal<number | undefined>();
