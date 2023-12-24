@@ -43,6 +43,18 @@ pub async fn create_new_qdrant_collection_query() -> Result<(), ServiceError> {
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
+    // check if collection exists
+    let collection = qdrant_client
+        .collection_info(qdrant_collection.clone())
+        .await;
+    if let Ok(collection) = collection {
+        if collection.result.is_some() {
+            return Err(ServiceError::BadRequest(
+                "Collection already exists".to_string(),
+            ));
+        }
+    }
+
     let mut sparse_vector_config = HashMap::new();
     sparse_vector_config.insert(
         "sparse_vectors".to_string(),
