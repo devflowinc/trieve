@@ -1,6 +1,8 @@
 ---
 import "../global.css";
 import { Navbar } from "../components/Atoms/Navbar";
+import { isClientEnvsConfiguration } from "../../utils/apiTypes";
+
 
 const plausibleHost = import.meta.env.PLAUSIBLE_HOST as string;
 const dataset = import.meta.env.DATASET as string;
@@ -77,6 +79,28 @@ try {
             },
           );
         });
+      }
+    </script>
+    <script>
+      import { isClientEnvsConfiguration } from "../../utils/apiTypes";
+      try {
+        fetch("http://localhost:8090/api/dataset/envs", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "AF-Dataset": import.meta.env.PUBLIC_DATASET,
+          },
+        })
+          .then((res) =>
+            res.json().then((envs) => {
+              if (isClientEnvsConfiguration(envs)) {
+                localStorage.setItem("clientConfig", JSON.stringify(envs));
+              }
+            }),
+          )
+          .catch((e) => console.error(e));
+      } catch (e) {
+        console.error(e);
       }
     </script>
     <meta charset="UTF-8" />

@@ -6,6 +6,7 @@ import {
   type ChunkCollectionDTO,
   type ChunkMetadataWithVotes,
   ChunkMetadata,
+  ClientEnvsConfiguration,
 } from "../../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import sanitizeHtml from "sanitize-html";
@@ -52,21 +53,17 @@ export interface ChunkMetadataDisplayProps {
 
 const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const envs = JSON.parse(
+    localStorage.getItem("clientConfig") ?? "{}",
+  ) as ClientEnvsConfiguration;
+
   const frontMatterVals = (
-    (import.meta.env.PUBLIC_FRONTMATTER_VALS as string | undefined) ??
+    (envs.PUBLIC_FRONTMATTER_VALS as string | undefined) ??
     "link,tag_set,file_name,time_stamp"
   ).split(",");
 
-  const linesBeforeShowMore = (() => {
-    const parsedLinesBeforeShowMore = Number.parseInt(
-      (import.meta.env.PUBLIC_LINES_BEFORE_SHOW_MORE as string | undefined) ??
-        "4",
-      10,
-    );
-    return Number.isNaN(parsedLinesBeforeShowMore)
-      ? 4
-      : parsedLinesBeforeShowMore;
-  })();
+  const linesBeforeShowMore =
+    (envs.PUBLIC_LINES_BEFORE_SHOW_MORE as number | undefined) ?? 10;
 
   const [expanded, setExpanded] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);

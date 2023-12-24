@@ -1,12 +1,14 @@
 import { Show, createSignal } from "solid-js";
 import RegisterOrUserProfile from "../RegisterOrUserProfile";
 import type { HomeNavbarProps } from "./HomeNavbar";
+import type { ClientEnvsConfiguration } from "../../../utils/apiTypes";
 
 export const Navbar = (props: HomeNavbarProps) => {
-  const createEvidenceFeature =
-    import.meta.env.PUBLIC_CREATE_EVIDENCE_FEATURE !== "off";
-  const uploadDocumentFeature =
-    import.meta.env.PUBLIC_DOCUMENT_UPLOAD_FEATURE !== "off";
+  const envs = JSON.parse(
+    localStorage.getItem("clientConfig") ?? "{}",
+  ) as ClientEnvsConfiguration;
+  const createEvidenceFeature = envs.PUBLIC_CREATE_EVIDENCE_FEATURE;
+  const uploadDocumentFeature = envs.PUBLIC_DOCUMENT_UPLOAD_FEATURE;
 
   const [isOpen, setIsOpen] = createSignal(false);
 
