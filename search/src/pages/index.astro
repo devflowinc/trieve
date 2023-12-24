@@ -4,6 +4,7 @@ import Footer from "../components/Footer.astro";
 import type { Filters } from "../components/ResultsPage";
 import HomeLayout from "../layouts/HomeLayout.astro";
 import { DefaultQueries } from "../components/DefaultQueries";
+import { isClientEnvsConfiguration } from "../../utils/apiTypes";
 
 const dataset = import.meta.env.DATASET as string;
 const suggestedQueries = ((import.meta.env.SUGGESTED_QUERIES ?? "") as string)

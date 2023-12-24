@@ -1,6 +1,8 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
-    data::models::{Dataset, DatasetAndOrgWithSubAndPlan, Pool, StripePlan},
+    data::models::{
+        ClientDatasetConfiguration, Dataset, DatasetAndOrgWithSubAndPlan, Pool, StripePlan,
+    },
     errors::ServiceError,
     operators::{
         dataset_operator::{
@@ -47,10 +49,10 @@ impl FromRequest for DatasetAndOrgWithSubAndPlan {
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
             let ext = req.extensions();
-            let user = ext.get::<LoggedUser>().ok_or(ServiceError::Forbidden)?;
-            if dataset.organization_id != user.organization_id {
-                return Err(ServiceError::Forbidden);
-            }
+            // let user = ext.get::<LoggedUser>().ok_or(ServiceError::Forbidden)?;
+            // if dataset.organization_id != user.organization_id {
+            //     return Err(ServiceError::Forbidden);
+            // }
 
             Ok::<DatasetAndOrgWithSubAndPlan, ServiceError>(
                 DatasetAndOrgWithSubAndPlan::from_components(dataset, org_plan_sub),
@@ -238,4 +240,23 @@ pub async fn get_datasets_from_organization(
             .await
             .map_err(|e| ServiceError::InternalServerError(e.to_string()))??;
     Ok(HttpResponse::Ok().json(datasets))
+}
+
+#[utoipa::path(
+    get,
+    path = "/dataset/envs",
+    context_path = "/api",
+    tag = "dataset",
+    responses(
+        (status = 200, description = "Dataset environment variables", body = [ClientDatasetConfiguration]),
+    ),
+)]
+pub async fn get_client_dataset_config(
+    dataset: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    Ok(
+        HttpResponse::Ok().json(ClientDatasetConfiguration::from_json(
+            dataset.dataset.client_configuration,
+        )),
+    )
 }

@@ -114,6 +114,7 @@ pub async fn main() -> std::io::Result<()> {
             handlers::dataset_handler::delete_dataset,
             handlers::dataset_handler::get_dataset,
             handlers::dataset_handler::get_datasets_from_organization,
+            handlers::dataset_handler::get_client_dataset_config,
             handlers::stripe_handler::direct_to_payment_link,
             handlers::stripe_handler::cancel_subscription,
             handlers::stripe_handler::update_subscription_plan,
@@ -184,6 +185,8 @@ pub async fn main() -> std::io::Result<()> {
                 data::models::Organization,
                 data::models::Dataset,
                 data::models::UserRole,
+                data::models::DatasetAndOrgWithSubAndPlan,
+                data::models::ClientDatasetConfiguration,
                 errors::DefaultError,
             )
         ),
@@ -280,7 +283,9 @@ pub async fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/organization/{organization_id}")
                                     .route(web::get().to(handlers::dataset_handler::get_datasets_from_organization)),
-                            ),
+                            ).service(
+                                web::resource("/envs").route(web::get().to(handlers::dataset_handler::get_client_dataset_config))
+                            )
                     )
                     .service(
                         web::resource("/dataset/{dataset_id}")
