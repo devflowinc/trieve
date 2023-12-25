@@ -100,9 +100,8 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   };
 
   const imgInformation = createMemo(() => {
-    const imgRangeStartKey = import.meta.env
-      .PUBLIC_IMAGE_RANGE_START_KEY as string;
-    const imgRangeEndKey = import.meta.env.PUBLIC_IMAGE_RANGE_END_KEY as string;
+    const imgRangeStartKey = envs.PUBLIC_IMAGE_RANGE_START_KEY;
+    const imgRangeEndKey = envs.PUBLIC_IMAGE_RANGE_END_KEY;
 
     if (
       !imgRangeStartKey ||

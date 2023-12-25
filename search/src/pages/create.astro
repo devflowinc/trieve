@@ -2,6 +2,7 @@
 import SearchLayout from "../layouts/SearchLayout.astro";
 import { CreateNewDocChunkForm } from "../components/CreateNewDocChunkForm";
 import Footer from "../components/Footer.astro";
+
 const create_evidence_feature =
   import.meta.env.PUBLIC_CREATE_EVIDENCE_FEATURE !== "off";
 if (!create_evidence_feature) {
