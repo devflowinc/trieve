@@ -422,6 +422,9 @@ export interface ClientEnvsConfiguration {
   PUBLIC_DATE_RANGE_VALUE: string;
   PUBLIC_FILTER_ITEMS: ComboboxSection[];
   PUBLIC_SUGGESTED_QUERIES: string;
+  PUBLIC_SHOW_GITHUB_STARS: boolean;
+  PUBLIC_IMAGE_RANGE_START_KEY: string;
+  PUBLIC_IMAGE_RANGE_END_KEY: string;
 }
 
 export const isClientEnvsConfiguration = (
