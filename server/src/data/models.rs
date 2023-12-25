@@ -867,6 +867,9 @@ pub struct ClientDatasetConfiguration {
     pub PUBLIC_DATE_RANGE_VALUE: Option<String>,
     pub PUBLIC_FILTER_ITEMS: Option<serde_json::Value>,
     pub PUBLIC_SUGGESTED_QUERIES: Option<String>,
+    pub PUBLIC_SHOW_GITHUB_STARS: Option<bool>,
+    pub PUBLIC_IMAGE_RANGE_START_KEY: Option<String>,
+    pub PUBLIC_IMAGE_RANGE_END_KEY: Option<String>,
 }
 
 impl ClientDatasetConfiguration {
@@ -908,6 +911,20 @@ impl ClientDatasetConfiguration {
                 .map(|a| serde_json::Value::Array(a.clone())),
             PUBLIC_SUGGESTED_QUERIES: configuration
                 .get("PUBLIC_SUGGESTED_QUERIES")
+                .unwrap_or(&json!(""))
+                .as_str()
+                .map(|s| s.to_string()),
+            PUBLIC_SHOW_GITHUB_STARS: configuration
+                .get("PUBLIC_SHOW_GITHUB_STARS")
+                .unwrap_or(&json!(false))
+                .as_bool(),
+            PUBLIC_IMAGE_RANGE_START_KEY: configuration
+                .get("PUBLIC_IMAGE_RANGE_START_KEY")
+                .unwrap_or(&json!(""))
+                .as_str()
+                .map(|s| s.to_string()),
+            PUBLIC_IMAGE_RANGE_END_KEY: configuration
+                .get("PUBLIC_IMAGE_RANGE_END_KEY")
                 .unwrap_or(&json!(""))
                 .as_str()
                 .map(|s| s.to_string()),
