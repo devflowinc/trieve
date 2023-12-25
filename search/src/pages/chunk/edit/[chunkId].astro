@@ -10,15 +10,11 @@ import { EditChunkPageForm } from "../../../components/EditChunkPageForm";
 
 const dataset = import.meta.env.PUBLIC_DATASET as string;
 const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
 
 const { chunkId } = Astro.params;
 let specificChunk: SingleChunkDTO;
 
 try {
-  if (alwaysRequireAuth === "on") {
-    throw new Error("Auth always required");
-  }
 
   const specificChunkResult = await fetch(`${apiHost}/chunk/${chunkId ?? ""}`, {
     method: "GET",
