@@ -952,7 +952,7 @@ pub async fn get_recommended_chunks(
 ) -> Result<HttpResponse, actix_web::Error> {
     let positive_chunk_ids = data.positive_chunk_ids.clone();
     let embed_size =
-        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.configuration)
+        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration)
             .EMBEDDING_SIZE
             .unwrap_or(1536);
 

@@ -9,7 +9,6 @@ import {
 } from "../../../utils/apiTypes";
 
 const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
 const dataset = import.meta.env.PUBLIC_DATASET as string;
 
 const { chunkId } = Astro.params;
@@ -18,9 +17,6 @@ let title = "Arguflow Search";
 let specificChunks: SingleChunkDTO;
 
 try {
-  if (alwaysRequireAuth === "on") {
-    throw new Error("Auth always required");
-  }
 
   const specificChunk = await fetch(`${apiHost}/chunk/${chunkId ?? ""}`, {
     method: "GET",
