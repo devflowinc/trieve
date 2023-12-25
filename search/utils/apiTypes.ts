@@ -416,6 +416,7 @@ export const messageRoleFromIndex = (idx: number) => {
 
 export interface ClientEnvsConfiguration {
   PUBLIC_CREATE_EVIDENCE_FEATURE: boolean;
+  PUBLIC_DOCUMENT_UPLOAD_FEATURE: boolean;
   PUBLIC_SEARCH_QUERIES: string;
   PUBLIC_FRONTMATTER_VALS: string;
   PUBLIC_LINES_BEFORE_SHOW_MORE: number;
