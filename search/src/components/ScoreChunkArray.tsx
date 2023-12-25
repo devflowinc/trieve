@@ -17,7 +17,7 @@ export type ScoreChunkAraryProps = Omit<
   setChunkCollections: Setter<ChunkCollectionDTO[]>;
 };
 
-export const ScoreChunkArray = (props: ScoreChunkProps) => {
+export const ScoreChunkArray = (props: ScoreChunkAraryProps) => {
   const envs = JSON.parse(
     localStorage.getItem("clientConfig") ?? "{}",
   ) as ClientEnvsConfiguration;

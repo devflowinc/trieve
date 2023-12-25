@@ -1,6 +1,6 @@
 use crate::data::models::{
     ChunkCollisions, ChunkFile, ChunkMetadataCount, ChunkMetadataWithFileData, Dataset,
-    DatasetConfiguration, FullTextSearchResult,
+    FullTextSearchResult, ServerDatasetConfiguration,
 };
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::operators::model_operator::create_embedding;
@@ -599,7 +599,7 @@ pub async fn delete_chunk_metadata_query(
 
                 let new_embedding_vector = create_embedding(
                     collision_content.as_str(),
-                    DatasetConfiguration::from_json(dataset.configuration.clone()),
+                    ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
                 )
                 .await
                 .map_err(|_e| DefaultError {
