@@ -10,7 +10,6 @@ import type {
 import type { Filters } from "../../components/ResultsPage";
 
 const dataset = import.meta.env.PUBLIC_DATASET as string;
-const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
 
 const collectionID = Astro.params.collectionID ?? "";
 const requestParams = Astro.request.url.split("?")[1];
@@ -68,9 +67,6 @@ let title = "Arguflow Search";
 let description = "";
 
 try {
-  if (alwaysRequireAuth === "on") {
-    throw new Error("Always require auth is on");
-  }
 
   if (query === "") {
     const collectionChunkResponse = await fetch(

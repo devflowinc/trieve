@@ -10,7 +10,6 @@ import SearchLayout from "../../layouts/SearchLayout.astro";
 import { UserCardDisplay } from "../../components/UserChunkDisplay";
 
 const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-const alwaysRequireAuth = import.meta.env.PUBLIC_ALWAYS_REQUIRE_AUTH as string;
 const dataset = import.meta.env.PUBLIC_DATASET as string;
 
 let { id } = Astro.params;
@@ -25,9 +24,6 @@ let userCollections: ChunkCollectionDTO[] | null = null;
 let userCollectionPageCount = 1;
 
 try {
-  if (alwaysRequireAuth === "on") {
-    throw new Error("Auth is always required");
-  }
 
   if (!id) {
     throw new Error("No user id provided");

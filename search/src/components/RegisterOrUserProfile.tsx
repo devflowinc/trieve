@@ -9,7 +9,11 @@ import { BiRegularLogOut, BiRegularUser } from "solid-icons/bi";
 import { AiOutlineProfile } from "solid-icons/ai";
 import { IoSettingsOutline } from "solid-icons/io";
 import { Show, createEffect, createSignal } from "solid-js";
-import { isUserDTO, type UserDTO } from "../../utils/apiTypes";
+import {
+  ClientEnvsConfiguration,
+  isUserDTO,
+  type UserDTO,
+} from "../../utils/apiTypes";
 import { NotificationPopover } from "./Atoms/NotificationPopover";
 import { AiFillGithub } from "solid-icons/ai";
 import { TbMinusVertical } from "solid-icons/tb";
@@ -21,7 +25,10 @@ export interface RegisterOrUserProfileProps {
 const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const dataset = import.meta.env.PUBLIC_DATASET as string;
-  const showGithubStars = import.meta.env.PUBLIC_SHOW_GITHUB_STARS as string;
+  const envs = JSON.parse(
+    localStorage.getItem("clientConfig") ?? "{}",
+  ) as ClientEnvsConfiguration;
+  const showGithubStars = envs.PUBLIC_SHOW_GITHUB_STARS;
 
   const [isLoadingUser, setIsLoadingUser] = createSignal(true);
   const [currentUser, setCurrentUser] = createSignal<UserDTO | null>(null);
@@ -77,7 +84,7 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
               </a>
             </div>
           </Show>
-          <Show when={showGithubStars !== "off" && props.stars}>
+          <Show when={!showGithubStars && props.stars}>
             <a href="https://github.com/arguflow/arguflow">
               <div class="flex items-center justify-center rounded border border-black px-2 py-1 hover:border-gray-300 hover:bg-gray-300 dark:border-white dark:hover:border-neutral-700 dark:hover:bg-neutral-700">
                 <AiFillGithub class="mr-2 h-[26px] w-[26px] fill-current" />

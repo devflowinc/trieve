@@ -1,0 +1,56 @@
+---
+import Footer from "../../components/Footer.astro";
+import SearchLayout from "../../layouts/SearchLayout.astro";
+import { SingleCardPage } from "../../components/SingleCardPage";
+import {
+  isCardMetadataWithVotes,
+  type CardMetadataWithVotes,
+  type SingleCardDTO,
+} from "../../../utils/apiTypes";
+
+const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+const dataset = import.meta.env.PUBLIC_DATASET as string;
+
+const { cardId } = Astro.params;
+
+let title = "Arguflow Search";
+let specificCards: SingleCardDTO;
+
+try {
+
+  const specificCard = await fetch(`${apiHost}/card/${cardId ?? ""}`, {
+    method: "GET",
+    headers: {
+      "AF-Dataset": dataset,
+    },
+  });
+  const specificCardJson = (await specificCard.json()) as unknown;
+
+  if (!isCardMetadataWithVotes(specificCardJson)) {
+    throw new Error("Invalid card metadata");
+  }
+
+  specificCards = { metadata: specificCardJson, status: specificCard.status };
+
+  title = `${(specificCards.metadata?.content ?? "")
+    .split(/ +/)
+    .slice(0, 5)
+    .join(" ")} | Arguflow Search`;
+} catch (e) {
+  specificCards = { metadata: null, status: 404 };
+  title = "Arguflow Search";
+}
+---
+
+<SearchLayout title={title}>
+  <SingleCardPage
+    cardId={cardId}
+    defaultResultCard={specificCards as {
+      metadata: CardMetadataWithVotes;
+      status: number;
+    }}
+    client:load
+  />
+  <div class="flex-1"></div>
+  <Footer />
+</SearchLayout>
