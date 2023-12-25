@@ -870,6 +870,7 @@ pub struct ClientDatasetConfiguration {
     pub PUBLIC_SHOW_GITHUB_STARS: Option<bool>,
     pub PUBLIC_IMAGE_RANGE_START_KEY: Option<String>,
     pub PUBLIC_IMAGE_RANGE_END_KEY: Option<String>,
+    pub PUBLIC_DOCUMENT_UPLOAD_FEATURE: Option<bool>,
 }
 
 impl ClientDatasetConfiguration {
@@ -928,6 +929,10 @@ impl ClientDatasetConfiguration {
                 .unwrap_or(&json!(""))
                 .as_str()
                 .map(|s| s.to_string()),
+            PUBLIC_DOCUMENT_UPLOAD_FEATURE: configuration
+                .get("PUBLIC_DOCUMENT_UPLOAD_FEATURE")
+                .unwrap_or(&json!(false))
+                .as_bool(),
         }
     }
 }
