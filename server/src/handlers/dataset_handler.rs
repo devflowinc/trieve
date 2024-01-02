@@ -50,9 +50,11 @@ impl FromRequest for DatasetAndOrgWithSubAndPlan {
 
             let ext = req.extensions();
             let user = ext.get::<LoggedUser>().ok_or(ServiceError::Forbidden)?;
-            if dataset.organization_id != user.organization_id {
-                return Err(ServiceError::Forbidden);
-            }
+
+            user.user_orgs
+                .iter()
+                .find(|org| org.id == dataset.organization_id)
+                .ok_or(ServiceError::Forbidden)?;
 
             Ok::<DatasetAndOrgWithSubAndPlan, ServiceError>(
                 DatasetAndOrgWithSubAndPlan::from_components(dataset, org_plan_sub),
@@ -83,20 +85,17 @@ pub struct CreateDatasetRequest {
 pub async fn create_dataset(
     data: web::Json<CreateDatasetRequest>,
     pool: web::Data<Pool>,
-    user: OwnerOnly,
+    _user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    if user.0.organization_id != data.organization_id {
-        return Err(ServiceError::Forbidden);
-    }
-
     let org_pool = pool.clone();
+    let dataset_count_org_id = data.organization_id.clone();
 
     let organization_sub_plan =
-        get_organization_by_id_query(data.organization_id, org_pool.clone())
+        get_organization_by_id_query(data.organization_id.clone(), org_pool.clone())
             .await
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let dataset_count = web::block(move || get_org_dataset_count(user.0.organization_id, org_pool))
+    let dataset_count = web::block(move || get_org_dataset_count(dataset_count_org_id, org_pool))
         .await
         .map_err(|_| {
             ServiceError::BadRequest("Blocking error getting org dataset count".to_string())
@@ -231,9 +230,11 @@ pub async fn get_datasets_from_organization(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_id = organization_id.into_inner();
-    if organization_id != user.0.organization_id {
-        return Err(ServiceError::Forbidden.into());
-    }
+    user.0
+        .user_orgs
+        .iter()
+        .find(|org| org.id == organization_id)
+        .ok_or(ServiceError::Forbidden)?;
 
     let datasets =
         web::block(move || get_datasets_by_organization_id(organization_id.into(), pool))
