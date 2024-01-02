@@ -88,14 +88,13 @@ pub async fn create_dataset(
     _user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
     let org_pool = pool.clone();
-    let dataset_count_org_id = data.organization_id.clone();
+    let org_id = data.organization_id;
 
-    let organization_sub_plan =
-        get_organization_by_id_query(data.organization_id.clone(), org_pool.clone())
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let organization_sub_plan = get_organization_by_id_query(org_id, org_pool.clone())
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let dataset_count = web::block(move || get_org_dataset_count(dataset_count_org_id, org_pool))
+    let dataset_count = web::block(move || get_org_dataset_count(org_id, org_pool))
         .await
         .map_err(|_| {
             ServiceError::BadRequest("Blocking error getting org dataset count".to_string())
