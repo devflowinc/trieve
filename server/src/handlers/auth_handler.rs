@@ -1,4 +1,4 @@
-use crate::data::models::{DatasetAndOrgWithSubAndPlan, StripePlan};
+use crate::data::models::{DatasetAndOrgWithSubAndPlan, StripePlan, UserRole};
 use crate::get_env;
 use crate::operators::organization_operator::{get_organization_by_id_query, get_user_org_count};
 use crate::operators::user_operator::create_user_query;
@@ -83,10 +83,32 @@ impl FromRequest for AdminOnly {
     // TODO: rewrite this logic to pull current org and then the role from there
 
     fn from_request(req: &HttpRequest, pl: &mut Payload) -> Self::Future {
+        let ext = req.extensions();
+        let dataset_org_plan_sub = match ext.get::<DatasetAndOrgWithSubAndPlan>() {
+            Some(dataset_org_plan_sub) => dataset_org_plan_sub.clone(),
+            None => {
+                return ready(Err(ServiceError::InternalServerError(
+                    "Could not get dataset and org from request".to_string(),
+                )
+                .into()))
+            }
+        };
+
         if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
             if let Ok(user_json) = identity.id() {
                 if let Ok(user) = serde_json::from_str::<LoggedUser>(&user_json) {
-                    return ready(Ok(AdminOnly(user)));
+                    let user_org = match user
+                        .user_orgs
+                        .iter()
+                        .find(|org| org.id == dataset_org_plan_sub.organization.id)
+                    {
+                        Some(user_org) => user_org,
+                        None => return ready(Err(ServiceError::Forbidden.into())),
+                    };
+
+                    if user_org.role >= UserRole::Admin.into() {
+                        return ready(Ok(AdminOnly(user)));
+                    };
                 }
             }
         }
@@ -95,7 +117,18 @@ impl FromRequest for AdminOnly {
             if let Ok(authen_header) = authen_header.to_str() {
                 if let Some(pool) = req.app_data::<web::Data<Pool>>() {
                     if let Ok(user) = get_user_from_api_key_query(authen_header, pool) {
-                        return ready(Ok(AdminOnly(user)));
+                        let user_org = match user
+                            .user_orgs
+                            .iter()
+                            .find(|org| org.id == dataset_org_plan_sub.organization.id)
+                        {
+                            Some(user_org) => user_org,
+                            None => return ready(Err(ServiceError::Forbidden.into())),
+                        };
+
+                        if user_org.role >= UserRole::Admin.into() {
+                            return ready(Ok(AdminOnly(user)));
+                        };
                     }
                 }
             }
@@ -111,13 +144,33 @@ impl FromRequest for OwnerOnly {
     type Error = Error;
     type Future = Ready<Result<OwnerOnly, Error>>;
 
-    // TODO: rewrite this logic to pull current org and then the role from there
-
     fn from_request(req: &HttpRequest, pl: &mut Payload) -> Self::Future {
+        let ext = req.extensions();
+        let dataset_org_plan_sub = match ext.get::<DatasetAndOrgWithSubAndPlan>() {
+            Some(dataset_org_plan_sub) => dataset_org_plan_sub.clone(),
+            None => {
+                return ready(Err(ServiceError::InternalServerError(
+                    "Could not get dataset and org from request".to_string(),
+                )
+                .into()))
+            }
+        };
+
         if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
             if let Ok(user_json) = identity.id() {
                 if let Ok(user) = serde_json::from_str::<LoggedUser>(&user_json) {
-                    return ready(Ok(OwnerOnly(user)));
+                    let user_org = match user
+                        .user_orgs
+                        .iter()
+                        .find(|org| org.id == dataset_org_plan_sub.organization.id)
+                    {
+                        Some(user_org) => user_org,
+                        None => return ready(Err(ServiceError::Forbidden.into())),
+                    };
+
+                    if user_org.role >= UserRole::Owner.into() {
+                        return ready(Ok(OwnerOnly(user)));
+                    };
                 }
             }
         }
@@ -126,7 +179,18 @@ impl FromRequest for OwnerOnly {
             if let Ok(authen_header) = authen_header.to_str() {
                 if let Some(pool) = req.app_data::<web::Data<Pool>>() {
                     if let Ok(user) = get_user_from_api_key_query(authen_header, pool) {
-                        return ready(Ok(OwnerOnly(user)));
+                        let user_org = match user
+                            .user_orgs
+                            .iter()
+                            .find(|org| org.id == dataset_org_plan_sub.organization.id)
+                        {
+                            Some(user_org) => user_org,
+                            None => return ready(Err(ServiceError::Forbidden.into())),
+                        };
+
+                        if user_org.role >= UserRole::Owner.into() {
+                            return ready(Ok(OwnerOnly(user)));
+                        };
                     }
                 }
             }
