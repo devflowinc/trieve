@@ -40,24 +40,30 @@ pub fn get_user_by_username_query(
 pub fn get_user_by_id_query(
     user_id: &uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<(User, UserOrganization), DefaultError> {
+) -> Result<(User, Vec<UserOrganization>), DefaultError> {
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
 
     let mut conn = pool.get().unwrap();
 
-    let user: Option<(User, UserOrganization)> = users_columns::users
+    let user_orgs: Vec<(User, UserOrganization)> = users_columns::users
         .inner_join(user_organizations_columns::user_organizations)
         .filter(users_columns::id.eq(user_id))
         .select((User::as_select(), UserOrganization::as_select()))
-        .first::<(User, UserOrganization)>(&mut conn)
-        .optional()
+        .load::<(User, UserOrganization)>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Error loading user",
         })?;
 
-    match user {
-        Some(user) => Ok(user),
+    match user_orgs.first() {
+        Some(first_user_org) => {
+            let user = first_user_org.0.clone();
+            let user_orgs = user_orgs
+                .iter()
+                .map(|user_org| user_org.1.clone())
+                .collect::<Vec<UserOrganization>>();
+            Ok((user, user_orgs))
+        }
         None => Err(DefaultError {
             message: "User not found",
         }),
@@ -286,16 +292,23 @@ pub fn get_user_from_api_key_query(
 
     let mut conn = pool.get().unwrap();
 
-    let user: Option<(User, UserOrganization)> = users_columns::users
+    let user_orgs: Vec<(User, UserOrganization)> = users_columns::users
         .inner_join(user_organizations_columns::user_organizations)
         .filter(users_columns::api_key_hash.eq(api_key_hash))
-        .first::<(User, UserOrganization)>(&mut conn)
-        .optional()
+        .load::<(User, UserOrganization)>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Error loading user",
         })?;
-    match user {
-        Some(user) => Ok(SlimUser::from_details(user.0, user.1)),
+
+    match user_orgs.first() {
+        Some(first_user_org) => {
+            let user = first_user_org.0.clone();
+            let user_orgs = user_orgs
+                .iter()
+                .map(|user_org| user_org.1.clone())
+                .collect::<Vec<UserOrganization>>();
+            Ok(SlimUser::from_details(user, user_orgs))
+        }
         None => Err(DefaultError {
             message: "User not found",
         }),
@@ -309,7 +322,7 @@ pub fn create_user_query(
     owner: bool,
     org_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<(User, UserOrganization), DefaultError> {
+) -> Result<(User, Vec<UserOrganization>), DefaultError> {
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
 
@@ -331,7 +344,7 @@ pub fn create_user_query(
                 .values(&user_org)
                 .get_result::<UserOrganization>(conn)?;
 
-            Ok((user, user_org))
+            Ok((user, vec![user_org]))
         })
         .map_err(|_| DefaultError {
             message: "Failed to create user, likely that organization_id is invalid",

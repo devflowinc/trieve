@@ -212,9 +212,11 @@ pub async fn cancel_subscription(
     .await?
     .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
-    if subscription.organization_id != user.0.organization_id {
-        return Ok(HttpResponse::Forbidden().finish());
-    }
+    user.0
+        .user_orgs
+        .iter()
+        .find(|org| org.id == subscription.organization_id)
+        .ok_or(ServiceError::Forbidden)?;
 
     cancel_stripe_subscription(subscription.stripe_id)
         .await
@@ -263,9 +265,11 @@ pub async fn update_subscription_plan(
             .await?
             .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
-    if subscription.organization_id != user.0.organization_id {
-        return Ok(HttpResponse::Forbidden().finish());
-    }
+    user.0
+        .user_orgs
+        .iter()
+        .find(|org| org.id == subscription.organization_id)
+        .ok_or(ServiceError::Forbidden)?;
 
     let plan_id = path_data.plan_id;
     let plan = web::block(move || get_plan_by_id_query(plan_id, get_plan_pool))

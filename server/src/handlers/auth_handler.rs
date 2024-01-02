@@ -3,7 +3,7 @@ use crate::get_env;
 use crate::operators::organization_operator::{get_organization_by_id_query, get_user_org_count};
 use crate::operators::user_operator::create_user_query;
 use crate::{
-    data::models::{Pool, ServerDatasetConfiguration, SlimUser, User, UserOrganization, UserRole},
+    data::models::{Pool, ServerDatasetConfiguration, SlimUser, User, UserOrganization},
     errors::ServiceError,
     operators::{
         self,
@@ -80,13 +80,13 @@ impl FromRequest for AdminOnly {
     type Error = Error;
     type Future = Ready<Result<AdminOnly, Error>>;
 
+    // TODO: rewrite this logic to pull current org and then the role from there
+
     fn from_request(req: &HttpRequest, pl: &mut Payload) -> Self::Future {
         if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
             if let Ok(user_json) = identity.id() {
                 if let Ok(user) = serde_json::from_str::<LoggedUser>(&user_json) {
-                    if user.role >= UserRole::Admin {
-                        return ready(Ok(AdminOnly(user)));
-                    }
+                    return ready(Ok(AdminOnly(user)));
                 }
             }
         }
@@ -95,9 +95,7 @@ impl FromRequest for AdminOnly {
             if let Ok(authen_header) = authen_header.to_str() {
                 if let Some(pool) = req.app_data::<web::Data<Pool>>() {
                     if let Ok(user) = get_user_from_api_key_query(authen_header, pool) {
-                        if user.role >= UserRole::Admin {
-                            return ready(Ok(AdminOnly(user)));
-                        }
+                        return ready(Ok(AdminOnly(user)));
                     }
                 }
             }
@@ -113,13 +111,13 @@ impl FromRequest for OwnerOnly {
     type Error = Error;
     type Future = Ready<Result<OwnerOnly, Error>>;
 
+    // TODO: rewrite this logic to pull current org and then the role from there
+
     fn from_request(req: &HttpRequest, pl: &mut Payload) -> Self::Future {
         if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
             if let Ok(user_json) = identity.id() {
                 if let Ok(user) = serde_json::from_str::<LoggedUser>(&user_json) {
-                    if user.role >= UserRole::Owner {
-                        return ready(Ok(OwnerOnly(user)));
-                    }
+                    return ready(Ok(OwnerOnly(user)));
                 }
             }
         }
@@ -128,9 +126,7 @@ impl FromRequest for OwnerOnly {
             if let Ok(authen_header) = authen_header.to_str() {
                 if let Some(pool) = req.app_data::<web::Data<Pool>>() {
                     if let Ok(user) = get_user_from_api_key_query(authen_header, pool) {
-                        if user.role >= UserRole::Owner {
-                            return ready(Ok(OwnerOnly(user)));
-                        }
+                        return ready(Ok(OwnerOnly(user)));
                     }
                 }
             }
@@ -192,7 +188,7 @@ pub async fn create_account(
     dataset_id: Option<uuid::Uuid>,
     inv_code: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<(User, UserOrganization), ServiceError> {
+) -> Result<(User, Vec<UserOrganization>), ServiceError> {
     let mut owner = false;
     let org = match dataset_id {
         Some(dataset_id) => get_org_from_dataset_id_query(dataset_id, pool.clone())
