@@ -292,7 +292,6 @@ pub async fn create_account(
             .plan
             .unwrap_or(StripePlan::default())
             .user_count
-            .into()
     {
         return Err(ServiceError::BadRequest(
             "User limit reached for organization, must upgrade plan to add more users".to_string(),
