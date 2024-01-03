@@ -956,8 +956,8 @@ pub struct Organization {
     pub id: uuid::Uuid,
     pub name: String,
     pub configuration: serde_json::Value,
-    created_at: chrono::NaiveDateTime,
-    updated_at: chrono::NaiveDateTime,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
     pub registerable: Option<bool>,
 }
 
