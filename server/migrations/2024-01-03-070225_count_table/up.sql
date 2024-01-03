@@ -40,8 +40,7 @@ FOR EACH ROW
 EXECUTE FUNCTION update_chunk_metadata_counts();
 
 -- Function to update files storage counts
--- Function to update files storage counts
-CREATE OR REPLACE FUNCTION update_files_storage_trigger()
+CREATE OR REPLACE FUNCTION update_files_storage_counts()
 RETURNS TRIGGER AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
@@ -60,8 +59,6 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
-
 
 -- Trigger for files
 CREATE OR REPLACE TRIGGER update_files_storage_trigger
@@ -90,7 +87,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
 -- Trigger for messages
 CREATE OR REPLACE TRIGGER update_messages_counts_trigger
 AFTER INSERT OR DELETE ON messages
@@ -118,8 +114,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
-
 -- Trigger for datasets
 CREATE OR REPLACE TRIGGER update_datasets_counts_trigger
 AFTER INSERT OR DELETE ON datasets
@@ -145,8 +139,6 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
-
 
 -- Trigger for users
 CREATE OR REPLACE TRIGGER update_users_counts_trigger
