@@ -82,8 +82,8 @@ diesel::table! {
 }
 
 diesel::table! {
-    dataset_usage_counts (id) {
-        id -> Uuid,
+    dataset_usage_counts (dataset_id) {
+        dataset_id -> Uuid,
         chunk_count -> Int4,
     }
 }
@@ -159,8 +159,8 @@ diesel::table! {
 }
 
 diesel::table! {
-    organization_usage_counts (id) {
-        id -> Uuid,
+    organization_usage_counts (org_id) {
+        org_id -> Uuid,
         dataset_count -> Int4,
         user_count -> Int4,
         file_storage -> Int4,
@@ -272,7 +272,7 @@ diesel::joinable!(chunk_metadata -> users (author_id));
 diesel::joinable!(collections_from_files -> chunk_collection (collection_id));
 diesel::joinable!(collections_from_files -> files (file_id));
 diesel::joinable!(cut_chunks -> users (user_id));
-diesel::joinable!(dataset_usage_counts -> datasets (id));
+diesel::joinable!(dataset_usage_counts -> datasets (dataset_id));
 diesel::joinable!(datasets -> organizations (organization_id));
 diesel::joinable!(file_upload_completed_notifications -> chunk_collection (collection_uuid));
 diesel::joinable!(file_upload_completed_notifications -> datasets (dataset_id));
@@ -280,7 +280,7 @@ diesel::joinable!(files -> datasets (dataset_id));
 diesel::joinable!(files -> users (user_id));
 diesel::joinable!(messages -> datasets (dataset_id));
 diesel::joinable!(messages -> topics (topic_id));
-diesel::joinable!(organization_usage_counts -> organizations (id));
+diesel::joinable!(organization_usage_counts -> organizations (org_id));
 diesel::joinable!(stripe_subscriptions -> organizations (organization_id));
 diesel::joinable!(stripe_subscriptions -> stripe_plans (plan_id));
 diesel::joinable!(topics -> datasets (dataset_id));

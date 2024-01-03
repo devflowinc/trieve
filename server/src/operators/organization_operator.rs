@@ -196,7 +196,7 @@ pub fn get_org_dataset_count(
     })?;
 
     let dataset_count = organization_usage_counts_columns::organization_usage_counts
-        .filter(organization_usage_counts_columns::id.eq(organization_id))
+        .filter(organization_usage_counts_columns::org_id.eq(organization_id))
         .select(organization_usage_counts_columns::dataset_count)
         .first(&mut conn)
         .map_err(|_| DefaultError {
@@ -217,7 +217,7 @@ pub fn get_user_org_count(
     })?;
 
     let user_count = organization_usage_counts_columns::organization_usage_counts
-        .filter(organization_usage_counts_columns::id.eq(organization_id))
+        .filter(organization_usage_counts_columns::org_id.eq(organization_id))
         .select(organization_usage_counts_columns::user_count)
         .get_result(&mut conn)
         .map_err(|_| DefaultError {
@@ -238,7 +238,7 @@ pub fn get_message_org_count(
     })?;
 
     let messages_count = organization_usage_counts_columns::organization_usage_counts
-        .filter(organization_usage_counts_columns::id.eq(organization_id))
+        .filter(organization_usage_counts_columns::org_id.eq(organization_id))
         .select(organization_usage_counts_columns::message_count)
         .get_result(&mut conn)
         .map_err(|_| DefaultError {
@@ -259,7 +259,7 @@ pub fn get_file_size_sum_org(
     })?;
 
     let file_size_sums: i32 = organization_usage_counts_columns::organization_usage_counts
-        .filter(organization_usage_counts_columns::id.eq(organization_id))
+        .filter(organization_usage_counts_columns::org_id.eq(organization_id))
         .select(organization_usage_counts_columns::file_storage)
         .get_result(&mut conn)
         .map_err(|_| DefaultError {
