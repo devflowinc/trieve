@@ -285,12 +285,12 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(web::get().to(handlers::dataset_handler::get_datasets_from_organization)),
                             ).service(
                                 web::resource("/envs").route(web::get().to(handlers::dataset_handler::get_client_dataset_config))
+                            ).service(
+                                web::resource("/{dataset_id}")
+                                    .route(web::get().to(handlers::dataset_handler::get_dataset)),
                             )
                     )
-                    .service(
-                        web::resource("/dataset/{dataset_id}")
-                            .route(web::get().to(handlers::dataset_handler::get_dataset)),
-                    )
+                    
                     .service(
                         web::scope("/auth")
                         .service(

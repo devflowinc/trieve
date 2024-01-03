@@ -1188,19 +1188,18 @@ impl UserOrganization {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
-#[diesel(table_name = chunk_metadata_counts)]
-pub struct ChunkMetadataCount {
+#[diesel(table_name = organization_usage_counts)]
+pub struct OrganizationUsageCount {
     pub id: uuid::Uuid,
-    pub dataset_id: uuid::Uuid,
-    pub total_rows: i64,
+    pub dataset_count: i32,
+    pub user_count: i32,
+    pub file_storage: i32,
+    pub message_count: i32,
 }
 
-impl ChunkMetadataCount {
-    pub fn from_details(dataset_id: uuid::Uuid, total_rows: i64) -> Self {
-        ChunkMetadataCount {
-            id: uuid::Uuid::new_v4(),
-            dataset_id,
-            total_rows,
-        }
-    }
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[diesel(table_name = dataset_usage_counts)]
+pub struct DatasetUsageCount {
+    pub id: uuid::Uuid,
+    pub chunk_count: i32,
 }
