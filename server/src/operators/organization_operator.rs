@@ -7,8 +7,8 @@ use crate::{
 };
 use actix_web::web;
 use diesel::{
-    dsl::sql, sql_types::BigInt, ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl,
-    RunQueryDsl, SelectableHelper, Table,
+    ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl, RunQueryDsl,
+    SelectableHelper, Table,
 };
 
 pub async fn create_organization_query(
@@ -91,10 +91,8 @@ pub async fn get_organization_by_id_query(
 
     let org_plan_sub = match redis_organization {
         Ok(organization_str) => {
-            
-
             serde_json::from_str::<OrganizationWithSubAndPlan>(&organization_str)
-                    .expect("Could not deserialize org with sub and plan from redis")
+                .expect("Could not deserialize org with sub and plan from redis")
         }
         Err(_) => {
             use crate::data::schema::organizations::dsl as organizations_columns;
@@ -190,19 +188,19 @@ pub async fn get_org_from_dataset_id_query(
 pub fn get_org_dataset_count(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<i64, DefaultError> {
-    use crate::data::schema::datasets::dsl as datasets_columns;
+) -> Result<i32, DefaultError> {
+    use crate::data::schema::organization_usage_counts::dsl as organization_usage_counts_columns;
 
     let mut conn = pool.get().map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
-    let dataset_count = datasets_columns::datasets
-        .filter(datasets_columns::organization_id.eq(organization_id))
-        .count()
-        .get_result(&mut conn)
+    let dataset_count = organization_usage_counts_columns::organization_usage_counts
+        .filter(organization_usage_counts_columns::id.eq(organization_id))
+        .select(organization_usage_counts_columns::dataset_count)
+        .first(&mut conn)
         .map_err(|_| DefaultError {
-            message: "Error loading org datasets count",
+            message: "Error loading org dataset count",
         })?;
 
     Ok(dataset_count)
@@ -211,16 +209,16 @@ pub fn get_org_dataset_count(
 pub fn get_user_org_count(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<i64, DefaultError> {
-    use crate::data::schema::user_organizations::dsl as user_organizations_columns;
+) -> Result<i32, DefaultError> {
+    use crate::data::schema::organization_usage_counts::dsl as organization_usage_counts_columns;
 
     let mut conn = pool.get().map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
-    let user_count = user_organizations_columns::user_organizations
-        .filter(user_organizations_columns::organization_id.eq(organization_id))
-        .count()
+    let user_count = organization_usage_counts_columns::organization_usage_counts
+        .filter(organization_usage_counts_columns::id.eq(organization_id))
+        .select(organization_usage_counts_columns::user_count)
         .get_result(&mut conn)
         .map_err(|_| DefaultError {
             message: "Error loading org user count",
@@ -232,25 +230,16 @@ pub fn get_user_org_count(
 pub fn get_message_org_count(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<i64, DefaultError> {
-    use crate::data::schema::datasets::dsl as datasets_columns;
-    use crate::data::schema::messages::dsl as messages_columns;
-    use crate::data::schema::organizations::dsl as organizations_columns;
+) -> Result<i32, DefaultError> {
+    use crate::data::schema::organization_usage_counts::dsl as organization_usage_counts_columns;
 
     let mut conn = pool.get().map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
-    let messages_count = organizations_columns::organizations
-        .filter(organizations_columns::id.eq(organization_id))
-        .inner_join(
-            datasets_columns::datasets
-                .on(organizations_columns::id.eq(datasets_columns::organization_id)),
-        )
-        .inner_join(
-            messages_columns::messages.on(datasets_columns::id.eq(messages_columns::dataset_id)),
-        )
-        .count()
+    let messages_count = organization_usage_counts_columns::organization_usage_counts
+        .filter(organization_usage_counts_columns::id.eq(organization_id))
+        .select(organization_usage_counts_columns::message_count)
         .get_result(&mut conn)
         .map_err(|_| DefaultError {
             message: "Error loading message organization count",
@@ -262,29 +251,20 @@ pub fn get_message_org_count(
 pub fn get_file_size_sum_org(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<i64, DefaultError> {
-    use crate::data::schema::datasets::dsl as datasets_columns;
-    use crate::data::schema::files::dsl as files_columns;
-    use crate::data::schema::organizations::dsl as organizations_columns;
+) -> Result<i32, DefaultError> {
+    use crate::data::schema::organization_usage_counts::dsl as organization_usage_counts_columns;
 
     let mut conn = pool.get().map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
-    let file_size_sums: Vec<i64> = organizations_columns::organizations
-        .filter(organizations_columns::id.eq(organization_id))
-        .inner_join(
-            datasets_columns::datasets
-                .on(organizations_columns::id.eq(datasets_columns::organization_id)),
-        )
-        .inner_join(files_columns::files.on(datasets_columns::id.eq(files_columns::dataset_id)))
-        .select(sql::<BigInt>("SUM(files.size)"))
-        .load(&mut conn)
+    let file_size_sums: i32 = organization_usage_counts_columns::organization_usage_counts
+        .filter(organization_usage_counts_columns::id.eq(organization_id))
+        .select(organization_usage_counts_columns::file_storage)
+        .get_result(&mut conn)
         .map_err(|_| DefaultError {
-            message: "Error loading message organization count",
+            message: "Error loading file size sum organization count",
         })?;
 
-    let aggregate_file_size = file_size_sums.iter().sum();
-
-    Ok(aggregate_file_size)
+    Ok(file_size_sums)
 }

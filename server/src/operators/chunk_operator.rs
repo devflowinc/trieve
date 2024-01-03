@@ -1,6 +1,6 @@
 use crate::data::models::{
-    ChunkCollisions, ChunkFile, ChunkMetadataCount, ChunkMetadataWithFileData, Dataset,
-    FullTextSearchResult, ServerDatasetConfiguration,
+    ChunkCollisions, ChunkFile, ChunkMetadataWithFileData, Dataset, FullTextSearchResult,
+    ServerDatasetConfiguration,
 };
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::operators::model_operator::create_embedding;
@@ -729,39 +729,18 @@ pub fn find_relevant_sentence(
 pub fn get_row_count_for_dataset_id_query(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<ChunkMetadataCount, DefaultError> {
-    use crate::data::schema::chunk_metadata_counts::dsl as chunk_metadata_counts_columns;
+) -> Result<i32, DefaultError> {
+    use crate::data::schema::dataset_usage_counts::dsl as dataset_usage_counts_columns;
 
     let mut conn = pool.get().expect("Failed to get connection to db");
 
-    let chunk_metadata_count_result = chunk_metadata_counts_columns::chunk_metadata_counts
-        .filter(chunk_metadata_counts_columns::dataset_id.eq(dataset_id))
-        .select(ChunkMetadataCount::as_select())
-        .first::<ChunkMetadataCount>(&mut conn);
-
-    let chunk_metadata_count = match chunk_metadata_count_result {
-        Ok(chunk_metadata_count) => chunk_metadata_count,
-        Err(_) => create_row_count_for_dataset_id_query(dataset_id, pool)?,
-    };
-
-    Ok(chunk_metadata_count)
-}
-
-pub fn create_row_count_for_dataset_id_query(
-    dataset_id: uuid::Uuid,
-    pool: web::Data<Pool>,
-) -> Result<ChunkMetadataCount, DefaultError> {
-    use crate::data::schema::chunk_metadata_counts::dsl as chunk_metadata_counts_columns;
-
-    let mut conn = pool.get().expect("Failed to get connection to db");
-
-    let chunk_metadata_count =
-        diesel::insert_into(chunk_metadata_counts_columns::chunk_metadata_counts)
-            .values(&ChunkMetadataCount::from_details(dataset_id, 0))
-            .get_result::<ChunkMetadataCount>(&mut conn)
-            .map_err(|_| DefaultError {
-                message: "Could not create chunk_metadadta_count, likely dataset_id conflict",
-            })?;
+    let chunk_metadata_count = dataset_usage_counts_columns::dataset_usage_counts
+        .filter(dataset_usage_counts_columns::id.eq(dataset_id))
+        .select(dataset_usage_counts_columns::chunk_count)
+        .first::<i32>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to get chunk count for dataset",
+        })?;
 
     Ok(chunk_metadata_count)
 }

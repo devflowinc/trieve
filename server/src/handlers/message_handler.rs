@@ -70,7 +70,6 @@ pub async fn create_message_completion_handler(
             .plan
             .unwrap_or(StripePlan::default())
             .message_count
-            .into()
     {
         return Ok(HttpResponse::UpgradeRequired().json(json!({
             "message": "To create more message completions, you must upgrade your plan"
