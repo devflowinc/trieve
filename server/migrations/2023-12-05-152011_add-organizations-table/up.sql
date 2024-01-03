@@ -7,6 +7,4 @@ CREATE TABLE organizations (
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-INSERT INTO organizations (name, configuration) VALUES ('DEFAULT', '{}');
-
 CREATE INDEX idx_organizations_name ON organizations (name);
