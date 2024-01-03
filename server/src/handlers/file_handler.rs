@@ -98,7 +98,6 @@ pub async fn upload_file_handler(
             .plan
             .unwrap_or(StripePlan::default())
             .file_storage
-            .into()
     {
         return Err(ServiceError::BadRequest("File size limit reached".to_string()).into());
     }

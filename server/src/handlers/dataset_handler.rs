@@ -1,7 +1,8 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
     data::models::{
-        ClientDatasetConfiguration, Dataset, DatasetAndOrgWithSubAndPlan, Pool, StripePlan,
+        ClientDatasetConfiguration, Dataset, DatasetAndOrgWithSubAndPlan, Pool,
+        ServerDatasetConfiguration, StripePlan,
     },
     errors::ServiceError,
     operators::{
@@ -106,7 +107,6 @@ pub async fn create_dataset(
             .plan
             .unwrap_or(StripePlan::default())
             .dataset_count
-            .into()
     {
         return Ok(HttpResponse::UpgradeRequired()
             .json(json!({"message": "Your plan must be upgraded to create additional datasets"})));
@@ -206,7 +206,13 @@ pub async fn get_dataset(
     dataset_id: web::Path<uuid::Uuid>,
     _user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let d = get_dataset_by_id_query(dataset_id.into_inner(), pool).await?;
+    let mut d = get_dataset_by_id_query(dataset_id.into_inner(), pool).await?;
+    d.server_configuration = json!(ServerDatasetConfiguration::from_json(
+        d.server_configuration
+    ));
+    d.client_configuration = json!(ClientDatasetConfiguration::from_json(
+        d.client_configuration
+    ));
     Ok(HttpResponse::Ok().json(d))
 }
 

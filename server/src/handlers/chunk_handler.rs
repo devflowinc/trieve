@@ -147,13 +147,12 @@ pub async fn create_chunk(
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    if chunk_count.total_rows
+    if chunk_count
         >= dataset_org_plan_sub
             .organization
             .plan
             .unwrap_or(StripePlan::default())
             .chunk_count
-            .into()
     {
         return Ok(HttpResponse::UpgradeRequired()
             .json(json!({"message": "Must upgrade your plan to add more chunks"})));
