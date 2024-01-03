@@ -735,7 +735,7 @@ pub fn get_row_count_for_dataset_id_query(
     let mut conn = pool.get().expect("Failed to get connection to db");
 
     let chunk_metadata_count = dataset_usage_counts_columns::dataset_usage_counts
-        .filter(dataset_usage_counts_columns::id.eq(dataset_id))
+        .filter(dataset_usage_counts_columns::dataset_id.eq(dataset_id))
         .select(dataset_usage_counts_columns::chunk_count)
         .first::<i32>(&mut conn)
         .map_err(|_| DefaultError {
