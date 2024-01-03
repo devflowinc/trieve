@@ -275,13 +275,15 @@ pub async fn create_account(
                 })?
         }
     };
-    let org_plan_sub = get_organization_by_id_query(org.id, pool.clone())
+    let org_id = org.id;
+
+    let org_plan_sub = get_organization_by_id_query(org_id, pool.clone())
         .await
         .map_err(|_| {
             ServiceError::InternalServerError("Could not find organization for user".to_string())
         })?;
     let user_org_count_pool = pool.clone();
-    let user_org_count = web::block(move || get_user_org_count(user_id, user_org_count_pool))
+    let user_org_count = web::block(move || get_user_org_count(org_id, user_org_count_pool))
         .await
         .map_err(|_| {
             ServiceError::InternalServerError("Blocking error getting org user count".to_string())
@@ -297,8 +299,6 @@ pub async fn create_account(
             "User limit reached for organization, must upgrade plan to add more users".to_string(),
         ));
     }
-
-    let org_id = org.id;
 
     if org.registerable == Some(false) {
         if let Some(inv_code) = inv_code {
