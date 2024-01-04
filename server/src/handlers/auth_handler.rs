@@ -92,16 +92,16 @@ impl FromRequest for AdminOnly {
                 .unwrap()
                 .to_str()
                 .map_err(|_| {
-                    Err::<&str, Error>(
+                    ready(Err::<&str, Error>(
                         ServiceError::InternalServerError("Could not get org id".into()).into(),
-                    )
+                    ))
                 })
                 .unwrap()
                 .parse::<uuid::Uuid>()
                 .map_err(|_| {
-                    Err::<&str, Error>(
+                    ready(Err::<&str, Error>(
                         ServiceError::InternalServerError("Could not get org id".into()).into(),
-                    )
+                    ))
                 })
                 .unwrap();
             org_id
