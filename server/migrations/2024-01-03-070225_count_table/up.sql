@@ -1,15 +1,19 @@
 
 CREATE TABLE IF NOT EXISTS organization_usage_counts (
-    org_id UUID PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    org_id UUID NOT NULL UNIQUE,
     dataset_count INTEGER NOT NULL DEFAULT 0,    
     user_count INTEGER NOT NULL DEFAULT 0,
     file_storage INTEGER NOT NULL DEFAULT 0,
-    message_count INTEGER NOT NULL DEFAULT 0
+    message_count INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE
 );
 -- Create table for dataset usage counts
 CREATE TABLE IF NOT EXISTS dataset_usage_counts (
-    dataset_id UUID PRIMARY KEY REFERENCES datasets(id) ON DELETE CASCADE,
-    chunk_count INTEGER NOT NULL DEFAULT 0
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    dataset_id UUID NOT NULL UNIQUE,
+    chunk_count INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE
 );
 
 -- Function to update chunk metadata counts
