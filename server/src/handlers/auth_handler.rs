@@ -121,7 +121,11 @@ impl FromRequest for AdminOnly {
         if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
             if let Ok(user_json) = identity.id() {
                 if let Ok(user) = serde_json::from_str::<LoggedUser>(&user_json) {
-                    let user_org = match user.user_orgs.iter().find(|org| org.id == org_id) {
+                    let user_org = match user
+                        .user_orgs
+                        .iter()
+                        .find(|org| org.organization_id == org_id)
+                    {
                         Some(user_org) => user_org,
                         None => return ready(Err(ServiceError::Forbidden.into())),
                     };
@@ -137,7 +141,11 @@ impl FromRequest for AdminOnly {
             if let Ok(authen_header) = authen_header.to_str() {
                 if let Some(pool) = req.app_data::<web::Data<Pool>>() {
                     if let Ok(user) = get_user_from_api_key_query(authen_header, pool) {
-                        let user_org = match user.user_orgs.iter().find(|org| org.id == org_id) {
+                        let user_org = match user
+                            .user_orgs
+                            .iter()
+                            .find(|org| org.organization_id == org_id)
+                        {
                             Some(user_org) => user_org,
                             None => return ready(Err(ServiceError::Forbidden.into())),
                         };
@@ -198,7 +206,11 @@ impl FromRequest for OwnerOnly {
         if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
             if let Ok(user_json) = identity.id() {
                 if let Ok(user) = serde_json::from_str::<LoggedUser>(&user_json) {
-                    let user_org = match user.user_orgs.iter().find(|org| org.id == org_id) {
+                    let user_org = match user
+                        .user_orgs
+                        .iter()
+                        .find(|org| org.organization_id == org_id)
+                    {
                         Some(user_org) => user_org,
                         None => return ready(Err(ServiceError::Forbidden.into())),
                     };
@@ -214,7 +226,11 @@ impl FromRequest for OwnerOnly {
             if let Ok(authen_header) = authen_header.to_str() {
                 if let Some(pool) = req.app_data::<web::Data<Pool>>() {
                     if let Ok(user) = get_user_from_api_key_query(authen_header, pool) {
-                        let user_org = match user.user_orgs.iter().find(|org| org.id == org_id) {
+                        let user_org = match user
+                            .user_orgs
+                            .iter()
+                            .find(|org| org.organization_id == org_id)
+                        {
                             Some(user_org) => user_org,
                             None => return ready(Err(ServiceError::Forbidden.into())),
                         };
