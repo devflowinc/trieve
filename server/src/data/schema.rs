@@ -82,7 +82,8 @@ diesel::table! {
 }
 
 diesel::table! {
-    dataset_usage_counts (dataset_id) {
+    dataset_usage_counts (id) {
+        id -> Uuid,
         dataset_id -> Uuid,
         chunk_count -> Int4,
     }
@@ -159,7 +160,8 @@ diesel::table! {
 }
 
 diesel::table! {
-    organization_usage_counts (org_id) {
+    organization_usage_counts (id) {
+        id -> Uuid,
         org_id -> Uuid,
         dataset_count -> Int4,
         user_count -> Int4,

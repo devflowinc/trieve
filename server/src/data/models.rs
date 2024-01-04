@@ -1190,6 +1190,7 @@ impl UserOrganization {
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[diesel(table_name = organization_usage_counts)]
 pub struct OrganizationUsageCount {
+    pub id: uuid::Uuid,
     pub org_id: uuid::Uuid,
     pub dataset_count: i32,
     pub user_count: i32,
@@ -1200,6 +1201,7 @@ pub struct OrganizationUsageCount {
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[diesel(table_name = dataset_usage_counts)]
 pub struct DatasetUsageCount {
+    pub id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
     pub chunk_count: i32,
 }
