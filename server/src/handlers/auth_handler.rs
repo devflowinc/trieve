@@ -1,4 +1,4 @@
-use crate::data::models::{DatasetAndOrgWithSubAndPlan, StripePlan, UserRole};
+use crate::data::models::{DatasetAndOrgWithSubAndPlan, Organization, StripePlan, UserRole};
 use crate::get_env;
 use crate::operators::organization_operator::{get_organization_by_id_query, get_user_org_count};
 use crate::operators::user_operator::create_user_query;
@@ -299,7 +299,7 @@ pub async fn create_account(
     dataset_id: Option<uuid::Uuid>,
     inv_code: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<(User, Vec<UserOrganization>), ServiceError> {
+) -> Result<(User, Vec<UserOrganization>, Vec<Organization>), ServiceError> {
     let mut owner = false;
     let org = match dataset_id {
         Some(dataset_id) => get_org_from_dataset_id_query(dataset_id, pool.clone())
@@ -606,7 +606,7 @@ pub async fn callback(
         }
     };
 
-    let slim_user: SlimUser = SlimUser::from_details(user.0, user.1);
+    let slim_user: SlimUser = SlimUser::from_details(user.0, user.1, user.2);
 
     let user_string = serde_json::to_string(&slim_user).map_err(|_| {
         ServiceError::InternalServerError("Failed to serialize user to JSON".into())
@@ -641,7 +641,7 @@ pub async fn get_me(
     let user_result = web::block(move || get_user_by_id_query(&user_query_id, pool)).await?;
 
     match user_result {
-        Ok(user) => Ok(HttpResponse::Ok().json(SlimUser::from_details(user.0, user.1))),
+        Ok(user) => Ok(HttpResponse::Ok().json(SlimUser::from_details(user.0, user.1, user.2))),
         Err(e) => Ok(HttpResponse::BadRequest().json(e)),
     }
 }

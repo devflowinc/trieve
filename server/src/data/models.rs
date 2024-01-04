@@ -336,10 +336,15 @@ pub struct SlimUser {
     pub website: Option<String>,
     pub visible_email: bool,
     pub user_orgs: Vec<UserOrganization>,
+    pub orgs: Vec<Organization>,
 }
 
 impl SlimUser {
-    pub fn from_details(user: User, user_orgs: Vec<UserOrganization>) -> Self {
+    pub fn from_details(
+        user: User,
+        user_orgs: Vec<UserOrganization>,
+        orgs: Vec<Organization>,
+    ) -> Self {
         SlimUser {
             id: user.id,
             email: user.email,
@@ -347,6 +352,7 @@ impl SlimUser {
             website: user.website,
             visible_email: user.visible_email,
             user_orgs,
+            orgs,
         }
     }
 }
