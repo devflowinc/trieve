@@ -54,7 +54,7 @@ impl FromRequest for DatasetAndOrgWithSubAndPlan {
 
             user.user_orgs
                 .iter()
-                .find(|org| org.id == dataset.organization_id)
+                .find(|org| org.organization_id == dataset.organization_id)
                 .ok_or(ServiceError::Forbidden)?;
 
             Ok::<DatasetAndOrgWithSubAndPlan, ServiceError>(
@@ -238,7 +238,7 @@ pub async fn get_datasets_from_organization(
     user.0
         .user_orgs
         .iter()
-        .find(|org| org.id == organization_id)
+        .find(|org| org.organization_id == organization_id)
         .ok_or(ServiceError::Forbidden)?;
 
     let datasets =
