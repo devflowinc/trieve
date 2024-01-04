@@ -42,6 +42,8 @@ start_local_services() {
     docker compose up -d qdrant-database
     docker compose up -d s3
     docker compose up -d s3-client
+    docker compose up -d keycloak
+    docker compose up -d keycloak-db
 }
 
 # Main script logic
