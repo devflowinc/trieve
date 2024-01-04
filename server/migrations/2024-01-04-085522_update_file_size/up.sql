@@ -23,11 +23,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Drop the old function if it exists
-DROP FUNCTION IF EXISTS update_files_storage_counts();
-
 -- Drop the old trigger if it exists
 DROP TRIGGER IF EXISTS update_files_storage_trigger ON files;
+
+-- Drop the old function if it exists
+DROP FUNCTION IF EXISTS update_files_storage_counts();
 
 -- Create a new trigger that includes the 'UPDATE' operation
 CREATE TRIGGER update_files_storage_with_update_trigger
