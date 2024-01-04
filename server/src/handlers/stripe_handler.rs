@@ -215,7 +215,7 @@ pub async fn cancel_subscription(
     user.0
         .user_orgs
         .iter()
-        .find(|org| org.id == subscription.organization_id)
+        .find(|org| org.organization_id == subscription.organization_id)
         .ok_or(ServiceError::Forbidden)?;
 
     cancel_stripe_subscription(subscription.stripe_id)
@@ -268,7 +268,7 @@ pub async fn update_subscription_plan(
     user.0
         .user_orgs
         .iter()
-        .find(|org| org.id == subscription.organization_id)
+        .find(|org| org.organization_id == subscription.organization_id)
         .ok_or(ServiceError::Forbidden)?;
 
     let plan_id = path_data.plan_id;
