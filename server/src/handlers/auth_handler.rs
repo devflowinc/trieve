@@ -51,10 +51,12 @@ impl FromRequest for LoggedUser {
     type Error = Error;
     type Future = Ready<Result<LoggedUser, Error>>;
 
+    #[inline]
     fn from_request(req: &HttpRequest, pl: &mut Payload) -> Self::Future {
         if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
             if let Ok(user_json) = identity.id() {
-                if let Ok(user) = serde_json::from_str(&user_json) {
+                if let Ok(user) = serde_json::from_str::<LoggedUser>(&user_json) {
+                    req.extensions_mut().insert(user.clone());
                     return ready(Ok(user));
                 }
             }
@@ -64,6 +66,7 @@ impl FromRequest for LoggedUser {
             if let Ok(authen_header) = authen_header.to_str() {
                 if let Some(pool) = req.app_data::<web::Data<Pool>>() {
                     if let Ok(user) = get_user_from_api_key_query(authen_header, pool) {
+                        req.extensions_mut().insert(user.clone());
                         return ready(Ok(user));
                     }
                 }

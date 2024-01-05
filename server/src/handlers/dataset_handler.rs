@@ -259,6 +259,7 @@ pub async fn get_datasets_from_organization(
 )]
 pub async fn get_client_dataset_config(
     dataset: DatasetAndOrgWithSubAndPlan,
+    _logged_user: LoggedUser,
 ) -> Result<HttpResponse, ServiceError> {
     Ok(
         HttpResponse::Ok().json(ClientDatasetConfiguration::from_json(
