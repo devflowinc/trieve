@@ -57,9 +57,10 @@ impl FromRequest for DatasetAndOrgWithSubAndPlan {
                 .find(|org| org.organization_id == dataset.organization_id)
                 .ok_or(ServiceError::Forbidden)?;
 
-            Ok::<DatasetAndOrgWithSubAndPlan, ServiceError>(
-                DatasetAndOrgWithSubAndPlan::from_components(dataset, org_plan_sub),
-            )
+            let dataset = DatasetAndOrgWithSubAndPlan::from_components(dataset, org_plan_sub);
+            req.extensions_mut().insert(dataset.clone());
+
+            Ok::<DatasetAndOrgWithSubAndPlan, ServiceError>(dataset)
         })
     }
 }
