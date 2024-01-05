@@ -29,7 +29,7 @@ pub struct GetUserWithChunksData {
     context_path = "/api",
     tag = "user",
     responses(
-        (status = 200, description = "JSON body representing the chunks made by a given user with their chunks", body = [UserDTOWithchunks]),
+        (status = 200, description = "JSON body representing the chunks made by a given user with their chunks", body = [UserDTOWithChunks]),
         (status = 400, description = "Service error relating to getting the chunks for the given user", body = [DefaultError]),
     ),
     params(
@@ -39,15 +39,20 @@ pub struct GetUserWithChunksData {
 )]
 pub async fn get_user_with_chunks_by_id(
     path_data: web::Path<GetUserWithChunksData>,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_query_id = path_data.user_id;
     let page = path_data.page;
 
     let user_result = web::block(move || {
-        get_user_with_chunks_by_id_query(user_query_id, dataset_org_plan_sub.dataset.id, &page, pool)
+        get_user_with_chunks_by_id_query(
+            user_query_id,
+            dataset_org_plan_sub.dataset.id,
+            &page,
+            pool,
+        )
     })
     .await?;
 
