@@ -1,9 +1,10 @@
 use super::auth_handler::{AdminOnly, OwnerOnly};
 use crate::{
-    data::models::{Organization, Pool},
+    data::models::Pool,
     errors::ServiceError,
     operators::organization_operator::{
-        create_organization_query, get_organization_by_id_query, update_organization_query,
+        create_organization_query, get_org_usage_by_id_query, get_organization_by_id_query,
+        update_organization_query,
     },
 };
 use actix_web::{web, HttpResponse};
@@ -34,7 +35,7 @@ pub async fn get_organization_by_id(
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    Ok(HttpResponse::Ok().json(Organization::from_org_with_plan_sub(org_plan_sub)))
+    Ok(HttpResponse::Ok().json(org_plan_sub.with_defaults()))
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
@@ -116,4 +117,18 @@ pub async fn create_organization(
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(created_organization))
+}
+
+pub async fn get_organization_usage(
+    organization: web::Path<uuid::Uuid>,
+    pool: web::Data<Pool>,
+    _user: AdminOnly,
+) -> Result<HttpResponse, actix_web::Error> {
+    let org_id = organization.into_inner();
+
+    let usage = get_org_usage_by_id_query(org_id, pool)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    Ok(HttpResponse::Ok().json(usage))
 }

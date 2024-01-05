@@ -41,9 +41,9 @@ pub struct CreateChunkCollectionData {
     path = "/chunk_collection",
     context_path = "/api",
     tag = "chunk_collection",
-    request_body(content = CreatechunkCollectionData, description = "JSON request payload to cretea a chunkCollection", content_type = "application/json"),
+    request_body(content = CreateChunkCollectionData, description = "JSON request payload to cretea a chunkCollection", content_type = "application/json"),
     responses(
-        (status = 200, description = "Returns the created chunkCollection", body = [chunkCollection]),
+        (status = 200, description = "Returns the created chunkCollection", body = [ChunkCollection]),
         (status = 400, description = "Service error relating to creating the chunkCollection", body = [DefaultError]),
     ),
 )]

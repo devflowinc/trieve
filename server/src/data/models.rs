@@ -1140,6 +1140,19 @@ impl OrganizationWithSubAndPlan {
             subscription,
         }
     }
+
+    pub fn with_defaults(&self) -> Self {
+        OrganizationWithSubAndPlan {
+            id: self.id,
+            name: self.name.clone(),
+            configuration: self.configuration.clone(),
+            registerable: self.registerable,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            plan: Some(self.plan.clone().unwrap_or(StripePlan::default())),
+            subscription: self.subscription.clone(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, ToSchema, Ord, PartialOrd)]
