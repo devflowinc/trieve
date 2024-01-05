@@ -1,15 +1,16 @@
 use crate::{
     data::models::{
-        Organization, OrganizationUsageCount, OrganizationWithSubAndPlan, Pool,
-        StripePlan, StripeSubscription,
+        Organization, OrganizationUsageCount, OrganizationWithSubAndPlan, Pool, StripePlan,
+        StripeSubscription,
     },
     errors::DefaultError,
-    operators::stripe_operator::refresh_redis_org_plan_sub, randutil
+    operators::stripe_operator::refresh_redis_org_plan_sub,
+    randutil,
 };
 use actix_web::web;
 use diesel::{
-    ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl, RunQueryDsl,
-    SelectableHelper, Table, upsert::on_constraint,
+    upsert::on_constraint, ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl,
+    RunQueryDsl, SelectableHelper, Table,
 };
 
 /// Creates a dataset from Name if it doesn't conflict. If it does, then it creates a random name
@@ -27,8 +28,21 @@ pub async fn create_organization_query(
         message: "Could not get database connection",
     })?;
 
-    let mut number: usize =
-        diesel::insert_into(organizations_columns::organizations)
+    let mut number: usize = diesel::insert_into(organizations_columns::organizations)
+        .values(new_organization.clone())
+        .on_conflict(on_constraint("organizations_name_key"))
+        .do_nothing()
+        .execute(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Could not create organization, try again",
+        })?;
+
+    while number == 0 {
+        // Get random name
+        new_organization =
+            Organization::from_details(randutil::random_organization_name(), configuration.clone());
+
+        number = diesel::insert_into(organizations_columns::organizations)
             .values(new_organization.clone())
             .on_conflict(on_constraint("organizations_name_key"))
             .do_nothing()
@@ -36,20 +50,6 @@ pub async fn create_organization_query(
             .map_err(|_| DefaultError {
                 message: "Could not create organization, try again",
             })?;
-
-    while number != 0 {
-        // Get random name
-        new_organization = Organization::from_details(randutil::random_organization_name(), configuration.clone());
-
-        number =
-            diesel::insert_into(organizations_columns::organizations)
-                .values(new_organization.clone())
-                .on_conflict(on_constraint("organizations_name_key"))
-                .do_nothing()
-                .execute(&mut conn)
-                .map_err(|_| DefaultError {
-                    message: "Could not create organization, try again",
-                })?;
     }
 
     refresh_redis_org_plan_sub(new_organization.id, pool).await?;

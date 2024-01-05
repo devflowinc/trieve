@@ -306,18 +306,18 @@ pub async fn create_account(
     let (owner, org) = match dataset_id {
         Some(dataset_id) => (false, get_org_from_dataset_id_query(dataset_id, pool.clone())
             .await
-            .map_err(|_| {
+            .map_err(|error| {
                 ServiceError::InternalServerError(
-                    "Could not find organization for dataset".to_string(),
+                    error.message.to_string()
                 )
             })?),
         None => {
             let org_name = email.split('@').collect::<Vec<&str>>()[0].to_string().replace(" ", "-");
             (true, create_organization_query(org_name.as_str(), json!({}), pool.clone())
                 .await
-                .map_err(|_| {
+                .map_err(|error| {
                     ServiceError::InternalServerError(
-                        "Could not create organization for user".to_string(),
+                        error.message.to_string()
                     )
                 })?)
         }
@@ -326,8 +326,8 @@ pub async fn create_account(
 
     let org_plan_sub = get_organization_by_id_query(org_id, pool.clone())
         .await
-        .map_err(|_| {
-            ServiceError::InternalServerError("Could not find organization for user".to_string())
+        .map_err(|error| {
+            ServiceError::InternalServerError(error.message.to_string())
         })?;
     let user_org_count_pool = pool.clone();
     let user_org_count = web::block(move || get_user_org_count(org_id, user_org_count_pool))
