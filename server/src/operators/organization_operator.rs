@@ -1,6 +1,7 @@
 use crate::{
     data::models::{
-        Organization, OrganizationWithSubAndPlan, Pool, StripePlan, StripeSubscription,
+        Organization, OrganizationUsageCount, OrganizationWithSubAndPlan, Pool,
+        StripePlan, StripeSubscription,
     },
     errors::DefaultError,
     operators::stripe_operator::refresh_redis_org_plan_sub,
@@ -267,4 +268,23 @@ pub fn get_file_size_sum_org(
         })?;
 
     Ok(file_size_sums)
+}
+
+pub async fn get_org_usage_by_id_query(
+    org_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<OrganizationUsageCount, DefaultError> {
+    let mut conn = pool.get().map_err(|_| DefaultError {
+        message: "Could not get database connection",
+    })?;
+
+    let org_usage_count: OrganizationUsageCount =
+        crate::data::schema::organization_usage_counts::dsl::organization_usage_counts
+            .filter(crate::data::schema::organization_usage_counts::dsl::org_id.eq(org_id))
+            .first(&mut conn)
+            .map_err(|_| DefaultError {
+                message: "Could not find organization usage count",
+            })?;
+
+    Ok(org_usage_count)
 }
