@@ -300,9 +300,21 @@ pub async fn insert_card_metadata_query(
         Ok(_) => (),
         Err(e) => {
             log::info!("Failed to insert card metadata: {:?}", e);
-            return Err(DefaultError {
-                message: "Failed to insert card metadata, likely due to duplicate tracking_id",
-            });
+            match e {
+                diesel::result::Error::DatabaseError(
+                    diesel::result::DatabaseErrorKind::UniqueViolation,
+                    _,
+                ) => {
+                    return Err(DefaultError {
+                        message: "Duplicate tracking_id",
+                    });
+                }
+                _ => {
+                    return Err(DefaultError {
+                        message: "Failed to insert card metadata",
+                    });
+                }
+            }
         }
     };
 
@@ -749,8 +761,13 @@ pub fn create_row_count_for_dataset_id_query(
         diesel::insert_into(card_metadata_counts_columns::card_metadata_counts)
             .values(&CardMetadataCount::from_details(dataset_id, 0))
             .get_result::<CardMetadataCount>(&mut conn)
-            .map_err(|_| DefaultError {
-                message: "Could not create card_metadadta_count, likely dataset_id conflict",
+            .map_err(|err| match err {
+                diesel::result::Error::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => DefaultError {
+                    message: "Could not create card_metadta_count due to dataset_id conflict",
+                },
+                _ => DefaultError {
+                    message: "Could not create card_metadadta_count",
+                },
             })?;
 
     Ok(card_metadata_count)
