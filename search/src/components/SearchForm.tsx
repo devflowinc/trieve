@@ -36,7 +36,8 @@ const SearchForm = (props: {
   ) as ClientEnvsConfiguration;
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const comboboxSections: ComboboxSection[] = envs.PUBLIC_FILTER_ITEMS;
+  const comboboxSections: ComboboxSection[] =
+    (envs.PUBLIC_FILTER_ITEMS as ComboboxSection[] | undefined) ?? [];
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const customComboBoxFilterVals: ComboboxSection[] = comboboxSections;
 
