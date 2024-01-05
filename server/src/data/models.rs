@@ -797,6 +797,29 @@ impl Dataset {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[diesel(table_name = dataset_usage_counts)]
+pub struct DatasetUsageCount {
+    pub id: uuid::Uuid,
+    pub dataset_id: uuid::Uuid,
+    pub chunk_count: i32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct DatasetAndUsage {
+    pub dataset: Dataset,
+    pub datset_usage: DatasetUsageCount,
+}
+
+impl DatasetAndUsage {
+    pub fn from_components(dataset: Dataset, dataset_usage: DatasetUsageCount) -> Self {
+        DatasetAndUsage {
+            dataset,
+            datset_usage: dataset_usage,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[allow(non_snake_case)]
 pub struct ServerDatasetConfiguration {
@@ -1215,12 +1238,4 @@ pub struct OrganizationUsageCount {
     pub user_count: i32,
     pub file_storage: i32,
     pub message_count: i32,
-}
-
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
-#[diesel(table_name = dataset_usage_counts)]
-pub struct DatasetUsageCount {
-    pub id: uuid::Uuid,
-    pub dataset_id: uuid::Uuid,
-    pub chunk_count: i32,
 }
