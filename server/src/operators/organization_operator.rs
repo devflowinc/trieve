@@ -4,14 +4,16 @@ use crate::{
         StripePlan, StripeSubscription,
     },
     errors::DefaultError,
-    operators::stripe_operator::refresh_redis_org_plan_sub,
+    operators::stripe_operator::refresh_redis_org_plan_sub, randutil
 };
 use actix_web::web;
 use diesel::{
     ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl, RunQueryDsl,
-    SelectableHelper, Table,
+    SelectableHelper, Table, upsert::on_constraint,
 };
 
+/// Creates a dataset from Name if it doesn't conflict. If it does, then it creates a random name
+/// for the user
 pub async fn create_organization_query(
     name: &str,
     configuration: serde_json::Value,
@@ -19,23 +21,40 @@ pub async fn create_organization_query(
 ) -> Result<Organization, DefaultError> {
     use crate::data::schema::organizations::dsl as organizations_columns;
 
-    let new_organization = Organization::from_details(name.to_string(), configuration);
+    let mut new_organization = Organization::from_details(name.to_string(), configuration.clone());
 
     let mut conn = pool.get().map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
-    let created_organization: Organization =
+    let mut number: usize =
         diesel::insert_into(organizations_columns::organizations)
-            .values(new_organization)
-            .get_result(&mut conn)
+            .values(new_organization.clone())
+            .on_conflict(on_constraint("organizations_name_key"))
+            .do_nothing()
+            .execute(&mut conn)
             .map_err(|_| DefaultError {
                 message: "Could not create organization, try again",
             })?;
 
-    refresh_redis_org_plan_sub(created_organization.id, pool).await?;
+    while number != 0 {
+        // Get random name
+        new_organization = Organization::from_details(randutil::random_organization_name(), configuration.clone());
 
-    Ok(created_organization)
+        number =
+            diesel::insert_into(organizations_columns::organizations)
+                .values(new_organization.clone())
+                .on_conflict(on_constraint("organizations_name_key"))
+                .do_nothing()
+                .execute(&mut conn)
+                .map_err(|_| DefaultError {
+                    message: "Could not create organization, try again",
+                })?;
+    }
+
+    refresh_redis_org_plan_sub(new_organization.id, pool).await?;
+
+    Ok(new_organization)
 }
 
 pub async fn update_organization_query(
