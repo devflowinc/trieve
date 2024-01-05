@@ -1,3 +1,4 @@
+use crate::data::models::{DatasetAndUsage, DatasetUsageCount};
 use crate::diesel::RunQueryDsl;
 use crate::{
     data::models::{Dataset, Pool},
@@ -166,18 +167,25 @@ pub async fn update_dataset_query(
 pub fn get_datasets_by_organization_id(
     id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<Vec<Dataset>, ServiceError> {
+) -> Result<Vec<DatasetAndUsage>, ServiceError> {
+    use crate::data::schema::dataset_usage_counts::dsl as dataset_usage_counts_columns;
     use crate::data::schema::datasets::dsl as datasets_columns;
 
     let mut conn = pool
         .get()
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let dataset = datasets_columns::datasets
+    let dataset_and_usages: Vec<(Dataset, DatasetUsageCount)> = datasets_columns::datasets
+        .inner_join(dataset_usage_counts_columns::dataset_usage_counts)
         .filter(datasets_columns::organization_id.eq(id.into_inner()))
-        .select(Dataset::as_select())
-        .load::<Dataset>(&mut conn)
+        .select((Dataset::as_select(), DatasetUsageCount::as_select()))
+        .load::<(Dataset, DatasetUsageCount)>(&mut conn)
         .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?;
 
-    Ok(dataset)
+    let dataset_and_usages = dataset_and_usages
+        .into_iter()
+        .map(|(dataset, usage_count)| DatasetAndUsage::from_components(dataset, usage_count))
+        .collect::<Vec<DatasetAndUsage>>();
+
+    Ok(dataset_and_usages)
 }
