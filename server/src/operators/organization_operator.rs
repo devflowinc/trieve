@@ -10,7 +10,7 @@ use crate::{
 use actix_web::web;
 use diesel::{
     upsert::on_constraint, ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl,
-    RunQueryDsl, SelectableHelper, Table,
+    RunQueryDsl, SelectableHelper, Table, result::DatabaseErrorKind,
 };
 
 /// Creates a dataset from Name if it doesn't conflict. If it does, then it creates a random name
@@ -77,8 +77,13 @@ pub async fn update_organization_query(
             organizations_columns::updated_at.eq(chrono::Utc::now().naive_local()),
         ))
         .get_result(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to update organization, try again",
+        .map_err(|err| match err {
+            diesel::result::Error::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => DefaultError {
+                message: "Organization name already exists",
+            },
+            _ => DefaultError {
+                message: "Failed to update organization, try again",
+            },
         })?;
 
     refresh_redis_org_plan_sub(updated_organization.id, pool).await?;
