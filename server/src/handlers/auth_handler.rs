@@ -303,26 +303,23 @@ pub async fn create_account(
     inv_code: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<(User, Vec<UserOrganization>, Vec<Organization>), ServiceError> {
-    let mut owner = false;
-    let org = match dataset_id {
-        Some(dataset_id) => get_org_from_dataset_id_query(dataset_id, pool.clone())
+    let (owner, org) = match dataset_id {
+        Some(dataset_id) => (false, get_org_from_dataset_id_query(dataset_id, pool.clone())
             .await
             .map_err(|_| {
                 ServiceError::InternalServerError(
                     "Could not find organization for dataset".to_string(),
                 )
-            })?,
+            })?),
         None => {
-            let mut org_name = email.split('@').collect::<Vec<&str>>()[0].to_string();
-            org_name.push_str("'s Organization");
-            owner = true;
-            create_organization_query(org_name.as_str(), json!({}), pool.clone())
+            let org_name = email.split('@').collect::<Vec<&str>>()[0].to_string().replace(" ", "-");
+            (true, create_organization_query(org_name.as_str(), json!({}), pool.clone())
                 .await
                 .map_err(|_| {
                     ServiceError::InternalServerError(
                         "Could not create organization for user".to_string(),
                     )
-                })?
+                })?)
         }
     };
     let org_id = org.id;
