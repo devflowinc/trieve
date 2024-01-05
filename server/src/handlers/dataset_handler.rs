@@ -223,7 +223,7 @@ pub async fn get_dataset(
     context_path = "/api",
     tag = "dataset",
     responses(
-        (status = 200, description = "Dataset retrieved successfully", body = Vec<Dataset>),
+        (status = 200, description = "Dataset retrieved successfully", body = Vec<DatasetAndUsage>),
         (status = 400, description = "Service error relating to retrieving the dataset", body = [DefaultError]),
     ),
     params(
@@ -242,11 +242,12 @@ pub async fn get_datasets_from_organization(
         .find(|org| org.organization_id == organization_id)
         .ok_or(ServiceError::Forbidden)?;
 
-    let datasets =
+    let dataset_and_usages =
         web::block(move || get_datasets_by_organization_id(organization_id.into(), pool))
             .await
             .map_err(|e| ServiceError::InternalServerError(e.to_string()))??;
-    Ok(HttpResponse::Ok().json(datasets))
+
+    Ok(HttpResponse::Ok().json(dataset_and_usages))
 }
 
 #[utoipa::path(
