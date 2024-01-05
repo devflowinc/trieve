@@ -27,6 +27,7 @@ mod data;
 mod errors;
 mod handlers;
 mod operators;
+mod randutil;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 pub const SECONDS_IN_MINUTE: u64 = 60;
