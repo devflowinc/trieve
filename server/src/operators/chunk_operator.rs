@@ -306,9 +306,21 @@ pub async fn insert_chunk_metadata_query(
         Ok(_) => (),
         Err(e) => {
             log::info!("Failed to insert chunk metadata: {:?}", e);
-            return Err(DefaultError {
-                message: "Failed to insert chunk metadata, likely due to duplicate tracking_id",
-            });
+            match e {
+                diesel::result::Error::DatabaseError(
+                    diesel::result::DatabaseErrorKind::UniqueViolation,
+                    _,
+                ) => {
+                    return Err(DefaultError {
+                        message: "Duplicate tracking_id",
+                    });
+                }
+                _ => {
+                    return Err(DefaultError {
+                        message: "Failed to insert card metadata",
+                    });
+                }
+            }
         }
     };
 
