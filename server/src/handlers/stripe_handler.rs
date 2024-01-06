@@ -2,7 +2,7 @@ use crate::{
     data::models::Pool,
     errors::ServiceError,
     operators::{
-        organization_operator::get_organization_by_id_query,
+        organization_operator::get_organization_by_key_query,
         stripe_operator::{
             cancel_stripe_subscription, create_stripe_payment_link, create_stripe_plan_query,
             create_stripe_subscription_query, delete_subscription_by_id_query, get_all_plans_query,
@@ -171,7 +171,7 @@ pub async fn direct_to_payment_link(
     let plan_id = path_data.plan_id;
     let organization_id = path_data.organization_id;
     let organization_id_clone = path_data.organization_id;
-    let _org_plan_sub = get_organization_by_id_query(organization_id_clone, organization_pool)
+    let _org_plan_sub = get_organization_by_key_query(organization_id_clone.into(), organization_pool)
         .await
         .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
