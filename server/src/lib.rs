@@ -28,6 +28,7 @@ mod errors;
 mod handlers;
 mod operators;
 mod randutil;
+mod af_middleware;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 pub const SECONDS_IN_MINUTE: u64 = 60;
@@ -244,6 +245,7 @@ pub async fn main() -> std::io::Result<()> {
             .app_data( web::JsonConfig::default().limit(134200000))
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(oidc_client.clone()))
+            .wrap(af_middleware::auth_middleware::AuthMiddlewareFactory)
             .wrap(
                 IdentityMiddleware::builder()
                     .login_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
