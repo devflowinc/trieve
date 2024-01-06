@@ -7,10 +7,10 @@ use crate::{
     operators::stripe_operator::refresh_redis_org_plan_sub,
     randutil,
 };
-use actix_web::web;
+use actix_web::{web, Either};
 use diesel::{
-    upsert::on_constraint, ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl,
-    RunQueryDsl, SelectableHelper, Table, result::DatabaseErrorKind,
+    result::DatabaseErrorKind, upsert::on_constraint, ExpressionMethods, JoinOnDsl,
+    NullableExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper, Table,
 };
 
 /// Creates a dataset from Name if it doesn't conflict. If it does, then it creates a random name
@@ -78,9 +78,11 @@ pub async fn update_organization_query(
         ))
         .get_result(&mut conn)
         .map_err(|err| match err {
-            diesel::result::Error::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => DefaultError {
-                message: "Organization name already exists",
-            },
+            diesel::result::Error::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
+                DefaultError {
+                    message: "Organization name already exists",
+                }
+            }
             _ => DefaultError {
                 message: "Failed to update organization, try again",
             },
@@ -91,8 +93,35 @@ pub async fn update_organization_query(
     Ok(updated_organization)
 }
 
-pub async fn get_organization_by_id_query(
-    id: uuid::Uuid,
+pub enum OrganizationKey {
+    Id(uuid::Uuid),
+    Name(String),
+}
+
+impl OrganizationKey {
+    pub fn to_string(&self) -> String {
+        match self {
+            OrganizationKey::Id(id) => id.to_string(),
+            OrganizationKey::Name(name) => name.to_string(),
+        }
+    }
+}
+
+impl From<uuid::Uuid> for OrganizationKey {
+    fn from(id: uuid::Uuid) -> Self {
+        OrganizationKey::Id(id)
+    }
+}
+
+impl From<String> for OrganizationKey {
+    fn from(name: String) -> Self {
+        OrganizationKey::Name(name)
+    }
+}
+
+/// Gets organization by id or name
+pub async fn get_organization_by_key_query(
+    key: OrganizationKey,
     pool: web::Data<Pool>,
 ) -> Result<OrganizationWithSubAndPlan, DefaultError> {
     let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
@@ -107,7 +136,7 @@ pub async fn get_organization_by_id_query(
         })?;
 
     let redis_organization: Result<String, DefaultError> = redis::cmd("GET")
-        .arg(format!("dataset:{}", id))
+        .arg(format!("organization:{}", key.to_string()))
         .query_async(&mut redis_conn)
         .await
         .map_err(|_| DefaultError {
@@ -128,26 +157,38 @@ pub async fn get_organization_by_id_query(
                 message: "Could not get database connection",
             })?;
 
+            let query = organizations_columns::organizations
+                .left_outer_join(stripe_subscriptions_columns::stripe_subscriptions)
+                .left_outer_join(
+                    stripe_plans_columns::stripe_plans
+                        .on(stripe_plans_columns::id.eq(stripe_subscriptions_columns::plan_id)),
+                )
+                .select((
+                    organizations_columns::organizations::all_columns(),
+                    stripe_plans_columns::stripe_plans::all_columns().nullable(),
+                    stripe_subscriptions_columns::stripe_subscriptions::all_columns().nullable(),
+                ))
+                .into_boxed();
+
             let org_plan_sub: (Organization, Option<StripePlan>, Option<StripeSubscription>) =
-                organizations_columns::organizations
-                    .left_outer_join(stripe_subscriptions_columns::stripe_subscriptions)
-                    .left_outer_join(
-                        stripe_plans_columns::stripe_plans
-                            .on(stripe_plans_columns::id.eq(stripe_subscriptions_columns::plan_id)),
-                    )
-                    .select((
-                        organizations_columns::organizations::all_columns(),
-                        stripe_plans_columns::stripe_plans::all_columns().nullable(),
-                        stripe_subscriptions_columns::stripe_subscriptions::all_columns()
-                            .nullable(),
-                    ))
-                    .filter(organizations_columns::id.eq(id))
-                    .first::<(Organization, Option<StripePlan>, Option<StripeSubscription>)>(
-                        &mut conn,
-                    )
-                    .map_err(|_| DefaultError {
-                        message: "Could not find organizations",
-                    })?;
+                match key {
+                    OrganizationKey::Id(id) => query
+                        .filter(organizations_columns::id.eq(id))
+                        .first::<(Organization, Option<StripePlan>, Option<StripeSubscription>)>(
+                            &mut conn,
+                        )
+                        .map_err(|_| DefaultError {
+                            message: "Could not find organizations",
+                        })?,
+                    OrganizationKey::Name(name) => query
+                        .filter(organizations_columns::name.eq(name))
+                        .first::<(Organization, Option<StripePlan>, Option<StripeSubscription>)>(
+                            &mut conn,
+                        )
+                        .map_err(|_| DefaultError {
+                            message: "Could not find organizations",
+                        })?,
+                };
 
             let org_with_plan_sub: OrganizationWithSubAndPlan =
                 OrganizationWithSubAndPlan::from_components(

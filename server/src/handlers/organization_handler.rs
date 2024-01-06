@@ -3,7 +3,7 @@ use crate::{
     data::models::Pool,
     errors::ServiceError,
     operators::organization_operator::{
-        create_organization_query, get_org_usage_by_id_query, get_organization_by_id_query,
+        create_organization_query, get_org_usage_by_id_query, get_organization_by_key_query,
         update_organization_query,
     },
 };
@@ -31,7 +31,7 @@ pub async fn get_organization_by_id(
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_id = organization_id.into_inner();
 
-    let org_plan_sub = get_organization_by_id_query(organization_id, pool)
+    let org_plan_sub = get_organization_by_key_query(organization_id.into(), pool)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -63,7 +63,7 @@ pub async fn update_organization(
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_update_data = organization.into_inner();
     let old_organization =
-        get_organization_by_id_query(organization_update_data.organization_uuid, pool.clone())
+        get_organization_by_key_query(organization_update_data.organization_uuid.into(), pool.clone())
             .await
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
