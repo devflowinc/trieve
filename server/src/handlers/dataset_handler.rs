@@ -14,54 +14,27 @@ use crate::{
     },
 };
 use actix_web::{web, FromRequest, HttpMessage, HttpResponse};
-use futures_util::Future;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::pin::Pin;
+use std::future::{ready, Ready};
 use utoipa::ToSchema;
 
 impl FromRequest for DatasetAndOrgWithSubAndPlan {
     type Error = ServiceError;
-    type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
+    type Future = Ready<Result<Self, Self::Error>>;
 
     fn from_request(
         req: &actix_web::HttpRequest,
         _payload: &mut actix_web::dev::Payload,
     ) -> Self::Future {
-        let req = req.clone();
-        Box::pin(async move {
-            let pool = req.app_data::<web::Data<Pool>>().unwrap().clone();
-            let dataset_header =
-                req.headers()
-                    .get("AF-Dataset")
-                    .ok_or(ServiceError::BadRequest(
-                        "Dataset must be specified".to_string(),
-                    ))?;
-
-            let dataset_id = dataset_header
-                .to_str()
-                .map_err(|_| ServiceError::BadRequest("Dataset must be valid string".to_string()))?
-                .parse::<uuid::Uuid>()
-                .map_err(|_| ServiceError::BadRequest("Dataset must be valid UUID".to_string()))?;
-
-            let dataset = get_dataset_by_id_query(dataset_id, pool.clone()).await?;
-            let org_plan_sub = get_organization_by_key_query(dataset.organization_id.into(), pool.clone())
-                .await
-                .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-            let ext = req.extensions();
-            let user = ext.get::<LoggedUser>().ok_or(ServiceError::Forbidden)?;
-
-            user.user_orgs
-                .iter()
-                .find(|org| org.organization_id == dataset.organization_id)
-                .ok_or(ServiceError::Forbidden)?;
-
-            let dataset = DatasetAndOrgWithSubAndPlan::from_components(dataset, org_plan_sub);
-            req.extensions_mut().insert(dataset.clone());
-
-            Ok::<DatasetAndOrgWithSubAndPlan, ServiceError>(dataset)
-        })
+        ready(
+            req.extensions()
+                .get::<DatasetAndOrgWithSubAndPlan>()
+                .cloned()
+                .ok_or(ServiceError::InternalServerError(
+                    "Could not get dataset from request".to_string(),
+                )),
+        )
     }
 }
 
