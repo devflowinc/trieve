@@ -1,6 +1,6 @@
 use crate::data::models::{DatasetAndOrgWithSubAndPlan, Organization, StripePlan, UserRole};
 use crate::get_env;
-use crate::operators::organization_operator::{get_organization_by_id_query, get_user_org_count};
+use crate::operators::organization_operator::{get_organization_by_key_query, get_user_org_count};
 use crate::operators::user_operator::create_user_query;
 use crate::{
     data::models::{Pool, ServerDatasetConfiguration, SlimUser, User, UserOrganization},
@@ -17,6 +17,7 @@ use actix_session::Session;
 use actix_web::{
     dev::Payload, web, Error, FromRequest, HttpMessage as _, HttpRequest, HttpResponse,
 };
+use futures_util::{Future, FutureExt};
 use oauth2::reqwest::async_http_client;
 use oauth2::{
     AuthUrl, AuthorizationCode, ClientSecret, CsrfToken, PkceCodeChallenge, PkceCodeVerifier,
@@ -27,6 +28,9 @@ use openidconnect::{AccessTokenHash, ClientId, IssuerUrl, Nonce};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::future::{ready, Ready};
+use std::ops::DerefMut;
+use std::pin::Pin;
+use std::rc::Rc;
 use utoipa::ToSchema;
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -77,176 +81,129 @@ impl FromRequest for LoggedUser {
     }
 }
 
+pub struct OrganizationRole {
+    pub user: SlimUser,
+    pub role: UserRole,
+}
+
+/// Pulls the user's organization role from the request using AF-Organization
+impl FromRequest for OrganizationRole {
+    type Error = ServiceError;
+    type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
+
+    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
+        let req = req.clone();
+        Box::pin(async move {
+            let ext = req.extensions();
+
+            let org_id = match req.headers().get("AF-Organization") {
+                Some(org_header) => {
+                    let orgid_result = org_header
+                        .to_str()
+                        .map_err(|_| {
+                            ServiceError::InternalServerError(
+                                "Could not convert Organization to str".to_string(),
+                            )
+                        })?
+                        .parse::<uuid::Uuid>();
+
+                    match orgid_result {
+                        Ok(org_id) => org_id,
+                        Err(_) => {
+                            let pool = req.app_data::<web::Data<Pool>>().unwrap().to_owned();
+                            let organization = get_organization_by_key_query(
+                                org_header
+                                    .to_str()
+                                    .map_err(|_| {
+                                        ServiceError::InternalServerError(
+                                            "Could not convert Organization to str".to_string(),
+                                        )
+                                    })?
+                                    .to_string()
+                                    .into(),
+                                pool,
+                            )
+                            .await
+                            .map_err(|_| {
+                                ServiceError::InternalServerError("Could not get org id".into())
+                            })?;
+                            organization.id
+                        }
+                    }
+                }
+                None => {
+                    let dataset_org_plan_sub = match ext.get::<DatasetAndOrgWithSubAndPlan>() {
+                        Some(dataset_org_plan_sub) => dataset_org_plan_sub.clone(),
+                        None => {
+                            return Err(ServiceError::InternalServerError(
+                                "Could not get dataset and org from request".to_string(),
+                            ))
+                        }
+                    };
+                    dataset_org_plan_sub.organization.id
+                }
+            };
+
+            let user = ext.get::<LoggedUser>().ok_or(ServiceError::Unauthorized)?;
+            let user_org = user
+                .user_orgs
+                .iter()
+                .find(|org| org.organization_id == org_id)
+                .ok_or(ServiceError::Forbidden)?;
+
+            return if user_org.role >= UserRole::Owner.into() {
+                Ok(Self{ user: user.clone(), role: UserRole::Owner })
+            } else if user_org.role >= UserRole::Admin.into() {
+                Ok(Self{ user: user.clone(), role: UserRole::Admin })
+            } else if user_org.role >= UserRole::User.into() {
+                Ok(Self{ user: user.clone(), role: UserRole::User })
+            } else {
+                Err(ServiceError::Forbidden)
+            };
+        })
+    }
+}
+
 pub struct AdminOnly(pub SlimUser);
 
 impl FromRequest for AdminOnly {
-    type Error = Error;
-    type Future = Ready<Result<AdminOnly, Error>>;
+    type Error = ServiceError;
+    type Future = Ready<Result<Self, Self::Error>>;
 
-    // TODO: rewrite this logic to pull current org and then the role from there
-
-    fn from_request(req: &HttpRequest, pl: &mut Payload) -> Self::Future {
+    #[inline]
+    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
         let ext = req.extensions();
-
-        let org_id = if req.headers().get("AF-Organization").is_some() {
-            let org_id = req
-                .headers()
-                .get("AF-Organization")
-                .unwrap()
-                .to_str()
-                .map_err(|_| {
-                    ready(Err::<&str, Error>(
-                        ServiceError::InternalServerError("Could not get org id".into()).into(),
-                    ))
-                })
-                .unwrap()
-                .parse::<uuid::Uuid>()
-                .map_err(|_| {
-                    ready(Err::<&str, Error>(
-                        ServiceError::InternalServerError("Could not get org id".into()).into(),
-                    ))
-                })
-                .unwrap();
-            org_id
-        } else {
-            let dataset_org_plan_sub = match ext.get::<DatasetAndOrgWithSubAndPlan>() {
-                Some(dataset_org_plan_sub) => dataset_org_plan_sub.clone(),
-                None => {
-                    return ready(Err(ServiceError::InternalServerError(
-                        "Could not get dataset and org from request".to_string(),
-                    )
-                    .into()))
-                }
-            };
-            dataset_org_plan_sub.organization.id
-        };
-
-        if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
-            if let Ok(user_json) = identity.id() {
-                if let Ok(user) = serde_json::from_str::<LoggedUser>(&user_json) {
-                    let user_org = match user
-                        .user_orgs
-                        .iter()
-                        .find(|org| org.organization_id == org_id)
-                    {
-                        Some(user_org) => user_org,
-                        None => return ready(Err(ServiceError::Forbidden.into())),
-                    };
-
-                    if user_org.role >= UserRole::Admin.into() {
-                        return ready(Ok(AdminOnly(user)));
-                    };
-                }
-            }
+        
+        match ext.get::<OrganizationRole>() {
+            Some(OrganizationRole { user, role: UserRole::Owner }) => {
+                ready(Ok(Self(user.clone())))
+            },
+            Some(OrganizationRole { user, role: UserRole::Admin }) => {
+                ready(Ok(Self(user.clone())))
+            },
+            None => ready(Err(ServiceError::Unauthorized)),
+            _ => ready(Err(ServiceError::Forbidden))
         }
-
-        if let Some(authen_header) = req.headers().get("Authorization") {
-            if let Ok(authen_header) = authen_header.to_str() {
-                if let Some(pool) = req.app_data::<web::Data<Pool>>() {
-                    if let Ok(user) = get_user_from_api_key_query(authen_header, pool) {
-                        let user_org = match user
-                            .user_orgs
-                            .iter()
-                            .find(|org| org.organization_id == org_id)
-                        {
-                            Some(user_org) => user_org,
-                            None => return ready(Err(ServiceError::Forbidden.into())),
-                        };
-
-                        if user_org.role >= UserRole::Admin.into() {
-                            return ready(Ok(AdminOnly(user)));
-                        };
-                    }
-                }
-            }
-        }
-
-        ready(Err(ServiceError::Unauthorized.into()))
     }
 }
 
 pub struct OwnerOnly(pub SlimUser);
 
 impl FromRequest for OwnerOnly {
-    type Error = Error;
-    type Future = Ready<Result<OwnerOnly, Error>>;
+    type Error = ServiceError;
+    type Future = Ready<Result<Self, Self::Error>>;
 
-    fn from_request(req: &HttpRequest, pl: &mut Payload) -> Self::Future {
+    #[inline]
+    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
         let ext = req.extensions();
-        let org_id = if req.headers().get("AF-Organization").is_some() {
-            let org_id = req
-                .headers()
-                .get("AF-Organization")
-                .unwrap()
-                .to_str()
-                .map_err(|_| {
-                    Err::<&str, Error>(
-                        ServiceError::InternalServerError("Could not get org id".into()).into(),
-                    )
-                })
-                .unwrap()
-                .parse::<uuid::Uuid>()
-                .map_err(|_| {
-                    Err::<&str, Error>(
-                        ServiceError::InternalServerError("Could not get org id".into()).into(),
-                    )
-                })
-                .unwrap();
-            org_id
-        } else {
-            let dataset_org_plan_sub = match ext.get::<DatasetAndOrgWithSubAndPlan>() {
-                Some(dataset_org_plan_sub) => dataset_org_plan_sub.clone(),
-                None => {
-                    return ready(Err(ServiceError::InternalServerError(
-                        "Could not get dataset and org from request".to_string(),
-                    )
-                    .into()))
-                }
-            };
-            dataset_org_plan_sub.organization.id
-        };
-
-        if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
-            if let Ok(user_json) = identity.id() {
-                if let Ok(user) = serde_json::from_str::<LoggedUser>(&user_json) {
-                    let user_org = match user
-                        .user_orgs
-                        .iter()
-                        .find(|org| org.organization_id == org_id)
-                    {
-                        Some(user_org) => user_org,
-                        None => return ready(Err(ServiceError::Forbidden.into())),
-                    };
-
-                    if user_org.role >= UserRole::Owner.into() {
-                        return ready(Ok(OwnerOnly(user)));
-                    };
-                }
-            }
+        
+        match ext.get::<OrganizationRole>() {
+            Some(OrganizationRole { user, role: UserRole::Owner }) => {
+                ready(Ok(Self(user.clone())))
+            },
+            None => ready(Err(ServiceError::Unauthorized)),
+            _ => ready(Err(ServiceError::Forbidden))
         }
-
-        if let Some(authen_header) = req.headers().get("Authorization") {
-            if let Ok(authen_header) = authen_header.to_str() {
-                if let Some(pool) = req.app_data::<web::Data<Pool>>() {
-                    if let Ok(user) = get_user_from_api_key_query(authen_header, pool) {
-                        let user_org = match user
-                            .user_orgs
-                            .iter()
-                            .find(|org| org.organization_id == org_id)
-                        {
-                            Some(user_org) => user_org,
-                            None => return ready(Err(ServiceError::Forbidden.into())),
-                        };
-
-                        if user_org.role >= UserRole::Owner.into() {
-                            return ready(Ok(OwnerOnly(user)));
-                        };
-                    }
-                }
-            }
-        }
-
-        ready(Err(ServiceError::Unauthorized.into()))
     }
 }
 
@@ -304,31 +261,31 @@ pub async fn create_account(
     pool: web::Data<Pool>,
 ) -> Result<(User, Vec<UserOrganization>, Vec<Organization>), ServiceError> {
     let (owner, org) = match dataset_id {
-        Some(dataset_id) => (false, get_org_from_dataset_id_query(dataset_id, pool.clone())
-            .await
-            .map_err(|error| {
-                ServiceError::InternalServerError(
-                    error.message.to_string()
-                )
-            })?),
-        None => {
-            let org_name = email.split('@').collect::<Vec<&str>>()[0].to_string().replace(" ", "-");
-            (true, create_organization_query(org_name.as_str(), json!({}), pool.clone())
+        Some(dataset_id) => (
+            false,
+            get_org_from_dataset_id_query(dataset_id, pool.clone())
                 .await
-                .map_err(|error| {
-                    ServiceError::InternalServerError(
-                        error.message.to_string()
-                    )
-                })?)
+                .map_err(|error| ServiceError::InternalServerError(error.message.to_string()))?,
+        ),
+        None => {
+            let org_name = email.split('@').collect::<Vec<&str>>()[0]
+                .to_string()
+                .replace(" ", "-");
+            (
+                true,
+                create_organization_query(org_name.as_str(), json!({}), pool.clone())
+                    .await
+                    .map_err(|error| {
+                        ServiceError::InternalServerError(error.message.to_string())
+                    })?,
+            )
         }
     };
     let org_id = org.id;
 
-    let org_plan_sub = get_organization_by_id_query(org_id, pool.clone())
+    let org_plan_sub = get_organization_by_key_query(org_id.into(), pool.clone())
         .await
-        .map_err(|error| {
-            ServiceError::InternalServerError(error.message.to_string())
-        })?;
+        .map_err(|error| ServiceError::InternalServerError(error.message.to_string()))?;
     let user_org_count_pool = pool.clone();
     let user_org_count = web::block(move || get_user_org_count(org_id, user_org_count_pool))
         .await

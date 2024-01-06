@@ -10,7 +10,7 @@ use crate::{
             create_dataset_query, delete_dataset_by_id_query, get_dataset_by_id_query,
             get_datasets_by_organization_id, update_dataset_query,
         },
-        organization_operator::{get_org_dataset_count, get_organization_by_id_query},
+        organization_operator::{get_org_dataset_count, get_organization_by_key_query},
     },
 };
 use actix_web::{web, FromRequest, HttpMessage, HttpResponse};
@@ -45,7 +45,7 @@ impl FromRequest for DatasetAndOrgWithSubAndPlan {
                 .map_err(|_| ServiceError::BadRequest("Dataset must be valid UUID".to_string()))?;
 
             let dataset = get_dataset_by_id_query(dataset_id, pool.clone()).await?;
-            let org_plan_sub = get_organization_by_id_query(dataset.organization_id, pool.clone())
+            let org_plan_sub = get_organization_by_key_query(dataset.organization_id.into(), pool.clone())
                 .await
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -92,7 +92,7 @@ pub async fn create_dataset(
     let org_pool = pool.clone();
     let org_id = data.organization_id;
 
-    let organization_sub_plan = get_organization_by_id_query(org_id, org_pool.clone())
+    let organization_sub_plan = get_organization_by_key_query(org_id.into(), org_pool.clone())
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
