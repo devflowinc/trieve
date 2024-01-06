@@ -1045,7 +1045,7 @@ impl Invitation {
 }
 
 #[derive(
-    Debug, Serialize, Deserialize, Selectable, Clone, Queryable, Insertable, ValidGrouping,
+    Debug, Serialize, Deserialize, Selectable, Clone, Queryable, Insertable, ValidGrouping, ToSchema,
 )]
 #[diesel(table_name = stripe_plans)]
 pub struct StripePlan {
