@@ -119,6 +119,7 @@ pub async fn main() -> std::io::Result<()> {
             handlers::stripe_handler::direct_to_payment_link,
             handlers::stripe_handler::cancel_subscription,
             handlers::stripe_handler::update_subscription_plan,
+            handlers::stripe_handler::get_all_plans,
         ),
         components(
             schemas(
@@ -188,6 +189,7 @@ pub async fn main() -> std::io::Result<()> {
                 data::models::UserRole,
                 data::models::DatasetAndOrgWithSubAndPlan,
                 data::models::ClientDatasetConfiguration,
+                data::models::StripePlan,
                 errors::DefaultError,
             )
         ),
@@ -538,6 +540,10 @@ pub async fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/payment_link/{plan_id}/{organization_id}")
                                     .route(web::get().to(handlers::stripe_handler::direct_to_payment_link)),
+                            )
+                            .service(
+                                web::resource("/plans")
+                                    .route(web::get().to(handlers::stripe_handler::get_all_plans)),
                             ),
                     )
             )

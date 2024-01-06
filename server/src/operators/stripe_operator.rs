@@ -45,11 +45,8 @@ pub async fn refresh_redis_org_plan_sub(
             .map_err(|_| DefaultError {
                 message: "Could not find organizations",
             })?;
-    let org_plan_sub = OrganizationWithSubAndPlan::from_components(
-        org_plan_sub.0,
-        org_plan_sub.1,
-        org_plan_sub.2,
-    );
+    let org_plan_sub =
+        OrganizationWithSubAndPlan::from_components(org_plan_sub.0, org_plan_sub.1, org_plan_sub.2);
 
     let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
     let client = redis::Client::open(redis_url).map_err(|_| DefaultError {
@@ -146,6 +143,22 @@ pub fn get_plan_by_id_query(
         })?;
 
     Ok(stripe_plan)
+}
+
+pub fn get_all_plans_query(pool: web::Data<Pool>) -> Result<Vec<StripePlan>, DefaultError> {
+    use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
+
+    let mut conn = pool.get().expect("Failed to get connection from pool");
+    let stripe_plans: Vec<StripePlan> = stripe_plans_columns::stripe_plans
+        .load(&mut conn)
+        .map_err(|e| {
+            log::error!("Failed to get stripe plans: {}", e);
+            DefaultError {
+                message: "Failed to get stripe plans",
+            }
+        })?;
+
+    Ok(stripe_plans)
 }
 
 pub async fn create_stripe_payment_link(

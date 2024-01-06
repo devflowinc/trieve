@@ -5,7 +5,7 @@ use crate::{
         organization_operator::get_organization_by_id_query,
         stripe_operator::{
             cancel_stripe_subscription, create_stripe_payment_link, create_stripe_plan_query,
-            create_stripe_subscription_query, delete_subscription_by_id_query,
+            create_stripe_subscription_query, delete_subscription_by_id_query, get_all_plans_query,
             get_option_subscription_by_organization_id_query, get_plan_by_id_query,
             get_subscription_by_id_query, set_stripe_subscription_current_period_end,
             update_stripe_subscription, update_stripe_subscription_plan_query,
@@ -290,4 +290,22 @@ pub async fn update_subscription_plan(
         .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
     Ok(HttpResponse::Ok().finish())
+}
+
+#[utoipa::path(
+    get,
+    path = "/stripe/plans",
+    context_path = "/api",
+    tag = "stripe",
+    responses(
+        (status = 200, description = "List of all plans", body = [Vec<StripePlan>]),
+        (status = 400, description = "Service error relating to getting all plans", body = [DefaultError]),
+    ),
+)]
+pub async fn get_all_plans(pool: web::Data<Pool>) -> Result<HttpResponse, actix_web::Error> {
+    let stripe_plans = web::block(move || get_all_plans_query(pool))
+        .await?
+        .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+
+    Ok(HttpResponse::Ok().json(stripe_plans))
 }
