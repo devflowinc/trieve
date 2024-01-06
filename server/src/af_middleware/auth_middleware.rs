@@ -118,9 +118,9 @@ where
             };
             let (http_req, pl) = req.parts_mut();
             let user = get_user(http_req, pl);
-            req.extensions_mut().insert(user.clone());
 
             if let Some(user) = user {
+                req.extensions_mut().insert(user.clone());
                 let user_org = user
                     .user_orgs
                     .iter()
