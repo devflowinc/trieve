@@ -1,15 +1,3 @@
-use std::{
-    future::{ready, Ready},
-    rc::Rc,
-};
-
-use actix_identity::Identity;
-use actix_web::{
-    dev::{forward_ready, Payload, Service, ServiceRequest, ServiceResponse, Transform},
-    web, Error, FromRequest, HttpMessage, HttpRequest,
-};
-use futures_util::future::LocalBoxFuture;
-
 use crate::{
     data::models::{DatasetAndOrgWithSubAndPlan, Pool, UserRole},
     errors::ServiceError,
@@ -19,6 +7,16 @@ use crate::{
         organization_operator::get_organization_by_key_query,
         user_operator::get_user_from_api_key_query,
     },
+};
+use actix_identity::Identity;
+use actix_web::{
+    dev::{forward_ready, Payload, Service, ServiceRequest, ServiceResponse, Transform},
+    web, Error, FromRequest, HttpMessage, HttpRequest,
+};
+use futures_util::future::LocalBoxFuture;
+use std::{
+    future::{ready, Ready},
+    rc::Rc,
 };
 
 pub struct AuthenticationMiddleware<S> {
@@ -77,6 +75,7 @@ where
                         }
                     }
                 }
+
                 None => match req.headers().get("AF-Dataset") {
                     Some(dataset_header) => {
                         let pool = req.app_data::<web::Data<Pool>>().unwrap().to_owned();
@@ -116,6 +115,7 @@ where
                     }
                 },
             };
+
             let (http_req, pl) = req.parts_mut();
             let user = get_user(http_req, pl);
 
@@ -127,20 +127,10 @@ where
                     .find(|org| org.organization_id == org_id)
                     .ok_or(ServiceError::Forbidden)?;
 
-                let role = if user_org.role >= UserRole::Owner.into() {
+                let role = if user_org.role >= UserRole::User.into() {
                     Ok(OrganizationRole {
                         user: user.clone(),
-                        role: UserRole::Owner,
-                    })
-                } else if user_org.role >= UserRole::Admin.into() {
-                    Ok(OrganizationRole {
-                        user: user.clone(),
-                        role: UserRole::Admin,
-                    })
-                } else if user_org.role >= UserRole::User.into() {
-                    Ok(OrganizationRole {
-                        user: user.clone(),
-                        role: UserRole::User,
+                        role: UserRole::from(user_org.role),
                     })
                 } else {
                     Err(ServiceError::Forbidden)

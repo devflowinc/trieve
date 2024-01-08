@@ -99,7 +99,7 @@ pub enum OrganizationKey {
 }
 
 impl OrganizationKey {
-    pub fn to_string(&self) -> String {
+    pub fn display(&self) -> String {
         match self {
             OrganizationKey::Id(id) => id.to_string(),
             OrganizationKey::Name(name) => name.to_string(),
@@ -136,7 +136,7 @@ pub async fn get_organization_by_key_query(
         })?;
 
     let redis_organization: Result<String, DefaultError> = redis::cmd("GET")
-        .arg(format!("organization:{}", key.to_string()))
+        .arg(format!("organization:{}", key.display()))
         .query_async(&mut redis_conn)
         .await
         .map_err(|_| DefaultError {
