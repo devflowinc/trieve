@@ -193,6 +193,7 @@ diesel::table! {
         amount -> Int8,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        name -> Text,
     }
 }
 

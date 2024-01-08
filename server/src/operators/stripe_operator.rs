@@ -109,7 +109,16 @@ pub fn create_stripe_plan_query(
 ) -> Result<StripePlan, DefaultError> {
     use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
 
-    let stripe_plan = StripePlan::from_details(stripe_id, 10000, 1000000000, 100, 1, 10000, amount);
+    let stripe_plan = StripePlan::from_details(
+        stripe_id,
+        10000,
+        1000000000,
+        100,
+        1,
+        10000,
+        amount,
+        "Project".to_string(),
+    );
 
     let mut conn = pool.get().expect("Failed to get connection from pool");
     let created_stripe_plan: StripePlan = diesel::insert_into(stripe_plans_columns::stripe_plans)

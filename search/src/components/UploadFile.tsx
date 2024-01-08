@@ -40,6 +40,7 @@ export const UploadFile = () => {
         reader.onload = () => resolve(reader.result);
         reader.onerror = reject;
       });
+
     let base64File = await toBase64(file() ?? new File([], ""));
     base64File = (base64File as string)
       .toString()
@@ -47,6 +48,7 @@ export const UploadFile = () => {
       .replace(/\+/g, "-") // Convert '+' to '-'
       .replace(/\//g, "_") // Convert '/' to '_'
       .replace(/=+$/, ""); // Remove ending '='
+
     const file_name = file()?.name;
     const file_mime_type = file()?.type;
 
