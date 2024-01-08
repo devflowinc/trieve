@@ -6,7 +6,7 @@ import HomeLayout from "../layouts/HomeLayout.astro";
 import { DefaultQueries } from "../components/DefaultQueries";
 import { isClientEnvsConfiguration } from "../../utils/apiTypes";
 
-const dataset = import.meta.env.DATASET as string;
+const dataset = import.meta.env.PUBLIC_DATASET as string;
 const suggestedQueries = ((import.meta.env.SUGGESTED_QUERIES ?? "") as string)
   .split(",")
   .filter((query) => query !== "");
