@@ -2,7 +2,8 @@ use crate::{
     data::models::{
         Organization, OrganizationWithSubAndPlan, Pool, StripePlan, StripeSubscription,
     },
-    errors::DefaultError, get_env,
+    errors::DefaultError,
+    get_env,
 };
 use actix_web::web;
 use diesel::{
@@ -194,12 +195,11 @@ pub async fn create_stripe_payment_link(
         ..Default::default()
     };
 
-    let admin_dashboard_url =
-        get_env!("ADMIN_DASHBOARD_URL", "ADMIN_DASHBOARD_URL must be set");
+    let admin_dashboard_url = get_env!("ADMIN_DASHBOARD_URL", "ADMIN_DASHBOARD_URL must be set");
     let mut create_payment_link = CreatePaymentLink::new(vec![payment_link_line_items]);
     create_payment_link.after_completion = Some(CreatePaymentLinkAfterCompletion {
         redirect: Some(CreatePaymentLinkAfterCompletionRedirect {
-            url: admin_dashboard_url.to_string(),
+            url: admin_dashboard_url + "/dashboard/billing",
         }),
         hosted_confirmation: None,
         type_: CreatePaymentLinkAfterCompletionType::Redirect,
@@ -381,9 +381,10 @@ pub async fn update_stripe_subscription(
 ) -> Result<(), DefaultError> {
     let stripe_client = get_stripe_client();
 
-    let stripe_subscription_id: stripe::SubscriptionId = subscription_stripe_id
-        .parse()
-        .map_err(|_| DefaultError { message: "Failed to parse stripe subscription id"})?;
+    let stripe_subscription_id: stripe::SubscriptionId =
+        subscription_stripe_id.parse().map_err(|_| DefaultError {
+            message: "Failed to parse stripe subscription id",
+        })?;
 
     let stripe_subscription =
         stripe::Subscription::retrieve(&stripe_client, &stripe_subscription_id, &[])
