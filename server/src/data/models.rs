@@ -808,14 +808,14 @@ pub struct DatasetUsageCount {
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct DatasetAndUsage {
     pub dataset: Dataset,
-    pub datset_usage: DatasetUsageCount,
+    pub dataset_usage: DatasetUsageCount,
 }
 
 impl DatasetAndUsage {
     pub fn from_components(dataset: Dataset, dataset_usage: DatasetUsageCount) -> Self {
         DatasetAndUsage {
             dataset,
-            datset_usage: dataset_usage,
+            dataset_usage,
         }
     }
 }
