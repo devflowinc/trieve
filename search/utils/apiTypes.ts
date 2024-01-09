@@ -482,3 +482,24 @@ export const isOrganizationDTO = (
     typeof (organization as OrganizationDTO).registerable === "boolean"
   );
 };
+
+export interface DatasetDTO {
+    id: string,
+    name: string,
+    created_at: string,
+    updated_at: string,
+    organization_id: string,
+    server_configuration: object,
+    client_configuration: ClientEnvsConfiguration,
+}
+
+export interface UsageDTO {
+    id: string,
+    dataset_id: string,
+    chunk_count: number,
+}
+
+export interface DatasetAndUsageDTO {
+  dataset: DatasetDTO;
+  usage: UsageDTO;
+}
