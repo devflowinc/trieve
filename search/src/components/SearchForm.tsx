@@ -18,15 +18,11 @@ import {
   Popover,
   PopoverButton,
   PopoverPanel,
-  Select,
-  SelectOption,
-  Transition,
 } from "solid-headless";
 import { FaSolidCheck } from "solid-icons/fa";
 import type { Filters } from "./ResultsPage";
 import { DatePicker } from "./Atoms/DatePicker";
-import { isOrganizationDTO, type ClientEnvsConfiguration, type DatasetAndUsageDTO, type OrganizationDTO } from "../../utils/apiTypes";
-import { BsChevronExpand } from "solid-icons/bs";
+import type { ClientEnvsConfiguration } from "../../utils/apiTypes";
 
 const SearchForm = (props: {
   query?: string;
@@ -35,7 +31,7 @@ const SearchForm = (props: {
   collectionID?: string;
   weight?: string;
 }) => {
-  const apiHost = import.meta.env.PUBLIC_API_HOST;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const envs = JSON.parse(
     localStorage.getItem("clientConfig") ?? "{}",
   ) as ClientEnvsConfiguration;
@@ -70,32 +66,6 @@ const SearchForm = (props: {
   });
   const [semanticWeight, setSemanticWeight] = createSignal("0.5");
   const [usingPanel, setUsingPanel] = createSignal("");
-  const [datasets, setDatasets] = createSignal<DatasetAndUsageDTO[]>([]);
-  const [selectedDataset, setSelectedDataset] = createSignal<DatasetAndUsageDTO>();
-  const [isDatasetSelectOpen, setIsDatasetSelectOpen] = createSignal(false);
-
-  createEffect(() => {
-    const organization = JSON.parse(
-      localStorage.getItem("currentOrganization") ?? "{}",
-    ) as OrganizationDTO;
-
-    if (organization && isOrganizationDTO(organization)) {
-      fetch(`${apiHost}/dataset/organization/${organization.id}`, {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "AF-Organization": organization.id,
-        }
-      }).then((res) => {
-        if (res.ok) {
-          res.json().then((data) => {
-              setSelectedDataset(data[0]);
-            setDatasets(data);
-          });
-        }
-      })
-    }
-  });
 
   createEffect(() => {
     // get the previous searched queries from localStorage and set them into the state;
@@ -200,17 +170,17 @@ const SearchForm = (props: {
 
     window.location.href = props.collectionID
       ? `/collection/${props.collectionID}?q=${searchQuery}` +
-      (filters ? `&${filters}` : "") +
-      (timeRange().start ? `&start=${timeRange().start}` : "") +
-      (timeRange().end ? `&end=${timeRange().end}` : "") +
-      searchTypeUrlParam +
-      semanticWeightUrlParam
+        (filters ? `&${filters}` : "") +
+        (timeRange().start ? `&start=${timeRange().start}` : "") +
+        (timeRange().end ? `&end=${timeRange().end}` : "") +
+        searchTypeUrlParam +
+        semanticWeightUrlParam
       : `/search?q=${searchQuery}` +
-      (filters ? `&${filters}` : "") +
-      (timeRange().start ? `&start=${timeRange().start}` : "") +
-      (timeRange().end ? `&end=${timeRange().end}` : "") +
-      searchTypeUrlParam +
-      semanticWeightUrlParam;
+        (filters ? `&${filters}` : "") +
+        (timeRange().start ? `&start=${timeRange().start}` : "") +
+        (timeRange().end ? `&end=${timeRange().end}` : "") +
+        searchTypeUrlParam +
+        semanticWeightUrlParam;
   };
 
   onMount(() => {
@@ -223,11 +193,11 @@ const SearchForm = (props: {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
     const savedCustomFilters: any = JSON.parse(
       window.localStorage.getItem("savedCustomFilters") ??
-      JSON.stringify({
-        tagSet: [],
-        link: [],
-        metadataFilters: {},
-      }),
+        JSON.stringify({
+          tagSet: [],
+          link: [],
+          metadataFilters: {},
+        }),
     );
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
@@ -348,7 +318,7 @@ const SearchForm = (props: {
 
   createEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const temp = textareaVal();
+    textareaVal();
 
     resizeTextarea(document.querySelector("#search-query-textarea"));
   });
@@ -456,39 +426,6 @@ const SearchForm = (props: {
 
   return (
     <div class="w-full">
-      <div class="flex items-center space-x-4">
-        <p>Dataset</p>
-        <div class="w-full">
-          <button onClick={() => {
-            setIsDatasetSelectOpen((prev) => !prev);
-          }} type="button" class="relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6" aria-haspopup="listbox" aria-expanded="true" aria-labelledby="listbox-label">
-            <span class="block truncate">{selectedDataset()?.dataset.name}</span>
-            <BsChevronExpand class="absolute inset-y-0 right-0 w-5 h-5 mt-2 mr-2 text-gray-400" aria-hidden="true" />
-          </button>
-          <Show when={isDatasetSelectOpen()}>
-            <Select toggleable value={selectedDataset} onChange={setSelectedDataset} class="border border-magenta absolute z-10 bg-white w-[500px]">
-              <For each={datasets()}>
-                {(item) => (
-                  <SelectOption value={item}>
-                    {({ isActive, isSelected }) => (
-                      <div
-                        classList={{
-                          "flex items-center space-x-2": true,
-                          "bg-green-100 dark:bg-neutral-700": isActive(),
-                          "bg-red-200 dark:bg-neutral-600": isSelected(),
-                        }}>
-                        {item.dataset.name}
-                      </div>
-                    )}
-                  </SelectOption>
-                )}
-              </For>
-            </Select>
-          </Show>
-        </div>
-      </div>
-
-
       <form class="w-full space-y-4 dark:text-white" onSubmit={onSubmit}>
         <div class="relative flex">
           <div
@@ -816,7 +753,7 @@ const SearchForm = (props: {
           </div>
         </Show>
       </form>
-    </div >
+    </div>
   );
 };
 
