@@ -8,8 +8,9 @@ use crate::{
             cancel_stripe_subscription, create_stripe_payment_link, create_stripe_plan_query,
             create_stripe_subscription_query, delete_subscription_by_id_query, get_all_plans_query,
             get_option_subscription_by_organization_id_query, get_plan_by_id_query,
-            get_subscription_by_id_query, set_stripe_subscription_current_period_end,
-            update_stripe_subscription, update_stripe_subscription_plan_query,
+            get_subscription_by_id_query, refresh_redis_org_plan_sub,
+            set_stripe_subscription_current_period_end, update_stripe_subscription,
+            update_stripe_subscription_plan_query,
         },
     },
 };
@@ -231,8 +232,9 @@ pub async fn cancel_subscription(
     user: OwnerOnly,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let pool_clone = pool.clone();
     let subscription = web::block(move || {
-        get_subscription_by_id_query(subscription_id.into_inner(), pool.clone())
+        get_subscription_by_id_query(subscription_id.into_inner(), pool_clone)
     })
     .await?
     .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
@@ -251,6 +253,8 @@ pub async fn cancel_subscription(
                 e.message
             ))
         })?;
+
+    let _ = refresh_redis_org_plan_sub(subscription.organization_id, pool.clone()).await;
 
     Ok(HttpResponse::Ok().finish())
 }
