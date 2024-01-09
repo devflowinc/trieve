@@ -184,6 +184,7 @@ export interface UserDTO {
   username: string | null;
   website: string | null;
   visible_email: boolean;
+  orgs: [OrganizationDTO];
 }
 
 export const isUserDTO = (user: unknown): user is UserDTO => {
@@ -202,7 +203,10 @@ export const isUserDTO = (user: unknown): user is UserDTO => {
     (typeof (user as UserDTO).website === "string" ||
       (user as UserDTO).website === null) &&
     indirectHasOwnProperty(user, "visible_email") &&
-    typeof (user as UserDTO).visible_email === "boolean"
+    typeof (user as UserDTO).visible_email === "boolean" &&
+    indirectHasOwnProperty(user, "orgs") &&
+    Array.isArray((user as UserDTO).orgs) &&
+    (user as UserDTO).orgs.every((val) => isOrganizationDTO(val))
   );
 };
 
@@ -455,5 +459,26 @@ export const isClientEnvsConfiguration = (
     indirectHasOwnProperty(config, "PUBLIC_SUGGESTED_QUERIES") &&
     typeof (config as ClientEnvsConfiguration).PUBLIC_SUGGESTED_QUERIES ===
       "string"
+  );
+};
+
+export interface OrganizationDTO {
+  id: string;
+  name: string;
+  registerable: boolean;
+}
+
+export const isOrganizationDTO = (
+  organization: unknown,
+): organization is OrganizationDTO => {
+  if (typeof organization !== "object" || organization === null) return false;
+
+  return (
+    indirectHasOwnProperty(organization, "id") &&
+    typeof (organization as OrganizationDTO).id === "string" &&
+    indirectHasOwnProperty(organization, "name") &&
+    typeof (organization as OrganizationDTO).name === "string" &&
+    indirectHasOwnProperty(organization, "registerable") &&
+    typeof (organization as OrganizationDTO).registerable === "boolean"
   );
 };
