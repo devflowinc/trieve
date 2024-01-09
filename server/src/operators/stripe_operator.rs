@@ -199,7 +199,7 @@ pub async fn create_stripe_payment_link(
     let mut create_payment_link = CreatePaymentLink::new(vec![payment_link_line_items]);
     create_payment_link.after_completion = Some(CreatePaymentLinkAfterCompletion {
         redirect: Some(CreatePaymentLinkAfterCompletionRedirect {
-            url: admin_dashboard_url + "/dashboard/billing",
+            url: format!("{}/dashboard/billing", admin_dashboard_url),
         }),
         hosted_confirmation: None,
         type_: CreatePaymentLinkAfterCompletionType::Redirect,
