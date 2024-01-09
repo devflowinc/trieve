@@ -1,10 +1,13 @@
-use super::auth_handler::{AdminOnly, OwnerOnly};
+use super::auth_handler::{AdminOnly, OwnerOnly, LoggedUser};
 use crate::{
-    data::models::Pool,
+    data::models::{Pool, UserOrganization, UserRole},
     errors::ServiceError,
-    operators::organization_operator::{
-        create_organization_query, get_org_usage_by_id_query, get_organization_by_key_query,
-        update_organization_query,
+    operators::{
+        organization_operator::{
+            create_organization_query, get_org_usage_by_id_query, get_organization_by_key_query,
+            update_organization_query,
+        },
+        user_operator::add_user_to_organization,
     },
 };
 use actix_web::{web, HttpResponse};
@@ -62,10 +65,12 @@ pub async fn update_organization(
     _user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_update_data = organization.into_inner();
-    let old_organization =
-        get_organization_by_key_query(organization_update_data.organization_uuid.into(), pool.clone())
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let old_organization = get_organization_by_key_query(
+        organization_update_data.organization_uuid.into(),
+        pool.clone(),
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let updated_organization = update_organization_query(
         organization_update_data.organization_uuid,
@@ -90,6 +95,7 @@ pub struct CreateOrganizationData {
     configuration: serde_json::Value,
 }
 
+/// Create a new organization, the user that creates the organization becomes the owner
 #[utoipa::path(
     post,
     path = "/organization",
@@ -104,17 +110,26 @@ pub struct CreateOrganizationData {
 pub async fn create_organization(
     organization: web::Json<CreateOrganizationData>,
     pool: web::Data<Pool>,
-    _user: OwnerOnly,
+    user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_create_data = organization.into_inner();
 
-    let created_organization = create_organization_query(
-        organization_create_data.name.as_str(),
-        organization_create_data.configuration,
-        pool,
-    )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let created_organization = {
+        let pool = pool.clone();
+        create_organization_query(
+            organization_create_data.name.as_str(),
+            organization_create_data.configuration,
+            pool,
+        )
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+    };
+
+    web::block(move || {
+        add_user_to_organization(
+            UserOrganization::from_details(user.id, created_organization.id, UserRole::Owner),
+            pool)
+    }).await.map_err(|_| ServiceError::BadRequest("Thread pool error".to_owned()))??;
 
     Ok(HttpResponse::Ok().json(created_organization))
 }

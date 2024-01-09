@@ -15,7 +15,6 @@ const { chunkId } = Astro.params;
 let specificChunk: SingleChunkDTO;
 
 try {
-
   const specificChunkResult = await fetch(`${apiHost}/chunk/${chunkId ?? ""}`, {
     method: "GET",
     headers: {
