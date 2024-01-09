@@ -229,21 +229,15 @@ pub async fn direct_to_payment_link(
 )]
 pub async fn cancel_subscription(
     subscription_id: web::Path<uuid::Uuid>,
-    user: OwnerOnly,
+    _user: OwnerOnly,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool_clone = pool.clone();
+    let get_sub_pool = pool.clone();
     let subscription = web::block(move || {
-        get_subscription_by_id_query(subscription_id.into_inner(), pool_clone)
+        get_subscription_by_id_query(subscription_id.into_inner(), get_sub_pool)
     })
     .await?
     .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
-
-    user.0
-        .user_orgs
-        .iter()
-        .find(|org| org.organization_id == subscription.organization_id)
-        .ok_or(ServiceError::Forbidden)?;
 
     cancel_stripe_subscription(subscription.stripe_id)
         .await
