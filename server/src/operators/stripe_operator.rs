@@ -72,6 +72,19 @@ pub async fn refresh_redis_org_plan_sub(
             message: "Could not set organization in redis",
         })?;
 
+    redis::cmd("SET")
+        .arg(format!("organization:{}", org_plan_sub.name))
+        .arg(
+            serde_json::to_string(&org_plan_sub).map_err(|_| DefaultError {
+                message: "Could not stringify organization",
+            })?,
+        )
+        .query_async(&mut redis_conn)
+        .await
+        .map_err(|_| DefaultError {
+            message: "Could not set organization in redis",
+        })?;
+
     Ok(())
 }
 
@@ -361,7 +374,7 @@ pub async fn update_stripe_subscription(
 
     let stripe_subscription_id: stripe::SubscriptionId = subscription_stripe_id
         .parse()
-        .map_err(|e| DefaultError { message: "Failed to parse stripe subscription id"})?;
+        .map_err(|_| DefaultError { message: "Failed to parse stripe subscription id"})?;
 
     let stripe_subscription =
         stripe::Subscription::retrieve(&stripe_client, &stripe_subscription_id, &[])

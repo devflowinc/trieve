@@ -132,8 +132,7 @@ const ChatPopup = (props: LayoutProps) => {
       if (!reader) {
         return;
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const _ = await handleReader(reader);
+      await handleReader(reader);
     } catch (e) {
       console.error(e);
     }
