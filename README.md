@@ -258,3 +258,11 @@ make install
 ## How to debug diesel by getting the exact generated SQL
 
 `diesel::debug_query(&query).to_string();`
+
+## Listen to Stripe events for billing
+
+Install Stripe CLI.
+
+1. `stripe login`
+2. `stripe listen --forward-to localhost:8090/api/stripe/webhook`
+3. `stripe plans create --amount=1200 --currency=usd --interval=month --product=prod_PCHehsNBCcVN9i`
