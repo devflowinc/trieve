@@ -484,22 +484,70 @@ export const isOrganizationDTO = (
 };
 
 export interface DatasetDTO {
-    id: string,
-    name: string,
-    created_at: string,
-    updated_at: string,
-    organization_id: string,
-    server_configuration: object,
-    client_configuration: ClientEnvsConfiguration,
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+  organization_id: string;
+  server_configuration: string;
+  client_configuration: string;
 }
 
+export const isDatasetDTO = (dataset: unknown): dataset is DatasetDTO => {
+  if (typeof dataset !== "object" || dataset === null) return false;
+
+  return (
+    indirectHasOwnProperty(dataset, "id") &&
+    typeof (dataset as DatasetDTO).id === "string" &&
+    indirectHasOwnProperty(dataset, "name") &&
+    typeof (dataset as DatasetDTO).name === "string" &&
+    indirectHasOwnProperty(dataset, "created_at") &&
+    typeof (dataset as DatasetDTO).created_at === "string" &&
+    indirectHasOwnProperty(dataset, "updated_at") &&
+    typeof (dataset as DatasetDTO).updated_at === "string" &&
+    indirectHasOwnProperty(dataset, "organization_id") &&
+    typeof (dataset as DatasetDTO).organization_id === "string" &&
+    indirectHasOwnProperty(dataset, "server_configuration") &&
+    typeof (dataset as DatasetDTO).server_configuration === "string" &&
+    indirectHasOwnProperty(dataset, "client_configuration") &&
+    typeof (dataset as DatasetDTO).client_configuration === "string"
+  );
+};
+
 export interface UsageDTO {
-    id: string,
-    dataset_id: string,
-    chunk_count: number,
+  id: string;
+  dataset_id: string;
+  chunk_count: number;
 }
+
+export const isUsageDTO = (usage: unknown): usage is UsageDTO => {
+  if (typeof usage !== "object" || usage === null) return false;
+
+  return (
+    indirectHasOwnProperty(usage, "id") &&
+    typeof (usage as UsageDTO).id === "string" &&
+    indirectHasOwnProperty(usage, "dataset_id") &&
+    typeof (usage as UsageDTO).dataset_id === "string" &&
+    indirectHasOwnProperty(usage, "chunk_count") &&
+    typeof (usage as UsageDTO).chunk_count === "number"
+  );
+};
 
 export interface DatasetAndUsageDTO {
   dataset: DatasetDTO;
-  usage: UsageDTO;
+  dataset_usage: UsageDTO;
 }
+
+export const isDatasetAndUsageDTO = (
+  datasetAndUsage: unknown,
+): datasetAndUsage is DatasetAndUsageDTO => {
+  if (typeof datasetAndUsage !== "object" || datasetAndUsage === null)
+    return false;
+
+  return (
+    indirectHasOwnProperty(datasetAndUsage, "dataset") &&
+    isDatasetDTO((datasetAndUsage as DatasetAndUsageDTO).dataset) &&
+    indirectHasOwnProperty(datasetAndUsage, "dataset_usage") &&
+    isUsageDTO((datasetAndUsage as DatasetAndUsageDTO).dataset_usage)
+  );
+};
