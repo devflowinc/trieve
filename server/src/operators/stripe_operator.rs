@@ -319,32 +319,25 @@ pub async fn set_stripe_subscription_current_period_end(
 pub async fn cancel_stripe_subscription(
     subscription_stripe_id: String,
 ) -> Result<(), DefaultError> {
-    let stripe_secret = get_env!("STRIPE_SECRET", "STRIPE_SECRET must be set");
-    let stripe_client = reqwest::Client::new();
-    let stripe_response = stripe_client
-        .delete(&format!(
-            "https://api.stripe.com/v1/subscriptions/{}",
-            subscription_stripe_id
-        ))
-        .bearer_auth(stripe_secret)
-        .send()
-        .await
-        .map_err(|e| {
-            log::error!("Failed to cancel stripe subscription: {}", e);
-            DefaultError {
-                message: "Request to stripe failed",
-            }
+    let stripe_client = get_stripe_client();
+    let stripe_subscription_id: stripe::SubscriptionId =
+        subscription_stripe_id.parse().map_err(|_| DefaultError {
+            message: "Failed to parse stripe subscription id",
         })?;
-
-    if !stripe_response.status().is_success() {
-        log::error!(
-            "Failed to cancel stripe subscription: {}",
-            stripe_response.text().await.unwrap()
-        );
-        return Err(DefaultError {
+    stripe::Subscription::cancel(
+        &stripe_client,
+        &stripe_subscription_id,
+        stripe::CancelSubscription {
+            at_period_end: Some(true),
+        },
+    )
+    .await
+    .map_err(|e| {
+        log::error!("Failed to cancel stripe subscription: {}", e);
+        DefaultError {
             message: "Request to stripe failed",
-        });
-    }
+        }
+    })?;
 
     Ok(())
 }
