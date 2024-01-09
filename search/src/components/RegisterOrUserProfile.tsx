@@ -8,15 +8,18 @@ import {
 import { BiRegularLogOut, BiRegularUser } from "solid-icons/bi";
 import { AiOutlineProfile } from "solid-icons/ai";
 import { IoSettingsOutline } from "solid-icons/io";
-import { Show, createEffect, createSignal } from "solid-js";
+import { For, Show, createEffect, createSignal } from "solid-js";
 import {
   ClientEnvsConfiguration,
+  isOrganizationDTO,
   isUserDTO,
+  OrganizationDTO,
   type UserDTO,
 } from "../../utils/apiTypes";
 import { NotificationPopover } from "./Atoms/NotificationPopover";
 import { AiFillGithub } from "solid-icons/ai";
 import { TbMinusVertical } from "solid-icons/tb";
+import { FaSolidCheck } from "solid-icons/fa";
 
 export interface RegisterOrUserProfileProps {
   stars: number;
@@ -32,6 +35,11 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
 
   const [isLoadingUser, setIsLoadingUser] = createSignal(true);
   const [currentUser, setCurrentUser] = createSignal<UserDTO | null>(null);
+  const [currentOrganization, setOrganization] =
+    createSignal<OrganizationDTO | null>(null);
+  const [organizations, setOrganizations] = createSignal<
+    OrganizationDTO[] | null
+  >(null);
 
   const logout = () => {
     void fetch(`${apiHost}/auth`, {
@@ -48,6 +56,28 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
       window.location.href = "/";
     });
   };
+
+  createEffect(() => {
+    const user = currentUser();
+    if (!user) {
+      return;
+    }
+
+    const orgItem = localStorage.getItem("currentOrganization");
+    setOrganizations(user.orgs);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const organization = orgItem ? JSON.parse(orgItem) : null;
+    if (organization && isOrganizationDTO(organization)) {
+      // check if user is in the organization
+      const org = user.orgs.find((o) => o.id === organization.id);
+      if (org) {
+        setOrganization(organization);
+        return;
+      }
+    } else {
+      setOrganization(user.orgs[0]);
+    }
+  });
 
   createEffect(() => {
     void fetch(`${apiHost}/auth/me`, {
@@ -144,6 +174,81 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
                         </Menu>
                       </PopoverPanel>
                     </div>
+                  </Show>
+                </>
+              )}
+            </Popover>
+          </Show>
+          <Show when={!!currentUser()}>
+            <Popover defaultOpen={false} class="relative">
+              {({ isOpen, setState }) => (
+                <>
+                  <PopoverButton
+                    aria-label="Toggle filters"
+                    type="button"
+                    class="flex items-center space-x-1 pb-1 text-sm"
+                  >
+                    <span>{currentOrganization()?.name}</span>
+                    <svg
+                      fill="currentColor"
+                      stroke-width="0"
+                      style={{ overflow: "visible", color: "currentColor" }}
+                      viewBox="0 0 16 16"
+                      class="h-3.5 w-3.5 "
+                      height="1em"
+                      width="1em"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />
+                    </svg>
+                  </PopoverButton>
+                  <Show when={isOpen()}>
+                    <PopoverPanel
+                      unmount={false}
+                      class="absolute right-0 z-10 mt-2 h-fit w-[180px] rounded-md border p-1 dark:bg-neutral-800"
+                    >
+                      <Menu class="mx-1 space-y-0.5">
+                        <For each={organizations()}>
+                          {(organizationItem) => {
+                            const onClick = (e: Event) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setOrganization(organizationItem);
+                              localStorage.setItem(
+                                "currentOrganization",
+                                JSON.stringify(organizationItem),
+                              );
+                              setState(false);
+                            };
+                            return (
+                              <MenuItem
+                                as="button"
+                                classList={{
+                                  "flex w-full items-center justify-between rounded p-1 focus:text-black focus:outline-none dark:hover:text-white dark:focus:text-white hover:bg-neutral-300 hover:dark:bg-neutral-700":
+                                    true,
+                                  "bg-neutral-300 dark:bg-neutral-700":
+                                    organizationItem.id ===
+                                    currentOrganization()?.id,
+                                }}
+                                onClick={onClick}
+                              >
+                                <div class="flex flex-row justify-start space-x-2">
+                                  <span class="line-clamp-1 text-left text-sm">
+                                    {organizationItem.name}
+                                  </span>
+                                </div>
+                                {organizationItem.id ==
+                                  currentOrganization()?.id && (
+                                  <span>
+                                    <FaSolidCheck class="text-sm" />
+                                  </span>
+                                )}
+                              </MenuItem>
+                            );
+                          }}
+                        </For>
+                      </Menu>
+                    </PopoverPanel>
                   </Show>
                 </>
               )}
