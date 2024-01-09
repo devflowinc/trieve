@@ -67,7 +67,6 @@ let title = "Arguflow Search";
 let description = "";
 
 try {
-
   if (query === "") {
     const collectionChunkResponse = await fetch(
       `${apiHost}/chunk_collection/${collectionID}/${page}`,

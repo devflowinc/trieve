@@ -17,7 +17,6 @@ let title = "Arguflow Search";
 let specificChunks: SingleChunkDTO;
 
 try {
-
   const specificChunk = await fetch(`${apiHost}/chunk/${chunkId ?? ""}`, {
     method: "GET",
     headers: {

@@ -221,6 +221,19 @@ pub async fn get_organization_by_key_query(
                     message: "Could not set organization in redis",
                 })?;
 
+            redis::cmd("SET")
+                .arg(format!("organization:{}", org_with_plan_sub.name))
+                .arg(
+                    serde_json::to_string(&org_with_plan_sub).map_err(|_| DefaultError {
+                        message: "Could not stringify organization",
+                    })?,
+                )
+                .query_async(&mut redis_conn)
+                .await
+                .map_err(|_| DefaultError {
+                    message: "Could not set organization in redis",
+                })?;
+
             org_with_plan_sub
         }
     };

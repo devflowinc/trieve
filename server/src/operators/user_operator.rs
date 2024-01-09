@@ -3,6 +3,7 @@ use crate::data::models::{
     UserDTOWithChunks, UserOrganization, UserRole,
 };
 use crate::diesel::prelude::*;
+use crate::errors::ServiceError;
 use crate::handlers::auth_handler::LoggedUser;
 use crate::{
     data::models::{Pool, User},
@@ -380,4 +381,22 @@ pub fn create_user_query(
     let user_org = get_user_by_id_query(&user_org.0.id, pool)?;
 
     Ok(user_org)
+}
+
+pub fn add_user_to_organization(
+    user_organizations: UserOrganization,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::user_organizations::dsl as user_organizations_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::insert_into(user_organizations_columns::user_organizations)
+        .values(user_organizations)
+        .execute(&mut conn)
+        .map_err(|_| {
+            ServiceError::InternalServerError ("Failed to add user to organization".to_string())
+        })?;
+
+    Ok(())
 }
