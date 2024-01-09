@@ -10,7 +10,7 @@ use crate::{
             get_subscription_by_id_query, set_stripe_subscription_current_period_end,
             update_stripe_subscription, update_stripe_subscription_plan_query,
         },
-    },
+    }, get_env,
 };
 use actix_web::{web, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -24,17 +24,16 @@ pub async fn webhook(
     payload: web::Bytes,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let payload_str = String::from_utf8(payload.to_vec()).expect("Failed to parse payload");
+    let payload_str = String::from_utf8(payload.to_vec()).map_err(|_| ServiceError::BadRequest("Failed to parse payload".to_string()))?;
 
     let stripe_signature = req
         .headers()
         .get("Stripe-Signature")
-        .expect("Stripe-Signature header is required")
+        .ok_or(ServiceError::BadRequest("Stripe-Signature header is required".to_string()))?
         .to_str()
-        .expect("Failed to parse Stripe-Signature header");
+        .map_err(|_| ServiceError::BadRequest("Failed to parse Stripe-Signature header".to_string()))?;
 
-    let stripe_webhook_secret =
-        std::env::var("STRIPE_WEBHOOK_SERCRET").expect("STRIPE_WEBHOOK_SERCRET must be set");
+    let stripe_webhook_secret = get_env!("STRIPE_WEBHOOK_SERCRET", "STRIPE_WEBHOOK_SERCRET must be set");
 
     if let Ok(event) =
         Webhook::construct_event(&payload_str, stripe_signature, &stripe_webhook_secret)
@@ -45,23 +44,23 @@ pub async fn webhook(
                     let optional_subscription_pool = pool.clone();
                     let subscription_stripe_id = checkout_session
                         .subscription
-                        .expect("Checkout session must have a subscription")
+                        .ok_or(ServiceError::BadRequest("Checkout session must have a subscription".to_string()))?
                         .id()
                         .to_string();
 
                     let metadata = checkout_session
                         .metadata
-                        .expect("Checkout session must have metadata");
+                        .ok_or(ServiceError::BadRequest("Checkout session must have metadata".to_string()))?;
                     let plan_id = metadata
                         .get("plan_id")
-                        .expect("Checkout session must have a plan_id metadata")
+                        .ok_or(ServiceError::BadRequest("Checkout session must have a plan_id metadata".to_string()))?
                         .parse::<uuid::Uuid>()
-                        .expect("plan_id metadata must be a uuid");
+                        .map_err(|_| ServiceError::BadRequest("plan_id metadata must be a uuid".to_string()))?;
                     let organization_id = metadata
                         .get("organization_id")
-                        .expect("Checkout session must have an organization_id metadata")
+                        .ok_or(ServiceError::BadRequest("Checkout session must have an organization_id metadata".to_string()))?
                         .parse::<uuid::Uuid>()
-                        .expect("organization_id metadata must be a uuid");
+                        .map_err(|_| ServiceError::BadRequest("organization_id metadata must be a uuid".to_string()))?;
 
                     let fetch_subscription_organization_id = organization_id;
 
@@ -98,7 +97,7 @@ pub async fn webhook(
             EventType::PlanCreated => {
                 if let EventObject::Plan(plan) = event.data.object {
                     let plan_id = plan.id.to_string();
-                    let plan_amount = plan.amount.expect("Plan must have an amount");
+                    let plan_amount = plan.amount.ok_or(ServiceError::BadRequest("Plan must have an amount".to_string()))?;
 
                     web::block(move || create_stripe_plan_query(plan_id, plan_amount, pool))
                         .await?
@@ -112,7 +111,7 @@ pub async fn webhook(
                     let current_period_end = chrono::NaiveDateTime::from_timestamp_micros(
                         subscription.current_period_end,
                     )
-                    .expect("Failed to convert current_period_end to NaiveDateTime");
+                    .ok_or(ServiceError::BadRequest("Failed to convert current_period_end to NaiveDateTime".to_string()))?;
 
                     set_stripe_subscription_current_period_end(
                         subscription_stripe_id,
