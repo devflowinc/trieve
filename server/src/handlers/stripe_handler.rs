@@ -1,6 +1,7 @@
 use crate::{
     data::models::Pool,
     errors::ServiceError,
+    get_env,
     operators::{
         organization_operator::get_organization_by_key_query,
         stripe_operator::{
@@ -10,7 +11,7 @@ use crate::{
             get_subscription_by_id_query, set_stripe_subscription_current_period_end,
             update_stripe_subscription, update_stripe_subscription_plan_query,
         },
-    }, get_env,
+    },
 };
 use actix_web::{web, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -24,16 +25,24 @@ pub async fn webhook(
     payload: web::Bytes,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let payload_str = String::from_utf8(payload.to_vec()).map_err(|_| ServiceError::BadRequest("Failed to parse payload".to_string()))?;
+    let payload_str = String::from_utf8(payload.to_vec())
+        .map_err(|_| ServiceError::BadRequest("Failed to parse payload".to_string()))?;
 
     let stripe_signature = req
         .headers()
         .get("Stripe-Signature")
-        .ok_or(ServiceError::BadRequest("Stripe-Signature header is required".to_string()))?
+        .ok_or(ServiceError::BadRequest(
+            "Stripe-Signature header is required".to_string(),
+        ))?
         .to_str()
-        .map_err(|_| ServiceError::BadRequest("Failed to parse Stripe-Signature header".to_string()))?;
+        .map_err(|_| {
+            ServiceError::BadRequest("Failed to parse Stripe-Signature header".to_string())
+        })?;
 
-    let stripe_webhook_secret = get_env!("STRIPE_WEBHOOK_SERCRET", "STRIPE_WEBHOOK_SERCRET must be set");
+    let stripe_webhook_secret = get_env!(
+        "STRIPE_WEBHOOK_SERCRET",
+        "STRIPE_WEBHOOK_SERCRET must be set"
+    );
 
     if let Ok(event) =
         Webhook::construct_event(&payload_str, stripe_signature, &stripe_webhook_secret)
@@ -44,23 +53,35 @@ pub async fn webhook(
                     let optional_subscription_pool = pool.clone();
                     let subscription_stripe_id = checkout_session
                         .subscription
-                        .ok_or(ServiceError::BadRequest("Checkout session must have a subscription".to_string()))?
+                        .ok_or(ServiceError::BadRequest(
+                            "Checkout session must have a subscription".to_string(),
+                        ))?
                         .id()
                         .to_string();
 
-                    let metadata = checkout_session
-                        .metadata
-                        .ok_or(ServiceError::BadRequest("Checkout session must have metadata".to_string()))?;
+                    let metadata = checkout_session.metadata.ok_or(ServiceError::BadRequest(
+                        "Checkout session must have metadata".to_string(),
+                    ))?;
                     let plan_id = metadata
                         .get("plan_id")
-                        .ok_or(ServiceError::BadRequest("Checkout session must have a plan_id metadata".to_string()))?
+                        .ok_or(ServiceError::BadRequest(
+                            "Checkout session must have a plan_id metadata".to_string(),
+                        ))?
                         .parse::<uuid::Uuid>()
-                        .map_err(|_| ServiceError::BadRequest("plan_id metadata must be a uuid".to_string()))?;
+                        .map_err(|_| {
+                            ServiceError::BadRequest("plan_id metadata must be a uuid".to_string())
+                        })?;
                     let organization_id = metadata
                         .get("organization_id")
-                        .ok_or(ServiceError::BadRequest("Checkout session must have an organization_id metadata".to_string()))?
+                        .ok_or(ServiceError::BadRequest(
+                            "Checkout session must have an organization_id metadata".to_string(),
+                        ))?
                         .parse::<uuid::Uuid>()
-                        .map_err(|_| ServiceError::BadRequest("organization_id metadata must be a uuid".to_string()))?;
+                        .map_err(|_| {
+                            ServiceError::BadRequest(
+                                "organization_id metadata must be a uuid".to_string(),
+                            )
+                        })?;
 
                     let fetch_subscription_organization_id = organization_id;
 
@@ -97,7 +118,9 @@ pub async fn webhook(
             EventType::PlanCreated => {
                 if let EventObject::Plan(plan) = event.data.object {
                     let plan_id = plan.id.to_string();
-                    let plan_amount = plan.amount.ok_or(ServiceError::BadRequest("Plan must have an amount".to_string()))?;
+                    let plan_amount = plan.amount.ok_or(ServiceError::BadRequest(
+                        "Plan must have an amount".to_string(),
+                    ))?;
 
                     web::block(move || create_stripe_plan_query(plan_id, plan_amount, pool))
                         .await?
@@ -111,7 +134,9 @@ pub async fn webhook(
                     let current_period_end = chrono::NaiveDateTime::from_timestamp_micros(
                         subscription.current_period_end,
                     )
-                    .ok_or(ServiceError::BadRequest("Failed to convert current_period_end to NaiveDateTime".to_string()))?;
+                    .ok_or(ServiceError::BadRequest(
+                        "Failed to convert current_period_end to NaiveDateTime".to_string(),
+                    ))?;
 
                     set_stripe_subscription_current_period_end(
                         subscription_stripe_id,
@@ -170,9 +195,10 @@ pub async fn direct_to_payment_link(
     let plan_id = path_data.plan_id;
     let organization_id = path_data.organization_id;
     let organization_id_clone = path_data.organization_id;
-    let _org_plan_sub = get_organization_by_key_query(organization_id_clone.into(), organization_pool)
-        .await
-        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    let _org_plan_sub =
+        get_organization_by_key_query(organization_id_clone.into(), organization_pool)
+            .await
+            .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
     let plan = web::block(move || get_plan_by_id_query(plan_id, pool))
         .await?
