@@ -2,7 +2,7 @@ use crate::{
     data::models::{
         Organization, OrganizationWithSubAndPlan, Pool, StripePlan, StripeSubscription,
     },
-    errors::DefaultError,
+    errors::DefaultError, get_env,
 };
 use actix_web::web;
 use diesel::{
@@ -14,7 +14,7 @@ use stripe::{
 };
 
 pub fn get_stripe_client() -> stripe::Client {
-    let stripe_secret = std::env::var("STRIPE_SECRET").expect("STRIPE_SECRET must be set");
+    let stripe_secret = get_env!("STRIPE_SECRET", "STRIPE_SECRET must be set");
 
     stripe::Client::new(stripe_secret)
 }
@@ -48,7 +48,7 @@ pub async fn refresh_redis_org_plan_sub(
     let org_plan_sub =
         OrganizationWithSubAndPlan::from_components(org_plan_sub.0, org_plan_sub.1, org_plan_sub.2);
 
-    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
+    let redis_url = get_env!("REDIS_URL", "REDIS_URL must be set");
     let client = redis::Client::open(redis_url).map_err(|_| DefaultError {
         message: "Could not create redis client",
     })?;
@@ -109,6 +109,7 @@ pub fn create_stripe_plan_query(
 ) -> Result<StripePlan, DefaultError> {
     use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
 
+    // TODO: Make this configurable
     let stripe_plan = StripePlan::from_details(
         stripe_id,
         10000,
@@ -181,11 +182,11 @@ pub async fn create_stripe_payment_link(
     };
 
     let admin_dashboard_url =
-        std::env::var("ADMIN_DASHBOARD_URL").expect("ADMIN_DASHBOARD_URL must be set");
+        get_env!("ADMIN_DASHBOARD_URL", "ADMIN_DASHBOARD_URL must be set");
     let mut create_payment_link = CreatePaymentLink::new(vec![payment_link_line_items]);
     create_payment_link.after_completion = Some(CreatePaymentLinkAfterCompletion {
         redirect: Some(CreatePaymentLinkAfterCompletionRedirect {
-            url: admin_dashboard_url,
+            url: admin_dashboard_url.to_string(),
         }),
         hosted_confirmation: None,
         type_: CreatePaymentLinkAfterCompletionType::Redirect,
@@ -305,7 +306,7 @@ pub async fn set_stripe_subscription_current_period_end(
 pub async fn cancel_stripe_subscription(
     subscription_stripe_id: String,
 ) -> Result<(), DefaultError> {
-    let stripe_secret = std::env::var("STRIPE_SECRET").expect("STRIPE_SECRET must be set");
+    let stripe_secret = get_env!("STRIPE_SECRET", "STRIPE_SECRET must be set");
     let stripe_client = reqwest::Client::new();
     let stripe_response = stripe_client
         .delete(&format!(
@@ -369,7 +370,7 @@ pub async fn update_stripe_subscription(
 
     let stripe_subscription_id: stripe::SubscriptionId = subscription_stripe_id
         .parse()
-        .expect("Failed to parse stripe subscription id");
+        .map_err(|e| DefaultError { message: "Failed to parse stripe subscription id"})?;
 
     let stripe_subscription =
         stripe::Subscription::retrieve(&stripe_client, &stripe_subscription_id, &[])
