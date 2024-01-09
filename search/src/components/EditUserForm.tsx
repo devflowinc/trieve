@@ -5,11 +5,13 @@ import {
   isActixApiDefaultError,
   isUserDTO,
 } from "../../utils/apiTypes";
+import { currentUser } from "../stores/userStore";
+import { useStore } from "@nanostores/solid";
 
 const SearchForm = () => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const dataset = import.meta.env.PUBLIC_DATASET as string;
-  const [currentUser, setCurrentUser] = createSignal<UserDTO | null>(null);
+  const $currentUser = useStore(currentUser);
   const [username, setUsername] = createSignal("");
   const [website, setWebsite] = createSignal("");
   const [hideEmail, setHideEmail] = createSignal(false);
@@ -89,36 +91,22 @@ const SearchForm = () => {
   };
 
   createEffect(() => {
-    void fetch(`${apiHost}/auth/me`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-    }).then((response) => {
-      if (response.ok) {
-        void response.json().then((data) => {
-          if (isUserDTO(data)) {
-            setCurrentUser(data);
-            setUsername(data.username ?? "");
-            setWebsite(data.website ?? "");
-            setHideEmail(!data.visible_email);
-            return;
-          }
-          window.location.href = `${apiHost}/auth?dataset_id=${dataset}`;
-        });
+    currentUser.subscribe((user) => {
+      if (user) {
+        setUsername(user.username ?? "");
+        setWebsite(user.website ?? "");
+        setHideEmail(!user.visible_email);
         return;
       }
-      window.location.href = `${apiHost}/auth?dataset_id=${dataset}`;
     });
   });
 
   return (
     <>
-      <Show when={!currentUser()}>
+      <Show when={!$currentUser()}>
         <div class="mx-auto mt-16 h-32 w-32 animate-spin rounded-full border-b-2 border-t-2 border-neutral-900 dark:border-white" />
       </Show>
-      <Show when={!!currentUser()}>
+      <Show when={!!$currentUser()}>
         <form
           class="mb-8 h-full w-full text-neutral-800 dark:text-white"
           onSubmit={(e) => {
@@ -129,7 +117,7 @@ const SearchForm = () => {
           <div class="text-center text-red-500">{errorText()}</div>
           <div class="mt-8 grid w-full grid-cols-[1fr,2fr] justify-items-end gap-x-8 gap-y-6">
             <div>Email</div>
-            <div class="flex w-full justify-start">{currentUser()?.email}</div>
+            <div class="flex w-full justify-start">{$currentUser()?.email}</div>
 
             <div>Username</div>
             <input
@@ -164,8 +152,7 @@ const SearchForm = () => {
                 onInput={(e) => setHideEmail(e.target.checked)}
                 classList={{
                   "h-6 w-6": true,
-                  "ring ring-red-500 ring-1":
-                    errorFields().includes("hideEmail"),
+                  "ring-red-500 ring-1": errorFields().includes("hideEmail"),
                 }}
               />
             </div>
