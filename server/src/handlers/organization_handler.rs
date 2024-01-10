@@ -1,11 +1,11 @@
-use super::auth_handler::{AdminOnly, OwnerOnly, LoggedUser};
+use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
     data::models::{Pool, UserOrganization, UserRole},
     errors::ServiceError,
     operators::{
         organization_operator::{
-            create_organization_query, get_org_usage_by_id_query, get_organization_by_key_query,
-            update_organization_query,
+            create_organization_query, get_org_usage_by_id_query, get_org_users_by_id_query,
+            get_organization_by_key_query, update_organization_query,
         },
         user_operator::add_user_to_organization,
     },
@@ -128,8 +128,11 @@ pub async fn create_organization(
     web::block(move || {
         add_user_to_organization(
             UserOrganization::from_details(user.id, created_organization.id, UserRole::Owner),
-            pool)
-    }).await.map_err(|_| ServiceError::BadRequest("Thread pool error".to_owned()))??;
+            pool,
+        )
+    })
+    .await
+    .map_err(|_| ServiceError::BadRequest("Thread pool error".to_owned()))??;
 
     Ok(HttpResponse::Ok().json(created_organization))
 }
@@ -142,6 +145,20 @@ pub async fn get_organization_usage(
     let org_id = organization.into_inner();
 
     let usage = get_org_usage_by_id_query(org_id, pool)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    Ok(HttpResponse::Ok().json(usage))
+}
+
+pub async fn get_organization_users(
+    organization: web::Path<uuid::Uuid>,
+    pool: web::Data<Pool>,
+    _user: AdminOnly,
+) -> Result<HttpResponse, actix_web::Error> {
+    let org_id = organization.into_inner();
+
+    let usage = get_org_users_by_id_query(org_id, pool)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
