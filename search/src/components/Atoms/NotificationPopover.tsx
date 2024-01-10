@@ -8,7 +8,6 @@ import {
 import {
   isFileUploadCompleteNotificationDTO,
   type NotificationDTO,
-  type UserDTO,
   NotificationWithPagesDTO,
 } from "../../../utils/apiTypes";
 import { IoNotificationsOutline } from "solid-icons/io";

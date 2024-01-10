@@ -15,7 +15,6 @@ import {
   type Message,
   messageRoleFromIndex,
   ScoreChunkDTO,
-  UserDTO,
 } from "../../utils/apiTypes";
 import { AfMessage } from "./Atoms/AfMessage";
 import { useStore } from "@nanostores/solid";
