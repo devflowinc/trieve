@@ -10,9 +10,9 @@ actix-session = { version = "0.8.0", features = [
     "redis-rs-tls-session",
 ] }
 actix-web = { version = "4.3" }
-actix-cors = { version = "0.6" }
+actix-cors = { version = "0.7" }
 
-async-stripe = { version = "0.26.0", features = [
+async-stripe = { git = "https://github.com/arlyon/async-stripe", features = [
     "runtime-tokio-hyper",
     "checkout",
     "webhook-events",
@@ -65,7 +65,7 @@ utoipa = { version = "4", features = [
     "chrono",
     "debug",
 ] }
-utoipa-redoc = { version = "2.0", features = ["actix-web"] }
+utoipa-redoc = { version = "3.0", features = ["actix-web"] }
 magick_rust = "0.19.1"
 pyo3 = { version = "0.20.0", features = ["full", "auto-initialize"] }
 openidconnect = { version = "3.4.0", features = [
