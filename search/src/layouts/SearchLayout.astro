@@ -11,9 +11,9 @@ const ogDescription = import.meta.env.OG_DESCRIPTION as string;
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
 let title = Astro.props.title;
 if (!title) {
-  title = "Arguflow Search - " + $dataset ?? "";
+  title = "Arguflow Search - " + $dataset as unknown as string;
 } else {
-  title = (title as unknown as string) + " - " + $dataset ?? "";
+  title = (title as unknown as string) + " - " + $dataset as unknown as string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
