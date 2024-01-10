@@ -5,7 +5,7 @@ import { useStore } from "@nanostores/solid";
 import { currentDataset } from "../stores/datasetStore";
 
 export const UploadFile = () => {
-  const $dataset = useStore(currentDataset)()?.dataset.id;
+  const $dataset = useStore(currentDataset);
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const [file, setFile] = createSignal<File | undefined>();
   const [link, setLink] = createSignal("");
@@ -27,6 +27,9 @@ export const UploadFile = () => {
     setFile(e.target.files ? e.target.files[0] : undefined);
   };
   const submitEvidence = async (e: Event) => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
+
     if (!file()) {
       setErrorText("Please select a file to upload");
       setIsSubmitting(false);
@@ -72,7 +75,7 @@ export const UploadFile = () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
       body: JSON.stringify(requestBody),
@@ -216,7 +219,9 @@ export const UploadFile = () => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${$dataset ?? ""}`}
+                href={`${apiHost}/auth?dataset_id=${
+                  $dataset()?.dataset.name ?? ""
+                }`}
               >
                 Login/Register
                 <BiRegularLogIn class="h-6 w-6" />

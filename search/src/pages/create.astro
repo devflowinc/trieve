@@ -6,8 +6,7 @@ import { useStore } from "@nanostores/solid";
 import { clientConfig } from "../stores/envsStore";
 
 const $envs = useStore(clientConfig);
-const create_evidence_feature =
- $envs()?.PUBLIC_CREATE_EVIDENCE_FEATURE;
+const create_evidence_feature = $envs()?.PUBLIC_CREATE_EVIDENCE_FEATURE;
 if (!create_evidence_feature) {
   return Astro.redirect("/404");
 }

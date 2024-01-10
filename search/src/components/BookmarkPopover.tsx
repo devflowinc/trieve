@@ -31,7 +31,7 @@ export interface BookmarkPopoverProps {
 
 const BookmarkPopover = (props: BookmarkPopoverProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const $dataset = useStore(currentDataset)()?.dataset.id;
+  const $dataset = useStore(currentDataset);
   const $currentUser = useStore(currentUser);
 
   const [refetchingChunkCollections, setRefetchingChunkCollections] =
@@ -113,10 +113,13 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
     chunkBookmarks: ChunkBookmarksDTO[],
     setChunkCollections: Setter<ChunkCollectionDTO[]> | undefined,
   ) => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
+
     void fetch(`${apiHost}/chunk_collection/${localCollectionPage()}`, {
       method: "GET",
       headers: {
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
     }).then((response) => {
@@ -171,12 +174,15 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
   };
 
   const refetchBookmarks = (curPage: number) => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
+
     void fetch(`${apiHost}/chunk_collection/bookmark`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       body: JSON.stringify({
         chunk_ids: [props.chunkMetadata.id],
@@ -292,6 +298,8 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                                   : false
                               }
                               onChange={(e) => {
+                                const currentDataset = $dataset();
+                                if (!currentDataset) return;
                                 void fetch(
                                   `${apiHost}/chunk_collection/${collection.id}`,
                                   {
@@ -300,7 +308,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                                       : "DELETE",
                                     headers: {
                                       "Content-Type": "application/json",
-                                      "AF-Dataset": $dataset ?? "",
+                                      "AF-Dataset": currentDataset.dataset.id,
                                     },
                                     credentials: "include",
                                     body: JSON.stringify({
@@ -371,11 +379,13 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                         onCreate={() => {
                           const title = collectionFormTitle();
                           if (title.trim() == "") return;
+                          const currentDataset = $dataset();
+                          if (!currentDataset) return;
                           void fetch(`${apiHost}/chunk_collection`, {
                             method: "POST",
                             headers: {
                               "Content-Type": "application/json",
-                              "AF-Dataset": $dataset ?? "",
+                              "AF-Dataset": currentDataset.dataset.id,
                             },
                             credentials: "include",
                             body: JSON.stringify({

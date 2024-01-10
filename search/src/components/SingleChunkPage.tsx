@@ -28,7 +28,7 @@ export interface SingleChunkPageProps {
 }
 export const SingleChunkPage = (props: SingleChunkPageProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const $dataset = useStore(currentDataset)()?.dataset.id;
+  const $dataset = useStore(currentDataset);
   const initialChunkMetadata = props.defaultResultChunk.metadata;
 
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
@@ -67,12 +67,14 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   // Fetch the chunk collections for the auth'ed user
   const fetchChunkCollections = () => {
     if (!$currentUser()) return;
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
 
     void fetch(`${apiHost}/chunk_collection/1`, {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
     }).then((response) => {
       if (response.ok) {
@@ -87,12 +89,14 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   };
 
   const fetchBookmarks = () => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
     void fetch(`${apiHost}/chunk_collection/bookmark`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       body: JSON.stringify({
         chunk_ids: chunkMetadata()?.id ? [chunkMetadata()?.id] : [],
@@ -111,12 +115,15 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     prev_recommendations: ChunkMetadata[],
   ) => {
     setLoadingRecommendations(true);
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
+
     void fetch(`${apiHost}/chunk/recommend`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       body: JSON.stringify({
         positive_chunk_ids: ids,
@@ -150,12 +157,15 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   });
 
   createEffect(() => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
+
     setFetching(true);
     void fetch(`${apiHost}/chunk/${props.chunkId ?? ""}`, {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
     }).then((response) => {
       if (response.ok) {
@@ -369,7 +379,9 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${$dataset ?? ""}`}
+                href={`${apiHost}/auth?dataset_id=${
+                  $dataset()?.dataset.id ?? ""
+                }`}
               >
                 Login/Register
                 <BiRegularLogIn class="h-6 w-6 fill-current" />
