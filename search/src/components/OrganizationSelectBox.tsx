@@ -30,7 +30,9 @@ export const OrganizationSelectBox = () => {
                 type="button"
                 class="flex items-center space-x-1 pb-1 text-sm"
               >
-                <span>{$currentOrganization()?.name}</span>
+                <span class="line-clamp-1 text-left text-sm">
+                  {$currentOrganization()?.name}
+                </span>
                 <svg
                   fill="currentColor"
                   stroke-width="0"
@@ -56,10 +58,6 @@ export const OrganizationSelectBox = () => {
                           e.preventDefault();
                           e.stopPropagation();
                           currentOrganization.set(organizationItem);
-                          localStorage.setItem(
-                            "currentOrganization",
-                            JSON.stringify(organizationItem),
-                          );
                           setState(false);
                         };
                         return (
