@@ -2,13 +2,15 @@ import { Show, createSignal } from "solid-js";
 import RegisterOrUserProfile from "../RegisterOrUserProfile";
 import type { HomeNavbarProps } from "./HomeNavbar";
 import type { ClientEnvsConfiguration } from "../../../utils/apiTypes";
+import { useStore } from "@nanostores/solid";
+import { clientConfig } from "../../stores/envsStore";
+import { currentDataset } from "../../stores/datasetStore";
 
 export const Navbar = (props: HomeNavbarProps) => {
-  const envs = JSON.parse(
-    localStorage.getItem("clientConfig") ?? "{}",
-  ) as ClientEnvsConfiguration;
-  const createEvidenceFeature = envs.PUBLIC_CREATE_EVIDENCE_FEATURE;
-  const uploadDocumentFeature = envs.PUBLIC_DOCUMENT_UPLOAD_FEATURE;
+  const $envs = useStore(clientConfig);
+  const $datasetName = useStore(currentDataset)()?.dataset.name;
+  const createEvidenceFeature = $envs()?.PUBLIC_CREATE_EVIDENCE_FEATURE;
+  const uploadDocumentFeature = $envs()?.PUBLIC_DOCUMENT_UPLOAD_FEATURE;
 
   const [isOpen, setIsOpen] = createSignal(false);
 
@@ -21,7 +23,7 @@ export const Navbar = (props: HomeNavbarProps) => {
               <img class="w-6 sm:w-12" src="/logo_transparent.png" alt="Logo" />
               <div class="hidden min-[450px]:block ">
                 <div class="mb-[-4px] w-full text-end align-bottom leading-3 text-turquoise sm:mb-[-10px] sm:text-lg">
-                  {props.dataset}
+                  {$datasetName}
                 </div>
                 <div class="min-[380px]:text-xl sm:text-4xl">
                   <span>Arguflow</span>

@@ -18,6 +18,7 @@ import { VsBookmark } from "solid-icons/vs";
 import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
 import { useStore } from "@nanostores/solid";
 import { currentUser } from "../stores/userStore";
+import { currentDataset } from "../stores/datasetStore";
 
 export interface BookmarkPopoverProps {
   chunkMetadata: ChunkMetadata;
@@ -30,7 +31,7 @@ export interface BookmarkPopoverProps {
 
 const BookmarkPopover = (props: BookmarkPopoverProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const dataset = import.meta.env.PUBLIC_DATASET as string;
+  const $dataset = useStore(currentDataset)()?.dataset.id;
   const $currentUser = useStore(currentUser);
 
   const [refetchingChunkCollections, setRefetchingChunkCollections] =
@@ -115,7 +116,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
     void fetch(`${apiHost}/chunk_collection/${localCollectionPage()}`, {
       method: "GET",
       headers: {
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       credentials: "include",
     }).then((response) => {
@@ -175,7 +176,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       body: JSON.stringify({
         chunk_ids: [props.chunkMetadata.id],
@@ -299,7 +300,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                                       : "DELETE",
                                     headers: {
                                       "Content-Type": "application/json",
-                                      "AF-Dataset": dataset,
+                                      "AF-Dataset": $dataset ?? "",
                                     },
                                     credentials: "include",
                                     body: JSON.stringify({
@@ -374,7 +375,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                             method: "POST",
                             headers: {
                               "Content-Type": "application/json",
-                              "AF-Dataset": dataset,
+                              "AF-Dataset": $dataset ?? "",
                             },
                             credentials: "include",
                             body: JSON.stringify({

@@ -20,6 +20,7 @@ import { AiOutlineRobot } from "solid-icons/ai";
 import { IoDocumentOutline } from "solid-icons/io";
 import { currentUser } from "../stores/userStore";
 import { useStore } from "@nanostores/solid";
+import { currentDataset } from "../stores/datasetStore";
 
 export interface SingleChunkPageProps {
   chunkId: string | undefined;
@@ -27,7 +28,7 @@ export interface SingleChunkPageProps {
 }
 export const SingleChunkPage = (props: SingleChunkPageProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const dataset = import.meta.env.PUBLIC_DATASET as string;
+  const $dataset = useStore(currentDataset)()?.dataset.id;
   const initialChunkMetadata = props.defaultResultChunk.metadata;
 
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
@@ -71,7 +72,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
     }).then((response) => {
       if (response.ok) {
@@ -91,7 +92,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       body: JSON.stringify({
         chunk_ids: chunkMetadata()?.id ? [chunkMetadata()?.id] : [],
@@ -115,7 +116,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       body: JSON.stringify({
         positive_chunk_ids: ids,
@@ -154,7 +155,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
     }).then((response) => {
       if (response.ok) {
@@ -368,7 +369,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${dataset}`}
+                href={`${apiHost}/auth?dataset_id=${$dataset ?? ""}`}
               >
                 Login/Register
                 <BiRegularLogIn class="h-6 w-6 fill-current" />

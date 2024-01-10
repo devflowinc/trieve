@@ -9,6 +9,8 @@ import { For, Setter, Show, createEffect, createSignal } from "solid-js";
 import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
 import { getLocalTime } from "./ChunkMetadataDisplay";
 import { Transition } from "solid-headless";
+import { useStore } from "@nanostores/solid";
+import { currentDataset } from "../stores/datasetStore";
 
 export interface CollectionUserPageViewProps {
   user: UserDTOWithVotesAndChunks | undefined;
@@ -21,7 +23,7 @@ export interface CollectionUserPageViewProps {
 
 export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const dataset = import.meta.env.PUBLIC_DATASET as string;
+  const $dataset = useStore(currentDataset)()?.dataset.id;
   const [collections, setCollections] = createSignal<ChunkCollectionDTO[]>([]);
   const [collectionPage, setCollectionPage] = createSignal(1);
   const [collectionPageCount, setCollectionPageCount] = createSignal(1);
@@ -39,7 +41,7 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
     }).then((response) => {
       if (response.ok) {
@@ -68,7 +70,7 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            "AF-Dataset": dataset,
+            "AF-Dataset": $dataset ?? "",
           },
           body: JSON.stringify({
             collection_id: collection.id,

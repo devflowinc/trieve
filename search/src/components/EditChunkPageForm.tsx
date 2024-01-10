@@ -14,10 +14,12 @@ import type { TinyMCE } from "../../public/tinymce/tinymce";
 import sanitize from "sanitize-html";
 import { sanitzerOptions } from "./ScoreChunk";
 import { Tooltip } from "./Atoms/Tooltip";
+import { useStore } from "@nanostores/solid";
+import { currentDataset } from "../stores/datasetStore";
 
 export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const dataset = import.meta.env.PUBLIC_DATASET as string;
+  const $dataset = useStore(currentDataset)()?.dataset.id;
   const initialChunkMetadata = props.defaultResultChunk.metadata;
 
   const [topLevelError, setTopLevelError] = createSignal("");
@@ -70,7 +72,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       credentials: "include",
       body: JSON.stringify({
@@ -128,7 +130,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
     void fetch(`${apiHost}/chunk/${props.chunkId ?? ""}`, {
       method: "GET",
       headers: {
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       credentials: "include",
     }).then((response) => {
@@ -352,7 +354,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${dataset}`}
+                href={`${apiHost}/auth?dataset_id=${$dataset ?? ""}`}
               >
                 Login/Register
                 <BiRegularLogIn class="h-6 w-6 fill-current" />

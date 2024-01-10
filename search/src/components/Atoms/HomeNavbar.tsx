@@ -3,17 +3,16 @@ import RegisterOrUserProfile from "../RegisterOrUserProfile";
 import type { ClientEnvsConfiguration } from "../../../utils/apiTypes";
 import { OrganizationSelectBox } from "../OrganizationSelectBox";
 import { DatasetSelectBox } from "../DatasetSelectBox";
+import { useStore } from "@nanostores/solid";
+import { clientConfig } from "../../stores/envsStore";
 
 export interface HomeNavbarProps {
   stars: number;
-  dataset: string;
 }
 
 export const HomeNavbar = (props: HomeNavbarProps) => {
-  const envs = JSON.parse(
-    localStorage.getItem("clientConfig") ?? "{}",
-  ) as ClientEnvsConfiguration;
-  const uploadDocumentFeature = envs.PUBLIC_DOCUMENT_UPLOAD_FEATURE;
+  const $envs = useStore(clientConfig);
+  const uploadDocumentFeature = $envs()?.PUBLIC_DOCUMENT_UPLOAD_FEATURE;
 
   const [isOpen, setIsOpen] = createSignal(false);
 
