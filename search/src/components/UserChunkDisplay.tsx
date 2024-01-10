@@ -1,8 +1,6 @@
 import { Show, createEffect, createSignal, For } from "solid-js";
 import {
-  isUserDTO,
   type ChunkCollectionDTO,
-  type UserDTO,
   type UserDTOWithVotesAndChunks,
   ChunkBookmarksDTO,
   isChunkCollectionPageDTO,
@@ -13,6 +11,8 @@ import { CollectionUserPageView } from "./CollectionUserPageView";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { BiRegularLogIn, BiRegularXCircle } from "solid-icons/bi";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
+import { useStore } from "@nanostores/solid";
+import { currentUser } from "../stores/userStore";
 
 export interface UserChunkDisplayProps {
   id: string;
@@ -29,7 +29,7 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
   const [user, setUser] = createSignal<UserDTOWithVotesAndChunks>();
   const [clientSideRequestFinished, setClientSideRequestFinished] =
     createSignal(false);
-  const [loggedUser, setLoggedUser] = createSignal<UserDTO>();
+  const $currentUser = useStore(currentUser);
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
   const [showConfirmModal, setShowConfirmModal] = createSignal(false);
   const [chunkCollections, setChunkCollections] = createSignal<
@@ -48,19 +48,6 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
   ] = createSignal(false);
   const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
-
-  createEffect(() => {
-    void fetch(`${apiHost}/auth/me`, {
-      method: "GET",
-      credentials: "include",
-    }).then((response) => {
-      if (response.ok) {
-        void response.json().then((data) => {
-          isUserDTO(data) ? setLoggedUser(data) : setLoggedUser(undefined);
-        });
-      }
-    });
-  });
 
   createEffect(() => {
     void fetch(`${apiHost}/user/${props.id}/${props.page}`, {
@@ -188,7 +175,7 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
             user={user()}
             initialCollections={props.initialUserCollections}
             initialCollectionPageCount={props.initialUserCollectionPageCount}
-            loggedUser={loggedUser()}
+            loggedUser={$currentUser()}
             setOnDelete={setOnCollectionDelete}
             setShowConfirmModal={setShowConfirmCollectionmDeleteModal}
           />
@@ -205,7 +192,6 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
                     <ChunkMetadataDisplay
                       totalCollectionPages={totalCollectionPages()}
                       setShowConfirmModal={setShowConfirmModal}
-                      signedInUserId={loggedUser()?.id}
                       viewingUserId={props.id}
                       chunk={chunk}
                       setShowModal={setShowNeedLoginModal}

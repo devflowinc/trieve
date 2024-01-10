@@ -1,7 +1,4 @@
-import { FaSolidCheck } from "solid-icons/fa";
 import { Show, For } from "solid-js";
-import { currentDataset, datasetsAndUsagesStore } from "../stores/datasetStore";
-import { useStore } from "@nanostores/solid";
 import {
   Menu,
   MenuItem,
@@ -9,10 +6,18 @@ import {
   PopoverButton,
   PopoverPanel,
 } from "solid-headless";
+import { useStore } from "@nanostores/solid";
+import {
+  currentOrganization,
+  organizations,
+} from "../stores/organizationStore";
+import { FaSolidCheck } from "solid-icons/fa";
 
-export const DatasetSelectBox = () => {
-  const $datasetsAndUsages = useStore(datasetsAndUsagesStore);
-  const $currentDataset = useStore(currentDataset);
+export const OrganizationSelectBox = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+  const $organizations = useStore(organizations);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+  const $currentOrganization = useStore(currentOrganization);
 
   return (
     <div>
@@ -25,7 +30,7 @@ export const DatasetSelectBox = () => {
                 type="button"
                 class="flex items-center space-x-1 pb-1 text-sm"
               >
-                <span>{$currentDataset()?.dataset.name}</span>
+                <span>{$currentOrganization()?.name}</span>
                 <svg
                   fill="currentColor"
                   stroke-width="0"
@@ -42,18 +47,18 @@ export const DatasetSelectBox = () => {
               <Show when={isOpen()}>
                 <PopoverPanel
                   unmount={false}
-                  class="absolute right-0 z-10 mt-2 h-fit w-[180px] rounded-md border p-1 dark:bg-neutral-800"
+                  class="absolute left-0 z-10 mt-2 h-fit w-[180px] rounded-md border p-1 dark:bg-neutral-800"
                 >
                   <Menu class="mx-1 space-y-0.5">
-                    <For each={Object.values($datasetsAndUsages())}>
-                      {(datasetItem) => {
+                    <For each={Object.values($organizations())}>
+                      {(organizationItem) => {
                         const onClick = (e: Event) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          currentDataset.set(datasetItem);
+                          currentOrganization.set(organizationItem);
                           localStorage.setItem(
                             "currentOrganization",
-                            JSON.stringify(datasetItem),
+                            JSON.stringify(organizationItem),
                           );
                           setState(false);
                         };
@@ -64,18 +69,18 @@ export const DatasetSelectBox = () => {
                               "flex w-full items-center justify-between rounded p-1 focus:text-black focus:outline-none dark:hover:text-white dark:focus:text-white hover:bg-neutral-300 hover:dark:bg-neutral-700":
                                 true,
                               "bg-neutral-300 dark:bg-neutral-700":
-                                datasetItem.dataset.id ===
-                                $currentDataset()?.dataset.id,
+                                organizationItem.id ===
+                                $currentOrganization()?.id,
                             }}
                             onClick={onClick}
                           >
                             <div class="flex flex-row justify-start space-x-2">
                               <span class="line-clamp-1 text-left text-sm">
-                                {datasetItem.dataset.name}
+                                {organizationItem.name}
                               </span>
                             </div>
-                            {datasetItem.dataset.id ==
-                              $currentDataset()?.dataset.id && (
+                            {organizationItem.id ==
+                              $currentOrganization()?.id && (
                               <span>
                                 <FaSolidCheck class="text-sm" />
                               </span>

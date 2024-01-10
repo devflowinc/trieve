@@ -1,9 +1,7 @@
 import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
 import {
-  isUserDTO,
   type ChunkCollectionDTO,
   type ChunkMetadataWithVotes,
-  type UserDTO,
   isChunkMetadataWithVotes,
   SingleChunkDTO,
   ChunkBookmarksDTO,
@@ -20,6 +18,8 @@ import { Portal } from "solid-js/web";
 import ChatPopup from "./ChatPopup";
 import { AiOutlineRobot } from "solid-icons/ai";
 import { IoDocumentOutline } from "solid-icons/io";
+import { currentUser } from "../stores/userStore";
+import { useStore } from "@nanostores/solid";
 
 export interface SingleChunkPageProps {
   chunkId: string | undefined;
@@ -38,7 +38,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   const [chunkCollections, setChunkCollections] = createSignal<
     ChunkCollectionDTO[]
   >([]);
-  const [user, setUser] = createSignal<UserDTO | undefined>();
+  const $currentUser = useStore(currentUser);
   const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
     createSignal(false);
@@ -65,7 +65,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
 
   // Fetch the chunk collections for the auth'ed user
   const fetchChunkCollections = () => {
-    if (!user()) return;
+    if (!$currentUser()) return;
 
     void fetch(`${apiHost}/chunk_collection/1`, {
       method: "GET",
@@ -148,20 +148,6 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     fetchBookmarks();
   });
 
-  // Fetch the user info for the auth'ed user
-  createEffect(() => {
-    void fetch(`${apiHost}/auth/me`, {
-      method: "GET",
-      credentials: "include",
-    }).then((response) => {
-      if (response.ok) {
-        void response.json().then((data) => {
-          isUserDTO(data) ? setUser(data) : setUser(undefined);
-        });
-      }
-    });
-  });
-
   createEffect(() => {
     setFetching(true);
     void fetch(`${apiHost}/chunk/${props.chunkId ?? ""}`, {
@@ -211,7 +197,6 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     return (
       <ScoreChunk
         totalCollectionPages={totalCollectionPages()}
-        signedInUserId={user()?.id}
         chunk={curChunkMetadata}
         score={0}
         setShowModal={setShowNeedLoginModal}
@@ -240,7 +225,6 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
             <Show when={chunkMetadata()}>
               <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto rounded-md scrollbar-thin">
                 <ChatPopup
-                  user={user}
                   chunks={scoreChunk}
                   selectedIds={selectedIds}
                   setShowNeedLoginModal={setShowNeedLoginModal}
@@ -285,8 +269,6 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
                       <div class="mt-4">
                         <ChunkMetadataDisplay
                           totalCollectionPages={totalCollectionPages()}
-                          signedInUserId={user()?.id}
-                          viewingUserId={user()?.id}
                           chunk={chunk}
                           chunkCollections={chunkCollections()}
                           bookmarks={bookmarks()}

@@ -7,9 +7,7 @@ import {
   onCleanup,
 } from "solid-js";
 import {
-  isUserDTO,
   type ChunkCollectionDTO,
-  type UserDTO,
   type ChunkCollectionBookmarkDTO,
   ChunkBookmarksDTO,
   BookmarkDTO,
@@ -32,6 +30,8 @@ import { Portal } from "solid-js/web";
 import ChatPopup from "./ChatPopup";
 import { AiOutlineRobot } from "solid-icons/ai";
 import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
+import { currentUser } from "../stores/userStore";
+import { useStore } from "@nanostores/solid";
 
 export interface CollectionPageProps {
   collectionID: string;
@@ -94,7 +94,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
   const [fetchingCollections, setFetchingCollections] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
   const [editing, setEditing] = createSignal(false);
-  const [user, setUser] = createSignal<UserDTO | undefined>();
+  const $currentUser = useStore(currentUser);
   const [totalPages, setTotalPages] = createSignal(
     props.defaultCollectionChunks.metadata.total_pages,
   );
@@ -131,31 +131,6 @@ export const CollectionPage = (props: CollectionPageProps) => {
     if (!openChat()) {
       setSelectedIds((prev) => (prev.length < resultsLength ? prev : []));
     }
-  });
-
-  // Fetch the user info for the auth'ed user
-  createEffect(() => {
-    const abortController = new AbortController();
-
-    void fetch(`${apiHost}/auth/me`, {
-      method: "GET",
-      credentials: "include",
-      signal: abortController.signal,
-    }).then((response) => {
-      if (response.ok) {
-        void response.json().then((data) => {
-          isUserDTO(data) ? setUser(data) : setUser(undefined);
-        });
-      }
-
-      if (response.status == 401) {
-        setUser(undefined);
-      }
-    });
-
-    onCleanup(() => {
-      abortController.abort();
-    });
   });
 
   createEffect(() => {
@@ -280,7 +255,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
 
   // Fetch the chunk collections for the auth'ed user
   const fetchChunkCollections = () => {
-    if (!user()) return;
+    if (!$currentUser()) return;
     void fetch(`${apiHost}/chunk_collection/1`, {
       method: "GET",
       credentials: "include",
@@ -398,7 +373,6 @@ export const CollectionPage = (props: CollectionPageProps) => {
           <FullScreenModal isOpen={openChat} setIsOpen={setOpenChat}>
             <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto rounded-md scrollbar-thin">
               <ChatPopup
-                user={user}
                 chunks={() =>
                   metadatasWithVotes() as unknown as ScoreChunkDTO[]
                 }
@@ -549,7 +523,6 @@ export const CollectionPage = (props: CollectionPageProps) => {
               <div class="mt-4">
                 <ScoreChunkArray
                   totalCollectionPages={totalCollectionPages()}
-                  signedInUserId={user()?.id}
                   chunks={chunk.metadata}
                   score={isScoreChunkDTO(chunk) ? chunk.score : 0}
                   collection={true}
@@ -580,8 +553,6 @@ export const CollectionPage = (props: CollectionPageProps) => {
                     <div class="mt-4">
                       <ChunkMetadataDisplay
                         totalCollectionPages={totalCollectionPages()}
-                        signedInUserId={user()?.id}
-                        viewingUserId={user()?.id}
                         chunk={chunk}
                         chunkCollections={chunkCollections()}
                         bookmarks={bookmarks()}
