@@ -48,7 +48,7 @@ export interface CollectionPageProps {
 
 export const CollectionPage = (props: CollectionPageProps) => {
   const apiHost: string = import.meta.env.PUBLIC_API_HOST as string;
-  const $dataset = useStore(currentDataset)()?.dataset.id;
+  const $dataset = useStore(currentDataset);
 
   const chunkMetadatasWithVotes: BookmarkDTO[] = [];
   const searchChunkMetadatasWithVotes: ScoreChunkDTO[] = [];
@@ -137,6 +137,8 @@ export const CollectionPage = (props: CollectionPageProps) => {
   createEffect(() => {
     const abortController = new AbortController();
     let collection_id: string | null = null;
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
     if (props.query === "") {
       void fetch(
         `${apiHost}/chunk_collection/${props.collectionID}/${props.page}`,
@@ -145,7 +147,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
           credentials: "include",
           signal: abortController.signal,
           headers: {
-            "AF-Dataset": $dataset ?? "",
+            "AF-Dataset": currentDataset.dataset.id,
           },
         },
       ).then((response) => {
@@ -176,7 +178,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "AF-Dataset": $dataset ?? "",
+          "AF-Dataset": currentDataset.dataset.id,
         },
         signal: abortController.signal,
         credentials: "include",
@@ -224,7 +226,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            "AF-Dataset": $dataset ?? "",
+            "AF-Dataset": currentDataset.dataset.id,
           },
           signal: abortController.signal,
           body: JSON.stringify({
@@ -256,12 +258,15 @@ export const CollectionPage = (props: CollectionPageProps) => {
 
   // Fetch the chunk collections for the auth'ed user
   const fetchChunkCollections = () => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
     if (!$currentUser()) return;
+
     void fetch(`${apiHost}/chunk_collection/1`, {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
     }).then((response) => {
       if (response.ok) {
@@ -276,12 +281,15 @@ export const CollectionPage = (props: CollectionPageProps) => {
   };
 
   const fetchBookmarks = () => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
+
     void fetch(`${apiHost}/chunk_collection/bookmark`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       body: JSON.stringify({
         chunk_ids: metadatasWithVotes().flatMap((m) => {
@@ -298,6 +306,9 @@ export const CollectionPage = (props: CollectionPageProps) => {
   };
 
   const updateCollection = () => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
+
     setFetchingCollections(true);
     const body = {
       collection_id: collectionInfo().id,
@@ -310,7 +321,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
       body: JSON.stringify(body),
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
     }).then((response) => {
       setFetchingCollections(false);
@@ -327,13 +338,16 @@ export const CollectionPage = (props: CollectionPageProps) => {
     ids: string[],
     prev_recommendations: ChunkMetadata[],
   ) => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
+
     setLoadingRecommendations(true);
     void fetch(`${apiHost}/chunk/recommend`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       body: JSON.stringify({
         positive_chunk_ids: ids,
@@ -704,7 +718,9 @@ export const CollectionPage = (props: CollectionPageProps) => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${$dataset ?? ""}`}
+                href={`${apiHost}/auth?dataset_id=${
+                  $dataset()?.dataset.name ?? ""
+                }`}
               >
                 Login/Register
                 <BiRegularLogInCircle class="h-6 w-6  fill-current" />

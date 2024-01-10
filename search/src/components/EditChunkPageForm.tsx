@@ -19,7 +19,7 @@ import { currentDataset } from "../stores/datasetStore";
 
 export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const $dataset = useStore(currentDataset)()?.dataset.id;
+  const $dataset = useStore(currentDataset);
   const initialChunkMetadata = props.defaultResultChunk.metadata;
 
   const [topLevelError, setTopLevelError] = createSignal("");
@@ -50,6 +50,9 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   }
 
   const updateEvidence = () => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
+
     const chunkHTMLContentValue =
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       (window as any).tinymce.activeEditor.getContent() as unknown as string;
@@ -72,7 +75,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
       body: JSON.stringify({
@@ -126,11 +129,14 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   };
 
   createEffect(() => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
+
     setFetching(true);
     void fetch(`${apiHost}/chunk/${props.chunkId ?? ""}`, {
       method: "GET",
       headers: {
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
     }).then((response) => {
@@ -354,7 +360,9 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${$dataset ?? ""}`}
+                href={`${apiHost}/auth?dataset_id=${
+                  $dataset()?.dataset.name ?? ""
+                }`}
               >
                 Login/Register
                 <BiRegularLogIn class="h-6 w-6 fill-current" />
