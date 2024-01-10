@@ -1088,6 +1088,7 @@ pub struct StripePlan {
 }
 
 impl StripePlan {
+    #[allow(clippy::too_many_arguments)]
     pub fn from_details(
         stripe_id: String,
         chunk_count: i32,
