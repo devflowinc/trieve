@@ -29,6 +29,8 @@ import { Tooltip } from "./Atoms/Tooltip";
 import { AiOutlineCopy } from "solid-icons/ai";
 import CommunityBookmarkPopover from "./CommunityBookmarkPopover";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
+import { useStore } from "@nanostores/solid";
+import { currentUser } from "../stores/userStore";
 
 export const sanitzerOptions = {
   allowedTags: [...sanitizeHtml.defaults.allowedTags, "font", "button", "span"],
@@ -51,7 +53,6 @@ export const formatDate = (date: Date) => {
 };
 
 export interface ScoreChunkProps {
-  signedInUserId?: string;
   chunkCollections?: ChunkCollectionDTO[];
   totalCollectionPages?: number;
   collection?: boolean;
@@ -89,6 +90,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const linesBeforeShowMore =
     (envs.PUBLIC_LINES_BEFORE_SHOW_MORE as number | undefined) ?? 10;
 
+  const $currentUser = useStore(currentUser);
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
   const [showPropsModal, setShowPropsModal] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
@@ -143,7 +145,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
     if (!props.setOnDelete) return;
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (props.signedInUserId !== props.chunk.author?.id) return;
+    if ($currentUser()?.id !== props.chunk.author?.id) return;
 
     const curChunkMetadataId = props.chunk.id;
 
@@ -337,7 +339,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               <Show
                 when={
                   props.setOnDelete &&
-                  props.signedInUserId == props.chunk.author?.id
+                  $currentUser()?.id == props.chunk.author?.id
                 }
               >
                 <button
@@ -351,7 +353,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                   <FiTrash class="h-5 w-5" />
                 </button>
               </Show>
-              <Show when={props.signedInUserId == props.chunk.author?.id}>
+              <Show when={$currentUser()?.id == props.chunk.author?.id}>
                 <a title="Edit" href={`/chunk/edit/${props.chunk.id}`}>
                   <FiEdit class="h-5 w-5" />
                 </a>
@@ -376,7 +378,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               <Show when={props.chunkCollections}>
                 {(chunkCollections) => (
                   <BookmarkPopover
-                    signedInUserId={props.signedInUserId}
                     totalCollectionPages={props.totalCollectionPages ?? 0}
                     chunkCollections={chunkCollections()}
                     chunkMetadata={props.chunk}

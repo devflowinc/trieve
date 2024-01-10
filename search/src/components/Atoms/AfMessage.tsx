@@ -13,7 +13,6 @@ export interface AfMessageProps {
   role: "user" | "assistant" | "system";
   content: string;
   streamingCompletion: Accessor<boolean>;
-  user: Accessor<UserDTO | undefined>;
   chunks: Accessor<ScoreChunkDTO[]>;
   order: number;
 }

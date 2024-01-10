@@ -7,11 +7,9 @@ import {
   onCleanup,
 } from "solid-js";
 import {
-  isUserDTO,
   type ChunkCollectionDTO,
   type ChunksWithTotalPagesDTO,
   type ScoreChunkDTO,
-  type UserDTO,
   ChunkBookmarksDTO,
   isChunkCollectionPageDTO,
 } from "../../utils/apiTypes";
@@ -24,6 +22,8 @@ import { Portal } from "solid-js/web";
 import { AiOutlineRobot } from "solid-icons/ai";
 import ChatPopup from "./ChatPopup";
 import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
+import { currentUser } from "../stores/userStore";
+import { useStore } from "@nanostores/solid";
 export interface Filters {
   tagSet: string[];
   link: string[];
@@ -50,7 +50,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   const [chunkCollections, setChunkCollections] = createSignal<
     ChunkCollectionDTO[]
   >([]);
-  const [user, setUser] = createSignal<UserDTO | undefined>();
+  const $currentUser = useStore(currentUser);
   const [resultChunks, setResultChunks] =
     createSignal<ScoreChunkDTO[]>(initialResultChunks);
   const [clientSideRequestFinished, setClientSideRequestFinished] =
@@ -67,7 +67,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
 
   const fetchChunkCollections = () => {
-    if (!user()) return;
+    if (!$currentUser()) return;
 
     void fetch(`${apiHost}/chunk_collection/1`, {
       method: "GET",
@@ -109,20 +109,6 @@ const ResultsPage = (props: ResultsPageProps) => {
       }
     });
   };
-
-  createEffect(() => {
-    void fetch(`${apiHost}/auth/me`, {
-      method: "GET",
-      credentials: "include",
-    }).then((response) => {
-      if (response.ok) {
-        void response.json().then((data) => {
-          isUserDTO(data) ? setUser(data) : setUser(undefined);
-        });
-        return;
-      }
-    });
-  });
 
   createEffect(() => {
     const abortController = new AbortController();
@@ -206,7 +192,6 @@ const ResultsPage = (props: ResultsPageProps) => {
           <FullScreenModal isOpen={openChat} setIsOpen={setOpenChat}>
             <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto rounded-md scrollbar-thin">
               <ChatPopup
-                user={user}
                 chunks={resultChunks}
                 selectedIds={selectedIds}
                 setShowNeedLoginModal={setShowNeedLoginModal}
@@ -246,7 +231,6 @@ const ResultsPage = (props: ResultsPageProps) => {
               <div>
                 <ScoreChunkArray
                   totalCollectionPages={totalCollectionPages()}
-                  signedInUserId={user()?.id}
                   chunkCollections={chunkCollections()}
                   chunks={chunk.metadata}
                   score={chunk.score}
