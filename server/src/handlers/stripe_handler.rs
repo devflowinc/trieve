@@ -40,13 +40,11 @@ pub async fn webhook(
             ServiceError::BadRequest("Failed to parse Stripe-Signature header".to_string())
         })?;
 
-    let stripe_webhook_secret = get_env!(
-        "STRIPE_WEBHOOK_SERCRET",
-        "STRIPE_WEBHOOK_SERCRET must be set"
-    );
+    let stripe_webhook_secret =
+        get_env!("STRIPE_WEBHOOK_SECRET", "STRIPE_WEBHOOK_SECRET must be set");
 
     if let Ok(event) =
-        Webhook::construct_event(&payload_str, stripe_signature, &stripe_webhook_secret)
+        Webhook::construct_event(&payload_str, stripe_signature, stripe_webhook_secret)
     {
         match event.type_ {
             EventType::CheckoutSessionCompleted => {

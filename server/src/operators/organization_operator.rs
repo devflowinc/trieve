@@ -1,7 +1,7 @@
 use crate::{
     data::models::{
-        Organization, OrganizationUsageCount, OrganizationWithSubAndPlan, Pool, StripePlan,
-        StripeSubscription,
+        Organization, OrganizationUsageCount, OrganizationWithSubAndPlan, Pool, SlimUser,
+        StripePlan, StripeSubscription, User, UserOrganization,
     },
     errors::DefaultError,
     operators::stripe_operator::refresh_redis_org_plan_sub,
@@ -12,6 +12,7 @@ use diesel::{
     result::DatabaseErrorKind, upsert::on_constraint, ExpressionMethods, JoinOnDsl,
     NullableExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper, Table,
 };
+use itertools::Itertools;
 
 /// Creates a dataset from Name if it doesn't conflict. If it does, then it creates a random name
 /// for the user
@@ -241,20 +242,18 @@ pub async fn get_organization_by_key_query(
     Ok(org_plan_sub)
 }
 
-pub async fn get_org_from_dataset_id_query(
-    dataset_id: uuid::Uuid,
+pub async fn get_org_from_id_query(
+    organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Organization, DefaultError> {
-    use crate::data::schema::datasets::dsl as datasets_columns;
     use crate::data::schema::organizations::dsl as organizations_columns;
 
     let mut conn = pool.get().map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
-    let organization: Organization = datasets_columns::datasets
-        .inner_join(organizations_columns::organizations)
-        .filter(datasets_columns::id.eq(dataset_id))
+    let organization: Organization = organizations_columns::organizations
+        .filter(organizations_columns::id.eq(organization_id))
         .select(Organization::as_select())
         .first(&mut conn)
         .map_err(|_| DefaultError {
@@ -365,4 +364,43 @@ pub async fn get_org_usage_by_id_query(
             })?;
 
     Ok(org_usage_count)
+}
+
+pub async fn get_org_users_by_id_query(
+    org_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Vec<SlimUser>, DefaultError> {
+    use crate::data::schema::organizations::dsl as organization_columns;
+    use crate::data::schema::user_organizations::dsl as user_organizations_columns;
+    use crate::data::schema::users::dsl as users_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    let user_orgs_orgs: Vec<(User, UserOrganization, Organization)> = users_columns::users
+        .inner_join(user_organizations_columns::user_organizations)
+        .inner_join(
+            organization_columns::organizations
+                .on(organization_columns::id.eq(user_organizations_columns::organization_id)),
+        )
+        .filter(user_organizations_columns::organization_id.eq(org_id))
+        .select((
+            User::as_select(),
+            UserOrganization::as_select(),
+            Organization::as_select(),
+        ))
+        .load::<(User, UserOrganization, Organization)>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Error loading user",
+        })?;
+
+    Ok(user_orgs_orgs
+        .into_iter()
+        .map(|user_orgs_orgs| {
+            SlimUser::from_details(
+                user_orgs_orgs.0,
+                vec![user_orgs_orgs.1],
+                vec![user_orgs_orgs.2],
+            )
+        })
+        .collect_vec())
 }

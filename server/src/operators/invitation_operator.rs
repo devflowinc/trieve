@@ -10,14 +10,14 @@ use sendgrid::v3::{Content, Email, Message, Personalization, Sender};
 /// Diesel query
 pub async fn create_invitation_query(
     email: String,
-    dataset_id: uuid::Uuid,
+    organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Invitation, DefaultError> {
     use crate::data::schema::invitations::dsl::invitations;
 
     let mut conn = pool.get().unwrap();
 
-    let new_invitation = Invitation::from_details(email, dataset_id);
+    let new_invitation = Invitation::from_details(email, organization_id);
 
     let inserted_invitation = diesel::insert_into(invitations)
         .values(&new_invitation)
@@ -47,7 +47,7 @@ pub async fn get_invitation_by_id_query(
     Ok(invitation)
 }
 
-pub fn send_invitation(inv_url: String, invitation: Invitation) -> Result<(), DefaultError> {
+pub async fn send_invitation(inv_url: String, invitation: Invitation) -> Result<(), DefaultError> {
     let sg_email_content = format!(
         "You have been invited to join an Arguflow AI dataset. <br/>
          Please click on the link below to register. <br/>
