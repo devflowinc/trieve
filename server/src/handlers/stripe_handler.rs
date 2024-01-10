@@ -132,8 +132,9 @@ pub async fn webhook(
                 if let EventObject::Subscription(subscription) = event.data.object {
                     let subscription_stripe_id = subscription.id.to_string();
 
-                    let current_period_end = chrono::NaiveDateTime::from_timestamp_micros(
+                    let current_period_end = chrono::NaiveDateTime::from_timestamp_opt(
                         subscription.current_period_end,
+                        0,
                     )
                     .ok_or(ServiceError::BadRequest(
                         "Failed to convert current_period_end to NaiveDateTime".to_string(),
@@ -275,7 +276,7 @@ pub struct UpdateSubscriptionData {
 )]
 pub async fn update_subscription_plan(
     path_data: web::Path<UpdateSubscriptionData>,
-    user: OwnerOnly,
+    _user: OwnerOnly,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let get_subscription_pool = pool.clone();
@@ -287,12 +288,6 @@ pub async fn update_subscription_plan(
         web::block(move || get_subscription_by_id_query(subscription_id, get_subscription_pool))
             .await?
             .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
-
-    user.0
-        .user_orgs
-        .iter()
-        .find(|org| org.organization_id == subscription.organization_id)
-        .ok_or(ServiceError::Forbidden)?;
 
     let plan_id = path_data.plan_id;
     let plan = web::block(move || get_plan_by_id_query(plan_id, get_plan_pool))
