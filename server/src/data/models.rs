@@ -331,6 +331,7 @@ pub struct ChunkMetadataWithFileData {
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct SlimUser {
     pub id: uuid::Uuid,
+    pub name: Option<String>,
     pub email: String,
     pub username: Option<String>,
     pub website: Option<String>,
@@ -347,6 +348,7 @@ impl SlimUser {
     ) -> Self {
         SlimUser {
             id: user.id,
+            name: user.name,
             email: user.email,
             username: user.username,
             website: user.website,
@@ -1019,7 +1021,7 @@ impl Organization {
 pub struct Invitation {
     pub id: uuid::Uuid,
     pub email: String,
-    pub dataset_id: uuid::Uuid,
+    pub organization_id: uuid::Uuid,
     pub used: bool,
     pub expires_at: chrono::NaiveDateTime,
     pub created_at: chrono::NaiveDateTime,
@@ -1028,11 +1030,11 @@ pub struct Invitation {
 
 // any type that implements Into<String> can be used to create Invitation
 impl Invitation {
-    pub fn from_details(email: String, dataset_id: uuid::Uuid) -> Self {
+    pub fn from_details(email: String, organization_id: uuid::Uuid) -> Self {
         Invitation {
             id: uuid::Uuid::new_v4(),
             email,
-            dataset_id,
+            organization_id,
             used: false,
             expires_at: chrono::Utc::now().naive_local() + chrono::Duration::days(3),
             created_at: chrono::Utc::now().naive_local(),

@@ -500,12 +500,16 @@ pub async fn main() -> std::io::Result<()> {
                     .service(
                         web::scope("/organization")
                         .service(
-                            web::resource("/{organization_id}")
-                                .route(web::get().to(handlers::organization_handler::get_organization_by_id))
+                            web::resource("/usage/{organization_id}")
+                            .route(web::get().to(handlers::organization_handler::get_organization_usage))
                         )
                         .service(
-                            web::resource("/usage/{organization_id}")
-                                .route(web::get().to(handlers::organization_handler::get_organization_usage))
+                            web::resource("/users/{organization_id}")
+                            .route(web::get().to(handlers::organization_handler::get_organization_users))
+                        )
+                        .service(
+                            web::resource("/{organization_id}")
+                                .route(web::get().to(handlers::organization_handler::get_organization_by_id))
                         )
                         .service(
                             web::resource("")

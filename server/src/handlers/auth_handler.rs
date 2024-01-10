@@ -1,15 +1,15 @@
 use crate::data::models::{DatasetAndOrgWithSubAndPlan, Organization, StripePlan, UserRole};
 use crate::get_env;
-use crate::operators::organization_operator::{get_organization_by_key_query, get_user_org_count};
+use crate::operators::organization_operator::{
+    get_org_from_id_query, get_organization_by_key_query, get_user_org_count,
+};
 use crate::operators::user_operator::create_user_query;
 use crate::{
     data::models::{Pool, ServerDatasetConfiguration, SlimUser, User, UserOrganization},
     errors::ServiceError,
     operators::{
-        self,
-        invitation_operator::get_invitation_by_id_query,
-        organization_operator::{create_organization_query, get_org_from_dataset_id_query},
-        user_operator::get_user_by_id_query,
+        self, invitation_operator::get_invitation_by_id_query,
+        organization_operator::create_organization_query, user_operator::get_user_by_id_query,
     },
 };
 use actix_identity::Identity;
@@ -162,14 +162,14 @@ pub async fn create_account(
     email: String,
     name: String,
     user_id: uuid::Uuid,
-    dataset_id: Option<uuid::Uuid>,
+    organization_id: Option<uuid::Uuid>,
     inv_code: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<(User, Vec<UserOrganization>, Vec<Organization>), ServiceError> {
-    let (owner, org) = match dataset_id {
-        Some(dataset_id) => (
+    let (owner, org) = match organization_id {
+        Some(organization_id) => (
             false,
-            get_org_from_dataset_id_query(dataset_id, pool.clone())
+            get_org_from_id_query(organization_id, pool.clone())
                 .await
                 .map_err(|error| ServiceError::InternalServerError(error.message.to_string()))?,
         ),
@@ -226,7 +226,7 @@ pub async fn create_account(
                 ));
             }
 
-            if invitation.dataset_id != dataset_id.unwrap() {
+            if invitation.organization_id != organization_id.unwrap() {
                 return Err(ServiceError::BadRequest(
                     "Dataset ID does not match invitation".to_string(),
                 ));
@@ -286,7 +286,7 @@ const OIDC_SESSION_KEY: &str = "oidc_state";
 
 #[derive(Deserialize, Debug)]
 pub struct AuthQuery {
-    pub dataset_id: Option<uuid::Uuid>,
+    pub organization_id: Option<uuid::Uuid>,
     pub redirect_uri: Option<String>,
     pub inv_code: Option<uuid::Uuid>,
 }
@@ -294,7 +294,7 @@ pub struct AuthQuery {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LoginState {
     pub redirect_uri: String,
-    pub dataset_id: Option<uuid::Uuid>,
+    pub organization_id: Option<uuid::Uuid>,
     pub inv_code: Option<uuid::Uuid>,
 }
 
@@ -348,7 +348,7 @@ pub async fn login(
 
     let login_state = LoginState {
         redirect_uri,
-        dataset_id: data.dataset_id,
+        organization_id: data.organization_id,
         inv_code: data.inv_code,
     };
 
@@ -461,7 +461,7 @@ pub async fn callback(
                 email.to_string(),
                 name.iter().next().unwrap().1.to_string(),
                 user_id,
-                login_state.dataset_id,
+                login_state.organization_id,
                 login_state.inv_code,
                 pool,
             )

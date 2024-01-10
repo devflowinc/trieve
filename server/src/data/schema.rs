@@ -134,7 +134,7 @@ diesel::table! {
         id -> Uuid,
         #[max_length = 100]
         email -> Varchar,
-        dataset_id -> Uuid,
+        organization_id -> Uuid,
         used -> Bool,
         expires_at -> Timestamp,
         created_at -> Timestamp,

@@ -1,10 +1,10 @@
 use super::auth_handler::OwnerOnly;
 use crate::{
-    data::models::{Dataset, DatasetAndOrgWithSubAndPlan, Invitation, Pool},
+    data::models::{Invitation, Pool},
     errors::{DefaultError, ServiceError},
     operators::invitation_operator::{create_invitation_query, send_invitation},
 };
-use actix_web::{web, HttpRequest, HttpResponse};
+use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -20,7 +20,9 @@ pub struct InvitationResponse {
 
 #[derive(Deserialize, ToSchema)]
 pub struct InvitationData {
+    pub organization_id: uuid::Uuid,
     pub email: String,
+    pub app_url: String,
     pub redirect_uri: String,
 }
 
@@ -36,10 +38,8 @@ pub struct InvitationData {
     )
 )]
 pub async fn post_invitation(
-    request: HttpRequest,
     invitation_data: web::Json<InvitationData>,
     pool: web::Data<Pool>,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let invitation_data = invitation_data.into_inner();
@@ -52,28 +52,21 @@ pub async fn post_invitation(
         );
     }
 
-    // get the host from the request
-    let host_name = request
-        .headers()
-        .get("Origin")
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .to_string();
-
     let invitation = create_invitation(
-        host_name,
+        invitation_data.app_url,
         email,
-        dataset_org_plan_sub.dataset,
+        invitation_data.organization_id,
         invitation_data.redirect_uri,
         pool,
     )
     .await
     .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
-    send_invitation(invitation.registration_url, invitation.invitation).map_err(|e| {
-        ServiceError::BadRequest(format!("Could not send invitation: {}", e.message))
-    })?;
+    send_invitation(invitation.registration_url, invitation.invitation)
+        .await
+        .map_err(|e| {
+            ServiceError::BadRequest(format!("Could not send invitation: {}", e.message))
+        })?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -86,17 +79,17 @@ pub struct InvitationWithUrl {
 pub async fn create_invitation(
     app_url: String,
     email: String,
-    dataset: Dataset,
+    organization_id: uuid::Uuid,
     redirect_uri: String,
     pool: web::Data<Pool>,
 ) -> Result<InvitationWithUrl, DefaultError> {
-    let invitation = create_invitation_query(email, dataset.id, pool).await?;
+    let invitation = create_invitation_query(email, organization_id, pool).await?;
     // send_invitation(app_url, &invitation)
 
     //TODO:figure out how to get redirect_uri
     let registration_url = format!(
-        "{}/auth?inv_code={}&dataset_id={}&redirect_uri={}",
-        app_url, invitation.id, dataset.id, redirect_uri
+        "{}/auth?inv_code={}&organization_id={}&redirect_uri={}",
+        app_url, invitation.id, organization_id, redirect_uri
     );
     Ok(InvitationWithUrl {
         invitation,
