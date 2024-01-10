@@ -164,6 +164,14 @@ services:
     environment:
       - VITE_API_HOST=${VITE_API_HOST}
 
+  splade-embeddings:
+    image: arguflow/splade-embeddings
+    build: ./embedding-server/
+    networks:
+      - app-network
+    ports:
+      - 7070:7070
+
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.1
     environment:
