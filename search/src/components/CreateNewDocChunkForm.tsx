@@ -8,10 +8,12 @@ import { FullScreenModal } from "./Atoms/FullScreenModal";
 import type { TinyMCE } from "../../public/tinymce/tinymce";
 import { CreateChunkDTO, isActixApiDefaultError } from "../../utils/apiTypes";
 import { Tooltip } from "./Atoms/Tooltip";
+import { useStore } from "@nanostores/solid";
+import { currentDataset } from "../stores/datasetStore";
 
 export const CreateNewDocChunkForm = () => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const dataset = import.meta.env.PUBLIC_DATASET as string;
+  const $dataset = useStore(currentDataset)()?.dataset.id;
   const [docChunkLink, setDocChunkLink] = createSignal("");
   const [tagSet, setTagSet] = createSignal("");
   const [errorText, setErrorText] = createSignal<
@@ -61,7 +63,7 @@ export const CreateNewDocChunkForm = () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       credentials: "include",
       body: JSON.stringify(requestBody),
@@ -263,7 +265,7 @@ export const CreateNewDocChunkForm = () => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${dataset}`}
+                href={`${apiHost}/auth?dataset_id=${$dataset ?? ""}`}
               >
                 Login/Register
                 <BiRegularLogIn class="h-6 w-6  fill-current" />

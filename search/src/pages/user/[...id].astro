@@ -8,9 +8,11 @@ import {
 import Footer from "../../components/Footer.astro";
 import SearchLayout from "../../layouts/SearchLayout.astro";
 import { UserChunkDisplay } from "../../components/UserChunkDisplay";
+import { useStore } from "@nanostores/solid";
+import { currentDataset } from "../../stores/datasetStore";
 
 const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-const dataset = import.meta.env.PUBLIC_DATASET as string;
+const $dataset = useStore(currentDataset)()?.dataset.id;
 
 let { id } = Astro.params;
 id = id?.split("&")[0];
@@ -31,7 +33,7 @@ try {
   const queryPromise = fetch(`${apiHost}/user/${id}/${page}`, {
     method: "GET",
     headers: {
-      "AF-Dataset": dataset,
+      "AF-Dataset": $dataset ??  "",
       "Content-Type": "application/json",
     },
   });
@@ -39,7 +41,7 @@ try {
   const collectionsPromise = fetch(`${apiHost}/user/collections/${id}/1`, {
     method: "GET",
     headers: {
-      "AF-Dataset": dataset,
+      "AF-Dataset": $dataset ??  "",
     },
   });
 
@@ -88,4 +90,4 @@ try {
   </div>
   <div class="flex-1"></div>
   <Footer />
-</SearchLayout>../../components/UserChunkDisplay
+</SearchLayout>

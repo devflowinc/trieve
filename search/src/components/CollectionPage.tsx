@@ -32,6 +32,7 @@ import { AiOutlineRobot } from "solid-icons/ai";
 import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
 import { currentUser } from "../stores/userStore";
 import { useStore } from "@nanostores/solid";
+import { currentDataset } from "../stores/datasetStore";
 
 export interface CollectionPageProps {
   collectionID: string;
@@ -47,7 +48,7 @@ export interface CollectionPageProps {
 
 export const CollectionPage = (props: CollectionPageProps) => {
   const apiHost: string = import.meta.env.PUBLIC_API_HOST as string;
-  const dataset = import.meta.env.PUBLIC_DATASET as string;
+  const $dataset = useStore(currentDataset)()?.dataset.id;
 
   const chunkMetadatasWithVotes: BookmarkDTO[] = [];
   const searchChunkMetadatasWithVotes: ScoreChunkDTO[] = [];
@@ -144,7 +145,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
           credentials: "include",
           signal: abortController.signal,
           headers: {
-            "AF-Dataset": dataset,
+            "AF-Dataset": $dataset ?? "",
           },
         },
       ).then((response) => {
@@ -175,7 +176,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "AF-Dataset": dataset,
+          "AF-Dataset": $dataset ?? "",
         },
         signal: abortController.signal,
         credentials: "include",
@@ -223,7 +224,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            "AF-Dataset": dataset,
+            "AF-Dataset": $dataset ?? "",
           },
           signal: abortController.signal,
           body: JSON.stringify({
@@ -260,7 +261,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
     }).then((response) => {
       if (response.ok) {
@@ -280,7 +281,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       body: JSON.stringify({
         chunk_ids: metadatasWithVotes().flatMap((m) => {
@@ -309,7 +310,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
       body: JSON.stringify(body),
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
     }).then((response) => {
       setFetchingCollections(false);
@@ -332,7 +333,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       body: JSON.stringify({
         positive_chunk_ids: ids,
@@ -703,7 +704,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${dataset}`}
+                href={`${apiHost}/auth?dataset_id=${$dataset ?? ""}`}
               >
                 Login/Register
                 <BiRegularLogInCircle class="h-6 w-6  fill-current" />

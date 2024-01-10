@@ -1,17 +1,19 @@
+import { useStore } from "@nanostores/solid";
 import { createSignal, createEffect, For, Show } from "solid-js";
+import { currentDataset } from "../stores/datasetStore";
 
 export const SuggestedQueries = (props: { query: string }) => {
   const [suggestedQueries, setSuggestedQueries] = createSignal<string[]>([]);
   const [authed, setAuthed] = createSignal<boolean>(true);
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const dataset = import.meta.env.PUBLIC_DATASET as string;
+  const $dataset = useStore(currentDataset)()?.dataset.id;
 
   createEffect(() => {
     void fetch(`${apiHost}/chunk/gen_suggestions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       credentials: "include",
       body: JSON.stringify({ query: props.query }),

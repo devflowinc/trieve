@@ -18,10 +18,11 @@ import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
 import { SingleNotification } from "../Notification";
 import { useStore } from "@nanostores/solid";
 import { currentUser } from "../../stores/userStore";
+import { currentDataset } from "../../stores/datasetStore";
 
 export const NotificationPopover = () => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const dataset = import.meta.env.PUBLIC_DATASET as string;
+  const $dataset = useStore(currentDataset)()?.dataset.id;
   const similarityScoreThreshold =
     (import.meta.env.PUBLIC_SIMILARITY_SCORE_THRESHOLD as number | undefined) ??
     80;
@@ -40,7 +41,7 @@ export const NotificationPopover = () => {
     void fetch(`${apiHost}/notifications/${page()}`, {
       method: "GET",
       headers: {
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       credentials: "include",
     }).then((response) => {
@@ -59,7 +60,7 @@ export const NotificationPopover = () => {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       credentials: "include",
       body: JSON.stringify({
@@ -88,7 +89,7 @@ export const NotificationPopover = () => {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       credentials: "include",
     }).then((response) => {

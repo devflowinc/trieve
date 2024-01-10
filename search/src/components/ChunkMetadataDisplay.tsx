@@ -6,7 +6,6 @@ import {
   type ChunkCollectionDTO,
   type ChunkMetadataWithVotes,
   ChunkMetadata,
-  ClientEnvsConfiguration,
 } from "../../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import sanitizeHtml from "sanitize-html";
@@ -23,6 +22,9 @@ import {
 } from "solid-icons/fa";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { RiOthersCharacterRecognitionLine } from "solid-icons/ri";
+import { useStore } from "@nanostores/solid";
+import { currentDataset } from "../stores/datasetStore";
+import { clientConfig } from "../stores/envsStore";
 
 export const getLocalTime = (strDate: string | Date) => {
   const utcDate = new Date(strDate);
@@ -53,26 +55,22 @@ export interface ChunkMetadataDisplayProps {
 
 const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const envs = JSON.parse(
-    localStorage.getItem("clientConfig") ?? "{}",
-  ) as ClientEnvsConfiguration;
+  const $envs = useStore(clientConfig);
 
   const frontMatterVals = (
-    (envs.PUBLIC_FRONTMATTER_VALS as string | undefined) ??
-    "link,tag_set,file_name,time_stamp"
+    $envs()?.PUBLIC_FRONTMATTER_VALS ?? "link,tag_set,file_name,time_stamp"
   ).split(",");
 
-  const linesBeforeShowMore =
-    (envs.PUBLIC_LINES_BEFORE_SHOW_MORE as number | undefined) ?? 10;
+  const linesBeforeShowMore = $envs()?.PUBLIC_LINES_BEFORE_SHOW_MORE ?? 10;
 
   const [expanded, setExpanded] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
   const [deleted, setDeleted] = createSignal(false);
   const [showImageModal, setShowImageModal] = createSignal(false);
   const [showMetadata, setShowMetadata] = createSignal(false);
+  const $currentDataset = useStore(currentDataset);
 
   const onDelete = () => {
-    const dataset = import.meta.env.PUBLIC_DATASET as string;
     if (props.signedInUserId !== props.viewingUserId) return;
     const curChunkId = props.chunk.id;
 
@@ -83,7 +81,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
           method: "DELETE",
           credentials: "include",
           headers: {
-            "AF-Dataset": dataset,
+            "AF-Dataset": $currentDataset()?.dataset.id ?? "",
           },
         }).then((response) => {
           setDeleting(false);
@@ -100,11 +98,12 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   };
 
   const imgInformation = createMemo(() => {
-    const imgRangeStartKey = envs.PUBLIC_IMAGE_RANGE_START_KEY;
-    const imgRangeEndKey = envs.PUBLIC_IMAGE_RANGE_END_KEY;
+    const imgRangeStartKey = $envs()?.PUBLIC_IMAGE_RANGE_START_KEY;
+    const imgRangeEndKey = $envs()?.PUBLIC_IMAGE_RANGE_END_KEY;
 
     if (
       !imgRangeStartKey ||
+      !imgRangeEndKey ||
       !props.chunk.metadata ||
       !indirectHasOwnProperty(props.chunk.metadata, imgRangeStartKey) ||
       !indirectHasOwnProperty(props.chunk.metadata, imgRangeEndKey)

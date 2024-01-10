@@ -1,9 +1,11 @@
 import { BiRegularLogIn, BiRegularXCircle, BiSolidFile } from "solid-icons/bi";
 import { Show, createSignal } from "solid-js";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
+import { useStore } from "@nanostores/solid";
+import { currentDataset } from "../stores/datasetStore";
 
 export const UploadFile = () => {
-  const dataset = import.meta.env.PUBLIC_DATASET as string;
+  const $dataset = useStore(currentDataset)()?.dataset.id;
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const [file, setFile] = createSignal<File | undefined>();
   const [link, setLink] = createSignal("");
@@ -70,7 +72,7 @@ export const UploadFile = () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       credentials: "include",
       body: JSON.stringify(requestBody),
@@ -214,7 +216,7 @@ export const UploadFile = () => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${dataset}`}
+                href={`${apiHost}/auth?dataset_id=${$dataset ?? ""}`}
               >
                 Login/Register
                 <BiRegularLogIn class="h-6 w-6" />

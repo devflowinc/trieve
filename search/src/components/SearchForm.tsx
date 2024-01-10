@@ -23,6 +23,8 @@ import { FaSolidCheck } from "solid-icons/fa";
 import type { Filters } from "./ResultsPage";
 import { DatePicker } from "./Atoms/DatePicker";
 import type { ClientEnvsConfiguration } from "../../utils/apiTypes";
+import { clientConfig } from "../stores/envsStore";
+import { useStore } from "@nanostores/solid";
 
 const SearchForm = (props: {
   query?: string;
@@ -32,17 +34,15 @@ const SearchForm = (props: {
   weight?: string;
 }) => {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const envs = JSON.parse(
-    localStorage.getItem("clientConfig") ?? "{}",
-  ) as ClientEnvsConfiguration;
+  const $envs = useStore(clientConfig);
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const comboboxSections: ComboboxSection[] =
-    (envs.PUBLIC_FILTER_ITEMS as ComboboxSection[] | undefined) ?? [];
+    $envs()?.PUBLIC_FILTER_ITEMS ?? [];
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const customComboBoxFilterVals: ComboboxSection[] = comboboxSections;
 
-  const createEvidenceFeature = envs.PUBLIC_CREATE_EVIDENCE_FEATURE;
+  const createEvidenceFeature = $envs()?.PUBLIC_CREATE_EVIDENCE_FEATURE;
 
   const [searchTypes, setSearchTypes] = createSignal([
     { name: "Full Text", isSelected: false, route: "fulltext" },
@@ -361,7 +361,7 @@ const SearchForm = (props: {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-    const textArray: string[] = ["bro", "wtf"]; // envs.PUBLIC_SEARCH_QUERIES.split(",");
+    const textArray: string[] = $envs()?.PUBLIC_SEARCH_QUERIES.split(",") ?? [];
 
     const typingSpeed = 50;
     const deleteSpeed = 30;

@@ -1,16 +1,10 @@
 import { Show, createEffect, createSignal } from "solid-js";
-import {
-  APIRequest,
-  UserDTO,
-  isActixApiDefaultError,
-  isUserDTO,
-} from "../../utils/apiTypes";
+import { APIRequest, isActixApiDefaultError } from "../../utils/apiTypes";
 import { currentUser } from "../stores/userStore";
 import { useStore } from "@nanostores/solid";
 
 const SearchForm = () => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const dataset = import.meta.env.PUBLIC_DATASET as string;
   const $currentUser = useStore(currentUser);
   const [username, setUsername] = createSignal("");
   const [website, setWebsite] = createSignal("");
