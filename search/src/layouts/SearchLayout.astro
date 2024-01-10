@@ -5,15 +5,15 @@ import { useStore } from "@nanostores/solid";
 import { currentDataset } from "../stores/datasetStore";
 
 const plausibleHost = import.meta.env.PLAUSIBLE_HOST as string;
-const $dataset = useStore(currentDataset)()?.dataset.name;
+const $dataset = useStore(currentDataset);
 const ogDescription = import.meta.env.OG_DESCRIPTION as string;
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-let title = Astro.props.title;
-if (!title) {
-  title = "Arguflow Search - " + $dataset as unknown as string;
-} else {
-  title = (title as unknown as string) + " - " + $dataset as unknown as string;
+let title: string = Astro.props.title ?? "Arguflow Search";
+let datasetName = $dataset()?.dataset.name;
+
+if (datasetName) {
+  title += " - " + datasetName;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
@@ -122,7 +122,7 @@ try {
     <div
       class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white"
     >
-      <Navbar stars={stars}  client:load />
+      <Navbar stars={stars} client:load />
       <slot />
     </div>
   </body>

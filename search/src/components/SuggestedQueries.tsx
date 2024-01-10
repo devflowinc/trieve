@@ -6,14 +6,17 @@ export const SuggestedQueries = (props: { query: string }) => {
   const [suggestedQueries, setSuggestedQueries] = createSignal<string[]>([]);
   const [authed, setAuthed] = createSignal<boolean>(true);
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const $dataset = useStore(currentDataset)()?.dataset.id;
+  const $dataset = useStore(currentDataset);
 
   createEffect(() => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
+
     void fetch(`${apiHost}/chunk/gen_suggestions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
       body: JSON.stringify({ query: props.query }),

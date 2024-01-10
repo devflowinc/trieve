@@ -5,10 +5,14 @@ import { useStore } from "@nanostores/solid";
 import { currentDataset } from "../stores/datasetStore";
 
 const plausibleHost = import.meta.env.PLAUSIBLE_HOST as string;
-const $dataset = useStore(currentDataset)()?.dataset.name;
+const $dataset = useStore(currentDataset);
+const datasetName = $dataset()?.dataset.name;
 const ogDescription = import.meta.env.OG_DESCRIPTION as string;
 
-const title = `Arguflow Search - ${$dataset ?? ""}`;
+let title = `Arguflow Search`;
+if (datasetName) {
+  title += ` - ${datasetName}`;
+}
 
 let stars = 0;
 try {
