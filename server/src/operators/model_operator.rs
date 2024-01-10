@@ -110,7 +110,7 @@ pub struct CustomSparseEmbedData {
 }
 
 pub async fn get_splade_doc_embedding(message: &str) -> Result<Vec<(u32, f32)>, ServiceError> {
-    let mut embedding_server_call: String = get_env!("SPLADE_EMBEDDING_SERVER_ORIGIN","EMBEDDING_SERVER_ORIGIN should be set if this is called").to_string();
+    let mut embedding_server_call: String = get_env!("SPLADE_EMBEDDING_SERVER_ORIGIN","SPLADE_EMBEDDING_SERVER_ORIGIN should be set if this is called").to_string();
     embedding_server_call.push_str("/sparse_encode");
 
     let client = reqwest::Client::new();
