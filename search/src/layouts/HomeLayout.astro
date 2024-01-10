@@ -1,12 +1,14 @@
 ---
 import "../global.css";
 import { HomeNavbar } from "../components/Atoms/HomeNavbar";
+import { useStore } from "@nanostores/solid";
+import { currentDataset } from "../stores/datasetStore";
 
 const plausibleHost = import.meta.env.PLAUSIBLE_HOST as string;
-const dataset = import.meta.env.PUBLIC_DATASET as string;
+const $dataset = useStore(currentDataset)()?.dataset.name;
 const ogDescription = import.meta.env.OG_DESCRIPTION as string;
 
-const title = `Arguflow Search - ${dataset}`;
+const title = `Arguflow Search - ${$dataset}`;
 
 let stars = 0;
 try {
@@ -67,29 +69,6 @@ try {
         });
       }
     </script>
-    <script>
-      import { isClientEnvsConfiguration } from "../../utils/apiTypes";
-      // try {
-      //   fetch("http://localhost:8090/api/dataset/envs", {
-      //     method: "GET",
-      //     headers: {
-      //       "Content-Type": "application/json",
-      //       "AF-Dataset": import.meta.env.PUBLIC_DATASET,
-      //     },
-      //     credentials: "include",
-      //   })
-      //     .then((res) =>
-      //       res.json().then((envs) => {
-      //         if (isClientEnvsConfiguration(envs)) {
-      //           localStorage.setItem("clientConfig", JSON.stringify(envs));
-      //         }
-      //       }),
-      //     )
-      //     .catch((e) => console.error(e));
-      // } catch (e) {
-      //   console.error(e);
-      // }
-    </script>
     <meta charset="UTF-8" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#5E5E5E" />
@@ -131,7 +110,7 @@ try {
     <div
       class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white"
     >
-      <HomeNavbar stars={stars} dataset={dataset} client:load />
+      <HomeNavbar stars={stars} client:load />
       <slot />
     </div>
   </body>

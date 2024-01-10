@@ -8,6 +8,8 @@ import type {
 import type { ScoreChunkProps } from "./ScoreChunk";
 import { FiChevronLeft, FiChevronRight } from "solid-icons/fi";
 import ScoreChunk from "./ScoreChunk";
+import { useStore } from "@nanostores/solid";
+import { clientConfig } from "../stores/envsStore";
 
 export type ScoreChunkAraryProps = Omit<
   ScoreChunkProps,
@@ -18,11 +20,8 @@ export type ScoreChunkAraryProps = Omit<
 };
 
 export const ScoreChunkArray = (props: ScoreChunkAraryProps) => {
-  const envs = JSON.parse(
-    localStorage.getItem("clientConfig") ?? "{}",
-  ) as ClientEnvsConfiguration;
-  const dateValue =
-    (envs.PUBLIC_DATE_RANGE_VALUE as string | undefined) ?? "Date";
+  const $envs = useStore(clientConfig);
+  const dateValue = $envs()?.PUBLIC_DATE_RANGE_VALUE ?? "Date";
 
   const [curChunk, setCurChunk] = createSignal(0);
   const [beginTime, setBeginTime] = createSignal<number | undefined>();

@@ -2,9 +2,12 @@
 import SearchLayout from "../layouts/SearchLayout.astro";
 import { CreateNewDocChunkForm } from "../components/CreateNewDocChunkForm";
 import Footer from "../components/Footer.astro";
+import { useStore } from "@nanostores/solid";
+import { clientConfig } from "../stores/envsStore";
 
+const $envs = useStore(clientConfig);
 const create_evidence_feature =
-  import.meta.env.PUBLIC_CREATE_EVIDENCE_FEATURE !== "off";
+ $envs()?.PUBLIC_CREATE_EVIDENCE_FEATURE;
 if (!create_evidence_feature) {
   return Astro.redirect("/404");
 }
