@@ -22,7 +22,6 @@ import {
 import { FaSolidCheck } from "solid-icons/fa";
 import type { Filters } from "./ResultsPage";
 import { DatePicker } from "./Atoms/DatePicker";
-import type { ClientEnvsConfiguration } from "../../utils/apiTypes";
 import { clientConfig } from "../stores/envsStore";
 import { useStore } from "@nanostores/solid";
 

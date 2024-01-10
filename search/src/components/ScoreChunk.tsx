@@ -12,7 +12,6 @@ import {
   type ChunkBookmarksDTO,
   type ChunkCollectionDTO,
   type ChunkMetadataWithVotes,
-  ClientEnvsConfiguration,
 } from "../../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import { RiOthersCharacterRecognitionLine } from "solid-icons/ri";
