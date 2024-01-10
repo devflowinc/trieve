@@ -17,6 +17,7 @@ import { useStore } from "@nanostores/solid";
 import { currentUser, isLoadingUser } from "../stores/userStore";
 import { clientConfig } from "../stores/envsStore";
 import { currentDataset } from "../stores/datasetStore";
+import { currentOrganization } from "../stores/organizationStore";
 
 export interface RegisterOrUserProfileProps {
   stars: number;
@@ -26,6 +27,7 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const $dataset = useStore(currentDataset);
   const $envs = useStore(clientConfig);
+  const $currentOrganization = useStore(currentOrganization);
 
   const showGithubStars = $envs()?.PUBLIC_SHOW_GITHUB_STARS;
 
@@ -57,9 +59,9 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
           <Show when={!$currentUser()}>
             <div class="flex items-center space-x-3">
               <a
-                href={`${apiHost}/auth?dataset_id=${
-                  $dataset()?.dataset.id ?? ""
-                }`}
+                href={`${apiHost}/auth?organization_id=${
+                  $currentOrganization()?.id
+                }}`}
                 class="min-[420px]:text-lg"
               >
                 Login/Register
