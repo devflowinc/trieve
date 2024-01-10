@@ -24,7 +24,7 @@ export interface RegisterOrUserProfileProps {
 
 const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const $dataset = useStore(currentDataset)()?.dataset.id;
+  const $dataset = useStore(currentDataset);
   const $envs = useStore(clientConfig);
 
   const showGithubStars = $envs()?.PUBLIC_SHOW_GITHUB_STARS;
@@ -33,11 +33,13 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
   const $isLoadingUser = useStore(isLoadingUser);
 
   const logout = () => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
     void fetch(`${apiHost}/auth`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
     }).then((response) => {
@@ -55,7 +57,9 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
           <Show when={!$currentUser()}>
             <div class="flex items-center space-x-3">
               <a
-                href={`${apiHost}/auth?dataset_id=${$dataset ?? ""}`}
+                href={`${apiHost}/auth?dataset_id=${
+                  $dataset()?.dataset.id ?? ""
+                }`}
                 class="min-[420px]:text-lg"
               >
                 Login/Register

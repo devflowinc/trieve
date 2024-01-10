@@ -44,7 +44,7 @@ export interface ResultsPageProps {
 
 const ResultsPage = (props: ResultsPageProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const $dataset = useStore(currentDataset)()?.dataset.id;
+  const $dataset = useStore(currentDataset);
   const initialResultChunks = props.defaultResultChunks.score_chunks;
   const initialTotalPages = props.defaultResultChunks.total_chunk_pages;
 
@@ -69,12 +69,14 @@ const ResultsPage = (props: ResultsPageProps) => {
 
   const fetchChunkCollections = () => {
     if (!$currentUser()) return;
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
 
     void fetch(`${apiHost}/chunk_collection/1`, {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
     }).then((response) => {
       if (response.ok) {
@@ -89,12 +91,15 @@ const ResultsPage = (props: ResultsPageProps) => {
   };
 
   const fetchBookmarks = () => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
+
     void fetch(`${apiHost}/chunk_collection/bookmark`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       body: JSON.stringify({
         chunk_ids: resultChunks().flatMap((c) => {
@@ -113,6 +118,8 @@ const ResultsPage = (props: ResultsPageProps) => {
 
   createEffect(() => {
     const abortController = new AbortController();
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const requestBody: any = {
@@ -146,7 +153,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
       signal: abortController.signal,
@@ -336,7 +343,9 @@ const ResultsPage = (props: ResultsPageProps) => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${$dataset ?? ""}`}
+                href={`${apiHost}/auth?dataset_id=${
+                  $dataset()?.dataset.id ?? ""
+                }`}
               >
                 Login/Register
                 <BiRegularLogIn class="h-6 w-6 fill-current" />

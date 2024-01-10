@@ -7,8 +7,7 @@ import { clientConfig } from "../stores/envsStore";
 
 const $env = useStore(clientConfig);
 
-const documentUploadFeature =
-  $env()?.PUBLIC_DOCUMENT_UPLOAD_FEATURE;
+const documentUploadFeature = $env()?.PUBLIC_DOCUMENT_UPLOAD_FEATURE;
 if (!documentUploadFeature) {
   return Astro.redirect("/404");
 }

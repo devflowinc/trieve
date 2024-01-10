@@ -23,7 +23,7 @@ export interface CollectionUserPageViewProps {
 
 export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const $dataset = useStore(currentDataset)()?.dataset.id;
+  const $dataset = useStore(currentDataset);
   const [collections, setCollections] = createSignal<ChunkCollectionDTO[]>([]);
   const [collectionPage, setCollectionPage] = createSignal(1);
   const [collectionPageCount, setCollectionPageCount] = createSignal(1);
@@ -37,11 +37,14 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
     const userId = props.user?.id;
     if (userId === undefined) return;
 
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
+
     void fetch(`${apiHost}/user/collections/${userId}/${collectionPage()}`, {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
     }).then((response) => {
       if (response.ok) {
@@ -61,6 +64,8 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
 
   const deleteCollection = (collection: ChunkCollectionDTO) => {
     if (props.user?.id !== collection.author_id) return;
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
 
     props.setOnDelete(() => {
       return () => {
@@ -70,7 +75,7 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            "AF-Dataset": $dataset ?? "",
+            "AF-Dataset": currentDataset.dataset.id,
           },
           body: JSON.stringify({
             collection_id: collection.id,

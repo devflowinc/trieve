@@ -21,7 +21,7 @@ import { currentDataset } from "../../stores/datasetStore";
 
 export const NotificationPopover = () => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const $dataset = useStore(currentDataset)()?.dataset.id;
+  const $dataset = useStore(currentDataset);
   const similarityScoreThreshold =
     (import.meta.env.PUBLIC_SIMILARITY_SCORE_THRESHOLD as number | undefined) ??
     80;
@@ -37,10 +37,12 @@ export const NotificationPopover = () => {
   });
 
   const fetchNotifs = () => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
     void fetch(`${apiHost}/notifications/${page()}`, {
       method: "GET",
       headers: {
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
     }).then((response) => {
@@ -55,11 +57,13 @@ export const NotificationPopover = () => {
   };
 
   const markAsRead = (notification: NotificationDTO) => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
     void fetch(`${apiHost}/notifications`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
       body: JSON.stringify({
@@ -84,11 +88,13 @@ export const NotificationPopover = () => {
   };
 
   const markAllAsRead = () => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
     void fetch(`${apiHost}/notifications_readall`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
     }).then((response) => {
