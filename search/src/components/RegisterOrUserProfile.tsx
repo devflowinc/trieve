@@ -60,7 +60,7 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
             <div class="flex items-center space-x-3">
               <a
                 href={`${apiHost}/auth?organization_id=${
-                  $currentOrganization()?.id
+                  $currentOrganization()?.id ?? ""
                 }}`}
                 class="min-[420px]:text-lg"
               >
