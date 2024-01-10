@@ -16,10 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: rustup component add clippy
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: imagemagick
-          version: 1.0
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
