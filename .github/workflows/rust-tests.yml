@@ -1,5 +1,15 @@
 name: rust test suite
 
+on: 
+  pull_request:
+    paths:
+    - 'server/**'
+    - '.github/workflows/**'
+  push:
+    paths:
+    - 'server/**'
+    - '.github/workflows/**'
+
 jobs:
   clippy_check:
     runs-on: ubuntu-latest
