@@ -833,7 +833,7 @@ pub struct DatasetUsageCount {
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct DatasetAndUsage {
     pub dataset: DatasetDTO,
-    pub datset_usage: DatasetUsageCount,
+    pub dataset_usage: DatasetUsageCount,
 }
 
 impl DatasetAndUsage {
