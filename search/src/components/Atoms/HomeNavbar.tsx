@@ -13,7 +13,7 @@ export const HomeNavbar = (props: HomeNavbarProps) => {
   const envs = JSON.parse(
     localStorage.getItem("clientConfig") ?? "{}",
   ) as ClientEnvsConfiguration;
-  const uploadDocumentFeature = envs.PUBLIC_DOCUMENT_UPLOAD_FEATURE !== "off";
+  const uploadDocumentFeature = envs.PUBLIC_DOCUMENT_UPLOAD_FEATURE;
 
   const [isOpen, setIsOpen] = createSignal(false);
 
@@ -22,9 +22,11 @@ export const HomeNavbar = (props: HomeNavbarProps) => {
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 items-center justify-between">
           <div class="mx-auto flex h-[60px] w-full max-w-6xl items-center justify-between">
-            <OrganizationSelectBox />
-            /
-            <DatasetSelectBox />
+            <div class="flex items-center space-x-2">
+              <OrganizationSelectBox />
+              <span class="text-2xl">/</span>
+              <DatasetSelectBox />
+            </div>
             <div class="flex w-full items-center justify-end space-x-1 sm:space-x-4">
               <Show when={uploadDocumentFeature}>
                 <a
