@@ -1,7 +1,6 @@
 import { Show, createSignal } from "solid-js";
 import RegisterOrUserProfile from "../RegisterOrUserProfile";
 import type { HomeNavbarProps } from "./HomeNavbar";
-import type { ClientEnvsConfiguration } from "../../../utils/apiTypes";
 import { useStore } from "@nanostores/solid";
 import { clientConfig } from "../../stores/envsStore";
 import { currentDataset } from "../../stores/datasetStore";

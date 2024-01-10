@@ -3,7 +3,6 @@ import { Show, createSignal, onMount } from "solid-js";
 import type {
   ChunkMetadataWithVotes,
   ChunkCollectionDTO,
-  ClientEnvsConfiguration,
 } from "../../utils/apiTypes";
 import type { ScoreChunkProps } from "./ScoreChunk";
 import { FiChevronLeft, FiChevronRight } from "solid-icons/fi";
