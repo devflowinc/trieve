@@ -184,7 +184,7 @@ pub fn get_datasets_by_organization_id(
 
     let dataset_and_usages = dataset_and_usages
         .into_iter()
-        .map(|(dataset, usage_count)| DatasetAndUsage::from_components(dataset, usage_count))
+        .map(|(dataset, usage_count)| DatasetAndUsage::from_components(dataset.into(), usage_count))
         .collect::<Vec<DatasetAndUsage>>();
 
     Ok(dataset_and_usages)
