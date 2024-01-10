@@ -24,7 +24,6 @@ export interface LayoutProps {
   chunks: Accessor<ScoreChunkDTO[]>;
   setShowNeedLoginModal: Setter<boolean>;
   setOpenChat: Setter<boolean>;
-  user: Accessor<UserDTO | undefined>;
 }
 
 const ChatPopup = (props: LayoutProps) => {
@@ -188,7 +187,6 @@ const ChatPopup = (props: LayoutProps) => {
               {(message, idx) => {
                 return (
                   <AfMessage
-                    user={props.user}
                     chunks={messageChunks}
                     role={messageRoleFromIndex(idx())}
                     content={message.content}
