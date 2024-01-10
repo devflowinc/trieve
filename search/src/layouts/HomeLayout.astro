@@ -8,7 +8,7 @@ const plausibleHost = import.meta.env.PLAUSIBLE_HOST as string;
 const $dataset = useStore(currentDataset)()?.dataset.name;
 const ogDescription = import.meta.env.OG_DESCRIPTION as string;
 
-const title = `Arguflow Search - ${$dataset}`;
+const title = `Arguflow Search - ${$dataset ?? ""}`;
 
 let stars = 0;
 try {

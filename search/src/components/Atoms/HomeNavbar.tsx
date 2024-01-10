@@ -1,6 +1,5 @@
 import { Show, createSignal } from "solid-js";
 import RegisterOrUserProfile from "../RegisterOrUserProfile";
-import type { ClientEnvsConfiguration } from "../../../utils/apiTypes";
 import { OrganizationSelectBox } from "../OrganizationSelectBox";
 import { DatasetSelectBox } from "../DatasetSelectBox";
 import { useStore } from "@nanostores/solid";
