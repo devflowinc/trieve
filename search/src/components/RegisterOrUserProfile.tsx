@@ -8,18 +8,15 @@ import {
 import { BiRegularLogOut, BiRegularUser } from "solid-icons/bi";
 import { AiOutlineProfile } from "solid-icons/ai";
 import { IoSettingsOutline } from "solid-icons/io";
-import { For, Show } from "solid-js";
-import type { ClientEnvsConfiguration } from "../../utils/apiTypes";
+import { Show } from "solid-js";
 import { NotificationPopover } from "./Atoms/NotificationPopover";
 import { AiFillGithub } from "solid-icons/ai";
 import { TbMinusVertical } from "solid-icons/tb";
-import {
-  currentOrganization,
-  organizations,
-} from "../stores/organizationStore";
+
 import { useStore } from "@nanostores/solid";
 import { currentUser, isLoadingUser } from "../stores/userStore";
-import { OrganizationSelectBox } from "./OrganizationSelectBox";
+import { clientConfig } from "../stores/envsStore";
+import { currentDataset } from "../stores/datasetStore";
 
 export interface RegisterOrUserProfileProps {
   stars: number;
@@ -27,25 +24,20 @@ export interface RegisterOrUserProfileProps {
 
 const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const dataset = import.meta.env.PUBLIC_DATASET as string;
-  const envs = JSON.parse(
-    localStorage.getItem("clientConfig") ?? "{}",
-  ) as ClientEnvsConfiguration;
-  const showGithubStars = envs.PUBLIC_SHOW_GITHUB_STARS;
+  const $dataset = useStore(currentDataset)()?.dataset.id;
+  const $envs = useStore(clientConfig);
+
+  const showGithubStars = $envs()?.PUBLIC_SHOW_GITHUB_STARS;
 
   const $currentUser = useStore(currentUser);
   const $isLoadingUser = useStore(isLoadingUser);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-  const $organizations = useStore(organizations);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-  const $currentOrganization = useStore(currentOrganization);
 
   const logout = () => {
     void fetch(`${apiHost}/auth`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       credentials: "include",
     }).then((response) => {
@@ -63,7 +55,7 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
           <Show when={!$currentUser()}>
             <div class="flex items-center space-x-3">
               <a
-                href={`${apiHost}/auth?dataset_id=${dataset}`}
+                href={`${apiHost}/auth?dataset_id=${$dataset ?? ""}`}
                 class="min-[420px]:text-lg"
               >
                 Login/Register

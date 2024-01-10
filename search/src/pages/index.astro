@@ -4,9 +4,13 @@ import Footer from "../components/Footer.astro";
 import type { Filters } from "../components/ResultsPage";
 import HomeLayout from "../layouts/HomeLayout.astro";
 import { DefaultQueries } from "../components/DefaultQueries";
+import { useStore } from "@nanostores/solid";
+import { currentDataset } from "../stores/datasetStore";
+import { clientConfig } from "../stores/envsStore";
 
-const dataset = import.meta.env.PUBLIC_DATASET as string;
-const suggestedQueries = ((import.meta.env.SUGGESTED_QUERIES ?? "") as string)
+const $dataset = useStore(currentDataset)()?.dataset.name;
+const $env = useStore(clientConfig);
+const suggestedQueries = (($env()?.PUBLIC_SUGGESTED_QUERIES ?? "") as string)
   .split(",")
   .filter((query) => query !== "");
 
@@ -54,7 +58,7 @@ const dataTypeFilters: Filters = {
           <div
             class="mb-[-4px] w-full text-end align-bottom text-lg leading-3 text-turquoise"
           >
-            {dataset}
+            {$dataset}
           </div>
           <div class="text-4xl">
             <span>Arguflow</span><span class="text-magenta">Search</span>

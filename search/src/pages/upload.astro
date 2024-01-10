@@ -1,10 +1,14 @@
 ---
+import { useStore } from "@nanostores/solid";
 import Footer from "../components/Footer.astro";
 import { UploadFile } from "../components/UploadFile";
 import SearchLayout from "../layouts/SearchLayout.astro";
+import { clientConfig } from "../stores/envsStore";
+
+const $env = useStore(clientConfig);
 
 const documentUploadFeature =
-  import.meta.env.PUBLIC_DOCUMENT_UPLOAD_FEATURE !== "off";
+  $env()?.PUBLIC_DOCUMENT_UPLOAD_FEATURE;
 if (!documentUploadFeature) {
   return Astro.redirect("/404");
 }
