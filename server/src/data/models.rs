@@ -799,6 +799,29 @@ impl Dataset {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Queryable, Clone, ToSchema)]
+pub struct DatasetDTO {
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub organization_id: uuid::Uuid,
+    pub client_configuration: serde_json::Value,
+}
+
+impl From<Dataset> for DatasetDTO {
+    fn from(dataset: Dataset) -> Self {
+        DatasetDTO {
+            id: dataset.id,
+            name: dataset.name,
+            created_at: dataset.created_at,
+            updated_at: dataset.updated_at,
+            organization_id: dataset.organization_id,
+            client_configuration: dataset.client_configuration,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[diesel(table_name = dataset_usage_counts)]
 pub struct DatasetUsageCount {
@@ -809,12 +832,12 @@ pub struct DatasetUsageCount {
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct DatasetAndUsage {
-    pub dataset: Dataset,
-    pub dataset_usage: DatasetUsageCount,
+    pub dataset: DatasetDTO,
+    pub datset_usage: DatasetUsageCount,
 }
 
 impl DatasetAndUsage {
-    pub fn from_components(dataset: Dataset, dataset_usage: DatasetUsageCount) -> Self {
+    pub fn from_components(dataset: DatasetDTO, dataset_usage: DatasetUsageCount) -> Self {
         DatasetAndUsage {
             dataset,
             dataset_usage,
