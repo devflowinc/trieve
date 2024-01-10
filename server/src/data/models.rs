@@ -833,7 +833,7 @@ pub struct DatasetUsageCount {
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct DatasetAndUsage {
     pub dataset: DatasetDTO,
-    pub datset_usage: DatasetUsageCount,
+    pub dataset_usage: DatasetUsageCount,
 }
 
 impl DatasetAndUsage {
@@ -1088,6 +1088,7 @@ pub struct StripePlan {
 }
 
 impl StripePlan {
+    #[allow(clippy::too_many_arguments)]
     pub fn from_details(
         stripe_id: String,
         chunk_count: i32,
