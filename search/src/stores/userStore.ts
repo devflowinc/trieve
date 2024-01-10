@@ -5,7 +5,7 @@ import { isUserDTO, type UserDTO } from "../../utils/apiTypes";
 const apiHost: string = import.meta.env.PUBLIC_API_HOST;
 
 export const isLoadingUser = atom<boolean>(true);
-export const currentUser = atom<UserDTO | null>(null);
+export const currentUser = atom<UserDTO | undefined>(undefined);
 
 fetch(`${apiHost}/auth/me`, {
   method: "GET",

@@ -16,9 +16,10 @@ import {
 import InputRowsForm from "./Atoms/InputRowsForm";
 import { VsBookmark } from "solid-icons/vs";
 import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
+import { useStore } from "@nanostores/solid";
+import { currentUser } from "../stores/userStore";
 
 export interface BookmarkPopoverProps {
-  signedInUserId: string | undefined;
   chunkMetadata: ChunkMetadata;
   chunkCollections: ChunkCollectionDTO[];
   totalCollectionPages: number;
@@ -30,6 +31,7 @@ export interface BookmarkPopoverProps {
 const BookmarkPopover = (props: BookmarkPopoverProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const dataset = import.meta.env.PUBLIC_DATASET as string;
+  const $currentUser = useStore(currentUser);
 
   const [refetchingChunkCollections, setRefetchingChunkCollections] =
     createSignal(false);
@@ -78,7 +80,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
   }, 1);
 
   createEffect(() => {
-    if (props.signedInUserId === undefined) {
+    if ($currentUser()?.id === undefined) {
       return;
     }
     if (!refetchingChunkCollections()) {
@@ -93,7 +95,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
   });
 
   createEffect(() => {
-    if (props.signedInUserId === undefined) {
+    if ($currentUser()?.id === undefined) {
       return;
     }
     if (!refetchingBookmarks()) {
@@ -232,7 +234,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
             <PopoverButton
               title="Bookmark"
               onClick={() => {
-                if (notLoggedIn() || props.signedInUserId === undefined) {
+                if (notLoggedIn() || $currentUser()?.id === undefined) {
                   props.setLoginModal?.(true);
                   return;
                 }
@@ -246,7 +248,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
             when={
               (isOpen() || usingPanel()) &&
               !notLoggedIn() &&
-              !(props.signedInUserId === undefined)
+              !($currentUser()?.id === undefined)
             }
           >
             <PopoverPanel

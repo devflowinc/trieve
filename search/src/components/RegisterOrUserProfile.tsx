@@ -13,15 +13,13 @@ import type { ClientEnvsConfiguration } from "../../utils/apiTypes";
 import { NotificationPopover } from "./Atoms/NotificationPopover";
 import { AiFillGithub } from "solid-icons/ai";
 import { TbMinusVertical } from "solid-icons/tb";
-import { FaSolidCheck } from "solid-icons/fa";
 import {
   currentOrganization,
   organizations,
 } from "../stores/organizationStore";
 import { useStore } from "@nanostores/solid";
-import { DatasetSelectBox } from "./DatasetSelectBox";
-import { VsOrganization } from "solid-icons/vs";
 import { currentUser, isLoadingUser } from "../stores/userStore";
+import { OrganizationSelectBox } from "./OrganizationSelectBox";
 
 export interface RegisterOrUserProfileProps {
   stars: number;
@@ -82,7 +80,7 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
               </div>
             </a>
           </Show>
-          <NotificationPopover user={$currentUser()} />
+          <NotificationPopover />
           <Show when={!!$currentUser()}>
             <Popover defaultOpen={false} class="relative flex items-center">
               {({ isOpen }) => (
@@ -136,85 +134,6 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
                 </>
               )}
             </Popover>
-          </Show>
-          <Show when={!!$currentUser()}>
-            <div class="flex flex-col">
-              <Popover defaultOpen={false} class="relative">
-                {({ isOpen, setState }) => (
-                  <>
-                    <PopoverButton
-                      aria-label="Toggle filters"
-                      type="button"
-                      class="flex items-center space-x-4 pb-1 text-sm"
-                    >
-                      <VsOrganization class="h-5 w-5 fill-current" />
-                      <span>{$currentOrganization()?.name}</span>
-                      <svg
-                        fill="currentColor"
-                        stroke-width="0"
-                        style={{ overflow: "visible", color: "currentColor" }}
-                        viewBox="0 0 16 16"
-                        class="h-3.5 w-3.5 "
-                        height="1em"
-                        width="1em"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />
-                      </svg>
-                    </PopoverButton>
-                    <Show when={isOpen()}>
-                      <PopoverPanel
-                        unmount={false}
-                        class="absolute right-0 z-10 mt-2 h-fit w-[180px] rounded-md border p-1 dark:bg-neutral-800"
-                      >
-                        <Menu class="mx-1 space-y-0.5">
-                          <For each={Object.values($organizations())}>
-                            {(organizationItem) => {
-                              const onClick = (e: Event) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                currentOrganization.set(organizationItem);
-                                localStorage.setItem(
-                                  "currentOrganization",
-                                  JSON.stringify(organizationItem),
-                                );
-                                setState(false);
-                              };
-                              return (
-                                <MenuItem
-                                  as="button"
-                                  classList={{
-                                    "flex w-full items-center justify-between rounded p-1 focus:text-black focus:outline-none dark:hover:text-white dark:focus:text-white hover:bg-neutral-300 hover:dark:bg-neutral-700":
-                                      true,
-                                    "bg-neutral-300 dark:bg-neutral-700":
-                                      organizationItem.id ===
-                                      $currentOrganization()?.id,
-                                  }}
-                                  onClick={onClick}
-                                >
-                                  <div class="flex flex-row justify-start space-x-2">
-                                    <span class="line-clamp-1 text-left text-sm">
-                                      {organizationItem.name}
-                                    </span>
-                                  </div>
-                                  {organizationItem.id ==
-                                    $currentOrganization()?.id && (
-                                    <span>
-                                      <FaSolidCheck class="text-sm" />
-                                    </span>
-                                  )}
-                                </MenuItem>
-                              );
-                            }}
-                          </For>
-                        </Menu>
-                      </PopoverPanel>
-                    </Show>
-                  </>
-                )}
-              </Popover>
-              <DatasetSelectBox />
-            </div>
           </Show>
         </div>
       </Show>

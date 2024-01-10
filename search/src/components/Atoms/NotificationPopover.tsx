@@ -16,8 +16,10 @@ import { Show, createEffect, createSignal, For } from "solid-js";
 import { VsCheckAll } from "solid-icons/vs";
 import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
 import { SingleNotification } from "../Notification";
+import { useStore } from "@nanostores/solid";
+import { currentUser } from "../../stores/userStore";
 
-export const NotificationPopover = (props: { user: UserDTO | null }) => {
+export const NotificationPopover = () => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const dataset = import.meta.env.PUBLIC_DATASET as string;
   const similarityScoreThreshold =
@@ -28,6 +30,7 @@ export const NotificationPopover = (props: { user: UserDTO | null }) => {
   const [page, setPage] = createSignal(1);
   const [totalPages, setTotalPages] = createSignal(0);
   const [usingPanel, setUsingPanel] = createSignal(false);
+  const $currentUser = useStore(currentUser);
 
   createEffect(() => {
     fetchNotifs();
@@ -102,7 +105,7 @@ export const NotificationPopover = (props: { user: UserDTO | null }) => {
   };
 
   return (
-    <Show when={!!props.user}>
+    <Show when={!!$currentUser()}>
       <div>
         <Popover defaultOpen={false} class="relative flex items-center">
           {({ isOpen, setState }) => (
