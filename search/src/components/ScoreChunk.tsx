@@ -77,7 +77,7 @@ export interface ScoreChunkProps {
 }
 
 const ScoreChunk = (props: ScoreChunkProps) => {
-  const $dataset = useStore(currentDataset)()?.dataset.id;
+  const $dataset = useStore(currentDataset);
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const $envs = useStore(clientConfig);
 
@@ -141,6 +141,8 @@ const ScoreChunk = (props: ScoreChunkProps) => {
 
   const deleteChunk = () => {
     if (!props.setOnDelete) return;
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if ($currentUser()?.id !== props.chunk.author?.id) return;
@@ -153,7 +155,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
         void fetch(`${apiHost}/chunk/${curChunkMetadataId}`, {
           method: "DELETE",
           headers: {
-            "AF-Dataset": $dataset ?? "",
+            "AF-Dataset": currentDataset.dataset.id,
           },
           credentials: "include",
         }).then((response) => {

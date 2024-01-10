@@ -29,7 +29,7 @@ export interface LayoutProps {
 
 const ChatPopup = (props: LayoutProps) => {
   const api_host = import.meta.env.PUBLIC_API_HOST as unknown as string;
-  const $dataset = useStore(currentDataset)()?.dataset.id;
+  const $dataset = useStore(currentDataset);
   const resizeTextarea = (textarea: HTMLTextAreaElement) => {
     textarea.style.height = "auto";
     textarea.style.height = `${textarea.scrollHeight}px`;
@@ -78,6 +78,9 @@ const ChatPopup = (props: LayoutProps) => {
   }) => {
     setStreamingCompletion(true);
     setNewMessageContent("");
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
+
     const newMessageTextarea = document.querySelector(
       "#new-message-content-textarea",
     ) as HTMLTextAreaElement | undefined;
@@ -115,7 +118,7 @@ const ChatPopup = (props: LayoutProps) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "AF-Dataset": $dataset ?? "",
+          "AF-Dataset": currentDataset.dataset.id,
         },
         credentials: "include",
         body: JSON.stringify(body),

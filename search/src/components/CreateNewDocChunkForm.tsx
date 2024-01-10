@@ -13,7 +13,7 @@ import { currentDataset } from "../stores/datasetStore";
 
 export const CreateNewDocChunkForm = () => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const $dataset = useStore(currentDataset)()?.dataset.id;
+  const $dataset = useStore(currentDataset);
   const [docChunkLink, setDocChunkLink] = createSignal("");
   const [tagSet, setTagSet] = createSignal("");
   const [errorText, setErrorText] = createSignal<
@@ -26,6 +26,8 @@ export const CreateNewDocChunkForm = () => {
 
   const submitDocChunk = (e: Event) => {
     e.preventDefault();
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
 
     const chunkHTMLContentValue =
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
@@ -63,7 +65,7 @@ export const CreateNewDocChunkForm = () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
       body: JSON.stringify(requestBody),
@@ -265,7 +267,9 @@ export const CreateNewDocChunkForm = () => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${$dataset ?? ""}`}
+                href={`${apiHost}/auth?dataset_id=${
+                  $dataset()?.dataset.name ?? ""
+                }`}
               >
                 Login/Register
                 <BiRegularLogIn class="h-6 w-6  fill-current" />

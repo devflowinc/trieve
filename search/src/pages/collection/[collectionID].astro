@@ -11,7 +11,7 @@ import type { Filters } from "../../components/ResultsPage";
 import { useStore } from "@nanostores/solid";
 import { currentDataset } from "../../stores/datasetStore";
 
-const $dataset = useStore(currentDataset)()?.dataset.id;
+const $dataset = useStore(currentDataset);
 
 const collectionID = Astro.params.collectionID ?? "";
 const requestParams = Astro.request.url.split("?")[1];
@@ -69,13 +69,16 @@ let title = "Arguflow Search";
 let description = "";
 
 try {
+  const datasetId = $dataset()?.dataset.id;
+  if (!datasetId) return;
+
   if (query === "") {
     const collectionChunkResponse = await fetch(
       `${apiHost}/chunk_collection/${collectionID}/${page}`,
       {
         method: "GET",
         headers: {
-          "AF-Dataset": $dataset ??  "",
+          "AF-Dataset": datasetId,
         },
       },
     );
@@ -103,7 +106,7 @@ try {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "AF-Dataset": $dataset ??  "",
+          "AF-Dataset": datasetId,
         },
         credentials: "include",
         body: JSON.stringify({

@@ -25,7 +25,7 @@ export interface UserChunkDisplayProps {
 
 export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const $dataset = useStore(currentDataset)()?.dataset.id;
+  const $dataset = useStore(currentDataset);
 
   const [user, setUser] = createSignal<UserDTOWithVotesAndChunks>();
   const [clientSideRequestFinished, setClientSideRequestFinished] =
@@ -51,10 +51,13 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
 
   createEffect(() => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
+
     void fetch(`${apiHost}/user/${props.id}/${props.page}`, {
       method: "GET",
       headers: {
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
     }).then((response) => {
@@ -73,12 +76,15 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
   });
 
   const fetchBookmarks = () => {
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
+
     void fetch(`${apiHost}/chunk_collection/bookmark`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
       body: JSON.stringify({
         chunk_ids: user()?.chunks.map((c) => c.id)
@@ -96,12 +102,14 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
 
   const fetchChunkCollections = () => {
     if (!user()) return;
+    const currentDataset = $dataset();
+    if (!currentDataset) return;
 
     void fetch(`${apiHost}/chunk_collection/1`, {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": $dataset ?? "",
+        "AF-Dataset": currentDataset.dataset.id,
       },
     }).then((response) => {
       if (response.ok) {
@@ -230,7 +238,9 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${$dataset ?? ""}`}
+                href={`${apiHost}/auth?dataset_id=${
+                  $dataset()?.dataset.name ?? ""
+                }`}
               >
                 Login/Register
                 <BiRegularLogIn class="h-6 w-6 fill-current" />
