@@ -181,6 +181,14 @@ services:
       - SUGGESTED_QUERIES=${SUGGESTED_QUERIES}
       - PUBLIC_SEARCH_VOTE_FEATURE=${PUBLIC_SEARCH_VOTE_FEATURE}
 
+  splade-embeddings:
+    image: arguflow/splade-embeddings
+    build: ./embedding-server/
+    networks:
+      - app-network
+    ports:
+      - 7070:7070
+
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.1
     environment:
