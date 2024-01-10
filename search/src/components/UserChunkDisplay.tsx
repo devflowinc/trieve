@@ -13,6 +13,7 @@ import { BiRegularLogIn, BiRegularXCircle } from "solid-icons/bi";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
 import { useStore } from "@nanostores/solid";
 import { currentUser } from "../stores/userStore";
+import { currentDataset } from "../stores/datasetStore";
 
 export interface UserChunkDisplayProps {
   id: string;
@@ -24,7 +25,7 @@ export interface UserChunkDisplayProps {
 
 export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const dataset = import.meta.env.PUBLIC_DATASET as string;
+  const $dataset = useStore(currentDataset)()?.dataset.id;
 
   const [user, setUser] = createSignal<UserDTOWithVotesAndChunks>();
   const [clientSideRequestFinished, setClientSideRequestFinished] =
@@ -53,7 +54,7 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
     void fetch(`${apiHost}/user/${props.id}/${props.page}`, {
       method: "GET",
       headers: {
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       credentials: "include",
     }).then((response) => {
@@ -77,7 +78,7 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       body: JSON.stringify({
         chunk_ids: user()?.chunks.map((c) => c.id)
@@ -100,7 +101,7 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
     }).then((response) => {
       if (response.ok) {
@@ -229,7 +230,7 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${dataset}`}
+                href={`${apiHost}/auth?dataset_id=${$dataset ?? ""}`}
               >
                 Login/Register
                 <BiRegularLogIn class="h-6 w-6 fill-current" />

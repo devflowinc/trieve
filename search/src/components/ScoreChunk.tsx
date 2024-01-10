@@ -31,6 +31,8 @@ import CommunityBookmarkPopover from "./CommunityBookmarkPopover";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { useStore } from "@nanostores/solid";
 import { currentUser } from "../stores/userStore";
+import { clientConfig } from "../stores/envsStore";
+import { currentDataset } from "../stores/datasetStore";
 
 export const sanitzerOptions = {
   allowedTags: [...sanitizeHtml.defaults.allowedTags, "font", "button", "span"],
@@ -76,19 +78,15 @@ export interface ScoreChunkProps {
 }
 
 const ScoreChunk = (props: ScoreChunkProps) => {
-  const dataset = import.meta.env.PUBLIC_DATASET as string;
+  const $dataset = useStore(currentDataset)()?.dataset.id;
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const envs = JSON.parse(
-    localStorage.getItem("clientConfig") ?? "{}",
-  ) as ClientEnvsConfiguration;
+  const $envs = useStore(clientConfig);
 
   const frontMatterVals = (
-    (envs.PUBLIC_FRONTMATTER_VALS as string | undefined) ??
-    "link,tag_set,time_stamp"
+    $envs()?.PUBLIC_FRONTMATTER_VALS ?? "link,tag_set,time_stamp"
   ).split(",");
 
-  const linesBeforeShowMore =
-    (envs.PUBLIC_LINES_BEFORE_SHOW_MORE as number | undefined) ?? 10;
+  const linesBeforeShowMore = $envs()?.PUBLIC_LINES_BEFORE_SHOW_MORE ?? 10;
 
   const $currentUser = useStore(currentUser);
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
@@ -100,11 +98,12 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const [showMetadata, setShowMetadata] = createSignal(false);
 
   const imgInformation = createMemo(() => {
-    const imgRangeStartKey = envs.PUBLIC_IMAGE_RANGE_START_KEY;
-    const imgRangeEndKey = envs.PUBLIC_IMAGE_RANGE_END_KEY;
+    const imgRangeStartKey = $envs()?.PUBLIC_IMAGE_RANGE_START_KEY;
+    const imgRangeEndKey = $envs()?.PUBLIC_IMAGE_RANGE_END_KEY;
 
     if (
       !imgRangeStartKey ||
+      !imgRangeEndKey ||
       !props.chunk.metadata ||
       !indirectHasOwnProperty(props.chunk.metadata, imgRangeStartKey) ||
       !indirectHasOwnProperty(props.chunk.metadata, imgRangeEndKey)
@@ -155,7 +154,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
         void fetch(`${apiHost}/chunk/${curChunkMetadataId}`, {
           method: "DELETE",
           headers: {
-            "AF-Dataset": dataset,
+            "AF-Dataset": $dataset ?? "",
           },
           credentials: "include",
         }).then((response) => {

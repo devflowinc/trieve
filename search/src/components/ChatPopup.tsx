@@ -18,6 +18,8 @@ import {
   UserDTO,
 } from "../../utils/apiTypes";
 import { AfMessage } from "./Atoms/AfMessage";
+import { useStore } from "@nanostores/solid";
+import { currentDataset } from "../stores/datasetStore";
 
 export interface LayoutProps {
   selectedIds: Accessor<string[]>;
@@ -28,7 +30,7 @@ export interface LayoutProps {
 
 const ChatPopup = (props: LayoutProps) => {
   const api_host = import.meta.env.PUBLIC_API_HOST as unknown as string;
-  const dataset = import.meta.env.PUBLIC_DATASET as string;
+  const $dataset = useStore(currentDataset)()?.dataset.id;
   const resizeTextarea = (textarea: HTMLTextAreaElement) => {
     textarea.style.height = "auto";
     textarea.style.height = `${textarea.scrollHeight}px`;
@@ -114,7 +116,7 @@ const ChatPopup = (props: LayoutProps) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "AF-Dataset": dataset,
+          "AF-Dataset": $dataset ?? "",
         },
         credentials: "include",
         body: JSON.stringify(body),

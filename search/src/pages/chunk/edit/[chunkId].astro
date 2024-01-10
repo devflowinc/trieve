@@ -7,8 +7,10 @@ import {
   type SingleChunkDTO,
 } from "../../../../utils/apiTypes";
 import { EditChunkPageForm } from "../../../components/EditChunkPageForm";
+import { useStore } from "@nanostores/solid";
+import { currentDataset } from "../../../stores/datasetStore";
 
-const dataset = import.meta.env.PUBLIC_DATASET as string;
+const $dataset = useStore(currentDataset)()?.dataset.id;
 const apiHost = import.meta.env.PUBLIC_API_HOST as string;
 
 const { chunkId } = Astro.params;
@@ -18,7 +20,7 @@ try {
   const specificChunkResult = await fetch(`${apiHost}/chunk/${chunkId ?? ""}`, {
     method: "GET",
     headers: {
-      "AF-Dataset": dataset,
+      "AF-Dataset": $dataset ?? "",
     },
   });
   const specificChunkJson = (await specificChunkResult.json()) as unknown;

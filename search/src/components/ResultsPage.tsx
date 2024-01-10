@@ -24,6 +24,7 @@ import ChatPopup from "./ChatPopup";
 import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
 import { currentUser } from "../stores/userStore";
 import { useStore } from "@nanostores/solid";
+import { currentDataset } from "../stores/datasetStore";
 export interface Filters {
   tagSet: string[];
   link: string[];
@@ -43,7 +44,7 @@ export interface ResultsPageProps {
 
 const ResultsPage = (props: ResultsPageProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
-  const dataset = import.meta.env.PUBLIC_DATASET as string;
+  const $dataset = useStore(currentDataset)()?.dataset.id;
   const initialResultChunks = props.defaultResultChunks.score_chunks;
   const initialTotalPages = props.defaultResultChunks.total_chunk_pages;
 
@@ -73,7 +74,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
     }).then((response) => {
       if (response.ok) {
@@ -93,7 +94,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       body: JSON.stringify({
         chunk_ids: resultChunks().flatMap((c) => {
@@ -145,7 +146,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset,
+        "AF-Dataset": $dataset ?? "",
       },
       credentials: "include",
       signal: abortController.signal,
@@ -335,7 +336,7 @@ const ResultsPage = (props: ResultsPageProps) => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${dataset}`}
+                href={`${apiHost}/auth?dataset_id=${$dataset ?? ""}`}
               >
                 Login/Register
                 <BiRegularLogIn class="h-6 w-6 fill-current" />
