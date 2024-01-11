@@ -1,4 +1,4 @@
-use super::auth_handler::OwnerOnly;
+use super::auth_handler::{AdminOnly, OwnerOnly};
 use crate::{
     data::models::{Invitation, Pool},
     errors::{DefaultError, ServiceError},
@@ -21,6 +21,7 @@ pub struct InvitationResponse {
 #[derive(Deserialize, ToSchema)]
 pub struct InvitationData {
     pub organization_id: uuid::Uuid,
+    pub user_role: i32,
     pub email: String,
     pub app_url: String,
     pub redirect_uri: String,
@@ -40,7 +41,7 @@ pub struct InvitationData {
 pub async fn post_invitation(
     invitation_data: web::Json<InvitationData>,
     pool: web::Data<Pool>,
-    _user: OwnerOnly,
+    user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let invitation_data = invitation_data.into_inner();
     let email = invitation_data.email;
@@ -48,6 +49,20 @@ pub async fn post_invitation(
         return Ok(
             HttpResponse::BadRequest().json(crate::errors::DefaultError {
                 message: "Invalid email",
+            }),
+        );
+    }
+
+    let org_role = user
+        .0
+        .user_orgs
+        .iter()
+        .find(|org| org.id == invitation_data.organization_id);
+
+    if org_role.is_none() || org_role.expect("cannot be none").role < invitation_data.user_role {
+        return Ok(
+            HttpResponse::BadRequest().json(crate::errors::DefaultError {
+                message: "Can not invite user with higher role than yours",
             }),
         );
     }
