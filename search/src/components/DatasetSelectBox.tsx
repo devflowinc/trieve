@@ -13,7 +13,7 @@ import {
 export const DatasetSelectBox = () => {
   const $datasetsAndUsages = useStore(datasetsAndUsagesStore);
   const $currentDataset = useStore(currentDataset);
-
+  const datasetAndUsages = $datasetsAndUsages();
   return (
     <Show when={$datasetsAndUsages().length != 0}>
       <Popover defaultOpen={false} class="relative">
@@ -46,7 +46,7 @@ export const DatasetSelectBox = () => {
                 class="absolute right-0 z-10 mt-2 h-fit w-[180px] rounded-md border p-1 dark:bg-neutral-800"
               >
                 <Menu class="mx-1 space-y-0.5">
-                  <For each={Object.values($datasetsAndUsages())}>
+                  <For each={datasetAndUsages}>
                     {(datasetItem) => {
                       const onClick = (e: Event) => {
                         e.preventDefault();
