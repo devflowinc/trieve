@@ -36,12 +36,11 @@ const SearchForm = (props: {
   const $envs = useStore(clientConfig);
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const comboboxSections: ComboboxSection[] =
-    $envs()?.PUBLIC_FILTER_ITEMS ?? [];
+  const comboboxSections: ComboboxSection[] = $envs().PUBLIC_FILTER_ITEMS;
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const customComboBoxFilterVals: ComboboxSection[] = comboboxSections;
 
-  const createEvidenceFeature = $envs()?.PUBLIC_CREATE_EVIDENCE_FEATURE;
+  const createEvidenceFeature = $envs().PUBLIC_CREATE_EVIDENCE_FEATURE;
 
   const [searchTypes, setSearchTypes] = createSignal([
     { name: "Full Text", isSelected: false, route: "fulltext" },
@@ -360,7 +359,7 @@ const SearchForm = (props: {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-    const textArray: string[] = $envs()?.PUBLIC_SEARCH_QUERIES.split(",") ?? [];
+    const textArray: string[] = $envs().PUBLIC_SEARCH_QUERIES.split(",");
 
     const typingSpeed = 50;
     const deleteSpeed = 30;

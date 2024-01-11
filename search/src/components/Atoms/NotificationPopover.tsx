@@ -22,6 +22,7 @@ import { currentDataset } from "../../stores/datasetStore";
 export const NotificationPopover = () => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const $dataset = useStore(currentDataset);
+
   const similarityScoreThreshold =
     (import.meta.env.PUBLIC_SIMILARITY_SCORE_THRESHOLD as number | undefined) ??
     80;
@@ -31,7 +32,6 @@ export const NotificationPopover = () => {
   const [totalPages, setTotalPages] = createSignal(0);
   const [usingPanel, setUsingPanel] = createSignal(false);
   const $currentUser = useStore(currentUser);
-
   createEffect(() => {
     fetchNotifs();
   });

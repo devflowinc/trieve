@@ -20,7 +20,7 @@ export type ScoreChunkAraryProps = Omit<
 
 export const ScoreChunkArray = (props: ScoreChunkAraryProps) => {
   const $envs = useStore(clientConfig);
-  const dateValue = $envs()?.PUBLIC_DATE_RANGE_VALUE ?? "Date";
+  const dateValue = $envs().PUBLIC_DATE_RANGE_VALUE;
 
   const [curChunk, setCurChunk] = createSignal(0);
   const [beginTime, setBeginTime] = createSignal<number | undefined>();

@@ -4,6 +4,7 @@ import { OrganizationSelectBox } from "../OrganizationSelectBox";
 import { DatasetSelectBox } from "../DatasetSelectBox";
 import { useStore } from "@nanostores/solid";
 import { clientConfig } from "../../stores/envsStore";
+import { currentUser } from "../../stores/userStore";
 
 export interface HomeNavbarProps {
   stars: number;
@@ -11,7 +12,8 @@ export interface HomeNavbarProps {
 
 export const HomeNavbar = (props: HomeNavbarProps) => {
   const $envs = useStore(clientConfig);
-  const uploadDocumentFeature = $envs()?.PUBLIC_DOCUMENT_UPLOAD_FEATURE;
+  const $currentUser = useStore(currentUser);
+  const uploadDocumentFeature = $envs().PUBLIC_DOCUMENT_UPLOAD_FEATURE;
 
   const [isOpen, setIsOpen] = createSignal(false);
 
@@ -20,11 +22,13 @@ export const HomeNavbar = (props: HomeNavbarProps) => {
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 items-center justify-between">
           <div class="mx-auto flex h-[60px] w-full max-w-6xl items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <OrganizationSelectBox />
-              <span class="text-2xl">/</span>
-              <DatasetSelectBox />
-            </div>
+            <Show when={$currentUser()}>
+              <div class="flex items-center space-x-2">
+                <OrganizationSelectBox />
+                <span class="text-2xl">/</span>
+                <DatasetSelectBox />
+              </div>
+            </Show>
             <div class="flex w-full items-center justify-end space-x-1 sm:space-x-4">
               <Show when={uploadDocumentFeature}>
                 <a
