@@ -25,7 +25,6 @@ use oauth2::{
 use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
 use openidconnect::{AccessTokenHash, ClientId, IssuerUrl, Nonce};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::future::{ready, Ready};
 use utoipa::ToSchema;
 
@@ -179,7 +178,7 @@ pub async fn create_account(
                 .replace(' ', "-");
             (
                 true,
-                create_organization_query(org_name.as_str(), json!({}), pool.clone())
+                create_organization_query(org_name.as_str(), pool.clone())
                     .await
                     .map_err(|error| {
                         ServiceError::InternalServerError(error.message.to_string())

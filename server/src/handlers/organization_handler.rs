@@ -45,7 +45,6 @@ pub async fn get_organization_by_id(
 pub struct UpdateOrganizationData {
     organization_uuid: uuid::Uuid,
     name: Option<String>,
-    configuration: Option<serde_json::Value>,
 }
 
 #[utoipa::path(
@@ -78,9 +77,6 @@ pub async fn update_organization(
             .name
             .unwrap_or(old_organization.name)
             .as_str(),
-        organization_update_data
-            .configuration
-            .unwrap_or(old_organization.configuration),
         pool,
     )
     .await
@@ -116,13 +112,9 @@ pub async fn create_organization(
 
     let created_organization = {
         let pool = pool.clone();
-        create_organization_query(
-            organization_create_data.name.as_str(),
-            organization_create_data.configuration,
-            pool,
-        )
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+        create_organization_query(organization_create_data.name.as_str(), pool)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
     };
 
     web::block(move || {
