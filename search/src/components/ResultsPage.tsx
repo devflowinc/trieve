@@ -45,6 +45,7 @@ export interface ResultsPageProps {
 const ResultsPage = (props: ResultsPageProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const $dataset = useStore(currentDataset);
+
   const initialResultChunks = props.defaultResultChunks.score_chunks;
   const initialTotalPages = props.defaultResultChunks.total_chunk_pages;
 
@@ -69,14 +70,13 @@ const ResultsPage = (props: ResultsPageProps) => {
 
   const fetchChunkCollections = () => {
     if (!$currentUser()) return;
-    const currentDataset = $dataset();
-    if (!currentDataset) return;
-
+    const dataset = $dataset();
+    if (!dataset) return;
     void fetch(`${apiHost}/chunk_collection/1`, {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": currentDataset.dataset.id,
+        "AF-Dataset": dataset.dataset.id,
       },
     }).then((response) => {
       if (response.ok) {
@@ -91,15 +91,15 @@ const ResultsPage = (props: ResultsPageProps) => {
   };
 
   const fetchBookmarks = () => {
-    const currentDataset = $dataset();
-    if (!currentDataset) return;
+    const dataset = $dataset();
+    if (!dataset) return;
 
     void fetch(`${apiHost}/chunk_collection/bookmark`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": currentDataset.dataset.id,
+        "AF-Dataset": dataset.dataset.id,
       },
       body: JSON.stringify({
         chunk_ids: resultChunks().flatMap((c) => {
@@ -117,9 +117,8 @@ const ResultsPage = (props: ResultsPageProps) => {
   };
 
   createEffect(() => {
-    const abortController = new AbortController();
-    const currentDataset = $dataset();
-    if (!currentDataset) return;
+    const dataset = $dataset();
+    if (!dataset) return;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const requestBody: any = {
@@ -153,10 +152,9 @@ const ResultsPage = (props: ResultsPageProps) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": currentDataset.dataset.id,
+        "AF-Dataset": dataset.dataset.id,
       },
       credentials: "include",
-      signal: abortController.signal,
       body: JSON.stringify(requestBody),
     }).then((response) => {
       if (response.ok) {
@@ -177,10 +175,7 @@ const ResultsPage = (props: ResultsPageProps) => {
     });
 
     fetchChunkCollections();
-
-    onCleanup(() => {
-      abortController.abort();
-    });
+    console.log("loaded");
   });
 
   onMount(() => {

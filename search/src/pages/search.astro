@@ -53,64 +53,6 @@ let initialScoreChunks: ChunksWithTotalPagesDTO = {
   total_chunk_pages: 0,
 };
 
-try {
-  const datasetId = $dataset()?.dataset.id;
-  if (!datasetId) return;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const requestBody: any = {
-    content: query,
-    tag_set: dataTypeFilters.tagSet,
-    link: dataTypeFilters.link,
-    time_range:
-      dataTypeFilters.start || dataTypeFilters.end
-        ? [
-            dataTypeFilters.start
-              ? dataTypeFilters.start + " 00:00:00"
-              : "null",
-            dataTypeFilters.end ? dataTypeFilters.end + " 00:00:00" : "null",
-          ]
-        : null,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    filters: dataTypeFilters.metadataFilters,
-    search_type: searchType,
-  };
-
-  if (searchType === "hybrid") {
-    const semanticWeight = parseFloat(weight || "0.5");
-    if (semanticWeight != 0.5) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      requestBody.weights = [semanticWeight, 1 - semanticWeight];
-    } else {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      requestBody.cross_encoder = true;
-    }
-  }
-
-  const initialScoreChunksResult = await fetch(
-    `${apiHost}/chunk/search/${page}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "AF-Dataset": datasetId,
-      },
-      credentials: "include",
-      body: JSON.stringify(requestBody),
-    },
-  );
-
-  if (!initialScoreChunksResult.ok) {
-    throw new Error(
-      `Failed to fetch initial score chunks: ${initialScoreChunksResult.status}`,
-    );
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const initialScoreChunksJson = await initialScoreChunksResult.json();
-  initialScoreChunks = initialScoreChunksJson as ChunksWithTotalPagesDTO;
-} catch (e) {
-  console.error(e);
-}
 ---
 
 <style is:inline>
@@ -141,7 +83,7 @@ try {
         filters={dataTypeFilters}
         searchType={searchType}
         weight={weight}
-        client:load
+        client:only
       />
       <SuggestedQueries query={query} client:only />
     </div>
@@ -154,7 +96,7 @@ try {
     defaultResultChunks={initialScoreChunks}
     searchType={searchType}
     weight={weight}
-    client:load
+    client:only
   />
   <div class="flex-1"></div>
   <Footer />

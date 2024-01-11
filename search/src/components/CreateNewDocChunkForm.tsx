@@ -26,8 +26,8 @@ export const CreateNewDocChunkForm = () => {
 
   const submitDocChunk = (e: Event) => {
     e.preventDefault();
-    const currentDataset = $dataset();
-    if (!currentDataset) return;
+    const dataset = $dataset();
+    if (!dataset) return;
 
     const chunkHTMLContentValue =
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
@@ -65,7 +65,7 @@ export const CreateNewDocChunkForm = () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": currentDataset.dataset.id,
+        "AF-Dataset": dataset.dataset.id,
       },
       credentials: "include",
       body: JSON.stringify(requestBody),

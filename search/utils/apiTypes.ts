@@ -432,6 +432,21 @@ export interface ClientEnvsConfiguration {
   PUBLIC_IMAGE_RANGE_END_KEY: string;
 }
 
+export const defaultClientEnvsConfiguration: ClientEnvsConfiguration = {
+  PUBLIC_CREATE_EVIDENCE_FEATURE: false,
+  PUBLIC_DOCUMENT_UPLOAD_FEATURE: false,
+  PUBLIC_SEARCH_QUERIES:
+    "star github.com/arguflow/arguflow, no seriously please star github.com/arguflow/arguflow, you know you want to star github.com/arguflow/arguflow",
+  PUBLIC_FRONTMATTER_VALS: "link,tag_set,file_name,time_stamp",
+  PUBLIC_LINES_BEFORE_SHOW_MORE: 10,
+  PUBLIC_DATE_RANGE_VALUE: "Date",
+  PUBLIC_FILTER_ITEMS: [],
+  PUBLIC_SUGGESTED_QUERIES: "",
+  PUBLIC_SHOW_GITHUB_STARS: false,
+  PUBLIC_IMAGE_RANGE_START_KEY: "",
+  PUBLIC_IMAGE_RANGE_END_KEY: "",
+};
+
 export const isClientEnvsConfiguration = (
   config: unknown,
 ): config is ClientEnvsConfiguration => {
@@ -507,8 +522,6 @@ export const isDatasetDTO = (dataset: unknown): dataset is DatasetDTO => {
     typeof (dataset as DatasetDTO).updated_at === "string" &&
     indirectHasOwnProperty(dataset, "organization_id") &&
     typeof (dataset as DatasetDTO).organization_id === "string" &&
-    indirectHasOwnProperty(dataset, "server_configuration") &&
-    typeof (dataset as DatasetDTO).server_configuration === "string" &&
     indirectHasOwnProperty(dataset, "client_configuration") &&
     typeof (dataset as DatasetDTO).client_configuration === "string"
   );

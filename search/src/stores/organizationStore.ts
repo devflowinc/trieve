@@ -1,4 +1,5 @@
 import { atom } from "nanostores";
+import { persistentAtom } from "@nanostores/persistent";
 import { isOrganizationDTO, type OrganizationDTO } from "../../utils/apiTypes";
 import { currentUser } from "./userStore";
 
@@ -6,21 +7,24 @@ currentUser.subscribe((user) => {
   if (!user) {
     return;
   }
-  const orgItem = localStorage.getItem("currentOrganization");
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const organization = orgItem ? JSON.parse(orgItem) : null;
   organizations.set(user.orgs);
-  if (organization && isOrganizationDTO(organization)) {
-    // check if user is in the organization
-    const org = user.orgs.find((o) => o.id === organization.id);
-    if (org) {
-      currentOrganization.set(organization);
-      return;
-    }
-  } else {
-    currentOrganization.set(user.orgs[0]);
-  }
+  currentOrganization.set(user.orgs[0]);
 });
 
-export const currentOrganization = atom<OrganizationDTO | null>(null);
+const tryParse = (encoded: string) => {
+  try {
+    if (isOrganizationDTO(JSON.parse(encoded))) {
+      return JSON.parse(encoded) as OrganizationDTO;
+    } else {
+      return null;
+    }
+  } catch (e) {
+    return null;
+  }
+};
+
+export const currentOrganization = persistentAtom("currentOrganization", null, {
+  encode: JSON.stringify,
+  decode: tryParse,
+});
 export const organizations = atom<OrganizationDTO[]>([]);
