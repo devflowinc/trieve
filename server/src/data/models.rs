@@ -1009,18 +1009,16 @@ impl DatasetAndOrgWithSubAndPlan {
 pub struct Organization {
     pub id: uuid::Uuid,
     pub name: String,
-    pub configuration: serde_json::Value,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub registerable: Option<bool>,
 }
 
 impl Organization {
-    pub fn from_details(name: String, configuration: serde_json::Value) -> Self {
+    pub fn from_details(name: String) -> Self {
         Organization {
             id: uuid::Uuid::new_v4(),
             name,
-            configuration,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             registerable: Some(true),
@@ -1031,7 +1029,6 @@ impl Organization {
         Organization {
             id: org_plan_sub.id,
             name: org_plan_sub.name,
-            configuration: org_plan_sub.configuration,
             created_at: org_plan_sub.created_at,
             updated_at: org_plan_sub.updated_at,
             registerable: org_plan_sub.registerable,
@@ -1168,7 +1165,6 @@ impl StripeSubscription {
 pub struct OrganizationWithSubAndPlan {
     pub id: uuid::Uuid,
     pub name: String,
-    pub configuration: serde_json::Value,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub registerable: Option<bool>,
@@ -1185,7 +1181,6 @@ impl OrganizationWithSubAndPlan {
         OrganizationWithSubAndPlan {
             id: organization.id,
             name: organization.name,
-            configuration: organization.configuration,
             registerable: organization.registerable,
             created_at: organization.created_at,
             updated_at: organization.updated_at,
@@ -1198,7 +1193,6 @@ impl OrganizationWithSubAndPlan {
         OrganizationWithSubAndPlan {
             id: self.id,
             name: self.name.clone(),
-            configuration: self.configuration.clone(),
             registerable: self.registerable,
             created_at: self.created_at,
             updated_at: self.updated_at,
