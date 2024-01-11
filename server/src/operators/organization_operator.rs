@@ -18,12 +18,11 @@ use itertools::Itertools;
 /// for the user
 pub async fn create_organization_query(
     name: &str,
-    configuration: serde_json::Value,
     pool: web::Data<Pool>,
 ) -> Result<Organization, DefaultError> {
     use crate::data::schema::organizations::dsl as organizations_columns;
 
-    let mut new_organization = Organization::from_details(name.to_string(), configuration.clone());
+    let mut new_organization = Organization::from_details(name.to_string());
 
     let mut conn = pool.get().map_err(|_| DefaultError {
         message: "Could not get database connection",
@@ -40,8 +39,7 @@ pub async fn create_organization_query(
 
     while number == 0 {
         // Get random name
-        new_organization =
-            Organization::from_details(randutil::random_organization_name(), configuration.clone());
+        new_organization = Organization::from_details(randutil::random_organization_name());
 
         number = diesel::insert_into(organizations_columns::organizations)
             .values(new_organization.clone())
@@ -61,7 +59,6 @@ pub async fn create_organization_query(
 pub async fn update_organization_query(
     id: uuid::Uuid,
     name: &str,
-    configuration: serde_json::Value,
     pool: web::Data<Pool>,
 ) -> Result<Organization, DefaultError> {
     use crate::data::schema::organizations::dsl as organizations_columns;
@@ -74,7 +71,6 @@ pub async fn update_organization_query(
         .filter(organizations_columns::id.eq(id))
         .set((
             organizations_columns::name.eq(name),
-            organizations_columns::configuration.eq(configuration),
             organizations_columns::updated_at.eq(chrono::Utc::now().naive_local()),
         ))
         .get_result(&mut conn)

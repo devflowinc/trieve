@@ -174,7 +174,6 @@ diesel::table! {
     organizations (id) {
         id -> Uuid,
         name -> Text,
-        configuration -> Jsonb,
         created_at -> Timestamp,
         updated_at -> Timestamp,
         registerable -> Nullable<Bool>,
