@@ -3,10 +3,12 @@ import "../global.css";
 import { HomeNavbar } from "../components/Atoms/HomeNavbar";
 import { useStore } from "@nanostores/solid";
 import { currentDataset } from "../stores/datasetStore";
+import type { DatasetAndUsageDTO } from "../../utils/apiTypes";
 
 const plausibleHost = import.meta.env.PLAUSIBLE_HOST as string;
-const $dataset = useStore(currentDataset);
-const datasetName = $dataset()?.dataset.name;
+const $dataset = currentDataset.get();
+
+const datasetName = $dataset?.dataset.name;
 const ogDescription = import.meta.env.OG_DESCRIPTION as string;
 
 let title = `Arguflow Search`;

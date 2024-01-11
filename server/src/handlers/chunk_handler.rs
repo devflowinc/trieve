@@ -4,7 +4,7 @@ use crate::data::models::{
     ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration,
     StripePlan,
 };
-use crate::errors::ServiceError;
+use crate::errors::{DefaultError, ServiceError};
 use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
@@ -82,7 +82,7 @@ pub struct CreateChunkData {
     pub weight: Option<f64>,
 }
 
-pub fn convert_html(html: &str) -> String {
+pub fn convert_html(html: &str) -> Result<String, DefaultError> {
     let html_parse_result = Command::new("./server-python/html-converter.py")
         .arg(html)
         .output();
@@ -100,17 +100,23 @@ pub fn convert_html(html: &str) -> String {
                         .to_string(),
                 )
             } else {
-                return "".to_string();
+                return Err(DefaultError {
+                    message: "Could not parse html",
+                });
             }
         }
         Err(_) => {
-            return "".to_string();
+            return Err(DefaultError {
+                message: "Could not parse html",
+            });
         }
     };
 
     match content {
-        Some(content) => content,
-        None => "".to_string(),
+        Some(content) => Ok(content),
+        None => Err(DefaultError {
+            message: "Could not parse html",
+        }),
     }
 }
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
@@ -166,7 +172,10 @@ pub async fn create_chunk(
 
     let mut collision: Option<uuid::Uuid> = None;
 
-    let content = convert_html(chunk.chunk_html.as_ref().unwrap_or(&"".to_string()));
+    let content =
+        convert_html(chunk.chunk_html.as_ref().unwrap_or(&"".to_string())).map_err(|err| {
+            ServiceError::BadRequest(format!("Could not parse html: {}", err.message))
+        })?;
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
     let embedding_vector = if let Some(embedding_vector) = chunk.chunk_vector.clone() {
@@ -462,7 +471,10 @@ pub async fn update_chunk(
         .clone()
         .filter(|chunk_tracking| !chunk_tracking.is_empty());
 
-    let new_content = convert_html(chunk.chunk_html.as_ref().unwrap_or(&chunk_metadata.content));
+    let new_content = convert_html(chunk.chunk_html.as_ref().unwrap_or(&chunk_metadata.content))
+        .map_err(|err| {
+            ServiceError::BadRequest(format!("Could not parse html: {}", err.message))
+        })?;
 
     let embedding_vector = create_embedding(
         &new_content,
@@ -582,7 +594,10 @@ pub async fn update_chunk_by_tracking_id(
         .clone()
         .unwrap_or_else(|| chunk_metadata.link.clone().unwrap_or_default());
 
-    let new_content = convert_html(chunk.chunk_html.as_ref().unwrap_or(&chunk_metadata.content));
+    let new_content = convert_html(chunk.chunk_html.as_ref().unwrap_or(&chunk_metadata.content))
+        .map_err(|err| {
+            ServiceError::BadRequest(format!("Could not parse html: {}", err.message))
+        })?;
 
     let embedding_vector = create_embedding(
         &new_content,

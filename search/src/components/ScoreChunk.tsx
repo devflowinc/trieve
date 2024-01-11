@@ -81,11 +81,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const $envs = useStore(clientConfig);
 
-  const frontMatterVals = (
-    $envs()?.PUBLIC_FRONTMATTER_VALS ?? "link,tag_set,time_stamp"
-  ).split(",");
+  const frontMatterVals = $envs().PUBLIC_FRONTMATTER_VALS.split(",");
 
-  const linesBeforeShowMore = $envs()?.PUBLIC_LINES_BEFORE_SHOW_MORE ?? 10;
+  const linesBeforeShowMore = $envs().PUBLIC_LINES_BEFORE_SHOW_MORE;
 
   const $currentUser = useStore(currentUser);
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
@@ -97,8 +95,8 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const [showMetadata, setShowMetadata] = createSignal(false);
 
   const imgInformation = createMemo(() => {
-    const imgRangeStartKey = $envs()?.PUBLIC_IMAGE_RANGE_START_KEY;
-    const imgRangeEndKey = $envs()?.PUBLIC_IMAGE_RANGE_END_KEY;
+    const imgRangeStartKey = $envs().PUBLIC_IMAGE_RANGE_START_KEY;
+    const imgRangeEndKey = $envs().PUBLIC_IMAGE_RANGE_END_KEY;
 
     if (
       !imgRangeStartKey ||
@@ -141,8 +139,8 @@ const ScoreChunk = (props: ScoreChunkProps) => {
 
   const deleteChunk = () => {
     if (!props.setOnDelete) return;
-    const currentDataset = $dataset();
-    if (!currentDataset) return;
+    const dataset = $dataset();
+    if (!dataset) return;
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if ($currentUser()?.id !== props.chunk.author?.id) return;
@@ -155,7 +153,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
         void fetch(`${apiHost}/chunk/${curChunkMetadataId}`, {
           method: "DELETE",
           headers: {
-            "AF-Dataset": currentDataset.dataset.id,
+            "AF-Dataset": dataset.dataset.id,
           },
           credentials: "include",
         }).then((response) => {

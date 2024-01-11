@@ -17,31 +17,30 @@ import { useStore } from "@nanostores/solid";
 import { currentUser, isLoadingUser } from "../stores/userStore";
 import { clientConfig } from "../stores/envsStore";
 import { currentDataset } from "../stores/datasetStore";
-import { currentOrganization } from "../stores/organizationStore";
 
 export interface RegisterOrUserProfileProps {
   stars: number;
 }
 
 const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
+  if (typeof window === "undefined") return null;
   const apiHost = import.meta.env.PUBLIC_API_HOST as string;
   const $dataset = useStore(currentDataset);
   const $envs = useStore(clientConfig);
-  const $currentOrganization = useStore(currentOrganization);
 
-  const showGithubStars = $envs()?.PUBLIC_SHOW_GITHUB_STARS;
+  const showGithubStars = $envs().PUBLIC_SHOW_GITHUB_STARS;
 
   const $currentUser = useStore(currentUser);
   const $isLoadingUser = useStore(isLoadingUser);
 
   const logout = () => {
-    const currentDataset = $dataset();
-    if (!currentDataset) return;
+    const dataset = $dataset();
+    if (!dataset) return;
     void fetch(`${apiHost}/auth`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": currentDataset.dataset.id,
+        "AF-Dataset": dataset.dataset.id,
       },
       credentials: "include",
     }).then((response) => {
@@ -59,9 +58,7 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
           <Show when={!$currentUser()}>
             <div class="flex items-center space-x-3">
               <a
-                href={`${apiHost}/auth?organization_id=${
-                  $currentOrganization()?.id ?? ""
-                }}`}
+                href={`${apiHost}/auth?redirect=http://localhost:3000`}
                 class="min-[420px]:text-lg"
               >
                 Login/Register

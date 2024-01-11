@@ -369,7 +369,7 @@ pub async fn create_chunks_with_handler(
             }
         }
     }
-    let converted_description = convert_html(&description.unwrap_or("".to_string()));
+    let converted_description = convert_html(&description.unwrap_or("".to_string()))?;
     let collection_id;
     match create_collection_and_add_bookmarks_query(
         ChunkCollection::from_details(

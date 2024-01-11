@@ -14,11 +14,9 @@ import {
 import { FaSolidCheck } from "solid-icons/fa";
 
 export const OrganizationSelectBox = () => {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
   const $organizations = useStore(organizations);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+  const organizationsList = $organizations();
   const $currentOrganization = useStore(currentOrganization);
-
   return (
     <div>
       <div class="flex flex-col">
@@ -52,7 +50,7 @@ export const OrganizationSelectBox = () => {
                   class="absolute left-0 z-10 mt-2 h-fit w-[180px] rounded-md border p-1 dark:bg-neutral-800"
                 >
                   <Menu class="mx-1 space-y-0.5">
-                    <For each={Object.values($organizations())}>
+                    <For each={organizationsList}>
                       {(organizationItem) => {
                         const onClick = (e: Event) => {
                           e.preventDefault();
