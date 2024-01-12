@@ -147,7 +147,7 @@ pub async fn get_specific_user_chunk_collections(
         (status = 400, description = "Service error relating to getting the collections for the auth'ed user", body = [DefaultError]),
     ),
     params(
-        ("page_or_chunk_collection_id" = u64, description = "The page of collections to fetch"),
+        ("page_number" = u64, description = "The page of collections to fetch"),
     ),
 )]
 pub async fn get_logged_in_user_chunk_collections(
