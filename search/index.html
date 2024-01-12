@@ -1,44 +1,7 @@
----
-import "../global.css";
-import { HomeNavbar } from "../components/Atoms/HomeNavbar";
-import { useStore } from "@nanostores/solid";
-import { currentDataset } from "../stores/datasetStore";
-import type { DatasetAndUsageDTO } from "../../utils/apiTypes";
-
-const plausibleHost = import.meta.env.PLAUSIBLE_HOST as string;
-const $dataset = currentDataset.get();
-
-const datasetName = $dataset?.dataset.name;
-const ogDescription = import.meta.env.OG_DESCRIPTION as string;
-
-let title = `Arguflow Search`;
-if (datasetName) {
-  title += ` - ${datasetName}`;
-}
-
-let stars = 0;
-try {
-  const ghStarResponse = await fetch(
-    `https://api.github.com/repos/arguflow/arguflow`,
-    {
-      headers: {
-        Accept: "application/vnd.github+json",
-        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-        Authorization: `token ${import.meta.env.GITHUB_TOKEN}`,
-      },
-    },
-  );
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const ghStarJson = await ghStarResponse.json();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-  stars = ghStarJson.stargazers_count;
-} catch (e) {
-  console.error(e);
-}
----
-
+<!doctype html>
 <html lang="en">
   <head>
+    <script src="/tinymce/tinymce.min.js" :inline></script>
     <script is:inline>
       const theme = (() => {
         if (
@@ -77,18 +40,22 @@ try {
     </script>
     <meta charset="UTF-8" />
     <link rel="manifest" href="/manifest.json" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <meta name="theme-color" content="#5E5E5E" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <meta name="viewport" content="width=device-width" />
-    <title>{title}</title>
+    <title>Ansear Search</title>
     <meta name="description" content={ogDescription} />
 
     <!-- Facebook Meta Tags -->
     <meta property="og:url" content="https://search.arguflow.ai/" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content={title} />
+    <meta property="og:title" content="Ansear Search" />
     <meta property="og:description" content={ogDescription} />
     <meta
       property="og:image"
@@ -99,7 +66,7 @@ try {
     <meta name="twitter:card" content="summary_large_image" />
     <meta property="twitter:domain" content="search.arguflow.ai" />
     <meta property="twitter:url" content="https://search.arguflow.ai/" />
-    <meta name="twitter:title" content={title} />
+    <meta name="twitter:title" content="Ansear Search" />
     <meta name="twitter:description" content={ogDescription} />
     <meta
       name="twitter:image"
@@ -107,17 +74,11 @@ try {
     />
     <script
       defer
-      data-domain={`${plausibleHost}`}
+      data-domain="search.ansear.ai"
       src="https://perhaps.arguflow.com/js/script.js"></script>
   </head>
-  <body
-    class="scrollbar-thin scrollbar-thumb-rounded-md scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600"
-  >
-    <div
-      class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white"
-    >
-      <HomeNavbar stars={stars} client:load />
-      <slot />
-    </div>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>
