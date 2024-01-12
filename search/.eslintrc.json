@@ -2,7 +2,6 @@
   "env": { "browser": true },
   "extends": [
     "eslint:recommended",
-    "plugin:astro/recommended",
     "plugin:@typescript-eslint/recommended",
     "plugin:@typescript-eslint/recommended-requiring-type-checking",
     "plugin:@typescript-eslint/strict",
@@ -15,17 +14,6 @@
   "rules": {
     "prettier/prettier": ["error", { "endOfLine": "auto" }]
   },
-  "overrides": [
-    {
-      "files": ["*.astro"],
-      "parser": "astro-eslint-parser",
-      "parserOptions": {
-        "parser": "@typescript-eslint/parser",
-        "extraFileExtensions": [".astro"]
-      },
-      "rules": {
-        "solid/self-closing-comp": "off"
-      }
-    }
-  ]
+  "overrides": [],
+  "ignorePatterns": ["node_modules", "dist", "tailwind.config.cjs", "prettier.config.cjs", "vite.config.ts", "postcss.config.cjs"]
 }

@@ -2,17 +2,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 module.exports = {
   plugins: [
-    require("prettier-plugin-tailwindcss"),
-    require("prettier-plugin-astro"),
+    import("prettier-plugin-tailwindcss"),
   ],
-  overrides: [
-    {
-      files: "*.astro",
-      options: {
-        parser: "astro",
-      },
-    },
-  ],
+  overrides: [],
   tabWidth: 2,
   trailingComma: "all",
 };
