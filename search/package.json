@@ -1,5 +1,5 @@
 {
-  "name": "arguflow-client",
+  "name": "ansear-search-client",
   "type": "module",
   "version": "0.0.1",
   "scripts": {
@@ -33,15 +33,19 @@
     "@types/sanitize-html": "^2.9.0",
     "@typescript-eslint/eslint-plugin": "^5.50.0",
     "@typescript-eslint/parser": "^5.60.1",
+    "autoprefixer": "^10.4.16",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-config-standard-with-typescript": "^35.0.0",
-    "eslint-plugin-import": "^2.25.2",
-    "eslint-plugin-n": "^15.0.0",
+    "eslint-config-semistandard": "^17.0.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-n": "^16.6.2",
     "eslint-plugin-prettier": "^4.2.1",
-    "eslint-plugin-promise": "^6.0.0",
+    "eslint-plugin-promise": "^6.1.1",
     "eslint-plugin-solid": "^0.12.1",
     "solid-devtools": "^0.27.4",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "vite": "^5.0.11"
   }
 }
