@@ -1,9 +1,10 @@
 use super::auth_handler::LoggedUser;
 use crate::{
-    data::models::{DatasetAndOrgWithSubAndPlan, Pool},
+    data::models::{DatasetAndOrgWithSubAndPlan, Pool, SlimUser},
     errors::{DefaultError, ServiceError},
     operators::user_operator::{
-        get_user_with_chunks_by_id_query, set_user_api_key_query, update_user_query,
+        get_user_by_id_query, get_user_with_chunks_by_id_query, set_user_api_key_query,
+        update_user_query,
     },
 };
 use actix_web::{web, HttpResponse};
@@ -12,9 +13,12 @@ use utoipa::ToSchema;
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct UpdateUserData {
+    pub user_id: Option<uuid::Uuid>,
     pub username: Option<String>,
+    pub name: Option<String>,
     pub website: Option<String>,
     pub visible_email: Option<bool>,
+    pub role: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
@@ -75,10 +79,51 @@ pub async fn get_user_with_chunks_by_id(
 )]
 pub async fn update_user(
     data: web::Json<UpdateUserData>,
-    user: LoggedUser,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    mut user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let update_user_data = data.into_inner();
+    let org_role = user
+        .clone()
+        .user_orgs
+        .into_iter()
+        .find(|org| org.organization_id == dataset_org_plan_sub.organization.id)
+        .ok_or(ServiceError::BadRequest(
+            "You are not a member of this organization".into(),
+        ))?
+        .role;
+
+    if let Some(user_id) = update_user_data.user_id {
+        if org_role < 1 {
+            return Ok(HttpResponse::BadRequest().json(DefaultError {
+                message: "You must be an admin to update other users",
+            }));
+        }
+        let user_info = get_user_by_id_query(&user_id, pool.clone())
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+        let authorized = user_info
+            .1
+            .iter()
+            .zip(user.user_orgs.iter())
+            .any(|(org, user_org)| {
+                org.organization_id == user_org.organization_id && user_org.role >= 1
+            });
+        if authorized {
+            user = SlimUser::from_details(user_info.0, user_info.1, user_info.2);
+        } else {
+            return Ok(HttpResponse::BadRequest().json(DefaultError {
+                message: "You must be in this organization to update other users",
+            }));
+        }
+    }
+
+    if update_user_data.role.is_some() && update_user_data.role.unwrap() > org_role {
+        return Ok(HttpResponse::BadRequest().json(DefaultError {
+            message: "Can not grant a user a higher role than yours",
+        }));
+    }
 
     if update_user_data.username.clone().unwrap_or("".to_string()) == ""
         && !update_user_data.visible_email.unwrap_or(user.visible_email)
@@ -92,7 +137,9 @@ pub async fn update_user(
         update_user_query(
             &user.clone(),
             &update_user_data.username.clone().or(user.username),
+            &update_user_data.name.clone().or(user.name),
             &update_user_data.website.or(user.website),
+            Some(update_user_data.role.unwrap_or(org_role).into()),
             update_user_data.visible_email.unwrap_or(user.visible_email),
             pool,
         )

@@ -139,6 +139,7 @@ diesel::table! {
         expires_at -> Timestamp,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        role -> Int4,
     }
 }
 

@@ -2,7 +2,7 @@ use crate::{errors::DefaultError, get_env};
 use sendgrid::v3::{Content, Email, Message, Personalization, Sender};
 
 #[allow(dead_code)]
-pub fn send_health_check_error(email: String, error: String) -> Result<(), DefaultError> {
+pub async fn send_health_check_error(email: String, error: String) -> Result<(), DefaultError> {
     let sg_email_content = format!(
         "WARNING health check is down. <br/>
         Error message: <br/>
@@ -23,13 +23,13 @@ pub fn send_health_check_error(email: String, error: String) -> Result<(), Defau
         )
         .add_personalization(sg_email_personalization);
 
-    send_email(sg_email)
+    send_email(sg_email).await
 }
 
-fn send_email(sg_email: Message) -> Result<(), DefaultError> {
+pub async fn send_email(sg_email: Message) -> Result<(), DefaultError> {
     let sg_api_key = get_env!("SENDGRID_API_KEY", "SENDGRID_API_KEY should be set").into();
     let sg_sender = Sender::new(sg_api_key);
-    let sg_response = sg_sender.send(&sg_email);
+    let sg_response = sg_sender.send(&sg_email).await;
     match sg_response {
         Ok(_) => Ok(()),
         Err(_e) => Err(DefaultError {

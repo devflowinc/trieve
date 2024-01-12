@@ -1,15 +1,15 @@
 use crate::data::models::{DatasetAndOrgWithSubAndPlan, Organization, StripePlan, UserRole};
 use crate::get_env;
+use crate::operators::invitation_operator::check_inv_valid;
 use crate::operators::organization_operator::{
     get_org_from_id_query, get_organization_by_key_query, get_user_org_count,
 };
-use crate::operators::user_operator::create_user_query;
+use crate::operators::user_operator::{add_user_to_organization, create_user_query};
 use crate::{
     data::models::{Pool, ServerDatasetConfiguration, SlimUser, User, UserOrganization},
     errors::ServiceError,
     operators::{
-        self, invitation_operator::get_invitation_by_id_query,
-        organization_operator::create_organization_query, user_operator::get_user_by_id_query,
+        self, organization_operator::create_organization_query, user_operator::get_user_by_id_query,
     },
 };
 use actix_identity::Identity;
@@ -165,9 +165,9 @@ pub async fn create_account(
     inv_code: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<(User, Vec<UserOrganization>, Vec<Organization>), ServiceError> {
-    let (owner, org) = match organization_id {
+    let (mut role, org) = match organization_id {
         Some(organization_id) => (
-            false,
+            UserRole::User,
             get_org_from_id_query(organization_id, pool.clone())
                 .await
                 .map_err(|error| ServiceError::InternalServerError(error.message.to_string()))?,
@@ -177,7 +177,7 @@ pub async fn create_account(
                 .to_string()
                 .replace(' ', "-");
             (
-                true,
+                UserRole::Owner,
                 create_organization_query(org_name.as_str(), pool.clone())
                     .await
                     .map_err(|error| {
@@ -209,48 +209,14 @@ pub async fn create_account(
         ));
     }
 
-    if org.registerable == Some(false) {
-        if let Some(inv_code) = inv_code {
-            let invitation = get_invitation_by_id_query(inv_code, pool.clone())
-                .await
-                .map_err(|_| {
-                    ServiceError::InternalServerError(
-                        "Could not find invitation for user".to_string(),
-                    )
-                })?;
-
-            if invitation.email != email {
-                return Err(ServiceError::BadRequest(
-                    "Email does not match invitation".to_string(),
-                ));
-            }
-
-            if invitation.organization_id != organization_id.unwrap() {
-                return Err(ServiceError::BadRequest(
-                    "Dataset ID does not match invitation".to_string(),
-                ));
-            }
-
-            if invitation.expired() {
-                return Err(ServiceError::BadRequest(
-                    "Invitation has expired".to_string(),
-                ));
-            }
-
-            if invitation.used {
-                return Err(ServiceError::BadRequest(
-                    "Invitation has already been used".to_string(),
-                ));
-            }
-        } else {
-            return Err(ServiceError::BadRequest(
-                "This organization is not registerable".to_string(),
-            ));
-        }
+    if let Some(inv_code) = inv_code {
+        let invitation =
+            check_inv_valid(inv_code, email.clone(), organization_id, pool.clone()).await?;
+        role = invitation.role.into();
     }
 
     let user_org =
-        web::block(move || create_user_query(user_id, email, Some(name), owner, org_id, pool))
+        web::block(move || create_user_query(user_id, email, Some(name), role, org_id, pool))
             .await
             .map_err(|_| {
                 ServiceError::InternalServerError("Blocking error creating user".to_string())
@@ -462,13 +428,35 @@ pub async fn callback(
                 user_id,
                 login_state.organization_id,
                 login_state.inv_code,
-                pool,
+                pool.clone(),
             )
             .await?
         }
     };
 
     let slim_user: SlimUser = SlimUser::from_details(user.0, user.1, user.2);
+
+    if login_state.organization_id.is_some()
+        && !slim_user.user_orgs.iter().any(|org| {
+            org.organization_id == login_state.organization_id.unwrap_or(uuid::Uuid::default())
+        })
+    {
+        if let Some(inv_code) = login_state.inv_code {
+            let invitation = check_inv_valid(
+                inv_code,
+                email.to_string(),
+                login_state.organization_id,
+                pool.clone(),
+            )
+            .await?;
+            let user_org = UserOrganization::from_details(
+                slim_user.id,
+                invitation.organization_id,
+                invitation.role.into(),
+            );
+            add_user_to_organization(user_org, pool)?;
+        }
+    }
 
     let user_string = serde_json::to_string(&slim_user).map_err(|_| {
         ServiceError::InternalServerError("Failed to serialize user to JSON".into())

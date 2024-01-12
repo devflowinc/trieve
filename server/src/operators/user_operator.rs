@@ -205,7 +205,9 @@ pub fn get_user_with_chunks_by_id_query(
 pub fn update_user_query(
     user: &LoggedUser,
     username: &Option<String>,
+    name: &Option<String>,
     website: &Option<String>,
+    role: Option<UserRole>,
     visible_email: bool,
     pool: web::Data<Pool>,
 ) -> Result<User, DefaultError> {
@@ -234,11 +236,23 @@ pub fn update_user_query(
             user_columns::username.eq(username),
             user_columns::website.eq(website),
             user_columns::visible_email.eq(&visible_email),
+            user_columns::name.eq(name),
         ))
         .get_result(&mut conn)
         .map_err(|_| DefaultError {
             message: "Error updating user",
         })?;
+    if let Some(role) = role {
+        diesel::update(
+            crate::data::schema::user_organizations::dsl::user_organizations
+                .filter(crate::data::schema::user_organizations::dsl::user_id.eq(user.id)),
+        )
+        .set(crate::data::schema::user_organizations::dsl::role.eq(Into::<i32>::into(role)))
+        .execute(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Error updating user",
+        })?;
+    }
 
     Ok(user)
 }
@@ -347,7 +361,7 @@ pub fn create_user_query(
     user_id: uuid::Uuid,
     email: String,
     name: Option<String>,
-    owner: bool,
+    role: UserRole,
     org_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(User, Vec<UserOrganization>, Vec<Organization>), DefaultError> {
@@ -355,11 +369,8 @@ pub fn create_user_query(
     use crate::data::schema::users::dsl as users_columns;
 
     let user = User::from_details_with_id(user_id, email, name);
-    let user_org = if owner {
-        UserOrganization::from_details(user_id, org_id, UserRole::Owner)
-    } else {
-        UserOrganization::from_details(user_id, org_id, UserRole::User)
-    };
+    let user_org = UserOrganization::from_details(user_id, org_id, role);
+
     let mut conn = pool.get().unwrap();
 
     let user_org = conn
@@ -395,7 +406,7 @@ pub fn add_user_to_organization(
         .values(user_organizations)
         .execute(&mut conn)
         .map_err(|_| {
-            ServiceError::InternalServerError ("Failed to add user to organization".to_string())
+            ServiceError::InternalServerError("Failed to add user to organization".to_string())
         })?;
 
     Ok(())
