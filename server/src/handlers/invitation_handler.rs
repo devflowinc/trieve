@@ -1,4 +1,4 @@
-use super::auth_handler::{AdminOnly, OwnerOnly};
+use super::auth_handler::AdminOnly;
 use crate::{
     data::models::{Invitation, Pool},
     errors::{DefaultError, ServiceError},
@@ -57,7 +57,7 @@ pub async fn post_invitation(
         .0
         .user_orgs
         .iter()
-        .find(|org| org.id == invitation_data.organization_id);
+        .find(|org| org.organization_id == invitation_data.organization_id);
 
     if org_role.is_none() || org_role.expect("cannot be none").role < invitation_data.user_role {
         return Ok(
@@ -72,6 +72,7 @@ pub async fn post_invitation(
         email,
         invitation_data.organization_id,
         invitation_data.redirect_uri,
+        invitation_data.user_role,
         pool,
     )
     .await
@@ -96,9 +97,10 @@ pub async fn create_invitation(
     email: String,
     organization_id: uuid::Uuid,
     redirect_uri: String,
+    user_role: i32,
     pool: web::Data<Pool>,
 ) -> Result<InvitationWithUrl, DefaultError> {
-    let invitation = create_invitation_query(email, organization_id, pool).await?;
+    let invitation = create_invitation_query(email, organization_id, user_role, pool).await?;
     // send_invitation(app_url, &invitation)
 
     //TODO:figure out how to get redirect_uri
