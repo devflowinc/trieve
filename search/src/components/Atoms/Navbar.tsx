@@ -1,11 +1,10 @@
 import { Show, createSignal } from "solid-js";
 import RegisterOrUserProfile from "../RegisterOrUserProfile";
-import type { HomeNavbarProps } from "./HomeNavbar";
 import { useStore } from "@nanostores/solid";
 import { clientConfig } from "../../stores/envsStore";
 import { currentDataset } from "../../stores/datasetStore";
 
-export const Navbar = (props: HomeNavbarProps) => {
+export const Navbar = () => {
   const $envs = useStore(clientConfig);
   const $datasetName = useStore(currentDataset)()?.dataset.name;
   const createEvidenceFeature = $envs().PUBLIC_CREATE_EVIDENCE_FEATURE;
@@ -55,7 +54,7 @@ export const Navbar = (props: HomeNavbarProps) => {
                 Docs
               </a>
               <div>
-                <RegisterOrUserProfile stars={props.stars} />
+                <RegisterOrUserProfile />
               </div>
             </div>
           </div>

@@ -47,7 +47,7 @@ export interface CollectionPageProps {
 }
 
 export const CollectionPage = (props: CollectionPageProps) => {
-  const apiHost: string = import.meta.env.PUBLIC_API_HOST as string;
+  const apiHost: string = import.meta.env.VITE_API_HOST as string;
   const $dataset = useStore(currentDataset);
 
   const chunkMetadatasWithVotes: BookmarkDTO[] = [];

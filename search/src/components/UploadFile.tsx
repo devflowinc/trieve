@@ -6,7 +6,7 @@ import { currentDataset } from "../stores/datasetStore";
 
 export const UploadFile = () => {
   const $dataset = useStore(currentDataset);
-  const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const apiHost = import.meta.env.VITE_API_HOST as string;
   const [file, setFile] = createSignal<File | undefined>();
   const [link, setLink] = createSignal("");
   const [tagSet, setTagSet] = createSignal("");
