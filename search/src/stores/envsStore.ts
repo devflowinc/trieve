@@ -6,7 +6,7 @@ import {
 } from "../../utils/apiTypes";
 import { currentDataset } from "./datasetStore";
 
-const api_host = import.meta.env.VITE_API_HOST as unknown as string;
+const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
 const tryParse = (encoded: string) => {
   try {
@@ -31,7 +31,7 @@ export const clientConfig = persistentAtom(
 
 currentDataset.subscribe((dataset) => {
   if (dataset) {
-    void fetch(`${api_host}/dataset/envs`, {
+    void fetch(`${apiHost}/dataset/envs`, {
       method: "GET",
       credentials: "include",
       headers: {
