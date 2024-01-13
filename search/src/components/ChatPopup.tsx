@@ -28,7 +28,7 @@ export interface LayoutProps {
 }
 
 const ChatPopup = (props: LayoutProps) => {
-  const api_host = import.meta.env.PUBLIC_API_HOST as unknown as string;
+  const api_host = import.meta.env.VITE_API_HOST as unknown as string;
   const $dataset = useStore(currentDataset);
   const resizeTextarea = (textarea: HTMLTextAreaElement) => {
     textarea.style.height = "auto";

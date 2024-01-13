@@ -4,7 +4,7 @@ import { currentUser } from "../stores/userStore";
 import { useStore } from "@nanostores/solid";
 
 const SearchForm = () => {
-  const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const apiHost = import.meta.env.VITE_API_HOST as string;
   const $currentUser = useStore(currentUser);
   const [username, setUsername] = createSignal("");
   const [website, setWebsite] = createSignal("");

@@ -43,7 +43,7 @@ export interface ResultsPageProps {
 }
 
 const ResultsPage = (props: ResultsPageProps) => {
-  const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const apiHost = import.meta.env.VITE_API_HOST as string;
   const $dataset = useStore(currentDataset);
 
   const initialResultChunks = props.defaultResultChunks.score_chunks;

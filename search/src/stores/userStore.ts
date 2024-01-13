@@ -2,7 +2,7 @@ import { atom } from "nanostores";
 import { isUserDTO, type UserDTO } from "../../utils/apiTypes";
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-const apiHost: string = import.meta.env.PUBLIC_API_HOST;
+const apiHost: string = import.meta.env.VITE_API_HOST;
 
 export const isLoadingUser = atom<boolean>(true);
 export const currentUser = atom<UserDTO | undefined>(undefined);

@@ -5,7 +5,7 @@ import { isDatasetAndUsageDTO } from "../../utils/apiTypes";
 import { currentOrganization } from "./organizationStore";
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-const apiHost: string = import.meta.env.PUBLIC_API_HOST;
+const apiHost: string = import.meta.env.VITE_API_HOST;
 
 const tryParse = (encoded: string) => {
   try {
