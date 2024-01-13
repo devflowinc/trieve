@@ -48,7 +48,7 @@ export const Footer = () => {
         </a>
       </div>
       <div class="flex w-full justify-center space-x-4">
-        <div>contact@arguflow.gg</div>
+        <div>humans@ansear.ai</div>
         <div>
           <ThemeModeController />
         </div>

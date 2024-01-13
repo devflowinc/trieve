@@ -177,7 +177,7 @@ export default function Home() {
           </div>
         </div>
         <div class="flex w-full flex-col  items-center gap-2">
-          <a href="mailto:contact@arguflow.gg">contact@arguflow.gg</a>
+          <a href="mailto:humans@ansear.ai">humans@ansear.ai</a>
         </div>
         <div class="py-2" />
         <div class="flex gap-3">
