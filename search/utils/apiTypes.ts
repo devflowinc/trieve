@@ -178,6 +178,35 @@ export const getReferralTokenArray = (): string[] => {
   return [];
 };
 
+export interface UserOrganization {
+  id: string;
+  user_id: string;
+  organization_id: string;
+  role: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  configuration: [key: string];
+  created_at: string;
+  updated_at: string;
+  registerable?: boolean;
+}
+
+export interface SlimUser {
+  id: string;
+  name?: string;
+  email: string;
+  username?: string;
+  website?: string;
+  visible_email: boolean;
+  user_orgs: UserOrganization[];
+  orgs: Organization[];
+}
+
 export interface UserDTO {
   id: string;
   email: string | null;
