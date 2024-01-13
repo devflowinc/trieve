@@ -8,30 +8,43 @@ import {
 import { BiRegularLogOut, BiRegularUser } from "solid-icons/bi";
 import { AiOutlineProfile } from "solid-icons/ai";
 import { IoSettingsOutline } from "solid-icons/io";
-import { Show } from "solid-js";
+import { Show, createEffect, createSignal } from "solid-js";
 import { NotificationPopover } from "./Atoms/NotificationPopover";
 import { AiFillGithub } from "solid-icons/ai";
 import { TbMinusVertical } from "solid-icons/tb";
-
 import { useStore } from "@nanostores/solid";
 import { currentUser, isLoadingUser } from "../stores/userStore";
-import { clientConfig } from "../stores/envsStore";
 import { currentDataset } from "../stores/datasetStore";
 
-export interface RegisterOrUserProfileProps {
-  stars: number;
-}
-
-const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
+const RegisterOrUserProfile = () => {
   if (typeof window === "undefined") return null;
-  const apiHost = import.meta.env.PUBLIC_API_HOST as string;
+  const apiHost = import.meta.env.VITE_API_HOST as string;
+
   const $dataset = useStore(currentDataset);
-  const $envs = useStore(clientConfig);
-
-  const showGithubStars = $envs().PUBLIC_SHOW_GITHUB_STARS;
-
   const $currentUser = useStore(currentUser);
   const $isLoadingUser = useStore(isLoadingUser);
+
+  const [starCount, setStarCount] = createSignal(0);
+
+  createEffect(() => {
+    try {
+      void fetch(`https://api.github.com/repos/arguflow/arguflow`, {
+        headers: {
+          Accept: "application/vnd.github+json",
+        },
+      }).then((response) => {
+        if (!response.ok) {
+          return;
+        }
+        void response.json().then((data) => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          setStarCount(data.stargazers_count);
+        });
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  });
 
   const logout = () => {
     const dataset = $dataset();
@@ -65,16 +78,14 @@ const RegisterOrUserProfile = (props: RegisterOrUserProfileProps) => {
               </a>
             </div>
           </Show>
-          <Show when={!showGithubStars && props.stars}>
             <a href="https://github.com/arguflow/arguflow">
               <div class="flex items-center justify-center rounded border border-black px-2 py-1 hover:border-gray-300 hover:bg-gray-300 dark:border-white dark:hover:border-neutral-700 dark:hover:bg-neutral-700">
                 <AiFillGithub class="mr-2 h-[26px] w-[26px] fill-current" />
                 <p class="text-sm">STAR US</p>
                 <TbMinusVertical size={25} />
-                <p>{props.stars}</p>
+                <p>{starCount()}</p>
               </div>
             </a>
-          </Show>
           <NotificationPopover />
           <Show when={!!$currentUser()}>
             <Popover defaultOpen={false} class="relative flex items-center">

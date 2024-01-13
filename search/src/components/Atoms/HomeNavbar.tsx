@@ -6,11 +6,7 @@ import { useStore } from "@nanostores/solid";
 import { clientConfig } from "../../stores/envsStore";
 import { currentUser } from "../../stores/userStore";
 
-export interface HomeNavbarProps {
-  stars: number;
-}
-
-export const HomeNavbar = (props: HomeNavbarProps) => {
+export const HomeNavbar = () => {
   const $envs = useStore(clientConfig);
   const $currentUser = useStore(currentUser);
   const uploadDocumentFeature = $envs().PUBLIC_DOCUMENT_UPLOAD_FEATURE;
@@ -46,7 +42,7 @@ export const HomeNavbar = (props: HomeNavbarProps) => {
                 Docs
               </a>
               <div>
-                <RegisterOrUserProfile stars={props.stars} />
+                <RegisterOrUserProfile />
               </div>
             </div>
           </div>
