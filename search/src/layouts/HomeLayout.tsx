@@ -36,7 +36,7 @@ export const HomeLayout = (props: { children: JSX.Element }) => {
 
   return (
     <div class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white">
-      <HomeNavbar stars={200} />
+      <HomeNavbar />
       {props.children}
     </div>
   );
