@@ -71,7 +71,7 @@ const RegisterOrUserProfile = () => {
           <Show when={!$currentUser()}>
             <div class="flex items-center space-x-3">
               <a
-                href={`${apiHost}/auth?redirect=http://localhost:3000`}
+                href={`${apiHost}/auth?redirect=http://localhost:5174`}
                 class="min-[420px]:text-lg"
               >
                 Login/Register

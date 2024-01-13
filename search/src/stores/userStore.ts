@@ -1,31 +1,27 @@
 import { atom } from "nanostores";
-import { isUserDTO, type UserDTO } from "../../utils/apiTypes";
+import { UserDTO } from "../../utils/apiTypes";
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 const apiHost: string = import.meta.env.VITE_API_HOST;
 
 export const isLoadingUser = atom<boolean>(true);
 export const currentUser = atom<UserDTO | undefined>(undefined);
 
+isLoadingUser.set(true);
+
 fetch(`${apiHost}/auth/me`, {
-  method: "GET",
-  headers: {
-    "Content-Type": "application/json",
-  },
   credentials: "include",
 })
-  .then((response) => {
-    if (response.ok) {
-      void response.json().then((data) => {
-        if (isUserDTO(data)) {
-          currentUser.set(data);
-        }
-        isLoadingUser.set(false);
-      });
-      return;
+  .then((res) => {
+    if (res.status === 401) {
+      window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}/dashboard`;
     }
-    isLoadingUser.set(false);
   })
-  .catch(() => {
+  .then((data) => {
+    currentUser.set(data as unknown as UserDTO);
+  })
+  .catch((err) => {
+    console.error(err);
+  })
+  .finally(() => {
     isLoadingUser.set(false);
   });
