@@ -10,7 +10,6 @@ import {
   BiRegularXCircle,
 } from "solid-icons/bi";
 import type { SingleChunkPageProps } from "./SingleChunkPage";
-import type { TinyMCE } from "../../public/tinymce/tinymce";
 import sanitize from "sanitize-html";
 import { sanitzerOptions } from "./ScoreChunk";
 import { Tooltip } from "./Atoms/Tooltip";
@@ -178,7 +177,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
     textareaItem.innerHTML = sanitize(chunkHtml(), sanitzerOptions);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    const tinyMCE: TinyMCE = (window as any).tinymce as TinyMCE;
+    const tinyMCE: any = (window as any).tinymce;
     const options = {
       selector: "#search-query-textarea",
       height: "100%",
