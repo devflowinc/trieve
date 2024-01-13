@@ -5,7 +5,6 @@ import {
 } from "solid-icons/bi";
 import { JSX, Show, createEffect, createSignal } from "solid-js";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
-import type { TinyMCE } from "../../public/tinymce/tinymce";
 import { CreateChunkDTO, isActixApiDefaultError } from "../../utils/apiTypes";
 import { Tooltip } from "./Atoms/Tooltip";
 import { useStore } from "@nanostores/solid";
@@ -97,7 +96,7 @@ export const CreateNewDocChunkForm = () => {
 
   createEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    const tinyMCE: TinyMCE = (window as any).tinymce as TinyMCE;
+    const tinyMCE: any = (window as any).tinymce;
     const options = {
       selector: "#search-query-textarea",
       height: "100%",
