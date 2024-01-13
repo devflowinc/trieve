@@ -78,14 +78,14 @@ const RegisterOrUserProfile = () => {
               </a>
             </div>
           </Show>
-            <a href="https://github.com/arguflow/arguflow">
-              <div class="flex items-center justify-center rounded border border-black px-2 py-1 hover:border-gray-300 hover:bg-gray-300 dark:border-white dark:hover:border-neutral-700 dark:hover:bg-neutral-700">
-                <AiFillGithub class="mr-2 h-[26px] w-[26px] fill-current" />
-                <p class="text-sm">STAR US</p>
-                <TbMinusVertical size={25} />
-                <p>{starCount()}</p>
-              </div>
-            </a>
+          <a href="https://github.com/arguflow/arguflow">
+            <div class="flex items-center justify-center rounded border border-black px-2 py-1 hover:border-gray-300 hover:bg-gray-300 dark:border-white dark:hover:border-neutral-700 dark:hover:bg-neutral-700">
+              <AiFillGithub class="mr-2 h-[26px] w-[26px] fill-current" />
+              <p class="text-sm">STAR US</p>
+              <TbMinusVertical size={25} />
+              <p>{starCount()}</p>
+            </div>
+          </a>
           <NotificationPopover />
           <Show when={!!$currentUser()}>
             <Popover defaultOpen={false} class="relative flex items-center">
