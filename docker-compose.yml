@@ -205,6 +205,47 @@ services:
     networks:
       - app-network
 
+  splade-embeddings:
+    image: arguflow/splade-embeddings
+    build: ./embedding-server/
+    networks:
+      - app-network
+    ports:
+      - 7070:7070
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.1
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=aintsecure
+      - KC_DATABASE=postgres
+      - KC_DATABASE_URL=jdbc:postgresql://localhost:5434/keycloak
+      - KC_DB_USERNAME=postgres
+      - KC_DB_PASSWORD=password
+    entrypoint: "/opt/keycloak/bin/kc.sh start-dev --import-realm --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false"
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - ./keycloak/themes/arguflow:/opt/keycloak/themes/arguflow
+    ports:
+      - 8080:8080
+    networks:
+      - app-network
+
+  keycloak-db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: keycloak
+    volumes:
+      - pg-keycloak-data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    networks:
+      - app-network
+
 networks:
   app-network:
     driver: bridge
