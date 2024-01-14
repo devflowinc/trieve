@@ -83,8 +83,8 @@ pub async fn get_splade_doc_embedding(message: &str) -> Result<Vec<(u32, f32)>, 
 
 pub async fn get_splade_query_embedding(message: &str) -> Result<Vec<(u32, f32)>, ServiceError> {
     let mut embedding_server_call: String = get_env!(
-        "SPLADE_EMBEDDING_SERVER_ORIGIN",
-        "EMBEDDING_SERVER_ORIGIN should be set if this is called"
+        "GPU_SERVER_ORIGIN",
+        "GPU_SERVER_ORIGIN should be set if this is called"
     )
     .to_string();
     embedding_server_call.push_str("/sparse_encode");
@@ -130,8 +130,8 @@ pub async fn cross_encoder(
     results: Vec<ScoreChunkDTO>,
 ) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
     let mut embedding_server_call: String = get_env!(
-        "SPLADE_EMBEDDING_SERVER_ORIGIN",
-        "EMBEDDING_SERVER_ORIGIN should be set if this is called"
+        "GPU_SERVER_ORIGIN",
+        "GPU_SERVER_ORIGIN should be set if this is called"
     )
     .to_string();
     embedding_server_call.push_str("/rerank");
