@@ -45,3 +45,5 @@ typing_extensions==4.7.1
 urllib3==2.0.4
 uvicorn==0.23.2
 angle_emb==0.1.5
+sentence-transformers==2.2.2
+

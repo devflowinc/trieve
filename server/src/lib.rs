@@ -1,13 +1,11 @@
-#![feature(ready_into_inner)]
 #[macro_use]
 extern crate diesel;
 
 use crate::{
     handlers::auth_handler::build_oidc_client,
-    operators::{
-        model_operator::initalize_cross_encoder,
+    operators::
         qdrant_operator::create_new_qdrant_collection_query,
-    },
+    
 };
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
@@ -224,7 +222,6 @@ pub async fn main() -> std::io::Result<()> {
         .build(manager)
         .expect("Failed to create pool.");
 
-    let cross_encoder = web::Data::new(initalize_cross_encoder());
 
     let redis_store = RedisSessionStore::new(redis_url).await.unwrap();
 
@@ -358,7 +355,6 @@ pub async fn main() -> std::io::Result<()> {
                             )
                             .service(
                                 web::resource("/search/{page}")
-                                    .app_data(cross_encoder.clone())
                                     .route(web::post().to(handlers::chunk_handler::search_chunk)),
                             )
                             .service(

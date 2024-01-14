@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from transformers import AutoModelForMaskedLM, AutoTokenizer
+from sentence_transformers.cross_encoder import CrossEncoder
 
 # Create a Flask app
 app = FastAPI()
@@ -18,6 +19,10 @@ doc_model = AutoModelForMaskedLM.from_pretrained(doc_model_id)
 query_model_id = "naver/efficient-splade-VI-BT-large-query"
 query_tokenizer = AutoTokenizer.from_pretrained(query_model_id)
 query_model = AutoModelForMaskedLM.from_pretrained(query_model_id)
+
+cross_encoder_model_id = "cross-encoder/ms-marco-MiniLM-L-4-v2"
+cross_encoder_model = CrossEncoder(cross_encoder_model_id)
+
 
 angle = AnglE.from_pretrained("WhereIsAI/UAE-Large-V1", pooling_strategy="cls")
 if torch.cuda.is_available():
@@ -119,6 +124,25 @@ async def sparse_encode(encodingRequest: SparseEncodeRequest):
     return JSONResponse(
         content={
             "embeddings": list(zip(indices, values)),
+            "status": 200,
+        }
+    )
+
+
+class ReRankRequest:
+    query: str
+    docs: list
+
+
+@app.post("/rerank")
+async def rerank(rerankRequest: EncodeRequest):
+    combined_docs = [[rerankRequest.query, doc] for doc in rerankRequest.docs]
+    doc_scores = cross_encoder_model.predict(combined_docs)
+    sim_scores_argsort = reversed(np.argsort(doc_scores))
+    reranked_docs = [rerankRequest.docs[i] for i in sim_scores_argsort]
+    return JSONResponse(
+        content={
+            "docs": reranked_docs,
             "status": 200,
         }
     )
