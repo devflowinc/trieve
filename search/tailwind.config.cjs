@@ -1,12 +1,14 @@
+const defaultTheme = require("tailwindcss/defaultTheme");
+
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable no-undef */
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: "class",
-  content: ["./src/**/*.{html,js,jsx,md,mdx,ts,tsx,vue}"],
-  theme: 
+  content: ["./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}"],
+  theme: {
     fontFamily: {
-      sans: ["Quicksand", "sans-serif"],
+      sans: ["Quicksand", ...defaultTheme.fontFamily.sans],
     },
     extend: {
       colors: {
@@ -139,7 +141,6 @@ module.exports = {
     },
   },
   plugins: [
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     require("tailwind-scrollbar")({ nocompatible: true }),
     require("tailwind-gradient-mask-image"),
   ],
