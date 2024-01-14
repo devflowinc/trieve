@@ -46,7 +46,6 @@ export interface SidebarProps {
 
 export const Sidebar = (props: SidebarProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
-  const dataset = import.meta.env.VITE_DATASET as unknown as string;
   const showGithubStars = import.meta.env
     .VITE_SHOW_GITHUB_STARS as unknown as string;
 
@@ -59,10 +58,14 @@ export const Sidebar = (props: SidebarProps) => {
     const topics = props.topics();
     const topic = topics[editingIndex()];
 
+    const dataset = props.currentDataset();
+    if (!dataset) return;
+
     const res = await fetch(`${apiHost}/topic`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset.dataset.id,
       },
       credentials: "include",
       body: JSON.stringify({
@@ -82,10 +85,14 @@ export const Sidebar = (props: SidebarProps) => {
   };
 
   const deleteSelected = async () => {
+    const dataset = props.currentDataset();
+    if (!dataset) return;
+
     const res = await fetch(`${apiHost}/topic`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset.dataset.id,
       },
       credentials: "include",
       body: JSON.stringify({
@@ -303,7 +310,7 @@ export const Sidebar = (props: SidebarProps) => {
             <img src="/logo_512.png" class="h-7 w-7" />
             <div>
               <div class="mb-[-4px] w-full text-end align-bottom text-xs leading-3 text-turquoise">
-                {dataset}
+                {props.currentDataset()?.dataset.name}
               </div>
               <div class="align-top text-lg">
                 <span>Arguflow</span>

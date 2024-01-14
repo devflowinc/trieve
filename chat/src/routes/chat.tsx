@@ -104,10 +104,14 @@ export const chat = () => {
   });
 
   const refetchTopics = async (): Promise<Topic[]> => {
+    const dataset = currentDataset();
+    if (!dataset) return [];
+
     const response = await fetch(`${apiHost}/topic`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset.dataset.id,
       },
       credentials: "include",
     });
@@ -184,6 +188,7 @@ export const chat = () => {
             setIsCreatingNormalTopic={setIsCreatingNormalTopic}
           />
           <MainLayout
+            currentDataset={currentDataset}
             setTopics={setTopics}
             setSelectedTopic={setSelectedTopic}
             isCreatingNormalTopic={isCreatingNormalTopic}
