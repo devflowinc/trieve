@@ -4922,6 +4922,7 @@ dependencies = [
  "candle-core",
  "candle-nn",
  "candle-transformers",
+ "cfg-if",
  "chrono",
  "crossbeam-channel",
  "dateparser",
