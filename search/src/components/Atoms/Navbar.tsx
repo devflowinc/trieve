@@ -1,3 +1,4 @@
+import { A } from "@solidjs/router";
 import { Show, createSignal } from "solid-js";
 import RegisterOrUserProfile from "../RegisterOrUserProfile";
 import { useStore } from "@nanostores/solid";
@@ -7,7 +8,7 @@ import { currentDataset } from "../../stores/datasetStore";
 export const Navbar = () => {
   const $envs = useStore(clientConfig);
   const $datasetName = useStore(currentDataset)()?.dataset.name;
-  const createEvidenceFeature = $envs().CREATE_EVIDENCE_FEATURE;
+  const createChunkFeature = $envs().CREATE_CHUNK_FEATURE;
   const uploadDocumentFeature = $envs().DOCUMENT_UPLOAD_FEATURE;
 
   const [isOpen, setIsOpen] = createSignal(false);
@@ -30,21 +31,21 @@ export const Navbar = () => {
               </div>
             </a>
             <div class="flex w-full items-center justify-end space-x-1 sm:space-x-4">
-              <Show when={createEvidenceFeature}>
-                <a
+              <Show when={createChunkFeature}>
+                <A
                   href="/create"
                   class="hidden text-center min-[420px]:text-lg min-[920px]:block"
                 >
                   Create Doc Chunk
-                </a>
+                </A>
               </Show>
               <Show when={uploadDocumentFeature}>
-                <a
+                <A
                   href="/upload"
                   class="hidden text-center min-[420px]:text-lg min-[920px]:block"
                 >
                   Upload Files
-                </a>
+                </A>
               </Show>
               <a
                 href="https://docs.arguflow.ai"
@@ -109,7 +110,7 @@ export const Navbar = () => {
         id="mobile-menu"
       >
         <div class="space-y-1 px-2 pb-3 pt-2 sm:px-3">
-          <Show when={createEvidenceFeature}>
+          <Show when={createChunkFeature}>
             <a
               href="/create"
               class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"

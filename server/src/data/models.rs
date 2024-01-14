@@ -912,7 +912,7 @@ impl ServerDatasetConfiguration {
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[allow(non_snake_case)]
 pub struct ClientDatasetConfiguration {
-    pub CREATE_EVIDENCE_FEATURE: Option<bool>,
+    pub CREATE_CHUNK_FEATURE: Option<bool>,
     pub SEARCH_QUERIES: Option<String>,
     pub FRONTMATTER_VALS: Option<String>,
     pub LINES_BEFORE_SHOW_MORE: Option<usize>,
@@ -933,8 +933,8 @@ impl ClientDatasetConfiguration {
             .unwrap_or(default_config.as_object().unwrap());
 
         ClientDatasetConfiguration {
-            CREATE_EVIDENCE_FEATURE: configuration
-                .get("CREATE_EVIDENCE_FEATURE")
+            CREATE_CHUNK_FEATURE: configuration
+                .get("CREATE_CHUNK_FEATURE")
                 .unwrap_or(&json!(false))
                 .as_bool(),
             SEARCH_QUERIES: configuration
