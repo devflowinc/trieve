@@ -448,7 +448,7 @@ export const messageRoleFromIndex = (idx: number) => {
 };
 
 export interface ClientEnvsConfiguration {
-  CREATE_EVIDENCE_FEATURE?: boolean;
+  CREATE_CHUNK_FEATURE?: boolean;
   SEARCH_QUERIES?: string;
   FRONTMATTER_VALS?: string;
   LINES_BEFORE_SHOW_MORE?: number;
@@ -462,7 +462,7 @@ export interface ClientEnvsConfiguration {
 }
 
 export const defaultClientEnvsConfiguration: ClientEnvsConfiguration = {
-  CREATE_EVIDENCE_FEATURE: false,
+  CREATE_CHUNK_FEATURE: false,
   DOCUMENT_UPLOAD_FEATURE: false,
   SEARCH_QUERIES:
     "star github.com/arguflow/arguflow, no seriously please star github.com/arguflow/arguflow, you know you want to star github.com/arguflow/arguflow",
