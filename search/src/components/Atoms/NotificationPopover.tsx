@@ -24,7 +24,7 @@ export const NotificationPopover = () => {
   const $dataset = useStore(currentDataset);
 
   const similarityScoreThreshold =
-    (import.meta.env.PUBLIC_SIMILARITY_SCORE_THRESHOLD as number | undefined) ??
+    (import.meta.env.SIMILARITY_SCORE_THRESHOLD as number | undefined) ??
     80;
 
   const [notifs, setNotifs] = createSignal<NotificationDTO[]>([]);

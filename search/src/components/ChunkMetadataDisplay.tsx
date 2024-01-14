@@ -57,9 +57,9 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
   const $envs = useStore(clientConfig);
 
-  const frontMatterVals = $envs().PUBLIC_FRONTMATTER_VALS.split(",");
+  const frontMatterVals = $envs().FRONTMATTER_VALS.split(",");
 
-  const linesBeforeShowMore = $envs().PUBLIC_LINES_BEFORE_SHOW_MORE;
+  const linesBeforeShowMore = $envs().LINES_BEFORE_SHOW_MORE;
 
   const [expanded, setExpanded] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
@@ -96,8 +96,8 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   };
 
   const imgInformation = createMemo(() => {
-    const imgRangeStartKey = $envs().PUBLIC_IMAGE_RANGE_START_KEY;
-    const imgRangeEndKey = $envs().PUBLIC_IMAGE_RANGE_END_KEY;
+    const imgRangeStartKey = $envs().IMAGE_RANGE_START_KEY;
+    const imgRangeEndKey = $envs().IMAGE_RANGE_END_KEY;
 
     if (
       !imgRangeStartKey ||
