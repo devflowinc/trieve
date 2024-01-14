@@ -213,7 +213,7 @@ diesel::table! {
     topics (id) {
         id -> Uuid,
         user_id -> Uuid,
-        resolution -> Text,
+        name -> Text,
         side -> Bool,
         deleted -> Bool,
         created_at -> Timestamp,
