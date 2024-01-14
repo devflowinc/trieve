@@ -96,7 +96,6 @@ services:
       - 8090:8090
     volumes:
       - ./server/images:/app/images
-      - ./server/tantivy:/app/tantivy
     links:
       - tika:tika
     environment:
