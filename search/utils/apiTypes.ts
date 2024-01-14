@@ -448,62 +448,32 @@ export const messageRoleFromIndex = (idx: number) => {
 };
 
 export interface ClientEnvsConfiguration {
-  PUBLIC_CREATE_EVIDENCE_FEATURE: boolean;
-  PUBLIC_DOCUMENT_UPLOAD_FEATURE: boolean;
-  PUBLIC_SEARCH_QUERIES: string;
-  PUBLIC_FRONTMATTER_VALS: string;
-  PUBLIC_LINES_BEFORE_SHOW_MORE: number;
-  PUBLIC_DATE_RANGE_VALUE: string;
-  PUBLIC_FILTER_ITEMS: ComboboxSection[];
-  PUBLIC_SUGGESTED_QUERIES: string;
-  PUBLIC_SHOW_GITHUB_STARS: boolean;
-  PUBLIC_IMAGE_RANGE_START_KEY: string;
-  PUBLIC_IMAGE_RANGE_END_KEY: string;
+  CREATE_EVIDENCE_FEATURE?: boolean,
+  SEARCH_QUERIES?: string,
+  FRONTMATTER_VALS?: string,
+  LINES_BEFORE_SHOW_MORE?: number,
+  DATE_RANGE_VALUE?: string,
+  FILTER_ITEMS?: ComboboxSection[],
+  SUGGESTED_QUERIES?: string,
+  SHOW_GITHUB_STARS?: boolean,
+  IMAGE_RANGE_START_KEY?: string,
+  IMAGE_RANGE_END_KEY?: string,
+  DOCUMENT_UPLOAD_FEATURE?: boolean,
 }
 
 export const defaultClientEnvsConfiguration: ClientEnvsConfiguration = {
-  PUBLIC_CREATE_EVIDENCE_FEATURE: false,
-  PUBLIC_DOCUMENT_UPLOAD_FEATURE: false,
-  PUBLIC_SEARCH_QUERIES:
+  CREATE_EVIDENCE_FEATURE: false,
+  DOCUMENT_UPLOAD_FEATURE: false,
+  SEARCH_QUERIES:
     "star github.com/arguflow/arguflow, no seriously please star github.com/arguflow/arguflow, you know you want to star github.com/arguflow/arguflow",
-  PUBLIC_FRONTMATTER_VALS: "link,tag_set,file_name,time_stamp",
-  PUBLIC_LINES_BEFORE_SHOW_MORE: 10,
-  PUBLIC_DATE_RANGE_VALUE: "Date",
-  PUBLIC_FILTER_ITEMS: [],
-  PUBLIC_SUGGESTED_QUERIES: "",
-  PUBLIC_SHOW_GITHUB_STARS: false,
-  PUBLIC_IMAGE_RANGE_START_KEY: "",
-  PUBLIC_IMAGE_RANGE_END_KEY: "",
-};
-
-export const isClientEnvsConfiguration = (
-  config: unknown,
-): config is ClientEnvsConfiguration => {
-  if (typeof config !== "object" || config === null) return false;
-
-  return (
-    indirectHasOwnProperty(config, "PUBLIC_CREATE_EVIDENCE_FEATURE") &&
-    typeof (config as ClientEnvsConfiguration)
-      .PUBLIC_CREATE_EVIDENCE_FEATURE === "boolean" &&
-    indirectHasOwnProperty(config, "PUBLIC_SEARCH_QUERIES") &&
-    typeof (config as ClientEnvsConfiguration).PUBLIC_SEARCH_QUERIES ===
-      "string" &&
-    indirectHasOwnProperty(config, "PUBLIC_FRONTMATTER_VALS") &&
-    typeof (config as ClientEnvsConfiguration).PUBLIC_FRONTMATTER_VALS ===
-      "string" &&
-    indirectHasOwnProperty(config, "PUBLIC_LINES_BEFORE_SHOW_MORE") &&
-    typeof (config as ClientEnvsConfiguration).PUBLIC_LINES_BEFORE_SHOW_MORE ===
-      "number" &&
-    indirectHasOwnProperty(config, "PUBLIC_DATE_RANGE_VALUE") &&
-    typeof (config as ClientEnvsConfiguration).PUBLIC_DATE_RANGE_VALUE ===
-      "string" &&
-    indirectHasOwnProperty(config, "PUBLIC_FILTER_ITEMS") &&
-    typeof (config as ClientEnvsConfiguration).PUBLIC_FILTER_ITEMS ===
-      "object" &&
-    indirectHasOwnProperty(config, "PUBLIC_SUGGESTED_QUERIES") &&
-    typeof (config as ClientEnvsConfiguration).PUBLIC_SUGGESTED_QUERIES ===
-      "string"
-  );
+  FRONTMATTER_VALS: "link,tag_set,file_name,time_stamp",
+  LINES_BEFORE_SHOW_MORE: 10,
+  DATE_RANGE_VALUE: "Date",
+  FILTER_ITEMS: [],
+  SUGGESTED_QUERIES: "",
+  SHOW_GITHUB_STARS: false,
+  IMAGE_RANGE_START_KEY: "",
+  IMAGE_RANGE_END_KEY: "",
 };
 
 export interface OrganizationDTO {

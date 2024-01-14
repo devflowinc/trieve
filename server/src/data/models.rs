@@ -912,17 +912,17 @@ impl ServerDatasetConfiguration {
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[allow(non_snake_case)]
 pub struct ClientDatasetConfiguration {
-    pub PUBLIC_CREATE_EVIDENCE_FEATURE: Option<bool>,
-    pub PUBLIC_SEARCH_QUERIES: Option<String>,
-    pub PUBLIC_FRONTMATTER_VALS: Option<String>,
-    pub PUBLIC_LINES_BEFORE_SHOW_MORE: Option<usize>,
-    pub PUBLIC_DATE_RANGE_VALUE: Option<String>,
-    pub PUBLIC_FILTER_ITEMS: Option<serde_json::Value>,
-    pub PUBLIC_SUGGESTED_QUERIES: Option<String>,
-    pub PUBLIC_SHOW_GITHUB_STARS: Option<bool>,
-    pub PUBLIC_IMAGE_RANGE_START_KEY: Option<String>,
-    pub PUBLIC_IMAGE_RANGE_END_KEY: Option<String>,
-    pub PUBLIC_DOCUMENT_UPLOAD_FEATURE: Option<bool>,
+    pub CREATE_EVIDENCE_FEATURE: Option<bool>,
+    pub SEARCH_QUERIES: Option<String>,
+    pub FRONTMATTER_VALS: Option<String>,
+    pub LINES_BEFORE_SHOW_MORE: Option<usize>,
+    pub DATE_RANGE_VALUE: Option<String>,
+    pub FILTER_ITEMS: Option<serde_json::Value>,
+    pub SUGGESTED_QUERIES: Option<String>,
+    pub SHOW_GITHUB_STARS: Option<bool>,
+    pub IMAGE_RANGE_START_KEY: Option<String>,
+    pub IMAGE_RANGE_END_KEY: Option<String>,
+    pub DOCUMENT_UPLOAD_FEATURE: Option<bool>,
 }
 
 impl ClientDatasetConfiguration {
@@ -933,56 +933,56 @@ impl ClientDatasetConfiguration {
             .unwrap_or(default_config.as_object().unwrap());
 
         ClientDatasetConfiguration {
-            PUBLIC_CREATE_EVIDENCE_FEATURE: configuration
-                .get("PUBLIC_CREATE_EVIDENCE_FEATURE")
+            CREATE_EVIDENCE_FEATURE: configuration
+                .get("CREATE_EVIDENCE_FEATURE")
                 .unwrap_or(&json!(false))
                 .as_bool(),
-            PUBLIC_SEARCH_QUERIES: configuration
-                .get("PUBLIC_SEARCH_QUERIES")
+            SEARCH_QUERIES: configuration
+                .get("SEARCH_QUERIES")
                 .unwrap_or(&json!(""))
                 .as_str()
                 .map(|s| s.to_string()),
-            PUBLIC_FRONTMATTER_VALS: configuration
-                .get("PUBLIC_FRONTMATTER_VALS")
+            FRONTMATTER_VALS: configuration
+                .get("FRONTMATTER_VALS")
                 .unwrap_or(&json!(""))
                 .as_str()
                 .map(|s| s.to_string()),
-            PUBLIC_LINES_BEFORE_SHOW_MORE: configuration
-                .get("PUBLIC_LINES_BEFORE_SHOW_MORE")
+            LINES_BEFORE_SHOW_MORE: configuration
+                .get("LINES_BEFORE_SHOW_MORE")
                 .unwrap_or(&json!(3))
                 .as_u64()
                 .map(|u| u as usize),
-            PUBLIC_DATE_RANGE_VALUE: configuration
-                .get("PUBLIC_DATE_RANGE_VALUE")
+            DATE_RANGE_VALUE: configuration
+                .get("DATE_RANGE_VALUE")
                 .unwrap_or(&json!(""))
                 .as_str()
                 .map(|s| s.to_string()),
-            PUBLIC_FILTER_ITEMS: configuration
-                .get("PUBLIC_FILTER_ITEMS")
+            FILTER_ITEMS: configuration
+                .get("FILTER_ITEMS")
                 .unwrap_or(&json!([]))
                 .as_array()
                 .map(|a| serde_json::Value::Array(a.clone())),
-            PUBLIC_SUGGESTED_QUERIES: configuration
-                .get("PUBLIC_SUGGESTED_QUERIES")
+            SUGGESTED_QUERIES: configuration
+                .get("SUGGESTED_QUERIES")
                 .unwrap_or(&json!(""))
                 .as_str()
                 .map(|s| s.to_string()),
-            PUBLIC_SHOW_GITHUB_STARS: configuration
-                .get("PUBLIC_SHOW_GITHUB_STARS")
+            SHOW_GITHUB_STARS: configuration
+                .get("SHOW_GITHUB_STARS")
                 .unwrap_or(&json!(false))
                 .as_bool(),
-            PUBLIC_IMAGE_RANGE_START_KEY: configuration
-                .get("PUBLIC_IMAGE_RANGE_START_KEY")
+            IMAGE_RANGE_START_KEY: configuration
+                .get("IMAGE_RANGE_START_KEY")
                 .unwrap_or(&json!(""))
                 .as_str()
                 .map(|s| s.to_string()),
-            PUBLIC_IMAGE_RANGE_END_KEY: configuration
-                .get("PUBLIC_IMAGE_RANGE_END_KEY")
+            IMAGE_RANGE_END_KEY: configuration
+                .get("IMAGE_RANGE_END_KEY")
                 .unwrap_or(&json!(""))
                 .as_str()
                 .map(|s| s.to_string()),
-            PUBLIC_DOCUMENT_UPLOAD_FEATURE: configuration
-                .get("PUBLIC_DOCUMENT_UPLOAD_FEATURE")
+            DOCUMENT_UPLOAD_FEATURE: configuration
+                .get("DOCUMENT_UPLOAD_FEATURE")
                 .unwrap_or(&json!(false))
                 .as_bool(),
         }
