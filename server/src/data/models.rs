@@ -65,7 +65,7 @@ impl User {
 pub struct Topic {
     pub id: uuid::Uuid,
     pub user_id: uuid::Uuid,
-    pub resolution: String,
+    pub name: String,
     pub side: bool,
     pub deleted: bool,
     pub created_at: chrono::NaiveDateTime,
@@ -76,7 +76,7 @@ pub struct Topic {
 
 impl Topic {
     pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(
-        resolution: S,
+        name: S,
         user_id: T,
         normal_chat: Option<bool>,
         dataset_id: uuid::Uuid,
@@ -84,7 +84,7 @@ impl Topic {
         Topic {
             id: uuid::Uuid::new_v4(),
             user_id: user_id.into(),
-            resolution: resolution.into(),
+            name: name.into(),
             side: false,
             deleted: false,
             created_at: chrono::Utc::now().naive_local(),
@@ -133,8 +133,6 @@ impl From<Message> for ChatMessage {
 pub struct ChatMessageProxy {
     pub role: String,
     pub content: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
 }
 
 impl From<ChatMessageProxy> for ChatMessage {
@@ -149,7 +147,7 @@ impl From<ChatMessageProxy> for ChatMessage {
             role,
             content: Some(message.content),
             tool_calls: None,
-            name: message.name,
+            name: None,
             tool_call_id: None,
         }
     }
