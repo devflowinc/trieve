@@ -72,11 +72,6 @@ openidconnect = { version = "3.4.0", features = [
     "reqwest",
 ], default-features = false }
 oauth2 = "4.4.2"
-hf-hub = "0.3.2"
-tokenizers = { version = "0.15.0", features = ["http"] }
-candle-nn = { git = "https://github.com/huggingface/candle.git", version = "0.3.1" }
-candle-core = { git = "https://github.com/huggingface/candle.git", version = "0.3.1" }
-candle-transformers = { git = "https://github.com/huggingface/candle.git", version = "0.3.1" }
 dateparser = "0.2.1"
 cfg-if = "1.0.0"
 
