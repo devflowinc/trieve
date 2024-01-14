@@ -11,7 +11,7 @@ use crate::operators::chunk_operator::*;
 use crate::operators::collection_operator::{
     create_chunk_bookmark_query, get_collection_by_id_query,
 };
-use crate::operators::model_operator::{create_embedding, CrossEncoder};
+use crate::operators::model_operator::create_embedding;
 use crate::operators::qdrant_operator::update_qdrant_point_query;
 use crate::operators::qdrant_operator::{
     create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
@@ -749,7 +749,6 @@ pub async fn search_chunk(
     page: Option<web::Path<u64>>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
-    cross_encoder_init: web::Data<CrossEncoder>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = page.map(|page| page.into_inner()).unwrap_or(1);
@@ -759,15 +758,8 @@ pub async fn search_chunk(
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => search_full_text_chunks(data, parsed_query, page, pool, dataset_id).await?,
         "hybrid" => {
-            search_hybrid_chunks(
-                data,
-                parsed_query,
-                page,
-                pool,
-                cross_encoder_init,
-                dataset_org_plan_sub.dataset,
-            )
-            .await?
+            search_hybrid_chunks(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
+                .await?
         }
         _ => {
             search_semantic_chunks(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
