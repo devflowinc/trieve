@@ -7,8 +7,8 @@ import { currentDataset } from "../../stores/datasetStore";
 export const Navbar = () => {
   const $envs = useStore(clientConfig);
   const $datasetName = useStore(currentDataset)()?.dataset.name;
-  const createEvidenceFeature = $envs().PUBLIC_CREATE_EVIDENCE_FEATURE;
-  const uploadDocumentFeature = $envs().PUBLIC_DOCUMENT_UPLOAD_FEATURE;
+  const createEvidenceFeature = $envs().CREATE_EVIDENCE_FEATURE;
+  const uploadDocumentFeature = $envs().DOCUMENT_UPLOAD_FEATURE;
 
   const [isOpen, setIsOpen] = createSignal(false);
 
