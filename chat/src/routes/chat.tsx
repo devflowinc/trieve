@@ -5,6 +5,13 @@ import { Navbar } from "~/components/Navbar/Navbar";
 import { Sidebar } from "~/components/Navbar/Sidebar";
 import { detectReferralToken, isTopic } from "~/types/actix-api";
 import { Topic } from "~/types/topics";
+import {
+  DatasetAndUsageDTO,
+  isDatasetAndUsageDTO,
+  isUserDTO,
+  OrganizationDTO,
+  UserDTO,
+} from "~/utils/apiTypes";
 
 export const chat = () => {
   const apiHost: string = import.meta.env.VITE_API_HOST as unknown as string;
@@ -19,11 +26,62 @@ export const chat = () => {
     createSignal<boolean>(false);
   const [topics, setTopics] = createSignal<Topic[]>([]);
   const [isLogin, setIsLogin] = createSignal<boolean>(false);
+  const [user, setUser] = createSignal<UserDTO | null>(null);
+  const [currentOrganization, setCurrentOrganization] =
+    createSignal<OrganizationDTO | null>(null);
+  const [organizations, setOrganizations] = createSignal<OrganizationDTO[]>([]);
+
+  const [datasetsAndUsages, setDatasetsAndUsages] = createSignal<
+    DatasetAndUsageDTO[]
+  >([]);
+  const [currentDataset, setCurrentDataset] =
+    createSignal<DatasetAndUsageDTO | null>(null);
+
+  createEffect(() => {
+    const u = user();
+    if (u !== null && typeof u === "object") {
+      setOrganizations(u.orgs);
+      setCurrentOrganization(u.orgs[0]);
+    }
+  });
+
+  createEffect(() => {
+    const organization = currentOrganization();
+
+    if (organization) {
+      void fetch(`${apiHost}/dataset/organization/${organization.id}`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "AF-Organization": organization.id,
+        },
+      }).then((res) => {
+        if (res.ok) {
+          void res
+            .json()
+            .then((data) => {
+              if (data && Array.isArray(data)) {
+                if (data.length === 0) {
+                  setDatasetsAndUsages([]);
+                }
+                if (data.length > 0 && data.every(isDatasetAndUsageDTO)) {
+                  setCurrentDataset(data[0]);
+                  setDatasetsAndUsages(data);
+                }
+              }
+            })
+            .catch((err) => {
+              console.log(err);
+            });
+        }
+      });
+    }
+  });
 
   detectReferralToken(searchParams.t);
 
   createEffect(() => {
-    void fetch(`${apiHost}/auth`, {
+    void fetch(`${apiHost}/auth/me`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -31,16 +89,17 @@ export const chat = () => {
       credentials: "include",
     }).then((response) => {
       setIsLogin(response.ok);
-      if (
-        !response.ok &&
-        !(
-          window.location.pathname.includes("/auth/") ||
-          window.location.pathname === "/"
-        )
-      ) {
-        window.location.href = "/auth/login";
-        return;
-      }
+
+      response
+        .json()
+        .then((data) => {
+          if (isUserDTO(data)) {
+            setUser(data);
+          }
+        })
+        .catch(() => {
+          setUser(null);
+        });
     });
   });
 
@@ -82,6 +141,12 @@ export const chat = () => {
             setIsCreatingTopic={setIsCreatingTopic}
             setSideBarOpen={setSideBarOpen}
             setIsCreatingNormalTopic={setIsCreatingNormalTopic}
+            currentOrganization={currentOrganization}
+            setCurrentOrganization={setCurrentOrganization}
+            organizations={organizations}
+            currentDataset={currentDataset}
+            setCurrentDataset={setCurrentDataset}
+            datasetsAndUsages={datasetsAndUsages}
           />
         </div>
         <div class="lg:hidden">
@@ -97,6 +162,12 @@ export const chat = () => {
               setIsCreatingTopic={setIsCreatingTopic}
               setSideBarOpen={setSideBarOpen}
               setIsCreatingNormalTopic={setIsCreatingNormalTopic}
+              currentOrganization={currentOrganization}
+              setCurrentOrganization={setCurrentOrganization}
+              organizations={organizations}
+              currentDataset={currentDataset}
+              setCurrentDataset={setCurrentDataset}
+              datasetsAndUsages={datasetsAndUsages}
             />
           </Show>
         </div>

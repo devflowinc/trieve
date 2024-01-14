@@ -176,12 +176,34 @@ export const getReferralTokenArray = (): string[] => {
   return [];
 };
 
+export interface OrganizationDTO {
+  id: string;
+  name: string;
+  registerable: boolean;
+}
+
+export const isOrganizationDTO = (
+  organization: unknown,
+): organization is OrganizationDTO => {
+  if (typeof organization !== "object" || organization === null) return false;
+
+  return (
+    indirectHasOwnProperty(organization, "id") &&
+    typeof (organization as OrganizationDTO).id === "string" &&
+    indirectHasOwnProperty(organization, "name") &&
+    typeof (organization as OrganizationDTO).name === "string" &&
+    indirectHasOwnProperty(organization, "registerable") &&
+    typeof (organization as OrganizationDTO).registerable === "boolean"
+  );
+};
+
 export interface UserDTO {
   id: string;
   email: string | null;
   username: string | null;
   website: string | null;
   visible_email: boolean;
+  orgs: [OrganizationDTO];
 }
 
 export const isUserDTO = (user: unknown): user is UserDTO => {
@@ -200,7 +222,10 @@ export const isUserDTO = (user: unknown): user is UserDTO => {
     (typeof (user as UserDTO).website === "string" ||
       (user as UserDTO).website === null) &&
     indirectHasOwnProperty(user, "visible_email") &&
-    typeof (user as UserDTO).visible_email === "boolean"
+    typeof (user as UserDTO).visible_email === "boolean" &&
+    indirectHasOwnProperty(user, "orgs") &&
+    Array.isArray((user as UserDTO).orgs) &&
+    (user as UserDTO).orgs.every((val) => isOrganizationDTO(val))
   );
 };
 
@@ -410,4 +435,72 @@ export const messageRoleFromIndex = (idx: number) => {
     return "assistant";
   }
   return "user";
+};
+
+export interface DatasetDTO {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+  organization_id: string;
+  server_configuration: string;
+  client_configuration: object;
+}
+
+export const isDatasetDTO = (dataset: unknown): dataset is DatasetDTO => {
+  if (typeof dataset !== "object" || dataset === null) return false;
+
+  return (
+    indirectHasOwnProperty(dataset, "id") &&
+    typeof (dataset as DatasetDTO).id === "string" &&
+    indirectHasOwnProperty(dataset, "name") &&
+    typeof (dataset as DatasetDTO).name === "string" &&
+    indirectHasOwnProperty(dataset, "created_at") &&
+    typeof (dataset as DatasetDTO).created_at === "string" &&
+    indirectHasOwnProperty(dataset, "updated_at") &&
+    typeof (dataset as DatasetDTO).updated_at === "string" &&
+    indirectHasOwnProperty(dataset, "organization_id") &&
+    typeof (dataset as DatasetDTO).organization_id === "string" &&
+    indirectHasOwnProperty(dataset, "client_configuration") &&
+    (typeof (dataset as DatasetDTO).client_configuration === "string" ||
+      typeof (dataset as DatasetDTO).client_configuration === "object")
+  );
+};
+
+export interface UsageDTO {
+  id: string;
+  dataset_id: string;
+  chunk_count: number;
+}
+
+export const isUsageDTO = (usage: unknown): usage is UsageDTO => {
+  if (typeof usage !== "object" || usage === null) return false;
+
+  return (
+    indirectHasOwnProperty(usage, "id") &&
+    typeof (usage as UsageDTO).id === "string" &&
+    indirectHasOwnProperty(usage, "dataset_id") &&
+    typeof (usage as UsageDTO).dataset_id === "string" &&
+    indirectHasOwnProperty(usage, "chunk_count") &&
+    typeof (usage as UsageDTO).chunk_count === "number"
+  );
+};
+
+export interface DatasetAndUsageDTO {
+  dataset: DatasetDTO;
+  dataset_usage: UsageDTO;
+}
+
+export const isDatasetAndUsageDTO = (
+  datasetAndUsage: unknown,
+): datasetAndUsage is DatasetAndUsageDTO => {
+  if (typeof datasetAndUsage !== "object" || datasetAndUsage === null)
+    return false;
+
+  return (
+    indirectHasOwnProperty(datasetAndUsage, "dataset") &&
+    isDatasetDTO((datasetAndUsage as DatasetAndUsageDTO).dataset) &&
+    indirectHasOwnProperty(datasetAndUsage, "dataset_usage") &&
+    isUsageDTO((datasetAndUsage as DatasetAndUsageDTO).dataset_usage)
+  );
 };
