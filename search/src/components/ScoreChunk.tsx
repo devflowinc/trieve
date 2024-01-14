@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   Accessor,
   For,
@@ -81,7 +82,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
   const $envs = useStore(clientConfig);
 
-  const frontMatterVals = $envs().FRONTMATTER_VALS.split(",");
+  const frontMatterVals = $envs().FRONTMATTER_VALS?.split(",");
 
   const linesBeforeShowMore = $envs().LINES_BEFORE_SHOW_MORE;
 
@@ -194,7 +195,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   };
 
   const useExpand = createMemo(() => {
-    return props.chunk.content.split(" ").length > 20 * linesBeforeShowMore;
+    return (
+      props.chunk.content.split(" ").length > 20 * (linesBeforeShowMore ?? 0)
+    );
   });
 
   return (

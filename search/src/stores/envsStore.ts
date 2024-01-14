@@ -9,7 +9,7 @@ const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
 const tryParse = (encoded: string) => {
   try {
-    if (isClientEnvsConfiguration(JSON.parse(encoded))) {
+    if (JSON.parse(encoded)) {
       return JSON.parse(encoded) as ClientEnvsConfiguration;
     } else {
       return defaultClientEnvsConfiguration;
@@ -42,6 +42,7 @@ currentDataset.subscribe((dataset) => {
           .json()
           .then((data) => {
             console.log("envs: ", data);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
             clientConfig.set(data);
           })
           .catch((err) => {
