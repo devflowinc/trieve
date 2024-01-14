@@ -2,7 +2,7 @@ use super::chunk_operator::{
     find_relevant_sentence, get_collided_chunks_query,
     get_metadata_and_collided_chunks_from_point_ids_query, get_metadata_from_point_ids,
 };
-use super::model_operator::create_embedding;
+use super::model_operator::{create_embedding, cross_encoder};
 use crate::data::models::{
     ChunkCollection, ChunkFileWithName, ChunkMetadataWithFileData, Dataset, FullTextSearchResult,
     ServerDatasetConfiguration, User, UserDTO,
@@ -15,13 +15,11 @@ use crate::handlers::chunk_handler::{
     ParsedQuery, ScoreChunkDTO, SearchChunkData, SearchChunkQueryResponseBody,
     SearchCollectionsData, SearchCollectionsResult,
 };
-use crate::operators::model_operator::CrossEncoder;
 use crate::operators::qdrant_operator::{
     get_qdrant_connection, search_full_text_qdrant_query, search_semantic_qdrant_query,
 };
 use crate::{data::models::Pool, errors::DefaultError};
 use actix_web::web;
-use candle_core::Tensor;
 use dateparser::DateTimeUtc;
 use diesel::{dsl::sql, sql_types::Text};
 use diesel::{
@@ -939,82 +937,6 @@ pub async fn search_full_text_chunks(
     Ok(result_chunks)
 }
 
-fn cross_encoder(
-    results: Vec<ScoreChunkDTO>,
-    query: String,
-    cross_encoder_init: web::Data<CrossEncoder>,
-) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
-    let paired_results = results
-        .clone()
-        .into_iter()
-        .map(|score_chunk| {
-            (
-                query.clone(),
-                score_chunk.metadata[0]
-                    .chunk_html
-                    .clone()
-                    .unwrap_or(score_chunk.metadata[0].content.clone()),
-            )
-        })
-        .collect::<Vec<(String, String)>>();
-
-    let tokenizer = &cross_encoder_init.tokenizer;
-
-    let tokenized_inputs = tokenizer
-        .encode_batch(paired_results, false)
-        .map_err(|e| ServiceError::BadRequest(format!("Could not tokenize inputs: {}", e)))?;
-
-    let token_ids = tokenized_inputs
-        .iter()
-        .map(|tokens| {
-            let tokens = tokens.get_ids().to_vec();
-            Tensor::new(tokens.as_slice(), &candle_core::Device::Cpu)
-                .map_err(|e| ServiceError::BadRequest(format!("Could not create tensor: {}", e)))
-        })
-        .collect::<Result<Vec<Tensor>, ServiceError>>()?;
-
-    let token_ids = Tensor::stack(&token_ids, 0)
-        .map_err(|e| ServiceError::BadRequest(format!("Could not stack tensors: {}", e)))?;
-
-    let token_type_ids = token_ids
-        .zeros_like()
-        .map_err(|e| ServiceError::BadRequest(format!("Could not create tensor: {}", e)))?;
-
-    let embeddings = cross_encoder_init
-        .model
-        .forward(&token_ids, &token_type_ids)
-        .map_err(|e| ServiceError::BadRequest(format!("Could not run model: {}", e)))?;
-
-    let scores = embeddings
-        .to_dtype(candle_core::DType::F32)
-        .unwrap()
-        .to_vec2::<f32>()
-        .unwrap()
-        .into_iter()
-        .flatten()
-        .collect::<Vec<f32>>();
-
-    let mut sim_scores_argsort: Vec<usize> = (0..scores.len()).collect();
-    sim_scores_argsort.sort_by(|&a, &b| scores[b].partial_cmp(&scores[a]).unwrap());
-    let mut sorted_corpus: Vec<ScoreChunkDTO> = sim_scores_argsort
-        .iter()
-        .map(|&idx| results[idx].clone())
-        .collect();
-
-    for (result, &idx) in sorted_corpus.iter_mut().zip(&sim_scores_argsort) {
-        result.score = scores[idx] as f64;
-    }
-
-    sorted_corpus.sort_by(|a, b| {
-        b.score
-            .partial_cmp(&a.score)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
-
-    sorted_corpus.truncate(10);
-    Ok(sorted_corpus)
-}
-
 fn reciprocal_rank_fusion(
     semantic_results: Vec<ScoreChunkDTO>,
     full_text_results: Vec<ScoreChunkDTO>,
@@ -1064,7 +986,6 @@ pub async fn search_hybrid_chunks(
     parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
-    cross_encoder_init: web::Data<CrossEncoder>,
     dataset: Dataset,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let embedding_vector = create_embedding(
@@ -1164,11 +1085,7 @@ pub async fn search_hybrid_chunks(
             .unique_by(|score_chunk| score_chunk.metadata[0].id)
             .collect::<Vec<ScoreChunkDTO>>();
         SearchChunkQueryResponseBody {
-            score_chunks: cross_encoder(
-                combined_results,
-                data.content.clone(),
-                cross_encoder_init,
-            )?,
+            score_chunks: cross_encoder(data.content.clone(), combined_results).await?,
             total_chunk_pages: search_chunk_query_results.total_chunk_pages,
         }
     } else if let Some(weights) = data.weights {
