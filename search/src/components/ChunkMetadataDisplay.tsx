@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import { For, Setter, Show, createMemo, createSignal } from "solid-js";
 import {
@@ -57,7 +58,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
   const $envs = useStore(clientConfig);
 
-  const frontMatterVals = $envs().FRONTMATTER_VALS.split(",");
+  const frontMatterVals = $envs().FRONTMATTER_VALS?.split(",");
 
   const linesBeforeShowMore = $envs().LINES_BEFORE_SHOW_MORE;
 
@@ -110,9 +111,9 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    const imgRangeStartVal = (props.chunk.metadata as any)[
-      imgRangeStartKey
-    ] as unknown as string;
+    const imgRangeStartVal =
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+      (props.chunk.metadata as any)[imgRangeStartKey] as unknown as string;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
     const imgRangeEndVal = (props.chunk.metadata as any)[
       imgRangeEndKey
@@ -132,7 +133,9 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   });
 
   const useExpand = createMemo(() => {
-    return props.chunk.content.split(" ").length > 20 * linesBeforeShowMore;
+    return (
+      props.chunk.content.split(" ").length > 20 * (linesBeforeShowMore ?? 0)
+    );
   });
 
   return (

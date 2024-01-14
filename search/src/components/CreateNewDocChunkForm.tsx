@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   BiRegularLogIn,
   BiRegularQuestionMark,
@@ -95,7 +96,7 @@ export const CreateNewDocChunkForm = () => {
   };
 
   createEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
     const tinyMCE: any = (window as any).tinymce;
     const options = {
       selector: "#search-query-textarea",
@@ -180,7 +181,7 @@ export const CreateNewDocChunkForm = () => {
     };
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
       void tinyMCE.init(options as any);
     } catch (e) {
       console.error(e);

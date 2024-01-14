@@ -448,17 +448,17 @@ export const messageRoleFromIndex = (idx: number) => {
 };
 
 export interface ClientEnvsConfiguration {
-  CREATE_EVIDENCE_FEATURE?: boolean,
-  SEARCH_QUERIES?: string,
-  FRONTMATTER_VALS?: string,
-  LINES_BEFORE_SHOW_MORE?: number,
-  DATE_RANGE_VALUE?: string,
-  FILTER_ITEMS?: ComboboxSection[],
-  SUGGESTED_QUERIES?: string,
-  SHOW_GITHUB_STARS?: boolean,
-  IMAGE_RANGE_START_KEY?: string,
-  IMAGE_RANGE_END_KEY?: string,
-  DOCUMENT_UPLOAD_FEATURE?: boolean,
+  CREATE_EVIDENCE_FEATURE?: boolean;
+  SEARCH_QUERIES?: string;
+  FRONTMATTER_VALS?: string;
+  LINES_BEFORE_SHOW_MORE?: number;
+  DATE_RANGE_VALUE?: string;
+  FILTER_ITEMS?: ComboboxSection[];
+  SUGGESTED_QUERIES?: string;
+  SHOW_GITHUB_STARS?: boolean;
+  IMAGE_RANGE_START_KEY?: string;
+  IMAGE_RANGE_END_KEY?: string;
+  DOCUMENT_UPLOAD_FEATURE?: boolean;
 }
 
 export const defaultClientEnvsConfiguration: ClientEnvsConfiguration = {
