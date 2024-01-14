@@ -29,7 +29,7 @@ export default function Home() {
   createEffect(() => {
     const abort_controller = new AbortController();
 
-    void fetch(`${apiHost}/auth`, {
+    void fetch(`${apiHost}/auth/me`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

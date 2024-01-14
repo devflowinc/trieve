@@ -22,6 +22,9 @@ import { FullScreenModal } from "../Atoms/FullScreenModal";
 import { OnScreenThemeModeController } from "../Atoms/OnScreenThemeModeController";
 import { AiFillGithub } from "solid-icons/ai";
 import { TbMinusVertical } from "solid-icons/tb";
+import { DatasetAndUsageDTO, OrganizationDTO } from "~/utils/apiTypes";
+import { DatasetSelectBox } from "../Atoms/DatasetSelectBox";
+import { OrganizationSelectBox } from "../Atoms/OrganizationSelectBox";
 
 export interface SidebarProps {
   topics: Accessor<Topic[]>;
@@ -31,6 +34,14 @@ export interface SidebarProps {
   setCurrentTopic: (topic: Topic | undefined) => void;
   setSideBarOpen: Setter<boolean>;
   setIsCreatingNormalTopic: Setter<boolean>;
+
+  currentOrganization: Accessor<OrganizationDTO | null>;
+  setCurrentOrganization: Setter<OrganizationDTO | null>;
+  organizations: Accessor<OrganizationDTO[]>;
+
+  currentDataset: Accessor<DatasetAndUsageDTO | null>;
+  setCurrentDataset: Setter<DatasetAndUsageDTO | null>;
+  datasetsAndUsages: Accessor<DatasetAndUsageDTO[]>;
 }
 
 export const Sidebar = (props: SidebarProps) => {
@@ -245,6 +256,19 @@ export const Sidebar = (props: SidebarProps) => {
         </div>
         <div class="flex-1 " />
         <div class="flex w-full flex-col space-y-1 border-t px-2 py-2 dark:border-neutral-400">
+          <div class="flex items-center space-x-2 ml-4">
+            <OrganizationSelectBox
+              currentOrganization={props.currentOrganization}
+              organizations={props.organizations}
+              setCurrentOrganization={props.setCurrentOrganization}
+            />
+            <p class="text-2xl">/</p>
+            <DatasetSelectBox
+              currentDataset={props.currentDataset}
+              datasetsAndUsages={props.datasetsAndUsages}
+              setCurrentDataset={props.setCurrentDataset}
+            />
+          </div>
           <button
             class="flex w-full items-center space-x-4  rounded-md px-3 py-2 hover:bg-neutral-200   dark:hover:bg-neutral-700"
             onClick={logout}
