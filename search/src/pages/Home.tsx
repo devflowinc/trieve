@@ -11,7 +11,7 @@ export const Home = () => {
   const $dataset = useStore(currentDataset);
   const $env = useStore(clientConfig);
   const suggestedQueries = $env()
-    .PUBLIC_SUGGESTED_QUERIES.split(",")
+    .SUGGESTED_QUERIES.split(",")
     .filter((query) => query !== "");
 
   const url = window.location.href;

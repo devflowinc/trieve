@@ -9,7 +9,7 @@ import { currentUser } from "../../stores/userStore";
 export const HomeNavbar = () => {
   const $envs = useStore(clientConfig);
   const $currentUser = useStore(currentUser);
-  const uploadDocumentFeature = $envs().PUBLIC_DOCUMENT_UPLOAD_FEATURE;
+  const uploadDocumentFeature = $envs().DOCUMENT_UPLOAD_FEATURE;
 
   const [isOpen, setIsOpen] = createSignal(false);
 

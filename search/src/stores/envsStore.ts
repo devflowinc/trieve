@@ -1,6 +1,5 @@
 import { persistentAtom } from "@nanostores/persistent";
 import {
-  isClientEnvsConfiguration,
   ClientEnvsConfiguration,
   defaultClientEnvsConfiguration,
 } from "../../utils/apiTypes";
@@ -42,11 +41,8 @@ currentDataset.subscribe((dataset) => {
         void res
           .json()
           .then((data) => {
-            if (data && Array.isArray(data)) {
-              if (data.length > 0 && data.every(isClientEnvsConfiguration)) {
-                clientConfig.set(data[0]);
-              }
-            }
+            console.log("envs: ", data);
+            clientConfig.set(data);
           })
           .catch((err) => {
             console.log(err);
