@@ -134,6 +134,7 @@ services:
       - OIDC_CLIENT_ID=${OIDC_CLIENT_ID}
       - OIDC_AUTH_REDIRECT_URL=${OIDC_AUTH_REDIRECT_URL}
       - OIDC_ISSUER_URL=${OIDC_ISSUER_URL}
+      - GPU_SERVER_ORIGIN=${GPU_SERVER_ORIGIN}
 
   chat:
     image: arguflow/chat
