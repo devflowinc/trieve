@@ -17,7 +17,6 @@ import { currentUser, isLoadingUser } from "../stores/userStore";
 import { currentDataset } from "../stores/datasetStore";
 
 const RegisterOrUserProfile = () => {
-  if (typeof window === "undefined") return null;
   const apiHost = import.meta.env.VITE_API_HOST as string;
 
   const $dataset = useStore(currentDataset);
