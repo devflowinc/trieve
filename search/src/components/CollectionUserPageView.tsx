@@ -14,7 +14,7 @@ import { currentDataset } from "../stores/datasetStore";
 
 export interface CollectionUserPageViewProps {
   user: UserDTOWithVotesAndChunks | undefined;
-  loggedUser: UserDTO | undefined;
+  loggedUser: UserDTO | null;
   setOnDelete: Setter<() => void>;
   setShowConfirmModal: Setter<boolean>;
   initialCollections?: ChunkCollectionDTO[];
