@@ -129,13 +129,13 @@ async def sparse_encode(encodingRequest: SparseEncodeRequest):
     )
 
 
-class ReRankRequest:
+class ReRankRequest(BaseModel):
     query: str
-    docs: list
+    docs: list[str]
 
 
 @app.post("/rerank")
-async def rerank(rerankRequest: EncodeRequest):
+async def rerank(rerankRequest: ReRankRequest):
     combined_docs = [[rerankRequest.query, doc] for doc in rerankRequest.docs]
     doc_scores = cross_encoder_model.predict(combined_docs)
     sim_scores_argsort = reversed(np.argsort(doc_scores))
