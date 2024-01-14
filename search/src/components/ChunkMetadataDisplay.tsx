@@ -250,7 +250,6 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
               />
 
               <BookmarkPopover
-                signedInUserId={props.signedInUserId}
                 totalCollectionPages={props.totalCollectionPages}
                 chunkCollections={props.chunkCollections}
                 chunkMetadata={props.chunk}
