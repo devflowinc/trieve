@@ -1,5 +1,6 @@
 import { BiRegularSearch, BiRegularX } from "solid-icons/bi";
 import { AiOutlineClockCircle } from "solid-icons/ai";
+import { A } from "@solidjs/router";
 import {
   For,
   Match,
@@ -36,11 +37,11 @@ const SearchForm = (props: {
   const $envs = useStore(clientConfig);
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const comboboxSections: ComboboxSection[] = $envs().FILTER_ITEMS;
+  const comboboxSections: ComboboxSection[] = $envs().FILTER_ITEMS ?? [];
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const customComboBoxFilterVals: ComboboxSection[] = comboboxSections;
 
-  const createEvidenceFeature = $envs().CREATE_EVIDENCE_FEATURE;
+  const createChunkFeature = $envs().CREATE_CHUNK_FEATURE;
 
   const [searchTypes, setSearchTypes] = createSignal([
     { name: "Full Text", isSelected: false, route: "fulltext" },
@@ -359,7 +360,7 @@ const SearchForm = (props: {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-    const textArray: string[] = $envs().SEARCH_QUERIES.split(",");
+    const textArray: string[] = $envs().SEARCH_QUERIES?.split(",") ?? [];
 
     const typingSpeed = 50;
     const deleteSpeed = 30;
@@ -403,6 +404,10 @@ const SearchForm = (props: {
       clearTimeout(timeoutRefTwo);
       clearTimeout(timeoutRefThree);
     });
+  });
+
+  createEffect(() => {
+    createChunkFeature?.valueOf();
   });
 
   const textareaVal = createMemo(() => {
@@ -740,13 +745,13 @@ const SearchForm = (props: {
             >
               Search
             </button>
-            <Show when={createEvidenceFeature}>
-              <a
+            <Show when={createChunkFeature}>
+              <A
                 class="w-fit rounded bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700"
                 href="/create"
               >
                 Create
-              </a>
+              </A>
             </Show>
           </div>
         </Show>

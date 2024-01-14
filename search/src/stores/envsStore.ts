@@ -41,7 +41,6 @@ currentDataset.subscribe((dataset) => {
         void res
           .json()
           .then((data) => {
-            console.log("envs: ", data);
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
             clientConfig.set(data);
           })
