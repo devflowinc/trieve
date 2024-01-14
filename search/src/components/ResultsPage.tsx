@@ -1,11 +1,4 @@
-import {
-  Show,
-  createEffect,
-  createSignal,
-  For,
-  onMount,
-  onCleanup,
-} from "solid-js";
+import { Show, createEffect, createSignal, For, onMount } from "solid-js";
 import {
   type ChunkCollectionDTO,
   type ChunksWithTotalPagesDTO,

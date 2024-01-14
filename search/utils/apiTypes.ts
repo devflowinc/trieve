@@ -534,7 +534,7 @@ export interface DatasetDTO {
   updated_at: string;
   organization_id: string;
   server_configuration: string;
-  client_configuration: string;
+  client_configuration: object;
 }
 
 export const isDatasetDTO = (dataset: unknown): dataset is DatasetDTO => {
@@ -552,7 +552,8 @@ export const isDatasetDTO = (dataset: unknown): dataset is DatasetDTO => {
     indirectHasOwnProperty(dataset, "organization_id") &&
     typeof (dataset as DatasetDTO).organization_id === "string" &&
     indirectHasOwnProperty(dataset, "client_configuration") &&
-    typeof (dataset as DatasetDTO).client_configuration === "string"
+    (typeof (dataset as DatasetDTO).client_configuration === "string" ||
+      typeof (dataset as DatasetDTO).client_configuration === "object")
   );
 };
 
