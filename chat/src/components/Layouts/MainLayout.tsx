@@ -20,8 +20,10 @@ import {
 } from "~/types/messages";
 import { Topic } from "~/types/topics";
 import { AfMessage } from "../Atoms/AfMessage";
+import { DatasetAndUsageDTO } from "~/utils/apiTypes";
 
 export interface LayoutProps {
+  currentDataset: Accessor<DatasetAndUsageDTO | null>;
   setTopics: Setter<Topic[]>;
   isCreatingNormalTopic: Accessor<boolean>;
   setSelectedTopic: Setter<Topic | undefined>;
@@ -141,6 +143,9 @@ const MainLayout = (props: LayoutProps) => {
     topic_id: string | undefined;
     regenerateLastMessage?: boolean;
   }) => {
+    const dataset = props.currentDataset();
+    if (!dataset) return;
+
     let finalTopicId = topic_id;
     setStreamingCompletion(true);
 
@@ -163,6 +168,7 @@ const MainLayout = (props: LayoutProps) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "AF-Dataset": dataset.dataset.id,
         },
         credentials: "include",
         body: JSON.stringify(body),
@@ -226,6 +232,7 @@ const MainLayout = (props: LayoutProps) => {
         method: requestMethod,
         headers: {
           "Content-Type": "application/json",
+          "AF-Dataset": dataset.dataset.id,
         },
         credentials: "include",
         body: JSON.stringify({
@@ -253,12 +260,15 @@ const MainLayout = (props: LayoutProps) => {
     if (!topicId) {
       return;
     }
+    const dataset = props.currentDataset();
+    if (!dataset) return;
 
     setLoadingMessages(true);
     const res = await fetch(`${apiHost}/messages/${topicId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        "AF-Dataset": dataset.dataset.id,
       },
       credentials: "include",
       signal: abortController.signal,
@@ -325,6 +335,9 @@ const MainLayout = (props: LayoutProps) => {
                     content={message.content}
                     streamingCompletion={streamingCompletion}
                     onEdit={(content: string) => {
+                      const dataset = props.currentDataset();
+                      if (!dataset) return;
+
                       const newMessage: Message = {
                         content: "",
                       };
@@ -337,6 +350,7 @@ const MainLayout = (props: LayoutProps) => {
                         method: "PUT",
                         headers: {
                           "Content-Type": "application/json",
+                          "AF-Dataset": dataset.dataset.id,
                         },
                         credentials: "include",
                         signal: completionAbortController().signal,
