@@ -14,7 +14,7 @@ use utoipa::ToSchema;
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct CreateTopicData {
-    pub resolution: String,
+    pub name: String,
     pub normal_chat: Option<bool>,
 }
 
@@ -26,7 +26,7 @@ pub struct CreateTopicData {
     request_body(content = CreateTopicData, description = "JSON request payload to create chat topic", content_type = "application/json"),
     responses(
         (status = 200, description = "The JSON response payload containing the created topic", body = [Topic]),
-        (status = 400, description = "Topic resolution empty or a service error", body = [DefaultError]),
+        (status = 400, description = "Topic name empty or a service error", body = [DefaultError]),
     )
 )]
 pub async fn create_topic(
@@ -36,21 +36,21 @@ pub async fn create_topic(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let data_inner = data.into_inner();
-    let resolution = data_inner.resolution;
+    let name = data_inner.name;
     let normal_chat = data_inner.normal_chat;
 
-    if resolution.is_empty() {
+    if name.is_empty() {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
             message: "Resolution must not be empty",
         }));
     }
 
-    let topic_resolution = get_topic_string(resolution, &dataset_org_plan_sub.dataset)
+    let topic_name = get_topic_string(name, &dataset_org_plan_sub.dataset)
         .await
         .map_err(|e| ServiceError::BadRequest(format!("Error getting topic string: {}", e)))?;
 
     let new_topic = Topic::from_details(
-        topic_resolution,
+        topic_name,
         user.id,
         normal_chat,
         dataset_org_plan_sub.dataset.id,
@@ -120,7 +120,7 @@ pub async fn delete_topic(
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct UpdateTopicData {
     pub topic_id: uuid::Uuid,
-    pub resolution: String,
+    pub name: String,
     pub side: bool,
 }
 
@@ -143,11 +143,11 @@ pub async fn update_topic(
 ) -> Result<HttpResponse, actix_web::Error> {
     let data_inner = data.into_inner();
     let topic_id = data_inner.topic_id;
-    let resolution = data_inner.resolution;
+    let name = data_inner.name;
     let side = data_inner.side;
     let pool_inner = pool.clone();
 
-    if resolution.is_empty() {
+    if name.is_empty() {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
             message: "Resolution must not be empty",
         }));
@@ -168,7 +168,7 @@ pub async fn update_topic(
             let update_topic_result = web::block(move || {
                 update_topic_query(
                     topic.id,
-                    resolution,
+                    name,
                     side,
                     dataset_org_plan_sub.dataset.id,
                     &pool,
