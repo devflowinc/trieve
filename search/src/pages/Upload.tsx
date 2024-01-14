@@ -9,7 +9,7 @@ export const Upload = () => {
   const navigate = useNavigate();
   const $env = useStore(clientConfig);
 
-  const documentUploadFeature = $env().PUBLIC_DOCUMENT_UPLOAD_FEATURE;
+  const documentUploadFeature = $env().DOCUMENT_UPLOAD_FEATURE;
   if (!documentUploadFeature) {
     navigate("/404");
   }
