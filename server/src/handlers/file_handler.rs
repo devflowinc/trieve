@@ -12,14 +12,18 @@ use crate::{
     },
 };
 use actix_files::NamedFile;
-use actix_web::{http::header::ContentDisposition, web, HttpResponse};
+use actix_web::{web, HttpResponse};
 use base64::{
     alphabet,
     engine::{self, general_purpose},
     Engine as _,
 };
+#[cfg(feature = "ocr")]
 use magick_rust::MagickWand;
+#[cfg(feature = "ocr")]
 use pyo3::{types::PyDict, Python};
+#[cfg(feature = "ocr")]
+use actix_web::http::header::ContentDisposition;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use utoipa::ToSchema;
@@ -267,85 +271,92 @@ pub struct GetPdfFromRangeData {
     pub ocr: Option<bool>,
 }
 
+#[allow(unused_variables)]
 pub async fn get_pdf_from_range(
     path_data: web::Path<GetPdfFromRangeData>,
     _user: LoggedUser,
 ) -> Result<NamedFile, actix_web::Error> {
-    let root_dir = "./images";
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "ocr")] {
+            let root_dir = "./images";
 
-    let validated_prefix = validate_file_name(path_data.prefix.clone())?;
+            let validated_prefix = validate_file_name(path_data.prefix.clone())?;
 
-    let mut wand = MagickWand::new();
+            let mut wand = MagickWand::new();
 
-    for i in path_data.file_start..=path_data.file_end {
-        let file_path: PathBuf = format!("{}/{}{}.png", root_dir, validated_prefix, i).into();
+            for i in path_data.file_start..=path_data.file_end {
+                let file_path: PathBuf = format!("{}/{}{}.png", root_dir, validated_prefix, i).into();
 
-        if file_path.exists() {
-            wand.read_image(file_path.to_str().expect("Could not convert path to str"))
-                .map_err(|e| {
-                    ServiceError::BadRequest(format!(
-                        "Could not read image to wand: {} - {}",
-                        e,
-                        file_path.to_str().expect("Could not convert path to str")
-                    ))
+                if file_path.exists() {
+                    wand.read_image(file_path.to_str().expect("Could not convert path to str"))
+                        .map_err(|e| {
+                            ServiceError::BadRequest(format!(
+                                "Could not read image to wand: {} - {}",
+                                e,
+                                file_path.to_str().expect("Could not convert path to str")
+                            ))
+                        })?;
+                }
+            }
+
+            let mut pdf_file_name = path_data.file_name.clone();
+            if !pdf_file_name.ends_with(".pdf") {
+                pdf_file_name.push_str(".pdf");
+            }
+
+            wand.set_filename(pdf_file_name.as_str())
+                .map_err(|e| ServiceError::BadRequest(format!("Could not set filename for wand: {}", e)))?;
+
+            let file_path = format!("./tmp/{}-{}", uuid::Uuid::new_v4(), pdf_file_name);
+
+            wand.write_images(file_path.as_str(), true).map_err(|e| {
+                ServiceError::BadRequest(format!("Could not write images to pdf with wand: {}", e))
+            })?;
+
+            if path_data.ocr.unwrap_or(false) {
+                Python::with_gil(|sys| -> Result<(), actix_web::Error> {
+                    let ocrmypdf = sys.import("ocrmypdf").map_err(|e| {
+                        ServiceError::BadRequest(format!("Could not import ocrmypdf module: {}", e))
+                    })?;
+
+                    let kwargs = PyDict::new(sys);
+                    kwargs.set_item("deskew", true).map_err(|e| {
+                        ServiceError::BadRequest(format!(
+                            "Could not set deskew argument for ocrmypdf: {}",
+                            e
+                        ))
+                    })?;
+
+                    ocrmypdf
+                        .call_method("ocr", (file_path.clone(), file_path.clone()), Some(kwargs))
+                        .map_err(|e| {
+                            ServiceError::BadRequest(format!(
+                                "Could not call ocr method for ocrmypdf: {}",
+                                e
+                            ))
+                        })?;
+
+                    Ok(())
                 })?;
+            }
+
+            let mut response_file = NamedFile::open(file_path.clone())?;
+            let parameters = NamedFile::open(file_path.clone())?
+                .content_disposition()
+                .parameters
+                .clone();
+
+            std::fs::remove_file(file_path)
+                .map_err(|e| ServiceError::BadRequest(format!("Could not remove temporary file: {}", e)))?;
+
+            response_file = response_file.set_content_disposition(ContentDisposition {
+                disposition: actix_web::http::header::DispositionType::Inline,
+                parameters,
+            });
+
+            Ok(response_file)
+        } else {
+            Err(ServiceError::BadRequest("OCR feature not enabled".to_string()).into())
         }
     }
-
-    let mut pdf_file_name = path_data.file_name.clone();
-    if !pdf_file_name.ends_with(".pdf") {
-        pdf_file_name.push_str(".pdf");
-    }
-
-    wand.set_filename(pdf_file_name.as_str())
-        .map_err(|e| ServiceError::BadRequest(format!("Could not set filename for wand: {}", e)))?;
-
-    let file_path = format!("./tmp/{}-{}", uuid::Uuid::new_v4(), pdf_file_name);
-
-    wand.write_images(file_path.as_str(), true).map_err(|e| {
-        ServiceError::BadRequest(format!("Could not write images to pdf with wand: {}", e))
-    })?;
-
-    if path_data.ocr.unwrap_or(false) {
-        Python::with_gil(|sys| -> Result<(), actix_web::Error> {
-            let ocrmypdf = sys.import("ocrmypdf").map_err(|e| {
-                ServiceError::BadRequest(format!("Could not import ocrmypdf module: {}", e))
-            })?;
-
-            let kwargs = PyDict::new(sys);
-            kwargs.set_item("deskew", true).map_err(|e| {
-                ServiceError::BadRequest(format!(
-                    "Could not set deskew argument for ocrmypdf: {}",
-                    e
-                ))
-            })?;
-
-            ocrmypdf
-                .call_method("ocr", (file_path.clone(), file_path.clone()), Some(kwargs))
-                .map_err(|e| {
-                    ServiceError::BadRequest(format!(
-                        "Could not call ocr method for ocrmypdf: {}",
-                        e
-                    ))
-                })?;
-
-            Ok(())
-        })?;
-    }
-
-    let mut response_file = NamedFile::open(file_path.clone())?;
-    let parameters = NamedFile::open(file_path.clone())?
-        .content_disposition()
-        .parameters
-        .clone();
-
-    std::fs::remove_file(file_path)
-        .map_err(|e| ServiceError::BadRequest(format!("Could not remove temporary file: {}", e)))?;
-
-    response_file = response_file.set_content_disposition(ContentDisposition {
-        disposition: actix_web::http::header::DispositionType::Inline,
-        parameters,
-    });
-
-    Ok(response_file)
 }
