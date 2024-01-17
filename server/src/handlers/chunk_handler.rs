@@ -1010,7 +1010,7 @@ pub async fn generate_off_chunks(
 ) -> Result<HttpResponse, actix_web::Error> {
     let prev_messages = data.prev_messages.clone();
     let chunk_ids = data.chunk_ids.clone();
-    let chunks = web::block(move || {
+    let mut chunks = web::block(move || {
         get_metadata_from_ids_query(chunk_ids, dataset_org_plan_sub.dataset.id, pool)
     })
     .await?
@@ -1051,6 +1051,13 @@ pub async fn generate_off_chunks(
         name: None,
         tool_call_id: None,
     });
+    chunks.sort_by(|a, b| {
+        data.chunk_ids
+            .iter()
+            .position(|&id| id == a.id)
+            .unwrap()
+            .cmp(&data.chunk_ids.iter().position(|&id| id == b.id).unwrap())
+    });
     chunks.iter().enumerate().for_each(|(idx, bookmark)| {
         let first_240_words = bookmark
             .content
@@ -1087,7 +1094,7 @@ pub async fn generate_off_chunks(
     });
 
     let parameters = ChatCompletionParameters {
-        model: "gpt-3.5-turbo".into(),
+        model: "gpt-3.5-turbo-1106".into(),
         messages,
         temperature: None,
         top_p: None,
@@ -1098,7 +1105,7 @@ pub async fn generate_off_chunks(
         frequency_penalty: Some(0.8),
         logit_bias: None,
         user: None,
-        respsonse_format: None,
+        response_format: None,
         tools: None,
         tool_choice: None,
     };

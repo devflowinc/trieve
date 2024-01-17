@@ -28,7 +28,7 @@ fetch(`${apiHost}/auth/me`, {
 })
   .then((res) => {
     if (res.status === 401) {
-      window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}/dashboard`;
+      window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}`;
     }
     if (res.ok) {
       return res.json();

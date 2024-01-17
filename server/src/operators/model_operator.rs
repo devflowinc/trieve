@@ -116,18 +116,18 @@ pub async fn get_splade_query_embedding(message: &str) -> Result<Vec<(u32, f32)>
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ReRankResponse {
-    pub docs: Vec<ScoreChunkDTO>,
+    pub docs: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CrossEncoderData {
     pub query: String,
-    pub docs: Vec<ScoreChunkDTO>,
+    pub docs: Vec<String>,
 }
 
 pub async fn cross_encoder(
     query: String,
-    results: Vec<ScoreChunkDTO>,
+    mut results: Vec<ScoreChunkDTO>,
 ) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
     let mut embedding_server_call: String = get_env!(
         "GPU_SERVER_ORIGIN",
@@ -136,12 +136,18 @@ pub async fn cross_encoder(
     .to_string();
     embedding_server_call.push_str("/rerank");
 
+    let request_docs = results
+        .clone()
+        .into_iter()
+        .map(|x| x.metadata[0].clone().content)
+        .collect::<Vec<String>>();
+
     let client = reqwest::Client::new();
     let resp = client
         .post(embedding_server_call)
         .json(&CrossEncoderData {
             query: query.to_string(),
-            docs: results,
+            docs: request_docs,
         })
         .send()
         .await
@@ -157,6 +163,12 @@ pub async fn cross_encoder(
                 "Failed parsing response from custom embedding server".to_string(),
             )
         })?;
+    results.sort_by(|a, b| {
+        let index_a = resp.docs.iter().position(|s| s == &a.metadata[0].content);
+        let index_b = resp.docs.iter().position(|s| s == &b.metadata[0].content);
 
-    Ok(resp.docs)
+        index_a.cmp(&index_b)
+    });
+
+    Ok(results)
 }
