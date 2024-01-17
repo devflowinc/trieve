@@ -117,7 +117,7 @@ export const Sidebar = (props: SidebarProps) => {
       if (!response.ok) {
         return;
       }
-      window.location.href = "/auth/login";
+      window.location.href = "/";
     });
   };
 

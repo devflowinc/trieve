@@ -392,7 +392,7 @@ pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<Strin
     };
     let openai_messages = vec![prompt_topic_message];
     let parameters = ChatCompletionParameters {
-        model: "gpt-3.5-turbo".into(),
+        model: "gpt-3.5-turbo-1106".into(),
         messages: openai_messages,
         temperature: None,
         top_p: None,
@@ -403,7 +403,7 @@ pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<Strin
         frequency_penalty: Some(0.8),
         logit_bias: None,
         user: None,
-        respsonse_format: None,
+        response_format: None,
         tools: None,
         tool_choice: None,
     };
@@ -488,7 +488,7 @@ pub async fn stream_response(
 
         // find evidence for the counter-argument
         let counter_arg_parameters = ChatCompletionParameters {
-            model: "gpt-3.5-turbo".into(),
+            model: "gpt-3.5-turbo-1106".into(),
             messages: vec![ChatMessage {
                 role: Role::User,
                 content: Some(format!(
@@ -515,7 +515,7 @@ pub async fn stream_response(
             frequency_penalty: Some(0.8),
             logit_bias: None,
             user: None,
-            respsonse_format: None,
+            response_format: None,
             tools: None,
             tool_choice: None,
         };
@@ -626,7 +626,7 @@ pub async fn stream_response(
         frequency_penalty: Some(0.8),
         logit_bias: None,
         user: None,
-        respsonse_format: None,
+        response_format: None,
         tools: None,
         tool_choice: None,
     };
@@ -733,7 +733,7 @@ pub async fn create_suggested_queries_handler(
         frequency_penalty: Some(0.8),
         logit_bias: None,
         user: None,
-        respsonse_format: None,
+        response_format: None,
         tools: None,
         tool_choice: None,
     };
