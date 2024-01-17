@@ -154,15 +154,16 @@ const MainLayout = (props: LayoutProps) => {
       const isNormalTopic = props.isCreatingNormalTopic();
 
       let body: object = {
-        resolution: new_message_content,
+        name: new_message_content,
       };
 
       if (isNormalTopic) {
         body = {
-          resolution: new_message_content,
+          name: new_message_content,
           normal_chat: true,
         };
       }
+      console.log(dataset.dataset.id);
 
       const topicResponse = await fetch(`${apiHost}/topic`, {
         method: "POST",
