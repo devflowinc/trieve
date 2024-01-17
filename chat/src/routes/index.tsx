@@ -113,7 +113,7 @@ export default function Home() {
             <ThemeModeController />
             <A
               class="rounded-lg bg-turquoise px-4 py-2 text-center font-semibold dark:text-neutral-900"
-              href={isLogin() ? "/chat" : "/register"}
+              href={isLogin() ? "/chat" : `${apiHost}/auth?redirect_uri=${window.origin}`}
             >
               Chat Now
             </A>

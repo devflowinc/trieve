@@ -39,7 +39,7 @@ uuid = { version = "1", features = ["v4", "serde"] }
 sendgrid = { version = "0.19", features = ["async"] }
 diesel_migrations = { version = "2.0" }
 regex = "1.7.3"
-openai_dive = { version = "0.3.4", features = ["stream"] }
+openai_dive = { version = "0.3.7", features = ["stream"] }
 tokio = "1.27.0"
 tokio-stream = "0.1.12"
 futures-util = "0.3.28"
@@ -67,7 +67,10 @@ utoipa = { version = "4", features = [
 ] }
 utoipa-redoc = { version = "3.0", features = ["actix-web"] }
 magick_rust = { version = "0.19.1", optional = true }
-pyo3 = { version = "0.20.0", features = ["full", "auto-initialize"], optional = true }
+pyo3 = { version = "0.20.0", features = [
+    "full",
+    "auto-initialize",
+], optional = true }
 openidconnect = { version = "3.4.0", features = [
     "reqwest",
 ], default-features = false }
