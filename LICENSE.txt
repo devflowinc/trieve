@@ -10,14 +10,14 @@ License text copyright (c) 2017 MariaDB Corporation Ab, All Rights Reserved.
 Parameters
 
 Licensor:             Devflow, Inc.
-Licensed Work:        Arguflow API, search UX, and chat UX
-                      The Licensed Work is (c)2023 Arguflow, Inc.
+Licensed Work:        Trieve API, search UX, and chat UX
+                      The Licensed Work is (c)2023 Devflow, Inc.
 Additional Use Grant: You may make use of the Licensed Work, provided you
                       do not use it in any of the following ways:
 
-                      * Sell hosted Arguflow services as a "SaaS" Product
+                      * Sell hosted Trieve services as a "SaaS" Product
 
-                      (1) Operate or sell access to Arguflow root servers,
+                      (1) Operate or sell access to Trieve root servers,
                       network controllers, or authorization key or certificate
                       generation components of the Licensed Work as a
                       for-profit service, regardless of whether the use of
@@ -54,7 +54,7 @@ Change License:       Apache License version 2.0 as published by the Apache
 Alternative Licensing
 
 If you would like to use the Licensed Work in any way that conflicts with
-the stipulations of the Additional Use Grant, contact Arguflow, Inc. to
+the stipulations of the Additional Use Grant, contact Devflow, Inc. to
 obtain an alternative commercial license.
 
 Visit us on the web at: https://arguflow.ai/

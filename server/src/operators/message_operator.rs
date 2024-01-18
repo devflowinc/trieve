@@ -96,9 +96,9 @@ pub fn create_generic_system_message(
     let topic =
         crate::operators::topic_operator::get_topic_query(messages_topic_id, dataset_id, pool)?;
     let system_message_content = if normal_chat {
-        "You are Arguflow Assistant, a large language model trained by Arguflow to be a helpful assistant."
+        "You are Trieve Assistant, a large language model trained by Trieve to be a helpful assistant."
     } else {
-        "You are Arguflow retrieval augmented chatbot, a large language model trained by Arguflow to respond in the same tone as and with the context of retrieved information."
+        "You are Trieve retrieval augmented chatbot, a large language model trained by Trieve to respond in the same tone as and with the context of retrieved information."
     };
 
     let system_message = Message::from_details(

@@ -86,7 +86,7 @@ export default function Home() {
                 {dataset}
               </div>
               <div class="align-top text-lg">
-                <span>Arguflow</span>
+                <span>Trieve</span>
                 <span class="text-magenta">Chat</span>\
               </div>
             </div>
@@ -126,7 +126,7 @@ export default function Home() {
               {dataset}
             </div>
             <div class="text-5xl md:text-6xl">
-              <span>Arguflow</span>
+              <span>Trieve</span>
               <span class="text-magenta">Chat</span>
             </div>
           </div>
@@ -171,7 +171,7 @@ export default function Home() {
               {dataset}
             </div>
             <div class="align-top text-lg">
-              <span>Arguflow</span>
+              <span>Trieve</span>
               <span class="text-magenta">Chat</span>\
             </div>
           </div>

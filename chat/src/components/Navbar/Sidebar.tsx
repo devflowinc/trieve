@@ -313,7 +313,7 @@ export const Sidebar = (props: SidebarProps) => {
                 {props.currentDataset()?.dataset.name}
               </div>
               <div class="align-top text-lg">
-                <span>Arguflow</span>
+                <span>Trieve</span>
                 <span class="text-magenta">Chat</span>\
               </div>
             </div>

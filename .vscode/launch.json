@@ -4,17 +4,17 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug executable 'vault-server'",
+      "name": "Debug executable 'trieve-server'",
       "cargo": {
         "args": [
           "+nightly",
           "build",
           "--manifest-path=./server/Cargo.toml",
-          "--bin=vault-server",
-          "--package=vault-server"
+          "--bin=trieve-server",
+          "--package=trieve-server"
         ],
         "filter": {
-          "name": "vault-server",
+          "name": "trieve-server",
           "kind": "bin"
         }
       },
@@ -24,17 +24,17 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug unit tests in executable 'vault-server'",
+      "name": "Debug unit tests in executable 'trieve-server'",
       "cargo": {
         "args": [
           "test",
           "--manifest-path=./server/Cargo.toml",
           "--no-run",
-          "--bin=vault-server",
-          "--package=vault-server"
+          "--bin=trieve-server",
+          "--package=trieve-server"
         ],
         "filter": {
-          "name": "vault-server",
+          "name": "trieve-server",
           "kind": "bin"
         }
       },

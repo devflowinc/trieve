@@ -4,8 +4,8 @@
   "display": "standalone",
   "scope": "/",
   "start_url": "/",
-  "name": "Arguflow Search",
-  "short_name": "Arguflow Search",
+  "name": "Trieve Search",
+  "short_name": "Trieve Search",
   "description": "Search, create, and rate evidence for any topic.",
   "icons": [
     {

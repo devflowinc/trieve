@@ -1,5 +1,5 @@
 [package]
-name = "vault-server"
+name = "trieve-server"
 version = "1.0.0"
 edition = "2021"
 

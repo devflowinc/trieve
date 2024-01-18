@@ -20,7 +20,7 @@ RUN cargo build --release --no-default-features --features "runtime-env",
 FROM python:3.9-bookworm as runtime
 RUN apt-get update && apt-get install -y libpq-dev pkg-config build-essential
 WORKDIR /app
-COPY --from=builder /app/target/release/vault-server /app/vault-server
+COPY --from=builder /app/target/release/trieve-server /app/trieve-server
 COPY ./server-python/requirements.txt /app/requirements.txt
 RUN pip install --break-system-packages -r /app/requirements.txt;
 COPY ./migrations/ /app/migrations
@@ -28,4 +28,4 @@ COPY ./server-python/ /app/server-python
 
 
 EXPOSE 8090
-ENTRYPOINT ["/app/vault-server"]
+ENTRYPOINT ["/app/trieve-server"]

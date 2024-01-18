@@ -11,7 +11,7 @@ export const Home = () => {
   const $dataset = useStore(currentDataset);
   const $env = useStore(clientConfig);
   const suggestedQueries = $env()
-    .SUGGESTED_QUERIES.split(",")
+    .SUGGESTED_QUERIES?.split(",")
     .filter((query) => query !== "");
 
   const url = window.location.href;
@@ -60,7 +60,7 @@ export const Home = () => {
                 {$dataset()?.dataset.name ?? "Dataset"}
               </div>
               <div class="text-4xl">
-                <span>Arguflow</span>
+                <span>Trieve</span>
                 <span class="text-magenta">Search</span>
               </div>
             </div>
@@ -80,7 +80,7 @@ export const Home = () => {
           <SearchForm filters={dataTypeFilters} searchType={searchType} />
         </div>
       </div>
-      <DefaultQueries suggestedQueries={suggestedQueries} />
+      <DefaultQueries suggestedQueries={suggestedQueries ?? []} />
       <div class="flex-1" />
       <Footer />
     </HomeLayout>

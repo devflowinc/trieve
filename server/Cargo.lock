@@ -3971,6 +3971,60 @@ dependencies = [
 ]
 
 [[package]]
+name = "trieve-server"
+version = "1.0.0"
+dependencies = [
+ "actix",
+ "actix-cors",
+ "actix-files",
+ "actix-identity",
+ "actix-session",
+ "actix-web",
+ "async-stream",
+ "async-stripe",
+ "base64 0.21.5",
+ "cfg-if",
+ "chrono",
+ "crossbeam-channel",
+ "dateparser",
+ "derive_more",
+ "diesel",
+ "diesel_migrations",
+ "dotenvy",
+ "env_logger",
+ "futures",
+ "futures-util",
+ "glob",
+ "itertools 0.12.0",
+ "lazy_static",
+ "log",
+ "magick_rust",
+ "oauth2",
+ "once_cell",
+ "openai_dive",
+ "openidconnect",
+ "pyo3",
+ "qdrant-client",
+ "r2d2",
+ "rand 0.8.5",
+ "redis 0.24.0",
+ "regex",
+ "reqwest",
+ "rust-argon2",
+ "rust-s3",
+ "sendgrid",
+ "serde",
+ "serde_json",
+ "simsearch",
+ "time",
+ "tokio",
+ "tokio-stream",
+ "utoipa",
+ "utoipa-redoc",
+ "uuid 1.6.1",
+]
+
+[[package]]
 name = "triple_accel"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4107,60 +4161,6 @@ checksum = "5e395fcf16a7a3d8127ec99782007af141946b4795001f876d54fb0d55978560"
 dependencies = [
  "getrandom 0.2.11",
  "serde",
-]
-
-[[package]]
-name = "vault-server"
-version = "1.0.0"
-dependencies = [
- "actix",
- "actix-cors",
- "actix-files",
- "actix-identity",
- "actix-session",
- "actix-web",
- "async-stream",
- "async-stripe",
- "base64 0.21.5",
- "cfg-if",
- "chrono",
- "crossbeam-channel",
- "dateparser",
- "derive_more",
- "diesel",
- "diesel_migrations",
- "dotenvy",
- "env_logger",
- "futures",
- "futures-util",
- "glob",
- "itertools 0.12.0",
- "lazy_static",
- "log",
- "magick_rust",
- "oauth2",
- "once_cell",
- "openai_dive",
- "openidconnect",
- "pyo3",
- "qdrant-client",
- "r2d2",
- "rand 0.8.5",
- "redis 0.24.0",
- "regex",
- "reqwest",
- "rust-argon2",
- "rust-s3",
- "sendgrid",
- "serde",
- "serde_json",
- "simsearch",
- "time",
- "tokio",
- "tokio-stream",
- "utoipa",
- "utoipa-redoc",
- "uuid 1.6.1",
 ]
 
 [[package]]
