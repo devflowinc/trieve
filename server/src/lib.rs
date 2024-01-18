@@ -62,7 +62,7 @@ macro_rules! get_env {
 pub async fn main() -> std::io::Result<()> {
     #[derive(OpenApi)]
     #[openapi(
-        info(description = "Arguflow REST API OpenAPI Documentation"),
+        info(description = "Trieve REST API OpenAPI Documentation"),
         paths(
             handlers::auth_handler::login,
             handlers::auth_handler::logout,

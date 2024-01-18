@@ -92,8 +92,8 @@ RUN pip install --break-system-packages -r /app/requirements.txt; \
 WORKDIR /app
 COPY ./server-python/ /app/server-python
 COPY ./migrations/ /app/migrations
-COPY --from=builder /imgs/app/target/release/vault-server /app/vault-server
+COPY --from=builder /imgs/app/target/release/trieve-server /app/trieve-server
 
 
 EXPOSE 8090
-ENTRYPOINT ["/app/vault-server"]
+ENTRYPOINT ["/app/trieve-server"]

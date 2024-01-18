@@ -10,7 +10,7 @@
     "lint:only": "eslint --fix \"src/**/*.{js,ts,jsx,tsx,}\"",
     "lint:CI": "eslint --fix --output-file eslint_report.json --format json \"src/**/*.{js,ts,jsx,tsx,}\""
   },
-  "description": "The admin client for Arguflow Search (https://search.arguflow.ai)",
+  "description": "The admin client for Trieve Search (https://search.arguflow.ai)",
   "dependencies": {
     "@nanostores/persistent": "^0.9.1",
     "@nanostores/solid": "^0.4.2",

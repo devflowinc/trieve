@@ -4,9 +4,9 @@
 	"display": "standalone",
 	"scope": "/",
 	"start_url": "/",
-	"name": "Arguflow Chat",
+	"name": "Trieve Chat",
 	"short_name": "LLM Chat",
-	"description": "Demo of Arguflow retrieval-augmented LLM-chat Infrastructure.",
+	"description": "Trieve retrieval-augmented LLM-chat Infrastructure.",
 	"icons": [
 		{
 			"src": "/android-chrome-192x192.png",
