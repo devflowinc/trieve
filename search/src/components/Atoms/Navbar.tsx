@@ -25,7 +25,7 @@ export const Navbar = () => {
                   {$datasetName}
                 </div>
                 <div class="min-[380px]:text-xl sm:text-4xl">
-                  <span>Arguflow</span>
+                  <span>Trieve</span>
                   <span class="text-magenta">Search</span>
                 </div>
               </div>

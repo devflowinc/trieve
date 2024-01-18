@@ -53,7 +53,7 @@ pub async fn get_invitation_by_id_query(
 
 pub async fn send_invitation(inv_url: String, invitation: Invitation) -> Result<(), DefaultError> {
     let sg_email_content = format!(
-        "You have been invited to join an Arguflow AI dataset. <br/>
+        "You have been invited to join an Trieve AI dataset. <br/>
          Please click on the link below to register. <br/>
          <a href=\"{}\">
          {}</a>",
@@ -68,7 +68,7 @@ pub async fn send_invitation(inv_url: String, invitation: Invitation) -> Result<
     ));
 
     let sg_email = Message::new(email_address)
-        .set_subject("Invitation to join Arguflow AI dataset")
+        .set_subject("Invitation to join Trieve AI dataset")
         .add_content(
             Content::new()
                 .set_content_type("text/html")

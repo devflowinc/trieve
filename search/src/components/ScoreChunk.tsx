@@ -273,7 +273,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                         props.chunk.metadata?.file_name ??
                         imgInformation()?.imgRangeStart ??
-                        "Arguflow PDF From Range"
+                        "Trieve PDF From Range"
                       }/false`}
                       target="_blank"
                       title="Open PDF"
@@ -297,7 +297,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                         props.chunk.metadata?.file_name ??
                         imgInformation()?.imgRangeStart ??
-                        "Arguflow PDF From Range"
+                        "Trieve PDF From Range"
                       }/true`}
                       target="_blank"
                       title="Open PDF"

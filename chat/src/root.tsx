@@ -20,7 +20,7 @@ export default function Root() {
   const plausibleHost = import.meta.env.VITE_PLAUSIBLE_HOST as string;
   const dataset = import.meta.env.VITE_DATASET as unknown as string;
 
-  const title = `Arguflow Chat - ${dataset}`;
+  const title = `Trieve Chat - ${dataset}`;
 
   const theme = (() => {
     if (typeof localStorage !== "undefined" && localStorage.getItem("theme")) {
@@ -78,7 +78,7 @@ export default function Root() {
 
         <Meta
           name="description"
-          content="Demo of Arguflow's LLM-chat infrastructure - Retrieval Augmented Chat"
+          content="Demo of Trieve's LLM-chat infrastructure - Retrieval Augmented Chat"
         />
 
         <Meta property="og:url" content="https://arguflow.ai/" />
@@ -86,7 +86,7 @@ export default function Root() {
         <Meta property="og:title" content={title} />
         <Meta
           property="og:description"
-          content="Demo of Arguflow's LLM-chat infrastructure - Retrieval Augmented Chat"
+          content="Demo of Trieve's LLM-chat infrastructure - Retrieval Augmented Chat"
         />
         <Meta
           property="og:image"
@@ -99,7 +99,7 @@ export default function Root() {
         <Meta name="twitter:title" content={title} />
         <Meta
           name="twitter:description"
-          content="Demo of Arguflow's LLM-chat infrastructure - Retrieval Augmented Chat"
+          content="Demo of Trieve's LLM-chat infrastructure - Retrieval Augmented Chat"
         />
         <Meta
           name="twitter:image"
