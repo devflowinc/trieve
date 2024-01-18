@@ -88,7 +88,7 @@ services:
       - 9998:9998
 
   server:
-    image: arguflow/server
+    image: arguflow/server:no-ocr
     build: ./server/
     networks:
       - app-network
@@ -146,7 +146,7 @@ services:
       - VITE_CHAT_VOTE_FEATURE=${VITE_CHAT_VOTE_FEATURE}
 
   search:
-    image: arguflow/search
+    image: arguflow/search:no-ocr
     build: ./search/
     networks:
       - app-network
