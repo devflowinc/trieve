@@ -11,6 +11,7 @@ use crate::{
             get_datasets_by_organization_id, update_dataset_query,
         },
         organization_operator::{get_org_dataset_count, get_organization_by_key_query},
+        stripe_operator::refresh_redis_org_plan_sub,
     },
 };
 use actix_web::{web, FromRequest, HttpMessage, HttpResponse};
@@ -131,9 +132,17 @@ pub async fn update_dataset(
         data.client_configuration
             .clone()
             .unwrap_or(curr_dataset.client_configuration),
-        pool,
+        pool.clone(),
     )
     .await?;
+    let _ = refresh_redis_org_plan_sub(d.organization_id, pool.clone())
+        .await
+        .map_err(|err| {
+            ServiceError::InternalServerError(format!(
+                "Error refreshing redis org plan sub: {}",
+                err
+            ))
+        });
     Ok(HttpResponse::Ok().json(d))
 }
 
