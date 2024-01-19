@@ -22,6 +22,7 @@ import {
 import { Topic } from "../../types/topics";
 import { AfMessage } from "../Atoms/AfMessage";
 import { UserContext } from "../contexts/UserContext";
+import { FaSolidUserSlash } from "solid-icons/fa";
 
 export interface LayoutProps {
   setTopics: Setter<Topic[]>;
@@ -317,6 +318,24 @@ const MainLayout = (props: LayoutProps) => {
           <div class="flex w-full flex-col items-center justify-center">
             <img src="/cooking-crab.gif" class="aspect-square w-[128px]" />
           </div>
+        </div>
+      </Show>
+      <Show when={userContext.user?.() === null}>
+        <div class="mx-10 mt-32 flex flex-col items-center justify-between rounded-lg border-2 border-dashed border-neutral-300 p-12 text-center hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-magenta-500 focus:ring-offset-2">
+          <FaSolidUserSlash class="h-20 w-20 text-neutral-500" />
+          <p class="mt-2 flex text-sm font-semibold text-neutral-900">
+            No user found
+          </p>
+          <p class="text-sm text-neutral-500">Please Login to continue</p>
+          <a
+            type="button"
+            class="mt-2 w-fit cursor-pointer rounded-lg bg-magenta px-5 py-3 text-center text-white"
+            onClick={() => {
+              window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}/dashboard`;
+            }}
+          >
+            Login
+          </a>
         </div>
       </Show>
       <Show when={!loadingMessages() || !props.selectedTopic()}>

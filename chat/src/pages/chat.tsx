@@ -50,56 +50,54 @@ export const Chat = () => {
   });
 
   return (
-    <Show when={userContext.user?.() !== null}>
-      <div class="relative flex h-screen flex-row bg-zinc-100 dark:bg-zinc-900">
-        <div class="hidden w-1/4 overflow-x-hidden lg:block">
+    <div class="relative flex h-screen flex-row bg-zinc-100 dark:bg-zinc-900">
+      <div class="hidden w-1/4 overflow-x-hidden lg:block">
+        <Sidebar
+          currentTopic={selectedTopic}
+          refetchTopics={refetchTopics}
+          setCurrentTopic={setSelectedTopic}
+          topics={topics}
+          setIsCreatingTopic={setIsCreatingTopic}
+          setSideBarOpen={setSideBarOpen}
+          setIsCreatingNormalTopic={setIsCreatingNormalTopic}
+        />
+      </div>
+      <div class="lg:hidden">
+        <Show when={sidebarOpen()}>
           <Sidebar
             currentTopic={selectedTopic}
             refetchTopics={refetchTopics}
-            setCurrentTopic={setSelectedTopic}
+            setCurrentTopic={(topic: Topic | undefined) => {
+              setIsCreatingTopic(false);
+              setSelectedTopic(topic);
+            }}
             topics={topics}
             setIsCreatingTopic={setIsCreatingTopic}
             setSideBarOpen={setSideBarOpen}
             setIsCreatingNormalTopic={setIsCreatingNormalTopic}
           />
-        </div>
-        <div class="lg:hidden">
-          <Show when={sidebarOpen()}>
-            <Sidebar
-              currentTopic={selectedTopic}
-              refetchTopics={refetchTopics}
-              setCurrentTopic={(topic: Topic | undefined) => {
-                setIsCreatingTopic(false);
-                setSelectedTopic(topic);
-              }}
-              topics={topics}
-              setIsCreatingTopic={setIsCreatingTopic}
-              setSideBarOpen={setSideBarOpen}
-              setIsCreatingNormalTopic={setIsCreatingNormalTopic}
-            />
-          </Show>
-        </div>
-        <div
-          id="topic-layout"
-          class="scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600 w-full overflow-y-auto"
-        >
-          <Navbar
-            selectedTopic={selectedTopic}
-            setSideBarOpen={setSideBarOpen}
-            isCreatingTopic={isCreatingTopic}
-            setIsCreatingTopic={setIsCreatingTopic}
-            isCreatingNormalTopic={isCreatingNormalTopic}
-            setIsCreatingNormalTopic={setIsCreatingNormalTopic}
-          />
-          <MainLayout
-            setTopics={setTopics}
-            setSelectedTopic={setSelectedTopic}
-            isCreatingNormalTopic={isCreatingNormalTopic}
-            selectedTopic={selectedTopic}
-          />
-        </div>
+        </Show>
       </div>
-    </Show>
+      <div
+        id="topic-layout"
+        class="scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600 w-full overflow-y-auto"
+      >
+        <Navbar
+          selectedTopic={selectedTopic}
+          setSideBarOpen={setSideBarOpen}
+          isCreatingTopic={isCreatingTopic}
+          setIsCreatingTopic={setIsCreatingTopic}
+          isCreatingNormalTopic={isCreatingNormalTopic}
+          setIsCreatingNormalTopic={setIsCreatingNormalTopic}
+        />
+        <MainLayout
+          setTopics={setTopics}
+          setSelectedTopic={setSelectedTopic}
+          isCreatingNormalTopic={isCreatingNormalTopic}
+          selectedTopic={selectedTopic}
+        />
+      </div>
+    </div>
   );
 };
 

@@ -3,6 +3,7 @@ import {
   BiRegularBrain,
   BiRegularChat,
   BiRegularCheck,
+  BiRegularLogIn,
   BiRegularLogOut,
   BiRegularPlus,
   BiRegularTrash,
@@ -101,21 +102,6 @@ export const Sidebar = (props: SidebarProps) => {
     }
   };
 
-  const logout = () => {
-    void fetch(`${apiHost}/auth`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-    }).then((response) => {
-      if (!response.ok) {
-        return;
-      }
-      window.location.href = "/";
-    });
-  };
-
   createEffect(() => {
     try {
       void fetch(`https://api.github.com/repos/arguflow/arguflow`, {
@@ -147,7 +133,8 @@ export const Sidebar = (props: SidebarProps) => {
               props.setCurrentTopic(undefined);
               props.setSideBarOpen(false);
             }}
-            class="flex w-full flex-row items-center rounded-md border border-neutral-500 px-3 py-1 hover:bg-neutral-200  dark:border-neutral-400 dark:hover:bg-neutral-700"
+            disabled={userContext.user?.() === null}
+            class="flex w-full flex-row items-center rounded-md border border-neutral-500 px-3 py-1 hover:bg-neutral-200 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:border-neutral-300 dark:border-neutral-400 dark:hover:bg-neutral-700"
           >
             <div class="flex flex-row items-center space-x-2">
               <span class="text-xl">
@@ -163,7 +150,8 @@ export const Sidebar = (props: SidebarProps) => {
               props.setCurrentTopic(undefined);
               props.setSideBarOpen(false);
             }}
-            class="flex w-full flex-row items-center rounded-md border border-neutral-500 px-3 py-1 hover:bg-neutral-200  dark:border-neutral-400 dark:hover:bg-neutral-700"
+            disabled={userContext.user?.() === null}
+            class="flex w-full flex-row items-center rounded-md border border-neutral-500 px-3 py-1 disabled:bg-neutral-200 disabled:border-neutral-300 disabled:text-neutral-400 hover:bg-neutral-200 dark:border-neutral-400 dark:hover:bg-neutral-700"
           >
             <div class="flex flex-row items-center space-x-2">
               <span class="text-xl">
@@ -263,15 +251,27 @@ export const Sidebar = (props: SidebarProps) => {
             <p class="text-2xl">/</p>
             <DatasetSelectBox />
           </div>
+          <Show when={userContext.user?.() !== null}>
+            <button
+              class="flex w-full items-center space-x-4  rounded-md px-3 py-2 hover:bg-neutral-200   dark:hover:bg-neutral-700"
+              onClick={userContext.logout}
+            >
+              <BiRegularLogOut class="h-6 w-6 fill-current" />
+              <div>Logout</div>
+            </button>
+          </Show>
+          <Show when={userContext.user?.() === null}>
+            <button
+              class="flex w-full items-center space-x-4  rounded-md px-3 py-2 hover:bg-neutral-200   dark:hover:bg-neutral-700"
+              onClick={userContext.logout}
+            >
+              <BiRegularLogIn class="h-6 w-6 fill-current" />
+              <div>Login</div>
+            </button>
+          </Show>
           <button
-            class="flex w-full items-center space-x-4  rounded-md px-3 py-2 hover:bg-neutral-200   dark:hover:bg-neutral-700"
-            onClick={logout}
-          >
-            <BiRegularLogOut class="h-6 w-6 fill-current" />
-            <div>Logout</div>
-          </button>
-          <button
-            class="flex w-full items-center space-x-4 rounded-md px-3 py-2 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+            disabled={userContext.user?.() === null}
+            class="flex w-full items-center space-x-4 rounded-md px-3 py-2 hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:bg-neutral-200 disabled:border-neutral-300 disabled:text-neutral-400"
             onClick={() => setSettingsModalOpen(true)}
           >
             <FiSettings class="h-6 w-6" />
