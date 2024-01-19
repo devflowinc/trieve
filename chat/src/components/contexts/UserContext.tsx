@@ -123,19 +123,11 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
               setDatasetsAndUsages([]);
             }
             if (data.length > 0 && data.every(isDatasetAndUsageDTO)) {
-              setCurrentDataset(null);
+              setCurrentDataset(data[0]);
               setDatasetsAndUsages(data);
             }
           }
         });
-    }
-  });
-
-  createEffect(() => {
-    const datasetNow = currentDataset();
-    if (datasetNow === null) {
-      const datasets = datasetsAndUsages();
-      setCurrentDataset(datasets[0]);
     }
   });
 
