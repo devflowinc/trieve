@@ -22,7 +22,7 @@ export const Navbar = (props: NavbarProps) => {
       </div>
       <div class="flex w-full items-center justify-center px-2 text-center">
         <p>
-          {props.selectedTopic()?.resolution ??
+          {props.selectedTopic()?.name ??
             (props.isCreatingNormalTopic()
               ? "New Normal Chat"
               : "New Retrieval Augmented Chat")}
