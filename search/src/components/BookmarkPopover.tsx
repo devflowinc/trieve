@@ -119,7 +119,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
     void fetch(`${apiHost}/chunk_collection/${localCollectionPage()}`, {
       method: "GET",
       headers: {
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
     }).then((response) => {
@@ -182,7 +182,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
       body: JSON.stringify({
         chunk_ids: [props.chunkMetadata.id],
@@ -308,7 +308,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                                       : "DELETE",
                                     headers: {
                                       "Content-Type": "application/json",
-                                      "AF-Dataset": currentDataset.dataset.id,
+                                      "TR-Dataset": currentDataset.dataset.id,
                                     },
                                     credentials: "include",
                                     body: JSON.stringify({
@@ -385,7 +385,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                             method: "POST",
                             headers: {
                               "Content-Type": "application/json",
-                              "AF-Dataset": currentDataset.dataset.id,
+                              "TR-Dataset": currentDataset.dataset.id,
                             },
                             credentials: "include",
                             body: JSON.stringify({

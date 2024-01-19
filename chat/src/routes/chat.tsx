@@ -53,7 +53,7 @@ export const chat = () => {
         method: "GET",
         credentials: "include",
         headers: {
-          "AF-Organization": organization.id,
+          "TR-Organization": organization.id,
         },
       }).then((res) => {
         if (res.ok) {
@@ -111,7 +111,7 @@ export const chat = () => {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset.dataset.id,
+        "TR-Dataset": dataset.dataset.id,
       },
       credentials: "include",
     });

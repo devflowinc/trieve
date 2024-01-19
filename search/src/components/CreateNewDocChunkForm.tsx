@@ -65,7 +65,7 @@ export const CreateNewDocChunkForm = () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset.dataset.id,
+        "TR-Dataset": dataset.dataset.id,
       },
       credentials: "include",
       body: JSON.stringify(requestBody),

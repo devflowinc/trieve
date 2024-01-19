@@ -74,7 +74,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
     }).then((response) => {
       if (response.ok) {
@@ -96,7 +96,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
       body: JSON.stringify({
         chunk_ids: chunkMetadata()?.id ? [chunkMetadata()?.id] : [],
@@ -123,7 +123,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
       body: JSON.stringify({
         positive_chunk_ids: ids,
@@ -165,7 +165,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
     }).then((response) => {
       if (response.ok) {

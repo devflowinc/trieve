@@ -154,7 +154,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
         void fetch(`${apiHost}/chunk/${curChunkMetadataId}`, {
           method: "DELETE",
           headers: {
-            "AF-Dataset": dataset.dataset.id,
+            "TR-Dataset": dataset.dataset.id,
           },
           credentials: "include",
         }).then((response) => {
