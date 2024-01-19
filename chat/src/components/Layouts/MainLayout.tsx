@@ -194,10 +194,9 @@ const MainLayout = (props: LayoutProps) => {
       });
       props.setSelectedTopic({
         id: newTopic.id,
-        resolution: newTopic.resolution,
+        name: newTopic.name,
         side: newTopic.side,
         normal_chat: newTopic.normal_chat,
-        set_inline: true,
       });
       finalTopicId = newTopic.id;
     }
@@ -248,8 +247,8 @@ const MainLayout = (props: LayoutProps) => {
       if (!reader) {
         return;
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const _ = await handleReader(reader);
+
+      await handleReader(reader);
     } catch (e) {
       console.error(e);
     }
@@ -285,11 +284,6 @@ const MainLayout = (props: LayoutProps) => {
 
   createEffect(() => {
     const curTopic = props.selectedTopic();
-
-    if (curTopic?.set_inline) {
-      setLoadingMessages(false);
-      return;
-    }
 
     setMessages([]);
     const fetchMessagesAbortController = new AbortController();
