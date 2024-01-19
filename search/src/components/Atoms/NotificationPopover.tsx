@@ -41,7 +41,7 @@ export const NotificationPopover = () => {
     void fetch(`${apiHost}/notifications/${page()}`, {
       method: "GET",
       headers: {
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
     }).then((response) => {
@@ -62,7 +62,7 @@ export const NotificationPopover = () => {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
       body: JSON.stringify({
@@ -93,7 +93,7 @@ export const NotificationPopover = () => {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
     }).then((response) => {

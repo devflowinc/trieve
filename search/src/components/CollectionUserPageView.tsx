@@ -44,7 +44,7 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
     }).then((response) => {
       if (response.ok) {
@@ -75,7 +75,7 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            "AF-Dataset": currentDataset.dataset.id,
+            "TR-Dataset": currentDataset.dataset.id,
           },
           body: JSON.stringify({
             collection_id: collection.id,

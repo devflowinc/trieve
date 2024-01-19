@@ -57,7 +57,7 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
     void fetch(`${apiHost}/user/${props.id}/${props.page}`, {
       method: "GET",
       headers: {
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
     }).then((response) => {
@@ -84,7 +84,7 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
       body: JSON.stringify({
         chunk_ids: user()?.chunks.map((c) => c.id)
@@ -109,7 +109,7 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
     }).then((response) => {
       if (response.ok) {

@@ -169,7 +169,7 @@ const MainLayout = (props: LayoutProps) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "AF-Dataset": dataset.dataset.id,
+          "TR-Dataset": dataset.dataset.id,
         },
         credentials: "include",
         body: JSON.stringify(body),
@@ -233,7 +233,7 @@ const MainLayout = (props: LayoutProps) => {
         method: requestMethod,
         headers: {
           "Content-Type": "application/json",
-          "AF-Dataset": dataset.dataset.id,
+          "TR-Dataset": dataset.dataset.id,
         },
         credentials: "include",
         body: JSON.stringify({
@@ -269,7 +269,7 @@ const MainLayout = (props: LayoutProps) => {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset.dataset.id,
+        "TR-Dataset": dataset.dataset.id,
       },
       credentials: "include",
       signal: abortController.signal,
@@ -351,7 +351,7 @@ const MainLayout = (props: LayoutProps) => {
                         method: "PUT",
                         headers: {
                           "Content-Type": "application/json",
-                          "AF-Dataset": dataset.dataset.id,
+                          "TR-Dataset": dataset.dataset.id,
                         },
                         credentials: "include",
                         signal: completionAbortController().signal,
