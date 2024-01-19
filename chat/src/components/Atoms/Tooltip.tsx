@@ -22,7 +22,7 @@ export const Tooltip = (props: TooltipProps) => {
         <div class="absolute z-10 inline-block w-[100px] -translate-x-[45%] translate-y-3 rounded bg-white p-2 text-center shadow-lg dark:bg-black">
           {props.tooltipText}
         </div>
-        <div class="caret dark:bg-shark-700 absolute h-4 w-4 translate-x-[2px] translate-y-2 rotate-45 transform bg-white" />
+        <div class="caret absolute h-4 w-4 translate-x-[2px] translate-y-2 rotate-45 transform bg-white dark:bg-shark-700" />
       </Show>
     </div>
   );
