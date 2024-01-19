@@ -3,6 +3,7 @@ version: "3"
 services:
   db:
     image: postgres:15
+    container_name: db
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -29,6 +30,7 @@ services:
 
   qdrant-database:
     image: qdrant/qdrant:v1.7.0
+    container_name: qdrant-database 
     environment:
       - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
     ports:
@@ -41,6 +43,7 @@ services:
 
   s3:
     image: minio/minio:RELEASE.2023-09-27T15-22-50Z
+    container_name: s3
     ports:
       - 9000:9000
       - 42625:42625
@@ -60,6 +63,7 @@ services:
 
   s3-client:
     image: minio/mc
+    container_name: s3-client
     depends_on:
       s3:
         condition: service_healthy
@@ -82,6 +86,7 @@ services:
 
   tika:
     image: apache/tika:2.9.1.0-full
+    container_name: tika
     networks:
       - app-network
     ports:
@@ -89,6 +94,7 @@ services:
 
   server:
     image: arguflow/server:no-ocr
+    container_name: server
     build: ./server/
     networks:
       - app-network
@@ -98,6 +104,7 @@ services:
       - ./server/images:/app/images
     links:
       - tika:tika
+      - keycloak:keycloak
     environment:
       - REDIS_URL=${REDIS_URL}
       - QDRANT_URL=${QDRANT_URL}
@@ -129,6 +136,7 @@ services:
 
   chat:
     image: arguflow/chat
+    container_name: chat
     build: ./chat/
     networks:
       - app-network
@@ -147,6 +155,7 @@ services:
 
   search:
     image: arguflow/search:no-ocr
+    container_name: search
     build: ./search/
     networks:
       - app-network
@@ -157,6 +166,7 @@ services:
 
   splade-embeddings:
     image: arguflow/splade-embeddings
+    container_name: splade-embeddings
     build: ./embedding-server/
     networks:
       - app-network
@@ -165,6 +175,7 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.1
+    container_name: keycloak
     environment:
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=aintsecure
@@ -184,6 +195,7 @@ services:
 
   keycloak-db:
     image: postgres:15
+    container_name: keycloak-db
     restart: always
     environment:
       POSTGRES_USER: postgres
