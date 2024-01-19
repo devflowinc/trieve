@@ -28,7 +28,11 @@ export const ScoreChunkArray = (props: ScoreChunkAraryProps) => {
 
   onMount(() => {
     props.chunks.forEach((chunk) => {
-      if (chunk.metadata && dateValue in chunk.metadata) {
+      if (
+        chunk.metadata &&
+        dateValue != undefined &&
+        dateValue in chunk.metadata
+      ) {
         // regex to select only valid dates
         // (\d{1,4}([.\-/])\d{1,2}([.\-/])\d{1,4})
         const dateString = chunk.metadata[dateValue] as string;
