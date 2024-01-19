@@ -224,6 +224,17 @@ diesel::table! {
 }
 
 diesel::table! {
+    user_api_key (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        api_key_hash -> Text,
+        name -> Text,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     user_collection_counts (id) {
         id -> Uuid,
         user_id -> Uuid,
@@ -259,7 +270,6 @@ diesel::table! {
         username -> Nullable<Text>,
         website -> Nullable<Text>,
         visible_email -> Bool,
-        api_key_hash -> Nullable<Text>,
         name -> Nullable<Text>,
     }
 }
@@ -288,6 +298,7 @@ diesel::joinable!(stripe_subscriptions -> organizations (organization_id));
 diesel::joinable!(stripe_subscriptions -> stripe_plans (plan_id));
 diesel::joinable!(topics -> datasets (dataset_id));
 diesel::joinable!(topics -> users (user_id));
+diesel::joinable!(user_api_key -> users (user_id));
 diesel::joinable!(user_collection_counts -> users (user_id));
 diesel::joinable!(user_notification_counts -> users (user_uuid));
 diesel::joinable!(user_organizations -> organizations (organization_id));
@@ -312,6 +323,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     stripe_plans,
     stripe_subscriptions,
     topics,
+    user_api_key,
     user_collection_counts,
     user_notification_counts,
     user_organizations,
