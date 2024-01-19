@@ -3,8 +3,8 @@ use crate::{
     data::models::{DatasetAndOrgWithSubAndPlan, Pool, SlimUser},
     errors::{DefaultError, ServiceError},
     operators::user_operator::{
-        get_user_by_id_query, get_user_with_chunks_by_id_query, set_user_api_key_query,
-        update_user_query,
+        delete_user_api_keys_query, get_user_api_keys_query, get_user_by_id_query,
+        get_user_with_chunks_by_id_query, set_user_api_key_query, update_user_query,
     },
 };
 use actix_web::{web, HttpResponse};
@@ -153,12 +153,17 @@ pub async fn update_user(
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
+pub struct SetUserApiKeyRequest {
+    name: String,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct SetUserApiKeyResponse {
     api_key: String,
 }
 
 #[utoipa::path(
-    get,
+    post,
     path = "/user/set_api_key",
     context_path = "/api",
     tag = "user",
@@ -169,13 +174,63 @@ pub struct SetUserApiKeyResponse {
 )]
 pub async fn set_user_api_key(
     user: LoggedUser,
+    data: web::Json<SetUserApiKeyRequest>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let new_api_key = web::block(move || set_user_api_key_query(user.id, pool))
+    let new_api_key = web::block(move || set_user_api_key_query(user.id, data.name.clone(), pool))
         .await?
         .map_err(|_err| ServiceError::BadRequest("Failed to set new API key for user".into()))?;
 
     Ok(HttpResponse::Ok().json(SetUserApiKeyResponse {
         api_key: new_api_key,
     }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/user/get_api_key",
+    context_path = "/api",
+    tag = "user",
+    responses(
+        (status = 200, description = "JSON body representing the api_key for the user", body = [Vec<ApiKeyDTO>]),
+        (status = 400, description = "Service error relating to creating api_key for the user", body = [DefaultError]),
+    ),
+)]
+pub async fn get_user_api_keys(
+    user: LoggedUser,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let api_keys = web::block(move || get_user_api_keys_query(user.id, pool))
+        .await?
+        .map_err(|_err| ServiceError::BadRequest("Failed to get API keys for user".into()))?;
+
+    Ok(HttpResponse::Ok().json(api_keys))
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct DeleteUserApiKeyRequest {
+    pub api_key_id: uuid::Uuid,
+}
+
+#[utoipa::path(
+    delete,
+    path = "/user/delete_api_key",
+    context_path = "/api",
+    tag = "user",
+    request_body(content = DeleteUserApiKeyRequest, description = "JSON request payload to delete a user api key", content_type = "application/json"),
+    responses(
+        (status = 200, description = "JSON body representing the api_key for the user", body = [Vec<ApiKeyDTO>]),
+        (status = 400, description = "Service error relating to creating api_key for the user", body = [DefaultError]),
+    ),
+)]
+pub async fn delete_user_api_key(
+    user: LoggedUser,
+    data: web::Json<DeleteUserApiKeyRequest>,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    web::block(move || delete_user_api_keys_query(user.id, data.api_key_id, pool))
+        .await?
+        .map_err(|_err| ServiceError::BadRequest("Failed to get API keys for user".into()))?;
+
+    Ok(HttpResponse::NoContent().finish())
 }

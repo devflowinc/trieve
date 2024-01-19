@@ -19,8 +19,15 @@ const SearchForm = () => {
     e.preventDefault();
     setIsGenerating(true);
     void fetch(`${apiHost}/user/set_api_key`, {
-      method: "GET",
+      method: "POST",
       credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      //TODO: Add modal to specify name
+      body: JSON.stringify({
+        "name": "search"
+      }),
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {

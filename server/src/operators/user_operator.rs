@@ -1,6 +1,6 @@
 use crate::data::models::{
-    ChunkFileWithName, ChunkMetadata, ChunkMetadataWithFileData, Organization, SlimUser,
-    UserDTOWithChunks, UserOrganization, UserRole,
+    ApiKeyDTO, ChunkFileWithName, ChunkMetadata, ChunkMetadataWithFileData, Organization, SlimUser,
+    UserApiKey, UserDTOWithChunks, UserOrganization, UserRole,
 };
 use crate::diesel::prelude::*;
 use crate::errors::ServiceError;
@@ -290,20 +290,21 @@ pub fn hash_password(password: &str) -> Result<String, DefaultError> {
 
 pub fn set_user_api_key_query(
     user_id: uuid::Uuid,
+    name: String,
     pool: web::Data<Pool>,
 ) -> Result<String, DefaultError> {
-    use crate::data::schema::users::dsl as users_columns;
-
     let raw_api_key = generate_api_key();
     let hashed_api_key = hash_password(&raw_api_key)?;
 
     let mut conn = pool.get().unwrap();
 
-    diesel::update(users_columns::users.filter(users_columns::id.eq(user_id)))
-        .set(users_columns::api_key_hash.eq(hashed_api_key))
+    let api_key_struct = UserApiKey::from_details(user_id, hashed_api_key.clone(), name);
+
+    diesel::insert_into(crate::data::schema::user_api_key::dsl::user_api_key)
+        .values(&api_key_struct)
         .execute(&mut conn)
         .map_err(|_| DefaultError {
-            message: "Failed to set api key",
+            message: "Error setting api key",
         })?;
 
     Ok(raw_api_key)
@@ -327,7 +328,8 @@ pub fn get_user_from_api_key_query(
             organization_columns::organizations
                 .on(organization_columns::id.eq(user_organizations_columns::organization_id)),
         )
-        .filter(users_columns::api_key_hash.eq(api_key_hash))
+        .inner_join(crate::data::schema::user_api_key::dsl::user_api_key)
+        .filter(crate::data::schema::user_api_key::dsl::api_key_hash.eq(api_key_hash))
         .select((
             User::as_select(),
             UserOrganization::as_select(),
@@ -355,6 +357,51 @@ pub fn get_user_from_api_key_query(
             message: "User not found",
         }),
     }
+}
+
+pub fn get_user_api_keys_query(
+    user_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Vec<ApiKeyDTO>, DefaultError> {
+    use crate::data::schema::user_api_key::dsl as user_api_key_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    let api_keys = user_api_key_columns::user_api_key
+        .filter(user_api_key_columns::user_id.eq(user_id))
+        .select(UserApiKey::as_select())
+        .load::<UserApiKey>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Error loading user api keys",
+        })?;
+
+    let api_keys = api_keys
+        .into_iter()
+        .map(|api_key| api_key.into())
+        .collect::<Vec<ApiKeyDTO>>();
+    Ok(api_keys)
+}
+
+pub fn delete_user_api_keys_query(
+    user_id: uuid::Uuid,
+    api_key_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::user_api_key::dsl as user_api_key_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::delete(
+        user_api_key_columns::user_api_key
+            .filter(user_api_key_columns::user_id.eq(user_id))
+            .filter(user_api_key_columns::id.eq(api_key_id)),
+    )
+    .execute(&mut conn)
+    .map_err(|_| DefaultError {
+        message: "Error deleting user api key",
+    })?;
+
+    Ok(())
 }
 
 pub fn create_user_query(
