@@ -17,10 +17,10 @@ import {
   isMessageArray,
   messageRoleFromIndex,
   type Message,
-} from "~/types/messages";
-import { Topic } from "~/types/topics";
+} from "../../types/messages";
+import { Topic } from "../../types/topics";
 import { AfMessage } from "../Atoms/AfMessage";
-import { DatasetAndUsageDTO } from "~/utils/apiTypes";
+import { DatasetAndUsageDTO } from "../../utils/apiTypes";
 
 export interface LayoutProps {
   currentDataset: Accessor<DatasetAndUsageDTO | null>;
@@ -163,7 +163,6 @@ const MainLayout = (props: LayoutProps) => {
           normal_chat: true,
         };
       }
-      console.log(dataset.dataset.id);
 
       const topicResponse = await fetch(`${apiHost}/topic`, {
         method: "POST",

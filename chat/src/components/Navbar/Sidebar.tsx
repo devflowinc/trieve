@@ -16,13 +16,13 @@ import {
   Setter,
   Show,
 } from "solid-js";
-import type { Topic } from "~/types/topics";
+import type { Topic } from "../../types/topics";
 import { FiSettings } from "solid-icons/fi";
 import { FullScreenModal } from "../Atoms/FullScreenModal";
 import { OnScreenThemeModeController } from "../Atoms/OnScreenThemeModeController";
 import { AiFillGithub } from "solid-icons/ai";
 import { TbMinusVertical } from "solid-icons/tb";
-import { DatasetAndUsageDTO, OrganizationDTO } from "~/utils/apiTypes";
+import { DatasetAndUsageDTO, OrganizationDTO } from "../../utils/apiTypes";
 import { DatasetSelectBox } from "../Atoms/DatasetSelectBox";
 import { OrganizationSelectBox } from "../Atoms/OrganizationSelectBox";
 

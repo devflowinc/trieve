@@ -5,9 +5,9 @@ import {
   Popover,
   PopoverButton,
   PopoverPanel,
-} from "solid-headless";
+} from "terracotta";
 import { FaSolidCheck } from "solid-icons/fa";
-import { OrganizationDTO } from "~/utils/apiTypes";
+import { OrganizationDTO } from "../../utils/apiTypes";
 
 export interface OrganizationSelectBoxProps {
   organizations: Accessor<OrganizationDTO[]>;

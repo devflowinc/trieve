@@ -5,7 +5,7 @@ import {
   PopoverButton,
   PopoverPanel,
   Transition,
-} from "solid-headless";
+} from "terracotta";
 import { createSignal } from "solid-js";
 import { BsMoonStars, BsSun } from "solid-icons/bs";
 import { CgScreen } from "solid-icons/cg";
