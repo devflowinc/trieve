@@ -6,6 +6,7 @@ import {
   createEffect,
   createSignal,
   onCleanup,
+  useContext,
 } from "solid-js";
 import {
   FiArrowDown,
@@ -20,10 +21,9 @@ import {
 } from "../../types/messages";
 import { Topic } from "../../types/topics";
 import { AfMessage } from "../Atoms/AfMessage";
-import { DatasetAndUsageDTO } from "../../utils/apiTypes";
+import { UserContext } from "../contexts/UserContext";
 
 export interface LayoutProps {
-  currentDataset: Accessor<DatasetAndUsageDTO | null>;
   setTopics: Setter<Topic[]>;
   isCreatingNormalTopic: Accessor<boolean>;
   setSelectedTopic: Setter<Topic | undefined>;
@@ -47,6 +47,8 @@ const MainLayout = (props: LayoutProps) => {
     textarea.style.height = `${textarea.scrollHeight}px`;
     setNewMessageContent(textarea.value);
   };
+
+  const userContext = useContext(UserContext);
 
   const [loadingMessages, setLoadingMessages] = createSignal<boolean>(true);
   const [messages, setMessages] = createSignal<Message[]>([]);
@@ -143,7 +145,7 @@ const MainLayout = (props: LayoutProps) => {
     topic_id: string | undefined;
     regenerateLastMessage?: boolean;
   }) => {
-    const dataset = props.currentDataset();
+    const dataset = userContext.currentDataset?.();
     if (!dataset) return;
 
     let finalTopicId = topic_id;
@@ -260,7 +262,7 @@ const MainLayout = (props: LayoutProps) => {
     if (!topicId) {
       return;
     }
-    const dataset = props.currentDataset();
+    const dataset = userContext.currentDataset?.();
     if (!dataset) return;
 
     setLoadingMessages(true);
@@ -335,7 +337,7 @@ const MainLayout = (props: LayoutProps) => {
                     content={message.content}
                     streamingCompletion={streamingCompletion}
                     onEdit={(content: string) => {
-                      const dataset = props.currentDataset();
+                      const dataset = userContext.currentDataset?.();
                       if (!dataset) return;
 
                       const newMessage: Message = {
