@@ -365,10 +365,6 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(web::post().to(handlers::message_handler::create_suggested_queries_handler)),
                             )
                             .service(
-                                web::resource("/search/{page}")
-                                    .route(web::post().to(handlers::chunk_handler::search_chunk)),
-                            )
-                            .service(
                                 web::resource("/generate")
                                 .route(web::post().to(handlers::chunk_handler::generate_off_chunks)),
                             )
@@ -456,7 +452,7 @@ pub async fn main() -> std::io::Result<()> {
                                             .to(handlers::collection_handler::get_logged_in_user_chunk_collections)),
                             )
                             .service(
-                                web::resource("/search/{page}")                                    
+                                web::resource("/search")                                    
                                 .route(
                                     web::post().to(handlers::chunk_handler::search_collections),
                                 ),
