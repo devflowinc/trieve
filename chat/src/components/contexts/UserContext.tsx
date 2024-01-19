@@ -73,7 +73,9 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     })
       .then((res) => {
         if (res.status === 401) {
-          window.location.href = `${api_host}/auth?redirect_uri=${window.origin}/dashboard`;
+          setUser(null);
+          setOrganizations([]);
+          return null;
         }
         return res.json();
       })
