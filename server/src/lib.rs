@@ -3,8 +3,8 @@ extern crate diesel;
 
 use crate::{
     handlers::auth_handler::build_oidc_client,
-    operators::
-        qdrant_operator::create_new_qdrant_collection_query,
+    operators::{
+        qdrant_operator::create_new_qdrant_collection_query, user_operator::create_default_user},
     
 };
 use actix_cors::Cors;
@@ -231,6 +231,12 @@ pub async fn main() -> std::io::Result<()> {
     let _ = create_new_qdrant_collection_query().await.map_err(|err| {
         log::error!("Failed to create qdrant collection: {:?}", err);
     });
+
+    if std::env::var("ADMIN_API_KEY").is_ok() {
+        let _ = create_default_user(&std::env::var("ADMIN_API_KEY").expect("ADMIN_API_KEY should be set"), web::Data::new(pool.clone())).map_err(|err| {
+            log::error!("Failed to create default user: {:?}", err);
+        });
+    }
 
     HttpServer::new(move || {
         App::new()
