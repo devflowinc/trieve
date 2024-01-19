@@ -178,7 +178,7 @@ export const Sidebar = (props: SidebarProps) => {
             </div>
           </button>
         </div>
-        <div class="flex w-full flex-col space-y-2 overflow-y-auto overflow-x-hidden px-2 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600">
+        <div class="scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600 flex w-full flex-col space-y-2 overflow-y-auto overflow-x-hidden px-2">
           <For each={props.topics()}>
             {(topic, index) => (
               <button
@@ -263,7 +263,7 @@ export const Sidebar = (props: SidebarProps) => {
         </div>
         <div class="flex-1 " />
         <div class="flex w-full flex-col space-y-1 border-t px-2 py-2 dark:border-neutral-400">
-          <div class="flex items-center space-x-2 ml-4">
+          <div class="ml-4 flex items-center space-x-2">
             <OrganizationSelectBox
               currentOrganization={props.currentOrganization}
               organizations={props.organizations}
