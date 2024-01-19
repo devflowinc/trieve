@@ -8,7 +8,7 @@ import {
   createMemo,
   createSignal,
 } from "solid-js";
-import { ChunkMetadataWithVotes } from "~/utils/apiTypes";
+import { ChunkMetadataWithVotes } from "../../utils/apiTypes";
 import ScoreChunk, { sanitzerOptions } from "../ScoreChunk";
 import sanitizeHtml from "sanitize-html";
 

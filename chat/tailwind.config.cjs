@@ -1,23 +1,31 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
+const defaultTheme = require("tailwindcss/defaultTheme");
+
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable no-undef */
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: "class",
-  content: ["./src/**/*.{html,js,jsx,ts,tsx}"],
+  content: ["./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}"],
   theme: {
     fontFamily: {
-      sans: ["Quicksand", "sans-serif"],
+      sans: ["Quicksand", ...defaultTheme.fontFamily.sans],
     },
     extend: {
-      backgroundImage: {
-        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "gradient-radial-t":
-          "radial-gradient(farthest-side at 50% -50%, var(--tw-gradient-stops))",
-        "gradient-radial-b":
-          "radial-gradient(farthest-side at 50% 150%, var(--tw-gradient-stops))",
-      },
       colors: {
+        shark: {
+          DEFAULT: "#202124",
+          50: "#767A85",
+          100: "#6D707A",
+          200: "#5A5C65",
+          300: "#46494F",
+          400: "#33353A",
+          500: "#202124",
+          600: "#1B1C1F",
+          700: "#161719",
+          800: "#121214",
+          900: "#0D0D0E",
+          950: "#0A0B0C",
+        },
         "cod-gray": {
           DEFAULT: "#0C0C0C",
           50: "#686868",
@@ -73,8 +81,34 @@ module.exports = {
           900: "#888888",
           950: "#7A7A7A",
         },
-        acid: "#D3FF19",
-        turquoise: "#00DDE7",
+        acid: {
+          DEFAULT: "#D3FF19",
+          50: "#F6FFD1",
+          100: "#F2FFBC",
+          200: "#EAFF93",
+          300: "#E3FF6B",
+          400: "#DBFF42",
+          500: "#D3FF19",
+          600: "#B5E000",
+          700: "#88A800",
+          800: "#5A7000",
+          900: "#2D3800",
+          950: "#161C00",
+        },
+        turquoise: {
+          DEFAULT: "#00DDE7",
+          50: "#A0FBFF",
+          100: "#8BFAFF",
+          200: "#62F8FF",
+          300: "#3AF6FF",
+          400: "#11F5FF",
+          500: "#00DDE7",
+          600: "#00A7AF",
+          700: "#007277",
+          800: "#003C3F",
+          900: "#000607",
+          950: "#000000",
+        },
         magenta: {
           DEFAULT: "#A33EB5",
           50: "#E4C1EA",
@@ -90,10 +124,21 @@ module.exports = {
           950: "#000000",
         },
       },
+      keyframes: {
+        scrollup: {
+          "0%": { transform: "translateY(-125%)" },
+          "25%": { transform: "translateY(-75%)" },
+          "50%": { transform: "translateY(-50%)" },
+          "100%": { transform: "translateY(0%)" },
+        },
+      },
+      animation: {
+        scrollup: "scrollup 180ms linear infinite",
+      },
+      transitionProperty: {
+        width: "width",
+      },
     },
   },
-  plugins: [
-    require("tailwind-scrollbar")({ nocompatible: true }),
-    require("tailwind-gradient-mask-image"),
-  ],
+  plugins: [],
 };

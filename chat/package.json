@@ -1,46 +1,42 @@
 {
-  "name": "ai-debater",
-  "scripts": {
-    "dev": "solid-start dev",
-    "build": "solid-start build",
-    "start": "solid-start start",
-    "lint": "prettier --write \"**/*.{js,jsx,ts,tsx,md,mdx}\" && eslint --fix \"src/**/*.{js,ts,jsx,tsx}\"",
-    "lint:CI": "eslint --output-file eslint_report.json --format json \"src/**/*.{js,ts,jsx,tsx}\""
-  },
+  "name": "trieve-chat",
+  "private": false,
+  "version": "0.0.0",
   "type": "module",
-  "devDependencies": {
-    "@types/sanitize-html": "^2.9.0",
-    "autoprefixer": "^10.4.13",
-    "postcss": "^8.4.21",
-    "prettier": "2.8.7",
-    "solid-start-node": "^0.2.19",
-    "tailwindcss": "^3.2.4",
-    "typescript": "^4.9.4",
-    "vite": "^4.1.4"
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "prettier --write  \"**/*.{js,jsx,ts,tsx,md,mdx,}\" && eslint --fix \"src/**/*.{js,ts,jsx,tsx,astro}\"",
+    "lint:only": "eslint --fix \"src/**/*.{js,ts,jsx,tsx,}\"",
+    "lint:CI": "eslint --fix --output-file eslint_report.json --format json \"src/**/*.{js,ts,jsx,tsx,}\""
   },
   "dependencies": {
-    "@solid-aria/switch": "^0.1.2",
-    "@solid-aria/visually-hidden": "^0.1.3",
-    "@solidjs/meta": "^0.28.2",
-    "@solidjs/router": "^0.8.2",
-    "@tailwindcss/line-clamp": "^0.4.4",
-    "@typescript-eslint/eslint-plugin": "^5.59.0",
-    "@typescript-eslint/parser": "^5.59.0",
-    "eslint": "^8.38.0",
-    "eslint-config-prettier": "^8.8.0",
-    "eslint-plugin-prettier": "^4.2.1",
-    "eslint-plugin-solid": "^0.12.1",
-    "prettier-plugin-tailwindcss": "^0.2.7",
+    "@solidjs/router": "^0.10.1",
     "sanitize-html": "^2.11.0",
-    "solid-headless": "^0.13.1",
-    "solid-icons": "^1.0.4",
-    "solid-js": "^1.7.2",
-    "solid-start": "^0.2.26",
-    "tailwind-gradient-mask-image": "^1.0.0",
-    "tailwind-scrollbar": "^3.0.0",
-    "undici": "^5.15.1"
+    "solid-icons": "^1.1.0",
+    "solid-js": "^1.8.5",
+    "terracotta": "^1.0.3"
   },
-  "engines": {
-    "node": ">=16"
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.13.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-config-semistandard": "^17.0.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-n": "^15.0.0",
+    "eslint-plugin-prettier": "^5.0.1",
+    "eslint-plugin-promise": "^6.0.0",
+    "eslint-plugin-solid": "^0.13.0",
+    "postcss": "^8.4.32",
+    "prettier": "3.1.1",
+    "prettier-plugin-tailwindcss": "^0.5.11",
+    "tailwindcss": "^3.3.6",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.0",
+    "vite-plugin-solid": "^2.7.2"
   }
 }

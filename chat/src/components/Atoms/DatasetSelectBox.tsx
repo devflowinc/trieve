@@ -6,8 +6,8 @@ import {
   Popover,
   PopoverButton,
   PopoverPanel,
-} from "solid-headless";
-import { DatasetAndUsageDTO } from "~/utils/apiTypes";
+} from "terracotta";
+import { DatasetAndUsageDTO } from "../../utils/apiTypes";
 
 export interface DatasetSelectBoxProps {
   datasetsAndUsages: Accessor<DatasetAndUsageDTO[]>;
