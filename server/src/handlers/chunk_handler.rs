@@ -671,6 +671,7 @@ pub async fn update_chunk_by_tracking_id(
 pub struct SearchChunkData {
     pub search_type: String,
     pub content: String,
+    pub page: Option<u64>,
     pub link: Option<Vec<String>>,
     pub tag_set: Option<Vec<String>>,
     pub time_range: Option<(String, String)>,
@@ -741,19 +742,15 @@ fn parse_query(query: String) -> ParsedQuery {
         (status = 200, description = "chunks which are similar to the embedding vector of the search query", body = [SearchChunkQueryResponseBody]),
         (status = 400, description = "Service error relating to searching", body = [DefaultError]),
     ),
-    params(
-        ("page" = Option<u64>, Path, description = "Page number of the search results")
-    ),
 )]
 #[allow(clippy::too_many_arguments)]
 pub async fn search_chunk(
     data: web::Json<SearchChunkData>,
-    page: Option<web::Path<u64>>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let page = page.map(|page| page.into_inner()).unwrap_or(1);
+    let page = data.page.unwrap_or(1);
     let dataset_id = dataset_org_plan_sub.dataset.id;
     let parsed_query = parse_query(data.content.clone());
 
@@ -776,6 +773,7 @@ pub async fn search_chunk(
 #[into_params(style = Form, parameter_in = Query)]
 pub struct SearchCollectionsData {
     pub content: String,
+    pub page: Option<u64>,
     pub link: Option<Vec<String>>,
     pub tag_set: Option<Vec<String>>,
     pub filters: Option<serde_json::Value>,
@@ -789,6 +787,7 @@ impl From<SearchCollectionsData> for SearchChunkData {
     fn from(data: SearchCollectionsData) -> Self {
         Self {
             content: data.content,
+            page: data.page,
             link: data.link,
             tag_set: data.tag_set,
             time_range: None,
@@ -818,20 +817,16 @@ pub struct SearchCollectionsResult {
         (status = 200, description = "Collection chunks which are similar to the embedding vector of the search query", body = [SearchCollectionsResult]),
         (status = 400, description = "Service error relating to getting the collections that the chunk is in", body = [DefaultError]),
     ),
-    params(
-        ("page" = u64, description = "The page of search results to get"),
-    ),
 )]
 #[allow(clippy::too_many_arguments)]
 pub async fn search_collections(
     data: web::Json<SearchCollectionsData>,
-    page: Option<web::Path<u64>>,
     pool: web::Data<Pool>,
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
-    let page = page.map(|page| page.into_inner()).unwrap_or(1);
+    let page = data.page.unwrap_or(1);
     let collection_id = data.collection_id;
     let dataset_id = dataset_org_plan_sub.dataset.id;
     let full_text_search_pool: web::Data<
