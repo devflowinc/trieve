@@ -25,7 +25,9 @@ use actix_web::{web, HttpResponse};
 use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
 use openai_dive::v1::api::Client;
-use openai_dive::v1::resources::chat::{ChatCompletionParameters, ChatMessage, Role};
+use openai_dive::v1::resources::chat::{
+    ChatCompletionParameters, ChatMessage, ChatMessageContent, Role,
+};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -1036,14 +1038,14 @@ pub async fn generate_off_chunks(
     messages.truncate(prev_messages.len() - 1);
     messages.push(ChatMessage {
         role: Role::User,
-        content: Some("I am going to provide several pieces of information for you to use in response to a request or question. You will not respond until I ask you to.".to_string()),
+        content: ChatMessageContent::Text("I am going to provide several pieces of information for you to use in response to a request or question. You will not respond until I ask you to.".to_string()),
         tool_calls: None,
         name: None,
         tool_call_id: None,
     });
     messages.push(ChatMessage {
         role: Role::Assistant,
-        content: Some(
+        content: ChatMessageContent::Text(
             "Understood, I will not reply until I receive a direct request or question."
                 .to_string(),
         ),
@@ -1068,14 +1070,14 @@ pub async fn generate_off_chunks(
 
         messages.push(ChatMessage {
             role: Role::User,
-            content: Some(format!("Doc {}: {}", idx + 1, first_240_words)),
+            content: ChatMessageContent::Text(format!("Doc {}: {}", idx + 1, first_240_words)),
             tool_calls: None,
             name: None,
             tool_call_id: None,
         });
         messages.push(ChatMessage {
             role: Role::Assistant,
-            content: Some("".to_string()),
+            content: ChatMessageContent::Text("".to_string()),
             tool_calls: None,
             name: None,
             tool_call_id: None,
@@ -1083,7 +1085,7 @@ pub async fn generate_off_chunks(
     });
     messages.push(ChatMessage {
         role: Role::User,
-        content: Some(format!("Respond to this question and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for.: {}",prev_messages
+        content: ChatMessageContent::Text(format!("Respond to this question and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for.: {}",prev_messages
             .last()
             .expect("There needs to be at least 1 prior message")
             .content
@@ -1108,6 +1110,9 @@ pub async fn generate_off_chunks(
         response_format: None,
         tools: None,
         tool_choice: None,
+        logprobs: None,
+        top_logprobs: None,
+        seed: None,
     };
 
     let stream = client.chat().create_stream(parameters).await.unwrap();
