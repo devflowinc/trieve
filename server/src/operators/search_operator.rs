@@ -516,7 +516,6 @@ pub fn get_metadata_query(
                 user_columns::username,
                 user_columns::website,
                 user_columns::visible_email,
-                user_columns::api_key_hash,
                 user_columns::name,
             )
                 .nullable(),

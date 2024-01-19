@@ -22,7 +22,6 @@ pub struct User {
     pub username: Option<String>,
     pub website: Option<String>,
     pub visible_email: bool,
-    pub api_key_hash: Option<String>,
     pub name: Option<String>,
 }
 
@@ -36,7 +35,6 @@ impl User {
             username: None,
             website: None,
             visible_email: true,
-            api_key_hash: None,
             name: name.map(|n| n.into()),
         }
     }
@@ -54,7 +52,6 @@ impl User {
             username: None,
             website: None,
             visible_email: true,
-            api_key_hash: None,
             name: name.map(|n| n.into()),
         }
     }
@@ -1262,4 +1259,49 @@ pub struct OrganizationUsageCount {
     pub user_count: i32,
     pub file_storage: i32,
     pub message_count: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[diesel(table_name = user_api_key)]
+pub struct UserApiKey {
+    pub id: uuid::Uuid,
+    pub user_id: uuid::Uuid,
+    pub api_key_hash: String,
+    pub name: String,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl UserApiKey {
+    pub fn from_details(user_id: uuid::Uuid, api_key_hash: String, name: String) -> Self {
+        UserApiKey {
+            id: uuid::Uuid::new_v4(),
+            user_id,
+            api_key_hash,
+            name,
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct ApiKeyDTO {
+    pub id: uuid::Uuid,
+    pub user_id: uuid::Uuid,
+    pub name: String,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl From<UserApiKey> for ApiKeyDTO {
+    fn from(api_key: UserApiKey) -> Self {
+        ApiKeyDTO {
+            id: api_key.id,
+            user_id: api_key.user_id,
+            name: api_key.name,
+            created_at: api_key.created_at,
+            updated_at: api_key.updated_at,
+        }
+    }
 }
