@@ -4,7 +4,7 @@ import {
   DialogPanel,
   Transition,
   TransitionChild,
-} from "solid-headless";
+} from "terracotta";
 import { Accessor, JSX, Setter } from "solid-js";
 
 export interface FullScreenModalProps {

@@ -1,6 +1,6 @@
 import { BiRegularMenuAltLeft, BiRegularPlus } from "solid-icons/bi";
 import { Setter } from "solid-js";
-import { Topic } from "~/types/topics";
+import { Topic } from "../../types/topics";
 
 export interface NavbarProps {
   setSideBarOpen: Setter<boolean>;

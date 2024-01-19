@@ -1,22 +1,20 @@
 import { Show, createEffect, createSignal } from "solid-js";
-import { useSearchParams } from "solid-start";
-import MainLayout from "~/components/Layouts/MainLayout";
-import { Navbar } from "~/components/Navbar/Navbar";
-import { Sidebar } from "~/components/Navbar/Sidebar";
-import { detectReferralToken, isTopic } from "~/types/actix-api";
-import { Topic } from "~/types/topics";
+import MainLayout from "../components/Layouts/MainLayout";
+import { Navbar } from "../components/Navbar/Navbar";
+import { Sidebar } from "../components/Navbar/Sidebar";
+import { isTopic } from "..//types/actix-api";
+import { Topic } from "../types/topics";
 import {
   DatasetAndUsageDTO,
   isDatasetAndUsageDTO,
   isUserDTO,
   OrganizationDTO,
   UserDTO,
-} from "~/utils/apiTypes";
+} from "../utils/apiTypes";
 
-export const chat = () => {
+export const Chat = () => {
   const apiHost: string = import.meta.env.VITE_API_HOST as unknown as string;
 
-  const [searchParams] = useSearchParams();
   const [selectedTopic, setSelectedTopic] = createSignal<Topic | undefined>(
     undefined,
   );
@@ -77,8 +75,6 @@ export const chat = () => {
       });
     }
   });
-
-  detectReferralToken(searchParams.t);
 
   createEffect(() => {
     void fetch(`${apiHost}/auth/me`, {
@@ -177,7 +173,7 @@ export const chat = () => {
         </div>
         <div
           id="topic-layout"
-          class="w-full overflow-y-auto scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600"
+          class="scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600 w-full overflow-y-auto"
         >
           <Navbar
             selectedTopic={selectedTopic}
@@ -200,4 +196,4 @@ export const chat = () => {
   );
 };
 
-export default chat;
+export default Chat;
