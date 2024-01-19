@@ -15,6 +15,7 @@ import {
   For,
   Setter,
   Show,
+  useContext,
 } from "solid-js";
 import type { Topic } from "../../types/topics";
 import { FiSettings } from "solid-icons/fi";
@@ -22,9 +23,9 @@ import { FullScreenModal } from "../Atoms/FullScreenModal";
 import { OnScreenThemeModeController } from "../Atoms/OnScreenThemeModeController";
 import { AiFillGithub } from "solid-icons/ai";
 import { TbMinusVertical } from "solid-icons/tb";
-import { DatasetAndUsageDTO, OrganizationDTO } from "../../utils/apiTypes";
 import { DatasetSelectBox } from "../Atoms/DatasetSelectBox";
 import { OrganizationSelectBox } from "../Atoms/OrganizationSelectBox";
+import { UserContext } from "../contexts/UserContext";
 
 export interface SidebarProps {
   topics: Accessor<Topic[]>;
@@ -34,14 +35,6 @@ export interface SidebarProps {
   setCurrentTopic: (topic: Topic | undefined) => void;
   setSideBarOpen: Setter<boolean>;
   setIsCreatingNormalTopic: Setter<boolean>;
-
-  currentOrganization: Accessor<OrganizationDTO | null>;
-  setCurrentOrganization: Setter<OrganizationDTO | null>;
-  organizations: Accessor<OrganizationDTO[]>;
-
-  currentDataset: Accessor<DatasetAndUsageDTO | null>;
-  setCurrentDataset: Setter<DatasetAndUsageDTO | null>;
-  datasetsAndUsages: Accessor<DatasetAndUsageDTO[]>;
 }
 
 export const Sidebar = (props: SidebarProps) => {
@@ -54,11 +47,13 @@ export const Sidebar = (props: SidebarProps) => {
   const [settingsModalOpen, setSettingsModalOpen] = createSignal(false);
   const [starCount, setStarCount] = createSignal(0);
 
+  const userContext = useContext(UserContext);
+
   const submitEditText = async () => {
     const topics = props.topics();
     const topic = topics[editingIndex()];
 
-    const dataset = props.currentDataset();
+    const dataset = userContext.currentDataset?.();
     if (!dataset) return;
 
     const res = await fetch(`${apiHost}/topic`, {
@@ -85,7 +80,7 @@ export const Sidebar = (props: SidebarProps) => {
   };
 
   const deleteSelected = async () => {
-    const dataset = props.currentDataset();
+    const dataset = userContext.currentDataset?.();
     if (!dataset) return;
 
     const res = await fetch(`${apiHost}/topic`, {
@@ -264,17 +259,9 @@ export const Sidebar = (props: SidebarProps) => {
         <div class="flex-1 " />
         <div class="flex w-full flex-col space-y-1 border-t px-2 py-2 dark:border-neutral-400">
           <div class="ml-4 flex items-center space-x-2">
-            <OrganizationSelectBox
-              currentOrganization={props.currentOrganization}
-              organizations={props.organizations}
-              setCurrentOrganization={props.setCurrentOrganization}
-            />
+            <OrganizationSelectBox />
             <p class="text-2xl">/</p>
-            <DatasetSelectBox
-              currentDataset={props.currentDataset}
-              datasetsAndUsages={props.datasetsAndUsages}
-              setCurrentDataset={props.setCurrentDataset}
-            />
+            <DatasetSelectBox />
           </div>
           <button
             class="flex w-full items-center space-x-4  rounded-md px-3 py-2 hover:bg-neutral-200   dark:hover:bg-neutral-700"
@@ -310,7 +297,7 @@ export const Sidebar = (props: SidebarProps) => {
             <img src="/logo_512.png" class="h-7 w-7" />
             <div>
               <div class="mb-[-4px] w-full text-end align-bottom text-xs leading-3 text-turquoise">
-                {props.currentDataset()?.dataset.name}
+                {userContext.currentDataset?.()?.dataset.name}
               </div>
               <div class="align-top text-lg">
                 <span>Trieve</span>

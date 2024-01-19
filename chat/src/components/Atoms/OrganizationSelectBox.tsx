@@ -1,4 +1,4 @@
-import { Show, For, Accessor } from "solid-js";
+import { Show, For, useContext } from "solid-js";
 import {
   Menu,
   MenuItem,
@@ -7,15 +7,11 @@ import {
   PopoverPanel,
 } from "terracotta";
 import { FaSolidCheck } from "solid-icons/fa";
-import { OrganizationDTO } from "../../utils/apiTypes";
+import { UserContext } from "../contexts/UserContext";
 
-export interface OrganizationSelectBoxProps {
-  organizations: Accessor<OrganizationDTO[]>;
-  currentOrganization: Accessor<OrganizationDTO | null>;
-  setCurrentOrganization: (organization: OrganizationDTO) => void;
-}
+export const OrganizationSelectBox = () => {
+  const userContext = useContext(UserContext);
 
-export const OrganizationSelectBox = (props: OrganizationSelectBoxProps) => {
   return (
     <div>
       <div class="flex flex-col">
@@ -28,7 +24,7 @@ export const OrganizationSelectBox = (props: OrganizationSelectBoxProps) => {
                 class="flex items-center space-x-1 pb-1 text-sm"
               >
                 <span class="line-clamp-1 text-left text-sm">
-                  {props.currentOrganization()?.name}
+                  {userContext.currentOrganization?.()?.name}
                 </span>
                 <svg
                   fill="currentColor"
@@ -49,12 +45,12 @@ export const OrganizationSelectBox = (props: OrganizationSelectBoxProps) => {
                   class="absolute bottom-7 left-0 z-20 mt-2 h-fit w-[180px] rounded-md border bg-white p-1 dark:bg-neutral-800"
                 >
                   <Menu class="mx-1 space-y-0.5">
-                    <For each={props.organizations()}>
+                    <For each={userContext.organizations?.()}>
                       {(organizationItem) => {
                         const onClick = (e: Event) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          props.setCurrentOrganization(organizationItem);
+                          userContext.setCurrentOrganization(organizationItem);
                           setState(false);
                         };
                         return (
@@ -65,7 +61,7 @@ export const OrganizationSelectBox = (props: OrganizationSelectBoxProps) => {
                                 true,
                               "bg-neutral-300 dark:bg-neutral-700":
                                 organizationItem.id ===
-                                props.currentOrganization()?.id,
+                                userContext.currentOrganization?.()?.id,
                             }}
                             onClick={onClick}
                           >
@@ -75,7 +71,7 @@ export const OrganizationSelectBox = (props: OrganizationSelectBoxProps) => {
                               </span>
                             </div>
                             {organizationItem.id ==
-                              props.currentOrganization()?.id && (
+                              userContext.currentOrganization?.()?.id && (
                               <span>
                                 <FaSolidCheck class="text-sm" />
                               </span>
