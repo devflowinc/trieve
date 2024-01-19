@@ -458,3 +458,55 @@ pub fn add_user_to_organization(
 
     Ok(())
 }
+
+pub fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result<(), DefaultError> {
+    use crate::data::schema::organizations::dsl as organization_columns;
+    use crate::data::schema::user_organizations::dsl as user_organizations_columns;
+    use crate::data::schema::users::dsl as users_columns;
+
+    let api_key_hash = hash_password(api_key)?;
+
+    let mut conn = pool.get().unwrap();
+
+    let user = User::from_details_with_id(
+        uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
+        "default".to_string(),
+        None,
+    );
+
+    let user = diesel::insert_into(users_columns::users)
+        .values(&user)
+        .get_result::<User>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to create default user",
+        })?;
+
+    let org = Organization::from_details("default".to_string());
+
+    let org = diesel::insert_into(organization_columns::organizations)
+        .values(&org)
+        .get_result::<Organization>(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to create default organization",
+        })?;
+
+    let user_org = UserOrganization::from_details(user.id, org.id, UserRole::Owner);
+
+    diesel::insert_into(user_organizations_columns::user_organizations)
+        .values(&user_org)
+        .execute(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Failed to create default user organization",
+        })?;
+
+    let api_key_struct = UserApiKey::from_details(user.id, api_key_hash, "default".to_string());
+
+    diesel::insert_into(crate::data::schema::user_api_key::dsl::user_api_key)
+        .values(&api_key_struct)
+        .execute(&mut conn)
+        .map_err(|_| DefaultError {
+            message: "Error setting api key",
+        })?;
+
+    Ok(())
+}
