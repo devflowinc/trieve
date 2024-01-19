@@ -236,7 +236,7 @@ export const Sidebar = (props: SidebarProps) => {
                     <Show when={!topic.normal_chat}>
                       <BiRegularBrain class="mr-2 fill-current" />
                     </Show>
-                    <p class="line-clamp-1 break-all">{topic.resolution}</p>
+                    <p class="line-clamp-1 break-all">{topic.name}</p>
                     <div class="flex-1" />
                     <div class="flex flex-row items-center space-x-2">
                       {props.currentTopic() == topic && (
