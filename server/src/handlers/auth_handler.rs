@@ -226,6 +226,9 @@ pub async fn create_account(
     Ok(user_org)
 }
 
+/// logout
+///
+/// Invalidate your current auth credential stored in the cookie. This does not invalidate your API key.
 #[utoipa::path(
     delete,
     path = "/auth",
@@ -263,6 +266,9 @@ pub struct LoginState {
     pub inv_code: Option<uuid::Uuid>,
 }
 
+/// login
+///
+/// Login with your email and password, response sets a cookie in browser. If using headlessly, we recommend using the /user/set_api_key route to set an API key and then use that API key for authentication.
 #[utoipa::path(
     post,
     path = "/auth",
@@ -327,6 +333,9 @@ pub async fn login(
         .finish())
 }
 
+/// openid_callback
+///
+/// This is the callback route for the OAuth provider, it should not be called directly. Redirects to browser with set-cookie header.
 #[utoipa::path(
     get,
     path = "/auth/callback",
@@ -472,6 +481,9 @@ pub async fn callback(
         .finish())
 }
 
+/// get_me
+///
+/// Get the user corresponding to your current auth credentials.
 #[utoipa::path(
     get,
     path = "/auth",
@@ -480,7 +492,7 @@ pub async fn callback(
     responses(
         (status = 200, description = "The user corresponding to your current auth credentials", body = [SlimUser]),
         (status = 400, description = "Error message indicitating you are not currently signed in", body = [DefaultError]),
-    )
+    ),
 )]
 pub async fn get_me(
     logged_user: LoggedUser,

@@ -18,6 +18,9 @@ pub struct CreateTopicData {
     pub normal_chat: Option<bool>,
 }
 
+/// create_topic
+///
+/// Create a new chat topic. Topics are attached to a user and act as a coordinator for memory of gen-AI chat sessions.
 #[utoipa::path(
     post,
     path = "/topic",
@@ -70,6 +73,9 @@ pub struct DeleteTopicData {
     pub topic_id: uuid::Uuid,
 }
 
+/// delete_topic
+///
+/// Delete an existing chat topic. When a topic is deleted, all associated chat messages are also deleted.
 #[utoipa::path(
     delete,
     path = "/topic",
