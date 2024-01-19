@@ -39,6 +39,8 @@ export const Chat = () => {
       }) as Topic[];
       setTopics(topics);
       return topics;
+    } else {
+      console.log("bye");
     }
     return [];
   };
