@@ -1,20 +1,13 @@
-import { Show, createEffect, createSignal } from "solid-js";
+import { Show, createEffect, createSignal, useContext } from "solid-js";
 import MainLayout from "../components/Layouts/MainLayout";
 import { Navbar } from "../components/Navbar/Navbar";
 import { Sidebar } from "../components/Navbar/Sidebar";
-import { isTopic } from "..//types/actix-api";
 import { Topic } from "../types/topics";
-import {
-  DatasetAndUsageDTO,
-  isDatasetAndUsageDTO,
-  isUserDTO,
-  OrganizationDTO,
-  UserDTO,
-} from "../utils/apiTypes";
+import { UserContext } from "../components/contexts/UserContext";
+import { isTopic } from "../types/actix-api";
 
 export const Chat = () => {
-  const apiHost: string = import.meta.env.VITE_API_HOST as unknown as string;
-
+  const userContext = useContext(UserContext);
   const [selectedTopic, setSelectedTopic] = createSignal<Topic | undefined>(
     undefined,
   );
@@ -23,87 +16,14 @@ export const Chat = () => {
   const [isCreatingNormalTopic, setIsCreatingNormalTopic] =
     createSignal<boolean>(false);
   const [topics, setTopics] = createSignal<Topic[]>([]);
-  const [isLogin, setIsLogin] = createSignal<boolean>(false);
-  const [user, setUser] = createSignal<UserDTO | null>(null);
-  const [currentOrganization, setCurrentOrganization] =
-    createSignal<OrganizationDTO | null>(null);
-  const [organizations, setOrganizations] = createSignal<OrganizationDTO[]>([]);
-
-  const [datasetsAndUsages, setDatasetsAndUsages] = createSignal<
-    DatasetAndUsageDTO[]
-  >([]);
-  const [currentDataset, setCurrentDataset] =
-    createSignal<DatasetAndUsageDTO | null>(null);
-
-  createEffect(() => {
-    const u = user();
-    if (u !== null && typeof u === "object") {
-      setOrganizations(u.orgs);
-      setCurrentOrganization(u.orgs[0]);
-    }
-  });
-
-  createEffect(() => {
-    const organization = currentOrganization();
-
-    if (organization) {
-      void fetch(`${apiHost}/dataset/organization/${organization.id}`, {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "TR-Organization": organization.id,
-        },
-      }).then((res) => {
-        if (res.ok) {
-          void res
-            .json()
-            .then((data) => {
-              if (data && Array.isArray(data)) {
-                if (data.length === 0) {
-                  setDatasetsAndUsages([]);
-                }
-                if (data.length > 0 && data.every(isDatasetAndUsageDTO)) {
-                  setCurrentDataset(data[0]);
-                  setDatasetsAndUsages(data);
-                }
-              }
-            })
-            .catch((err) => {
-              console.log(err);
-            });
-        }
-      });
-    }
-  });
-
-  createEffect(() => {
-    void fetch(`${apiHost}/auth/me`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-    }).then((response) => {
-      setIsLogin(response.ok);
-
-      response
-        .json()
-        .then((data) => {
-          if (isUserDTO(data)) {
-            setUser(data);
-          }
-        })
-        .catch(() => {
-          setUser(null);
-        });
-    });
-  });
 
   const refetchTopics = async (): Promise<Topic[]> => {
-    const dataset = currentDataset();
-    if (!dataset) return [];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const api_host: string = import.meta.env.VITE_API_HOST;
 
-    const response = await fetch(`${apiHost}/topic`, {
+    const dataset = userContext.currentDataset?.();
+    if (!dataset) return [];
+    const response = await fetch(`${api_host}/topic`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -112,7 +32,6 @@ export const Chat = () => {
       credentials: "include",
     });
     if (!response.ok) return [];
-
     const data: unknown = await response.json();
     if (data !== null && typeof data === "object" && Array.isArray(data)) {
       const topics = data.filter((topic: unknown) => {
@@ -121,7 +40,6 @@ export const Chat = () => {
       setTopics(topics);
       return topics;
     }
-
     return [];
   };
 
@@ -130,44 +48,32 @@ export const Chat = () => {
   });
 
   return (
-    <Show when={isLogin()}>
+    <Show when={userContext.user?.() !== null}>
       <div class="relative flex h-screen flex-row bg-zinc-100 dark:bg-zinc-900">
         <div class="hidden w-1/4 overflow-x-hidden lg:block">
           <Sidebar
             currentTopic={selectedTopic}
-            setCurrentTopic={setSelectedTopic}
             refetchTopics={refetchTopics}
+            setCurrentTopic={setSelectedTopic}
             topics={topics}
             setIsCreatingTopic={setIsCreatingTopic}
             setSideBarOpen={setSideBarOpen}
             setIsCreatingNormalTopic={setIsCreatingNormalTopic}
-            currentOrganization={currentOrganization}
-            setCurrentOrganization={setCurrentOrganization}
-            organizations={organizations}
-            currentDataset={currentDataset}
-            setCurrentDataset={setCurrentDataset}
-            datasetsAndUsages={datasetsAndUsages}
           />
         </div>
         <div class="lg:hidden">
           <Show when={sidebarOpen()}>
             <Sidebar
               currentTopic={selectedTopic}
+              refetchTopics={refetchTopics}
               setCurrentTopic={(topic: Topic | undefined) => {
                 setIsCreatingTopic(false);
                 setSelectedTopic(topic);
               }}
-              refetchTopics={refetchTopics}
               topics={topics}
               setIsCreatingTopic={setIsCreatingTopic}
               setSideBarOpen={setSideBarOpen}
               setIsCreatingNormalTopic={setIsCreatingNormalTopic}
-              currentOrganization={currentOrganization}
-              setCurrentOrganization={setCurrentOrganization}
-              organizations={organizations}
-              currentDataset={currentDataset}
-              setCurrentDataset={setCurrentDataset}
-              datasetsAndUsages={datasetsAndUsages}
             />
           </Show>
         </div>
@@ -184,7 +90,6 @@ export const Chat = () => {
             setIsCreatingNormalTopic={setIsCreatingNormalTopic}
           />
           <MainLayout
-            currentDataset={currentDataset}
             setTopics={setTopics}
             setSelectedTopic={setSelectedTopic}
             isCreatingNormalTopic={isCreatingNormalTopic}

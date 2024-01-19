@@ -1,5 +1,5 @@
 import { FaSolidCheck } from "solid-icons/fa";
-import { Show, For, Accessor } from "solid-js";
+import { Show, For, useContext } from "solid-js";
 import {
   Menu,
   MenuItem,
@@ -7,17 +7,13 @@ import {
   PopoverButton,
   PopoverPanel,
 } from "terracotta";
-import { DatasetAndUsageDTO } from "../../utils/apiTypes";
+import { UserContext } from "../contexts/UserContext";
 
-export interface DatasetSelectBoxProps {
-  datasetsAndUsages: Accessor<DatasetAndUsageDTO[]>;
-  currentDataset: Accessor<DatasetAndUsageDTO | null>;
-  setCurrentDataset: (dataset: DatasetAndUsageDTO) => void;
-}
+export const DatasetSelectBox = () => {
+  const userContext = useContext(UserContext);
 
-export const DatasetSelectBox = (props: DatasetSelectBoxProps) => {
   return (
-    <Show when={props.datasetsAndUsages().length != 0}>
+    <Show when={userContext.datasetsAndUsages?.()?.length != 0}>
       <Popover defaultOpen={false} class="relative">
         {({ isOpen, setState }) => (
           <>
@@ -27,7 +23,7 @@ export const DatasetSelectBox = (props: DatasetSelectBoxProps) => {
               class="flex items-center space-x-1 pb-1 text-sm"
             >
               <span class="line-clamp-1 text-left text-sm">
-                {props.currentDataset()?.dataset.name}
+                {userContext.currentDataset?.()?.dataset?.name}
               </span>
               <svg
                 fill="currentColor"
@@ -48,12 +44,12 @@ export const DatasetSelectBox = (props: DatasetSelectBoxProps) => {
                 class="absolute bottom-5 left-0 z-20 mt-2 h-fit w-[180px] rounded-md border bg-white p-1 dark:bg-neutral-800"
               >
                 <Menu class="mx-1 space-y-0.5">
-                  <For each={props.datasetsAndUsages()}>
+                  <For each={userContext.datasetsAndUsages?.()}>
                     {(datasetItem) => {
                       const onClick = (e: Event) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        props.setCurrentDataset(datasetItem);
+                        userContext.setCurrentDataset(datasetItem);
                         setState(false);
                       };
                       return (
@@ -64,7 +60,7 @@ export const DatasetSelectBox = (props: DatasetSelectBoxProps) => {
                               true,
                             "bg-neutral-300 dark:bg-neutral-700":
                               datasetItem.dataset.id ===
-                              props.currentDataset()?.dataset.id,
+                              userContext.currentDataset?.()?.dataset.id,
                           }}
                           onClick={onClick}
                         >
@@ -74,7 +70,7 @@ export const DatasetSelectBox = (props: DatasetSelectBoxProps) => {
                             </span>
                           </div>
                           {datasetItem.dataset.id ==
-                            props.currentDataset()?.dataset.id && (
+                            userContext.currentDataset?.()?.dataset.id && (
                             <span>
                               <FaSolidCheck class="text-sm" />
                             </span>
