@@ -27,7 +27,7 @@ use crossbeam_channel::unbounded;
 use futures_util::stream;
 use openai_dive::v1::{
     api::Client,
-    resources::chat::{ChatCompletionParameters, ChatMessage, Role},
+    resources::chat::{ChatCompletionParameters, ChatMessage, ChatMessageContent, Role},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -382,7 +382,7 @@ pub async fn regenerate_message_handler(
 pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<String, DefaultError> {
     let prompt_topic_message = ChatMessage {
         role: Role::User,
-        content: Some(format!(
+        content: ChatMessageContent::Text(format!(
             "Write a 2-3 word topic name from the following prompt: {}",
             prompt
         )),
@@ -406,6 +406,9 @@ pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<Strin
         response_format: None,
         tools: None,
         tool_choice: None,
+        logprobs: None,
+        top_logprobs: None,
+        seed: None,
     };
 
     let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
@@ -425,15 +428,16 @@ pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<Strin
         .create(parameters)
         .await
         .expect("No OpenAI Completion for topic");
-    let topic = query
+    let topic = match &query
         .choices
         .first()
         .expect("No response for OpenAI completion")
         .message
         .content
-        .clone()
-        .unwrap_or("".to_string())
-        .to_string();
+    {
+        ChatMessageContent::Text(topic) => topic.clone(),
+        _ => "".to_string(),
+    };
 
     Ok(topic)
 }
@@ -491,16 +495,19 @@ pub async fn stream_response(
             model: "gpt-3.5-turbo-1106".into(),
             messages: vec![ChatMessage {
                 role: Role::User,
-                content: Some(format!(
+                content: ChatMessageContent::Text(format!(
                     "{}{}",
                     rag_prompt,
-                    openai_messages
+                    match openai_messages
                         .clone()
                         .last()
                         .expect("No messages")
                         .clone()
                         .content
-                        .unwrap_or("".to_string())
+                    {
+                        ChatMessageContent::Text(text) => text,
+                        _ => "".to_string(),
+                    }
                 )),
                 tool_calls: None,
                 name: None,
@@ -518,6 +525,9 @@ pub async fn stream_response(
             response_format: None,
             tools: None,
             tool_choice: None,
+            logprobs: None,
+            top_logprobs: None,
+            seed: None,
         };
 
         let evidence_search_query = client
@@ -525,14 +535,16 @@ pub async fn stream_response(
             .create(counter_arg_parameters)
             .await
             .expect("No OpenAI Completion for evidence search");
-        let query = &evidence_search_query
+        let query = match &evidence_search_query
             .choices
             .first()
             .expect("No response for OpenAI completion")
             .message
             .content
-            .clone()
-            .unwrap_or("".to_string());
+        {
+            ChatMessageContent::Text(query) => query.clone(),
+            _ => "".to_string(),
+        };
         let embedding_vector = create_embedding(query.as_str(), dataset_config.clone()).await?;
 
         let search_chunk_query_results = retrieve_qdrant_points_query(
@@ -587,9 +599,12 @@ pub async fn stream_response(
             .collect::<Vec<String>>()
             .join("\n\n");
 
-        last_message = Some(format!(
+        last_message = ChatMessageContent::Text(format!(
             "Here's my prompt. Include the document numbers that you used in square brackets at the end of the sentences that you used the docs for: {} \n\n Pretending you found it, use the following retrieved information as the basis of your response.: {}",
-            openai_messages.last().expect("There needs to be at least 1 prior message").content.clone().unwrap_or("".to_string()),
+            match &openai_messages.last().expect("There needs to be at least 1 prior message").content {
+                ChatMessageContent::Text(text) => text.clone(),
+                _ => "".to_string(),
+            },
             rag_content,
         ));
     }
@@ -629,6 +644,9 @@ pub async fn stream_response(
         response_format: None,
         tools: None,
         tool_choice: None,
+        logprobs: None,
+        top_logprobs: None,
+        seed: None,
     };
 
     let (s, r) = unbounded::<String>();
@@ -716,7 +734,7 @@ pub async fn create_suggested_queries_handler(
     let query = format!("generate 3 suggested queries based off this query a user made. Your only response should be the 3 queries which are comma seperated and are just text and you do not add any other context or information about the queries.  Here is the query: {}", data.query);
     let message = ChatMessage {
         role: Role::User,
-        content: Some(query),
+        content: ChatMessageContent::Text(query),
         tool_calls: None,
         name: None,
         tool_call_id: None,
@@ -736,6 +754,9 @@ pub async fn create_suggested_queries_handler(
         response_format: None,
         tools: None,
         tool_choice: None,
+        logprobs: None,
+        top_logprobs: None,
+        seed: None,
     };
 
     let mut query = client
@@ -743,34 +764,38 @@ pub async fn create_suggested_queries_handler(
         .create(parameters.clone())
         .await
         .expect("No OpenAI Completion for topic");
-    let mut queries: Vec<String> = query
+    let mut queries: Vec<String> = match &query
         .choices
         .first()
         .expect("No response for OpenAI completion")
         .message
         .content
-        .clone()
-        .unwrap_or("".to_string())
-        .split(',')
-        .map(|query| query.to_string().trim().trim_matches('\n').to_string())
-        .collect();
+    {
+        ChatMessageContent::Text(content) => content.clone(),
+        _ => "".to_string(),
+    }
+    .split(',')
+    .map(|query| query.to_string().trim().trim_matches('\n').to_string())
+    .collect();
     while queries.len() < 3 {
         query = client
             .chat()
             .create(parameters.clone())
             .await
             .expect("No OpenAI Completion for topic");
-        queries = query
+        queries = match &query
             .choices
             .first()
             .expect("No response for OpenAI completion")
             .message
             .content
-            .clone()
-            .unwrap_or("".to_string())
-            .split(',')
-            .map(|query| query.to_string().trim().trim_matches('\n').to_string())
-            .collect();
+        {
+            ChatMessageContent::Text(content) => content.clone(),
+            _ => "".to_string(),
+        }
+        .split(',')
+        .map(|query| query.to_string().trim().trim_matches('\n').to_string())
+        .collect();
     }
     Ok(HttpResponse::Ok().json(SuggestedQueriesResponse { queries }))
 }
