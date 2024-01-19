@@ -34,7 +34,7 @@ currentDataset.subscribe((dataset) => {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": dataset.dataset.id,
+        "TR-Dataset": dataset.dataset.id,
       },
     }).then((res) => {
       if (res.ok) {

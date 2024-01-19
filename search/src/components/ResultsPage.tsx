@@ -69,7 +69,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": dataset.dataset.id,
+        "TR-Dataset": dataset.dataset.id,
       },
     }).then((response) => {
       if (response.ok) {
@@ -92,7 +92,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset.dataset.id,
+        "TR-Dataset": dataset.dataset.id,
       },
       body: JSON.stringify({
         chunk_ids: resultChunks().flatMap((c) => {
@@ -145,7 +145,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset.dataset.id,
+        "TR-Dataset": dataset.dataset.id,
       },
       credentials: "include",
       body: JSON.stringify(requestBody),

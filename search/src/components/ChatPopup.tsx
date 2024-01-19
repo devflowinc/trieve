@@ -118,7 +118,7 @@ const ChatPopup = (props: LayoutProps) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "AF-Dataset": currentDataset.dataset.id,
+          "TR-Dataset": currentDataset.dataset.id,
         },
         credentials: "include",
         body: JSON.stringify(body),

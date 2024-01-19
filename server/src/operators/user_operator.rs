@@ -260,7 +260,7 @@ pub fn update_user_query(
 pub fn generate_api_key() -> String {
     let rng = rand::thread_rng();
     let api_key: String = format!(
-        "af-{}",
+        "tr-{}",
         rng.sample_iter(&Alphanumeric)
             .take(32)
             .map(char::from)

@@ -74,7 +74,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
       body: JSON.stringify({
@@ -135,7 +135,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
     void fetch(`${apiHost}/chunk/${props.chunkId ?? ""}`, {
       method: "GET",
       headers: {
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
     }).then((response) => {

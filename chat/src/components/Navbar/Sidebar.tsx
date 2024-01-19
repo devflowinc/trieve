@@ -65,7 +65,7 @@ export const Sidebar = (props: SidebarProps) => {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset.dataset.id,
+        "TR-Dataset": dataset.dataset.id,
       },
       credentials: "include",
       body: JSON.stringify({
@@ -92,7 +92,7 @@ export const Sidebar = (props: SidebarProps) => {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": dataset.dataset.id,
+        "TR-Dataset": dataset.dataset.id,
       },
       credentials: "include",
       body: JSON.stringify({

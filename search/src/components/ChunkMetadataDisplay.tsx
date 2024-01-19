@@ -80,7 +80,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
           method: "DELETE",
           credentials: "include",
           headers: {
-            "AF-Dataset": $currentDataset()?.dataset.id ?? "",
+            "TR-Dataset": $currentDataset()?.dataset.id ?? "",
           },
         }).then((response) => {
           setDeleting(false);

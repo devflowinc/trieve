@@ -147,7 +147,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
           credentials: "include",
           signal: abortController.signal,
           headers: {
-            "AF-Dataset": currentDataset.dataset.id,
+            "TR-Dataset": currentDataset.dataset.id,
           },
         },
       ).then((response) => {
@@ -178,7 +178,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "AF-Dataset": currentDataset.dataset.id,
+          "TR-Dataset": currentDataset.dataset.id,
         },
         signal: abortController.signal,
         credentials: "include",
@@ -226,7 +226,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            "AF-Dataset": currentDataset.dataset.id,
+            "TR-Dataset": currentDataset.dataset.id,
           },
           signal: abortController.signal,
           body: JSON.stringify({
@@ -266,7 +266,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
     }).then((response) => {
       if (response.ok) {
@@ -289,7 +289,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
       body: JSON.stringify({
         chunk_ids: metadatasWithVotes().flatMap((m) => {
@@ -321,7 +321,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
       body: JSON.stringify(body),
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
     }).then((response) => {
       setFetchingCollections(false);
@@ -347,7 +347,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "AF-Dataset": currentDataset.dataset.id,
+        "TR-Dataset": currentDataset.dataset.id,
       },
       body: JSON.stringify({
         positive_chunk_ids: ids,

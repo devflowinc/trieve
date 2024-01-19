@@ -31,7 +31,7 @@ currentOrganization.subscribe((organization) => {
       method: "GET",
       credentials: "include",
       headers: {
-        "AF-Organization": organization.id,
+        "TR-Organization": organization.id,
       },
     }).then((res) => {
       if (res.ok) {

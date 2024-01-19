@@ -38,7 +38,7 @@ where
         // Clone the Rc pointers so we can move them into the async block.
         let srv = self.service.clone();
         Box::pin(async move {
-            let org_id = match req.headers().get("AF-Organization") {
+            let org_id = match req.headers().get("TR-Organization") {
                 Some(org_header) => {
                     let orgid_result = org_header
                         .to_str()
@@ -76,7 +76,7 @@ where
                     }
                 }
 
-                None => match req.headers().get("AF-Dataset") {
+                None => match req.headers().get("TR-Dataset") {
                     Some(dataset_header) => {
                         let pool = req.app_data::<web::Data<Pool>>().unwrap().to_owned();
 
