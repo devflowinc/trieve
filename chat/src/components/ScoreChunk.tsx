@@ -143,7 +143,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               <>
                 <Show when={props.chunk.link && frontMatterVal == "link"}>
                   <a
-                    class="dark:text-turquoise-400 line-clamp-1 w-fit break-all text-magenta-400 underline"
+                    class="line-clamp-1 w-fit break-all text-magenta-400 underline dark:text-turquoise-400"
                     target="_blank"
                     href={props.chunk.link ?? ""}
                   >

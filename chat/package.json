@@ -19,6 +19,7 @@
     "terracotta": "^1.0.3"
   },
   "devDependencies": {
+    "@types/sanitize-html": "^2.9.5",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "autoprefixer": "^10.4.16",
