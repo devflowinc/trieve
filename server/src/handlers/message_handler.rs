@@ -36,6 +36,7 @@ use utoipa::ToSchema;
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct CreateMessageData {
+    pub model: Option<String>,
     pub new_message_content: String,
     pub topic_id: uuid::Uuid,
 }
@@ -143,6 +144,7 @@ pub async fn create_message_completion_handler(
         previous_messages,
         user.id,
         topic_id,
+        create_message_data.model,
         dataset_org_plan_sub.dataset,
         pool4,
     )
@@ -193,11 +195,13 @@ pub async fn get_all_topic_messages(
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct RegenerateMessageData {
+    model: Option<String>,
     topic_id: uuid::Uuid,
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct EditMessageData {
+    model: Option<String>,
     topic_id: uuid::Uuid,
     message_sort_order: i32,
     new_message_content: String,
@@ -256,6 +260,7 @@ pub async fn edit_message_handler(
 
     create_message_completion_handler(
         actix_web::web::Json(CreateMessageData {
+            model: data.model.clone(),
             new_message_content: new_message_content.to_string(),
             topic_id,
         }),
@@ -316,6 +321,7 @@ pub async fn regenerate_message_handler(
             previous_messages,
             user.id,
             topic_id,
+            data.model.clone(),
             dataset_org_plan_sub.dataset,
             pool3,
         )
@@ -373,6 +379,7 @@ pub async fn regenerate_message_handler(
         previous_messages_to_regenerate,
         user.id,
         topic_id,
+        data.model.clone(),
         dataset_org_plan_sub.dataset,
         pool3,
     )
@@ -392,7 +399,7 @@ pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<Strin
     };
     let openai_messages = vec![prompt_topic_message];
     let parameters = ChatCompletionParameters {
-        model: "gpt-3.5-turbo-1106".into(),
+        model: "gpt-3.5-turbo-1106".to_string(),
         messages: openai_messages,
         temperature: None,
         top_p: None,
@@ -448,6 +455,7 @@ pub async fn stream_response(
     messages: Vec<models::Message>,
     user_id: uuid::Uuid,
     topic_id: uuid::Uuid,
+    model: Option<String>,
     dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -492,7 +500,7 @@ pub async fn stream_response(
 
         // find evidence for the counter-argument
         let counter_arg_parameters = ChatCompletionParameters {
-            model: "gpt-3.5-turbo-1106".into(),
+            model: model.clone().unwrap_or("gpt-3.5-turbo-1106".to_string()),
             messages: vec![ChatMessage {
                 role: Role::User,
                 content: ChatMessageContent::Text(format!(
