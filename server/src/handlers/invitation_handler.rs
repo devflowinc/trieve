@@ -27,6 +27,9 @@ pub struct InvitationData {
     pub redirect_uri: String,
 }
 
+/// send_invitation
+/// 
+/// Invitations act as a way to invite users to join an organization. After a user is invited, they will automatically be added to the organization with the role specified in the invitation once they set their.
 #[utoipa::path(
     post,
     path = "/invitation",

@@ -72,15 +72,25 @@ pub async fn user_owns_chunk_tracking_id(
 
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
 pub struct CreateChunkData {
+    /// HTML content of the chunk. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content.
     pub chunk_html: Option<String>,
+    /// Link to the chunk. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation.
     pub link: Option<String>,
+    /// The tag set is a comma separated list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
     pub tag_set: Option<String>,
+    /// The file_uuid is the uuid of the file that the chunk is associated with. This is used to associate chunks with files. This is useful for when you want to delete a file and all of its associated chunks.
     pub file_uuid: Option<uuid::Uuid>,
+    /// The metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub metadata: Option<serde_json::Value>,
+    /// The chunk_vector is a vector of floats which can be used to create a custom embedding for the chunk. This is useful for when you want to create a custom embedding for a chunk. If this is not provided, the innerText of the chunk_html will be used to create the embedding.
     pub chunk_vector: Option<Vec<f32>>,
+    /// The tracking_id is a string which can be used to identify a chunk. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk. This is also useful for when you want to update a chunk by tracking_id.
     pub tracking_id: Option<String>,
+    /// The collection_id is the id of the collection that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a collection in one request.
     pub collection_id: Option<uuid::Uuid>,
+    /// The time_stamp should be an ISO 8601 combined date and time without timezone. It is used for time window filtering and recency-biasing search results.
     pub time_stamp: Option<String>,
+    /// The weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset.
     pub weight: Option<f64>,
 }
 
@@ -127,6 +137,9 @@ pub struct ReturnCreatedChunk {
     pub duplicate: bool,
 }
 
+/// create_chunk
+///
+/// Create a new chunk. If the chunk has the same tracking_id as an existing chunk, the request will fail. Once a chunk is created, it can be searched for using the search endpoint.
 #[utoipa::path(
     post,
     path = "/chunk",
