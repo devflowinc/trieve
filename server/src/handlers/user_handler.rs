@@ -19,7 +19,7 @@ pub struct UpdateUserData {
     pub username: Option<String>,
     /// In the sense of a legal name, not a username. The new name to assign to the user, if not provided, the current name will be used.
     pub name: Option<String>,
-    /// The new website to assign to the user, if not provided, the current website will be used.
+    /// The new website to assign to the user, if not provided, the current website will be used. Used for linking to the user's personal or company website.
     pub website: Option<String>,
     /// Determines if the user's email is visible to other users, if not provided, the current value will be used.
     pub visible_email: Option<bool>,
