@@ -84,6 +84,9 @@ pub struct UserCollectionQuery {
     pub page: u64,
 }
 
+/// get_user_collections
+///
+/// Fetch the collections which belong to a user specified by their id.
 #[utoipa::path(
     get,
     path = "/user/collections/{user_id}/{page}",
@@ -94,8 +97,8 @@ pub struct UserCollectionQuery {
         (status = 400, description = "Service error relating to getting the collections created by the given user", body = [DefaultError]),
     ),
     params(
-        ("user_id" = uuid::Uuid, description = "The id of the user to fetch collections for"),
-        ("page" = i64, description = "The page of collections to fetch"),
+        ("user_id" = uuid::Uuid, description = "The id of the user to fetch collections for."),
+        ("page" = i64, description = "The page of collections to fetch. Each page contains 10 collections. Support for custom page size is coming soon."),
     ),
 )]
 pub async fn get_specific_user_chunk_collections(
