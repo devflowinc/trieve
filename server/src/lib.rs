@@ -157,7 +157,7 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::collection_handler::UpdateChunkCollectionData,
                 handlers::collection_handler::AddChunkToCollectionData,
                 handlers::collection_handler::GetCollectionsForChunksData,
-                handlers::collection_handler::RemoveBookmarkData,
+                handlers::collection_handler::DeleteBookmarkPathData,
                 handlers::collection_handler::GenerateOffCollectionData,
                 handlers::collection_handler::GetAllBookmarksData,
                 handlers::collection_handler::BookmarkChunks,
@@ -207,19 +207,19 @@ pub async fn main() -> std::io::Result<()> {
             )
         ),
         tags(
-            (name = "invitation", description = "Invitation endpoint"),
-            (name = "auth", description = "Authentication endpoint"),
-            (name = "user", description = "User endpoint"),
-            (name = "organization", description = "Organization endpoint"),
-            (name = "dataset", description = "Dataset endpoint"),
-            (name = "chunk", description = "Chunk endpoint"),
-            (name = "chunk_collection", description = "Chunk collection/bookmarks endpoint"),
-            (name = "file", description = "File endpoint"),
-            (name = "notifications", description = "Notifications endpoint"),
-            (name = "topic", description = "Topic chat endpoint"),
-            (name = "message", description = "Message chat endpoint"),
-            (name = "stripe", description = "Stripe endpoint"),
-            (name = "health", description = "Health check endpoint"),
+            (name = "invitation", description = "Invitation endpoint. Exists to invite users to an organization."),
+            (name = "auth", description = "Authentication endpoint. Serves to register and authenticate users."),
+            (name = "user", description = "User endpoint. Enables you to modify user roles and information."),
+            (name = "organization", description = "Organization endpoint. Enables you to modify organization roles and information."),
+            (name = "dataset", description = "Dataset endpoint. Datasets belong to organizations and hold configuration information for both client and server. Datasets contain chunks and chunk collections."),
+            (name = "chunk", description = "Chunk endpoint. Think of chunks as individual searchable units of information. The majority of your integration will likely be with the Chunk endpoint."),
+            (name = "chunk_collection", description = "Chunk collections endpoint. Think of a chunk_collection as a bookmark folder within the dataset."),
+            (name = "file", description = "File endpoint. When files are uploaded, they are stored in S3 and broken up into chunks with text extraction from Apache Tika. You can upload files of pretty much any type up to 1GB in size. See chunking algorithm details at `docs.trieve.ai` for more information on how chunking works. Improved default chunking is on our roadmap."),
+            (name = "notifications", description = "Notifications endpoint. Files are uploaded asynchronously and notifications are sent to the user when the upload is complete. Soon, chunk creation will work in the same way."),
+            (name = "topic", description = "Topic chat endpoint. Think of topics as the storage system for gen-ai chat memory. Gen AI messages belong to topics."),
+            (name = "message", description = "Message chat endpoint. Messages are units belonging to a topic in the context of a chat with a LLM. There are system, user, and assistant messages."),
+            (name = "stripe", description = "Stripe endpoint. Used for the managed SaaS version of this app. Eventually this will become a micro-service. Reach out to the team using contact info found at `docs.trieve.ai` for more information."),
+            (name = "health", description = "Health check endpoint. Used to check if the server is up and running."),
         )
     )]
     struct ApiDoc;
@@ -432,11 +432,6 @@ pub async fn main() -> std::io::Result<()> {
                                         ),
                                     )
                                     .route(
-                                        web::delete().to(
-                                            handlers::collection_handler::delete_chunk_collection,
-                                        ),
-                                    )
-                                    .route(
                                         web::put().to(
                                             handlers::collection_handler::update_chunk_collection,
                                         ),
@@ -450,13 +445,20 @@ pub async fn main() -> std::io::Result<()> {
                                 ),
                             )
                             .service(
+                                web::resource("/bookmark/{collection_id}/{bookmark_id}").route(
+                                    web::delete().to(
+                                        handlers::collection_handler::delete_bookmark,
+                                    ),
+                                ),
+                            )
+                            .service(
                                 web::resource("/{page_or_chunk_collection_id}")
                                     .route(
                                         web::post().to(handlers::collection_handler::add_bookmark),
                                     )
                                     .route(
                                         web::delete()
-                                            .to(handlers::collection_handler::delete_bookmark),
+                                            .to(handlers::collection_handler::delete_chunk_collection),
                                     ).route(
                                         web::get()
                                             .to(handlers::collection_handler::get_logged_in_user_chunk_collections)),

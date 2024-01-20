@@ -32,10 +32,15 @@ pub async fn user_owns_collection(
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct CreateChunkCollectionData {
+    /// Name to assign to the chunk_collection. Does not need to be unique.
     pub name: String,
+    /// Description to assign to the chunk_collection. Convenience field for you to avoid having to remember what the collection is for.
     pub description: String,
 }
 
+/// create_chunk_collection
+///
+/// Create a new chunk_collection. Think of this as analogous to a bookmark folder.
 #[utoipa::path(
     post,
     path = "/chunk_collection",
@@ -86,12 +91,12 @@ pub struct UserCollectionQuery {
 
 /// get_user_collections
 ///
-/// Fetch the collections which belong to a user specified by their id.
+/// Fetch the collections which belong to a user specified by their id. We are soon going to refactor collections to relate to only datasets instead of datasets and users.
 #[utoipa::path(
     get,
     path = "/user/collections/{user_id}/{page}",
     context_path = "/api",
-    tag = "user",
+    tag = "chunk_collection",
     responses(
         (status = 200, description = "JSON body representing the collections created by the given user", body = [CollectionData]),
         (status = 400, description = "Service error relating to getting the collections created by the given user", body = [DefaultError]),
@@ -140,6 +145,9 @@ pub async fn get_specific_user_chunk_collections(
     }))
 }
 
+/// get_current_user_collections
+///
+/// Fetch the collections which belong to the currently logged in user. We are soon going to refactor collections to relate to only datasets instead of datasets and users.
 #[utoipa::path(
     get,
     path = "/chunk_collection/{page}",
@@ -153,6 +161,7 @@ pub async fn get_specific_user_chunk_collections(
         ("page" = u64, description = "The page of collections to fetch"),
     ),
 )]
+#[deprecated]
 pub async fn get_logged_in_user_chunk_collections(
     user: LoggedUser,
     page: web::Path<u64>,
@@ -195,25 +204,30 @@ pub struct DeleteCollectionData {
     pub collection_id: uuid::Uuid,
 }
 
+/// delete_chunk_collection
+///
+/// This will delete a chunk_collection. This will not delete the chunks that are in the collection. We will soon support deleting a chunk_collection along with its member chunks.
 #[utoipa::path(
     delete,
-    path = "/chunk_collection",
+    path = "/chunk_collection/{collection_id}",
     context_path = "/api",
     tag = "chunk_collection",
-    request_body(content = DeleteCollectionData, description = "JSON request payload to delete a chunkCollection", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the chunkCollection was deleted"),
         (status = 400, description = "Service error relating to deleting the chunkCollection", body = [DefaultError]),
     ),
+    params(
+        ("collection_id" = uuid, description = "Id of the chunk_collection to delete"),
+    ),
 )]
 pub async fn delete_chunk_collection(
-    data: web::Json<DeleteCollectionData>,
+    collection_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool2 = pool.clone();
-    let collection_id = data.collection_id;
+    let delete_collection_pool = pool.clone();
+    let collection_id = collection_id.into_inner();
 
     user_owns_collection(
         user.0.id,
@@ -224,7 +238,11 @@ pub async fn delete_chunk_collection(
     .await?;
 
     web::block(move || {
-        delete_collection_by_id_query(collection_id, dataset_org_plan_sub.dataset.id, pool2)
+        delete_collection_by_id_query(
+            collection_id,
+            dataset_org_plan_sub.dataset.id,
+            delete_collection_pool,
+        )
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -234,11 +252,17 @@ pub async fn delete_chunk_collection(
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct UpdateChunkCollectionData {
+    /// Id of the chunk_collection to update.
     pub collection_id: uuid::Uuid,
+    /// Name to assign to the chunk_collection. Does not need to be unique. If not provided, the name will not be updated.
     pub name: Option<String>,
+    /// Description to assign to the chunk_collection. Convenience field for you to avoid having to remember what the collection is for. If not provided, the description will not be updated.
     pub description: Option<String>,
 }
 
+/// update_chunk_collection
+///
+/// Update a chunk_collection. Think of this as analogous to a bookmark folder.
 #[utoipa::path(
     put,
     path = "/chunk_collection",
@@ -287,9 +311,13 @@ pub async fn update_chunk_collection(
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct AddChunkToCollectionData {
-    pub chunk_metadata_id: uuid::Uuid,
+    /// Id of the chunk to make a member of the collection. Think of this as "bookmark"ing a chunk.
+    pub chunk_id: uuid::Uuid,
 }
 
+/// add_bookmark
+///
+/// Route to add a bookmark. Think of a bookmark as a chunk which is a member of a collection.
 #[utoipa::path(
     post,
     path = "/chunk_collection/{collection_id}",
@@ -312,7 +340,7 @@ pub async fn add_bookmark(
     user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool2 = pool.clone();
-    let chunk_metadata_id = body.chunk_metadata_id;
+    let chunk_metadata_id = body.chunk_id;
     let collection_id = collection_id.into_inner();
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
@@ -347,6 +375,9 @@ pub struct BookmarkChunks {
     pub metadata: Vec<ChunkMetadataWithFileData>,
 }
 
+/// get_all_bookmarks
+///
+/// Route to get all bookmarks for a collection. Think of a bookmark as a chunk which is a member of a collection.
 #[utoipa::path(
     get,
     path = "/chunk_collection/{collection_id}/{page}",
@@ -482,34 +513,37 @@ pub async fn get_collections_chunk_is_in(
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]
-pub struct RemoveBookmarkData {
-    pub chunk_metadata_id: uuid::Uuid,
+pub struct DeleteBookmarkPathData {
+    pub collection_id: uuid::Uuid,
+    pub bookmark_id: uuid::Uuid,
 }
 
+/// delete_bookmark
+///
+/// Route to delete a bookmark. Think of a bookmark as a chunk which is a member of a collection.
 #[utoipa::path(
     delete,
-    path = "/chunk_collection/{collection_id}",
+    path = "/bookmark/{collection_id}/{bookmark_id}",
     context_path = "/api",
     tag = "chunk_collection",
-    request_body(content = RemoveBookmarkData, description = "JSON request payload to remove a chunk to a collection (un-bookmark it)", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the chunk was removed to the collection"),
         (status = 400, description = "Service error relating to removing the chunk from the collection", body = [DefaultError]),
     ),
     params(
         ("collection_id" = uuid::Uuid, description = "Id of the collection to remove the bookmark'ed chunk from"),
+        ("bookmark_id" = uuid::Uuid, description = "Id of the bookmark to remove"),
     ),
 )]
 pub async fn delete_bookmark(
-    collection_id: web::Path<uuid::Uuid>,
-    body: web::Json<RemoveBookmarkData>,
+    path_data: web::Path<DeleteBookmarkPathData>,
     pool: web::Data<Pool>,
     user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
-    let collection_id = collection_id.into_inner();
-    let bookmark_id = body.chunk_metadata_id;
+    let collection_id = path_data.collection_id;
+    let bookmark_id = path_data.bookmark_id;
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let pool = pool.clone();

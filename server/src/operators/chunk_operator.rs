@@ -725,7 +725,7 @@ pub fn find_relevant_sentence(
         }
         let sentence_index = split_x[0].parse::<usize>().unwrap();
         let phrase_index = split_x[1].parse::<usize>().unwrap();
-        let highlighted_sentence = format!("{}{}{}", "<mark>", split_x[2], "</mark>");
+        let highlighted_sentence = format!("{}{}{}", "<b>", split_x[2], "</b>");
         split_content[sentence_index][phrase_index] = highlighted_sentence;
     }
     new_output.chunk_html = Some(
