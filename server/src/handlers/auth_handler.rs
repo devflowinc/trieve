@@ -252,30 +252,37 @@ pub struct OpenIdConnectState {
 
 const OIDC_SESSION_KEY: &str = "oidc_state";
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, ToSchema)]
 pub struct AuthQuery {
+    /// ID of organization to authenticate into
     pub organization_id: Option<uuid::Uuid>,
+    /// URL to redirect to after successful login
     pub redirect_uri: Option<String>,
+    /// Code sent via email as a result of successful call to send_invitation
     pub inv_code: Option<uuid::Uuid>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LoginState {
+    /// URL to redirect to after successful login
     pub redirect_uri: String,
+    /// ID of organization to authenticate into
     pub organization_id: Option<uuid::Uuid>,
+    /// Code sent via email as a result of successful call to send_invitation
     pub inv_code: Option<uuid::Uuid>,
 }
 
 /// login
 ///
-/// Login with your email and password, response sets a cookie in browser. If using headlessly, we recommend using the /user/set_api_key route to set an API key and then use that API key for authentication.
+/// This will redirect you to the OAuth provider for authentication with email/pass, SSO, Google, Github, etc.
 #[utoipa::path(
     post,
     path = "/auth",
     context_path = "/api",
     tag = "auth",
+    request_body(content = AuthQuery, description = "Query parameters for login", content_type = "application/x-www-form-urlencoded"),
     responses(
-        (status = 200, description = "Response that redirects to OAuth provider"),
+        (status = 303, description = "Response that redirects to OAuth provider"),
         (status = 400, description = "OAuth Error", body = [DefaultError]),
     )
 )]
@@ -486,7 +493,7 @@ pub async fn callback(
 /// Get the user corresponding to your current auth credentials.
 #[utoipa::path(
     get,
-    path = "/auth",
+    path = "/auth/me",
     context_path = "/api",
     tag = "auth",
     responses(

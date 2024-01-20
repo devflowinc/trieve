@@ -64,6 +64,7 @@ pub async fn main() -> std::io::Result<()> {
     #[openapi(
         info(description = "Trieve REST API OpenAPI Documentation"),
         paths(
+            handlers::invitation_handler::post_invitation,
             handlers::auth_handler::login,
             handlers::auth_handler::logout,
             handlers::auth_handler::get_me,
@@ -123,6 +124,7 @@ pub async fn main() -> std::io::Result<()> {
         components(
             schemas(
                 handlers::auth_handler::AuthData,
+                handlers::auth_handler::AuthQuery,
                 handlers::topic_handler::CreateTopicData,
                 handlers::topic_handler::DeleteTopicData,
                 handlers::topic_handler::UpdateTopicData,
@@ -161,6 +163,7 @@ pub async fn main() -> std::io::Result<()> {
                 operators::collection_operator::BookmarkCollectionResult,
                 handlers::file_handler::UploadFileData,
                 handlers::file_handler::UploadFileResult,
+                handlers::invitation_handler::InvitationData,
                 handlers::notification_handler::NotificationId,
                 handlers::notification_handler::Notification,
                 handlers::organization_handler::CreateOrganizationData,
@@ -201,18 +204,19 @@ pub async fn main() -> std::io::Result<()> {
             )
         ),
         tags(
+            (name = "invitation", description = "Invitation endpoint"),
             (name = "auth", description = "Authentication endpoint"),
-            (name = "topic", description = "Topic chat endpoint"),
-            (name = "message", description = "Message chat endpoint"),
-            (name = "chunk", description = "chunk endpoint"),
             (name = "user", description = "User endpoint"),
-            (name = "chunk_collection", description = "chunk collection endpoint"),
-            (name = "file", description = "File endpoint"),
-            (name = "notifications", description = "Notifications endpoint"),
-            (name = "health", description = "Health check endpoint"),
             (name = "organization", description = "Organization endpoint"),
             (name = "dataset", description = "Dataset endpoint"),
+            (name = "chunk", description = "Chunk endpoint"),
+            (name = "chunk_collection", description = "Chunk collection/bookmarks endpoint"),
+            (name = "file", description = "File endpoint"),
+            (name = "notifications", description = "Notifications endpoint"),
+            (name = "topic", description = "Topic chat endpoint"),
+            (name = "message", description = "Message chat endpoint"),
             (name = "stripe", description = "Stripe endpoint"),
+            (name = "health", description = "Health check endpoint"),
         )
     )]
     struct ApiDoc;

@@ -13,20 +13,31 @@ use utoipa::ToSchema;
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct UpdateUserData {
+    /// The id of the user to update, if not provided, the auth'ed user will be updated. If provided, the auth'ed user must be an admin (1) or owner (2) of the organization.
     pub user_id: Option<uuid::Uuid>,
+    /// The new username to assign to the user, if not provided, the current username will be used.
     pub username: Option<String>,
+    /// In the sense of a legal name, not a username. The new name to assign to the user, if not provided, the current name will be used.
     pub name: Option<String>,
+    /// The new website to assign to the user, if not provided, the current website will be used.
     pub website: Option<String>,
+    /// Determines if the user's email is visible to other users, if not provided, the current value will be used.
     pub visible_email: Option<bool>,
+    /// Either 0 (user), 1 (admin), or 2 (owner). If not provided, the current role will be used. The auth'ed user must have a role greater than or equal to the role being assigned.
     pub role: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct GetUserWithChunksData {
+    /// The id of the user to fetch the chunks for.
     pub user_id: uuid::Uuid,
+    /// The page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon.
     pub page: i64,
 }
 
+/// get_user_chunks
+///
+/// Get the chunks which were made by a given user.
 #[utoipa::path(
     get,
     path = "/user/{user_id}/{page}",
@@ -37,8 +48,8 @@ pub struct GetUserWithChunksData {
         (status = 400, description = "Service error relating to getting the chunks for the given user", body = [DefaultError]),
     ),
     params(
-        ("user_id" = uuid::Uuid, description = "The id of the user to fetch"),
-        ("page" = i64, description = "The page of chunks to fetch"),
+        ("user_id" = uuid::Uuid, description = "The id of the user to fetch."),
+        ("page" = i64, description = "The page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon."),
     ),
 )]
 pub async fn get_user_with_chunks_by_id(
@@ -66,6 +77,9 @@ pub async fn get_user_with_chunks_by_id(
     }
 }
 
+/// update_user
+///
+/// Update a user's information. If the user_id is not provided, the auth'ed user will be updated. If the user_id is provided, the auth'ed user must be an admin (1) or owner (2) of the organization.
 #[utoipa::path(
     put,
     path = "/user",
@@ -154,14 +168,19 @@ pub async fn update_user(
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SetUserApiKeyRequest {
+    /// The name which will be assigned to the new api key.
     name: String,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SetUserApiKeyResponse {
+    /// The api key which was created. This is the value which should be used in the Authorization header.
     api_key: String,
 }
 
+/// set_user_api_key
+///
+/// Create a new api key for the auth'ed user.
 #[utoipa::path(
     post,
     path = "/user/set_api_key",
@@ -186,6 +205,9 @@ pub async fn set_user_api_key(
     }))
 }
 
+/// get_users_api_keys
+///
+/// Get the api keys which belong to the auth'ed user. The actual api key values are not returned, only the ids, names, and creation dates.
 #[utoipa::path(
     post,
     path = "/user/get_api_key",
@@ -209,9 +231,13 @@ pub async fn get_user_api_keys(
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct DeleteUserApiKeyRequest {
+    /// The id of the api key to delete.
     pub api_key_id: uuid::Uuid,
 }
 
+/// delete_user_api_key
+/// 
+/// Delete an api key for the auth'ed user.
 #[utoipa::path(
     delete,
     path = "/user/delete_api_key",
