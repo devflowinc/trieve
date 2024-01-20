@@ -170,8 +170,8 @@ pub struct GetDirectPaymentLinkData {
         (status = 400, description = "Service error relating to creating a URL for a stripe checkout page", body = [DefaultError]),
     ),
     params(
-        ("plan_id" = uuid, Path, description = "id of the plan you want to subscribe to"),
-        ("organization_id" = uuid, Path, description = "id of the organization you want to subscribe to the plan"),
+        ("plan_id" = uuid::Uuid, Path, description = "id of the plan you want to subscribe to"),
+        ("organization_id" = uuid::Uuid, Path, description = "id of the organization you want to subscribe to the plan"),
     ),
 )]
 pub async fn direct_to_payment_link(
@@ -268,8 +268,8 @@ pub struct UpdateSubscriptionData {
         (status = 400, description = "Service error relating to updating the subscription to the new plan", body = [DefaultError]),
     ),
     params(
-        ("subscription_id" = uuid, Path, description = "id of the subscription you want to update"),
-        ("plan_id" = uuid, Path, description = "id of the plan you want to subscribe to"),
+        ("subscription_id" = uuid::Uuid, Path, description = "id of the subscription you want to update"),
+        ("plan_id" = uuid::Uuid, Path, description = "id of the plan you want to subscribe to"),
     ),
 )]
 pub async fn update_subscription_plan(

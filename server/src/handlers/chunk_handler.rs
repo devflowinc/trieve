@@ -351,7 +351,7 @@ pub async fn create_chunk(
 
 #[utoipa::path(
     delete,
-    path = "/chunk/{chunk_id}}",
+    path = "/chunk/{chunk_id}",
     context_path = "/api",
     tag = "chunk",
     responses(

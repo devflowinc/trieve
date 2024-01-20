@@ -173,7 +173,7 @@ pub async fn delete_dataset(
 
 #[utoipa::path(
     get,
-    path = "/dataset",
+    path = "/dataset/{dataset_id}",
     context_path = "/api",
     tag = "dataset",
     responses(

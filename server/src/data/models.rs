@@ -397,7 +397,7 @@ impl ChunkCollection {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct SlimCollection {
     pub id: uuid::Uuid,
     pub name: String,
@@ -1126,7 +1126,7 @@ impl StripePlan {
 }
 
 #[derive(
-    Debug, Serialize, Deserialize, Selectable, Clone, Queryable, Insertable, ValidGrouping,
+    Debug, Serialize, Deserialize, Selectable, Clone, Queryable, Insertable, ValidGrouping, ToSchema,
 )]
 #[diesel(table_name = stripe_subscriptions)]
 pub struct StripeSubscription {

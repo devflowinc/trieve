@@ -179,6 +179,7 @@ pub async fn main() -> std::io::Result<()> {
                 data::models::ChunkMetadata,
                 data::models::ChunkMetadataWithFileData,
                 data::models::ChatMessageProxy,
+                data::models::SlimCollection,
                 data::models::UserDTOWithChunks,
                 data::models::File,
                 data::models::ChunkCollection,
@@ -186,6 +187,7 @@ pub async fn main() -> std::io::Result<()> {
                 data::models::FileDTO,
                 data::models::FileUploadCompletedNotificationWithName,
                 data::models::Organization,
+                data::models::OrganizationWithSubAndPlan,
                 data::models::Dataset,
                 data::models::DatasetAndUsage,
                 data::models::DatasetDTO,
@@ -194,6 +196,7 @@ pub async fn main() -> std::io::Result<()> {
                 data::models::DatasetAndOrgWithSubAndPlan,
                 data::models::ClientDatasetConfiguration,
                 data::models::StripePlan,
+                data::models::StripeSubscription,
                 errors::DefaultError,
             )
         ),
