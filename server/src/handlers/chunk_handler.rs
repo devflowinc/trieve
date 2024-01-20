@@ -1089,12 +1089,12 @@ pub async fn generate_off_chunks(
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+    let openai_api_key = get_env!("OPENROUTER_API_KEY", "OPENROUTER_API_KEY should be set").into();
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
     let base_url = dataset_config
         .LLM_BASE_URL
-        .unwrap_or("https://api.openai.com/v1".into());
+        .unwrap_or("https://openrouter.ai/v1".into());
 
     let client = Client {
         api_key: openai_api_key,
