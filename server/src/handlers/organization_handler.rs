@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 /// get_organization
-/// 
+///
 /// Fetch the details of an organization by its id. The auth'ed user must be an admin or owner of the organization to fetch it.
 #[utoipa::path(
     get,
@@ -53,7 +53,7 @@ pub struct UpdateOrganizationData {
 }
 
 /// update_organization
-/// 
+///
 /// Update an organization. Only the owner of the organization can update it.
 #[utoipa::path(
     put,
@@ -97,8 +97,6 @@ pub async fn update_organization(
 pub struct CreateOrganizationData {
     /// The arbitrary name which will be used to identify the organization. This name must be unique.
     name: String,
-    /// The configuration for the organization. Should likely default to `{}`. This is a JSON object which can be used to store configuration parameters. See docs.trieve.ai for more information or use the admin panel to set.
-    configuration: serde_json::Value,
 }
 
 /// create_organization
@@ -142,7 +140,7 @@ pub async fn create_organization(
 }
 
 /// get_organization_usage
-/// 
+///
 /// Fetch the current usage specification of an organization by its id. The auth'ed user must be an admin or owner of the organization to fetch it.
 #[utoipa::path(
     get,
@@ -172,7 +170,7 @@ pub async fn get_organization_usage(
 }
 
 /// get_organization_users
-/// 
+///
 /// Fetch the users of an organization by its id. The auth'ed user must be an admin or owner of the organization to fetch it.
 #[utoipa::path(
     get,
