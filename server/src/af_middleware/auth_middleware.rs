@@ -49,6 +49,33 @@ where
                         })?
                         .parse::<uuid::Uuid>();
 
+                    if let Some(dataset_header) = req.headers().get("TR-Dataset") {
+                        let pool = req.app_data::<web::Data<Pool>>().unwrap().to_owned();
+
+                        let dataset_id = dataset_header
+                            .to_str()
+                            .map_err(|_| {
+                                ServiceError::BadRequest("Dataset must be valid string".to_string())
+                            })?
+                            .parse::<uuid::Uuid>()
+                            .map_err(|_| {
+                                ServiceError::BadRequest("Dataset must be valid UUID".to_string())
+                            })?;
+
+                        let dataset = get_dataset_by_id_query(dataset_id, pool.clone()).await?;
+                        let org_plan_sub = get_organization_by_key_query(
+                            dataset.organization_id.into(),
+                            pool.clone(),
+                        )
+                        .await
+                        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+                        let dataset_org_plan_sub =
+                            DatasetAndOrgWithSubAndPlan::from_components(dataset, org_plan_sub);
+
+                        req.extensions_mut().insert(dataset_org_plan_sub.clone());
+                    }
+
                     match orgid_result {
                         Ok(org_id) => org_id,
                         Err(_) => {
