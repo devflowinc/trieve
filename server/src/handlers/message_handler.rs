@@ -695,6 +695,7 @@ pub async fn stream_response(
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct SuggestedQueriesRequest {
+    /// The query to base the generated suggested queries off of.
     pub query: String,
 }
 
@@ -703,6 +704,9 @@ pub struct SuggestedQueriesResponse {
     pub queries: Vec<String>,
 }
 
+/// create_suggested_queries
+///
+/// This endpoint will generate 3 suggested queries based off the query provided in the request body and return them as a JSON object.
 #[utoipa::path(
     post,
     path = "/chunk/gen_suggestions",

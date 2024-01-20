@@ -76,21 +76,21 @@ pub struct CreateChunkData {
     pub chunk_html: Option<String>,
     /// Link to the chunk. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation.
     pub link: Option<String>,
-    /// The tag set is a comma separated list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
+    /// Tag set is a comma separated list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
     pub tag_set: Option<String>,
-    /// The file_uuid is the uuid of the file that the chunk is associated with. This is used to associate chunks with files. This is useful for when you want to delete a file and all of its associated chunks.
+    /// File_uuid is the uuid of the file that the chunk is associated with. This is used to associate chunks with files. This is useful for when you want to delete a file and all of its associated chunks.
     pub file_uuid: Option<uuid::Uuid>,
-    /// The metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
+    /// Metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub metadata: Option<serde_json::Value>,
-    /// The chunk_vector is a vector of floats which can be used to create a custom embedding for the chunk. This is useful for when you want to create a custom embedding for a chunk. If this is not provided, the innerText of the chunk_html will be used to create the embedding.
+    /// Chunk_vector is a vector of floats which can be used instead of generating a new embedding. This is useful for when you are using a pre-embedded dataset. If this is not provided, the innerText of the chunk_html will be used to create the embedding.
     pub chunk_vector: Option<Vec<f32>>,
-    /// The tracking_id is a string which can be used to identify a chunk. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk. This is also useful for when you want to update a chunk by tracking_id.
+    /// Tracking_id is a string which can be used to identify a chunk. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk.
     pub tracking_id: Option<String>,
-    /// The collection_id is the id of the collection that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a collection in one request.
+    /// Collection_id is the id of the collection that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a collection in one request.
     pub collection_id: Option<uuid::Uuid>,
-    /// The time_stamp should be an ISO 8601 combined date and time without timezone. It is used for time window filtering and recency-biasing search results.
+    /// Time_stamp should be an ISO 8601 combined date and time without timezone. It is used for time window filtering and recency-biasing search results.
     pub time_stamp: Option<String>,
-    /// The weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset.
+    /// Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset.
     pub weight: Option<f64>,
 }
 
@@ -362,6 +362,9 @@ pub async fn create_chunk(
     }))
 }
 
+/// delete_chunk
+///
+/// Delete a chunk by its id. If deleting a root chunk which has a collision, the most recently created collision will become a new root chunk.
 #[utoipa::path(
     delete,
     path = "/chunk/{chunk_id}",
@@ -399,6 +402,9 @@ pub async fn delete_chunk(
     Ok(HttpResponse::NoContent().finish())
 }
 
+/// delete_chunk_by_tracking_id
+///
+/// Delete a chunk by tracking_id. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk. If deleting a root chunk which has a collision, the most recently created collision will become a new root chunk.
 #[utoipa::path(
     delete,
     path = "/chunk/tracking_id/{tracking_id}",
@@ -441,12 +447,19 @@ pub async fn delete_chunk_by_tracking_id(
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct UpdateChunkData {
+    /// Id of the chunk you want to update.
     chunk_uuid: uuid::Uuid,
+    /// Link of the chunk you want to update. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation. If no link is provided, the existing link will be used.
     link: Option<String>,
+    /// HTML content of the chunk you want to update. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content. If no chunk_html is provided, the existing chunk_html will be used.
     chunk_html: Option<String>,
+    /// The metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata. If no metadata is provided, the existing metadata will be used.
     metadata: Option<serde_json::Value>,
+    /// Tracking_id is a string which can be used to identify a chunk. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk. If no tracking_id is provided, the existing tracking_id will be used.
     tracking_id: Option<String>,
+    /// Time_stamp should be an ISO 8601 combined date and time without timezone. It is used for time window filtering and recency-biasing search results. If no time_stamp is provided, the existing time_stamp will be used.
     time_stamp: Option<String>,
+    /// Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset. If no weight is provided, the existing weight will be used.
     weight: Option<f64>,
 }
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
@@ -455,6 +468,9 @@ pub struct ChunkHtmlUpdateError {
     changed_content: String,
 }
 
+/// update_chunk
+///
+/// Update a chunk. If you try to change the tracking_id of the chunk to have the same tracking_id as an existing chunk, the request will fail.
 #[utoipa::path(
     put,
     path = "/chunk/update",
@@ -559,15 +575,23 @@ pub async fn update_chunk(
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct UpdateChunkByTrackingIdData {
-    chunk_uuid: Option<uuid::Uuid>,
-    link: Option<String>,
-    chunk_html: Option<String>,
-    metadata: Option<serde_json::Value>,
+    /// Tracking_id of the chunk you want to update. This is required to match an existing chunk.
     tracking_id: String,
+    /// Link of the chunk you want to update. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation. If no link is provided, the existing link will be used.
+    link: Option<String>,
+    /// HTML content of the chunk you want to update. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content. If no chunk_html is provided, the existing chunk_html will be used.
+    chunk_html: Option<String>,
+    /// The metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata. If no metadata is provided, the existing metadata will be used.
+    metadata: Option<serde_json::Value>,
+    /// Time_stamp should be an ISO 8601 combined date and time without timezone. It is used for time window filtering and recency-biasing search results. If no time_stamp is provided, the existing time_stamp will be used.
     time_stamp: Option<String>,
+    /// Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset. If no weight is provided, the existing weight will be used.
     weight: Option<f64>,
 }
 
+/// update_chunk_by_tracking_id
+///
+/// Update a chunk by tracking_id. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk.
 #[utoipa::path(
     put,
     path = "/chunk/tracking_id/update",
@@ -682,15 +706,25 @@ pub async fn update_chunk_by_tracking_id(
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct SearchChunkData {
+    /// Can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using reciprocal rank fusion using the specified weights or BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: String,
-    pub content: String,
+    /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
+    pub query: String,
+    /// Page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon.
     pub page: Option<u64>,
+    /// Link set is a comma separated list of links. This can be used to filter chunks by link. HNSW indices do not exist for links, so there is a performance hit for filtering on them.
     pub link: Option<Vec<String>>,
+    /// Tag_set is a comma separated list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
     pub tag_set: Option<Vec<String>>,
+    /// Time_range is a tuple of two ISO 8601 combined date and time without timezone. The first value is the start of the time range and the second value is the end of the time range. This can be used to filter chunks by time range. HNSW indices do not exist for time range, so there is a performance hit for filtering on them.
     pub time_range: Option<(String, String)>,
+    /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<serde_json::Value>,
+    /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
     pub date_bias: Option<bool>,
+    /// Set cross_encoder to true to use the BAAI/bge-reranker-large model to re-rank search results. This will only apply if in hybrid search mode. If no weighs are specified, the re-ranker will be used by default.
     pub cross_encoder: Option<bool>,
+    /// Weights are a tuple of two floats. The first value is the weight for the semantic search results and the second value is the weight for the full-text search results. This can be used to bias search results towards semantic or full-text results. This will only apply if in hybrid search mode and cross_encoder is set to false.
     pub weights: Option<(f64, f64)>,
 }
 
@@ -745,6 +779,9 @@ fn parse_query(query: String) -> ParsedQuery {
     }
 }
 
+/// search
+///
+/// This route provides the primary search functionality for the API. It can be used to search for chunks by semantic similarity, full-text similarity, or a combination of both. The search_type parameter can be set to "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using reciprocal rank fusion using the specified weights or BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
 #[utoipa::path(
     post,
     path = "/chunk/search",
@@ -765,7 +802,7 @@ pub async fn search_chunk(
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = data.page.unwrap_or(1);
     let dataset_id = dataset_org_plan_sub.dataset.id;
-    let parsed_query = parse_query(data.content.clone());
+    let parsed_query = parse_query(data.query.clone());
 
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => search_full_text_chunks(data, parsed_query, page, pool, dataset_id).await?,
@@ -785,21 +822,29 @@ pub async fn search_chunk(
 #[derive(Serialize, Deserialize, Clone, ToSchema, IntoParams)]
 #[into_params(style = Form, parameter_in = Query)]
 pub struct SearchCollectionsData {
-    pub content: String,
+    /// The query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
+    pub query: String,
+    /// The page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon.
     pub page: Option<u64>,
+    /// The link set is a comma separated list of links. This can be used to filter chunks by link. HNSW indices do not exist for links, so there is a performance hit for filtering on them.
     pub link: Option<Vec<String>>,
+    /// The tag set is a comma separated list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
     pub tag_set: Option<Vec<String>>,
+    /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<serde_json::Value>,
+    /// Collection_id specifies the collection to search within. Results will only consist of chunks which are bookmarks within the specified collection.
     pub collection_id: uuid::Uuid,
     #[param(inline)]
+    /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: String,
+    /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
     pub date_bias: Option<bool>,
 }
 
 impl From<SearchCollectionsData> for SearchChunkData {
     fn from(data: SearchCollectionsData) -> Self {
         Self {
-            content: data.content,
+            query: data.query,
             page: data.page,
             link: data.link,
             tag_set: data.tag_set,
@@ -820,6 +865,9 @@ pub struct SearchCollectionsResult {
     pub total_pages: i64,
 }
 
+/// collection_search
+///
+/// This route allows you to search only within a collection. This is useful for when you only want search results to contain chunks which are members of a specific group. Think about this like searching within a playlist or bookmark folder.
 #[utoipa::path(
     post,
     path = "/chunk_collection/search",
@@ -853,7 +901,7 @@ pub async fn search_collections(
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?
     };
 
-    let parsed_query = parse_query(data.content.clone());
+    let parsed_query = parse_query(data.query.clone());
 
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => {
@@ -883,6 +931,9 @@ pub async fn search_collections(
     Ok(HttpResponse::Ok().json(result_chunks))
 }
 
+/// get_chunk
+///
+/// Get a singular chunk by id.
 #[utoipa::path(
     get,
     path = "/chunk/{chunk_id}",
@@ -893,7 +944,7 @@ pub async fn search_collections(
         (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = [DefaultError]),
     ),
     params(
-        ("chunk_id" = Option<uuid>, Path, description = "id of the chunk you want to fetch")
+        ("chunk_id" = Option<uuid>, Path, description = "Id of the chunk you want to fetch.")
     ),
 )]
 pub async fn get_chunk_by_id(
@@ -911,6 +962,9 @@ pub async fn get_chunk_by_id(
     Ok(HttpResponse::Ok().json(chunk))
 }
 
+/// get_chunk_by_tracking_id
+///
+/// Get a singular chunk by tracking_id. This is useful for when you are coordinating with an external system and want to use your own id as the primary reference for a chunk.
 #[utoipa::path(
     get,
     path = "/chunk/tracking_id/{tracking_id}",
@@ -946,9 +1000,13 @@ pub async fn get_chunk_by_tracking_id(
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct RecommendChunksRequest {
+    /// The ids of the chunks to be used as positive examples for the recommendation. The chunks in this array will be used to find similar chunks.
     pub positive_chunk_ids: Vec<uuid::Uuid>,
 }
 
+/// get_recommended_chunks
+///
+/// Get recommendations of chunks similar to the chunks in the request. Think about this as a feature similar to the "add to playlist" recommendation feature on Spotify. This request pairs especially well with our collections endpoint.
 #[utoipa::path(
     post,
     path = "/chunk/recommend",
@@ -997,10 +1055,15 @@ pub async fn get_recommended_chunks(
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct GenerateChunksRequest {
+    /// The previous messages to be placed into the chat history. The last message in this array will be the prompt for the model to inference on.
     pub prev_messages: Vec<ChatMessageProxy>,
+    /// The ids of the chunks to be retrieved and injected into the context window for RAG.
     pub chunk_ids: Vec<uuid::Uuid>,
 }
 
+/// generate_off_chunks
+///
+/// This endpoint exists as an alternative to the topic+message concept where our API handles chat memory. With this endpoint, the user is responsible for providing the context window and the prompt. See more in the "search before generate" page at docs.trieve.ai.
 #[utoipa::path(
     post,
     path = "/chunk/generate",
