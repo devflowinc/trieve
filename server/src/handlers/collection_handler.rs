@@ -139,7 +139,7 @@ pub async fn get_specific_user_chunk_collections(
 
 #[utoipa::path(
     get,
-    path = "/chunk_collection/{page_or_chunk_collection_id}",
+    path = "/chunk_collection/{page}",
     context_path = "/api",
     tag = "chunk_collection",
     responses(
@@ -147,7 +147,7 @@ pub async fn get_specific_user_chunk_collections(
         (status = 400, description = "Service error relating to getting the collections for the auth'ed user", body = [DefaultError]),
     ),
     params(
-        ("page_number" = u64, description = "The page of collections to fetch"),
+        ("page" = u64, description = "The page of collections to fetch"),
     ),
 )]
 pub async fn get_logged_in_user_chunk_collections(
@@ -289,7 +289,7 @@ pub struct AddChunkToCollectionData {
 
 #[utoipa::path(
     post,
-    path = "/chunk_collection/{page_or_chunk_collection_id}",
+    path = "/chunk_collection/{collection_id}",
     context_path = "/api",
     tag = "chunk_collection",
     request_body(content = AddChunkToCollectionData, description = "JSON request payload to add a chunk to a collection (bookmark it)", content_type = "application/json"),
@@ -298,7 +298,7 @@ pub struct AddChunkToCollectionData {
         (status = 400, description = "Service error relating to getting the collections that the chunk is in", body = [DefaultError]),
     ),
     params(
-        ("page_or_chunk_collection_id" = uuid::Uuid, description = "The id of the collection to add the chunk to"),
+        ("collection_id" = uuid, description = "Id of the collection to add the chunk to as a bookmark"),
     ),
 )]
 pub async fn add_bookmark(
@@ -485,7 +485,7 @@ pub struct RemoveBookmarkData {
 
 #[utoipa::path(
     delete,
-    path = "/chunk_collection/{page_or_chunk_collection_id}",
+    path = "/chunk_collection/{collection_id}",
     context_path = "/api",
     tag = "chunk_collection",
     request_body(content = RemoveBookmarkData, description = "JSON request payload to remove a chunk to a collection (un-bookmark it)", content_type = "application/json"),
@@ -494,7 +494,7 @@ pub struct RemoveBookmarkData {
         (status = 400, description = "Service error relating to removing the chunk from the collection", body = [DefaultError]),
     ),
     params(
-        ("page_or_chunk_collection_id" = uuid::Uuid, description = "The id of the collection to remove the bookmark'ed chunk from"),
+        ("collection_id" = uuid::Uuid, description = "Id of the collection to remove the bookmark'ed chunk from"),
     ),
 )]
 pub async fn delete_bookmark(
