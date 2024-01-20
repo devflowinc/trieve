@@ -12,6 +12,8 @@ use crate::{
     },
 };
 use actix_files::NamedFile;
+#[cfg(feature = "ocr")]
+use actix_web::http::header::ContentDisposition;
 use actix_web::{web, HttpResponse};
 use base64::{
     alphabet,
@@ -22,8 +24,6 @@ use base64::{
 use magick_rust::MagickWand;
 #[cfg(feature = "ocr")]
 use pyo3::{types::PyDict, Python};
-#[cfg(feature = "ocr")]
-use actix_web::http::header::ContentDisposition;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use utoipa::ToSchema;
@@ -182,6 +182,9 @@ pub async fn get_file_handler(
     Ok(HttpResponse::Ok().json(file))
 }
 
+/// get_user_files
+///
+/// Get all files which belong to a given user specified by the user_id parameter.
 #[utoipa::path(
     get,
     path = "/user/files/{user_id}",
@@ -192,7 +195,7 @@ pub async fn get_file_handler(
         (status = 400, description = "Service error relating to getting the files uploaded by the given user", body = [DefaultError]),
     ),
     params(
-        ("user_id" = uuid::Uuid, description = "The id of the user to fetch files for"),
+        ("user_id" = uuid::Uuid, description = "The id of the user to fetch files for."),
     ),
 )]
 pub async fn get_user_files_handler(
