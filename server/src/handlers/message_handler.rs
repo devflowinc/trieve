@@ -411,12 +411,12 @@ pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<Strin
         seed: None,
     };
 
-    let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+    let openai_api_key = get_env!("OPENROUTER_API_KEY", "OPENROUTER_API_KEY should be set").into();
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
     let base_url = dataset_config
         .LLM_BASE_URL
-        .unwrap_or("https://api.openai.com/v1".into());
+        .unwrap_or("https://openrouter.ai/v1".into());
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
@@ -460,11 +460,11 @@ pub async fn stream_response(
         .map(|message| ChatMessage::from(message.clone()))
         .collect();
 
-    let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+    let openai_api_key = get_env!("OPENROUTER_API_KEY", "OPENROUTER_API_KEY should be set").into();
     let base_url = dataset_config
-        .EMBEDDING_BASE_URL
+        .LLM_BASE_URL
         .clone()
-        .unwrap_or("https://api.openai.com/v1".into());
+        .unwrap_or("https://openrouter.ai/v1".into());
     let client = Client {
         api_key: openai_api_key,
         http_client: reqwest::Client::new(),
@@ -723,12 +723,12 @@ pub async fn create_suggested_queries_handler(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, ServiceError> {
-    let openai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+    let openai_api_key = get_env!("OPENROUTER_API_KEY", "OPENROUTER_API_KEY should be set").into();
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
     let base_url = dataset_config
-        .EMBEDDING_BASE_URL
-        .unwrap_or("https://api.openai.com/v1".into());
+        .LLM_BASE_URL
+        .unwrap_or("https://openrouter.ai/v1".into());
 
     let client = Client {
         api_key: openai_api_key,
@@ -767,7 +767,7 @@ pub async fn create_suggested_queries_handler(
         .chat()
         .create(parameters.clone())
         .await
-        .expect("No OpenAI Completion for topic");
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
     let mut queries: Vec<String> = match &query
         .choices
         .first()
