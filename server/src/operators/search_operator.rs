@@ -817,7 +817,7 @@ pub async fn retrieve_chunks_from_point_ids(
                 },
             };
 
-            chunk = find_relevant_sentence(chunk.clone(), data.content.clone()).unwrap_or(chunk);
+            chunk = find_relevant_sentence(chunk.clone(), data.query.clone()).unwrap_or(chunk);
             let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
                 .iter()
                 .filter(|chunk| chunk.qdrant_id == search_result.point_id)
@@ -874,7 +874,7 @@ pub async fn search_semantic_chunks(
     dataset: Dataset,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let embedding_vector = create_embedding(
-        &data.content,
+        &data.query,
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
     )
     .await?;
@@ -988,7 +988,7 @@ pub async fn search_hybrid_chunks(
     dataset: Dataset,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let embedding_vector = create_embedding(
-        &data.content,
+        &data.query,
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
     )
     .await?;
@@ -1061,7 +1061,7 @@ pub async fn search_hybrid_chunks(
                 },
             };
 
-            chunk = find_relevant_sentence(chunk.clone(), data.content.clone()).unwrap_or(chunk);
+            chunk = find_relevant_sentence(chunk.clone(), data.query.clone()).unwrap_or(chunk);
             let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
                 .iter()
                 .filter(|chunk| chunk.qdrant_id == search_result.point_id)
@@ -1084,7 +1084,7 @@ pub async fn search_hybrid_chunks(
             .unique_by(|score_chunk| score_chunk.metadata[0].id)
             .collect::<Vec<ScoreChunkDTO>>();
         SearchChunkQueryResponseBody {
-            score_chunks: cross_encoder(data.content.clone(), combined_results).await?,
+            score_chunks: cross_encoder(data.query.clone(), combined_results).await?,
             total_chunk_pages: search_chunk_query_results.total_chunk_pages,
         }
     } else if let Some(weights) = data.weights {
@@ -1132,7 +1132,7 @@ pub async fn search_semantic_collections(
     dataset: Dataset,
 ) -> Result<SearchCollectionsResult, actix_web::Error> {
     let embedding_vector: Vec<f32> = create_embedding(
-        &data.content,
+        &data.query,
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
     )
     .await?;
@@ -1195,7 +1195,7 @@ pub async fn search_semantic_collections(
                     weight: 1.0,
                 },
             };
-            chunk = find_relevant_sentence(chunk.clone(), data.content.clone()).unwrap_or(chunk);
+            chunk = find_relevant_sentence(chunk.clone(), data.query.clone()).unwrap_or(chunk);
 
             let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
                 .iter()
@@ -1244,7 +1244,7 @@ pub async fn search_full_text_collections(
     let pool1 = pool.clone();
 
     let search_chunk_query_results = search_full_text_collection_query(
-        data_inner.content.clone(),
+        data_inner.query.clone(),
         page,
         pool,
         data_inner.filters.clone(),

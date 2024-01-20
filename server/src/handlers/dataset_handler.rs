@@ -41,12 +41,19 @@ impl FromRequest for DatasetAndOrgWithSubAndPlan {
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct CreateDatasetRequest {
+    /// Name of the dataset. Must be unique within the organization.
     pub dataset_name: String,
+    /// Organization ID that the dataset will belong to.
     pub organization_id: uuid::Uuid,
+    /// Server configuration for the dataset, can be arbitrary JSON. We recommend setting to `{}` to start. See docs.trieve.ai for more information or adjust with the admin dashboard.
     pub server_configuration: serde_json::Value,
+    /// Client configuration for the dataset, can be arbitrary JSON. We recommend setting to `{}` to start. See docs.trieve.ai for more information or adjust with the admin dashboard.
     pub client_configuration: serde_json::Value,
 }
 
+/// create_dataset
+///
+/// Create a new dataset. The auth'ed user must be an owner of the organization to create a dataset.
 #[utoipa::path(
     post,
     path = "/dataset",
@@ -100,12 +107,19 @@ pub async fn create_dataset(
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct UpdateDatasetRequest {
+    /// The id of the dataset you want to update.
     pub dataset_id: uuid::Uuid,
+    /// The new name of the dataset. Must be unique within the organization. If not provided, the name will not be updated.
     pub dataset_name: Option<String>,
+    /// The new server configuration of the dataset, can be arbitrary JSON. See docs.trieve.ai for more information. If not provided, the server configuration will not be updated.
     pub server_configuration: Option<serde_json::Value>,
+    /// The new client configuration of the dataset, can be arbitrary JSON. See docs.trieve.ai for more information. If not provided, the client configuration will not be updated.
     pub client_configuration: Option<serde_json::Value>,
 }
 
+/// update_dataset
+///
+/// Update a dataset. The auth'ed user must be an owner of the organization to update a dataset.
 #[utoipa::path(
     put,
     path = "/dataset",
@@ -148,9 +162,13 @@ pub async fn update_dataset(
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct DeleteDatasetRequest {
+    /// The id of the dataset you want to delete.
     pub dataset_id: uuid::Uuid,
 }
 
+/// delete_dataset
+///
+/// Delete a dataset. The auth'ed user must be an owner of the organization to delete a dataset.
 #[utoipa::path(
     delete,
     path = "/dataset",
@@ -171,6 +189,9 @@ pub async fn delete_dataset(
     Ok(HttpResponse::NoContent().finish())
 }
 
+/// get_dataset
+///
+/// Get a dataset by id. The auth'ed user must be an admin or owner of the organization to get a dataset.
 #[utoipa::path(
     get,
     path = "/dataset/{dataset_id}",
@@ -181,7 +202,7 @@ pub async fn delete_dataset(
         (status = 400, description = "Service error relating to retrieving the dataset", body = [DefaultError]),
     ),
     params(
-        ("dataset_id" = uuid, Path, description = "id of the dataset you want to retrieve"),
+        ("dataset_id" = uuid, Path, description = "The id of the dataset you want to retrieve."),
     ),
 )]
 pub async fn get_dataset(
@@ -199,6 +220,9 @@ pub async fn get_dataset(
     Ok(HttpResponse::Ok().json(d))
 }
 
+/// get_organization_datasets
+///
+/// Get all datasets for an organization. The auth'ed user must be an admin or owner of the organization to get its datasets.
 #[utoipa::path(
     get,
     path = "/dataset/organization/{organization_id}",
@@ -232,6 +256,9 @@ pub async fn get_datasets_from_organization(
     Ok(HttpResponse::Ok().json(dataset_and_usages))
 }
 
+/// get_client_dataset_config
+///
+/// Get the client configuration for a dataset. Will use the TR-D
 #[utoipa::path(
     get,
     path = "/dataset/envs",
