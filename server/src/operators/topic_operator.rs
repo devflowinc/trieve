@@ -43,7 +43,6 @@ pub fn delete_topic_query(
 pub fn update_topic_query(
     topic_id: uuid::Uuid,
     topic_name: String,
-    topic_side: bool,
     given_dataset_id: uuid::Uuid,
     pool: &web::Data<Pool>,
 ) -> Result<(), DefaultError> {
@@ -58,7 +57,6 @@ pub fn update_topic_query(
     )
     .set((
         name.eq(topic_name),
-        side.eq(topic_side),
         updated_at.eq(diesel::dsl::now),
     ))
     .execute(&mut conn)
