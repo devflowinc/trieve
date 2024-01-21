@@ -17,6 +17,9 @@ pub enum Notification {
     FileUploadComplete(FileUploadCompletedNotificationWithName),
 }
 
+/// get_notifications
+/// 
+/// Get notifications for the auth'ed user. Currently, this is only for notifications belonging to the auth'ed user. Soon, we plan to associate notifications to datasets instead of users. Each page contains 10 notifications.
 #[utoipa::path(
     get,
     path = "/notifications/{page}",
@@ -54,9 +57,13 @@ pub async fn get_notifications(
 
 #[derive(Debug, Deserialize, Serialize, Clone, ToSchema)]
 pub struct NotificationId {
+    /// Id of the notification to target.
     pub notification_id: uuid::Uuid,
 }
 
+/// mark_read
+/// 
+/// Mark a notification specified by id as read. Currently, this is only for notifications belonging to the auth'ed user. Soon, we plan to associate notifications to datasets instead of users.
 #[utoipa::path(
     put,
     path = "/notifications",
@@ -90,6 +97,9 @@ pub async fn mark_notification_as_read(
     Ok(HttpResponse::NoContent().into())
 }
 
+/// mark_all_read
+/// 
+/// Mark all notifications as read. Currently, this is only for notifications belonging to the auth'ed user. Soon, we plan to associate notifications to datasets instead of users.
 #[utoipa::path(
     put,
     path = "/notifications_readall",
