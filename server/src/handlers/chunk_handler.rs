@@ -1055,7 +1055,7 @@ pub async fn get_recommended_chunks(
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct GenerateChunksRequest {
-    /// The model to use for the chat. This can be any model from the model list. If no model is provided, the gpt-3.5 will be used.
+    /// The model to use for the chat. This can be any model from the model list. If no model is provided, the gryphe/mythomax-l2-13b will be used.
     pub model: Option<String>,
     /// The previous messages to be placed into the chat history. The last message in this array will be the prompt for the model to inference on.
     pub prev_messages: Vec<ChatMessageProxy>,
@@ -1172,7 +1172,7 @@ pub async fn generate_off_chunks(
         model: data
             .model
             .clone()
-            .unwrap_or("gpt-3.5-turbo-1106".to_string()),
+            .unwrap_or("gryphe/mythomax-l2-13b".to_string()),
         messages,
         temperature: None,
         top_p: None,
