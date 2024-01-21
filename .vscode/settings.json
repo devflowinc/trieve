@@ -9,5 +9,7 @@
     "search/**/*": "./search/tsconfig.json"
   },
   "rust-analyzer.linkedProjects": ["./server/Cargo.toml"],
-  "rust-analyzer.showUnlinkedFileNotification": false
+  "rust-analyzer.showUnlinkedFileNotification": false,
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true
 }
