@@ -206,13 +206,17 @@ pub async fn get_all_topic_messages(
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct RegenerateMessageData {
+    /// The model to use for the assistant generative inferences. This can be any model from the model list. If no model is provided, the gryphe/mythomax-l2-13b will be used.~
     model: Option<String>,
+    /// The id of the topic to regenerate the last message for.
     topic_id: uuid::Uuid,
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct EditMessageData {
+    /// The model to use for the assistant generative inferences. This can be any model from the model list. If no model is provided, the gryphe/mythomax-l2-13b will be used.~
     model: Option<String>,
+    /// The id of the topic to edit the message at the given sort order for.
     topic_id: uuid::Uuid,
     /// The sort order of the message to edit.
     message_sort_order: i32,
