@@ -44,8 +44,8 @@ pub struct GetUserWithChunksData {
     context_path = "/api",
     tag = "user",
     responses(
-        (status = 200, description = "JSON body representing the chunks made by a given user with their chunks", body = [UserDTOWithChunks]),
-        (status = 400, description = "Service error relating to getting the chunks for the given user", body = [DefaultError]),
+        (status = 200, description = "JSON body representing the chunks made by a given user with their chunks", body = UserDTOWithChunks),
+        (status = 400, description = "Service error relating to getting the chunks for the given user", body = DefaultError),
     ),
     params(
         ("user_id" = uuid::Uuid, description = "The id of the user to fetch."),
@@ -87,8 +87,8 @@ pub async fn get_user_with_chunks_by_id(
     tag = "user",
     request_body(content = UpdateUserData, description = "JSON request payload to update user information for the auth'ed user", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON body representing the updated user information", body = [SlimUser]),
-        (status = 400, description = "Service error relating to updating the user", body = [DefaultError]),
+        (status = 200, description = "JSON body representing the updated user information", body = SlimUser),
+        (status = 400, description = "Service error relating to updating the user", body = DefaultError),
     ),
 )]
 pub async fn update_user(
@@ -180,15 +180,15 @@ pub struct SetUserApiKeyResponse {
 
 /// set_user_api_key
 ///
-/// Create a new api key for the auth'ed user.
+/// Create a new api key for the auth'ed user. Successful response will contain the newly created api key.
 #[utoipa::path(
     post,
     path = "/user/set_api_key",
     context_path = "/api",
     tag = "user",
     responses(
-        (status = 200, description = "JSON body representing the api_key for the user", body = [SetUserApiKeyResponse]),
-        (status = 400, description = "Service error relating to creating api_key for the user", body = [DefaultError]),
+        (status = 200, description = "JSON body representing the api_key for the user", body = SetUserApiKeyResponse),
+        (status = 400, description = "Service error relating to creating api_key for the user", body = DefaultError),
     ),
 )]
 pub async fn set_user_api_key(

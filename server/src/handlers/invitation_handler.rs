@@ -33,7 +33,7 @@ pub struct InvitationData {
 }
 
 /// send_invitation
-/// 
+///
 /// Invitations act as a way to invite users to join an organization. After a user is invited, they will automatically be added to the organization with the role specified in the invitation once they set their.
 #[utoipa::path(
     post,
@@ -42,8 +42,8 @@ pub struct InvitationData {
     tag = "invitation",
     request_body(content = InvitationData, description = "JSON request payload to send an invitation", content_type = "application/json"),
     responses(
-        (status = 204, description = "Ok"),
-        (status = 400, description = "Invalid email", body = [DefaultError]),
+        (status = 204, description = "Ok response. Indicates that invitation email was sent correctly."),
+        (status = 400, description = "Invalid email or some other error", body = DefaultError),
     )
 )]
 pub async fn post_invitation(

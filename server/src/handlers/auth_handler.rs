@@ -232,14 +232,14 @@ pub async fn create_account(
 
 /// logout
 ///
-/// Invalidate your current auth credential stored in the cookie. This does not invalidate your API key.
+/// Invalidate your current auth credential stored typicall stored in a cookie. This does not invalidate your API key.
 #[utoipa::path(
     delete,
     path = "/auth",
     context_path = "/api",
     tag = "auth",
     responses(
-        (status = 204, description = "Confirmation that your current auth credentials have been cleared"),
+        (status = 204, description = "Confirmation that your current auth token has been invalidated. This does not invalidate your API key."),
     )
 )]
 pub async fn logout(id: Identity) -> HttpResponse {
@@ -280,14 +280,14 @@ pub struct LoginState {
 ///
 /// This will redirect you to the OAuth provider for authentication with email/pass, SSO, Google, Github, etc.
 #[utoipa::path(
-    post,
+    get,
     path = "/auth",
     context_path = "/api",
     tag = "auth",
-    request_body(content = AuthQuery, description = "Query parameters for login", content_type = "application/x-www-form-urlencoded"),
+    request_body(content = AuthQuery, description = "Query parameters for login to be included as kv pairs after ? on the request URL.", content_type = "application/x-www-form-urlencoded"),
     responses(
-        (status = 303, description = "Response that redirects to OAuth provider"),
-        (status = 400, description = "OAuth Error", body = [DefaultError]),
+        (status = 303, description = "Response that redirects to OAuth provider through a Location header to be handled by browser."),
+        (status = 400, description = "OAuth error likely with OIDC provider.", body = DefaultError),
     )
 )]
 pub async fn login(
@@ -501,8 +501,8 @@ pub async fn callback(
     context_path = "/api",
     tag = "auth",
     responses(
-        (status = 200, description = "The user corresponding to your current auth credentials", body = [SlimUser]),
-        (status = 400, description = "Error message indicitating you are not currently signed in", body = [DefaultError]),
+        (status = 200, description = "The user corresponding to your current auth credentials", body = SlimUser),
+        (status = 400, description = "Error message indicitating you are not currently signed in", body = DefaultError),
     ),
 )]
 pub async fn get_me(

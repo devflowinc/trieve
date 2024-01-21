@@ -313,10 +313,10 @@ pub async fn main() -> std::io::Result<()> {
                     .service(
                         web::scope("/auth")
                         .service(
-                        web::resource("")
-                            .route(web::get().to(handlers::auth_handler::login))
-                            .route(web::delete().to(handlers::auth_handler::logout))
-                        )
+                            web::resource("")
+                                .route(web::get().to(handlers::auth_handler::login))
+                                .route(web::delete().to(handlers::auth_handler::logout))
+                            )
                         .service(
                             web::resource("/me")
                                 .route(web::get().to(handlers::auth_handler::get_me)),
@@ -534,14 +534,6 @@ pub async fn main() -> std::io::Result<()> {
                                 .route(web::post().to(handlers::organization_handler::create_organization))
                                 .route(web::put().to(handlers::organization_handler::update_organization))
                         )
-                    )
-                    .service(
-                        web::scope("/usage")
-                            .service(
-                                web::resource("/organization/{organization_id}")
-                                    .route(web::get().to(handlers::organization_handler::get_organization_usage)),
-                            )
-                            
                     )
                     .service(
                         web::resource("/invitation")
