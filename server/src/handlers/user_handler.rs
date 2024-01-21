@@ -214,8 +214,8 @@ pub async fn set_user_api_key(
     context_path = "/api",
     tag = "user",
     responses(
-        (status = 200, description = "JSON body representing the api_key for the user", body = [Vec<ApiKeyDTO>]),
-        (status = 400, description = "Service error relating to creating api_key for the user", body = [DefaultError]),
+        (status = 200, description = "JSON body representing the api_key for the user", body = Vec<ApiKeyDTO>),
+        (status = 400, description = "Service error relating to creating api_key for the user", body = DefaultError),
     ),
 )]
 pub async fn get_user_api_keys(
@@ -236,7 +236,7 @@ pub struct DeleteUserApiKeyRequest {
 }
 
 /// delete_user_api_key
-/// 
+///
 /// Delete an api key for the auth'ed user.
 #[utoipa::path(
     delete,
@@ -245,8 +245,8 @@ pub struct DeleteUserApiKeyRequest {
     tag = "user",
     request_body(content = DeleteUserApiKeyRequest, description = "JSON request payload to delete a user api key", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON body representing the api_key for the user", body = [Vec<ApiKeyDTO>]),
-        (status = 400, description = "Service error relating to creating api_key for the user", body = [DefaultError]),
+        (status = 200, description = "JSON body representing the api_key for the user", body = Vec<ApiKeyDTO>),
+        (status = 400, description = "Service error relating to creating api_key for the user", body = DefaultError),
     ),
 )]
 pub async fn delete_user_api_key(

@@ -26,8 +26,8 @@ pub enum Notification {
     context_path = "/api",
     tag = "notifications",
     responses(
-        (status = 200, description = "Notifications for the user", body = [NotificationReturn]),
-        (status = 400, description = "Service error relating to getting notifications for the user", body = [DefaultError]),
+        (status = 200, description = "Notifications for the user", body = NotificationReturn),
+        (status = 400, description = "Service error relating to getting notifications for the user", body = DefaultError),
     ),
     params(
         ("page" = i64, description = "Page number of notifications to get"),
@@ -72,7 +72,7 @@ pub struct NotificationId {
     request_body(content = NotificationId, description = "JSON request payload with id of notification to mark read", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the notification is marked read"),
-        (status = 400, description = "Service error relating to finding the notification and marking it read", body = [DefaultError]),
+        (status = 400, description = "Service error relating to finding the notification and marking it read", body = DefaultError),
     ),
 )]
 pub async fn mark_notification_as_read(
@@ -107,7 +107,7 @@ pub async fn mark_notification_as_read(
     tag = "notifications",
     responses(
         (status = 204, description = "Confirmation that the all notification were marked read for the auth'ed user"),
-        (status = 400, description = "Service error relating to finding the notifications for the auth'ed user and marking them read", body = [DefaultError]),
+        (status = 400, description = "Service error relating to finding the notifications for the auth'ed user and marking them read", body = DefaultError),
     ),
 )]
 pub async fn mark_all_notifications_as_read(
