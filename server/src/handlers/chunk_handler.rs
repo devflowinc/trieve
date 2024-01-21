@@ -147,8 +147,8 @@ pub struct ReturnCreatedChunk {
     tag = "chunk",
     request_body(content = CreateChunkData, description = "JSON request payload to create a new chunk (chunk)", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON response payload containing the created chunk", body = [ReturnCreatedChunk]),
-        (status = 400, description = "Service error relating to to creating a chunk, likely due to conflicting tracking_id", body = [DefaultError]),
+        (status = 200, description = "JSON response payload containing the created chunk", body = ReturnCreatedChunk),
+        (status = 400, description = "Service error relating to to creating a chunk, likely due to conflicting tracking_id", body = DefaultError),
     )
 )]
 pub async fn create_chunk(
@@ -372,7 +372,7 @@ pub async fn create_chunk(
     tag = "chunk",
     responses(
         (status = 204, description = "Confirmation that the chunk with the id specified was deleted"),
-        (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = [DefaultError]),
+        (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = DefaultError),
     ),
     params(
         ("chunk_id" = Option<uuid>, Path, description = "id of the chunk you want to delete")
@@ -412,7 +412,7 @@ pub async fn delete_chunk(
     tag = "chunk",
     responses(
         (status = 204, description = "Confirmation that the chunk with the tracking_id specified was deleted"),
-        (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = [DefaultError]),
+        (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = DefaultError),
     ),
     params(
         ("tracking_id" = Option<String>, Path, description = "tracking_id of the chunk you want to delete")
@@ -479,7 +479,7 @@ pub struct ChunkHtmlUpdateError {
     request_body(content = UpdateChunkData, description = "JSON request payload to update a chunk (chunk)", content_type = "application/json"),
     responses(
         (status = 204, description = "No content Ok response indicating the chunk was updated as requested",),
-        (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = [DefaultError]),
+        (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = DefaultError),
     )
 )]
 pub async fn update_chunk(
@@ -600,7 +600,7 @@ pub struct UpdateChunkByTrackingIdData {
     request_body(content = UpdateChunkByTrackingIdData, description = "JSON request payload to update a chunk by tracking_id (chunks)", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the chunk has been updated as per your request",),
-        (status = 400, description = "Service error relating to to updating chunk", body = [DefaultError]),
+        (status = 400, description = "Service error relating to to updating chunk", body = DefaultError),
     ),
 )]
 pub async fn update_chunk_by_tracking_id(
@@ -789,8 +789,8 @@ fn parse_query(query: String) -> ParsedQuery {
     tag = "chunk",
     request_body(content = SearchChunkData, description = "JSON request payload to semantically search for chunks (chunks)", content_type = "application/json"),
     responses(
-        (status = 200, description = "chunks which are similar to the embedding vector of the search query", body = [SearchChunkQueryResponseBody]),
-        (status = 400, description = "Service error relating to searching", body = [DefaultError]),
+        (status = 200, description = "chunks which are similar to the embedding vector of the search query", body = SearchChunkQueryResponseBody),
+        (status = 400, description = "Service error relating to searching", body = DefaultError),
     ),
 )]
 #[allow(clippy::too_many_arguments)]
@@ -940,8 +940,8 @@ pub async fn search_collections(
     context_path = "/api",
     tag = "chunk",
     responses(
-        (status = 200, description = "chunk with the id that you were searching for", body = [ChunkMetadata]),
-        (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = [DefaultError]),
+        (status = 200, description = "chunk with the id that you were searching for", body = ChunkMetadata),
+        (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = DefaultError),
     ),
     params(
         ("chunk_id" = Option<uuid>, Path, description = "Id of the chunk you want to fetch.")
@@ -971,8 +971,8 @@ pub async fn get_chunk_by_id(
     context_path = "/api",
     tag = "chunk",
     responses(
-        (status = 200, description = "chunk with the tracking_id that you were searching for", body = [ChunkMetadata]),
-        (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = [DefaultError]),
+        (status = 200, description = "chunk with the tracking_id that you were searching for", body = ChunkMetadata),
+        (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = DefaultError),
     ),
     params(
         ("tracking_id" = Option<String>, Path, description = "tracking_id of the chunk you want to fetch")
@@ -1014,8 +1014,8 @@ pub struct RecommendChunksRequest {
     tag = "chunk",
     request_body(content = RecommendChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON response payload containing chunks with scores which are similar to those in the request body", body = [Vec<ChunkMetadataWithFileData>]),
-        (status = 400, description = "Service error relating to to getting similar chunks", body = [DefaultError]),
+        (status = 200, description = "JSON response payload containing chunks with scores which are similar to those in the request body", body = Vec<ChunkMetadataWithFileData>),
+        (status = 400, description = "Service error relating to to getting similar chunks", body = DefaultError),
     )
 )]
 pub async fn get_recommended_chunks(
@@ -1073,8 +1073,8 @@ pub struct GenerateChunksRequest {
     tag = "chunk",
     request_body(content = GenerateChunksRequest, description = "JSON request payload to perform RAG on some chunks (chunks)", content_type = "application/json"),
     responses(
-        (status = 200, description = "This will be a HTTP stream, check the chat or search UI for an example how to process this",),
-        (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = [DefaultError]),
+        (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this",),
+        (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = DefaultError),
     ),
 )]
 pub async fn generate_off_chunks(
