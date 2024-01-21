@@ -36,11 +36,9 @@ use utoipa::ToSchema;
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct CreateMessageData {
-<<<<<<< HEAD
+    /// The model to use for the assistant's messages. This can be any model from the model list. If no model is provided, the gryphe/mythomax-l2-13b will be used.
     pub model: Option<String>,
-=======
-    /// Content of the message to be created.
->>>>>>> 50f9e26 (feature: finish documentation)
+    /// The content of the user message to attach to the topic and then generate an assistant message in response to.
     pub new_message_content: String,
     /// The ID of the topic to attach the message to.
     pub topic_id: uuid::Uuid,
