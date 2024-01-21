@@ -44,14 +44,23 @@ pub fn validate_file_name(s: String) -> Result<String, actix_web::Error> {
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct UploadFileData {
-    pub base64_docx_file: String,
+    /// Base64 encoded file. Convert + to -, / to _, and remove the ending = if present. This is the standard base64url encoding.
+    pub base64_file: String,
+    /// Name of the file being uploaded, including the extension.
     pub file_name: String,
+    /// MIME type of the file being uploaded.
     pub file_mime_type: String,
+    /// Tag set is a comma separated list of tags which will be passed down to the chunks made from the file. Tags are used to filter chunks when searching. HNSW indices are created for each tag such that there is no performance loss when filtering on them.
     pub tag_set: Option<String>,
+    /// Description is an optional convience field so you do not have to remember what the file contains or is about. It will be included on the collection resulting from the file which will hold its chunk.
     pub description: Option<String>,
+    /// Link to the file. This can also be any string. This can be used to filter when searching for the file's resulting chunks. The link value will not affect embedding creation.
     pub link: Option<String>,
+    /// Time stamp should be an ISO 8601 combined date and time without timezone. Time_stamp is used for time window filtering and recency-biasing search results. Will be passed down to the file's chunks.
     pub time_stamp: Option<String>,
+    /// Metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata. Will be passed down to the file's chunks.
     pub metadata: Option<serde_json::Value>,
+    /// Create chunks is a boolean which determines whether or not to create chunks from the file. If false, you can manually chunk the file and send the chunks to the create_chunk endpoint with the file_id to associate chunks with the file. Meant mostly for advanced users.
     pub create_chunks: Option<bool>,
 }
 
@@ -60,6 +69,9 @@ pub struct UploadFileResult {
     pub file_metadata: File,
 }
 
+/// upload_file
+/// 
+/// Upload a file to S3 attached to the server. The file will be converted to HTML with tika and chunked algorithmically, images will be OCR'ed with tesseract. The resulting chunks will be indexed and searchable. Optionally, you can only upload the file and manually create chunks associated to the file after. See docs.trieve.ai and/or contact us for more details and tips. Auth'ed user must be an admin or owner of the dataset's organization to upload a file.
 #[utoipa::path(
     post,
     path = "/file",
@@ -112,7 +124,7 @@ pub async fn upload_file_handler(
     let base64_engine = engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
 
     let decoded_file_data = base64_engine
-        .decode(upload_file_data.base64_docx_file)
+        .decode(upload_file_data.base64_file)
         .map_err(|_e| ServiceError::BadRequest("Could not decode base64 file".to_string()))?;
     let decoded_description_file_data = if upload_file_data.description.is_some() {
         Some(
@@ -148,6 +160,9 @@ pub async fn upload_file_handler(
     Ok(HttpResponse::Ok().json(conversion_result))
 }
 
+/// get_file
+/// 
+/// Download a file from S3 attached to the server based on its id. We plan to add support for getting signed S3 URLs to download from S3 directly in a release soon.
 #[utoipa::path(
     get,
     path = "/file/{file_id}",
@@ -212,6 +227,9 @@ pub async fn get_user_files_handler(
     Ok(HttpResponse::Ok().json(files))
 }
 
+/// delete_file
+/// 
+/// Delete a file from S3 attached to the server based on its id. This will disassociate chunks from the file, but will not delete the chunks. We plan to add support for deleting chunks in a release soon. Auth'ed user must be an admin or owner of the dataset's organization to upload a file.
 #[utoipa::path(
     delete,
     path = "/file/{file_id}",
@@ -236,6 +254,9 @@ pub async fn delete_file_handler(
     Ok(HttpResponse::NoContent().finish())
 }
 
+/// get_image_file
+/// 
+/// We strongly recommend not using this endpoint. It is disabled on the managed version and only meant for niche on-prem use cases where an image directory is mounted. Get in touch with us thru information on docs.trieve.ai for more information.
 #[utoipa::path(
     get,
     path = "/image/{file_name}",

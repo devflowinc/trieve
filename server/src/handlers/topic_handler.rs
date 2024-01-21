@@ -14,13 +14,15 @@ use utoipa::ToSchema;
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct CreateTopicData {
-    pub name: String,
+    /// The first message which will belong to the topic. The topic name is generated based on this message similar to how it works in the OpenAI chat UX.
+    pub first_user_message: String,
+    /// Whether or not RAG should be used on messages in this topic.
     pub normal_chat: Option<bool>,
 }
 
 /// create_topic
 ///
-/// Create a new chat topic. Topics are attached to a user and act as a coordinator for memory of gen-AI chat sessions.
+/// Create a new chat topic. Topics are attached to a user and act as a coordinator for memory of gen-AI chat sessions. We are considering refactoring this resource of the API soon.
 #[utoipa::path(
     post,
     path = "/topic",
@@ -39,7 +41,7 @@ pub async fn create_topic(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let data_inner = data.into_inner();
-    let name = data_inner.name;
+    let name = data_inner.first_user_message;
     let normal_chat = data_inner.normal_chat;
 
     if name.is_empty() {
@@ -70,6 +72,7 @@ pub async fn create_topic(
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct DeleteTopicData {
+    /// The id of the topic to target.
     pub topic_id: uuid::Uuid,
 }
 
@@ -125,11 +128,15 @@ pub async fn delete_topic(
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct UpdateTopicData {
+    /// The id of the topic to target.
     pub topic_id: uuid::Uuid,
+    /// The new name of the topic. A name is not generated from this field, it is used as-is.
     pub name: String,
-    pub side: bool,
 }
 
+/// update_topic
+/// 
+/// Update an existing chat topic. Currently, only the name of the topic can be updated.
 #[utoipa::path(
     put,
     path = "/topic",
@@ -150,7 +157,6 @@ pub async fn update_topic(
     let data_inner = data.into_inner();
     let topic_id = data_inner.topic_id;
     let name = data_inner.name;
-    let side = data_inner.side;
     let pool_inner = pool.clone();
 
     if name.is_empty() {
@@ -172,13 +178,7 @@ pub async fn update_topic(
     match user_topic {
         Ok(topic) => {
             let update_topic_result = web::block(move || {
-                update_topic_query(
-                    topic.id,
-                    name,
-                    side,
-                    dataset_org_plan_sub.dataset.id,
-                    &pool,
-                )
+                update_topic_query(topic.id, name, dataset_org_plan_sub.dataset.id, &pool)
             })
             .await?;
 
@@ -191,6 +191,9 @@ pub async fn update_topic(
     }
 }
 
+/// get_all_topics
+/// 
+/// Get all topics belonging to a the auth'ed user. Soon, we plan to allow specification of the user for this route and include pagination.
 #[utoipa::path(
     get,
     path = "/topic",
