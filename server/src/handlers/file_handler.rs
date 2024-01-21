@@ -79,8 +79,8 @@ pub struct UploadFileResult {
     tag = "file",
     request_body(content = UploadFileData, description = "JSON request payload to upload a file", content_type = "application/json"),
     responses(
-        (status = 200, description = "Confirmation that the file is uploading", body = [UploadFileResult]),
-        (status = 400, description = "Service error relating to uploading the file", body = [DefaultError]),
+        (status = 200, description = "Confirmation that the file is uploading", body = UploadFileResult),
+        (status = 400, description = "Service error relating to uploading the file", body = DefaultError),
     ),
 )]
 pub async fn upload_file_handler(
@@ -169,8 +169,8 @@ pub async fn upload_file_handler(
     context_path = "/api",
     tag = "file",
     responses(
-        (status = 200, description = "The file corresponding to the file_id requested", body = [FileDTO]),
-        (status = 400, description = "Service error relating to finding the file", body = [DefaultError]),
+        (status = 200, description = "The file corresponding to the file_id requested", body = FileDTO),
+        (status = 400, description = "Service error relating to finding the file", body = DefaultError),
     ),
     params(
         ("file_id" = uuid::Uuid, description = "The id of the file to fetch"),
@@ -237,7 +237,7 @@ pub async fn get_user_files_handler(
     tag = "file",
     responses(
         (status = 204, description = "Confirmation that the file has been deleted"),
-        (status = 400, description = "Service error relating to finding or deleting the file", body = [DefaultError]),
+        (status = 400, description = "Service error relating to finding or deleting the file", body = DefaultError),
     ),
     params(
         ("file_id" = uuid::Uuid, description = "The id of the file to delete"),
@@ -264,7 +264,7 @@ pub async fn delete_file_handler(
     tag = "file",
     responses(
         (status = 200, description = "The raw image file corresponding to the file_name requested such that it can be a src for an img tag"),
-        (status = 400, description = "Service error relating to finding the file", body = [DefaultError]),
+        (status = 400, description = "Service error relating to finding the file", body = DefaultError),
     ),
     params(
         ("file_name" = string, description = "The name of the image file to return"),

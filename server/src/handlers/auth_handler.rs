@@ -353,8 +353,8 @@ pub async fn login(
     context_path = "/api",
     tag = "auth",
     responses(
-        (status = 200, description = "Response that returns with set-cookie header", body = [SlimUser]),
-        (status = 400, description = "Email or password empty or incorrect", body = [DefaultError]),
+        (status = 200, description = "Response that returns with set-cookie header", body = SlimUser),
+        (status = 400, description = "Email or password empty or incorrect", body = DefaultError),
     )
 )]
 pub async fn callback(
@@ -526,7 +526,7 @@ pub async fn get_me(
     tag = "health",
     responses(
         (status = 200, description = "Confirmation that the service is healthy and can make embedding vectors"),
-        (status = 400, description = "Service error relating to making an embedding or overall service health", body = [DefaultError]),
+        (status = 400, description = "Service error relating to making an embedding or overall service health", body = DefaultError),
     ),
 )]
 pub async fn health_check(
