@@ -48,8 +48,8 @@ pub struct CreateChunkCollectionData {
     tag = "chunk_collection",
     request_body(content = CreateChunkCollectionData, description = "JSON request payload to cretea a chunkCollection", content_type = "application/json"),
     responses(
-        (status = 200, description = "Returns the created chunkCollection", body = [ChunkCollection]),
-        (status = 400, description = "Service error relating to creating the chunkCollection", body = [DefaultError]),
+        (status = 200, description = "Returns the created chunkCollection", body = ChunkCollection),
+        (status = 400, description = "Service error relating to creating the chunkCollection", body = DefaultError),
     ),
 )]
 pub async fn create_chunk_collection(
@@ -98,8 +98,8 @@ pub struct UserCollectionQuery {
     context_path = "/api",
     tag = "chunk_collection",
     responses(
-        (status = 200, description = "JSON body representing the collections created by the given user", body = [CollectionData]),
-        (status = 400, description = "Service error relating to getting the collections created by the given user", body = [DefaultError]),
+        (status = 200, description = "JSON body representing the collections created by the given user", body = CollectionData),
+        (status = 400, description = "Service error relating to getting the collections created by the given user", body = DefaultError),
     ),
     params(
         ("user_id" = uuid::Uuid, description = "The id of the user to fetch collections for."),
@@ -154,8 +154,8 @@ pub async fn get_specific_user_chunk_collections(
     context_path = "/api",
     tag = "chunk_collection",
     responses(
-        (status = 200, description = "The page of collections for the auth'ed user", body = [CollectionData]),
-        (status = 400, description = "Service error relating to getting the collections for the auth'ed user", body = [DefaultError]),
+        (status = 200, description = "The page of collections for the auth'ed user", body = CollectionData),
+        (status = 400, description = "Service error relating to getting the collections for the auth'ed user", body = DefaultError),
     ),
     params(
         ("page" = u64, description = "The page of collections to fetch"),
@@ -214,7 +214,7 @@ pub struct DeleteCollectionData {
     tag = "chunk_collection",
     responses(
         (status = 204, description = "Confirmation that the chunkCollection was deleted"),
-        (status = 400, description = "Service error relating to deleting the chunkCollection", body = [DefaultError]),
+        (status = 400, description = "Service error relating to deleting the chunkCollection", body = DefaultError),
     ),
     params(
         ("collection_id" = uuid, description = "Id of the chunk_collection to delete"),
@@ -271,7 +271,7 @@ pub struct UpdateChunkCollectionData {
     request_body(content = UpdateChunkCollectionData, description = "JSON request payload to update a chunkCollection", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the chunkCollection was updated"),
-        (status = 400, description = "Service error relating to updating the chunkCollection", body = [DefaultError]),
+        (status = 400, description = "Service error relating to updating the chunkCollection", body = DefaultError),
     ),
 )]
 pub async fn update_chunk_collection(
@@ -325,8 +325,8 @@ pub struct AddChunkToCollectionData {
     tag = "chunk_collection",
     request_body(content = AddChunkToCollectionData, description = "JSON request payload to add a chunk to a collection (bookmark it)", content_type = "application/json"),
     responses(
-        (status = 204, description = "Confirmation that the chunk was added to the collection"),
-        (status = 400, description = "Service error relating to getting the collections that the chunk is in", body = [DefaultError]),
+        (status = 204, description = "Confirmation that the chunk was added to the collection (bookmark'ed)."),
+        (status = 400, description = "Service error relating to getting the collections that the chunk is in.", body = DefaultError),
     ),
     params(
         ("collection_id" = uuid, description = "Id of the collection to add the chunk to as a bookmark"),
@@ -377,15 +377,15 @@ pub struct BookmarkChunks {
 
 /// get_all_bookmarks
 ///
-/// Route to get all bookmarks for a collection. Think of a bookmark as a chunk which is a member of a collection.
+/// Route to get all bookmarks for a collection. Think of a bookmark as a chunk which is a member of a collection. The response is paginated, with each page containing 10 chunks (bookmarks). Support for custom page size is coming soon.
 #[utoipa::path(
     get,
     path = "/chunk_collection/{collection_id}/{page}",
     context_path = "/api",
     tag = "chunk_collection",
     responses(
-        (status = 200, description = "Bookmark'ed chunks present within the specified collection", body = [BookmarkData]),
-        (status = 400, description = "Service error relating to getting the collections that the chunk is in", body = [DefaultError]),
+        (status = 200, description = "Bookmark'ed chunks present within the specified collection", body = BookmarkData),
+        (status = 400, description = "Service error relating to getting the collections that the chunk is in", body = DefaultError),
     ),
     params(
         ("collection_id" = uuid::Uuid, description = "The id of the collection to get the chunks from"),
@@ -487,8 +487,8 @@ pub struct GetCollectionsForChunksData {
     tag = "chunk_collection",
     request_body(content = GetCollectionsForChunksData, description = "JSON request payload to get the collections that a chunk is in", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON body representing the collections that the chunk is in", body = [Vec<BookmarkCollectionResult>]),
-        (status = 400, description = "Service error relating to getting the collections that the chunk is in", body = [DefaultError]),
+        (status = 200, description = "JSON body representing the collections that the chunk is in", body = Vec<BookmarkCollectionResult>),
+        (status = 400, description = "Service error relating to getting the collections that the chunk is in", body = DefaultError),
     ),
 )]
 pub async fn get_collections_chunk_is_in(
@@ -528,7 +528,7 @@ pub struct DeleteBookmarkPathData {
     tag = "chunk_collection",
     responses(
         (status = 204, description = "Confirmation that the chunk was removed to the collection"),
-        (status = 400, description = "Service error relating to removing the chunk from the collection", body = [DefaultError]),
+        (status = 400, description = "Service error relating to removing the chunk from the collection", body = DefaultError),
     ),
     params(
         ("collection_id" = uuid::Uuid, description = "Id of the collection to remove the bookmark'ed chunk from"),

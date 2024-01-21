@@ -875,8 +875,8 @@ pub struct SearchCollectionsResult {
     tag = "chunk_collection",
     request_body(content = SearchCollectionsData, description = "JSON request payload to semantically search a collection", content_type = "application/json"),
     responses(
-        (status = 200, description = "Collection chunks which are similar to the embedding vector of the search query", body = [SearchCollectionsResult]),
-        (status = 400, description = "Service error relating to getting the collections that the chunk is in", body = [DefaultError]),
+        (status = 200, description = "Collection chunks which are similar to the embedding vector of the search query", body = SearchCollectionsResult),
+        (status = 400, description = "Service error relating to getting the collections that the chunk is in", body = DefaultError),
     ),
 )]
 #[allow(clippy::too_many_arguments)]
