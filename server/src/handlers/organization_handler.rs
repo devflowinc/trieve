@@ -23,8 +23,8 @@ use utoipa::ToSchema;
     context_path = "/api",
     tag = "organization",
     responses(
-        (status = 200, description = "Organization with the id that was requested", body = [Organization]),
-        (status = 400, description = "Service error relating to finding the organization by id", body = [DefaultError]),
+        (status = 200, description = "Organization with the id that was requested", body = Organization),
+        (status = 400, description = "Service error relating to finding the organization by id", body = DefaultError),
     ),
     params(
         ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch.")
@@ -62,8 +62,8 @@ pub struct UpdateOrganizationData {
     tag = "organization",
     request_body(content = UpdateOrganizationData, description = "The organization data that you want to update", content_type = "application/json"),
     responses(
-        (status = 200, description = "Updated organization object", body = [Organization]),
-        (status = 400, description = "Service error relating to updating the organization", body = [DefaultError]),
+        (status = 200, description = "Updated organization object", body = Organization),
+        (status = 400, description = "Service error relating to updating the organization", body = DefaultError),
     ),
 )]
 pub async fn update_organization(
@@ -109,8 +109,8 @@ pub struct CreateOrganizationData {
     tag = "organization",
     request_body(content = CreateOrganizationData, description = "The organization data that you want to create", content_type = "application/json"),
     responses(
-        (status = 200, description = "Created organization object", body = [Organization]),
-        (status = 400, description = "Service error relating to creating the organization", body = [DefaultError]),
+        (status = 200, description = "Created organization object", body = Organization),
+        (status = 400, description = "Service error relating to creating the organization", body = DefaultError),
     ),
 )]
 pub async fn create_organization(
@@ -148,8 +148,8 @@ pub async fn create_organization(
     context_path = "/api",
     tag = "organization",
     responses(
-        (status = 200, description = "The current usage of the specified organization", body = [OrganizationUsageCount]),
-        (status = 400, description = "Service error relating to finding the organization's usage by id", body = [DefaultError]),
+        (status = 200, description = "The current usage of the specified organization", body = OrganizationUsageCount),
+        (status = 400, description = "Service error relating to finding the organization's usage by id", body = DefaultError),
     ),
     params(
         ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch the usage of.")
@@ -178,8 +178,8 @@ pub async fn get_organization_usage(
     context_path = "/api",
     tag = "organization",
     responses(
-        (status = 200, description = "Array of users who belong to the specified by organization", body = [Vec<SlimUser>]),
-        (status = 400, description = "Service error relating to finding the organization's users by id", body = [DefaultError]),
+        (status = 200, description = "Array of users who belong to the specified by organization", body = Vec<SlimUser>),
+        (status = 400, description = "Service error relating to finding the organization's users by id", body = DefaultError),
     ),
     params(
         ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch the users of.")

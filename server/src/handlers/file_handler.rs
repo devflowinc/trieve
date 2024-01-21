@@ -206,8 +206,8 @@ pub async fn get_file_handler(
     context_path = "/api",
     tag = "user",
     responses(
-        (status = 200, description = "JSON body representing the files uploaded by the given user", body = [Vec<File>]),
-        (status = 400, description = "Service error relating to getting the files uploaded by the given user", body = [DefaultError]),
+        (status = 200, description = "JSON body representing the files uploaded by the given user", body = Vec<File>),
+        (status = 400, description = "Service error relating to getting the files uploaded by the given user", body = DefaultError),
     ),
     params(
         ("user_id" = uuid::Uuid, description = "The id of the user to fetch files for."),
