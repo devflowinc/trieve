@@ -2331,7 +2331,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 [[package]]
 name = "openai_dive"
 version = "0.4.1"
-source = "git+https://github.com/densumesh/openai-client#2cecea43145872fb781032d3f146b9eb1c7afd03"
+source = "git+https://github.com/arguflow/openai-client#2cecea43145872fb781032d3f146b9eb1c7afd03"
 dependencies = [
  "bytes",
  "futures",
