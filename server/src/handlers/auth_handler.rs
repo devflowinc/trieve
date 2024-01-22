@@ -133,6 +133,10 @@ pub async fn build_oidc_client() -> CoreClient {
         "Client secret for OpenID provider must be set"
     )
     .to_string();
+    let base_server_url = get_env!(
+        "BASE_SERVER_URL",
+        "Server hostname for OpenID provider must be set"
+    );
 
     //build OpenId Connect client
     let meta_data = CoreProviderMetadata::discover_async(
@@ -152,7 +156,7 @@ pub async fn build_oidc_client() -> CoreClient {
         meta_data.jwks().to_owned(),
     )
     .set_redirect_uri(
-        RedirectUrl::new("http://localhost:8090/api/auth/callback".to_string())
+        RedirectUrl::new(format!("{}/api/auth/callback", base_server_url))
             .expect("Redirect URL for OpenID provider must be set"),
     )
 }
