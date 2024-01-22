@@ -59,7 +59,7 @@ export const UploadFile = () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const requestBody: any = {
-      base64_docx_file: base64File,
+      base64_file: base64File,
       file_name: file_name,
       file_mime_type: file_mime_type,
       link: link(),
@@ -219,9 +219,8 @@ export const UploadFile = () => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${
-                  $dataset()?.dataset.name ?? ""
-                }`}
+                href={`${apiHost}/auth?dataset_id=${$dataset()?.dataset.name ?? ""
+                  }`}
               >
                 Login/Register
                 <BiRegularLogIn class="h-6 w-6" />

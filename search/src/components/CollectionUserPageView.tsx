@@ -70,16 +70,13 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
     props.setOnDelete(() => {
       return () => {
         setDeleting(true);
-        void fetch(`${apiHost}/chunk_collection`, {
+        void fetch(`${apiHost}/chunk_collection/${collection.id}`, {
           method: "DELETE",
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
             "TR-Dataset": currentDataset.dataset.id,
           },
-          body: JSON.stringify({
-            collection_id: collection.id,
-          }),
         }).then((response) => {
           if (response.ok) {
             setDeleting(false);
