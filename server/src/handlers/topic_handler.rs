@@ -197,26 +197,49 @@ pub async fn update_topic(
     }
 }
 
-/// get_all_topics
+/// get_all_topics_for_user
 ///
 /// Get all topics belonging to a the auth'ed user. Soon, we plan to allow specification of the user for this route and include pagination.
 #[utoipa::path(
     get,
-    path = "/topic",
+    path = "/topic/user/{user_id}",
     context_path = "/api",
     tag = "topic",
     responses(
         (status = 200, description = "All topics belonging to a given user", body = Vec<Topic>),
         (status = 400, description = "Service error relating to topic get", body = DefaultError),
+    ),
+    params (
+        ("user_id", description="The id of the user to get topics for")
     )
 )]
-pub async fn get_all_topics(
+pub async fn get_all_topics_for_user(
     user: LoggedUser,
+    req_user_id: web::Path<uuid::Uuid>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    if user
+        .user_orgs
+        .iter()
+        .find(|o| o.id == dataset_org_plan_sub.organization.id)
+        .is_some()
+        && user.id != *req_user_id
+        && user
+            .user_orgs
+            .iter()
+            .find(|o| o.id == dataset_org_plan_sub.organization.id)
+            .unwrap()
+            .role
+            < 1
+    {
+        return Ok(HttpResponse::BadRequest().json(DefaultError {
+            message: "User does not have enough permissions to get topics for another user",
+        }));
+    }
+
     let topics = web::block(move || {
-        get_all_topics_for_user_query(user.id, dataset_org_plan_sub.dataset.id, &pool)
+        get_all_topics_for_user_query(req_user_id.clone(), dataset_org_plan_sub.dataset.id, &pool)
     })
     .await?;
 

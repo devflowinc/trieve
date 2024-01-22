@@ -72,7 +72,7 @@ pub async fn main() -> std::io::Result<()> {
             handlers::topic_handler::create_topic,
             handlers::topic_handler::delete_topic,
             handlers::topic_handler::update_topic,
-            handlers::topic_handler::get_all_topics,
+            handlers::topic_handler::get_all_topics_for_user,
             handlers::message_handler::create_message_completion_handler,
             handlers::message_handler::get_all_topic_messages,
             handlers::message_handler::edit_message_handler,
@@ -337,7 +337,12 @@ pub async fn main() -> std::io::Result<()> {
                             .route(web::post().to(handlers::topic_handler::create_topic))
                             .route(web::delete().to(handlers::topic_handler::delete_topic))
                             .route(web::put().to(handlers::topic_handler::update_topic))
-                            .route(web::get().to(handlers::topic_handler::get_all_topics)),
+                            
+                    )
+                    .service(
+                        web::resource("/topic/user/{user_id}").route(
+                            web::get().to(handlers::topic_handler::get_all_topics_for_user),
+                        ),
                     )
                     .service(
                         web::resource("/message")
