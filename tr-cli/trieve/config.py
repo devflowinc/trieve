@@ -36,6 +36,7 @@ def _init_config_file() -> int:
         "client_url": "http://localhost:5174",
         "server_url": "http://localhost:8090",
         "api_key": "admin",
+        "db_url": "postgres://postgres:password@localhost:5432/vault",
     }
     return SUCCESS
 
@@ -49,7 +50,8 @@ def store_value(key: str, value: str) -> None:
         config_parser.write(config_file)
 
 
-def get_api_key() -> str:
+def get_value(key: str) -> str | None:
     config_parser = configparser.ConfigParser()
     config_parser.read(CONFIG_FILE_PATH)
-    return config_parser.get("DEFAULT", "api_key")
+    return config_parser.get("DEFAULT", key, fallback=None)
+
