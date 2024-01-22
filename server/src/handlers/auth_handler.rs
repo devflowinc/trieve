@@ -228,7 +228,7 @@ pub async fn create_account(
 
 /// logout
 ///
-/// Invalidate your current auth credential stored typicall stored in a cookie. This does not invalidate your API key.
+/// Invalidate your current auth credential stored typically stored in a cookie. This does not invalidate your API key.
 #[utoipa::path(
     delete,
     path = "/auth",
