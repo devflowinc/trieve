@@ -115,10 +115,10 @@ export const CollectionPage = (props: CollectionPageProps) => {
 
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(1);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onDelete, setOnDelete] = createSignal(() => {});
+  const [onDelete, setOnDelete] = createSignal(() => { });
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onCollectionDelete, setOnCollectionDelete] = createSignal(() => {});
+  const [onCollectionDelete, setOnCollectionDelete] = createSignal(() => { });
 
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
@@ -718,9 +718,8 @@ export const CollectionPage = (props: CollectionPageProps) => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${
-                  $dataset()?.dataset.name ?? ""
-                }`}
+                href={`${apiHost}/auth?dataset_id=${$dataset()?.dataset.name ?? ""
+                  }`}
               >
                 Login/Register
                 <BiRegularLogInCircle class="h-6 w-6  fill-current" />

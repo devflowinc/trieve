@@ -2,21 +2,26 @@
 # rptodo/cli.py
 
 from http import client, server
+import subprocess
 from typing import Optional
 
 import typer
 
 from trieve import __app_name__, __version__
-from trieve.config import _init_config_file, get_api_key, store_value
+from trieve.config import _init_config_file, get_value, store_value
 from trieve.api import create_dataset, create_organization, get_login_url, get_user
+from trieve.db import terminate_connections
 from rich import print
 from rich.table import Table
 from rich.console import Console
 from rich.prompt import Prompt
+import subprocess
 
 app = typer.Typer()
 add_app = typer.Typer()
+reset_app = typer.Typer()
 app.add_typer(add_app, name="add")
+app.add_typer(reset_app, name="reset")
 console = Console()
 
 
@@ -25,11 +30,18 @@ def init() -> None:
     """Initialize the application."""
     _init_config_file()
     print("[bold]Hi! Welcome to the Trieve CLI!\n")
+    startup = typer.confirm("Would you like to start up the local docker containers?")
+    if startup:
+        print("Starting local services...")
+        subprocess.run(["docker", "compose", "up", "-d", "db"])
+        subprocess.run(["docker", "compose", "up", "-d", "redis"])
+        subprocess.run(["docker", "compose", "up", "-d", "qdrant-database"])
+        subprocess.run(["docker", "compose", "up", "-d", "s3"])
+        subprocess.run(["docker", "compose", "up", "-d", "s3-client"])
+        subprocess.run(["docker", "compose", "up", "-d", "keycloak"])
+        subprocess.run(["docker", "compose", "up", "-d", "keycloak-db"])
     print(
-        "Before you can use this CLI, ensure that all containers are running using [code]./convenience.sh -l"
-    )
-    print(
-        "Also, ensure that you have the API server and the search client running on your machine.\n"
+        "Ensure that you have the API server and the search client running on your machine.\n"
     )
     print("Let's get started!\n")
 
@@ -74,6 +86,8 @@ def init() -> None:
         )
         store_value("api_key", api_key)
 
+    typer.confirm("Would you like to create a dataset?", abort=True)
+
     print("\nGreat! Now, let's set up your dataset.\n")
 
     user = get_user()
@@ -106,6 +120,9 @@ def init() -> None:
 
 @add_app.command(name="dataset")
 def add_dataset() -> None:
+    if not get_value("api_key"):
+        print("API key not set! Please run `trieve init` to set up.")
+        typer.Abort()
     user = get_user()
     use_org = 0
     if len(user["orgs"] > 1):
@@ -129,11 +146,14 @@ def add_dataset() -> None:
 
     print("\nGreat! Now, here is the information you need to connect to your dataset:")
     print(f"Dataset ID: {dataset_id}")
-    print(f"API Key: {get_api_key()}\n")
+    print(f"API Key: {get_value('api_key')}\n")
 
 
 @add_app.command("organization")
 def add_organization() -> None:
+    if not get_value("api_key"):
+        print("API key not set! Please run `trieve init` to set up.")
+        typer.Abort()
     organization_name = Prompt.ask(
         "What would you like to name your organization?", default="default"
     )
@@ -145,6 +165,65 @@ def add_organization() -> None:
     typer.confirm("Would you like to create a dataset?", abort=True)
 
     add_dataset()
+
+@add_app.command("sample")
+def insert_sample_data() -> None:
+    
+
+
+@reset_app.command("db")
+def reset_db() -> None:
+    typer.confirm(
+        "Are you sure you want to reset your Qdrant and Postgres databases?", abort=True
+    )
+    if not get_value("db_url"):
+        db_url = Prompt.ask(
+            "\nWhat is the url of your Postgres db?",
+            default="postgres://postgres:password@localhost:5432/vault",
+            show_default=False,
+        )
+
+        store_value("db_url", db_url)
+
+    subprocess.run(["docker", "compose", "stop", "qdrant-database"])
+    subprocess.run(["docker", "compose", "rm", "-f", "qdrant-database"])
+    subprocess.run(["docker", "volume", "rm", "arguflow_qdrant_data"])
+    subprocess.run(["docker", "compose", "up", "-d", "qdrant-database"])
+    terminate_connections(get_value("db_url"))  # type: ignore
+    subprocess.run(
+        [
+            "diesel",
+            "db",
+            "reset",
+            "--migration-dir",
+            "../server/migrations",
+            "--config-file",
+            "../server/diesel.toml",
+            "--database-url",
+            get_value("db_url"), #type: ignore
+        ]
+    )
+
+    print("\nSuccessfully reset your databases!")
+
+
+@reset_app.command("s3")
+def reset_s3() -> None:
+    typer.confirm("Are you sure you want to reset your S3 instance?", abort=True)
+    subprocess.run(["docker", "compose", "stop", "s3"])
+    subprocess.run(["docker", "compose", "rm", "-f", "s3"])
+    subprocess.run(["docker", "volume", "rm", "vault_s3-data"])
+    subprocess.run(["docker", "compose", "up", "-d", "s3"])
+
+
+@reset_app.command("redis")
+def reset_redis() -> None:
+    typer.confirm("Are you sure you want to reset your Redis db?", abort=True)
+    subprocess.run(["docker", "compose", "stop", "script-redis"])
+    subprocess.run(["docker", "compose", "rm", "-f", "script-redis"])
+    subprocess.run(["docker", "volume", "rm", "vault_script-redis-data"])
+    subprocess.run(["docker", "compose", "up", "-d", "script-redis"])
+
 
 
 def _version_callback(value: bool) -> None:
