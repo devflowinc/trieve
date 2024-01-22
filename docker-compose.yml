@@ -9,19 +9,29 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: vault
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # ports:
+    #   - "5432:5432"
     networks:
       - app-network
 
   redis:
     image: redis:7.2.2
-    container_name: my-redis
+    container_name: redis
     restart: always
-    ports:
-      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # ports:
+    #   - "6379:6379"
     volumes:
       - redis-data:/data
     networks:
@@ -33,9 +43,9 @@ services:
     container_name: qdrant-database 
     environment:
       - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
-    ports:
-      - 6333:6333
-      - 6334:6334
+    # ports:
+    #   - 6333:6333
+    #   - 6334:6334
     volumes:
       - qdrant_data:/qdrant/storage
     networks:
@@ -52,8 +62,8 @@ services:
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://s3:9000/minio/health/live"]
-      interval: 3s
-      timeout: 2s
+      interval: 10s
+      timeout: 5s
       retries: 10
     volumes:
       - s3-data:/data
@@ -87,25 +97,39 @@ services:
   tika:
     image: apache/tika:2.9.1.0-full
     container_name: tika
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -S 'http://tika:9998/version' 2>&1 | grep 'HTTP/' | awk '{print $2}' | grep 200 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     networks:
       - app-network
-    ports:
-      - 9998:9998
+    # ports:
+    #   - 9998:9998
 
   server:
     image: arguflow/server:no-ocr
     container_name: server
     build: ./server/
+    depends_on:
+      tika:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      qdrant-database:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
     networks:
       - app-network
     ports:
       - 8090:8090
     volumes:
       - ./server/images:/app/images
-    links:
-      - tika:tika
-      - keycloak:keycloak
     environment:
+      - ADMIN_API_KEY=${ADMIN_API_KEY}
       - REDIS_URL=${REDIS_URL}
       - QDRANT_URL=${QDRANT_URL}
       - QDRANT_API_KEY=${QDRANT_API_KEY}
@@ -176,13 +200,22 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.1
     container_name: keycloak
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
     environment:
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=aintsecure
       - KC_DATABASE=postgres
-      - KC_DATABASE_URL=jdbc:postgresql://localhost:5434/keycloak
+      - KC_DATABASE_URL=jdbc:postgresql://keycloak-db:5432/keycloak
       - KC_DB_USERNAME=postgres
       - KC_DB_PASSWORD=password
+      - KC_HEALTH_ENABLED=true
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080;echo -e \"GET /health/ready HTTP/1.1\r\nhost: http://localhost\r\nConnection: close\r\n\r\n\" >&3;grep \"HTTP/1.1 200 OK\" <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 20 # Account for keycloak db starting up and taking time.
     entrypoint: "/opt/keycloak/bin/kc.sh start-dev --import-realm --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false"
     volumes:
       - keycloak-data:/opt/keycloak/data
@@ -201,10 +234,15 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: keycloak
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     volumes:
       - pg-keycloak-data:/var/lib/postgresql/data
-    ports:
-      - "5434:5432"
+    # ports:
+    #   - "5434:5432"
     networks:
       - app-network
 
