@@ -20,12 +20,18 @@ const tryParse = (encoded: string) => {
 };
 
 export const currentDataset = persistentAtom("dataset", null, {
-  encode: JSON.stringify,
+  encode: (dataset) => {
+    let params = new URL(window.location.href).searchParams;
+    params.set("dataset", dataset.dataset.id);
+    window.history.replaceState({}, "", `${window.location.pathname}?${params}`);
+    return JSON.stringify(dataset);
+  },
   decode: tryParse,
 });
 export const datasetsAndUsagesStore = atom<DatasetAndUsageDTO[]>([]);
 
 currentOrganization.subscribe((organization) => {
+  let params = new URLSearchParams(window.location.search);
   if (organization) {
     void fetch(`${apiHost}/dataset/organization/${organization.id}`, {
       method: "GET",
@@ -43,8 +49,15 @@ currentOrganization.subscribe((organization) => {
                 datasetsAndUsagesStore.set([]);
               }
               if (data.length > 0 && data.every(isDatasetAndUsageDTO)) {
-                if (currentDataset.get() === null) {
+                if (currentDataset.get() === null || params.get("dataset") === null){
                   currentDataset.set(data[0]);
+                } else if (params.get("dataset") !== null) {
+                  const dataset = data.find((d) => d.dataset.id === params.get("dataset"));
+                  if (dataset) {
+                    currentDataset.set(dataset);
+                  } else {
+                    currentDataset.set(data[0]);
+                  }
                 }
                 datasetsAndUsagesStore.set(data);
               }
