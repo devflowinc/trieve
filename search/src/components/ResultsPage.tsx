@@ -115,7 +115,7 @@ const ResultsPage = (props: ResultsPageProps) => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const requestBody: any = {
-      content: props.query,
+      query: props.query,
       tag_set: props.filters.tagSet,
       page: props.page,
       link: props.filters.link,
