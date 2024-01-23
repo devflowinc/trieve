@@ -26,7 +26,7 @@ const SearchForm = () => {
       },
       //TODO: Add modal to specify name
       body: JSON.stringify({
-        "name": "search"
+        name: "search",
       }),
     }).then((response) => {
       if (response.ok) {
