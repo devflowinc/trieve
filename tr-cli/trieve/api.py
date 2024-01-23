@@ -40,7 +40,7 @@ def create_dataset(name: str, org_id: str) -> str:
             "client_configuration": {},
         },
     ).json()
-
+    # TODO: account for if user is exceeding plan limits
     dataset_id = dataset["id"]
     return dataset_id
 

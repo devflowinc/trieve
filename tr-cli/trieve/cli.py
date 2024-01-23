@@ -92,7 +92,7 @@ def init() -> None:
 
     user = get_user()
     use_org = 0
-    if len(user["orgs"] > 1):
+    if len(user["orgs"]) > 1:
         org_table = Table("#", "Name", "ID")
 
         for i, org in enumerate(user["orgs"]):
@@ -125,7 +125,7 @@ def add_dataset() -> None:
         typer.Abort()
     user = get_user()
     use_org = 0
-    if len(user["orgs"] > 1):
+    if len(user["orgs"]) > 1:
         org_table = Table("#", "Name", "ID")
 
         for i, org in enumerate(user["orgs"]):
@@ -166,10 +166,6 @@ def add_organization() -> None:
 
     add_dataset()
 
-@add_app.command("sample")
-def insert_sample_data() -> None:
-    
-
 
 @reset_app.command("db")
 def reset_db() -> None:
@@ -200,7 +196,7 @@ def reset_db() -> None:
             "--config-file",
             "../server/diesel.toml",
             "--database-url",
-            get_value("db_url"), #type: ignore
+            get_value("db_url"),  # type: ignore
         ]
     )
 
@@ -223,7 +219,6 @@ def reset_redis() -> None:
     subprocess.run(["docker", "compose", "rm", "-f", "script-redis"])
     subprocess.run(["docker", "volume", "rm", "vault_script-redis-data"])
     subprocess.run(["docker", "compose", "up", "-d", "script-redis"])
-
 
 
 def _version_callback(value: bool) -> None:
