@@ -1,3 +1,4 @@
+from math import trunc
 from typing import Optional
 from angle_emb import AnglE, Prompts
 import uvicorn
@@ -13,11 +14,15 @@ from sentence_transformers.cross_encoder import CrossEncoder
 app = FastAPI()
 
 doc_model_id = "naver/efficient-splade-VI-BT-large-doc"
-doc_tokenizer = AutoTokenizer.from_pretrained(doc_model_id)
+doc_tokenizer = AutoTokenizer.from_pretrained(
+    doc_model_id, use_fast=True, truncation=True, max_length=512
+)
 doc_model = AutoModelForMaskedLM.from_pretrained(doc_model_id)
 
 query_model_id = "naver/efficient-splade-VI-BT-large-query"
-query_tokenizer = AutoTokenizer.from_pretrained(query_model_id)
+query_tokenizer = AutoTokenizer.from_pretrained(
+    query_model_id, use_fast=True, truncation=True, max_length=512
+)
 query_model = AutoModelForMaskedLM.from_pretrained(query_model_id)
 
 cross_encoder_model_id = "cross-encoder/ms-marco-MiniLM-L-4-v2"
@@ -53,7 +58,7 @@ def compute_vector(text, tokenizer, model):
     Returns:
     torch.Tensor: Computed vector.
     """
-    tokens = tokenizer(text, return_tensors="pt")
+    tokens = tokenizer(text[:512], return_tensors="pt")
     output = model(**tokens)
     logits, attention_mask = output.logits, tokens.attention_mask
     relu_log = torch.log(1 + torch.relu(logits))
@@ -136,7 +141,6 @@ class ReRankRequest(BaseModel):
 
 @app.post("/rerank")
 async def rerank(rerankRequest: ReRankRequest):
-    
     combined_docs = [[rerankRequest.query, doc] for doc in rerankRequest.docs]
     doc_scores = cross_encoder_model.predict(combined_docs)
     sim_scores_argsort = reversed(np.argsort(doc_scores))

@@ -1,15 +1,27 @@
 """This module provides the Trieve CLI."""
 # rptodo/cli.py
 
+from distutils.command import upload
 from http import client, server
 import subprocess
 from typing import Optional
+
+from numpy import delete
 
 import typer
 
 from trieve import __app_name__, __version__
 from trieve.config import _init_config_file, get_value, store_value
-from trieve.api import create_dataset, create_organization, get_login_url, get_user
+from trieve.api import (
+    create_dataset,
+    create_organization,
+    delete_dataset_api,
+    download_sample_data,
+    get_datasets_for_org,
+    get_login_url,
+    get_user,
+    upload_sample_data,
+)
 from trieve.db import terminate_connections
 from rich import print
 from rich.table import Table
@@ -20,8 +32,10 @@ import subprocess
 app = typer.Typer()
 add_app = typer.Typer()
 reset_app = typer.Typer()
+delete_app = typer.Typer()
 app.add_typer(add_app, name="add")
 app.add_typer(reset_app, name="reset")
+app.add_typer(delete_app, name="delete")
 console = Console()
 
 
@@ -91,25 +105,25 @@ def init() -> None:
     print("\nGreat! Now, let's set up your dataset.\n")
 
     user = get_user()
-    use_org = 0
-    if len(user["orgs"]) > 1:
+    use_org = 1
+    if len(user.orgs) > 1:
         org_table = Table("#", "Name", "ID")
 
-        for i, org in enumerate(user["orgs"]):
-            org_table.add_row(str(i + 1), org["name"], org["id"])
+        for i, org in enumerate(user.orgs):
+            org_table.add_row(str(i + 1), org.name, org.id)
 
         console.print(org_table)
 
         use_org = Prompt.ask(
-            f"Which organization would you like to create your dataset in (1 - {len(user['orgs'])})",
-            choices=[str(x + 1) for x in range(len(user["orgs"]))],
+            f"Which organization would you like to create your dataset in? (1 - {len(user.orgs)})",
+            choices=[str(x + 1) for x in range(len(user.orgs))],
             show_choices=False,
         )
 
     dataset_name = Prompt.ask(
         "What would you like to name your dataset?", default="default"
     )
-    dataset_id = create_dataset(dataset_name, user["orgs"][use_org]["id"])
+    dataset_id = create_dataset(dataset_name, user.orgs[int(use_org) - 1].id)
 
     print("\nGreat! Now, here is the information you need to connect to your dataset:")
     print(f"Dataset ID: {dataset_id}")
@@ -124,28 +138,29 @@ def add_dataset() -> None:
         print("API key not set! Please run `trieve init` to set up.")
         typer.Abort()
     user = get_user()
-    use_org = 0
-    if len(user["orgs"]) > 1:
+    use_org = 1
+    if len(user.orgs) > 1:
         org_table = Table("#", "Name", "ID")
 
-        for i, org in enumerate(user["orgs"]):
-            org_table.add_row(str(i + 1), org["name"], org["id"])
+        for i, org in enumerate(user.orgs):
+            org_table.add_row(str(i + 1), org.name, org.id)
 
         console.print(org_table)
 
         use_org = Prompt.ask(
-            f"Which organization would you like to create your dataset in (1 - {len(user['orgs'])})",
-            choices=[str(x + 1) for x in range(len(user["orgs"]))],
+            f"Which organization would you like to create your dataset in? (1 - {len(user.orgs)})",
+            choices=[str(x + 1) for x in range(len(user.orgs))],
             show_choices=False,
         )
 
     dataset_name = Prompt.ask(
         "What would you like to name your dataset?", default="default"
     )
-    dataset_id = create_dataset(dataset_name, user["orgs"][use_org]["id"])
+    dataset = create_dataset(dataset_name, user.orgs[int(use_org) - 1].id)
 
     print("\nGreat! Now, here is the information you need to connect to your dataset:")
-    print(f"Dataset ID: {dataset_id}")
+    print(f"Dataset ID: {dataset.id}")
+    print(f"Dataset Name: {dataset.name}")
     print(f"API Key: {get_value('api_key')}\n")
 
 
@@ -157,14 +172,60 @@ def add_organization() -> None:
     organization_name = Prompt.ask(
         "What would you like to name your organization?", default="default"
     )
-    organization_id = create_organization(organization_name)
+    organization = create_organization(organization_name)
 
-    print("\nGreat! Now, here is the information about your newly created dataset:")
-    print(f"Organization ID: {organization_id} \n")
+    print(
+        "\nGreat! Now, here is the information about your newly created organization:"
+    )
+    print(f"Organization ID: {organization.id} \n")
+    print(f"Organization Name: {organization.name} \n")
 
     typer.confirm("Would you like to create a dataset?", abort=True)
 
     add_dataset()
+
+
+@add_app.command("sample")
+def add_sample_data() -> None:
+    if not get_value("api_key"):
+        print("API key not set! Please run `trieve init` to set up.")
+        typer.Abort()
+    typer.confirm(
+        "Are you sure you would like to create a sample dataset? Will require download of sample data (around 1.1 gb)",
+        abort=True,
+    )
+    file_path = Prompt.ask(
+        "Where would you like to download the sample data to?",
+        default="./sample-data/enron.csv",
+    )
+    download_sample_data(file_path)
+    print("Successfully downloaded sample dataset!")
+    user = get_user()
+    use_org = 1
+    if len(user.orgs) > 1:
+        org_table = Table("#", "Name", "ID")
+
+        for i, org in enumerate(user.orgs):
+            org_table.add_row(str(i + 1), org.name, org.id)
+
+        console.print(org_table)
+
+        use_org = Prompt.ask(
+            f"Which organization would you like to create your dataset in? (1 - {len(user.orgs)})",
+            choices=[str(x + 1) for x in range(len(user.orgs))],
+            show_choices=False,
+        )
+
+    dataset_name = Prompt.ask(
+        "What would you like to name your dataset?", default="enron"
+    )
+    dataset = create_dataset(dataset_name, user.orgs[int(use_org) - 1].id)
+    upload_sample_data(dataset.id, file_path)
+    print("Successfully uploaded sample dataset!")
+    print("\nGreat! Now, here is the information you need to connect to your dataset:")
+    print(f"Dataset ID: {dataset.id}")
+    print(f"Dataset Name: {dataset.name}")
+    print(f"API Key: {get_value('api_key')}\n")
 
 
 @reset_app.command("db")
@@ -219,6 +280,43 @@ def reset_redis() -> None:
     subprocess.run(["docker", "compose", "rm", "-f", "script-redis"])
     subprocess.run(["docker", "volume", "rm", "vault_script-redis-data"])
     subprocess.run(["docker", "compose", "up", "-d", "script-redis"])
+
+
+@delete_app.command("dataset")
+def delete_dataset() -> None:
+    if not get_value("api_key"):
+        print("API key not set! Please run `trieve init` to set up.")
+        typer.Abort()
+    user = get_user()
+    use_org = 1
+    if len(user.orgs) > 1:
+        org_table = Table("#", "Name", "ID")
+
+        for i, org in enumerate(user.orgs):
+            org_table.add_row(str(i + 1), org.name, org.id)
+
+        console.print(org_table)
+
+        use_org = Prompt.ask(
+            f"Which organization would you like to delete your dataset in? (1 - {len(user.orgs)})",
+            choices=[str(x + 1) for x in range(len(user.orgs))],
+            show_choices=False,
+        )
+
+    datasets = get_datasets_for_org(user.orgs[int(use_org) - 1].id)
+    dataset_table = Table("#", "Name", "ID")
+    for i, dataset in enumerate(datasets):
+        dataset_table.add_row(str(i + 1), dataset.dataset.name, dataset.dataset.id)
+    console.print(dataset_table)
+
+    use_dataset = Prompt.ask(
+        f"Which dataset would you like to delete? (1 - {len(user.orgs)})",
+        choices=[str(x + 1) for x in range(len(user.orgs))],
+        show_choices=False,
+    )
+    delete_dataset_api(datasets[int(use_dataset) - 1].dataset.id)
+
+    print("\nSuccessfully deleted dataset!")
 
 
 def _version_callback(value: bool) -> None:
