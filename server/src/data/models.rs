@@ -699,22 +699,22 @@ pub struct ChunkFileWithName {
 #[diesel(table_name = file_upload_completed_notifications)]
 pub struct FileUploadCompletedNotification {
     pub id: uuid::Uuid,
-    pub user_uuid: uuid::Uuid,
     pub collection_uuid: uuid::Uuid,
     pub user_read: bool,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub dataset_id: uuid::Uuid,
 }
 
 impl FileUploadCompletedNotification {
-    pub fn from_details(user_uuid: uuid::Uuid, collection_uuid: uuid::Uuid) -> Self {
+    pub fn from_details(dataset_id: uuid::Uuid, collection_uuid: uuid::Uuid) -> Self {
         FileUploadCompletedNotification {
             id: uuid::Uuid::new_v4(),
-            user_uuid,
             collection_uuid,
             user_read: false,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
+            dataset_id,
         }
     }
 }
@@ -722,7 +722,7 @@ impl FileUploadCompletedNotification {
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct FileUploadCompletedNotificationWithName {
     pub id: uuid::Uuid,
-    pub user_uuid: uuid::Uuid,
+    pub dataset_id: uuid::Uuid,
     pub collection_uuid: uuid::Uuid,
     pub collection_name: Option<String>,
     pub user_read: bool,
@@ -737,7 +737,7 @@ impl FileUploadCompletedNotificationWithName {
     ) -> Self {
         FileUploadCompletedNotificationWithName {
             id: notification.id,
-            user_uuid: notification.user_uuid,
+            dataset_id: notification.dataset_id,
             collection_uuid: notification.collection_uuid,
             collection_name: Some(collection_name),
             user_read: notification.user_read,
@@ -756,10 +756,10 @@ pub struct UserCollectionCount {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
-#[diesel(table_name = user_notification_counts)]
-pub struct UserNotificationCount {
+#[diesel(table_name = dataset_notification_counts)]
+pub struct DatasetNotificationCount {
     pub id: uuid::Uuid,
-    pub user_uuid: uuid::Uuid,
+    pub dataset_uuid: uuid::Uuid,
     pub notification_count: i32,
 }
 

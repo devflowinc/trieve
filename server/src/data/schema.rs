@@ -82,6 +82,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    dataset_notification_counts (id) {
+        id -> Uuid,
+        notification_count -> Int4,
+        dataset_uuid -> Nullable<Uuid>,
+    }
+}
+
+diesel::table! {
     dataset_usage_counts (id) {
         id -> Uuid,
         dataset_id -> Uuid,
@@ -104,7 +112,6 @@ diesel::table! {
 diesel::table! {
     file_upload_completed_notifications (id) {
         id -> Uuid,
-        user_uuid -> Uuid,
         collection_uuid -> Uuid,
         user_read -> Bool,
         created_at -> Timestamp,
@@ -243,14 +250,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    user_notification_counts (id) {
-        id -> Uuid,
-        user_uuid -> Uuid,
-        notification_count -> Int4,
-    }
-}
-
-diesel::table! {
     user_organizations (id) {
         id -> Uuid,
         user_id -> Uuid,
@@ -300,7 +299,6 @@ diesel::joinable!(topics -> datasets (dataset_id));
 diesel::joinable!(topics -> users (user_id));
 diesel::joinable!(user_api_key -> users (user_id));
 diesel::joinable!(user_collection_counts -> users (user_id));
-diesel::joinable!(user_notification_counts -> users (user_uuid));
 diesel::joinable!(user_organizations -> organizations (organization_id));
 diesel::joinable!(user_organizations -> users (user_id));
 
@@ -312,6 +310,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     chunk_metadata,
     collections_from_files,
     cut_chunks,
+    dataset_notification_counts,
     dataset_usage_counts,
     datasets,
     file_upload_completed_notifications,
@@ -325,7 +324,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     topics,
     user_api_key,
     user_collection_counts,
-    user_notification_counts,
     user_organizations,
     users,
 );

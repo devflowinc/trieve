@@ -42,14 +42,13 @@ pub struct NotificationReturn {
     pub total_pages: i64,
 }
 pub fn get_notifications_query(
-    user_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     page: i64,
     pool: web::Data<Pool>,
 ) -> Result<NotificationReturn, DefaultError> {
     use crate::data::schema::chunk_collection::dsl as chunk_collection_columns;
+    use crate::data::schema::dataset_notification_counts::dsl as dataset_notification_counts_columns;
     use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
-    use crate::data::schema::user_notification_counts::dsl as user_notification_counts_columns;
 
     let mut conn = pool.get().unwrap();
 
@@ -61,16 +60,15 @@ pub fn get_notifications_query(
                         .eq(chunk_collection_columns::id)),
             )
             .left_outer_join(
-                user_notification_counts_columns::user_notification_counts
-                    .on(file_upload_completed_notifications_columns::user_uuid
-                        .eq(user_notification_counts_columns::user_uuid)),
+                dataset_notification_counts_columns::dataset_notification_counts
+                    .on(file_upload_completed_notifications_columns::dataset_id
+                        .eq(dataset_notification_counts_columns::dataset_uuid.assume_not_null())),
             )
-            .filter(file_upload_completed_notifications_columns::user_uuid.eq(user_id))
             .filter(file_upload_completed_notifications_columns::dataset_id.eq(dataset_id))
             .select((
                 FileUploadCompletedNotification::as_select(),
                 chunk_collection_columns::name.nullable(),
-                user_notification_counts_columns::notification_count.nullable(),
+                dataset_notification_counts_columns::notification_count.nullable(),
             ))
             .order(file_upload_completed_notifications_columns::created_at.desc())
             .limit(10)
@@ -101,7 +99,6 @@ pub fn get_notifications_query(
 }
 
 pub fn mark_notification_as_read_query(
-    user_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     notification_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -111,7 +108,6 @@ pub fn mark_notification_as_read_query(
 
     let file_upload_completed_result = diesel::update(
         file_upload_completed_notifications_columns::file_upload_completed_notifications
-            .filter(file_upload_completed_notifications_columns::user_uuid.eq(user_id))
             .filter(file_upload_completed_notifications_columns::dataset_id.eq(dataset_id))
             .filter(file_upload_completed_notifications_columns::id.eq(notification_id)),
     )
@@ -127,7 +123,6 @@ pub fn mark_notification_as_read_query(
 }
 
 pub fn mark_all_notifications_as_read_query(
-    user_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
@@ -137,8 +132,7 @@ pub fn mark_all_notifications_as_read_query(
 
     let file_upload_completed_result = diesel::update(
         file_upload_completed_notifications_columns::file_upload_completed_notifications
-            .filter(file_upload_completed_notifications_columns::dataset_id.eq(dataset_id))
-            .filter(file_upload_completed_notifications_columns::user_uuid.eq(user_id)),
+            .filter(file_upload_completed_notifications_columns::dataset_id.eq(dataset_id)),
     )
     .set(file_upload_completed_notifications_columns::user_read.eq(true))
     .execute(&mut conn);
