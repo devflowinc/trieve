@@ -183,7 +183,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
         signal: abortController.signal,
         credentials: "include",
         body: JSON.stringify({
-          content: props.query,
+          query: props.query,
           tag_set: props.filters.tagSet,
           link: props.filters.link,
           page: props.page,
