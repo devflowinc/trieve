@@ -48,7 +48,7 @@ pub async fn create_topic(
 
     if message.is_none() && data_inner.name.is_none() {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
-            message: "Resolution must not be empty",
+            message: "first_user_message and name must not be empty",
         }));
     }
 
