@@ -174,7 +174,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
         setClientSideRequestFinished(true);
       });
     } else {
-      void fetch(`${apiHost}/chunk_collection/search/${props.page}`, {
+      void fetch(`${apiHost}/chunk_collection/search`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -186,6 +186,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
           content: props.query,
           tag_set: props.filters.tagSet,
           link: props.filters.link,
+          page: props.page,
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           filters: props.filters.metadataFilters,
           collection_id: props.collectionID,

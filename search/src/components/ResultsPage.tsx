@@ -117,6 +117,7 @@ const ResultsPage = (props: ResultsPageProps) => {
     const requestBody: any = {
       content: props.query,
       tag_set: props.filters.tagSet,
+      page: props.page,
       link: props.filters.link,
       time_range:
         props.filters.start || props.filters.end
@@ -141,7 +142,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       }
     }
 
-    void fetch(`${apiHost}/chunk/search/${props.page}`, {
+    void fetch(`${apiHost}/chunk/search`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
