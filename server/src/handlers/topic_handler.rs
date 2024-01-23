@@ -15,7 +15,9 @@ use utoipa::ToSchema;
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct CreateTopicData {
     /// The first message which will belong to the topic. The topic name is generated based on this message similar to how it works in the OpenAI chat UX.
-    pub first_user_message: String,
+    pub first_user_message: Option<String>,
+    // The name of the topic. If this is not provided, the topic name is generated from the first_user_message.
+    pub name: Option<String>,
     /// Whether or not RAG should be used on messages in this topic.
     pub normal_chat: Option<bool>,
 }
@@ -41,18 +43,22 @@ pub async fn create_topic(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let data_inner = data.into_inner();
-    let name = data_inner.first_user_message;
+    let message = data_inner.first_user_message;
     let normal_chat = data_inner.normal_chat;
 
-    if name.is_empty() {
+    if message.is_none() && data_inner.name.is_none() {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
             message: "Resolution must not be empty",
         }));
     }
 
-    let topic_name = get_topic_string(name, &dataset_org_plan_sub.dataset)
-        .await
-        .map_err(|e| ServiceError::BadRequest(format!("Error getting topic string: {}", e)))?;
+    let topic_name = if let Some(name) = message {
+        get_topic_string(name, &dataset_org_plan_sub.dataset)
+            .await
+            .map_err(|e| ServiceError::BadRequest(format!("Error getting topic string: {}", e)))?
+    } else {
+        data_inner.name.unwrap_or_default()
+    };
 
     let new_topic = Topic::from_details(
         topic_name,
@@ -135,7 +141,7 @@ pub struct UpdateTopicData {
 }
 
 /// update_topic
-/// 
+///
 /// Update an existing chat topic. Currently, only the name of the topic can be updated.
 #[utoipa::path(
     put,
@@ -192,7 +198,7 @@ pub async fn update_topic(
 }
 
 /// get_all_topics
-/// 
+///
 /// Get all topics belonging to a the auth'ed user. Soon, we plan to allow specification of the user for this route and include pagination.
 #[utoipa::path(
     get,
