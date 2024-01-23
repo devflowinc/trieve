@@ -388,7 +388,10 @@ pub async fn create_chunks_with_handler(
     };
 
     add_collection_created_notification_query(
-        FileUploadCompletedNotification::from_details(user.id, collection_id),
+        FileUploadCompletedNotification::from_details(
+            dataset_org_plan_sub.dataset.id,
+            collection_id,
+        ),
         pool,
     )
     .map_err(|_| DefaultError {

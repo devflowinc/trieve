@@ -18,7 +18,7 @@ pub enum Notification {
 }
 
 /// get_notifications
-/// 
+///
 /// Get notifications for the auth'ed user. Currently, this is only for notifications belonging to the auth'ed user. Soon, we plan to associate notifications to datasets instead of users. Each page contains 10 notifications.
 #[utoipa::path(
     get,
@@ -26,28 +26,21 @@ pub enum Notification {
     context_path = "/api",
     tag = "notifications",
     responses(
-        (status = 200, description = "Notifications for the user", body = NotificationReturn),
-        (status = 400, description = "Service error relating to getting notifications for the user", body = DefaultError),
+        (status = 200, description = "Notifications for the dataset", body = NotificationReturn),
+        (status = 400, description = "Service error relating to getting notifications for the dataset", body = DefaultError),
     ),
     params(
         ("page" = i64, description = "Page number of notifications to get"),
     ),
 )]
 pub async fn get_notifications(
-    user: LoggedUser,
+    _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     page: web::Path<i64>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let user_id = user.id;
-
     let notifications = web::block(move || {
-        get_notifications_query(
-            user_id,
-            dataset_org_plan_sub.dataset.id,
-            page.into_inner(),
-            pool,
-        )
+        get_notifications_query(dataset_org_plan_sub.dataset.id, page.into_inner(), pool)
     })
     .await?
     .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
@@ -62,7 +55,7 @@ pub struct NotificationId {
 }
 
 /// mark_read
-/// 
+///
 /// Mark a notification specified by id as read. Currently, this is only for notifications belonging to the auth'ed user. Soon, we plan to associate notifications to datasets instead of users.
 #[utoipa::path(
     put,
@@ -76,16 +69,13 @@ pub struct NotificationId {
     ),
 )]
 pub async fn mark_notification_as_read(
-    user: LoggedUser,
+    _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     notification_id: web::Json<NotificationId>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let user_id = user.id;
-
     web::block(move || {
         mark_notification_as_read_query(
-            user_id,
             dataset_org_plan_sub.dataset.id,
             notification_id.into_inner().notification_id,
             pool,
@@ -98,7 +88,7 @@ pub async fn mark_notification_as_read(
 }
 
 /// mark_all_read
-/// 
+///
 /// Mark all notifications as read. Currently, this is only for notifications belonging to the auth'ed user. Soon, we plan to associate notifications to datasets instead of users.
 #[utoipa::path(
     put,
@@ -111,17 +101,13 @@ pub async fn mark_notification_as_read(
     ),
 )]
 pub async fn mark_all_notifications_as_read(
-    user: LoggedUser,
+    _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let user_id = user.id;
-
-    web::block(move || {
-        mark_all_notifications_as_read_query(user_id, dataset_org_plan_sub.dataset.id, pool)
-    })
-    .await?
-    .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+    web::block(move || mark_all_notifications_as_read_query(dataset_org_plan_sub.dataset.id, pool))
+        .await?
+        .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
 
     Ok(HttpResponse::NoContent().into())
 }
