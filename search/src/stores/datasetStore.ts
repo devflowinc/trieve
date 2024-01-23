@@ -22,7 +22,7 @@ const tryParse = (encoded: string) => {
 export const currentDataset = persistentAtom("dataset", null, {
   encode: (dataset) => {
     let params = new URL(window.location.href).searchParams;
-    params.set("dataset", dataset.dataset.id);
+    params.set("dataset", (dataset as DatasetAndUsageDTO).dataset.id);
     window.history.replaceState({}, "", `${window.location.pathname}?${params}`);
     return JSON.stringify(dataset);
   },
