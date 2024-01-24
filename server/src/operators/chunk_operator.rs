@@ -432,7 +432,6 @@ enum TransactionResult {
 
 pub async fn delete_chunk_metadata_query(
     chunk_uuid: uuid::Uuid,
-    qdrant_point_id: Option<uuid::Uuid>,
     dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
@@ -501,7 +500,7 @@ pub async fn delete_chunk_metadata_query(
                     None => chunk_collisions[0].0.clone(),
                 };
 
-                let latest_collision_metadata = match chunk_collisions.first() {
+                let mut latest_collision_metadata = match chunk_collisions.first() {
                     Some(x) => x.1.clone(),
                     None => chunk_collisions[0].1.clone(),
                 };
@@ -562,6 +561,8 @@ pub async fn delete_chunk_metadata_query(
                     .eq(latest_collision.collision_qdrant_id),))
                 .execute(conn)?;
 
+                latest_collision_metadata.qdrant_point_id = latest_collision.collision_qdrant_id;
+
                 return Ok(TransactionResult::ChunkCollisionDetected(
                     latest_collision_metadata,
                 ));
@@ -590,7 +591,10 @@ pub async fn delete_chunk_metadata_query(
                         qdrant_collection,
                         None,
                         &vec![<String as Into<PointId>>::into(
-                            qdrant_point_id.unwrap_or_default().to_string(),
+                            chunk_metadata
+                                .qdrant_point_id
+                                .unwrap_or_default()
+                                .to_string(),
                         )]
                         .into(),
                         None,
@@ -624,7 +628,10 @@ pub async fn delete_chunk_metadata_query(
                         None,
                         &[PointVectors {
                             id: Some(<String as Into<PointId>>::into(
-                                qdrant_point_id.unwrap_or_default().to_string(),
+                                latest_collision_metadata
+                                    .qdrant_point_id
+                                    .unwrap_or_default()
+                                    .to_string(),
                             )),
                             vectors: Some(new_embedding_vector.into()),
                         }],

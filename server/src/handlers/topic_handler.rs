@@ -222,8 +222,7 @@ pub async fn get_all_topics_for_user(
     if user
         .user_orgs
         .iter()
-        .find(|o| o.id == dataset_org_plan_sub.organization.id)
-        .is_some()
+        .any(|o| o.id == dataset_org_plan_sub.organization.id)
         && user.id != *req_user_id
         && user
             .user_orgs
@@ -239,7 +238,7 @@ pub async fn get_all_topics_for_user(
     }
 
     let topics = web::block(move || {
-        get_all_topics_for_user_query(req_user_id.clone(), dataset_org_plan_sub.dataset.id, &pool)
+        get_all_topics_for_user_query(*req_user_id, dataset_org_plan_sub.dataset.id, &pool)
     })
     .await?;
 
