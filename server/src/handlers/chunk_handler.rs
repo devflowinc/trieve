@@ -387,17 +387,11 @@ pub async fn delete_chunk(
     let chunk_id_inner = chunk_id.into_inner();
     let pool1 = pool.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
-    let chunk_metadata = user_owns_chunk(user.0.id, chunk_id_inner, dataset_id, pool).await?;
-    let qdrant_point_id = chunk_metadata.qdrant_point_id;
+    let _ = user_owns_chunk(user.0.id, chunk_id_inner, dataset_id, pool).await?;
 
-    delete_chunk_metadata_query(
-        chunk_id_inner,
-        qdrant_point_id,
-        dataset_org_plan_sub.dataset,
-        pool1,
-    )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    delete_chunk_metadata_query(chunk_id_inner, dataset_org_plan_sub.dataset, pool1)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -431,16 +425,9 @@ pub async fn delete_chunk_by_tracking_id(
     let chunk_metadata =
         user_owns_chunk_tracking_id(user.0.id, tracking_id_inner, dataset_id, pool).await?;
 
-    let qdrant_point_id = chunk_metadata.qdrant_point_id;
-
-    delete_chunk_metadata_query(
-        chunk_metadata.id,
-        qdrant_point_id,
-        dataset_org_plan_sub.dataset,
-        pool1,
-    )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    delete_chunk_metadata_query(chunk_metadata.id, dataset_org_plan_sub.dataset, pool1)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }

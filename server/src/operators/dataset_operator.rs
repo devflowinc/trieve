@@ -1,5 +1,9 @@
 use crate::data::models::{DatasetAndUsage, DatasetUsageCount};
 use crate::diesel::RunQueryDsl;
+use crate::operators::chunk_operator::delete_chunk_metadata_query;
+use crate::operators::collection_operator::delete_collection_by_id_query;
+use crate::operators::file_operator::delete_file_query;
+use crate::operators::topic_operator::delete_topic_query;
 use crate::{
     data::models::{Dataset, Pool},
     errors::ServiceError,
@@ -100,14 +104,72 @@ pub async fn delete_dataset_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
+    use crate::data::schema::chunk_collection::dsl as chunk_collection_columns;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::datasets::dsl as datasets_columns;
+    use crate::data::schema::files::dsl as files_columns;
+    use crate::data::schema::topics::dsl as topics_columns;
+
+    let dataset = get_dataset_by_id_query(id, pool.clone()).await?;
 
     let mut conn = pool
         .get()
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
+    let collection_ids = chunk_collection_columns::chunk_collection
+        .select(chunk_collection_columns::id)
+        .filter(chunk_collection_columns::dataset_id.eq(dataset.id))
+        .load::<uuid::Uuid>(&mut conn)
+        .map_err(|_| ServiceError::BadRequest("Could not find collections".to_string()))?;
+
+    for col_id in collection_ids {
+        delete_collection_by_id_query(col_id, dataset.id, pool.clone()).map_err(|_| {
+            ServiceError::BadRequest("Failed to delete collections for dataset".to_string())
+        })?;
+    }
+
+    let chunk_ids = chunk_metadata_columns::chunk_metadata
+        .select(chunk_metadata_columns::id)
+        .filter(chunk_metadata_columns::dataset_id.eq(dataset.id))
+        .load::<uuid::Uuid>(&mut conn)
+        .map_err(|_| ServiceError::BadRequest("Could not find chunks".to_string()))?;
+
+    for chunk_id in chunk_ids {
+        delete_chunk_metadata_query(chunk_id, dataset.clone(), pool.clone())
+            .await
+            .map_err(|_| {
+                ServiceError::BadRequest("Failed to delete chunks for dataset".to_string())
+            })?;
+    }
+
+    let file_ids = files_columns::files
+        .select(files_columns::id)
+        .filter(files_columns::dataset_id.eq(dataset.id))
+        .load::<uuid::Uuid>(&mut conn)
+        .map_err(|_| ServiceError::BadRequest("Could not find files".to_string()))?;
+
+    for file_id in file_ids {
+        delete_file_query(file_id, dataset.id, pool.clone())
+            .await
+            .map_err(|_| {
+                ServiceError::BadRequest("Failed to delete files for dataset".to_string())
+            })?;
+    }
+
+    let topic_ids = topics_columns::topics
+        .select(topics_columns::id)
+        .filter(topics_columns::dataset_id.eq(dataset.id))
+        .load::<uuid::Uuid>(&mut conn)
+        .map_err(|_| ServiceError::BadRequest("Could not find topics".to_string()))?;
+
+    for topic_id in topic_ids {
+        delete_topic_query(topic_id, dataset.id, &pool.clone()).map_err(|_| {
+            ServiceError::BadRequest("Failed to delete topics for dataset".to_string())
+        })?;
+    }
+
     diesel::delete(datasets_columns::datasets)
-        .filter(datasets_columns::id.eq(id))
+        .filter(datasets_columns::id.eq(dataset.id))
         .execute(&mut conn)
         .map_err(|_| ServiceError::BadRequest("Failed to delete dataset".to_string()))?;
 
