@@ -100,7 +100,7 @@ pub async fn create_message_completion_handler(
         dataset_org_plan_sub.dataset.id,
     );
 
-    let user_topic = web::block(move || {
+    let _ = web::block(move || {
         user_owns_topic_query(user.id, topic_id, dataset_org_plan_sub.dataset.id, &pool1)
     })
     .await?
@@ -112,29 +112,26 @@ pub async fn create_message_completion_handler(
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    if !user_topic.normal_chat {
-        // remove citations from the previous messages
-        previous_messages = previous_messages
-            .into_iter()
-            .map(|message| {
-                let mut message = message;
-                if message.role == "assistant" {
-                    message.content = message
-                        .content
-                        .split("||")
-                        .last()
-                        .unwrap_or("I give up, I can't find a citation")
-                        .to_string();
-                }
-                message
-            })
-            .collect::<Vec<models::Message>>();
-    }
+    // remove citations from the previous messages
+    previous_messages = previous_messages
+        .into_iter()
+        .map(|message| {
+            let mut message = message;
+            if message.role == "assistant" {
+                message.content = message
+                    .content
+                    .split("||")
+                    .last()
+                    .unwrap_or("I give up, I can't find a citation")
+                    .to_string();
+            }
+            message
+        })
+        .collect::<Vec<models::Message>>();
 
     // call create_topic_message_query with the new_message and previous_messages
     let previous_messages = web::block(move || {
         create_topic_message_query(
-            user_topic.normal_chat,
             previous_messages,
             new_message,
             user.id,
@@ -146,7 +143,6 @@ pub async fn create_message_completion_handler(
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     stream_response(
-        user_topic.normal_chat,
         previous_messages,
         user.id,
         topic_id,
@@ -315,10 +311,9 @@ pub async fn regenerate_message_handler(
     let pool3 = pool.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
-    let user_topic =
-        web::block(move || user_owns_topic_query(user.id, topic_id, dataset_id, &pool1))
-            .await?
-            .map_err(|_e| ServiceError::Unauthorized)?;
+    let _ = web::block(move || user_owns_topic_query(user.id, topic_id, dataset_id, &pool1))
+        .await?
+        .map_err(|_e| ServiceError::Unauthorized)?;
 
     let previous_messages_result =
         web::block(move || get_topic_messages(topic_id, dataset_id, &pool2)).await?;
@@ -338,7 +333,6 @@ pub async fn regenerate_message_handler(
 
     if previous_messages.len() == 2 {
         return stream_response(
-            user_topic.normal_chat,
             previous_messages,
             user.id,
             topic_id,
@@ -396,7 +390,6 @@ pub async fn regenerate_message_handler(
             .await?;
 
     stream_response(
-        user_topic.normal_chat,
         previous_messages_to_regenerate,
         user.id,
         topic_id,
@@ -472,7 +465,6 @@ pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<Strin
 
 #[allow(clippy::too_many_arguments)]
 pub async fn stream_response(
-    normal_chat: bool,
     messages: Vec<models::Message>,
     user_id: uuid::Uuid,
     topic_id: uuid::Uuid,
@@ -508,129 +500,123 @@ pub async fn stream_response(
         messages_len
     };
 
-    let mut last_message = openai_messages
-        .last()
-        .expect("There needs to be at least 1 prior message")
-        .content
-        .clone();
-    let mut citation_chunks_stringified = "".to_string();
-    let mut citation_chunks_stringified1 = citation_chunks_stringified.clone();
+    let mut citation_chunks_stringified;
+    let mut citation_chunks_stringified1;
 
-    if !normal_chat {
-        let rag_prompt = dataset_config.RAG_PROMPT.clone().unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string());
+    let rag_prompt = dataset_config.RAG_PROMPT.clone().unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string());
 
-        // find evidence for the counter-argument
-        let counter_arg_parameters = ChatCompletionParameters {
-            model: model
-                .clone()
-                .unwrap_or("gryphe/mythomax-l2-13b".to_string()),
-            messages: vec![ChatMessage {
-                role: Role::User,
-                content: ChatMessageContent::Text(format!(
-                    "{}{}",
-                    rag_prompt,
-                    match openai_messages
-                        .clone()
-                        .last()
-                        .expect("No messages")
-                        .clone()
-                        .content
-                    {
-                        ChatMessageContent::Text(text) => text,
-                        _ => "".to_string(),
-                    }
-                )),
-                tool_calls: None,
-                name: None,
-                tool_call_id: None,
-            }],
-            temperature: None,
-            top_p: None,
-            n: None,
-            stop: None,
-            max_tokens: None,
-            presence_penalty: Some(0.8),
-            frequency_penalty: Some(0.8),
-            logit_bias: None,
-            user: None,
-            response_format: None,
-            tools: None,
-            tool_choice: None,
-            logprobs: None,
-            top_logprobs: None,
-            seed: None,
-        };
+    // find evidence for the counter-argument
+    let counter_arg_parameters = ChatCompletionParameters {
+        model: model
+            .clone()
+            .unwrap_or("gryphe/mythomax-l2-13b".to_string()),
+        messages: vec![ChatMessage {
+            role: Role::User,
+            content: ChatMessageContent::Text(format!(
+                "{}{}",
+                rag_prompt,
+                match openai_messages
+                    .clone()
+                    .last()
+                    .expect("No messages")
+                    .clone()
+                    .content
+                {
+                    ChatMessageContent::Text(text) => text,
+                    _ => "".to_string(),
+                }
+            )),
+            tool_calls: None,
+            name: None,
+            tool_call_id: None,
+        }],
+        temperature: None,
+        top_p: None,
+        n: None,
+        stop: None,
+        max_tokens: None,
+        presence_penalty: Some(0.8),
+        frequency_penalty: Some(0.8),
+        logit_bias: None,
+        user: None,
+        response_format: None,
+        tools: None,
+        tool_choice: None,
+        logprobs: None,
+        top_logprobs: None,
+        seed: None,
+    };
 
-        let evidence_search_query = client
-            .chat()
-            .create(counter_arg_parameters)
-            .await
-            .expect("No OpenAI Completion for evidence search");
-        let query = match &evidence_search_query
-            .choices
-            .first()
-            .expect("No response for OpenAI completion")
-            .message
-            .content
-        {
-            ChatMessageContent::Text(query) => query.clone(),
-            _ => "".to_string(),
-        };
-        let embedding_vector = create_embedding(query.as_str(), dataset_config.clone()).await?;
-
-        let search_chunk_query_results = retrieve_qdrant_points_query(
-            Some(embedding_vector),
-            1,
-            None,
-            None,
-            None,
-            None,
-            ParsedQuery {
-                query: query.to_string(),
-                quote_words: None,
-                negated_words: None,
-            },
-            dataset.id,
-            pool.clone(),
-        )
+    let evidence_search_query = client
+        .chat()
+        .create(counter_arg_parameters)
         .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-        let n_retrievals_to_include = dataset_config.N_RETRIEVALS_TO_INCLUDE.unwrap_or(3);
+        .expect("No OpenAI Completion for evidence search");
+    let query = match &evidence_search_query
+        .choices
+        .first()
+        .expect("No response for OpenAI completion")
+        .message
+        .content
+    {
+        ChatMessageContent::Text(query) => query.clone(),
+        _ => "".to_string(),
+    };
+    let embedding_vector = create_embedding(query.as_str(), dataset_config.clone()).await?;
 
-        let retrieval_chunk_ids = search_chunk_query_results
-            .search_results
-            .iter()
-            .take(n_retrievals_to_include)
-            .map(|chunk| chunk.point_id)
-            .collect::<Vec<uuid::Uuid>>();
+    let search_chunk_query_results = retrieve_qdrant_points_query(
+        Some(embedding_vector),
+        1,
+        None,
+        None,
+        None,
+        None,
+        ParsedQuery {
+            query: query.to_string(),
+            quote_words: None,
+            negated_words: None,
+        },
+        dataset.id,
+        pool.clone(),
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let n_retrievals_to_include = dataset_config.N_RETRIEVALS_TO_INCLUDE.unwrap_or(3);
 
-        let (metadata_chunks, _collided_chunks) = web::block(move || {
-            get_metadata_and_collided_chunks_from_point_ids_query(retrieval_chunk_ids, pool2)
+    let retrieval_chunk_ids = search_chunk_query_results
+        .search_results
+        .iter()
+        .take(n_retrievals_to_include)
+        .map(|chunk| chunk.point_id)
+        .collect::<Vec<uuid::Uuid>>();
+
+    let (metadata_chunks, _collided_chunks) = web::block(move || {
+        get_metadata_and_collided_chunks_from_point_ids_query(retrieval_chunk_ids, pool2)
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let citation_chunks: Vec<ChunkMetadataWithFileData> = metadata_chunks.to_vec();
+
+    let highlighted_citation_chunks = citation_chunks
+        .iter()
+        .map(|chunk| {
+            find_relevant_sentence(chunk.clone(), query.to_string()).unwrap_or(chunk.clone())
         })
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        .collect::<Vec<ChunkMetadataWithFileData>>();
 
-        let citation_chunks: Vec<ChunkMetadataWithFileData> = metadata_chunks.to_vec();
+    citation_chunks_stringified = serde_json::to_string(&highlighted_citation_chunks)
+        .expect("Failed to serialize citation chunks");
+    citation_chunks_stringified1 = citation_chunks_stringified.clone();
 
-        let highlighted_citation_chunks = citation_chunks
-            .iter()
-            .map(|chunk| {
-                find_relevant_sentence(chunk.clone(), query.to_string()).unwrap_or(chunk.clone())
-            })
-            .collect::<Vec<ChunkMetadataWithFileData>>();
+    let rag_content = citation_chunks
+        .iter()
+        .enumerate()
+        .map(|(idx, chunk)| format!("Doc {}: {}", idx + 1, chunk.content.clone()))
+        .collect::<Vec<String>>()
+        .join("\n\n");
 
-        citation_chunks_stringified = serde_json::to_string(&highlighted_citation_chunks)
-            .expect("Failed to serialize citation chunks");
-        citation_chunks_stringified1 = citation_chunks_stringified.clone();
-
-        let rag_content = citation_chunks
-            .iter()
-            .enumerate()
-            .map(|(idx, chunk)| format!("Doc {}: {}", idx + 1, chunk.content.clone()))
-            .collect::<Vec<String>>()
-            .join("\n\n");
-
-        last_message = ChatMessageContent::Text(format!(
+    let last_message = ChatMessageContent::Text(format!(
             "Here's my prompt. Include the document numbers that you used in square brackets at the end of the sentences that you used the docs for: {} \n\n Pretending you found it, use the following retrieved information as the basis of your response.: {}",
             match &openai_messages.last().expect("There needs to be at least 1 prior message").content {
                 ChatMessageContent::Text(text) => text.clone(),
@@ -638,7 +624,6 @@ pub async fn stream_response(
             },
             rag_content,
         ));
-    }
 
     // replace the last message with the last message with evidence
     let open_ai_messages = openai_messages
