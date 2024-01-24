@@ -221,11 +221,9 @@ diesel::table! {
         id -> Uuid,
         user_id -> Uuid,
         name -> Text,
-        side -> Bool,
         deleted -> Bool,
         created_at -> Timestamp,
         updated_at -> Timestamp,
-        normal_chat -> Bool,
         dataset_id -> Uuid,
     }
 }

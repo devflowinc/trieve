@@ -63,11 +63,9 @@ pub struct Topic {
     pub id: uuid::Uuid,
     pub user_id: uuid::Uuid,
     pub name: String,
-    pub side: bool,
     pub deleted: bool,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub normal_chat: bool,
     pub dataset_id: uuid::Uuid,
 }
 
@@ -75,18 +73,15 @@ impl Topic {
     pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(
         name: S,
         user_id: T,
-        normal_chat: Option<bool>,
         dataset_id: uuid::Uuid,
     ) -> Self {
         Topic {
             id: uuid::Uuid::new_v4(),
             user_id: user_id.into(),
             name: name.into(),
-            side: false,
             deleted: false,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
-            normal_chat: normal_chat.unwrap_or(false),
             dataset_id,
         }
     }

@@ -90,16 +90,13 @@ pub fn create_message_query(
 pub fn create_generic_system_message(
     messages_topic_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
-    normal_chat: bool,
     pool: &web::Data<Pool>,
 ) -> Result<Message, DefaultError> {
     let topic =
         crate::operators::topic_operator::get_topic_query(messages_topic_id, dataset_id, pool)?;
-    let system_message_content = if normal_chat {
-        "You are Trieve Assistant, a large language model trained by Trieve to be a helpful assistant."
-    } else {
-        "You are Trieve retrieval augmented chatbot, a large language model trained by Trieve to respond in the same tone as and with the context of retrieved information."
-    };
+    let system_message_content = 
+        "You are Trieve retrieval augmented chatbot, a large language model trained by Trieve to respond in the same tone as and with the context of retrieved information.";
+    
 
     let system_message = Message::from_details(
         system_message_content,
@@ -115,7 +112,6 @@ pub fn create_generic_system_message(
 }
 
 pub fn create_topic_message_query(
-    normal_chat: bool,
     previous_messages: Vec<Message>,
     new_message: Message,
     given_user_id: uuid::Uuid,
@@ -128,7 +124,7 @@ pub fn create_topic_message_query(
 
     if previous_messages.is_empty() {
         let system_message =
-            create_generic_system_message(new_message.topic_id, dataset_id, normal_chat, pool)?;
+            create_generic_system_message(new_message.topic_id, dataset_id, pool)?;
         ret_messages.extend(vec![system_message.clone()]);
         create_message_query(system_message, given_user_id, pool)?;
         previous_messages_len = 1;

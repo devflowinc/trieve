@@ -18,8 +18,6 @@ pub struct CreateTopicData {
     pub first_user_message: Option<String>,
     // The name of the topic. If this is not provided, the topic name is generated from the first_user_message.
     pub name: Option<String>,
-    /// Whether or not RAG should be used on messages in this topic.
-    pub normal_chat: Option<bool>,
 }
 
 /// create_topic
@@ -44,7 +42,6 @@ pub async fn create_topic(
 ) -> Result<HttpResponse, actix_web::Error> {
     let data_inner = data.into_inner();
     let message = data_inner.first_user_message;
-    let normal_chat = data_inner.normal_chat;
 
     if message.is_none() && data_inner.name.is_none() {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
@@ -60,12 +57,7 @@ pub async fn create_topic(
         data_inner.name.unwrap_or_default()
     };
 
-    let new_topic = Topic::from_details(
-        topic_name,
-        user.id,
-        normal_chat,
-        dataset_org_plan_sub.dataset.id,
-    );
+    let new_topic = Topic::from_details(topic_name, user.id, dataset_org_plan_sub.dataset.id);
     let new_topic1 = new_topic.clone();
 
     let create_topic_result = web::block(move || create_topic_query(new_topic, &pool)).await?;
@@ -222,8 +214,7 @@ pub async fn get_all_topics_for_user(
     if user
         .user_orgs
         .iter()
-        .find(|o| o.id == dataset_org_plan_sub.organization.id)
-        .is_some()
+        .any(|o| o.id == dataset_org_plan_sub.organization.id)
         && user.id != *req_user_id
         && user
             .user_orgs
@@ -239,7 +230,7 @@ pub async fn get_all_topics_for_user(
     }
 
     let topics = web::block(move || {
-        get_all_topics_for_user_query(req_user_id.clone(), dataset_org_plan_sub.dataset.id, &pool)
+        get_all_topics_for_user_query(*req_user_id, dataset_org_plan_sub.dataset.id, &pool)
     })
     .await?;
 
