@@ -170,7 +170,7 @@ pub async fn update_user(
 pub struct SetUserApiKeyRequest {
     /// The name which will be assigned to the new api key.
     name: String,
-    /// The role which will be assigned to the new api key. Either 0 (user), 1 (admin), or 2 (owner). If not provided, the user role will be used. The auth'ed user must have a role greater than or equal to the role being assigned.
+    /// The role which will be assigned to the new api key. Either 0 (read), 1 (read and write). If not provided, the user role will be used. The auth'ed user must have a role greater than or equal to the role being assigned.
     role: Option<i32>,
 }
 
