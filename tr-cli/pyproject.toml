@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "trieve"
+version = "0.2.0"
+description = "CLI for Trieve RAG Framework @ https://github.com/devflowinc/trieve"
+authors = ["Dens Sumesh <dens.sumesh79@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+typer = { extras = ["all"], version = "^0.9.0" }
+psycopg2 = "^2.9.9"
+pandas = "^2.2.0"
+requests = "^2.31.0"
+trieve-python-client = "^1.0.0"
+
+[tool.poetry.scripts]
+trieve = "trieve.main:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
