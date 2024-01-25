@@ -3,6 +3,7 @@
 
 from distutils.command import upload
 from http import client, server
+from re import sub
 import subprocess
 from typing import Optional
 
@@ -29,19 +30,19 @@ from rich.console import Console
 from rich.prompt import Prompt
 import subprocess
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True, subcommand_metavar="COMMAND")
 add_app = typer.Typer()
 reset_app = typer.Typer()
 delete_app = typer.Typer()
-app.add_typer(add_app, name="add")
-app.add_typer(reset_app, name="reset")
-app.add_typer(delete_app, name="delete")
+app.add_typer(add_app, name="add", help="Add a dataset or organization.")
+app.add_typer(reset_app, name="reset", help="Reset a service.")
+app.add_typer(delete_app, name="delete", help="Delete a dataset or organization.")
 console = Console()
 
 
 @app.command()
 def init() -> None:
-    """Initialize the application."""
+    """Initialize the Trieve CLI with your account information. (Run this first!)"""
     _init_config_file()
     print("[bold]Hi! Welcome to the Trieve CLI!\n")
     startup = typer.confirm("Would you like to start up the local docker containers?")
@@ -134,6 +135,7 @@ def init() -> None:
 
 @add_app.command(name="dataset")
 def add_dataset() -> None:
+    """Add a dataset to your account."""
     if not get_value("api_key"):
         print("API key not set! Please run `trieve init` to set up.")
         typer.Abort()
@@ -166,6 +168,7 @@ def add_dataset() -> None:
 
 @add_app.command("organization")
 def add_organization() -> None:
+    """Add an organization to your account."""
     if not get_value("api_key"):
         print("API key not set! Please run `trieve init` to set up.")
         typer.Abort()
@@ -187,6 +190,7 @@ def add_organization() -> None:
 
 @add_app.command("sample")
 def add_sample_data() -> None:
+    """Add a sample dataset to your account."""
     if not get_value("api_key"):
         print("API key not set! Please run `trieve init` to set up.")
         typer.Abort()
@@ -230,6 +234,7 @@ def add_sample_data() -> None:
 
 @reset_app.command("db")
 def reset_db() -> None:
+    """Reset your Qdrant and Postgres databases."""
     typer.confirm(
         "Are you sure you want to reset your Qdrant and Postgres databases?", abort=True
     )
@@ -266,6 +271,7 @@ def reset_db() -> None:
 
 @reset_app.command("s3")
 def reset_s3() -> None:
+    """Reset your S3 instance."""
     typer.confirm("Are you sure you want to reset your S3 instance?", abort=True)
     subprocess.run(["docker", "compose", "stop", "s3"])
     subprocess.run(["docker", "compose", "rm", "-f", "s3"])
@@ -275,6 +281,7 @@ def reset_s3() -> None:
 
 @reset_app.command("redis")
 def reset_redis() -> None:
+    """Reset your Redis instance."""
     typer.confirm("Are you sure you want to reset your Redis db?", abort=True)
     subprocess.run(["docker", "compose", "stop", "script-redis"])
     subprocess.run(["docker", "compose", "rm", "-f", "script-redis"])
@@ -284,6 +291,7 @@ def reset_redis() -> None:
 
 @delete_app.command("dataset")
 def delete_dataset() -> None:
+    """Delete a dataset from your account."""
     if not get_value("api_key"):
         print("API key not set! Please run `trieve init` to set up.")
         typer.Abort()

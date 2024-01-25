@@ -2,7 +2,7 @@
 # trieve/__init__.py
 
 __app_name__ = "trieve/"
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 (
     SUCCESS,
