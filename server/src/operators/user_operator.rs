@@ -291,6 +291,7 @@ pub fn hash_password(password: &str) -> Result<String, DefaultError> {
 pub fn set_user_api_key_query(
     user_id: uuid::Uuid,
     name: String,
+    role: UserRole,
     pool: web::Data<Pool>,
 ) -> Result<String, DefaultError> {
     let raw_api_key = generate_api_key();
@@ -298,7 +299,7 @@ pub fn set_user_api_key_query(
 
     let mut conn = pool.get().unwrap();
 
-    let api_key_struct = UserApiKey::from_details(user_id, hashed_api_key.clone(), name);
+    let api_key_struct = UserApiKey::from_details(user_id, hashed_api_key.clone(), name, role);
 
     diesel::insert_into(crate::data::schema::user_api_key::dsl::user_api_key)
         .values(&api_key_struct)
@@ -322,31 +323,44 @@ pub fn get_user_from_api_key_query(
 
     let mut conn = pool.get().unwrap();
 
-    let user_orgs_orgs: Vec<(User, UserOrganization, Organization)> = users_columns::users
-        .inner_join(user_organizations_columns::user_organizations)
-        .inner_join(
-            organization_columns::organizations
-                .on(organization_columns::id.eq(user_organizations_columns::organization_id)),
-        )
-        .inner_join(crate::data::schema::user_api_key::dsl::user_api_key)
-        .filter(crate::data::schema::user_api_key::dsl::api_key_hash.eq(api_key_hash))
-        .select((
-            User::as_select(),
-            UserOrganization::as_select(),
-            Organization::as_select(),
-        ))
-        .load::<(User, UserOrganization, Organization)>(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Error loading user",
-        })?;
+    let user_orgs_orgs: Vec<(User, UserOrganization, Organization, UserApiKey)> =
+        users_columns::users
+            .inner_join(user_organizations_columns::user_organizations)
+            .inner_join(
+                organization_columns::organizations
+                    .on(organization_columns::id.eq(user_organizations_columns::organization_id)),
+            )
+            .inner_join(crate::data::schema::user_api_key::dsl::user_api_key)
+            .filter(crate::data::schema::user_api_key::dsl::api_key_hash.eq(api_key_hash))
+            .select((
+                User::as_select(),
+                UserOrganization::as_select(),
+                Organization::as_select(),
+                UserApiKey::as_select(),
+            ))
+            .load::<(User, UserOrganization, Organization, UserApiKey)>(&mut conn)
+            .map_err(|_| DefaultError {
+                message: "Error loading user",
+            })?;
 
     match user_orgs_orgs.first() {
         Some(first_user_org) => {
             let user = first_user_org.0.clone();
-            let user_orgs = user_orgs_orgs
+            let mut user_orgs = user_orgs_orgs
                 .iter()
                 .map(|user_org| user_org.1.clone())
                 .collect::<Vec<UserOrganization>>();
+
+            user_orgs.iter_mut().for_each(|user_org| {
+                user_org.role = user_orgs_orgs
+                    .iter()
+                    .find(|user_org_org| user_org_org.1.id == user_org.id)
+                    .unwrap()
+                    .3
+                    .clone()
+                    .role;
+            });
+
             let orgs = user_orgs_orgs
                 .iter()
                 .map(|user_org_org| user_org_org.2.clone())
@@ -499,7 +513,12 @@ pub fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result<(), D
             message: "Failed to create default user organization",
         })?;
 
-    let api_key_struct = UserApiKey::from_details(user.id, api_key_hash, "default".to_string());
+    let api_key_struct = UserApiKey::from_details(
+        user.id,
+        api_key_hash,
+        "default".to_string(),
+        UserRole::Owner,
+    );
 
     diesel::insert_into(crate::data::schema::user_api_key::dsl::user_api_key)
         .values(&api_key_struct)
