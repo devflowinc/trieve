@@ -841,6 +841,9 @@ pub async fn retrieve_chunks_from_point_ids(
 pub fn rerank_chunks(chunks: Vec<ScoreChunkDTO>, date_bias: Option<bool>) -> Vec<ScoreChunkDTO> {
     let mut reranked_chunks = Vec::new();
     chunks.into_iter().for_each(|mut chunk| {
+        if chunk.metadata[0].weight == 0.0 {
+            chunk.metadata[0].weight = 1.0;
+        }
         chunk.score *= chunk.metadata[0].weight;
         reranked_chunks.push(chunk);
     });
