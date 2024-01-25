@@ -1265,10 +1265,16 @@ pub struct UserApiKey {
     pub name: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub role: i32,
 }
 
 impl UserApiKey {
-    pub fn from_details(user_id: uuid::Uuid, api_key_hash: String, name: String) -> Self {
+    pub fn from_details(
+        user_id: uuid::Uuid,
+        api_key_hash: String,
+        name: String,
+        role: UserRole,
+    ) -> Self {
         UserApiKey {
             id: uuid::Uuid::new_v4(),
             user_id,
@@ -1276,6 +1282,7 @@ impl UserApiKey {
             name,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
+            role: role.into(),
         }
     }
 }
