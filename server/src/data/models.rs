@@ -1256,6 +1256,29 @@ pub struct OrganizationUsageCount {
     pub message_count: i32,
 }
 
+pub enum ApiKeyRole {
+    Read = 0,
+    ReadAndWrite = 1,
+}
+
+impl From<i32> for ApiKeyRole {
+    fn from(role: i32) -> Self {
+        match role {
+            1 => ApiKeyRole::ReadAndWrite,
+            _ => ApiKeyRole::Read,
+        }
+    }
+}
+
+impl From<ApiKeyRole> for i32 {
+    fn from(role: ApiKeyRole) -> Self {
+        match role {
+            ApiKeyRole::ReadAndWrite => 1,
+            ApiKeyRole::Read => 0,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[diesel(table_name = user_api_key)]
 pub struct UserApiKey {
@@ -1273,7 +1296,7 @@ impl UserApiKey {
         user_id: uuid::Uuid,
         api_key_hash: String,
         name: String,
-        role: UserRole,
+        role: ApiKeyRole,
     ) -> Self {
         UserApiKey {
             id: uuid::Uuid::new_v4(),

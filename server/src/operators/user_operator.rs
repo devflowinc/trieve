@@ -1,6 +1,6 @@
 use crate::data::models::{
-    ApiKeyDTO, ChunkFileWithName, ChunkMetadata, ChunkMetadataWithFileData, Organization, SlimUser,
-    UserApiKey, UserDTOWithChunks, UserOrganization, UserRole,
+    ApiKeyDTO, ApiKeyRole, ChunkFileWithName, ChunkMetadata, ChunkMetadataWithFileData,
+    Organization, SlimUser, UserApiKey, UserDTOWithChunks, UserOrganization, UserRole,
 };
 use crate::diesel::prelude::*;
 use crate::errors::ServiceError;
@@ -291,7 +291,7 @@ pub fn hash_password(password: &str) -> Result<String, DefaultError> {
 pub fn set_user_api_key_query(
     user_id: uuid::Uuid,
     name: String,
-    role: UserRole,
+    role: ApiKeyRole,
     pool: web::Data<Pool>,
 ) -> Result<String, DefaultError> {
     let raw_api_key = generate_api_key();
@@ -517,7 +517,7 @@ pub fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result<(), D
         user.id,
         api_key_hash,
         "default".to_string(),
-        UserRole::Owner,
+        ApiKeyRole::ReadAndWrite,
     );
 
     diesel::insert_into(crate::data::schema::user_api_key::dsl::user_api_key)
