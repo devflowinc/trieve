@@ -456,12 +456,21 @@ pub async fn main() -> std::io::Result<()> {
                                 ),
                             )
                             .service(
+                                web::resource("/search")                                    
+                                .route(
+                                    web::post().to(handlers::chunk_handler::search_collections),
+                                ),
+                            )
+                            .service(
                                 web::resource("/bookmark/{collection_id}/{bookmark_id}").route(
                                     web::delete().to(
                                         handlers::collection_handler::delete_bookmark,
                                     ),
                                 ),
                             )
+                            .service(web::resource("/{collection_id}/{page}").route(
+                                web::get().to(handlers::collection_handler::get_all_bookmarks),
+                            ))
                             .service(
                                 web::resource("/{page_or_chunk_collection_id}")
                                     .route(
@@ -473,16 +482,7 @@ pub async fn main() -> std::io::Result<()> {
                                     ).route(
                                         web::get()
                                             .to(handlers::collection_handler::get_logged_in_user_chunk_collections)),
-                            )
-                            .service(
-                                web::resource("/search")                                    
-                                .route(
-                                    web::post().to(handlers::chunk_handler::search_collections),
-                                ),
-                            )
-                            .service(web::resource("/{collection_id}/{page}").route(
-                                web::get().to(handlers::collection_handler::get_all_bookmarks),
-                            )),
+                            ),
                     )
                     .service(
                         web::scope("/file")

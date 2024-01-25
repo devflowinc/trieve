@@ -1,5 +1,5 @@
 use crate::data::models::{
-    ChunkCollisions, ChunkFile, ChunkMetadataWithFileData, Dataset, FullTextSearchResult,
+    ChunkCollision, ChunkFile, ChunkMetadataWithFileData, Dataset, FullTextSearchResult,
     ServerDatasetConfiguration,
 };
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
@@ -346,7 +346,7 @@ pub fn insert_duplicate_chunk_metadata_query(
 
         //insert duplicate into chunk_collisions
         diesel::insert_into(chunk_collisions)
-            .values(&ChunkCollisions::from_details(
+            .values(&ChunkCollision::from_details(
                 chunk_data.id,
                 duplicate_chunk,
             ))
@@ -480,7 +480,7 @@ pub async fn delete_chunk_metadata_query(
                 return Ok(TransactionResult::ChunkCollisionNotDetected);
             }
 
-            let chunk_collisions: Vec<(ChunkCollisions, ChunkMetadata)> =
+            let chunk_collisions: Vec<(ChunkCollision, ChunkMetadata)> =
                 chunk_collisions_columns::chunk_collisions
                     .inner_join(
                         chunk_metadata_columns::chunk_metadata
@@ -489,9 +489,9 @@ pub async fn delete_chunk_metadata_query(
                     )
                     .filter(chunk_metadata_columns::id.eq(chunk_uuid))
                     .filter(chunk_metadata_columns::dataset_id.eq(dataset.id))
-                    .select((ChunkCollisions::as_select(), ChunkMetadata::as_select()))
+                    .select((ChunkCollision::as_select(), ChunkMetadata::as_select()))
                     .order_by(chunk_collisions_columns::created_at.asc())
-                    .load::<(ChunkCollisions, ChunkMetadata)>(conn)?;
+                    .load::<(ChunkCollision, ChunkMetadata)>(conn)?;
 
             if !chunk_collisions.is_empty() {
                 // get the first collision as the latest collision
