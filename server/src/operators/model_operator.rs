@@ -49,6 +49,9 @@ pub struct CustomSparseEmbedData {
 }
 
 pub async fn get_splade_doc_embedding(message: &str) -> Result<Vec<(u32, f32)>, ServiceError> {
+    if message.is_empty() {
+        return Err(ServiceError::BadRequest("Cannot encode empty query".to_string()));
+    }
     let mut embedding_server_call: String = get_env!(
         "GPU_SERVER_ORIGIN",
         "GPU_SERVER_ORIGIN should be set if this is called"
