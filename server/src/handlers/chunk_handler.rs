@@ -18,7 +18,8 @@ use crate::operators::qdrant_operator::{
 };
 use crate::operators::search_operator::{
     global_unfiltered_top_match_query, search_full_text_chunks, search_full_text_collections,
-    search_hybrid_chunks, search_semantic_chunks, search_semantic_collections,
+    search_hybrid_chunks, search_hybrid_collections, search_semantic_chunks,
+    search_semantic_collections,
 };
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
@@ -826,6 +827,10 @@ pub struct SearchCollectionsData {
     pub search_type: String,
     /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
     pub date_bias: Option<bool>,
+    /// Set cross_encoder to true to use the BAAI/bge-reranker-large model to re-rank search results. This will only apply if in hybrid search mode. If no weighs are specified, the re-ranker will be used by default.
+    pub cross_encoder: Option<bool>,
+    /// Weights are a tuple of two floats. The first value is the weight for the semantic search results and the second value is the weight for the full-text search results. This can be used to bias search results towards semantic or full-text results. This will only apply if in hybrid search mode and cross_encoder is set to false.
+    pub weights: Option<(f64, f64)>,
 }
 
 impl From<SearchCollectionsData> for SearchChunkData {
@@ -877,9 +882,7 @@ pub async fn search_collections(
     let page = data.page.unwrap_or(1);
     let collection_id = data.collection_id;
     let dataset_id = dataset_org_plan_sub.dataset.id;
-    let full_text_search_pool: web::Data<
-        r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::prelude::PgConnection>>,
-    > = pool.clone();
+    let search_pool = pool.clone();
 
     let collection = {
         web::block(move || get_collection_by_id_query(collection_id, dataset_id, pool))
@@ -897,8 +900,19 @@ pub async fn search_collections(
                 parsed_query,
                 collection,
                 page,
-                full_text_search_pool,
+                search_pool,
                 dataset_id,
+            )
+            .await?
+        }
+        "hybrid" => {
+            search_hybrid_collections(
+                data,
+                parsed_query,
+                collection,
+                page,
+                search_pool,
+                dataset_org_plan_sub.dataset,
             )
             .await?
         }
@@ -908,7 +922,7 @@ pub async fn search_collections(
                 parsed_query,
                 collection,
                 page,
-                full_text_search_pool,
+                search_pool,
                 dataset_org_plan_sub.dataset,
             )
             .await?

@@ -1,6 +1,5 @@
 use super::chunk_operator::{
-    find_relevant_sentence, get_collided_chunks_query,
-    get_metadata_and_collided_chunks_from_point_ids_query, get_metadata_from_point_ids,
+    find_relevant_sentence, get_metadata_and_collided_chunks_from_point_ids_query,
 };
 use super::model_operator::{create_embedding, cross_encoder};
 use crate::data::models::{
@@ -35,14 +34,14 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::f32::consts::E;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SearchResult {
     pub score: f32,
     pub point_id: uuid::Uuid,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct SearchchunkQueryResult {
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SearchChunkQueryResult {
     pub search_results: Vec<SearchResult>,
     pub total_chunk_pages: i64,
 }
@@ -58,7 +57,7 @@ pub async fn retrieve_qdrant_points_query(
     parsed_query: ParsedQuery,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<SearchchunkQueryResult, DefaultError> {
+) -> Result<SearchChunkQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
 
     // TODO: Talk to Qdrant team about how to force substring match on a field instead of keyword match
@@ -241,7 +240,7 @@ pub async fn retrieve_qdrant_points_query(
         search_full_text_qdrant_query(page, filter, parsed_query.query, dataset_id).await
     };
 
-    Ok(SearchchunkQueryResult {
+    Ok(SearchChunkQueryResult {
         search_results: point_ids?,
         total_chunk_pages: (matching_qdrant_point_ids.len() as f64 / 10.0).ceil() as i64,
     })
@@ -331,7 +330,7 @@ pub async fn global_unfiltered_top_match_query(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn search_chunk_collections_query(
+pub async fn search_semantic_chunk_collections_query(
     embedding_vector: Vec<f32>,
     page: u64,
     pool: web::Data<Pool>,
@@ -341,7 +340,7 @@ pub async fn search_chunk_collections_query(
     collection_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     parsed_query: ParsedQuery,
-) -> Result<SearchchunkQueryResult, DefaultError> {
+) -> Result<SearchChunkQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::chunk_collection_bookmarks::dsl as chunk_collection_bookmarks_columns;
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
@@ -461,7 +460,7 @@ pub async fn search_chunk_collections_query(
     let point_ids: Vec<SearchResult> =
         search_semantic_qdrant_query(page, filter, embedding_vector, dataset_id).await?;
 
-    Ok(SearchchunkQueryResult {
+    Ok(SearchChunkQueryResult {
         search_results: point_ids,
         total_chunk_pages: (filtered_option_ids.len() as f64 / 10.0).ceil() as i64,
     })
@@ -616,7 +615,7 @@ pub async fn search_full_text_collection_query(
     collection_id: uuid::Uuid,
     parsed_query: ParsedQuery,
     dataset_uuid: uuid::Uuid,
-) -> Result<SearchchunkQueryResult, DefaultError> {
+) -> Result<SearchChunkQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::chunk_collection_bookmarks::dsl as chunk_collection_bookmarks_columns;
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
@@ -767,7 +766,7 @@ pub async fn search_full_text_collection_query(
 
     let point_ids = search_full_text_qdrant_query(page, filter, user_query, dataset_uuid).await;
 
-    Ok(SearchchunkQueryResult {
+    Ok(SearchChunkQueryResult {
         search_results: point_ids?,
         total_chunk_pages: (matching_qdrant_point_ids.len() as f64 / 10.0).ceil() as i64,
     })
@@ -775,7 +774,7 @@ pub async fn search_full_text_collection_query(
 
 /// Retrieve chunks from point ids, DOES NOT GUARD AGAINST DATASET ACCESS PERMISSIONS
 pub async fn retrieve_chunks_from_point_ids(
-    search_chunk_query_results: SearchchunkQueryResult,
+    search_chunk_query_results: SearchChunkQueryResult,
     data: &web::Json<SearchChunkData>,
     pool: web::Data<Pool>,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
@@ -832,6 +831,7 @@ pub async fn retrieve_chunks_from_point_ids(
             }
         })
         .collect();
+
     Ok(SearchChunkQueryResponseBody {
         score_chunks,
         total_chunk_pages: search_chunk_query_results.total_chunk_pages,
@@ -1118,7 +1118,9 @@ pub async fn search_hybrid_chunks(
             total_chunk_pages: search_chunk_query_results.total_chunk_pages,
         }
     };
+
     result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
+
     Ok(result_chunks)
 }
 
@@ -1136,14 +1138,11 @@ pub async fn search_semantic_collections(
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
     )
     .await?;
-    let pool1 = pool.clone();
-    let pool2 = pool.clone();
-    let pool3 = pool.clone();
 
-    let search_chunk_query_results = search_chunk_collections_query(
+    let search_semantic_chunk_query_results = search_semantic_chunk_collections_query(
         embedding_vector,
         page,
-        pool2,
+        pool.clone(),
         data.link.clone(),
         data.tag_set.clone(),
         data.filters.clone(),
@@ -1154,80 +1153,19 @@ pub async fn search_semantic_collections(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let point_ids = search_chunk_query_results
-        .search_results
-        .iter()
-        .map(|point| point.point_id)
-        .collect::<Vec<_>>();
+    let mut result_chunks = retrieve_chunks_from_point_ids(
+        search_semantic_chunk_query_results,
+        &web::Json(data.clone().into()),
+        pool.clone(),
+    )
+    .await?;
 
-    let point_ids_1 = point_ids.clone();
+    result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
 
-    let metadata_chunks = get_metadata_from_point_ids(point_ids, pool3)
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    let collided_chunks = get_collided_chunks_query(point_ids_1, dataset.id, pool1)
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    let mut score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
-        .search_results
-        .iter()
-        .map(|search_result| {
-            let mut chunk: ChunkMetadataWithFileData = match metadata_chunks
-                .iter()
-                .find(|metadata_chunk| metadata_chunk.qdrant_point_id == search_result.point_id)
-            {
-                Some(metadata_chunk) => metadata_chunk.clone(),
-                None => ChunkMetadataWithFileData {
-                    id: uuid::Uuid::default(),
-                    author: None,
-                    qdrant_point_id: uuid::Uuid::default(),
-                    created_at: chrono::Utc::now().naive_local(),
-                    updated_at: chrono::Utc::now().naive_local(),
-                    file_id: None,
-                    file_name: None,
-                    content: "".to_string(),
-                    chunk_html: Some("".to_string()),
-                    link: Some("".to_string()),
-                    tag_set: Some("".to_string()),
-                    metadata: None,
-                    tracking_id: None,
-                    time_stamp: None,
-                    weight: 1.0,
-                },
-            };
-            chunk = find_relevant_sentence(chunk.clone(), data.query.clone()).unwrap_or(chunk);
-
-            let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
-                .iter()
-                .filter(|chunk| chunk.1 == search_result.point_id)
-                .map(|chunk| chunk.0.clone())
-                .collect();
-
-            collided_chunks.insert(0, chunk);
-            // remove duplicates from collided chunks
-            let mut seen_ids = HashSet::new();
-            let mut i = 0;
-            while i < collided_chunks.len() {
-                if seen_ids.contains(&collided_chunks[i].id) {
-                    collided_chunks.remove(i);
-                } else {
-                    seen_ids.insert(collided_chunks[i].id);
-                    i += 1;
-                }
-            }
-
-            ScoreChunkDTO {
-                metadata: collided_chunks,
-                score: search_result.score.into(),
-            }
-        })
-        .collect();
-
-    score_chunks = rerank_chunks(score_chunks, data.date_bias);
     Ok(SearchCollectionsResult {
-        bookmarks: score_chunks,
+        bookmarks: result_chunks.score_chunks,
         collection,
-        total_pages: search_chunk_query_results.total_chunk_pages,
+        total_pages: result_chunks.total_chunk_pages,
     })
 }
 
@@ -1241,12 +1179,11 @@ pub async fn search_full_text_collections(
     dataset_id: uuid::Uuid,
 ) -> Result<SearchCollectionsResult, actix_web::Error> {
     let data_inner = data.clone();
-    let pool1 = pool.clone();
 
     let search_chunk_query_results = search_full_text_collection_query(
         data_inner.query.clone(),
         page,
-        pool,
+        pool.clone(),
         data_inner.filters.clone(),
         data_inner.link.clone(),
         data_inner.tag_set.clone(),
@@ -1260,7 +1197,7 @@ pub async fn search_full_text_collections(
     let mut result_chunks = retrieve_chunks_from_point_ids(
         search_chunk_query_results,
         &web::Json(data.clone().into()),
-        pool1,
+        pool.clone(),
     )
     .await?;
 
@@ -1270,5 +1207,163 @@ pub async fn search_full_text_collections(
         bookmarks: result_chunks.score_chunks,
         collection,
         total_pages: result_chunks.total_chunk_pages,
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn search_hybrid_collections(
+    data: web::Json<SearchCollectionsData>,
+    parsed_query: ParsedQuery,
+    collection: ChunkCollection,
+    page: u64,
+    pool: web::Data<Pool>,
+    dataset: Dataset,
+) -> Result<SearchCollectionsResult, actix_web::Error> {
+    let data_inner = data.clone();
+    let embedding_vector = create_embedding(
+        &data.query,
+        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
+    )
+    .await?;
+
+    let semantic_future = search_semantic_chunk_collections_query(
+        embedding_vector,
+        page,
+        pool.clone(),
+        data.link.clone(),
+        data.tag_set.clone(),
+        data.filters.clone(),
+        data.collection_id,
+        dataset.id,
+        parsed_query.clone(),
+    );
+
+    let full_text_future = search_full_text_collection_query(
+        data_inner.query.clone(),
+        page,
+        pool.clone(),
+        data_inner.filters.clone(),
+        data_inner.link.clone(),
+        data_inner.tag_set.clone(),
+        data_inner.collection_id,
+        parsed_query.clone(),
+        dataset.id,
+    );
+
+    let (semantic_results, full_text_results) = futures::join!(semantic_future, full_text_future);
+
+    let semantic_results =
+        semantic_results.map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let full_text_results =
+        full_text_results.map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    let combined_results = semantic_results
+        .clone()
+        .search_results
+        .into_iter()
+        .chain(full_text_results.clone().search_results.into_iter())
+        .unique_by(|chunk| chunk.point_id)
+        .collect::<Vec<SearchResult>>();
+
+    let combined_search_chunk_query_results = SearchChunkQueryResult {
+        search_results: combined_results,
+        total_chunk_pages: semantic_results.total_chunk_pages,
+    };
+
+    let combined_result_chunks = retrieve_chunks_from_point_ids(
+        combined_search_chunk_query_results,
+        &web::Json(data.clone().into()),
+        pool.clone(),
+    )
+    .await?;
+
+    let semantic_chunk_dtos = semantic_results
+        .search_results
+        .iter()
+        .map(|search_result| {
+            combined_result_chunks
+                .score_chunks
+                .iter()
+                .find(|metadata_chunk| {
+                    metadata_chunk
+                        .metadata
+                        .first()
+                        .expect("Must be at least one metadata in result")
+                        .qdrant_point_id
+                        == search_result.point_id
+                })
+                .expect("Was not able to find semantic chunk in combined result chunks")
+                .clone()
+        })
+        .collect::<Vec<ScoreChunkDTO>>();
+    let full_text_chunk_dtos = full_text_results
+        .search_results
+        .iter()
+        .map(|search_result| {
+            combined_result_chunks
+                .score_chunks
+                .iter()
+                .find(|metadata_chunk| {
+                    metadata_chunk
+                        .metadata
+                        .first()
+                        .expect("Must be at least one metadata in result")
+                        .qdrant_point_id
+                        == search_result.point_id
+                })
+                .expect("Was not able to find full-text chunk in combined result chunks")
+                .clone()
+        })
+        .collect::<Vec<ScoreChunkDTO>>();
+
+    let mut result_chunks = if data.cross_encoder.unwrap_or(false) {
+        let combined_results = semantic_chunk_dtos
+            .into_iter()
+            .chain(full_text_chunk_dtos.into_iter())
+            .unique_by(|score_chunk| score_chunk.metadata[0].id)
+            .collect::<Vec<ScoreChunkDTO>>();
+        SearchChunkQueryResponseBody {
+            score_chunks: cross_encoder(data.query.clone(), combined_results).await?,
+            total_chunk_pages: semantic_results.total_chunk_pages,
+        }
+    } else if let Some(weights) = data.weights {
+        if weights.0 == 1.0 {
+            SearchChunkQueryResponseBody {
+                score_chunks: semantic_chunk_dtos,
+                total_chunk_pages: semantic_results.total_chunk_pages,
+            }
+        } else if weights.1 == 1.0 {
+            SearchChunkQueryResponseBody {
+                score_chunks: full_text_chunk_dtos,
+                total_chunk_pages: full_text_results.total_chunk_pages,
+            }
+        } else {
+            SearchChunkQueryResponseBody {
+                score_chunks: reciprocal_rank_fusion(
+                    semantic_chunk_dtos,
+                    full_text_chunk_dtos,
+                    data.weights,
+                ),
+                total_chunk_pages: semantic_results.total_chunk_pages,
+            }
+        }
+    } else {
+        SearchChunkQueryResponseBody {
+            score_chunks: reciprocal_rank_fusion(
+                semantic_chunk_dtos,
+                full_text_chunk_dtos,
+                data.weights,
+            ),
+            total_chunk_pages: semantic_results.total_chunk_pages,
+        }
+    };
+
+    result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
+
+    Ok(SearchCollectionsResult {
+        bookmarks: combined_result_chunks.score_chunks,
+        collection,
+        total_pages: combined_result_chunks.total_chunk_pages,
     })
 }

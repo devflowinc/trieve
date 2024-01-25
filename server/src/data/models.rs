@@ -279,7 +279,7 @@ impl ChunkMetadata {
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Selectable, Insertable, Clone)]
 #[diesel(table_name = chunk_collisions)]
-pub struct ChunkCollisions {
+pub struct ChunkCollision {
     pub id: uuid::Uuid,
     pub chunk_id: uuid::Uuid,
     pub collision_qdrant_id: Option<uuid::Uuid>,
@@ -287,9 +287,9 @@ pub struct ChunkCollisions {
     pub updated_at: chrono::NaiveDateTime,
 }
 
-impl ChunkCollisions {
+impl ChunkCollision {
     pub fn from_details<T: Into<uuid::Uuid>>(chunk_id: T, collision_id: T) -> Self {
-        ChunkCollisions {
+        ChunkCollision {
             id: uuid::Uuid::new_v4(),
             chunk_id: chunk_id.into(),
             collision_qdrant_id: Some(collision_id.into()),
