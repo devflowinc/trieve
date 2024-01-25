@@ -722,7 +722,7 @@ pub struct ScoreChunkDTO {
     pub score: f64,
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Debug)]
 pub struct SearchChunkQueryResponseBody {
     pub score_chunks: Vec<ScoreChunkDTO>,
     pub total_chunk_pages: i64,
