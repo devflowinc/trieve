@@ -61,6 +61,7 @@ impl FromRequest for LoggedUser {
     }
 }
 
+#[derive(Debug)]
 pub struct OrganizationRole {
     pub user: SlimUser,
     pub role: UserRole,

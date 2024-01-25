@@ -301,7 +301,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                                 const currentDataset = $dataset();
                                 if (!currentDataset) return;
                                 void fetch(
-                                  `${apiHost}/chunk_collection/${collection.id}/${props.chunkMetadata.id}`,
+                                  `${apiHost}/chunk_collection/${collection.id}`,
                                   {
                                     method: e.currentTarget.checked
                                       ? "POST"
@@ -310,6 +310,9 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                                       "Content-Type": "application/json",
                                       "TR-Dataset": currentDataset.dataset.id,
                                     },
+                                    body: JSON.stringify({
+                                      chunk_id: props.chunkMetadata.id,
+                                    }),
                                     credentials: "include",
                                   },
                                 ).then((response) => {

@@ -23,7 +23,8 @@ export const ViewCollection = () => {
       key === "page" ||
       key === "searchType" ||
       key === "Tag Set" ||
-      key === "link"
+      key === "link" ||
+      key === "dataset"
     ) {
       return;
     }
