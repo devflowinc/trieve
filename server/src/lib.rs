@@ -472,7 +472,7 @@ pub async fn main() -> std::io::Result<()> {
                                 web::get().to(handlers::collection_handler::get_all_bookmarks),
                             ))
                             .service(
-                                web::resource("/{page_or_chunk_collection_id}")
+                                web::resource("/{chunk_collection_id}")
                                     .route(
                                         web::post().to(handlers::collection_handler::add_bookmark),
                                     )

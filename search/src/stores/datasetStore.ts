@@ -21,13 +21,15 @@ const tryParse = (encoded: string) => {
 
 export const currentDataset = persistentAtom("dataset", null, {
   encode: (dataset) => {
-    const params = new URL(window.location.href).searchParams;
-    params.set("dataset", (dataset as DatasetAndUsageDTO).dataset.id);
-    window.history.replaceState(
-      {},
-      "",
-      `${window.location.pathname}?${params.toString()}`,
-    );
+    if (dataset) {
+      const params = new URL(window.location.href).searchParams;
+      params.set("dataset", (dataset as DatasetAndUsageDTO).dataset.id);
+      window.history.replaceState(
+        {},
+        "",
+        `${window.location.pathname}?${params.toString()}`,
+      );
+    }
     return JSON.stringify(dataset);
   },
   decode: tryParse,

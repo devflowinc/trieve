@@ -31,7 +31,8 @@ export const Home = () => {
       key === "Tag Set" ||
       key === "link" ||
       key === "start" ||
-      key === "end"
+      key === "end" ||
+      key === "dataset"
     ) {
       return;
     }
