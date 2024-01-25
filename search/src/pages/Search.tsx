@@ -27,7 +27,8 @@ export const Search = () => {
       key === "link" ||
       key === "start" ||
       key === "end" ||
-      key === "weight"
+      key === "weight" ||
+      key === "dataset"
     ) {
       return;
     }
