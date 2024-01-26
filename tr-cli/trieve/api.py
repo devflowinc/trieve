@@ -140,28 +140,31 @@ def upload_sample_data_parallel_helper(
     client: ChunkApi,
     headers: Dict[str, str],
 ):
-    req = client.create_chunk(
-        create_chunk_data=CreateChunkData(
-            chunk_html=data.iloc[i]["content"],
-            link=data.iloc[i]["file"],
-            time_stamp=data.iloc[i]["Date"],
-            metadata={
-                "Message-ID": data.iloc[i]["Message-ID"],
-                "From": data.iloc[i]["From"][12:-2],
-                "To": data.iloc[i]["To"][12:-2],
-                "Subject": data.iloc[i]["Subject"],
-                "X-From": data.iloc[i]["X-From"],
-                "X-To": data.iloc[i]["X-To"],
-                "X-CC": data.iloc[i]["X-cc"],
-                "X-BCC": data.iloc[i]["X-bcc"],
-                "X-Folder": data.iloc[i]["X-Folder"],
-                "X-Origin": data.iloc[i]["X-Origin"],
-                "X-FileName": data.iloc[i]["X-FileName"],
-                "User": data.iloc[i]["user"],
-            },
-        ),
-        _headers=headers,
-    )
+    try:
+        req = client.create_chunk(
+            create_chunk_data=CreateChunkData(
+                chunk_html=data.iloc[i]["content"],
+                link=data.iloc[i]["file"],
+                time_stamp=data.iloc[i]["Date"],
+                metadata={
+                    "Message-ID": data.iloc[i]["Message-ID"],
+                    "From": data.iloc[i]["From"][12:-2],
+                    "To": data.iloc[i]["To"][12:-2],
+                    "Subject": data.iloc[i]["Subject"],
+                    "X-From": data.iloc[i]["X-From"],
+                    "X-To": data.iloc[i]["X-To"],
+                    "X-CC": data.iloc[i]["X-cc"],
+                    "X-BCC": data.iloc[i]["X-bcc"],
+                    "X-Folder": data.iloc[i]["X-Folder"],
+                    "X-Origin": data.iloc[i]["X-Origin"],
+                    "X-FileName": data.iloc[i]["X-FileName"],
+                    "User": data.iloc[i]["user"],
+                },
+            ),
+            _headers=headers,
+        )
+    except Exception as e:
+        print(str(e))
 
 
 def get_datasets_for_org(org_id: str) -> List[DatasetAndUsage]:

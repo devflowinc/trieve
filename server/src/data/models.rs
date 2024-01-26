@@ -1259,11 +1259,13 @@ pub struct OrganizationUsageCount {
 pub enum ApiKeyRole {
     Read = 0,
     ReadAndWrite = 1,
+    FullAccess = 2,
 }
 
 impl From<i32> for ApiKeyRole {
     fn from(role: i32) -> Self {
         match role {
+            2 => ApiKeyRole::FullAccess,
             1 => ApiKeyRole::ReadAndWrite,
             _ => ApiKeyRole::Read,
         }
@@ -1273,6 +1275,7 @@ impl From<i32> for ApiKeyRole {
 impl From<ApiKeyRole> for i32 {
     fn from(role: ApiKeyRole) -> Self {
         match role {
+            ApiKeyRole::FullAccess => 2,
             ApiKeyRole::ReadAndWrite => 1,
             ApiKeyRole::Read => 0,
         }
@@ -1315,6 +1318,7 @@ pub struct ApiKeyDTO {
     pub id: uuid::Uuid,
     pub user_id: uuid::Uuid,
     pub name: String,
+    pub role: i32,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
@@ -1325,6 +1329,7 @@ impl From<UserApiKey> for ApiKeyDTO {
             id: api_key.id,
             user_id: api_key.user_id,
             name: api_key.name,
+            role: api_key.role,
             created_at: api_key.created_at,
             updated_at: api_key.updated_at,
         }

@@ -197,7 +197,7 @@ def add_sample_data() -> None:
         print("API key not set! Please run `trieve init` to set up.")
         typer.Abort()
     typer.confirm(
-        "Are you sure you would like to create a sample dataset? Will require download of sample data (around 1.1 gb)",
+        "Are you sure you would like to create a sample dataset? Will require download of sample data (around 10mb)",
         abort=True,
     )
     file_path = Prompt.ask(
