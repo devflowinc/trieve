@@ -31,3 +31,4 @@ tantivy_index
 rustc-ice*
 tr-cli/sample-data
 tr-cli/dist
+sample-data
