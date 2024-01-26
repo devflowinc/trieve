@@ -55,9 +55,9 @@ RUN set -eux; \
 FROM builder-base as builder
 WORKDIR app
 COPY --from=planner /app/recipe.json recipe.json
-RUN cargo chef cook --release --recipe-path recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json --features "ocr"
 COPY . .
-RUN cargo build --release --no-default-features --features "runtime-env ocr", 
+RUN cargo build --release --features "runtime-env ocr"
 
 FROM dpokidov/imagemagick:7.1.1-21-bookworm as runtime
 RUN apt-get update; \

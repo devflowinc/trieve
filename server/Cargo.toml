@@ -83,6 +83,6 @@ cfg-if = "1.0.0"
 dotenvy = "0.15.7"
 
 [features]
-default = ["ocr"]
+default = []
 runtime-env = []
 ocr = ["dep:pyo3", "dep:magick_rust"]

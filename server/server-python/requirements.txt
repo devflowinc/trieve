@@ -1,4 +1,2 @@
-python-dotenv==1.0.0
-qdrant_client==1.7.0
 bs4==0.0.1
 english_dictionary==1.0.24
