@@ -36,14 +36,14 @@ cross_encoder_model_id = "BAAI/bge-reranker-large"
 cross_encoder_model = CrossEncoder(cross_encoder_model_id)
 
 if torch.cuda.is_available():
-    device = torch.device("cuda")
+    devices = [torch.device(i) for i in range(torch.cuda.device_count())]
 else:
-    device = torch.device("cpu")
+    devices = [torch.device("cpu"), torch.device("cpu")]
 
 # Tokenize sentences
-query_model.to(device)
-doc_model.to(device)
-embedding_model.to(device)
+query_model.to(devices[0])
+doc_model.to(devices[0])
+embedding_model.to(devices[1])
 
 # Create a Flask app
 app = FastAPI()
@@ -65,7 +65,7 @@ def compute_vector(text, tokenizer, model):
     torch.Tensor: Computed vector.
     """
     tokens = tokenizer(text[:512], return_tensors="pt")
-    tokens = tokens.to(device)
+    tokens = tokens.to(devices[0])
     output = model(**tokens)
     logits, attention_mask = output.logits, tokens.attention_mask
     relu_log = torch.log(1 + torch.relu(logits))
