@@ -30,7 +30,7 @@ const SearchForm = (props: {
   query?: string;
   filters: Filters;
   searchType: string;
-  collectionID?: string;
+  groupID?: string;
   weight?: string;
 }) => {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -167,8 +167,8 @@ const SearchForm = (props: {
       ? `&weight=${semanticWeightVal}`
       : "";
 
-    window.location.href = props.collectionID
-      ? `/collection/${props.collectionID}?q=${searchQuery}` +
+    window.location.href = props.groupID
+      ? `/group/${props.groupID}?q=${searchQuery}` +
         (filters ? `&${filters}` : "") +
         (timeRange().start ? `&start=${timeRange().start}` : "") +
         (timeRange().end ? `&end=${timeRange().end}` : "") +
@@ -555,7 +555,7 @@ const SearchForm = (props: {
                     <Menu class="ml-1 space-y-1">
                       <For each={searchTypes()}>
                         {(option) => {
-                          if (props.collectionID && option.route === "hybrid") {
+                          if (props.groupID && option.route === "hybrid") {
                             return <></>;
                           }
 
@@ -737,7 +737,7 @@ const SearchForm = (props: {
             </For>
           </div>
         </Show>
-        <Show when={!props.query && !props.collectionID}>
+        <Show when={!props.query && !props.groupID}>
           <div class="flex justify-center space-x-4 sm:gap-y-0 sm:space-x-2 sm:px-6">
             <button
               class="w-fit rounded bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700"

@@ -52,7 +52,7 @@ pub struct UploadFileData {
     pub file_mime_type: String,
     /// Tag set is a comma separated list of tags which will be passed down to the chunks made from the file. Tags are used to filter chunks when searching. HNSW indices are created for each tag such that there is no performance loss when filtering on them.
     pub tag_set: Option<String>,
-    /// Description is an optional convience field so you do not have to remember what the file contains or is about. It will be included on the collection resulting from the file which will hold its chunk.
+    /// Description is an optional convience field so you do not have to remember what the file contains or is about. It will be included on the group resulting from the file which will hold its chunk.
     pub description: Option<String>,
     /// Link to the file. This can also be any string. This can be used to filter when searching for the file's resulting chunks. The link value will not affect embedding creation.
     pub link: Option<String>,

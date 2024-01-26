@@ -108,7 +108,7 @@ export const AfMessage = (props: AfMessageProps) => {
                   <For each={metadata()}>
                     {(chunk) => (
                       <ScoreChunk
-                        collection={undefined}
+                        group={undefined}
                         chunk={chunk.metadata[0]}
                         score={0}
                         showExpand={!props.streamingCompletion()}

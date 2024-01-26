@@ -1,8 +1,8 @@
 pub mod chunk_operator;
-pub mod collection_operator;
 pub mod dataset_operator;
 pub mod email_operator;
 pub mod file_operator;
+pub mod group_operator;
 pub mod invitation_operator;
 pub mod message_operator;
 pub mod model_operator;

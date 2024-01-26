@@ -59,14 +59,14 @@ export const SingleNotification = (props: NotificationProps) => {
               <span class="text-left">
                 <a
                   // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-                  href={`/collection/${props.notification.collection_uuid}`}
+                  href={`/group/${props.notification.group_uuid}`}
                   onClick={() => {
                     markNotificationAsRead();
                   }}
                 >
                   <span class="underline dark:text-acid-500">
-                    {props.notification.collection_name.replace(
-                      "Collection for file ",
+                    {props.notification.group_name.replace(
+                      "Group for file ",
                       "",
                     )}
                   </span>{" "}

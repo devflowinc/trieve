@@ -11,9 +11,7 @@ use crate::{
     errors::DefaultError,
 };
 use actix_web::web;
-use diesel::{
-    Connection, JoinOnDsl, NullableExpressionMethods, SelectableHelper,
-};
+use diesel::{Connection, JoinOnDsl, NullableExpressionMethods, SelectableHelper};
 use itertools::Itertools;
 use qdrant_client::qdrant::{PointId, PointVectors};
 use serde::{Deserialize, Serialize};
@@ -165,7 +163,6 @@ pub fn get_metadata_and_collided_chunks_from_point_ids_query(
         chunk_metadatas_with_collided_qdrant_ids,
     ))
 }
-
 
 pub fn get_metadata_from_id_query(
     chunk_id: uuid::Uuid,
@@ -396,9 +393,9 @@ pub async fn delete_chunk_metadata_query(
         });
     }
 
-    use crate::data::schema::chunk_collection_bookmarks::dsl as chunk_collection_bookmarks_columns;
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
     use crate::data::schema::chunk_files::dsl as chunk_files_columns;
+    use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     let mut conn = pool.get().unwrap();
 
@@ -411,8 +408,8 @@ pub async fn delete_chunk_metadata_query(
             .execute(conn)?;
 
             diesel::delete(
-                chunk_collection_bookmarks_columns::chunk_collection_bookmarks
-                    .filter(chunk_collection_bookmarks_columns::chunk_metadata_id.eq(chunk_uuid)),
+                chunk_group_bookmarks_columns::chunk_group_bookmarks
+                    .filter(chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_uuid)),
             )
             .execute(conn)?;
 

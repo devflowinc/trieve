@@ -1,27 +1,6 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    chunk_collection (id) {
-        id -> Uuid,
-        name -> Text,
-        description -> Text,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
-        dataset_id -> Uuid,
-    }
-}
-
-diesel::table! {
-    chunk_collection_bookmarks (id) {
-        id -> Uuid,
-        collection_id -> Uuid,
-        chunk_metadata_id -> Uuid,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
-    }
-}
-
-diesel::table! {
     chunk_collisions (id) {
         id -> Uuid,
         chunk_id -> Uuid,
@@ -36,6 +15,27 @@ diesel::table! {
         id -> Uuid,
         chunk_id -> Uuid,
         file_id -> Uuid,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
+    chunk_group (id) {
+        id -> Uuid,
+        name -> Text,
+        description -> Text,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+        dataset_id -> Uuid,
+    }
+}
+
+diesel::table! {
+    chunk_group_bookmarks (id) {
+        id -> Uuid,
+        group_id -> Uuid,
+        chunk_metadata_id -> Uuid,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
@@ -61,16 +61,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    collections_from_files (id) {
-        id -> Uuid,
-        collection_id -> Uuid,
-        file_id -> Uuid,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
-    }
-}
-
-diesel::table! {
     cut_chunks (id) {
         id -> Uuid,
         user_id -> Uuid,
@@ -81,9 +71,9 @@ diesel::table! {
 }
 
 diesel::table! {
-    dataset_collection_counts (id) {
+    dataset_group_counts (id) {
         id -> Uuid,
-        collection_count -> Int4,
+        group_count -> Int4,
         dataset_id -> Nullable<Uuid>,
     }
 }
@@ -119,7 +109,7 @@ diesel::table! {
 diesel::table! {
     file_upload_completed_notifications (id) {
         id -> Uuid,
-        collection_uuid -> Uuid,
+        group_uuid -> Uuid,
         user_read -> Bool,
         created_at -> Timestamp,
         updated_at -> Timestamp,
@@ -140,6 +130,16 @@ diesel::table! {
         link -> Nullable<Text>,
         time_stamp -> Nullable<Timestamp>,
         dataset_id -> Uuid,
+    }
+}
+
+diesel::table! {
+    groups_from_files (id) {
+        id -> Uuid,
+        group_id -> Uuid,
+        file_id -> Uuid,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
     }
 }
 
@@ -271,22 +271,23 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(chunk_collection -> datasets (dataset_id));
-diesel::joinable!(chunk_collection_bookmarks -> chunk_collection (collection_id));
-diesel::joinable!(chunk_collection_bookmarks -> chunk_metadata (chunk_metadata_id));
 diesel::joinable!(chunk_files -> chunk_metadata (chunk_id));
 diesel::joinable!(chunk_files -> files (file_id));
+diesel::joinable!(chunk_group -> datasets (dataset_id));
+diesel::joinable!(chunk_group_bookmarks -> chunk_group (group_id));
+diesel::joinable!(chunk_group_bookmarks -> chunk_metadata (chunk_metadata_id));
 diesel::joinable!(chunk_metadata -> datasets (dataset_id));
 diesel::joinable!(chunk_metadata -> users (author_id));
-diesel::joinable!(collections_from_files -> chunk_collection (collection_id));
-diesel::joinable!(collections_from_files -> files (file_id));
 diesel::joinable!(cut_chunks -> users (user_id));
+diesel::joinable!(dataset_group_counts -> datasets (dataset_id));
 diesel::joinable!(dataset_usage_counts -> datasets (dataset_id));
 diesel::joinable!(datasets -> organizations (organization_id));
-diesel::joinable!(file_upload_completed_notifications -> chunk_collection (collection_uuid));
+diesel::joinable!(file_upload_completed_notifications -> chunk_group (group_uuid));
 diesel::joinable!(file_upload_completed_notifications -> datasets (dataset_id));
 diesel::joinable!(files -> datasets (dataset_id));
 diesel::joinable!(files -> users (user_id));
+diesel::joinable!(groups_from_files -> chunk_group (group_id));
+diesel::joinable!(groups_from_files -> files (file_id));
 diesel::joinable!(messages -> datasets (dataset_id));
 diesel::joinable!(messages -> topics (topic_id));
 diesel::joinable!(organization_usage_counts -> organizations (org_id));
@@ -299,19 +300,19 @@ diesel::joinable!(user_organizations -> organizations (organization_id));
 diesel::joinable!(user_organizations -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    chunk_collection,
-    chunk_collection_bookmarks,
     chunk_collisions,
     chunk_files,
+    chunk_group,
+    chunk_group_bookmarks,
     chunk_metadata,
-    collections_from_files,
     cut_chunks,
-    dataset_collection_counts,
+    dataset_group_counts,
     dataset_notification_counts,
     dataset_usage_counts,
     datasets,
     file_upload_completed_notifications,
     files,
+    groups_from_files,
     invitations,
     messages,
     organization_usage_counts,

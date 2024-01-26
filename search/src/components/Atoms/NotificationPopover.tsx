@@ -74,7 +74,7 @@ export const NotificationPopover = () => {
         setNotifs((prev_notifs) =>
           prev_notifs.map((notif) => {
             if (isFileUpload && isFileUploadCompleteNotificationDTO(notif)) {
-              if (notification.collection_uuid === notif.collection_uuid) {
+              if (notification.group_uuid === notif.group_uuid) {
                 notif.user_read = true;
               }
             }

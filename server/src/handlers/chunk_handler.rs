@@ -1,25 +1,21 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    ChatMessageProxy, ChunkCollection, ChunkCollectionBookmark, ChunkMetadata,
-    ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration,
-    StripePlan,
+    ChatMessageProxy, ChunkGroup, ChunkGroupBookmark, ChunkMetadata, ChunkMetadataWithFileData,
+    DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration, StripePlan,
 };
 use crate::errors::{DefaultError, ServiceError};
 use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
-use crate::operators::collection_operator::{
-    create_chunk_bookmark_query, get_collection_by_id_query,
-};
+use crate::operators::group_operator::{create_chunk_bookmark_query, get_group_by_id_query};
 use crate::operators::model_operator::create_embedding;
 use crate::operators::qdrant_operator::update_qdrant_point_query;
 use crate::operators::qdrant_operator::{
     create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
 };
 use crate::operators::search_operator::{
-    global_unfiltered_top_match_query, search_full_text_chunks, search_full_text_collections,
-    search_hybrid_chunks, search_hybrid_collections, search_semantic_chunks,
-    search_semantic_collections,
+    global_unfiltered_top_match_query, search_full_text_chunks, search_full_text_groups,
+    search_hybrid_chunks, search_hybrid_groups, search_semantic_chunks, search_semantic_groups,
 };
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
@@ -87,8 +83,8 @@ pub struct CreateChunkData {
     pub chunk_vector: Option<Vec<f32>>,
     /// Tracking_id is a string which can be used to identify a chunk. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk.
     pub tracking_id: Option<String>,
-    /// Collection_id is the id of the collection that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a collection in one request.
-    pub collection_id: Option<uuid::Uuid>,
+    /// Group is the id of the group that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group in one request.
+    pub group_id: Option<uuid::Uuid>,
     /// Time_stamp should be an ISO 8601 combined date and time without timezone. It is used for time window filtering and recency-biasing search results.
     pub time_stamp: Option<String>,
     /// Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset.
@@ -184,7 +180,7 @@ pub async fn create_chunk(
         .tracking_id
         .clone()
         .filter(|chunk_tracking| !chunk_tracking.is_empty());
-    let chunk_collection_id = chunk.collection_id;
+    let chunk_group_id = chunk.group_id;
 
     let mut collision: Option<uuid::Uuid> = None;
 
@@ -349,12 +345,12 @@ pub async fn create_chunk(
         .await?;
     }
 
-    if let Some(collection_id_to_bookmark) = chunk_collection_id {
-        let chunk_collection_bookmark =
-            ChunkCollectionBookmark::from_details(collection_id_to_bookmark, chunk_metadata.id);
+    if let Some(group_id_to_bookmark) = chunk_group_id {
+        let chunk_group_bookmark =
+            ChunkGroupBookmark::from_details(group_id_to_bookmark, chunk_metadata.id);
 
-        let _ = web::block(move || create_chunk_bookmark_query(pool3, chunk_collection_bookmark))
-            .await?;
+        let _ =
+            web::block(move || create_chunk_bookmark_query(pool3, chunk_group_bookmark)).await?;
     }
 
     Ok(HttpResponse::Ok().json(ReturnCreatedChunk {
@@ -809,7 +805,7 @@ pub async fn search_chunk(
 
 #[derive(Serialize, Deserialize, Clone, ToSchema, IntoParams)]
 #[into_params(style = Form, parameter_in = Query)]
-pub struct SearchCollectionsData {
+pub struct SearchGroupsData {
     /// The query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
     pub query: String,
     /// The page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon.
@@ -820,8 +816,8 @@ pub struct SearchCollectionsData {
     pub tag_set: Option<Vec<String>>,
     /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<serde_json::Value>,
-    /// Collection_id specifies the collection to search within. Results will only consist of chunks which are bookmarks within the specified collection.
-    pub collection_id: uuid::Uuid,
+    /// Group specifies the group to search within. Results will only consist of chunks which are bookmarks within the specified group.
+    pub group_id: uuid::Uuid,
     #[param(inline)]
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: String,
@@ -833,8 +829,8 @@ pub struct SearchCollectionsData {
     pub weights: Option<(f64, f64)>,
 }
 
-impl From<SearchCollectionsData> for SearchChunkData {
-    fn from(data: SearchCollectionsData) -> Self {
+impl From<SearchGroupsData> for SearchChunkData {
+    fn from(data: SearchGroupsData) -> Self {
         Self {
             query: data.query,
             page: data.page,
@@ -851,41 +847,41 @@ impl From<SearchCollectionsData> for SearchChunkData {
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
-pub struct SearchCollectionsResult {
+pub struct SearchGroupsResult {
     pub bookmarks: Vec<ScoreChunkDTO>,
-    pub collection: ChunkCollection,
+    pub group: ChunkGroup,
     pub total_pages: i64,
 }
 
-/// collection_search
+/// group_search
 ///
-/// This route allows you to search only within a collection. This is useful for when you only want search results to contain chunks which are members of a specific group. Think about this like searching within a playlist or bookmark folder.
+/// This route allows you to search only within a group. This is useful for when you only want search results to contain chunks which are members of a specific group. Think about this like searching within a playlist or bookmark folder.
 #[utoipa::path(
     post,
-    path = "/chunk_collection/search",
+    path = "/chunk_group/search",
     context_path = "/api",
-    tag = "chunk_collection",
-    request_body(content = SearchCollectionsData, description = "JSON request payload to semantically search a collection", content_type = "application/json"),
+    tag = "chunk_group",
+    request_body(content = SearchGroupsData, description = "JSON request payload to semantically search a group", content_type = "application/json"),
     responses(
-        (status = 200, description = "Collection chunks which are similar to the embedding vector of the search query", body = SearchCollectionsResult),
-        (status = 400, description = "Service error relating to getting the collections that the chunk is in", body = DefaultError),
+        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchGroupsResult),
+        (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = DefaultError),
     ),
 )]
 #[allow(clippy::too_many_arguments)]
-pub async fn search_collections(
-    data: web::Json<SearchCollectionsData>,
+pub async fn search_groups(
+    data: web::Json<SearchGroupsData>,
     pool: web::Data<Pool>,
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
     let page = data.page.unwrap_or(1);
-    let collection_id = data.collection_id;
+    let group_id = data.group_id;
     let dataset_id = dataset_org_plan_sub.dataset.id;
     let search_pool = pool.clone();
 
-    let collection = {
-        web::block(move || get_collection_by_id_query(collection_id, dataset_id, pool))
+    let group = {
+        web::block(move || get_group_by_id_query(group_id, dataset_id, pool))
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?
@@ -895,21 +891,14 @@ pub async fn search_collections(
 
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => {
-            search_full_text_collections(
-                data,
-                parsed_query,
-                collection,
-                page,
-                search_pool,
-                dataset_id,
-            )
-            .await?
+            search_full_text_groups(data, parsed_query, group, page, search_pool, dataset_id)
+                .await?
         }
         "hybrid" => {
-            search_hybrid_collections(
+            search_hybrid_groups(
                 data,
                 parsed_query,
-                collection,
+                group,
                 page,
                 search_pool,
                 dataset_org_plan_sub.dataset,
@@ -917,10 +906,10 @@ pub async fn search_collections(
             .await?
         }
         _ => {
-            search_semantic_collections(
+            search_semantic_groups(
                 data,
                 parsed_query,
-                collection,
+                group,
                 page,
                 search_pool,
                 dataset_org_plan_sub.dataset,
@@ -1007,7 +996,7 @@ pub struct RecommendChunksRequest {
 
 /// get_recommended_chunks
 ///
-/// Get recommendations of chunks similar to the chunks in the request. Think about this as a feature similar to the "add to playlist" recommendation feature on Spotify. This request pairs especially well with our collections endpoint.
+/// Get recommendations of chunks similar to the chunks in the request. Think about this as a feature similar to the "add to playlist" recommendation feature on Spotify. This request pairs especially well with our groups endpoint.
 #[utoipa::path(
     post,
     path = "/chunk/recommend",
