@@ -14,9 +14,7 @@ COPY --from=planner /app/recipe.json recipe.json
 # Build dependencies - this is the caching Docker layer!
 RUN cargo chef cook --release --recipe-path recipe.json
 # Build application
-COPY ./src .
-COPY ./Cargo.toml .
-COPY ./Cargo.lock .
+COPY . .
 RUN cargo build --release --features "runtime-env"
 
 # Use Ubuntu 22.04 as the base image
