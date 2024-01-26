@@ -1066,7 +1066,7 @@ pub struct StripePlan {
     pub id: uuid::Uuid,
     pub stripe_id: String,
     pub chunk_count: i32,
-    pub file_storage: i32,
+    pub file_storage: i64,
     pub user_count: i32,
     pub dataset_count: i32,
     pub message_count: i32,
@@ -1081,7 +1081,7 @@ impl StripePlan {
     pub fn from_details(
         stripe_id: String,
         chunk_count: i32,
-        file_storage: i32,
+        file_storage: i64,
         user_count: i32,
         dataset_count: i32,
         message_count: i32,
@@ -1252,7 +1252,7 @@ pub struct OrganizationUsageCount {
     pub org_id: uuid::Uuid,
     pub dataset_count: i32,
     pub user_count: i32,
-    pub file_storage: i32,
+    pub file_storage: i64,
     pub message_count: i32,
 }
 
