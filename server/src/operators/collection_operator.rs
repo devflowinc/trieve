@@ -326,14 +326,13 @@ pub fn get_bookmarks_for_collection_query(
 ) -> Result<CollectionsBookmarkQueryResult, ServiceError> {
     use crate::data::schema::chunk_collection::dsl as chunk_collection_columns;
     use crate::data::schema::chunk_collection_bookmarks::dsl as chunk_collection_bookmarks_columns;
-    use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     let page = if page == 0 { 1 } else { page };
     let limit = limit.unwrap_or(10);
 
     let mut conn = pool.get().unwrap();
 
-    let bookmark_metadata: Vec<(ChunkMetadataWithCount, Option<uuid::Uuid>, ChunkCollection)> =
+    let bookmark_metadata: Vec<(ChunkMetadataWithCount, ChunkCollection)> =
         chunk_metadata_columns::chunk_metadata
             .left_join(
                 chunk_collection_bookmarks_columns::chunk_collection_bookmarks
@@ -343,10 +342,6 @@ pub fn get_bookmarks_for_collection_query(
             .left_join(chunk_collection_columns::chunk_collection.on(
                 chunk_collection_columns::id.eq(chunk_collection_bookmarks_columns::collection_id),
             ))
-            .left_join(
-                chunk_collisions_columns::chunk_collisions
-                    .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
-            )
             .filter(
                 chunk_collection_bookmarks_columns::collection_id
                     .eq(collection)
@@ -370,7 +365,6 @@ pub fn get_bookmarks_for_collection_query(
                     chunk_metadata_columns::weight,
                     sql::<Int8>("count(*) OVER() AS full_count"),
                 ),
-                chunk_collisions_columns::collision_qdrant_id.nullable(),
                 (
                     chunk_collection_columns::id.assume_not_null(),
                     chunk_collection_columns::author_id.assume_not_null(),
@@ -383,11 +377,11 @@ pub fn get_bookmarks_for_collection_query(
             ))
             .limit(limit)
             .offset(((page - 1) * limit as u64).try_into().unwrap_or(0))
-            .load::<(ChunkMetadataWithCount, Option<uuid::Uuid>, ChunkCollection)>(&mut conn)
+            .load::<(ChunkMetadataWithCount, ChunkCollection)>(&mut conn)
             .map_err(|_err| ServiceError::BadRequest("Error getting bookmarks".to_string()))?;
 
     let chunk_collection = if let Some(bookmark) = bookmark_metadata.first() {
-        bookmark.2.clone()
+        bookmark.1.clone()
     } else {
         chunk_collection_columns::chunk_collection
             .filter(chunk_collection_columns::id.eq(collection))
@@ -398,16 +392,9 @@ pub fn get_bookmarks_for_collection_query(
 
     let converted_chunks: Vec<FullTextSearchResult> = bookmark_metadata
         .iter()
-        .map(
-            |(chunk, collided_id, _chunk_collection)| match collided_id {
-                Some(id) => {
-                    let mut chunk = chunk.clone();
-                    chunk.qdrant_point_id = Some(*id);
-                    <ChunkMetadataWithCount as Into<FullTextSearchResult>>::into(chunk)
-                }
-                None => <ChunkMetadataWithCount as Into<FullTextSearchResult>>::into(chunk.clone()),
-            },
-        )
+        .map(|(chunk, _chunk_collection)| {
+            <ChunkMetadataWithCount as Into<FullTextSearchResult>>::into(chunk.clone())
+        })
         .collect::<Vec<FullTextSearchResult>>();
 
     let chunk_metadata_with_file_id = get_metadata_query(converted_chunks, conn)
