@@ -93,13 +93,12 @@ pub async fn main() -> std::io::Result<()> {
             handlers::user_handler::delete_user_api_key,
             handlers::user_handler::get_user_with_chunks_by_id,
             handlers::file_handler::get_user_files_handler,
-            handlers::collection_handler::get_specific_user_chunk_collections,
+            handlers::collection_handler::get_specific_dataset_chunk_collections,
             handlers::collection_handler::create_chunk_collection,
             handlers::collection_handler::delete_chunk_collection,
             handlers::collection_handler::update_chunk_collection,
             handlers::collection_handler::add_bookmark,
             handlers::collection_handler::delete_bookmark,
-            handlers::collection_handler::get_logged_in_user_chunk_collections,
             handlers::collection_handler::get_all_bookmarks,
             handlers::collection_handler::get_collections_chunk_is_in,
             handlers::chunk_handler::search_collections,
@@ -156,7 +155,7 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::user_handler::SetUserApiKeyResponse,
                 handlers::user_handler::DeleteUserApiKeyRequest,
                 handlers::collection_handler::CollectionData,
-                handlers::collection_handler::UserCollectionQuery,
+                handlers::collection_handler::DatasetCollectionQuery,
                 handlers::collection_handler::CreateChunkCollectionData,
                 handlers::collection_handler::DeleteCollectionData,
                 handlers::collection_handler::UpdateChunkCollectionData,
@@ -313,7 +312,13 @@ pub async fn main() -> std::io::Result<()> {
                             ).service(
                                 web::resource("/{dataset_id}")
                                     .route(web::get().to(handlers::dataset_handler::get_dataset)),
-                            )
+                            ).service(
+                                web::resource("/collections/{dataset_id}/{page}").route(
+                                    web::get().to(
+                                        handlers::collection_handler::get_specific_dataset_chunk_collections,
+                                    ),
+                                ),
+                            ),
                     )
                     
                     .service(
@@ -425,13 +430,7 @@ pub async fn main() -> std::io::Result<()> {
                             .service(web::resource("/{user_id}/{page}")
                                 .route(web::get().to(handlers::user_handler::get_user_with_chunks_by_id)),
                             )
-                            .service(
-                                web::resource("/collections/{user_id}/{page}").route(
-                                    web::get().to(
-                                        handlers::collection_handler::get_specific_user_chunk_collections,
-                                    ),
-                                ),
-                            ),
+
                     )
                     .service(
                         web::scope("/chunk_collection")
@@ -479,10 +478,8 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(
                                         web::delete()
                                             .to(handlers::collection_handler::delete_chunk_collection),
-                                    ).route(
-                                        web::get()
-                                            .to(handlers::collection_handler::get_logged_in_user_chunk_collections)),
-                            ),
+                                    )
+                                )
                     )
                     .service(
                         web::scope("/file")
