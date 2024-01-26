@@ -1,17 +1,19 @@
 from math import trunc
 from typing import Optional
-from angle_emb import AnglE, Prompts
 import uvicorn
 import torch
 import numpy as np
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from transformers import AutoModelForMaskedLM, AutoTokenizer
+from transformers import AutoModelForMaskedLM, AutoTokenizer, AutoModel
 from sentence_transformers.cross_encoder import CrossEncoder
+import huggingface_hub
+import os
 
-# Create a Flask app
-app = FastAPI()
+hf_token = os.environ.get('HF_TOKEN')
+huggingface_hub.login(token=hf_token)
+embedding_model = AutoModel.from_pretrained('jinaai/jina-embeddings-v2-base-en', token=hf_token, trust_remote_code=True) # trust_remote_code is needed to use the encode method
 
 doc_model_id = "naver/efficient-splade-VI-BT-large-doc"
 doc_tokenizer = AutoTokenizer.from_pretrained(
@@ -28,19 +30,18 @@ query_model = AutoModelForMaskedLM.from_pretrained(query_model_id)
 cross_encoder_model_id = "BAAI/bge-reranker-large"
 cross_encoder_model = CrossEncoder(cross_encoder_model_id)
 
-
-angle = AnglE.from_pretrained("jinaai/jina-embeddings-v2-base-en", pooling_strategy="cls")
 if torch.cuda.is_available():
-    # Initialize CUDA device
     device = torch.device("cuda")
-    angle = angle.cuda()
 else:
     device = torch.device("cpu")
-angle.set_prompt(Prompts.C)
+
 # Tokenize sentences
 query_model.to(device)
 doc_model.to(device)
+embedding_model.to(device)
 
+# Create a Flask app
+app = FastAPI()
 
 @app.get("/")
 async def health():
@@ -79,17 +80,15 @@ class EncodeRequest(BaseModel):
 
 @app.post("/embeddings")
 async def encode(encodingRequest: EncodeRequest):
-    # normalize embeddings
-    sentence_embeddings = angle.encode(
-        {"text": encodingRequest.input}, device=device, to_numpy=True
-    )
+    sentence_embeddings = embedding_model.encode([encodingRequest.input])
+
     return JSONResponse(
         content={
             "object": "list",
             "data": [
                 {
                     "object": "embedding",
-                    "embedding": sentence_embeddings.tolist()[0],
+                    "embedding": sentence_embeddings[0],
                     "index": 0,
                 }
             ],
