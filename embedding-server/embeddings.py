@@ -25,11 +25,11 @@ query_tokenizer = AutoTokenizer.from_pretrained(
 )
 query_model = AutoModelForMaskedLM.from_pretrained(query_model_id)
 
-cross_encoder_model_id = "cross-encoder/ms-marco-MiniLM-L-4-v2"
+cross_encoder_model_id = "BAAI/bge-reranker-large"
 cross_encoder_model = CrossEncoder(cross_encoder_model_id)
 
 
-angle = AnglE.from_pretrained("WhereIsAI/UAE-Large-V1", pooling_strategy="cls")
+angle = AnglE.from_pretrained("jinaai/jina-embeddings-v2-base-en", pooling_strategy="cls")
 if torch.cuda.is_available():
     # Initialize CUDA device
     device = torch.device("cuda")
