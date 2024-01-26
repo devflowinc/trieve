@@ -640,7 +640,7 @@ pub struct FileDTO {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub size: i64,
-    pub base64url_content: String,
+    pub s3_url: String,
     pub metadata: Option<serde_json::Value>,
     pub link: Option<String>,
 }
@@ -654,7 +654,7 @@ impl From<File> for FileDTO {
             created_at: file.created_at,
             updated_at: file.updated_at,
             size: file.size,
-            base64url_content: "".to_string(),
+            s3_url: "".to_string(),
             metadata: file.metadata,
             link: file.link,
         }

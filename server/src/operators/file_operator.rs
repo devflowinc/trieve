@@ -22,11 +22,7 @@ use crate::{
     },
 };
 use actix_web::{body::MessageBody, web};
-use base64::{
-    alphabet,
-    engine::{self, general_purpose},
-    Engine as _,
-};
+
 use diesel::RunQueryDsl;
 use s3::{creds::Credentials, Bucket, Region};
 use std::{path::PathBuf, process::Command};
@@ -419,20 +415,12 @@ pub async fn get_file_query(
         .map_err(|_| ServiceError::NotFound)?;
 
     let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
-    let file_data = bucket
-        .get_object(file_metadata.id.to_string())
-        .await
-        .map_err(|_| ServiceError::BadRequest("Could not get file from S3".to_string()))?
-        .to_vec();
-
-    let base64_engine = engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
-    let base64_file_data = base64_engine.encode(file_data);
+    let s3_url = bucket
+        .presign_get(file_metadata.id.to_string(), 300, None)
+        .map_err(|_| ServiceError::BadRequest("Could not get presigned url".to_string()))?;
 
     let file_dto: FileDTO = file_metadata.into();
-    let file_dto = FileDTO {
-        base64url_content: base64_file_data,
-        ..file_dto
-    };
+    let file_dto: FileDTO = FileDTO { s3_url, ..file_dto };
 
     Ok(file_dto)
 }

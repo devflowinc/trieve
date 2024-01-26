@@ -169,7 +169,7 @@ pub async fn upload_file_handler(
     context_path = "/api",
     tag = "file",
     responses(
-        (status = 200, description = "The file corresponding to the file_id requested", body = FileDTO),
+        (status = 200, description = "The signed s3 url corresponding to the file_id requested", body = FileDTO),
         (status = 400, description = "Service error relating to finding the file", body = DefaultError),
     ),
     params(
