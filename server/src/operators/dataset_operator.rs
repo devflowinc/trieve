@@ -104,18 +104,18 @@ pub async fn delete_dataset_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
-    use crate::data::schema::chunk_collection::dsl as chunk_collection_columns;
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::datasets::dsl as datasets_columns;
     use crate::data::schema::files::dsl as files_columns;
     use crate::data::schema::topics::dsl as topics_columns;
     use crate::data::schema::{
-        chunk_collection_bookmarks::dsl as chunk_collection_bookmarks_columns,
-        collections_from_files::dsl as collections_from_files_columns,
-        file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns,
+        chunk_collisions::dsl as chunk_collisions_columns, chunk_files::dsl as chunk_files_columns,
     };
     use crate::data::schema::{
-        chunk_collisions::dsl as chunk_collisions_columns, chunk_files::dsl as chunk_files_columns,
+        chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns,
+        file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns,
+        groups_from_files::dsl as groups_from_files_columns,
     };
 
     let dataset = get_dataset_by_id_query(id, pool.clone()).await?;
@@ -131,29 +131,27 @@ pub async fn delete_dataset_by_id_query(
         )
         .execute(conn)?;
 
-        let collection_ids = chunk_collection_columns::chunk_collection
-            .select(chunk_collection_columns::id)
-            .filter(chunk_collection_columns::dataset_id.eq(dataset.id))
+        let group_ids = chunk_group_columns::chunk_group
+            .select(chunk_group_columns::id)
+            .filter(chunk_group_columns::dataset_id.eq(dataset.id))
             .load::<uuid::Uuid>(conn)?;
 
         diesel::delete(
-            collections_from_files_columns::collections_from_files.filter(
-                collections_from_files_columns::collection_id.eq_any(collection_ids.clone()),
-            ),
+            groups_from_files_columns::groups_from_files
+                .filter(groups_from_files_columns::group_id.eq_any(group_ids.clone())),
         )
         .execute(conn)?;
 
         diesel::delete(
-            chunk_collection_bookmarks_columns::chunk_collection_bookmarks.filter(
-                chunk_collection_bookmarks_columns::collection_id.eq_any(collection_ids.clone()),
-            ),
+            chunk_group_bookmarks_columns::chunk_group_bookmarks
+                .filter(chunk_group_bookmarks_columns::group_id.eq_any(group_ids.clone())),
         )
         .execute(conn)?;
 
         diesel::delete(
-            chunk_collection_columns::chunk_collection
-                .filter(chunk_collection_columns::id.eq_any(collection_ids.clone()))
-                .filter(chunk_collection_columns::dataset_id.eq(id)),
+            chunk_group_columns::chunk_group
+                .filter(chunk_group_columns::id.eq_any(group_ids.clone()))
+                .filter(chunk_group_columns::dataset_id.eq(id)),
         )
         .execute(conn)?;
         let chunks = chunk_metadata_columns::chunk_metadata
@@ -173,9 +171,8 @@ pub async fn delete_dataset_by_id_query(
         .execute(conn)?;
 
         diesel::delete(
-            chunk_collection_bookmarks_columns::chunk_collection_bookmarks.filter(
-                chunk_collection_bookmarks_columns::chunk_metadata_id.eq_any(chunk_ids.clone()),
-            ),
+            chunk_group_bookmarks_columns::chunk_group_bookmarks
+                .filter(chunk_group_bookmarks_columns::chunk_metadata_id.eq_any(chunk_ids.clone())),
         )
         .execute(conn)?;
 
@@ -265,8 +262,7 @@ pub async fn delete_dataset_by_id_query(
             })?;
     }
 
-    let qdrant_collection =
-        std::env::var("QDRANT_COLLECTION").unwrap_or("debate_chunks".to_owned());
+    let qdrant_group = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_chunks".to_owned());
 
     match transaction_result {
         Ok(chunks) => {
@@ -299,7 +295,7 @@ pub async fn delete_dataset_by_id_query(
                 .collect::<Vec<PointId>>();
 
             let _ = qdrant
-                .delete_points(qdrant_collection, None, &selector.into(), None)
+                .delete_points(qdrant_group, None, &selector.into(), None)
                 .await
                 .map_err(|err| {
                     ServiceError::BadRequest(format!(

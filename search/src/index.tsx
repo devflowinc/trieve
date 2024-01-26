@@ -8,7 +8,7 @@ import { Upload } from "./pages/Upload";
 import { CreateChunk } from "./pages/CreateChunk";
 import { EditChunk } from "./pages/chunk/edit/EditChunk";
 import { ViewChunk } from "./pages/chunk/ViewChunk";
-import { ViewCollection } from "./pages/collection/ViewCollection";
+import { ViewGroup } from "./pages/group/ViewGroup";
 import { Settings } from "./pages/user/Settings";
 import { ViewUser } from "./pages/user/ViewUser";
 
@@ -25,7 +25,7 @@ render(
         <Route path="/edit/:id" component={EditChunk} />
         <Route path="/:id" component={ViewChunk} />
       </Route>
-      <Route path="/collection/:id" component={ViewCollection} />
+      <Route path="/group/:id" component={ViewGroup} />
       <Route path="/user">
         <Route path="/settings" component={Settings} />
         <Route path="/:id" component={ViewUser} />

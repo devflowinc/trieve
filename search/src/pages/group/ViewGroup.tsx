@@ -1,13 +1,13 @@
 import { Footer } from "../../components/Footer";
 import { SearchLayout } from "../../layouts/SearchLayout";
-import { CollectionPage } from "../../components/CollectionPage";
-import type { ChunkCollectionBookmarksWithStatusDTO } from "../../../utils/apiTypes";
+import { GroupPage } from "../../components/GroupPage";
+import type { ChunkGroupBookmarksWithStatusDTO } from "../../../utils/apiTypes";
 import type { Filters } from "../../components/ResultsPage";
 
-export const ViewCollection = () => {
-  // collectionID will be the last part of the URL before the query string
+export const ViewGroup = () => {
+  // groupID will be the last part of the URL before the query string
   const url = window.location.href;
-  const collectionID = url.split("/").pop()?.split("?")[0] ?? "";
+  const groupID = url.split("/").pop()?.split("?")[0] ?? "";
   const requestParams = url.split("?")[1];
   const params = new URLSearchParams(requestParams);
   const page = Number(params.get("page")) || 1;
@@ -43,11 +43,11 @@ export const ViewCollection = () => {
     end: "",
   };
 
-  const collectionChunks: ChunkCollectionBookmarksWithStatusDTO = {
+  const groupChunks: ChunkGroupBookmarksWithStatusDTO = {
     metadata: {
       bookmarks: [],
-      collection: {
-        id: collectionID,
+      group: {
+        id: groupID,
         name: "",
         description: "",
         author_id: "",
@@ -61,10 +61,10 @@ export const ViewCollection = () => {
 
   return (
     <SearchLayout>
-      <CollectionPage
-        collectionID={collectionID}
+      <GroupPage
+        groupID={groupID}
         page={page}
-        defaultCollectionChunks={collectionChunks}
+        defaultGroupChunks={groupChunks}
         query={query}
         filters={dataTypeFilters}
         searchType={searchType}

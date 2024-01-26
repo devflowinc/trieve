@@ -8,9 +8,9 @@ import {
 } from "solid-headless";
 import { RiSystemAddFill } from "solid-icons/ri";
 import {
-  isChunkCollectionPageDTO,
+  isChunkGroupPageDTO,
   type ChunkBookmarksDTO,
-  type ChunkCollectionDTO,
+  type ChunkGroupDTO,
   type ChunkMetadata,
 } from "../../utils/apiTypes";
 import InputRowsForm from "./Atoms/InputRowsForm";
@@ -22,11 +22,11 @@ import { currentDataset } from "../stores/datasetStore";
 
 export interface BookmarkPopoverProps {
   chunkMetadata: ChunkMetadata;
-  chunkCollections: ChunkCollectionDTO[];
-  totalCollectionPages: number;
+  chunkGroups: ChunkGroupDTO[];
+  totalGroupPages: number;
   setLoginModal?: Setter<boolean>;
   bookmarks: ChunkBookmarksDTO[];
-  setChunkCollections?: Setter<ChunkCollectionDTO[]>;
+  setChunkGroups?: Setter<ChunkGroupDTO[]>;
 }
 
 const BookmarkPopover = (props: BookmarkPopoverProps) => {
@@ -34,25 +34,25 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
   const $dataset = useStore(currentDataset);
   const $currentUser = useStore(currentUser);
 
-  const [refetchingChunkCollections, setRefetchingChunkCollections] =
+  const [refetchingChunkGroups, setRefetchingChunkGroups] =
     createSignal(false);
   const [refetchingBookmarks, setRefetchingBookmarks] = createSignal(false);
-  const [showCollectionForm, setShowCollectionForm] = createSignal(false);
+  const [showGroupForm, setShowGroupForm] = createSignal(false);
   const [notLoggedIn, setNotLoggedIn] = createSignal(false);
-  const [collectionFormTitle, setCollectionFormTitle] = createSignal("");
+  const [groupFormTitle, setGroupFormTitle] = createSignal("");
   const [usingPanel, setUsingPanel] = createSignal(false);
   const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
-  const [localCollectionPage, setLocalCollectionPage] = createSignal(1);
-  const [localChunkCollections, setLocalChunkCollections] = createSignal<
-    ChunkCollectionDTO[]
+  const [localGroupPage, setLocalGroupPage] = createSignal(1);
+  const [localChunkGroups, setLocalChunkGroups] = createSignal<
+    ChunkGroupDTO[]
   >([]);
 
   createEffect(() => {
-    const collectionsToAdd: ChunkCollectionDTO[] = [];
+    const groupsToAdd: ChunkGroupDTO[] = [];
     props.bookmarks.forEach((b) => {
-      b.slim_collections.forEach((c) => {
+      b.slim_groups.forEach((c) => {
         c.of_current_user &&
-          collectionsToAdd.push({
+          groupsToAdd.push({
             id: c.id,
             name: c.name,
             description: "",
@@ -64,18 +64,18 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
     });
 
     setBookmarks(props.bookmarks);
-    setLocalChunkCollections([...collectionsToAdd, ...props.chunkCollections]);
+    setLocalChunkGroups([...groupsToAdd, ...props.chunkGroups]);
   });
 
   createEffect((prevPage) => {
-    const curPage = localCollectionPage();
+    const curPage = localGroupPage();
     if (curPage == prevPage) {
       return curPage;
     }
 
     const chunkBookmarks = bookmarks();
-    const setChunkCollections = props.setChunkCollections;
-    refetchCollections(curPage, chunkBookmarks, setChunkCollections);
+    const setChunkGroups = props.setChunkGroups;
+    refetchGroups(curPage, chunkBookmarks, setChunkGroups);
 
     return curPage;
   }, 1);
@@ -84,15 +84,15 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
     if ($currentUser()?.id === undefined) {
       return;
     }
-    if (!refetchingChunkCollections()) {
+    if (!refetchingChunkGroups()) {
       return;
     }
 
-    const curPage = localCollectionPage();
+    const curPage = localGroupPage();
     const chunkBookmarks = bookmarks();
-    const setChunkCollections = props.setChunkCollections;
-    refetchCollections(curPage, chunkBookmarks, setChunkCollections);
-    setRefetchingChunkCollections(false);
+    const setChunkGroups = props.setChunkGroups;
+    refetchGroups(curPage, chunkBookmarks, setChunkGroups);
+    setRefetchingChunkGroups(false);
   });
 
   createEffect(() => {
@@ -103,66 +103,66 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
       return;
     }
 
-    const curCollectionPage = localCollectionPage();
-    refetchBookmarks(curCollectionPage);
+    const curGroupPage = localGroupPage();
+    refetchBookmarks(curGroupPage);
     setRefetchingBookmarks(false);
   });
 
-  const refetchCollections = (
+  const refetchGroups = (
     curPage: number,
     chunkBookmarks: ChunkBookmarksDTO[],
-    setChunkCollections: Setter<ChunkCollectionDTO[]> | undefined,
+    setChunkGroups: Setter<ChunkGroupDTO[]> | undefined,
   ) => {
     const currentDataset = $dataset();
     if (!currentDataset) return;
 
-    void fetch(`${apiHost}/chunk_collection/${localCollectionPage()}`, {
+    void fetch(`${apiHost}/dataset/groups/${currentDataset.dataset.id}/${localGroupPage()}`, {
       method: "GET",
       headers: {
         "TR-Dataset": currentDataset.dataset.id,
       },
       credentials: "include",
     }).then((response) => {
-      if (!setChunkCollections) return;
+      if (!setChunkGroups) return;
 
       if (response.ok) {
         void response.json().then((data) => {
-          if (isChunkCollectionPageDTO(data)) {
+          if (isChunkGroupPageDTO(data)) {
             if (curPage !== 1) {
-              setLocalChunkCollections(data.collections);
+              setLocalChunkGroups(data.groups);
               return;
             }
 
-            const collectionsToAdd: ChunkCollectionDTO[] = [];
+            const groupsToAdd: ChunkGroupDTO[] = [];
 
             chunkBookmarks.forEach((chunkBookmark) => {
-              chunkBookmark.slim_collections.forEach((collection) => {
-                if (collection.of_current_user) {
-                  const chunkCollection: ChunkCollectionDTO = {
-                    id: collection.id,
-                    name: collection.name,
+              chunkBookmark.slim_groups.forEach((group) => {
+                if (group.of_current_user) {
+                  const chunkGroup: ChunkGroupDTO = {
+                    id: group.id,
+                    name: group.name,
                     description: "",
-                    author_id: collection.author_id,
+                    author_id: group.author_id,
                     created_at: "",
                     updated_at: "",
                   };
 
-                  collectionsToAdd.push(chunkCollection);
+                  groupsToAdd.push(chunkGroup);
                 }
               });
             });
 
-            const deDupedPrev = data.collections.filter((collection) => {
+            const deDupedPrev = data.groups.filter((group) => {
               return (
-                collectionsToAdd.find(
-                  (collectionToAdd) => collectionToAdd.id == collection.id,
+                groupsToAdd.find(
+                  (groupToAdd) => groupToAdd.id == group.id,
                 ) == undefined
               );
             });
 
-            const updatedCollections = [...collectionsToAdd, ...deDupedPrev];
-            setLocalChunkCollections(updatedCollections);
-            setChunkCollections(updatedCollections);
+            const updatedGroups = [...groupsToAdd, ...deDupedPrev];
+            setLocalChunkGroups(updatedGroups);
+            setChunkGroups(updatedGroups);
           }
         });
       }
@@ -177,7 +177,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
     const currentDataset = $dataset();
     if (!currentDataset) return;
 
-    void fetch(`${apiHost}/chunk_collection/bookmark`, {
+    void fetch(`${apiHost}/chunk_group/bookmark`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -198,35 +198,35 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
             return;
           }
 
-          const collectionsToAdd: ChunkCollectionDTO[] = [];
+          const groupsToAdd: ChunkGroupDTO[] = [];
 
           chunkBookmarks.forEach((chunkBookmark) => {
-            chunkBookmark.slim_collections.forEach((collection) => {
-              if (collection.of_current_user) {
-                const chunkCollection: ChunkCollectionDTO = {
-                  id: collection.id,
-                  name: collection.name,
+            chunkBookmark.slim_groups.forEach((group) => {
+              if (group.of_current_user) {
+                const chunkGroup: ChunkGroupDTO = {
+                  id: group.id,
+                  name: group.name,
                   description: "",
-                  author_id: collection.author_id,
+                  author_id: group.author_id,
                   created_at: "",
                   updated_at: "",
                 };
 
-                collectionsToAdd.push(chunkCollection);
+                groupsToAdd.push(chunkGroup);
               }
             });
           });
 
-          setLocalChunkCollections((prev) => {
-            const deDupedPrev = prev.filter((collection) => {
+          setLocalChunkGroups((prev) => {
+            const deDupedPrev = prev.filter((group) => {
               return (
-                collectionsToAdd.find(
-                  (collectionToAdd) => collectionToAdd.id == collection.id,
+                groupsToAdd.find(
+                  (groupToAdd) => groupToAdd.id == group.id,
                 ) == undefined
               );
             });
 
-            return [...collectionsToAdd, ...deDupedPrev];
+            return [...groupsToAdd, ...deDupedPrev];
           });
         });
       }
@@ -245,7 +245,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                   props.setLoginModal?.(true);
                   return;
                 }
-                refetchBookmarks(localCollectionPage());
+                refetchBookmarks(localGroupPage());
               }}
             >
               <VsBookmark class="z-0 h-5 w-5 fill-current" />
@@ -267,12 +267,12 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
             >
               <Menu class=" flex w-full flex-col justify-end space-y-2 overflow-hidden rounded bg-white py-4 shadow-2xl dark:bg-shark-700">
                 <div class="mb-3 w-full px-4 text-center text-lg font-bold">
-                  Manage Themes For This Chunk
+                  Manage Groups For This Chunk
                 </div>
                 <MenuItem as="button" aria-label="Empty" />
                 <div class="max-w-screen mx-1 max-h-[20vh] transform justify-end space-y-2 overflow-y-auto rounded px-4 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-600 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-400">
-                  <For each={localChunkCollections()}>
-                    {(collection, idx) => {
+                  <For each={localChunkGroups()}>
+                    {(group, idx) => {
                       return (
                         <>
                           <Show when={idx() != 0}>
@@ -280,19 +280,19 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                           </Show>
                           <div class="flex w-full items-center justify-between space-x-2">
                             <a
-                              href={`/collection/${collection.id}`}
+                              href={`/group/${group.id}`}
                               class="max-w-[80%] underline"
                             >
-                              {collection.name}
+                              {group.name}
                             </a>
 
                             <input
                               type="checkbox"
                               checked={
                                 bookmarks().find((bookmark) =>
-                                  bookmark.slim_collections
-                                    .map((slimCollection) => slimCollection.id)
-                                    .includes(collection.id),
+                                  bookmark.slim_groups
+                                    .map((slimGroup) => slimGroup.id)
+                                    .includes(group.id),
                                 )
                                   ? true
                                   : false
@@ -301,7 +301,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                                 const currentDataset = $dataset();
                                 if (!currentDataset) return;
                                 void fetch(
-                                  `${apiHost}/chunk_collection/${collection.id}`,
+                                  `${apiHost}/chunk_group/${group.id}`,
                                   {
                                     method: e.currentTarget.checked
                                       ? "POST"
@@ -335,17 +335,17 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                     <div />
                     <div class="flex items-center">
                       <div class="text-sm text-neutral-400">
-                        {localCollectionPage()} /{" "}
-                        {props.totalCollectionPages == 0
+                        {localGroupPage()} /{" "}
+                        {props.totalGroupPages == 0
                           ? 1
-                          : props.totalCollectionPages}
+                          : props.totalGroupPages}
                       </div>
                       <button
                         class="disabled:text-neutral-400 dark:disabled:text-neutral-500"
-                        disabled={localCollectionPage() == 1}
+                        disabled={localGroupPage() == 1}
                         onClick={() => {
                           setState(true);
-                          setLocalCollectionPage((prev) => prev - 1);
+                          setLocalGroupPage((prev) => prev - 1);
                         }}
                       >
                         <BiRegularChevronLeft class="h-6 w-6 fill-current" />
@@ -353,14 +353,14 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                       <button
                         class="disabled:text-neutral-400 dark:disabled:text-neutral-500"
                         disabled={
-                          localCollectionPage() ==
-                          (props.totalCollectionPages == 0
+                          localGroupPage() ==
+                          (props.totalGroupPages == 0
                             ? 1
-                            : props.totalCollectionPages)
+                            : props.totalGroupPages)
                         }
                         onClick={() => {
                           setState(true);
-                          setLocalCollectionPage((prev) => prev + 1);
+                          setLocalGroupPage((prev) => prev + 1);
                         }}
                       >
                         <BiRegularChevronRight class="h-6 w-6 fill-current" />
@@ -368,20 +368,20 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                     </div>
                   </div>
                 </div>
-                <Show when={showCollectionForm()}>
+                <Show when={showGroupForm()}>
                   <div class="mx-4 rounded bg-gray-100 py-2 dark:bg-neutral-800">
                     <div class="px-2 text-lg font-bold">
-                      Create New Collection
+                      Create New Group
                     </div>
                     <div>
                       <InputRowsForm
-                        createButtonText="Create collection"
+                        createButtonText="Create group"
                         onCreate={() => {
-                          const title = collectionFormTitle();
+                          const title = groupFormTitle();
                           if (title.trim() == "") return;
                           const currentDataset = $dataset();
                           if (!currentDataset) return;
-                          void fetch(`${apiHost}/chunk_collection`, {
+                          void fetch(`${apiHost}/chunk_group`, {
                             method: "POST",
                             headers: {
                               "Content-Type": "application/json",
@@ -393,39 +393,39 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                               description: "",
                             }),
                           }).then(() => {
-                            setRefetchingChunkCollections(true);
-                            setShowCollectionForm(false);
-                            setCollectionFormTitle("");
+                            setRefetchingChunkGroups(true);
+                            setShowGroupForm(false);
+                            setGroupFormTitle("");
                             setState(true);
                           });
                         }}
                         onCancel={() => {
-                          setShowCollectionForm(false);
+                          setShowGroupForm(false);
                           setState(true);
                         }}
                         inputGroups={[
                           {
                             label: "Title",
-                            inputValue: collectionFormTitle,
-                            setInputValue: setCollectionFormTitle,
+                            inputValue: groupFormTitle,
+                            setInputValue: setGroupFormTitle,
                           },
                         ]}
                       />
                     </div>
                   </div>
                 </Show>
-                {!showCollectionForm() && (
+                {!showGroupForm() && (
                   <div class="px-4 pt-4">
                     <MenuItem
                       as="button"
                       onClick={() => {
-                        setShowCollectionForm(true);
+                        setShowGroupForm(true);
                         setState(true);
                       }}
                       class="flex w-full items-center justify-center rounded-full border border-green-500 bg-transparent px-2 text-lg text-green-500"
                     >
                       <RiSystemAddFill class="h-5 w-5 fill-current" />
-                      <p> Create New Theme </p>
+                      <p> Create New Group </p>
                     </MenuItem>
                   </div>
                 )}

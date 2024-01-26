@@ -1,13 +1,13 @@
 import { Show, createEffect, createSignal, For } from "solid-js";
 import {
-  type ChunkCollectionDTO,
+  type ChunkGroupDTO,
   type UserDTOWithVotesAndChunks,
   ChunkBookmarksDTO,
-  isChunkCollectionPageDTO,
+  isChunkGroupPageDTO,
 } from "../../utils/apiTypes";
 import ChunkMetadataDisplay, { getLocalTime } from "./ChunkMetadataDisplay";
 import { PaginationController } from "./Atoms/PaginationController";
-import { CollectionUserPageView } from "./CollectionUserPageView";
+import { GroupUserPageView } from "./GroupUserPageView";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { BiRegularLogIn, BiRegularXCircle } from "solid-icons/bi";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
@@ -19,8 +19,8 @@ export interface UserChunkDisplayProps {
   id: string;
   page: number;
   initialUser?: UserDTOWithVotesAndChunks | null;
-  initialUserCollections?: ChunkCollectionDTO[];
-  initialUserCollectionPageCount?: number;
+  initialUserGroups?: ChunkGroupDTO[];
+  initialUserGroupPageCount?: number;
 }
 
 export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
@@ -33,8 +33,8 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
   const $currentUser = useStore(currentUser);
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
   const [showConfirmModal, setShowConfirmModal] = createSignal(false);
-  const [chunkCollections, setChunkCollections] = createSignal<
-    ChunkCollectionDTO[]
+  const [chunkGroups, setChunkGroups] = createSignal<
+    ChunkGroupDTO[]
   >([]);
 
   props.initialUser && setUser(props.initialUser);
@@ -42,13 +42,13 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const [onDelete, setOnDelete] = createSignal<() => void>(() => {});
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onCollectionDelete, setOnCollectionDelete] = createSignal(() => {});
+  const [onGroupDelete, setOnGroupDelete] = createSignal(() => {});
   const [
-    showConfirmCollectionDeleteModal,
-    setShowConfirmCollectionmDeleteModal,
+    showConfirmGroupDeleteModal,
+    setShowConfirmGroupmDeleteModal,
   ] = createSignal(false);
   const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
-  const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
+  const [totalGroupPages, setTotalGroupPages] = createSignal(0);
 
   createEffect(() => {
     const currentDataset = $dataset();
@@ -71,7 +71,7 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
   });
 
   createEffect(() => {
-    fetchChunkCollections();
+    fetchChunkGroups();
     fetchBookmarks();
   });
 
@@ -79,7 +79,7 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
     const currentDataset = $dataset();
     if (!currentDataset) return;
 
-    void fetch(`${apiHost}/chunk_collection/bookmark`, {
+    void fetch(`${apiHost}/chunk_group/bookmark`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -100,12 +100,12 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
     });
   };
 
-  const fetchChunkCollections = () => {
+  const fetchChunkGroups = () => {
     if (!user()) return;
     const currentDataset = $dataset();
     if (!currentDataset) return;
 
-    void fetch(`${apiHost}/chunk_collection/1`, {
+    void fetch(`${apiHost}/chunk_group/1`, {
       method: "GET",
       credentials: "include",
       headers: {
@@ -114,9 +114,9 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          if (isChunkCollectionPageDTO(data)) {
-            setChunkCollections(data.collections);
-            setTotalCollectionPages(data.total_pages);
+          if (isChunkGroupPageDTO(data)) {
+            setChunkGroups(data.groups);
+            setTotalGroupPages(data.total_pages);
           }
         });
       }
@@ -180,13 +180,13 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
           </div>
         </div>
         <div class="mb-4 mt-4 flex  flex-col overflow-hidden border-t border-neutral-500 pt-4 text-xl">
-          <CollectionUserPageView
+          <GroupUserPageView
             user={user()}
-            initialCollections={props.initialUserCollections}
-            initialCollectionPageCount={props.initialUserCollectionPageCount}
+            initialGroups={props.initialUserGroups}
+            initialGroupPageCount={props.initialUserGroupPageCount}
             loggedUser={$currentUser()}
-            setOnDelete={setOnCollectionDelete}
-            setShowConfirmModal={setShowConfirmCollectionmDeleteModal}
+            setOnDelete={setOnGroupDelete}
+            setShowConfirmModal={setShowConfirmGroupmDeleteModal}
           />
         </div>
         <Show when={(user()?.chunks.length ?? 0) > 0}>
@@ -199,14 +199,14 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
                 {(chunk) => (
                   <div class="w-full">
                     <ChunkMetadataDisplay
-                      totalCollectionPages={totalCollectionPages()}
+                      totalGroupPages={totalGroupPages()}
                       setShowConfirmModal={setShowConfirmModal}
                       viewingUserId={props.id}
                       chunk={chunk}
                       setShowModal={setShowNeedLoginModal}
-                      chunkCollections={chunkCollections()}
-                      fetchChunkCollections={fetchChunkCollections}
-                      setChunkCollections={setChunkCollections}
+                      chunkGroups={chunkGroups()}
+                      fetchChunkGroups={fetchChunkGroups}
+                      setChunkGroups={setChunkGroups}
                       setOnDelete={setOnDelete}
                       bookmarks={bookmarks()}
                       showExpand={clientSideRequestFinished()}
@@ -256,9 +256,9 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
         message={"Are you sure you want to delete this chunk?"}
       />
       <ConfirmModal
-        showConfirmModal={showConfirmCollectionDeleteModal}
-        setShowConfirmModal={setShowConfirmCollectionmDeleteModal}
-        onConfirm={onCollectionDelete}
+        showConfirmModal={showConfirmGroupDeleteModal}
+        setShowConfirmModal={setShowConfirmGroupmDeleteModal}
+        onConfirm={onGroupDelete}
         message={"Are you sure you want to delete this theme?"}
       />
     </>

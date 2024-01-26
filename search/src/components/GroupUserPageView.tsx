@@ -1,7 +1,7 @@
 import { FiTrash } from "solid-icons/fi";
 import {
-  isChunkCollectionPageDTO,
-  type ChunkCollectionDTO,
+  isChunkGroupPageDTO,
+  type ChunkGroupDTO,
   type UserDTO,
   type UserDTOWithVotesAndChunks,
 } from "../../utils/apiTypes";
@@ -12,26 +12,26 @@ import { Transition } from "solid-headless";
 import { useStore } from "@nanostores/solid";
 import { currentDataset } from "../stores/datasetStore";
 
-export interface CollectionUserPageViewProps {
+export interface GroupUserPageViewProps {
   user: UserDTOWithVotesAndChunks | undefined;
   loggedUser: UserDTO | null;
   setOnDelete: Setter<() => void>;
   setShowConfirmModal: Setter<boolean>;
-  initialCollections?: ChunkCollectionDTO[];
-  initialCollectionPageCount?: number;
+  initialGroups?: ChunkGroupDTO[];
+  initialGroupPageCount?: number;
 }
 
-export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
+export const GroupUserPageView = (props: GroupUserPageViewProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
   const $dataset = useStore(currentDataset);
-  const [collections, setCollections] = createSignal<ChunkCollectionDTO[]>([]);
-  const [collectionPage, setCollectionPage] = createSignal(1);
-  const [collectionPageCount, setCollectionPageCount] = createSignal(1);
+  const [groups, setGroups] = createSignal<ChunkGroupDTO[]>([]);
+  const [groupPage, setGroupPage] = createSignal(1);
+  const [groupPageCount, setGroupPageCount] = createSignal(1);
   const [deleting, setDeleting] = createSignal(false);
 
-  props.initialCollections && setCollections(props.initialCollections);
-  props.initialCollectionPageCount &&
-    setCollectionPageCount(props.initialCollectionPageCount);
+  props.initialGroups && setGroups(props.initialGroups);
+  props.initialGroupPageCount &&
+    setGroupPageCount(props.initialGroupPageCount);
 
   createEffect(() => {
     const userId = props.user?.id;
@@ -40,7 +40,7 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
     const currentDataset = $dataset();
     if (!currentDataset) return;
 
-    void fetch(`${apiHost}/user/collections/${userId}/${collectionPage()}`, {
+    void fetch(`${apiHost}/dataset/groups/${currentDataset.dataset.id}/${groupPage()}`, {
       method: "GET",
       credentials: "include",
       headers: {
@@ -49,9 +49,9 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          if (isChunkCollectionPageDTO(data)) {
-            setCollections(data.collections);
-            setCollectionPageCount(
+          if (isChunkGroupPageDTO(data)) {
+            setGroups(data.groups);
+            setGroupPageCount(
               data.total_pages == 0 ? 1 : data.total_pages,
             );
           } else {
@@ -62,15 +62,15 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
     });
   });
 
-  const deleteCollection = (collection: ChunkCollectionDTO) => {
-    if (props.user?.id !== collection.author_id) return;
+  const deleteGroup = (group: ChunkGroupDTO) => {
+    if (props.user?.id !== group.author_id) return;
     const currentDataset = $dataset();
     if (!currentDataset) return;
 
     props.setOnDelete(() => {
       return () => {
         setDeleting(true);
-        void fetch(`${apiHost}/chunk_collection/${collection.id}`, {
+        void fetch(`${apiHost}/chunk_group/${group.id}`, {
           method: "DELETE",
           credentials: "include",
           headers: {
@@ -80,8 +80,8 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
         }).then((response) => {
           if (response.ok) {
             setDeleting(false);
-            setCollections((prev) => {
-              return prev.filter((c) => c.id != collection.id);
+            setGroups((prev) => {
+              return prev.filter((c) => c.id != group.id);
             });
           }
           if (response.status == 403) {
@@ -98,7 +98,7 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
   };
   return (
     <Transition
-      show={props.user !== undefined && collections().length > 0}
+      show={props.user !== undefined && groups().length > 0}
       enter="transition duration-200"
       enterFrom="opacity-0"
       enterTo="opacity-100"
@@ -108,7 +108,7 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
     >
       <div>
         <div class="mx-auto w-full text-center text-2xl font-bold">
-          {props.user?.username ?? props.user?.email}'s Collections
+          {props.user?.username ?? props.user?.email}'s Groups
         </div>
         <div class="mt-2 flow-root">
           <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -137,7 +137,7 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
                     <Show
                       when={
                         props.loggedUser != undefined &&
-                        props.loggedUser.id == collections()[0]?.author_id
+                        props.loggedUser.id == groups()[0]?.author_id
                       }
                     >
                       <th
@@ -150,34 +150,34 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
-                  <For each={collections()}>
-                    {(collection) => (
+                  <For each={groups()}>
+                    {(group) => (
                       <tr>
                         <td class="cursor-pointer whitespace-nowrap py-4 pl-4 pr-3 text-sm font-semibold text-gray-900 dark:text-white">
                           <a
                             class="w-full underline"
-                            href={`/collection/${collection.id}`}
+                            href={`/group/${group.id}`}
                           >
-                            {collection.name}
+                            {group.name}
                           </a>
                         </td>
                         <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-300">
-                          {collection.description}
+                          {group.description}
                         </td>
                         <td class="whitespace-nowrap px-3 py-4 text-left text-sm text-gray-900 dark:text-gray-300">
                           {getLocalTime(
-                            collection.created_at,
+                            group.created_at,
                           ).toLocaleDateString() +
                             " " +
                             //remove seconds from time
-                            getLocalTime(collection.created_at)
+                            getLocalTime(group.created_at)
                               .toLocaleTimeString()
                               .replace(/:\d+\s/, " ")}
                         </td>
                         <Show
                           when={
                             props.user != undefined &&
-                            props.user.id == collection.author_id
+                            props.user.id == group.author_id
                           }
                         >
                           <td
@@ -186,7 +186,7 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
                                 true,
                               "hidden block":
                                 props.loggedUser == undefined ||
-                                props.loggedUser.id != collection.author_id,
+                                props.loggedUser.id != group.author_id,
                             }}
                           >
                             <button
@@ -194,7 +194,7 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
                                 "h-fit text-red-700 dark:text-red-400": true,
                                 "animate-pulse": deleting(),
                               }}
-                              onClick={() => deleteCollection(collection)}
+                              onClick={() => deleteGroup(group)}
                             >
                               <FiTrash class="h-5 w-5" />
                             </button>
@@ -212,22 +212,22 @@ export const CollectionUserPageView = (props: CollectionUserPageViewProps) => {
           <div />
           <div class="flex items-center">
             <div class="text-sm text-neutral-400">
-              {collectionPage()} / {collectionPageCount()}
+              {groupPage()} / {groupPageCount()}
             </div>
             <button
               class="disabled:text-neutral-400 dark:disabled:text-neutral-500"
-              disabled={collectionPage() == 1}
+              disabled={groupPage() == 1}
               onClick={() => {
-                setCollectionPage((prev) => prev - 1);
+                setGroupPage((prev) => prev - 1);
               }}
             >
               <BiRegularChevronLeft class="h-6 w-6 fill-current" />
             </button>
             <button
               class="disabled:text-neutral-400 dark:disabled:text-neutral-500"
-              disabled={collectionPage() == collectionPageCount()}
+              disabled={groupPage() == groupPageCount()}
               onClick={() => {
-                setCollectionPage((prev) => prev + 1);
+                setGroupPage((prev) => prev + 1);
               }}
             >
               <BiRegularChevronRight class="h-6 w-6 fill-current" />

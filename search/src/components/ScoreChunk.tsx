@@ -11,7 +11,7 @@ import {
 import {
   indirectHasOwnProperty,
   type ChunkBookmarksDTO,
-  type ChunkCollectionDTO,
+  type ChunkGroupDTO,
   type ChunkMetadataWithVotes,
 } from "../../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
@@ -27,7 +27,6 @@ import {
 } from "solid-icons/fa";
 import { Tooltip } from "./Atoms/Tooltip";
 import { AiOutlineCopy } from "solid-icons/ai";
-import CommunityBookmarkPopover from "./CommunityBookmarkPopover";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { useStore } from "@nanostores/solid";
 import { currentUser } from "../stores/userStore";
@@ -55,9 +54,9 @@ export const formatDate = (date: Date) => {
 };
 
 export interface ScoreChunkProps {
-  chunkCollections?: ChunkCollectionDTO[];
-  totalCollectionPages?: number;
-  collection?: boolean;
+  chunkGroups?: ChunkGroupDTO[];
+  totalGroupPages?: number;
+  group?: boolean;
   chunk: ChunkMetadataWithVotes;
   score: number;
   setShowModal?: Setter<boolean>;
@@ -66,7 +65,7 @@ export interface ScoreChunkProps {
   initialExpanded?: boolean;
   bookmarks?: ChunkBookmarksDTO[];
   showExpand?: boolean;
-  setChunkCollections?: Setter<ChunkCollectionDTO[]>;
+  setChunkGroups?: Setter<ChunkGroupDTO[]>;
   counter: string;
   order?: string;
   total: number;
@@ -78,6 +77,7 @@ export interface ScoreChunkProps {
 }
 
 const ScoreChunk = (props: ScoreChunkProps) => {
+  console.log(props.chunk)
   const $dataset = useStore(currentDataset);
   const apiHost = import.meta.env.VITE_API_HOST as string;
   const $envs = useStore(clientConfig);
@@ -195,6 +195,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   };
 
   const useExpand = createMemo(() => {
+    if (!props.chunk.content) return false;
     return (
       props.chunk.content.split(" ").length > 20 * (linesBeforeShowMore ?? 0)
     );
@@ -367,20 +368,12 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                 }
                 tooltipText="Open in new tab"
               />
-              <Show when={props.bookmarks}>
-                {(bookmarks) => (
-                  <CommunityBookmarkPopover
-                    bookmarks={bookmarks().filter(
-                      (bookmark) => bookmark.chunk_uuid === props.chunk.id,
-                    )}
-                  />
-                )}
-              </Show>
-              <Show when={props.chunkCollections}>
-                {(chunkCollections) => (
+        
+              <Show when={props.chunkGroups}>
+                {(chunkGroups) => (
                   <BookmarkPopover
-                    totalCollectionPages={props.totalCollectionPages ?? 0}
-                    chunkCollections={chunkCollections()}
+                    totalGroupPages={props.totalGroupPages ?? 0}
+                    chunkGroups={chunkGroups()}
                     chunkMetadata={props.chunk}
                     setLoginModal={props.setShowModal}
                     bookmarks={
@@ -388,7 +381,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                         (bookmark) => bookmark.chunk_uuid === props.chunk.id,
                       ) ?? []
                     }
-                    setChunkCollections={props.setChunkCollections}
+                    setChunkGroups={props.setChunkGroups}
                   />
                 )}
               </Show>

@@ -1,10 +1,10 @@
 import { Show, createEffect, createSignal, For, onMount } from "solid-js";
 import {
-  type ChunkCollectionDTO,
+  type ChunkGroupDTO,
   type ChunksWithTotalPagesDTO,
   type ScoreChunkDTO,
   ChunkBookmarksDTO,
-  isChunkCollectionPageDTO,
+  isChunkGroupPageDTO,
 } from "../../utils/apiTypes";
 import { BiRegularLogIn, BiRegularXCircle } from "solid-icons/bi";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
@@ -43,7 +43,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   const initialTotalPages = props.defaultResultChunks.total_chunk_pages;
 
   const [chunkCollections, setChunkCollections] = createSignal<
-    ChunkCollectionDTO[]
+    ChunkGroupDTO[]
   >([]);
   const $currentUser = useStore(currentUser);
   const [resultChunks, setResultChunks] =
@@ -65,7 +65,7 @@ const ResultsPage = (props: ResultsPageProps) => {
     if (!$currentUser()) return;
     const dataset = $dataset();
     if (!dataset) return;
-    void fetch(`${apiHost}/chunk_collection/1`, {
+    void fetch(`${apiHost}/chunk_group/1`, {
       method: "GET",
       credentials: "include",
       headers: {
@@ -74,8 +74,8 @@ const ResultsPage = (props: ResultsPageProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          if (isChunkCollectionPageDTO(data)) {
-            setChunkCollections(data.collections);
+          if (isChunkGroupPageDTO(data)) {
+            setChunkCollections(data.groups);
             setTotalCollectionPages(data.total_pages);
           }
         });
@@ -87,7 +87,7 @@ const ResultsPage = (props: ResultsPageProps) => {
     const dataset = $dataset();
     if (!dataset) return;
 
-    void fetch(`${apiHost}/chunk_collection/bookmark`, {
+    void fetch(`${apiHost}/chunk_group/bookmark`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -226,8 +226,8 @@ const ResultsPage = (props: ResultsPageProps) => {
             {(chunk) => (
               <div>
                 <ScoreChunkArray
-                  totalCollectionPages={totalCollectionPages()}
-                  chunkCollections={chunkCollections()}
+                  totalGroupPages={totalCollectionPages()}
+                  chunkGroups={chunkCollections()}
                   chunks={chunk.metadata}
                   score={chunk.score}
                   setShowModal={setShowNeedLoginModal}
@@ -235,7 +235,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                   setOnDelete={setOnDelete}
                   setShowConfirmModal={setShowConfirmDeleteModal}
                   showExpand={clientSideRequestFinished()}
-                  setChunkCollections={setChunkCollections}
+                  setChunkGroups={setChunkCollections}
                   setSelectedIds={setSelectedIds}
                   selectedIds={selectedIds}
                 />

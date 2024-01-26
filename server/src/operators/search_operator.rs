@@ -1,9 +1,10 @@
 use super::chunk_operator::{
     find_relevant_sentence, get_metadata_and_collided_chunks_from_point_ids_query,
+    get_metadata_from_point_ids,
 };
 use super::model_operator::{create_embedding, cross_encoder};
 use crate::data::models::{
-    ChunkCollection, ChunkFileWithName, ChunkMetadataWithFileData, Dataset, FullTextSearchResult,
+    ChunkFileWithName, ChunkGroup, ChunkMetadataWithFileData, Dataset, FullTextSearchResult,
     ServerDatasetConfiguration, User, UserDTO,
 };
 use crate::data::schema::{self};
@@ -11,8 +12,8 @@ use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::errors::ServiceError;
 use crate::get_env;
 use crate::handlers::chunk_handler::{
-    ParsedQuery, ScoreChunkDTO, SearchChunkData, SearchChunkQueryResponseBody,
-    SearchCollectionsData, SearchCollectionsResult,
+    ParsedQuery, ScoreChunkDTO, SearchChunkData, SearchChunkQueryResponseBody, SearchGroupsData,
+    SearchGroupsResult,
 };
 use crate::operators::qdrant_operator::{
     get_qdrant_connection, search_full_text_qdrant_query, search_semantic_qdrant_query,
@@ -252,7 +253,7 @@ pub async fn global_unfiltered_top_match_query(
 ) -> Result<SearchResult, DefaultError> {
     let qdrant = get_qdrant_connection().await?;
 
-    let qdrant_collection = get_env!(
+    let qdrant_group = get_env!(
         "QDRANT_COLLECTION",
         "QDRANT_COLLECTION should be set if this is called"
     )
@@ -277,7 +278,7 @@ pub async fn global_unfiltered_top_match_query(
 
     let data = qdrant
         .search_points(&SearchPoints {
-            collection_name: qdrant_collection,
+            collection_name: qdrant_group,
             vector: embedding_vector,
             vector_name: Some(vector_name.to_string()),
             limit: 1,
@@ -330,20 +331,20 @@ pub async fn global_unfiltered_top_match_query(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn search_semantic_chunk_collections_query(
+pub async fn search_semantic_chunk_groups_query(
     embedding_vector: Vec<f32>,
     page: u64,
     pool: web::Data<Pool>,
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
     filters: Option<serde_json::Value>,
-    collection_id: uuid::Uuid,
+    group_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     parsed_query: ParsedQuery,
 ) -> Result<SearchChunkQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
-    use crate::data::schema::chunk_collection_bookmarks::dsl as chunk_collection_bookmarks_columns;
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
+    use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let mut conn = pool.get().unwrap();
@@ -354,18 +355,16 @@ pub async fn search_semantic_chunk_collections_query(
                 .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
         )
         .left_outer_join(
-            chunk_collection_bookmarks_columns::chunk_collection_bookmarks.on(
-                chunk_metadata_columns::id
-                    .eq(chunk_collection_bookmarks_columns::chunk_metadata_id)
-                    .and(chunk_collection_bookmarks_columns::collection_id.eq(collection_id)),
-            ),
+            chunk_group_bookmarks_columns::chunk_group_bookmarks.on(chunk_metadata_columns::id
+                .eq(chunk_group_bookmarks_columns::chunk_metadata_id)
+                .and(chunk_group_bookmarks_columns::group_id.eq(group_id))),
         )
         .select((
             chunk_metadata_columns::qdrant_point_id,
             chunk_collisions_columns::collision_qdrant_id.nullable(),
         ))
         .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
-        .filter(chunk_collection_bookmarks_columns::collection_id.eq(collection_id))
+        .filter(chunk_group_bookmarks_columns::group_id.eq(group_id))
         .distinct()
         .into_boxed();
     let tag_set_inner = tag_set.unwrap_or_default();
@@ -605,20 +604,20 @@ pub struct FullTextDocIds {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn search_full_text_collection_query(
+pub async fn search_full_text_group_query(
     user_query: String,
     page: u64,
     pool: web::Data<Pool>,
     filters: Option<serde_json::Value>,
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
-    collection_id: uuid::Uuid,
+    group_id: uuid::Uuid,
     parsed_query: ParsedQuery,
     dataset_uuid: uuid::Uuid,
 ) -> Result<SearchChunkQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
-    use crate::data::schema::chunk_collection_bookmarks::dsl as chunk_collection_bookmarks_columns;
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
+    use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let second_join = diesel::alias!(schema::chunk_metadata as second_join);
@@ -649,13 +648,11 @@ pub async fn search_full_text_collection_query(
                 .eq(chunk_collisions_columns::collision_qdrant_id)),
         )
         .left_outer_join(
-            chunk_collection_bookmarks_columns::chunk_collection_bookmarks.on(
-                chunk_metadata_columns::id
-                    .eq(chunk_collection_bookmarks_columns::chunk_metadata_id)
-                    .and(chunk_collection_bookmarks_columns::collection_id.eq(collection_id)),
-            ),
+            chunk_group_bookmarks_columns::chunk_group_bookmarks.on(chunk_metadata_columns::id
+                .eq(chunk_group_bookmarks_columns::chunk_metadata_id)
+                .and(chunk_group_bookmarks_columns::group_id.eq(group_id))),
         )
-        .filter(chunk_collection_bookmarks_columns::collection_id.eq(collection_id))
+        .filter(chunk_group_bookmarks_columns::group_id.eq(group_id))
         .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid))
         .select((
             chunk_metadata_columns::qdrant_point_id,
@@ -769,6 +766,63 @@ pub async fn search_full_text_collection_query(
     Ok(SearchChunkQueryResult {
         search_results: point_ids?,
         total_chunk_pages: (matching_qdrant_point_ids.len() as f64 / 10.0).ceil() as i64,
+    })
+}
+
+pub async fn retrieve_chunks_from_point_ids_without_collsions(
+    search_chunk_query_results: SearchChunkQueryResult,
+    data: &web::Json<SearchChunkData>,
+    pool: web::Data<Pool>,
+) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
+    let point_ids = search_chunk_query_results
+        .search_results
+        .iter()
+        .map(|point| point.point_id)
+        .collect::<Vec<_>>();
+
+    let metadata_chunks = get_metadata_from_point_ids(point_ids, pool)
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
+        .search_results
+        .iter()
+        .map(|search_result| {
+            let mut chunk: ChunkMetadataWithFileData = match metadata_chunks
+                .iter()
+                .find(|metadata_chunk| metadata_chunk.qdrant_point_id == search_result.point_id)
+            {
+                Some(metadata_chunk) => metadata_chunk.clone(),
+                None => ChunkMetadataWithFileData {
+                    id: uuid::Uuid::default(),
+                    author: None,
+                    qdrant_point_id: uuid::Uuid::default(),
+                    created_at: chrono::Utc::now().naive_local(),
+                    updated_at: chrono::Utc::now().naive_local(),
+                    file_id: None,
+                    file_name: None,
+                    content: "".to_string(),
+                    chunk_html: Some("".to_string()),
+                    link: Some("".to_string()),
+                    tag_set: Some("".to_string()),
+                    metadata: None,
+                    tracking_id: None,
+                    time_stamp: None,
+                    weight: 1.0,
+                },
+            };
+
+            chunk = find_relevant_sentence(chunk.clone(), data.query.clone()).unwrap_or(chunk);
+
+            ScoreChunkDTO {
+                metadata: vec![chunk],
+                score: search_result.score.into(),
+            }
+        })
+        .collect();
+
+    Ok(SearchChunkQueryResponseBody {
+        score_chunks,
+        total_chunk_pages: search_chunk_query_results.total_chunk_pages,
     })
 }
 
@@ -1128,35 +1182,35 @@ pub async fn search_hybrid_chunks(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn search_semantic_collections(
-    data: web::Json<SearchCollectionsData>,
+pub async fn search_semantic_groups(
+    data: web::Json<SearchGroupsData>,
     parsed_query: ParsedQuery,
-    collection: ChunkCollection,
+    group: ChunkGroup,
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
-) -> Result<SearchCollectionsResult, actix_web::Error> {
+) -> Result<SearchGroupsResult, actix_web::Error> {
     let embedding_vector: Vec<f32> = create_embedding(
         &data.query,
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
     )
     .await?;
 
-    let search_semantic_chunk_query_results = search_semantic_chunk_collections_query(
+    let search_semantic_chunk_query_results = search_semantic_chunk_groups_query(
         embedding_vector,
         page,
         pool.clone(),
         data.link.clone(),
         data.tag_set.clone(),
         data.filters.clone(),
-        data.collection_id,
+        data.group_id,
         dataset.id,
         parsed_query,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let mut result_chunks = retrieve_chunks_from_point_ids(
+    let mut result_chunks = retrieve_chunks_from_point_ids_without_collsions(
         search_semantic_chunk_query_results,
         &web::Json(data.clone().into()),
         pool.clone(),
@@ -1165,39 +1219,39 @@ pub async fn search_semantic_collections(
 
     result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
 
-    Ok(SearchCollectionsResult {
+    Ok(SearchGroupsResult {
         bookmarks: result_chunks.score_chunks,
-        collection,
+        group,
         total_pages: result_chunks.total_chunk_pages,
     })
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn search_full_text_collections(
-    data: web::Json<SearchCollectionsData>,
+pub async fn search_full_text_groups(
+    data: web::Json<SearchGroupsData>,
     parsed_query: ParsedQuery,
-    collection: ChunkCollection,
+    group: ChunkGroup,
     page: u64,
     pool: web::Data<Pool>,
     dataset_id: uuid::Uuid,
-) -> Result<SearchCollectionsResult, actix_web::Error> {
+) -> Result<SearchGroupsResult, actix_web::Error> {
     let data_inner = data.clone();
 
-    let search_chunk_query_results = search_full_text_collection_query(
+    let search_chunk_query_results = search_full_text_group_query(
         data_inner.query.clone(),
         page,
         pool.clone(),
         data_inner.filters.clone(),
         data_inner.link.clone(),
         data_inner.tag_set.clone(),
-        data_inner.collection_id,
+        data_inner.group_id,
         parsed_query,
         dataset_id,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let mut result_chunks = retrieve_chunks_from_point_ids(
+    let mut result_chunks = retrieve_chunks_from_point_ids_without_collsions(
         search_chunk_query_results,
         &web::Json(data.clone().into()),
         pool.clone(),
@@ -1206,22 +1260,22 @@ pub async fn search_full_text_collections(
 
     result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
 
-    Ok(SearchCollectionsResult {
+    Ok(SearchGroupsResult {
         bookmarks: result_chunks.score_chunks,
-        collection,
+        group,
         total_pages: result_chunks.total_chunk_pages,
     })
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn search_hybrid_collections(
-    data: web::Json<SearchCollectionsData>,
+pub async fn search_hybrid_groups(
+    data: web::Json<SearchGroupsData>,
     parsed_query: ParsedQuery,
-    collection: ChunkCollection,
+    group: ChunkGroup,
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
-) -> Result<SearchCollectionsResult, actix_web::Error> {
+) -> Result<SearchGroupsResult, actix_web::Error> {
     let data_inner = data.clone();
     let embedding_vector = create_embedding(
         &data.query,
@@ -1229,26 +1283,26 @@ pub async fn search_hybrid_collections(
     )
     .await?;
 
-    let semantic_future = search_semantic_chunk_collections_query(
+    let semantic_future = search_semantic_chunk_groups_query(
         embedding_vector,
         page,
         pool.clone(),
         data.link.clone(),
         data.tag_set.clone(),
         data.filters.clone(),
-        data.collection_id,
+        data.group_id,
         dataset.id,
         parsed_query.clone(),
     );
 
-    let full_text_future = search_full_text_collection_query(
+    let full_text_future = search_full_text_group_query(
         data_inner.query.clone(),
         page,
         pool.clone(),
         data_inner.filters.clone(),
         data_inner.link.clone(),
         data_inner.tag_set.clone(),
-        data_inner.collection_id,
+        data_inner.group_id,
         parsed_query.clone(),
         dataset.id,
     );
@@ -1274,7 +1328,7 @@ pub async fn search_hybrid_collections(
         total_chunk_pages: semantic_results.total_chunk_pages,
     };
 
-    let combined_result_chunks = retrieve_chunks_from_point_ids(
+    let combined_result_chunks = retrieve_chunks_from_point_ids_without_collsions(
         combined_search_chunk_query_results,
         &web::Json(data.clone().into()),
         pool.clone(),
@@ -1364,9 +1418,9 @@ pub async fn search_hybrid_collections(
 
     result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
 
-    Ok(SearchCollectionsResult {
+    Ok(SearchGroupsResult {
         bookmarks: combined_result_chunks.score_chunks,
-        collection,
+        group,
         total_pages: combined_result_chunks.total_chunk_pages,
     })
 }

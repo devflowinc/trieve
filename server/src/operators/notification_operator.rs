@@ -13,8 +13,8 @@ use diesel::{
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-pub fn add_collection_created_notification_query(
-    collection: FileUploadCompletedNotification,
+pub fn add_group_created_notification_query(
+    group: FileUploadCompletedNotification,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
@@ -24,7 +24,7 @@ pub fn add_collection_created_notification_query(
     diesel::insert_into(
         file_upload_completed_notifications_columns::file_upload_completed_notifications,
     )
-    .values(&collection)
+    .values(&group)
     .execute(&mut conn)
     .map_err(|err| {
         log::error!("Failed to create notification: {:?}", err);
@@ -46,7 +46,7 @@ pub fn get_notifications_query(
     page: i64,
     pool: web::Data<Pool>,
 ) -> Result<NotificationReturn, DefaultError> {
-    use crate::data::schema::chunk_collection::dsl as chunk_collection_columns;
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::dataset_notification_counts::dsl as dataset_notification_counts_columns;
     use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
 
@@ -54,11 +54,9 @@ pub fn get_notifications_query(
 
     let file_upload_completed =
         file_upload_completed_notifications_columns::file_upload_completed_notifications
-            .left_outer_join(
-                chunk_collection_columns::chunk_collection
-                    .on(file_upload_completed_notifications_columns::collection_uuid
-                        .eq(chunk_collection_columns::id)),
-            )
+            .left_outer_join(chunk_group_columns::chunk_group.on(
+                file_upload_completed_notifications_columns::group_uuid.eq(chunk_group_columns::id),
+            ))
             .left_outer_join(
                 dataset_notification_counts_columns::dataset_notification_counts
                     .on(file_upload_completed_notifications_columns::dataset_id
@@ -67,7 +65,7 @@ pub fn get_notifications_query(
             .filter(file_upload_completed_notifications_columns::dataset_id.eq(dataset_id))
             .select((
                 FileUploadCompletedNotification::as_select(),
-                chunk_collection_columns::name.nullable(),
+                chunk_group_columns::name.nullable(),
                 dataset_notification_counts_columns::notification_count.nullable(),
             ))
             .order(file_upload_completed_notifications_columns::created_at.desc())

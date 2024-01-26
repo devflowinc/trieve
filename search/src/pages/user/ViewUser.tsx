@@ -15,8 +15,8 @@ export const ViewUser = () => {
           id={id}
           page={page}
           initialUser={undefined}
-          initialUserCollections={undefined}
-          initialUserCollectionPageCount={1}
+          initialUserGroups={undefined}
+          initialUserGroupPageCount={1}
         />
       </div>
       <div class="flex-1" />
