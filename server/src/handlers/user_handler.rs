@@ -13,6 +13,8 @@ use utoipa::ToSchema;
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct UpdateUserData {
+    /// The id of the organization to update the user for.
+    pub organization_id: uuid::Uuid,
     /// The id of the user to update, if not provided, the auth'ed user will be updated. If provided, the auth'ed user must be an admin (1) or owner (2) of the organization.
     pub user_id: Option<uuid::Uuid>,
     /// The new username to assign to the user, if not provided, the current username will be used.
@@ -93,7 +95,6 @@ pub async fn get_user_with_chunks_by_id(
 )]
 pub async fn update_user(
     data: web::Json<UpdateUserData>,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     mut user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -102,7 +103,7 @@ pub async fn update_user(
         .clone()
         .user_orgs
         .into_iter()
-        .find(|org| org.organization_id == dataset_org_plan_sub.organization.id)
+        .find(|org| org.organization_id == update_user_data.organization_id)
         .ok_or(ServiceError::BadRequest(
             "You are not a member of this organization".into(),
         ))?
@@ -133,7 +134,12 @@ pub async fn update_user(
         }
     }
 
-    if update_user_data.role.is_some() && update_user_data.role.unwrap() > org_role {
+    if update_user_data.role.is_some()
+        && update_user_data
+            .role
+            .expect("Role must not be null after the &&")
+            > org_role
+    {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
             message: "Can not grant a user a higher role than yours",
         }));
@@ -147,13 +153,19 @@ pub async fn update_user(
         }));
     }
 
+    let new_role = if let Some(role) = update_user_data.role {
+        Some(role.into())
+    } else {
+        None
+    };
+
     let user_result = web::block(move || {
         update_user_query(
             &user.clone(),
             &update_user_data.username.clone().or(user.username),
             &update_user_data.name.clone().or(user.name),
             &update_user_data.website.or(user.website),
-            Some(update_user_data.role.unwrap_or(org_role).into()),
+            new_role,
             update_user_data.visible_email.unwrap_or(user.visible_email),
             pool,
         )
