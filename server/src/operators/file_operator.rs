@@ -369,7 +369,6 @@ pub async fn create_chunks_with_handler(
     let collection_id;
     match create_collection_and_add_bookmarks_query(
         ChunkCollection::from_details(
-            user.id,
             format!("Collection for file {}", file_name),
             converted_description,
             dataset_org_plan_sub.dataset.id,

@@ -11,8 +11,7 @@ use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-pub async fn user_owns_collection(
-    user_id: uuid::Uuid,
+pub async fn dataset_owns_collection(
     collection_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -22,7 +21,7 @@ pub async fn user_owns_collection(
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    if collection.author_id != user_id {
+    if collection.dataset_id != dataset_id {
         return Err(ServiceError::Forbidden.into());
     }
 
@@ -53,19 +52,15 @@ pub struct CreateChunkCollectionData {
 )]
 pub async fn create_chunk_collection(
     body: web::Json<CreateChunkCollectionData>,
-    user: AdminOnly,
+    _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let name = body.name.clone();
     let description = body.description.clone();
 
-    let collection = ChunkCollection::from_details(
-        user.0.id,
-        name,
-        description,
-        dataset_org_plan_sub.dataset.id,
-    );
+    let collection =
+        ChunkCollection::from_details(name, description, dataset_org_plan_sub.dataset.id);
     {
         let collection = collection.clone();
         web::block(move || create_collection_query(collection, pool))
@@ -83,39 +78,38 @@ pub struct CollectionData {
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]
-pub struct UserCollectionQuery {
-    pub user_id: uuid::Uuid,
+pub struct DatasetCollectionQuery {
+    pub dataset_id: uuid::Uuid,
     pub page: u64,
 }
 
-/// get_user_collections
+/// get_dataset_collections
 ///
-/// Fetch the collections which belong to a user specified by their id. We are soon going to refactor collections to relate to only datasets instead of datasets and users.
+/// Fetch the collections which belong to a dataset specified by its id.
 #[utoipa::path(
     get,
-    path = "/user/collections/{user_id}/{page}",
+    path = "/dataset/collections/{dataset_id}/{page}",
     context_path = "/api",
     tag = "chunk_collection",
     responses(
-        (status = 200, description = "JSON body representing the collections created by the given user", body = CollectionData),
-        (status = 400, description = "Service error relating to getting the collections created by the given user", body = DefaultError),
+        (status = 200, description = "JSON body representing the collections created by the given dataset", body = CollectionData),
+        (status = 400, description = "Service error relating to getting the collections created by the given dataset", body = DefaultError),
     ),
     params(
-        ("user_id" = uuid::Uuid, description = "The id of the user to fetch collections for."),
+        ("user_id" = uuid::Uuid, description = "The id of the dataset to fetch collections for."),
         ("page" = i64, description = "The page of collections to fetch. Each page contains 10 collections. Support for custom page size is coming soon."),
     ),
 )]
-pub async fn get_specific_user_chunk_collections(
-    user_and_page: web::Path<UserCollectionQuery>,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+pub async fn get_specific_dataset_chunk_collections(
+    dataset_and_page: web::Path<DatasetCollectionQuery>,
+    _dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let collections = web::block(move || {
-        get_collections_for_specific_user_query(
-            user_and_page.user_id,
-            user_and_page.page,
-            dataset_org_plan_sub.dataset.id,
+        get_collections_for_specific_dataset_query(
+            dataset_and_page.page,
+            dataset_and_page.dataset_id,
             pool,
         )
     })
@@ -127,7 +121,7 @@ pub async fn get_specific_user_chunk_collections(
             .iter()
             .map(|collection| ChunkCollectionAndFile {
                 id: collection.id,
-                author_id: collection.author_id,
+                dataset_id: collection.dataset_id,
                 name: collection.name.clone(),
                 description: collection.description.clone(),
                 created_at: collection.created_at,
@@ -140,60 +134,6 @@ pub async fn get_specific_user_chunk_collections(
             .map(|collection| {
                 (collection.collection_count.unwrap_or(10) as f64 / 10.0).ceil() as i64
             })
-            .unwrap_or(1),
-    }))
-}
-
-/// get_current_user_collections
-///
-/// Fetch the collections which belong to the currently logged in user. We are soon going to refactor collections to relate to only datasets instead of datasets and users.
-#[utoipa::path(
-    get,
-    path = "/chunk_collection/{page}",
-    context_path = "/api",
-    tag = "chunk_collection",
-    responses(
-        (status = 200, description = "The page of collections for the auth'ed user", body = CollectionData),
-        (status = 400, description = "Service error relating to getting the collections for the auth'ed user", body = DefaultError),
-    ),
-    params(
-        ("page" = u64, description = "The page of collections to fetch"),
-    ),
-)]
-#[deprecated]
-pub async fn get_logged_in_user_chunk_collections(
-    user: LoggedUser,
-    page: web::Path<u64>,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    pool: web::Data<Pool>,
-) -> Result<HttpResponse, actix_web::Error> {
-    let collections = web::block(move || {
-        get_collections_for_logged_in_user_query(
-            user.id,
-            page.into_inner(),
-            dataset_org_plan_sub.dataset.id,
-            pool,
-        )
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    Ok(HttpResponse::Ok().json(CollectionData {
-        collections: collections
-            .iter()
-            .map(|collection| ChunkCollectionAndFile {
-                id: collection.id,
-                author_id: collection.author_id,
-                name: collection.name.clone(),
-                description: collection.description.clone(),
-                created_at: collection.created_at,
-                updated_at: collection.updated_at,
-                file_id: collection.file_id,
-            })
-            .collect(),
-        total_pages: collections
-            .first()
-            .map(|collection| (collection.collection_count.unwrap_or(5) as f64 / 5.0).ceil() as i64)
             .unwrap_or(1),
     }))
 }
@@ -223,18 +163,12 @@ pub async fn delete_chunk_collection(
     collection_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    user: AdminOnly,
+    _user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let delete_collection_pool = pool.clone();
     let collection_id = collection_id.into_inner();
 
-    user_owns_collection(
-        user.0.id,
-        collection_id,
-        dataset_org_plan_sub.dataset.id,
-        pool,
-    )
-    .await?;
+    dataset_owns_collection(collection_id, dataset_org_plan_sub.dataset.id, pool).await?;
 
     web::block(move || {
         delete_collection_by_id_query(
@@ -277,7 +211,7 @@ pub async fn update_chunk_collection(
     body: web::Json<UpdateChunkCollectionData>,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    user: AdminOnly,
+    _user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let name = body.name.clone();
     let description = body.description.clone();
@@ -285,13 +219,8 @@ pub async fn update_chunk_collection(
 
     let pool2 = pool.clone();
 
-    let collection = user_owns_collection(
-        user.0.id,
-        collection_id,
-        dataset_org_plan_sub.dataset.id,
-        pool,
-    )
-    .await?;
+    let collection =
+        dataset_owns_collection(collection_id, dataset_org_plan_sub.dataset.id, pool).await?;
 
     web::block(move || {
         update_chunk_collection_query(
@@ -336,14 +265,14 @@ pub async fn add_bookmark(
     collection_id: web::Path<uuid::Uuid>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
-    user: AdminOnly,
+    _user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool2 = pool.clone();
     let chunk_metadata_id = body.chunk_id;
     let collection_id = collection_id.into_inner();
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
-    user_owns_collection(user.0.id, collection_id, dataset_id, pool).await?;
+    dataset_owns_collection(collection_id, dataset_id, pool).await?;
 
     web::block(move || {
         create_chunk_bookmark_query(
@@ -444,19 +373,16 @@ pub async fn get_collections_chunk_is_in(
     data: web::Json<GetCollectionsForChunksData>,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    user: Option<LoggedUser>,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let chunk_ids = data.chunk_ids.clone();
 
     let dataset_id = dataset_org_plan_sub.dataset.id;
-    let current_user_id = user.map(|user| user.id);
 
-    let collections = web::block(move || {
-        get_collections_for_bookmark_query(chunk_ids, current_user_id, dataset_id, pool)
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let collections =
+        web::block(move || get_collections_for_bookmark_query(chunk_ids, dataset_id, pool))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(collections))
 }
@@ -487,7 +413,7 @@ pub struct DeleteBookmarkPathData {
 pub async fn delete_bookmark(
     path_data: web::Path<DeleteBookmarkPathData>,
     pool: web::Data<Pool>,
-    user: AdminOnly,
+    _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
@@ -496,7 +422,7 @@ pub async fn delete_bookmark(
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let pool = pool.clone();
-    user_owns_collection(user.0.id, collection_id, dataset_id, pool1).await?;
+    dataset_owns_collection(collection_id, dataset_id, pool1).await?;
 
     web::block(move || delete_bookmark_query(bookmark_id, collection_id, dataset_id, pool))
         .await?

@@ -365,7 +365,6 @@ pub struct UserDTO {
 #[diesel(table_name = chunk_collection)]
 pub struct ChunkCollection {
     pub id: uuid::Uuid,
-    pub author_id: uuid::Uuid,
     pub name: String,
     pub description: String,
     pub created_at: chrono::NaiveDateTime,
@@ -374,15 +373,9 @@ pub struct ChunkCollection {
 }
 
 impl ChunkCollection {
-    pub fn from_details(
-        author_id: uuid::Uuid,
-        name: String,
-        description: String,
-        dataset_id: uuid::Uuid,
-    ) -> Self {
+    pub fn from_details(name: String, description: String, dataset_id: uuid::Uuid) -> Self {
         ChunkCollection {
             id: uuid::Uuid::new_v4(),
-            author_id,
             name,
             description,
             dataset_id,
@@ -396,14 +389,14 @@ impl ChunkCollection {
 pub struct SlimCollection {
     pub id: uuid::Uuid,
     pub name: String,
-    pub author_id: uuid::Uuid,
-    pub of_current_user: bool,
+    pub dataset_id: uuid::Uuid,
+    pub of_current_dataset: bool,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Queryable, ToSchema)]
 pub struct ChunkCollectionAndFile {
     pub id: uuid::Uuid,
-    pub author_id: uuid::Uuid,
+    pub dataset_id: uuid::Uuid,
     pub name: String,
     pub description: String,
     pub created_at: chrono::NaiveDateTime,
@@ -414,7 +407,7 @@ pub struct ChunkCollectionAndFile {
 #[derive(Debug, Default, Serialize, Deserialize, Queryable)]
 pub struct ChunkCollectionAndFileWithCount {
     pub id: uuid::Uuid,
-    pub author_id: uuid::Uuid,
+    pub dataset_id: uuid::Uuid,
     pub name: String,
     pub description: String,
     pub created_at: chrono::NaiveDateTime,
@@ -427,7 +420,7 @@ impl From<ChunkCollectionAndFileWithCount> for ChunkCollectionAndFile {
     fn from(collection: ChunkCollectionAndFileWithCount) -> Self {
         ChunkCollectionAndFile {
             id: collection.id,
-            author_id: collection.author_id,
+            dataset_id: collection.dataset_id,
             name: collection.name,
             description: collection.description,
             created_at: collection.created_at,
@@ -743,11 +736,11 @@ impl FileUploadCompletedNotificationWithName {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
-#[diesel(table_name = user_collection_counts)]
-pub struct UserCollectionCount {
+#[diesel(table_name = dataset_collection_counts)]
+pub struct DatasetCollectionCount {
     pub id: uuid::Uuid,
-    pub user_id: uuid::Uuid,
     pub collection_count: i32,
+    pub dataset_id: uuid::Uuid,
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]

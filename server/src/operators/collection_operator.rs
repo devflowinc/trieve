@@ -100,15 +100,14 @@ pub fn create_collection_and_add_bookmarks_query(
     Ok(new_collection)
 }
 
-pub fn get_collections_for_specific_user_query(
-    user_id: uuid::Uuid,
+pub fn get_collections_for_specific_dataset_query(
     page: u64,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Vec<ChunkCollectionAndFileWithCount>, DefaultError> {
     use crate::data::schema::chunk_collection::dsl::*;
     use crate::data::schema::collections_from_files::dsl as collections_from_files_columns;
-    use crate::data::schema::user_collection_counts::dsl as user_collection_count_columns;
+    use crate::data::schema::dataset_collection_counts::dsl as dataset_collection_count_columns;
 
     let page = if page == 0 { 1 } else { page };
     let mut conn = pool.get().unwrap();
@@ -118,73 +117,26 @@ pub fn get_collections_for_specific_user_query(
                 .on(id.eq(collections_from_files_columns::collection_id)),
         )
         .left_outer_join(
-            user_collection_count_columns::user_collection_counts
-                .on(author_id.eq(user_collection_count_columns::user_id)),
+            dataset_collection_count_columns::dataset_collection_counts
+                .on(dataset_id.eq(dataset_collection_count_columns::dataset_id.assume_not_null())),
         )
         .select((
             id,
-            author_id,
+            dataset_id,
             name,
             description,
             created_at,
             updated_at,
             collections_from_files_columns::file_id.nullable(),
-            user_collection_count_columns::collection_count.nullable(),
+            dataset_collection_count_columns::collection_count.nullable(),
         ))
         .order_by(updated_at.desc())
-        .filter(author_id.eq(user_id))
         .filter(dataset_id.eq(dataset_uuid))
         .into_boxed();
 
     let collections = collections
         .limit(10)
         .offset(((page - 1) * 10).try_into().unwrap_or(0))
-        .load::<ChunkCollectionAndFileWithCount>(&mut conn)
-        .map_err(|_err| DefaultError {
-            message: "Error getting collections",
-        })?;
-
-    Ok(collections)
-}
-
-pub fn get_collections_for_logged_in_user_query(
-    current_user_id: uuid::Uuid,
-    page: u64,
-    dataset_uuid: uuid::Uuid,
-    pool: web::Data<Pool>,
-) -> Result<Vec<ChunkCollectionAndFileWithCount>, DefaultError> {
-    use crate::data::schema::chunk_collection::dsl::*;
-    use crate::data::schema::collections_from_files::dsl as collections_from_files_columns;
-    use crate::data::schema::user_collection_counts::dsl as user_collection_count_columns;
-
-    let page = if page == 0 { 1 } else { page };
-
-    let mut conn = pool.get().unwrap();
-
-    let collections = chunk_collection
-        .left_outer_join(
-            collections_from_files_columns::collections_from_files
-                .on(id.eq(collections_from_files_columns::collection_id)),
-        )
-        .left_outer_join(
-            user_collection_count_columns::user_collection_counts
-                .on(author_id.eq(user_collection_count_columns::user_id)),
-        )
-        .select((
-            id,
-            author_id,
-            name,
-            description,
-            created_at,
-            updated_at,
-            collections_from_files_columns::file_id.nullable(),
-            user_collection_count_columns::collection_count.nullable(),
-        ))
-        .filter(author_id.eq(current_user_id))
-        .filter(dataset_id.eq(dataset_uuid))
-        .order(updated_at.desc())
-        .limit(5)
-        .offset(((page - 1) * 5).try_into().unwrap_or(0))
         .load::<ChunkCollectionAndFileWithCount>(&mut conn)
         .map_err(|_err| DefaultError {
             message: "Error getting collections",
@@ -367,7 +319,6 @@ pub fn get_bookmarks_for_collection_query(
                 ),
                 (
                     chunk_collection_columns::id.assume_not_null(),
-                    chunk_collection_columns::author_id.assume_not_null(),
                     chunk_collection_columns::name.assume_not_null(),
                     chunk_collection_columns::description.assume_not_null(),
                     chunk_collection_columns::created_at.assume_not_null(),
@@ -419,7 +370,6 @@ pub struct BookmarkCollectionResult {
 
 pub fn get_collections_for_bookmark_query(
     chunk_ids: Vec<uuid::Uuid>,
-    current_user_id: Option<uuid::Uuid>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Vec<BookmarkCollectionResult>, DefaultError> {
@@ -439,7 +389,7 @@ pub fn get_collections_for_bookmark_query(
         .select((
             chunk_collection_columns::id,
             chunk_collection_columns::name,
-            chunk_collection_columns::author_id,
+            chunk_collection_columns::dataset_id,
             chunk_collection_bookmarks_columns::chunk_metadata_id.nullable(),
         ))
         .limit(1000)
@@ -448,13 +398,13 @@ pub fn get_collections_for_bookmark_query(
             message: "Error getting bookmarks",
         })?
         .into_iter()
-        .map(|(id, name, author_id, chunk_id)| match chunk_id {
+        .map(|(id, name, dataset_id, chunk_id)| match chunk_id {
             Some(chunk_id) => (
                 SlimCollection {
                     id,
                     name,
-                    author_id,
-                    of_current_user: author_id == current_user_id.unwrap_or_default(),
+                    dataset_id,
+                    of_current_dataset: dataset_id == dataset_uuid,
                 },
                 chunk_id,
             ),
@@ -462,8 +412,8 @@ pub fn get_collections_for_bookmark_query(
                 SlimCollection {
                     id,
                     name,
-                    author_id,
-                    of_current_user: author_id == current_user_id.unwrap_or_default(),
+                    dataset_id,
+                    of_current_dataset: dataset_id == dataset_uuid,
                 },
                 uuid::Uuid::default(),
             ),

@@ -153,11 +153,7 @@ pub async fn update_user(
         }));
     }
 
-    let new_role = if let Some(role) = update_user_data.role {
-        Some(role.into())
-    } else {
-        None
-    };
+    let new_role = update_user_data.role.map(|role| role.into());
 
     let user_result = web::block(move || {
         update_user_query(
