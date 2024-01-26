@@ -325,14 +325,14 @@ pub fn get_message_org_count(
 pub fn get_file_size_sum_org(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<i32, DefaultError> {
+) -> Result<i64, DefaultError> {
     use crate::data::schema::organization_usage_counts::dsl as organization_usage_counts_columns;
 
     let mut conn = pool.get().map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
-    let file_size_sums: i32 = organization_usage_counts_columns::organization_usage_counts
+    let file_size_sums: i64 = organization_usage_counts_columns::organization_usage_counts
         .filter(organization_usage_counts_columns::org_id.eq(organization_id))
         .select(organization_usage_counts_columns::file_storage)
         .get_result(&mut conn)

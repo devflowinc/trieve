@@ -173,7 +173,7 @@ diesel::table! {
         org_id -> Uuid,
         dataset_count -> Int4,
         user_count -> Int4,
-        file_storage -> Int4,
+        file_storage -> Int8,
         message_count -> Int4,
     }
 }
@@ -193,7 +193,7 @@ diesel::table! {
         id -> Uuid,
         stripe_id -> Text,
         chunk_count -> Int4,
-        file_storage -> Int4,
+        file_storage -> Int8,
         user_count -> Int4,
         dataset_count -> Int4,
         message_count -> Int4,
