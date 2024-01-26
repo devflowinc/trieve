@@ -1,14 +1,11 @@
+use super::email_operator::send_email;
 use crate::errors::ServiceError;
-use crate::get_env;
 use crate::{
     data::models::{Invitation, Pool},
     errors::DefaultError,
 };
 use actix_web::web;
 use diesel::prelude::*;
-use sendgrid::v3::{Content, Email, Message, Personalization};
-
-use super::email_operator::send_email;
 
 /// Diesel query
 pub async fn create_invitation_query(
@@ -61,22 +58,7 @@ pub async fn send_invitation(inv_url: String, invitation: Invitation) -> Result<
         inv_url.split('?').collect::<Vec<&str>>()[0]
     );
 
-    let sg_email_personalization = Personalization::new(Email::new(invitation.email.as_str()));
-    let email_address = Email::new(get_env!(
-        "SENDGRID_EMAIL_ADDRESS",
-        "SENDGRID_EMAIL_ADDRESS should be set"
-    ));
-
-    let sg_email = Message::new(email_address)
-        .set_subject("Invitation to join Trieve AI dataset")
-        .add_content(
-            Content::new()
-                .set_content_type("text/html")
-                .set_value(sg_email_content),
-        )
-        .add_personalization(sg_email_personalization);
-
-    send_email(sg_email).await
+    send_email(sg_email_content, invitation.email).await
 }
 
 pub async fn set_invitation_used(
