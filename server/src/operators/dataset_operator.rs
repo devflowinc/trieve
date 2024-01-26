@@ -1,15 +1,15 @@
-use crate::data::models::{DatasetAndUsage, DatasetUsageCount};
+use crate::data::models::{ChunkCollision, ChunkMetadata, DatasetAndUsage, DatasetUsageCount};
 use crate::diesel::RunQueryDsl;
-use crate::operators::chunk_operator::delete_chunk_metadata_query;
-use crate::operators::collection_operator::delete_collection_by_id_query;
+
 use crate::operators::file_operator::delete_file_query;
-use crate::operators::topic_operator::delete_topic_query;
+use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::{
     data::models::{Dataset, Pool},
     errors::ServiceError,
 };
 use actix_web::web;
-use diesel::{ExpressionMethods, QueryDsl, SelectableHelper};
+use diesel::{Connection, ExpressionMethods, JoinOnDsl, QueryDsl, SelectableHelper};
+use qdrant_client::qdrant::PointId;
 
 pub async fn create_dataset_query(
     new_dataset: Dataset,
@@ -109,6 +109,14 @@ pub async fn delete_dataset_by_id_query(
     use crate::data::schema::datasets::dsl as datasets_columns;
     use crate::data::schema::files::dsl as files_columns;
     use crate::data::schema::topics::dsl as topics_columns;
+    use crate::data::schema::{
+        chunk_collection_bookmarks::dsl as chunk_collection_bookmarks_columns,
+        collections_from_files::dsl as collections_from_files_columns,
+        file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns,
+    };
+    use crate::data::schema::{
+        chunk_collisions::dsl as chunk_collisions_columns, chunk_files::dsl as chunk_files_columns,
+    };
 
     let dataset = get_dataset_by_id_query(id, pool.clone()).await?;
 
@@ -116,31 +124,132 @@ pub async fn delete_dataset_by_id_query(
         .get()
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let collection_ids = chunk_collection_columns::chunk_collection
-        .select(chunk_collection_columns::id)
-        .filter(chunk_collection_columns::dataset_id.eq(dataset.id))
-        .load::<uuid::Uuid>(&mut conn)
-        .map_err(|_| ServiceError::BadRequest("Could not find collections".to_string()))?;
+    let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
+        diesel::delete(
+            file_upload_completed_notifications_columns::file_upload_completed_notifications
+                .filter(file_upload_completed_notifications_columns::dataset_id.eq(id)),
+        )
+        .execute(conn)?;
 
-    for col_id in collection_ids {
-        delete_collection_by_id_query(col_id, dataset.id, pool.clone()).map_err(|_| {
-            ServiceError::BadRequest("Failed to delete collections for dataset".to_string())
-        })?;
-    }
+        let collection_ids = chunk_collection_columns::chunk_collection
+            .select(chunk_collection_columns::id)
+            .filter(chunk_collection_columns::dataset_id.eq(dataset.id))
+            .load::<uuid::Uuid>(conn)?;
 
-    let chunk_ids = chunk_metadata_columns::chunk_metadata
-        .select(chunk_metadata_columns::id)
-        .filter(chunk_metadata_columns::dataset_id.eq(dataset.id))
-        .load::<uuid::Uuid>(&mut conn)
-        .map_err(|_| ServiceError::BadRequest("Could not find chunks".to_string()))?;
+        diesel::delete(
+            collections_from_files_columns::collections_from_files.filter(
+                collections_from_files_columns::collection_id.eq_any(collection_ids.clone()),
+            ),
+        )
+        .execute(conn)?;
 
-    for chunk_id in chunk_ids {
-        delete_chunk_metadata_query(chunk_id, dataset.clone(), pool.clone())
-            .await
-            .map_err(|_| {
-                ServiceError::BadRequest("Failed to delete chunks for dataset".to_string())
-            })?;
-    }
+        diesel::delete(
+            chunk_collection_bookmarks_columns::chunk_collection_bookmarks.filter(
+                chunk_collection_bookmarks_columns::collection_id.eq_any(collection_ids.clone()),
+            ),
+        )
+        .execute(conn)?;
+
+        diesel::delete(
+            chunk_collection_columns::chunk_collection
+                .filter(chunk_collection_columns::id.eq_any(collection_ids.clone()))
+                .filter(chunk_collection_columns::dataset_id.eq(id)),
+        )
+        .execute(conn)?;
+        let chunks = chunk_metadata_columns::chunk_metadata
+            .select(ChunkMetadata::as_select())
+            .filter(chunk_metadata_columns::dataset_id.eq(dataset.id))
+            .load::<ChunkMetadata>(conn)?;
+
+        let chunk_ids = chunks
+            .iter()
+            .map(|chunk| chunk.id)
+            .collect::<Vec<uuid::Uuid>>();
+
+        diesel::delete(
+            chunk_files_columns::chunk_files
+                .filter(chunk_files_columns::chunk_id.eq_any(chunk_ids.clone())),
+        )
+        .execute(conn)?;
+
+        diesel::delete(
+            chunk_collection_bookmarks_columns::chunk_collection_bookmarks.filter(
+                chunk_collection_bookmarks_columns::chunk_metadata_id.eq_any(chunk_ids.clone()),
+            ),
+        )
+        .execute(conn)?;
+
+        let deleted_chunk_collision_count = diesel::delete(
+            chunk_collisions_columns::chunk_collisions
+                .filter(chunk_collisions_columns::chunk_id.eq_any(chunk_ids.clone())),
+        )
+        .execute(conn)?;
+
+        if deleted_chunk_collision_count > 0 {
+            // there cannot be collisions for a collision, just delete the chunk_metadata without issue
+            diesel::delete(
+                chunk_metadata_columns::chunk_metadata
+                    .filter(chunk_metadata_columns::id.eq_any(chunk_ids))
+                    .filter(chunk_metadata_columns::dataset_id.eq(id)),
+            )
+            .execute(conn)?;
+        } else {
+            let chunk_collisions: Vec<(ChunkCollision, ChunkMetadata)> =
+                chunk_collisions_columns::chunk_collisions
+                    .inner_join(
+                        chunk_metadata_columns::chunk_metadata
+                            .on(chunk_metadata_columns::qdrant_point_id
+                                .eq(chunk_collisions_columns::collision_qdrant_id)),
+                    )
+                    .filter(chunk_metadata_columns::id.eq_any(chunk_ids.clone()))
+                    .filter(chunk_metadata_columns::dataset_id.eq(id))
+                    .select((ChunkCollision::as_select(), ChunkMetadata::as_select()))
+                    .order_by(chunk_collisions_columns::created_at.asc())
+                    .load::<(ChunkCollision, ChunkMetadata)>(conn)?;
+
+            if !chunk_collisions.is_empty() {
+                let chunk_metadata_ids = chunk_collisions
+                    .iter()
+                    .map(|(_, chunk_metadata)| chunk_metadata.id)
+                    .collect::<Vec<uuid::Uuid>>();
+
+                diesel::delete(
+                    chunk_metadata_columns::chunk_metadata
+                        .filter(chunk_metadata_columns::id.eq_any(chunk_metadata_ids))
+                        .filter(chunk_metadata_columns::dataset_id.eq(id)),
+                )
+                .execute(conn)?;
+
+                let collision_ids = chunk_collisions
+                    .iter()
+                    .map(|(chunk_collision, _)| chunk_collision.id)
+                    .collect::<Vec<uuid::Uuid>>();
+
+                diesel::delete(
+                    chunk_collisions_columns::chunk_collisions
+                        .filter(chunk_collisions_columns::id.eq_any(collision_ids)),
+                )
+                .execute(conn)?;
+            }
+
+            // if there were no collisions, just delete the chunk_metadata without issue
+            diesel::delete(
+                chunk_metadata_columns::chunk_metadata
+                    .filter(chunk_metadata_columns::id.eq_any(chunk_ids.clone()))
+                    .filter(chunk_metadata_columns::dataset_id.eq(dataset.id)),
+            )
+            .execute(conn)?;
+        }
+
+        diesel::delete(topics_columns::topics.filter(topics_columns::dataset_id.eq(id)))
+            .execute(conn)?;
+
+        diesel::delete(datasets_columns::datasets)
+            .filter(datasets_columns::id.eq(id))
+            .execute(conn)?;
+
+        Ok(chunks)
+    });
 
     let file_ids = files_columns::files
         .select(files_columns::id)
@@ -156,24 +265,55 @@ pub async fn delete_dataset_by_id_query(
             })?;
     }
 
-    let topic_ids = topics_columns::topics
-        .select(topics_columns::id)
-        .filter(topics_columns::dataset_id.eq(dataset.id))
-        .load::<uuid::Uuid>(&mut conn)
-        .map_err(|_| ServiceError::BadRequest("Could not find topics".to_string()))?;
+    let qdrant_collection =
+        std::env::var("QDRANT_COLLECTION").unwrap_or("debate_chunks".to_owned());
 
-    for topic_id in topic_ids {
-        delete_topic_query(topic_id, dataset.id, &pool.clone()).map_err(|_| {
-            ServiceError::BadRequest("Failed to delete topics for dataset".to_string())
-        })?;
+    match transaction_result {
+        Ok(chunks) => {
+            let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
+            let client = redis::Client::open(redis_url).map_err(|err| {
+                ServiceError::BadRequest(format!("Could not create redis client: {}", err))
+            })?;
+            let mut redis_conn = client.get_async_connection().await.map_err(|err| {
+                ServiceError::BadRequest(format!("Could not connect to redis: {}", err))
+            })?;
+            redis::cmd("DEL")
+                .arg(format!("dataset:{}", dataset.id))
+                .query_async(&mut redis_conn)
+                .await
+                .map_err(|err| {
+                    ServiceError::BadRequest(format!("Could not delete dataset in redis: {}", err))
+                })?;
+
+            let qdrant = get_qdrant_connection().await.map_err(|err| {
+                ServiceError::BadRequest(format!("Could not connect to qdrant: {}", err))
+            })?;
+
+            let selector = chunks
+                .iter()
+                .map(|chunk| {
+                    <String as Into<PointId>>::into(
+                        chunk.qdrant_point_id.unwrap_or_default().to_string(),
+                    )
+                })
+                .collect::<Vec<PointId>>();
+
+            let _ = qdrant
+                .delete_points(qdrant_collection, None, &selector.into(), None)
+                .await
+                .map_err(|err| {
+                    ServiceError::BadRequest(format!(
+                        "Could not delete points from qdrant: {}",
+                        err
+                    ))
+                })?;
+
+            Ok(())
+        }
+        Err(_) => Err(ServiceError::BadRequest(
+            "Failed to delete dataset".to_string(),
+        )),
     }
-
-    diesel::delete(datasets_columns::datasets)
-        .filter(datasets_columns::id.eq(dataset.id))
-        .execute(&mut conn)
-        .map_err(|_| ServiceError::BadRequest("Failed to delete dataset".to_string()))?;
-
-    Ok(())
 }
 
 pub async fn update_dataset_query(
