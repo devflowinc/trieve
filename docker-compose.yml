@@ -110,7 +110,9 @@ services:
   server:
     image: arguflow/server:no-ocr
     container_name: server
-    build: ./server/
+    build: 
+      context: ./server/
+      dockerfile: Dockerfile.no-ocr
     depends_on:
       tika:
         condition: service_healthy

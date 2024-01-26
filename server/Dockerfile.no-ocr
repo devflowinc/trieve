@@ -1,4 +1,4 @@
-FROM rustlang/rust:nightly-bookworm AS chef
+FROM rust:1.75-bookworm AS chef
 # We only pay the installation cost once, 
 # it will be cached from the second build onwards
 RUN cargo install cargo-chef 
@@ -11,20 +11,22 @@ RUN cargo chef prepare  --recipe-path recipe.json
 FROM chef AS builder
 COPY --from=planner /app/recipe.json recipe.json
 # Build dependencies - this is the caching Docker layer!
-RUN cargo chef cook --release --recipe-path recipe.json --no-default-features
+RUN cargo chef cook --release --recipe-path recipe.json
 # Build application
-COPY . .
-RUN cargo build --release --no-default-features --features "runtime-env", 
+COPY ./src .
+COPY ./Cargo.toml .
+COPY ./Cargo.lock .
+RUN cargo build --release --features "runtime-env"
 
 # Use Ubuntu 22.04 as the base image
 FROM python:3.9-slim-bookworm as runtime
 RUN apt-get update -y && apt-get -y install libpq-dev
 WORKDIR /app
-COPY --from=builder /app/target/release/trieve-server /app/trieve-server
 COPY ./server-python/requirements.txt /app/requirements.txt
 RUN pip install --break-system-packages -r /app/requirements.txt;
 COPY ./migrations/ /app/migrations
 COPY ./server-python/ /app/server-python
+COPY --from=builder /app/target/release/trieve-server /app/trieve-server
 
 
 EXPOSE 8090
