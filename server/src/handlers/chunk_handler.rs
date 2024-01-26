@@ -212,7 +212,7 @@ pub async fn create_chunk(
         ))
     })?;
 
-    let duplicate_distance_threshold = dataset_config.DUPLICATE_DISTANCE_THRESHOLD.unwrap_or(0.95);
+    let duplicate_distance_threshold = dataset_config.DUPLICATE_DISTANCE_THRESHOLD.unwrap_or(1.1);
 
     if first_semantic_result.score >= duplicate_distance_threshold {
         //Sets collision to collided chunk id
