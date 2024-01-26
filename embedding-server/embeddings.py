@@ -41,9 +41,9 @@ else:
     devices = [torch.device("cpu"), torch.device("cpu")]
 
 # Tokenize sentences
-query_model.to(devices[0])
-doc_model.to(devices[0])
-embedding_model.to(devices[1])
+query_model.to(devices[1])
+doc_model.to(devices[1])
+embedding_model.to(devices[0])
 
 # Create a Flask app
 app = FastAPI()
@@ -65,7 +65,7 @@ def compute_vector(text, tokenizer, model):
     torch.Tensor: Computed vector.
     """
     tokens = tokenizer(text[:512], return_tensors="pt")
-    tokens = tokens.to(devices[0])
+    tokens = tokens.to(devices[1])
     output = model(**tokens)
     logits, attention_mask = output.logits, tokens.attention_mask
     relu_log = torch.log(1 + torch.relu(logits))
