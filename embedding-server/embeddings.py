@@ -122,7 +122,8 @@ async def sparse_encode(encodingRequest: SparseEncodeRequest):
             content={
                 "embeddings": [],
                 "status": 400,
-            }
+            },
+            status_code=400
         )
     indices = vec.nonzero().squeeze().cpu().tolist()
     values = vec[indices].cpu().tolist()
@@ -130,7 +131,8 @@ async def sparse_encode(encodingRequest: SparseEncodeRequest):
         content={
             "embeddings": list(zip(indices, values)),
             "status": 200,
-        }
+        },
+        status_code=200
     )
 
 
@@ -149,7 +151,8 @@ async def rerank(rerankRequest: ReRankRequest):
         content={
             "docs": reranked_docs,
             "status": 200,
-        }
+        },
+        status_code=200
     )
 
 
