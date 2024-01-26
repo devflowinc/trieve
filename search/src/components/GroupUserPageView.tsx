@@ -108,7 +108,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
     >
       <div>
         <div class="mx-auto w-full text-center text-2xl font-bold">
-          {props.user?.username ?? props.user?.email}'s Groups
+          {$dataset()?.dataset.name}'s Groups
         </div>
         <div class="mt-2 flow-root">
           <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
