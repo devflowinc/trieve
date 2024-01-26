@@ -36,7 +36,6 @@ serde_json = { version = "1" }
 serde = { version = "1" }
 time = { version = "0.3" }
 uuid = { version = "1", features = ["v4", "serde"] }
-sendgrid = { version = "0.20" }
 diesel_migrations = { version = "2.0" }
 regex = "1.7.3"
 openai_dive = { version = "0.4.2", features = ["stream"] }
@@ -77,6 +76,7 @@ openidconnect = { version = "3.4.0", features = [
 oauth2 = "4.4.2"
 dateparser = "0.2.1"
 cfg-if = "1.0.0"
+lettre = "0.11.3"
 
 
 [build-dependencies]
