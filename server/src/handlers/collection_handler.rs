@@ -5,11 +5,10 @@ use crate::{
         ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan, Pool,
     },
     errors::ServiceError,
-    operators::{chunk_operator::get_collided_chunks_query, collection_operator::*},
+    operators::collection_operator::*,
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 use utoipa::ToSchema;
 
 pub async fn user_owns_collection(
@@ -372,7 +371,7 @@ pub struct GetAllBookmarksData {
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct BookmarkChunks {
-    pub metadata: Vec<ChunkMetadataWithFileData>,
+    pub metadata: ChunkMetadataWithFileData,
 }
 
 /// get_all_bookmarks
@@ -400,71 +399,21 @@ pub async fn get_all_bookmarks(
 ) -> Result<HttpResponse, actix_web::Error> {
     let collection_id = path_data.collection_id;
     let page = path_data.page.unwrap_or(1);
-    let pool1 = pool.clone();
-    let pool2 = pool.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let bookmarks = {
         web::block(move || {
-            get_bookmarks_for_collection_query(collection_id, page, None, dataset_id, pool2)
+            get_bookmarks_for_collection_query(collection_id, page, None, dataset_id, pool)
         })
         .await?
         .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?
     };
 
-    let point_ids = bookmarks
-        .metadata
-        .iter()
-        .map(|point| point.qdrant_point_id)
-        .collect::<Vec<uuid::Uuid>>();
-
-    let collided_chunks = {
-        web::block(move || get_collided_chunks_query(point_ids, dataset_id, pool1))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
-    };
-
     let collection_chunks = bookmarks
         .metadata
         .iter()
-        .map(|search_result| {
-            let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
-                .iter()
-                .filter(|chunk| {
-                    chunk.1 == search_result.qdrant_point_id && chunk.0.id != search_result.id
-                })
-                .map(|chunk| chunk.0.clone())
-                .collect();
-
-            // de-duplicate collided chunks by removing chunks with the same metadata: Option<serde_json::Value>
-            let mut seen_metadata = HashSet::new();
-            let mut i = 0;
-            while i < collided_chunks.len() {
-                let metadata_string = serde_json::to_string(&collided_chunks[i].metadata).unwrap();
-
-                if seen_metadata.contains(&metadata_string) {
-                    collided_chunks.remove(i);
-                } else {
-                    seen_metadata.insert(metadata_string);
-                    i += 1;
-                }
-            }
-
-            collided_chunks.insert(0, search_result.clone());
-
-            // Move the chunk that was searched for to the front of the list
-            let (matching, others): (Vec<_>, Vec<_>) = collided_chunks
-                .clone()
-                .into_iter()
-                .partition(|item| item.id == search_result.id);
-
-            collided_chunks.clear();
-            collided_chunks.extend(matching);
-            collided_chunks.extend(others);
-
-            BookmarkChunks {
-                metadata: collided_chunks,
-            }
+        .map(|search_result| BookmarkChunks {
+            metadata: search_result.clone(),
         })
         .collect();
 
