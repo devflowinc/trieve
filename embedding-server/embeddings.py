@@ -59,6 +59,7 @@ def compute_vector(text, tokenizer, model):
     torch.Tensor: Computed vector.
     """
     tokens = tokenizer(text[:512], return_tensors="pt")
+    tokens = tokens.to(device)
     output = model(**tokens)
     logits, attention_mask = output.logits, tokens.attention_mask
     relu_log = torch.log(1 + torch.relu(logits))
