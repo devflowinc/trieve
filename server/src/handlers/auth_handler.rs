@@ -25,6 +25,7 @@ use oauth2::{
 use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
 use openidconnect::{AccessTokenHash, ClientId, IssuerUrl, Nonce};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::future::{ready, Ready};
 use utoipa::ToSchema;
 
@@ -119,11 +120,13 @@ pub async fn build_oidc_client() -> CoreClient {
         "Issuer URL for OpenID provider must be set"
     )
     .to_string();
+
     let client_id = get_env!(
         "OIDC_CLIENT_ID",
         "Client ID for OpenID provider must be set"
     )
     .to_string();
+
     let auth_redirect_url = get_env!(
         "OIDC_AUTH_REDIRECT_URL",
         "Auth redirect URL for OpenID provider must be set"
@@ -231,6 +234,11 @@ pub async fn create_account(
     Ok(user_org)
 }
 
+#[derive(Deserialize, Debug)]
+pub struct LogoutRequest {
+    pub redirect_uri: Option<String>,
+}
+
 /// logout
 ///
 /// Invalidate your current auth credential stored typically stored in a cookie. This does not invalidate your API key.
@@ -243,9 +251,38 @@ pub async fn create_account(
         (status = 204, description = "Confirmation that your current auth token has been invalidated. This does not invalidate your API key."),
     )
 )]
-pub async fn logout(id: Identity) -> HttpResponse {
+pub async fn logout(
+    id: Identity,
+    data: web::Query<LogoutRequest>,
+    req: HttpRequest,
+) -> HttpResponse {
     id.logout();
-    HttpResponse::NoContent().finish()
+    let issuer_url = get_env!(
+        "OIDC_ISSUER_URL",
+        "Issuer URL for OpenID provider must be set"
+    )
+    .to_string();
+    let client_id = get_env!(
+        "OIDC_CLIENT_ID",
+        "Client ID for OpenID provider must be set"
+    )
+    .to_string();
+    let logout_url = format!(
+        "{}/protocol/openid-connect/logout?post_logout_redirect_uri={}&client_id={}",
+        issuer_url,
+        data.redirect_uri.clone().unwrap_or(
+            req.headers()
+                .get("Referer")
+                .map(|h| h.to_str().unwrap_or("/"))
+                .unwrap_or("/")
+                .to_string()
+        ),
+        client_id
+    );
+
+    HttpResponse::Ok().json(json!({
+        "logout_url": logout_url,
+    }))
 }
 
 #[derive(Serialize, Deserialize, Debug)]
