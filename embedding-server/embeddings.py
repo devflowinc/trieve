@@ -10,10 +10,15 @@ from transformers import AutoModelForMaskedLM, AutoTokenizer, AutoModel
 from sentence_transformers.cross_encoder import CrossEncoder
 import huggingface_hub
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 hf_token = os.environ.get('HF_TOKEN')
 huggingface_hub.login(token=hf_token)
 embedding_model = AutoModel.from_pretrained('jinaai/jina-embeddings-v2-base-en', token=hf_token, trust_remote_code=True) # trust_remote_code is needed to use the encode method
+
+# Create a Flask app
+app = FastAPI()
 
 doc_model_id = "naver/efficient-splade-VI-BT-large-doc"
 doc_tokenizer = AutoTokenizer.from_pretrained(
