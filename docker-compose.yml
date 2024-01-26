@@ -200,6 +200,8 @@ services:
       - app-network
     ports:
       - 7070:7070
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
 
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.1
