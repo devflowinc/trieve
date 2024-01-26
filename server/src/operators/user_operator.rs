@@ -351,6 +351,7 @@ pub fn get_user_from_api_key_query(
                 .map(|user_org| user_org.1.clone())
                 .collect::<Vec<UserOrganization>>();
 
+            //TODO: change this so that it is not above user current role
             user_orgs.iter_mut().for_each(|user_org| {
                 user_org.role = user_orgs_orgs
                     .iter()

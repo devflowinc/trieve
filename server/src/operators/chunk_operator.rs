@@ -12,7 +12,7 @@ use crate::{
 };
 use actix_web::web;
 use diesel::{
-    BoolExpressionMethods, Connection, JoinOnDsl, NullableExpressionMethods, SelectableHelper,
+    Connection, JoinOnDsl, NullableExpressionMethods, SelectableHelper,
 };
 use itertools::Itertools;
 use qdrant_client::qdrant::{PointId, PointVectors};
@@ -166,52 +166,6 @@ pub fn get_metadata_and_collided_chunks_from_point_ids_query(
     ))
 }
 
-pub fn get_collided_chunks_query(
-    point_ids: Vec<uuid::Uuid>,
-    dataset_uuid: uuid::Uuid,
-    pool: web::Data<Pool>,
-) -> Result<Vec<(ChunkMetadataWithFileData, uuid::Uuid)>, DefaultError> {
-    use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
-    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
-
-    let mut conn = pool.get().unwrap();
-
-    let chunk_metadata: Vec<ChunkMetadata> = chunk_metadata_columns::chunk_metadata
-        .left_outer_join(
-            chunk_collisions_columns::chunk_collisions
-                .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
-        )
-        .select(ChunkMetadata::as_select())
-        .filter(
-            chunk_collisions_columns::collision_qdrant_id
-                .eq_any(point_ids.clone())
-                .or(chunk_metadata_columns::qdrant_point_id.eq_any(point_ids)),
-        )
-        .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid))
-        // TODO: Properly handle this and remove the arbitrary limit
-        .limit(500)
-        .load::<ChunkMetadata>(&mut conn)
-        .map_err(|_| DefaultError {
-            message: "Failed to load metadata",
-        })?;
-
-    let converted_chunks: Vec<FullTextSearchResult> = chunk_metadata
-        .iter()
-        .map(|chunk| <ChunkMetadata as Into<FullTextSearchResult>>::into(chunk.clone()))
-        .collect::<Vec<FullTextSearchResult>>();
-
-    let chunk_metadata_with_file_id =
-        get_metadata_query(converted_chunks, conn).map_err(|_| DefaultError {
-            message: "Failed to load metadata",
-        })?;
-
-    let chunk_metadatas_with_collided_qdrant_ids = chunk_metadata_with_file_id
-        .iter()
-        .map(|chunk| (chunk.clone(), chunk.qdrant_point_id))
-        .collect::<Vec<(ChunkMetadataWithFileData, uuid::Uuid)>>();
-
-    Ok(chunk_metadatas_with_collided_qdrant_ids)
-}
 
 pub fn get_metadata_from_id_query(
     chunk_id: uuid::Uuid,

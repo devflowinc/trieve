@@ -3,7 +3,6 @@
 diesel::table! {
     chunk_collection (id) {
         id -> Uuid,
-        author_id -> Uuid,
         name -> Text,
         description -> Text,
         created_at -> Timestamp,
@@ -78,6 +77,14 @@ diesel::table! {
         cut_chunk_content -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
+    dataset_collection_counts (id) {
+        id -> Uuid,
+        collection_count -> Int4,
+        dataset_id -> Nullable<Uuid>,
     }
 }
 
@@ -241,14 +248,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    user_collection_counts (id) {
-        id -> Uuid,
-        user_id -> Uuid,
-        collection_count -> Int4,
-    }
-}
-
-diesel::table! {
     user_organizations (id) {
         id -> Uuid,
         user_id -> Uuid,
@@ -273,7 +272,6 @@ diesel::table! {
 }
 
 diesel::joinable!(chunk_collection -> datasets (dataset_id));
-diesel::joinable!(chunk_collection -> users (author_id));
 diesel::joinable!(chunk_collection_bookmarks -> chunk_collection (collection_id));
 diesel::joinable!(chunk_collection_bookmarks -> chunk_metadata (chunk_metadata_id));
 diesel::joinable!(chunk_files -> chunk_metadata (chunk_id));
@@ -297,7 +295,6 @@ diesel::joinable!(stripe_subscriptions -> stripe_plans (plan_id));
 diesel::joinable!(topics -> datasets (dataset_id));
 diesel::joinable!(topics -> users (user_id));
 diesel::joinable!(user_api_key -> users (user_id));
-diesel::joinable!(user_collection_counts -> users (user_id));
 diesel::joinable!(user_organizations -> organizations (organization_id));
 diesel::joinable!(user_organizations -> users (user_id));
 
@@ -309,6 +306,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     chunk_metadata,
     collections_from_files,
     cut_chunks,
+    dataset_collection_counts,
     dataset_notification_counts,
     dataset_usage_counts,
     datasets,
@@ -322,7 +320,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     stripe_subscriptions,
     topics,
     user_api_key,
-    user_collection_counts,
     user_organizations,
     users,
 );
