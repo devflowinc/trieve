@@ -56,7 +56,8 @@ pub struct CreateMessageData {
     tag = "message",
     request_body(content = CreateMessageData, description = "JSON request payload to create a message completion", content_type = "application/json"),
     responses(
-        (status = 200, description = "This will be a HTTP stream, check the chat or search UI for an example how to process this"),
+        (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this. Response if streaming.",),
+        (status = 200, description = "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.", body = String),
         (status = 400, description = "Service error relating to getting a chat completion", body = DefaultError),
     )
 )]
@@ -314,7 +315,8 @@ pub async fn edit_message_handler(
     tag = "message",
     request_body(content = RegenerateMessageData, description = "JSON request payload to delete an agent message then regenerate it in a strem", content_type = "application/json"),
     responses(
-        (status = 200, description = "This will be a HTTP stream, check the chat or search UI for an example how to process this"),
+        (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this. Response if streaming.",),
+        (status = 200, description = "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.", body = String),
         (status = 400, description = "Service error relating to getting a chat completion", body = DefaultError),
     )
 )]
@@ -732,8 +734,7 @@ pub async fn stream_response(
 
         let _ = create_message_query(new_message, user_id, &pool);
 
-        let chat_content = assistant_completion.choices[0].message.content.clone();
-        return Ok(HttpResponse::Ok().json(chat_content));
+        return Ok(HttpResponse::Ok().json(completion_content));
     }
 
     let (s, r) = unbounded::<String>();
