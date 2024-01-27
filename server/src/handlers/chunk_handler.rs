@@ -1045,12 +1045,16 @@ pub async fn get_recommended_chunks(
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct GenerateChunksRequest {
-    /// The model to use for the chat. This can be any model from the model list. If no model is provided, the gryphe/mythomax-l2-13b will be used.
+    /// The model to use for the chat. This can be any model from the openrouter model list. If no model is provided, gryphe/mythomax-l2-13b will be used.
     pub model: Option<String>,
-    /// The previous messages to be placed into the chat history. The last message in this array will be the prompt for the model to inference on.
+    /// The previous messages to be placed into the chat history. The last message in this array will be the prompt for the model to inference on. The length of this array must be at least 1.
     pub prev_messages: Vec<ChatMessageProxy>,
     /// The ids of the chunks to be retrieved and injected into the context window for RAG.
     pub chunk_ids: Vec<uuid::Uuid>,
+    /// Prompt for the last message in the prev_messages array. This will be used to generate the next message in the chat. The default is 'Respond to the instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:'.
+    pub prompt: Option<String>,
+    /// Whether or not to stream the response. If this is set to true not not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
+    pub stream: Option<bool>,
 }
 
 /// generate_off_chunks
@@ -1064,6 +1068,7 @@ pub struct GenerateChunksRequest {
     request_body(content = GenerateChunksRequest, description = "JSON request payload to perform RAG on some chunks (chunks)", content_type = "application/json"),
     responses(
         (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this",),
+        (status = 200, description = "This will be a JSON response of a string containing the LLM's generated inference", body = String),
         (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = DefaultError),
     ),
 )]
@@ -1074,7 +1079,17 @@ pub async fn generate_off_chunks(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let prev_messages = data.prev_messages.clone();
+
+    if prev_messages.iter().len() < 1 {
+        return Err(
+            ServiceError::BadRequest("There needs to be at least 1 prior message".into()).into(),
+        );
+    };
+
     let chunk_ids = data.chunk_ids.clone();
+    let prompt = data.prompt.clone();
+    let stream = data.stream.clone();
+
     let mut chunks = web::block(move || {
         get_metadata_from_ids_query(chunk_ids, dataset_org_plan_sub.dataset.id, pool)
     })
@@ -1094,10 +1109,8 @@ pub async fn generate_off_chunks(
         base_url,
     };
 
-    let mut messages: Vec<ChatMessage> = prev_messages
-        .iter()
-        .map(|message| ChatMessage::from(message.clone()))
-        .collect();
+    let mut messages: Vec<ChatMessage> = vec![];
+
     messages.truncate(prev_messages.len() - 1);
     messages.push(ChatMessage {
         role: Role::User,
@@ -1146,16 +1159,29 @@ pub async fn generate_off_chunks(
             tool_call_id: None,
         });
     });
+
+    let last_prev_message = prev_messages
+        .last()
+        .expect("There needs to be at least 1 prior message");
+    let mut prev_messages = prev_messages.clone();
+    prev_messages.truncate(prev_messages.len() - 1);
+
+    prev_messages
+        .iter()
+        .for_each(|message| messages.push(ChatMessage::from(message.clone())));
+
+    let prompt = prompt.unwrap_or("Respond to the instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:".to_string());
+
     messages.push(ChatMessage {
         role: Role::User,
-        content: ChatMessageContent::Text(format!("Respond to this question and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for.: {}",prev_messages
-            .last()
-            .expect("There needs to be at least 1 prior message")
-            .content
-            .clone())),
-            tool_calls: None,
-            name: None,
-            tool_call_id: None,
+        content: ChatMessageContent::Text(format!(
+            "{} {}",
+            prompt,
+            last_prev_message.content.clone()
+        )),
+        tool_calls: None,
+        name: None,
+        tool_call_id: None,
     });
 
     let parameters = ChatCompletionParameters {
@@ -1181,7 +1207,17 @@ pub async fn generate_off_chunks(
         seed: None,
     };
 
-    let stream = client.chat().create_stream(parameters).await.unwrap();
+    if !stream.unwrap_or(true) {
+        let response = client.chat().create(parameters.clone()).await.unwrap();
+        let chat_content = response.choices[0].message.content.clone();
+        return Ok(HttpResponse::Ok().json(chat_content));
+    }
+
+    let stream = client
+        .chat()
+        .create_stream(parameters.clone())
+        .await
+        .unwrap();
 
     Ok(HttpResponse::Ok().streaming(stream.map(
         move |response| -> Result<Bytes, actix_web::Error> {
