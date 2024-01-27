@@ -59,6 +59,11 @@ pub async fn get_splade_doc_embedding(message: &str) -> Result<Vec<(u32, f32)>, 
     .to_string();
     embedding_server_call.push_str("/sparse_encode");
 
+    let message = message
+        .chars()
+        .filter(|c| c.is_alphanumeric() || c.is_whitespace())
+        .collect::<String>();
+
     let client = reqwest::Client::new();
     let resp = client
         .post(embedding_server_call)
