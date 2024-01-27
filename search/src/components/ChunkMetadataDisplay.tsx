@@ -4,7 +4,7 @@ import { For, Setter, Show, createMemo, createSignal } from "solid-js";
 import {
   indirectHasOwnProperty,
   type ChunkBookmarksDTO,
-  type ChunkCollectionDTO,
+  type ChunkGroupDTO,
   type ChunkMetadataWithVotes,
   ChunkMetadata,
 } from "../../utils/apiTypes";
@@ -15,7 +15,6 @@ import BookmarkPopover from "./BookmarkPopover";
 import { FiEdit, FiTrash } from "solid-icons/fi";
 import { formatDate, sanitzerOptions } from "./ScoreChunk";
 import { Tooltip } from "./Atoms/Tooltip";
-import CommunityBookmarkPopover from "./CommunityBookmarkPopover";
 import {
   FaRegularFileCode,
   FaRegularFileImage,
@@ -40,16 +39,16 @@ export const getLocalTime = (strDate: string | Date) => {
 };
 
 export interface ChunkMetadataDisplayProps {
-  totalCollectionPages: number;
+  totalGroupPages: number;
   signedInUserId?: string;
   viewingUserId?: string;
   chunk: ChunkMetadataWithVotes | ChunkMetadata;
-  chunkCollections: ChunkCollectionDTO[];
+  chunkGroups: ChunkGroupDTO[];
   bookmarks: ChunkBookmarksDTO[];
   setShowModal: Setter<boolean>;
   setShowConfirmModal: Setter<boolean>;
-  fetchChunkCollections: () => void;
-  setChunkCollections: Setter<ChunkCollectionDTO[]>;
+  fetchChunkGroups: () => void;
+  setChunkGroups: Setter<ChunkGroupDTO[]>;
   setOnDelete: Setter<() => void>;
   showExpand?: boolean;
 }
@@ -246,21 +245,16 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                 }
                 tooltipText="Open in new tab"
               />
-              <CommunityBookmarkPopover
-                bookmarks={props.bookmarks.filter(
-                  (bookmark) => bookmark.chunk_uuid == props.chunk.id,
-                )}
-              />
-
+        
               <BookmarkPopover
-                totalCollectionPages={props.totalCollectionPages}
-                chunkCollections={props.chunkCollections}
+                totalGroupPages={props.totalGroupPages}
+                chunkGroups={props.chunkGroups}
                 chunkMetadata={props.chunk}
                 setLoginModal={props.setShowModal}
                 bookmarks={props.bookmarks.filter(
                   (bookmark) => bookmark.chunk_uuid == props.chunk.id,
                 )}
-                setChunkCollections={props.setChunkCollections}
+                setChunkGroups={props.setChunkGroups}
               />
             </div>
             <div class="flex w-full flex-col">

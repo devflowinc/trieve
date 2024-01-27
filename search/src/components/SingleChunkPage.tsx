@@ -1,11 +1,11 @@
 import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
 import {
-  type ChunkCollectionDTO,
+  type ChunkGroupDTO,
   type ChunkMetadataWithVotes,
   isChunkMetadataWithVotes,
   SingleChunkDTO,
   ChunkBookmarksDTO,
-  isChunkCollectionPageDTO,
+  isChunkGroupPageDTO,
   ChunkMetadata,
   ScoreChunkDTO,
 } from "../../utils/apiTypes";
@@ -36,14 +36,14 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     createSignal<ChunkMetadataWithVotes | null>(initialChunkMetadata);
   const [error, setError] = createSignal("");
   const [fetching, setFetching] = createSignal(true);
-  const [chunkCollections, setChunkCollections] = createSignal<
-    ChunkCollectionDTO[]
+  const [chunkGroups, setChunkGroups] = createSignal<
+    ChunkGroupDTO[]
   >([]);
   const $currentUser = useStore(currentUser);
   const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
     createSignal(false);
-  const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
+  const [totalGroupPages, setTotalGroupPages] = createSignal(0);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const [onDelete, setOnDelete] = createSignal(() => {});
   const [clientSideRequestFinished, setClientSideRequestFinished] =
@@ -64,13 +64,13 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     setError("This chunk could not be found.");
   }
 
-  // Fetch the chunk collections for the auth'ed user
-  const fetchChunkCollections = () => {
+  // Fetch the chunk groups for the auth'ed user
+  const fetchChunkGroups = () => {
     if (!$currentUser()) return;
     const currentDataset = $dataset();
     if (!currentDataset) return;
 
-    void fetch(`${apiHost}/chunk_collection/1`, {
+    void fetch(`${apiHost}/chunk_group/1`, {
       method: "GET",
       credentials: "include",
       headers: {
@@ -79,9 +79,9 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          if (isChunkCollectionPageDTO(data)) {
-            setChunkCollections(data.collections);
-            setTotalCollectionPages(data.total_pages);
+          if (isChunkGroupPageDTO(data)) {
+            setChunkGroups(data.groups);
+            setTotalGroupPages(data.total_pages);
           }
         });
       }
@@ -91,7 +91,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   const fetchBookmarks = () => {
     const currentDataset = $dataset();
     if (!currentDataset) return;
-    void fetch(`${apiHost}/chunk_collection/bookmark`, {
+    void fetch(`${apiHost}/chunk_group/bookmark`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -152,7 +152,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   };
 
   createEffect(() => {
-    fetchChunkCollections();
+    fetchChunkGroups();
     fetchBookmarks();
   });
 
@@ -207,17 +207,17 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
 
     return (
       <ScoreChunk
-        totalCollectionPages={totalCollectionPages()}
+        totalGroupPages={totalGroupPages()}
         chunk={curChunkMetadata}
         score={0}
         setShowModal={setShowNeedLoginModal}
-        chunkCollections={chunkCollections()}
+        chunkGroups={chunkGroups()}
         bookmarks={bookmarks()}
         setOnDelete={setOnDelete}
         setShowConfirmModal={setShowConfirmDeleteModal}
         initialExpanded={true}
         showExpand={clientSideRequestFinished()}
-        setChunkCollections={setChunkCollections}
+        setChunkGroups={setChunkGroups}
         counter={"0"}
         total={1}
         begin={0}
@@ -279,14 +279,14 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
                     <>
                       <div class="mt-4">
                         <ChunkMetadataDisplay
-                          totalCollectionPages={totalCollectionPages()}
+                          totalGroupPages={totalGroupPages()}
                           chunk={chunk}
-                          chunkCollections={chunkCollections()}
+                          chunkGroups={chunkGroups()}
                           bookmarks={bookmarks()}
                           setShowModal={setShowNeedLoginModal}
                           setShowConfirmModal={setShowConfirmDeleteModal}
-                          fetchChunkCollections={fetchChunkCollections}
-                          setChunkCollections={setChunkCollections}
+                          fetchChunkGroups={fetchChunkGroups}
+                          setChunkGroups={setChunkGroups}
                           setOnDelete={setOnDelete}
                           showExpand={true}
                         />

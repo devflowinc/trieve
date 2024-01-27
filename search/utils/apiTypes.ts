@@ -73,13 +73,13 @@ export const isChunkMetadataWithVotes = (
   );
 };
 
-export interface ChunkCollectionDTO {
+export interface ChunkGroupDTO {
   id: string;
   name: string;
   description: string;
 }
 
-export interface SlimCollection {
+export interface SlimGroup {
   id: string;
   name: string;
   author_id: string;
@@ -88,7 +88,7 @@ export interface SlimCollection {
 
 export interface ChunkBookmarksDTO {
   chunk_uuid: string;
-  slim_collections: [SlimCollection];
+  slim_groups: [SlimGroup];
 }
 
 export interface ChunksWithTotalPagesDTO {
@@ -106,10 +106,7 @@ export const isScoreChunkDTO = (chunk: unknown): chunk is ScoreChunkDTO => {
 
   return (
     indirectHasOwnProperty(chunk, "metadata") &&
-    Array.isArray((chunk as ScoreChunkDTO).metadata) &&
-    (chunk as ScoreChunkDTO).metadata.every((val) =>
-      isChunkMetadataWithVotes(val),
-    ) &&
+    Array.isArray((chunk as ScoreChunkDTO).metadata)  &&
     indirectHasOwnProperty(chunk, "score") &&
     typeof (chunk as ScoreChunkDTO).score === "number"
   );
@@ -283,7 +280,7 @@ export const isUserDTOWithScore = (user: unknown): user is UserDTOWithScore => {
   );
 };
 
-export interface ChunkCollectionDTO {
+export interface ChunkGroupDTO {
   id: string;
   author_id: string;
   name: string;
@@ -292,71 +289,71 @@ export interface ChunkCollectionDTO {
   updated_at: string;
 }
 
-export interface ChunkCollectionPageDTO {
-  collections: ChunkCollectionDTO[];
+export interface ChunkGroupPageDTO {
+  groups: ChunkGroupDTO[];
   total_pages: number;
 }
 
-export const isChunkCollectionPageDTO = (
-  collectionPage: unknown,
-): collectionPage is ChunkCollectionPageDTO => {
-  if (typeof collectionPage !== "object" || collectionPage === null)
+export const isChunkGroupPageDTO = (
+  groupPage: unknown,
+): groupPage is ChunkGroupPageDTO => {
+  if (typeof groupPage !== "object" || groupPage === null)
     return false;
 
   return (
-    indirectHasOwnProperty(collectionPage, "collections") &&
-    Array.isArray((collectionPage as ChunkCollectionPageDTO).collections) &&
-    (collectionPage as ChunkCollectionPageDTO).collections.every((collection) =>
-      isChunkCollectionDTO(collection),
+    indirectHasOwnProperty(groupPage, "groups") &&
+    Array.isArray((groupPage as ChunkGroupPageDTO).groups) &&
+    (groupPage as ChunkGroupPageDTO).groups.every((group) =>
+      isChunkGroupDTO(group),
     ) &&
-    indirectHasOwnProperty(collectionPage, "total_pages") &&
-    typeof (collectionPage as ChunkCollectionPageDTO).total_pages === "number"
+    indirectHasOwnProperty(groupPage, "total_pages") &&
+    typeof (groupPage as ChunkGroupPageDTO).total_pages === "number"
   );
 };
 
-export const isChunkCollectionDTO = (
-  collection: unknown,
-): collection is ChunkCollectionDTO => {
-  if (typeof collection !== "object" || collection === null) return false;
+export const isChunkGroupDTO = (
+  group: unknown,
+): group is ChunkGroupDTO => {
+  if (typeof group !== "object" || group === null) return false;
 
   return (
-    indirectHasOwnProperty(collection, "id") &&
-    typeof (collection as ChunkCollectionDTO).id === "string" &&
-    indirectHasOwnProperty(collection, "name") &&
-    typeof (collection as ChunkCollectionDTO).name === "string" &&
-    indirectHasOwnProperty(collection, "description") &&
-    typeof (collection as ChunkCollectionDTO).description === "string"
+    indirectHasOwnProperty(group, "id") &&
+    typeof (group as ChunkGroupDTO).id === "string" &&
+    indirectHasOwnProperty(group, "name") &&
+    typeof (group as ChunkGroupDTO).name === "string" &&
+    indirectHasOwnProperty(group, "description") &&
+    typeof (group as ChunkGroupDTO).description === "string"
   );
 };
 
-export interface ChunkCollectionBookmarkDTO {
+export interface ChunkGroupBookmarkDTO {
   bookmarks: BookmarkDTO[];
-  collection: ChunkCollectionDTO;
+  group: ChunkGroupDTO;
   total_pages: number;
 }
 
-export interface ChunkCollectionSearchDTO {
+export interface ChunkGroupSearchDTO {
   bookmarks: ScoreChunkDTO[];
-  collection: ChunkCollectionDTO;
+  group: ChunkGroupDTO;
   total_pages: number;
 }
 
-export const isChunkCollectionSearchDTO = (
-  collection: unknown,
-): collection is ChunkCollectionSearchDTO => {
-  if (typeof collection !== "object" || collection === null) return false;
+export const isChunkGroupSearchDTO = (
+  group: unknown,
+): group is ChunkGroupSearchDTO => {
+  if (typeof group !== "object" || group === null) return false;
 
   return (
-    indirectHasOwnProperty(collection, "bookmarks") &&
-    isScoreChunkDTO((collection as ChunkCollectionSearchDTO).bookmarks[0]) &&
-    indirectHasOwnProperty(collection, "collection") &&
-    isChunkCollectionDTO((collection as ChunkCollectionSearchDTO).collection) &&
-    indirectHasOwnProperty(collection, "total_pages") &&
-    typeof (collection as ChunkCollectionSearchDTO).total_pages === "number"
+    indirectHasOwnProperty(group, "bookmarks") &&
+    isScoreChunkDTO((group as ChunkGroupSearchDTO).bookmarks[0]) &&
+    indirectHasOwnProperty(group, "group") &&
+    isChunkGroupDTO((group as ChunkGroupSearchDTO).group) &&
+    indirectHasOwnProperty(group, "total_pages") &&
+    typeof (group as ChunkGroupSearchDTO).total_pages === "number"
   );
 };
 export interface BookmarkDTO {
-  metadata: [ChunkMetadataWithVotes];
+  metadata: ChunkMetadataWithVotes;
 }
 export interface CreateChunkDTO {
   message?: string;
@@ -369,12 +366,12 @@ export interface SingleChunkDTO {
   status: number;
 }
 
-export interface ChunkCollectionBookmarksDTO {
+export interface ChunkGroupBookmarksDTO {
   bookmarks: ChunkMetadataWithVotes[];
-  collection: ChunkCollectionDTO;
+  group: ChunkGroupDTO;
 }
-export interface ChunkCollectionBookmarksWithStatusDTO {
-  metadata: ChunkCollectionBookmarkDTO | ChunkCollectionSearchDTO;
+export interface ChunkGroupBookmarksWithStatusDTO {
+  metadata: ChunkGroupBookmarkDTO | ChunkGroupSearchDTO;
   status: number;
 }
 
@@ -390,8 +387,8 @@ export interface FileDTO {
 export interface FileUploadCompleteNotificationDTO {
   id: string;
   user_uuid: string;
-  collection_uuid: string;
-  collection_name: string;
+  group_uuid: string;
+  group_name: string;
   user_read: boolean;
   created_at: Date;
   updated_at: Date;
@@ -409,9 +406,9 @@ export const isFileUploadCompleteNotificationDTO = (
     indirectHasOwnProperty(notification, "user_uuid") &&
     typeof (notification as FileUploadCompleteNotificationDTO).user_uuid ===
       "string" &&
-    indirectHasOwnProperty(notification, "collection_uuid") &&
+    indirectHasOwnProperty(notification, "group_uuid") &&
     typeof (notification as FileUploadCompleteNotificationDTO)
-      .collection_uuid === "string" &&
+      .group_uuid === "string" &&
     indirectHasOwnProperty(notification, "user_read") &&
     typeof (notification as FileUploadCompleteNotificationDTO).user_read ===
       "boolean" &&

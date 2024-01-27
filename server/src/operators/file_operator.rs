@@ -1,8 +1,8 @@
-use super::collection_operator::create_collection_and_add_bookmarks_query;
-use super::notification_operator::add_collection_created_notification_query;
+use super::group_operator::create_group_and_add_bookmarks_query;
+use super::notification_operator::add_group_created_notification_query;
 use crate::data::models::DatasetAndOrgWithSubAndPlan;
 use crate::handlers::auth_handler::AdminOnly;
-use crate::{data::models::ChunkCollection, handlers::chunk_handler::ReturnCreatedChunk};
+use crate::{data::models::ChunkGroup, handlers::chunk_handler::ReturnCreatedChunk};
 use crate::{
     data::models::FileDTO,
     diesel::{ExpressionMethods, QueryDsl},
@@ -333,7 +333,7 @@ pub async fn create_chunks_with_handler(
             tag_set: tag_set.clone(),
             file_uuid: Some(created_file_id),
             metadata: metadata.clone(),
-            collection_id: None,
+            group_id: None,
             tracking_id: None,
             time_stamp: time_stamp.clone(),
             chunk_vector: None,
@@ -366,11 +366,10 @@ pub async fn create_chunks_with_handler(
         }
     }
     let converted_description = convert_html(&description.unwrap_or("".to_string()))?;
-    let collection_id;
-    match create_collection_and_add_bookmarks_query(
-        ChunkCollection::from_details(
-            user.id,
-            format!("Collection for file {}", file_name),
+    let group_id;
+    match create_group_and_add_bookmarks_query(
+        ChunkGroup::from_details(
+            format!("Group for file {}", file_name),
             converted_description,
             dataset_org_plan_sub.dataset.id,
         ),
@@ -379,15 +378,12 @@ pub async fn create_chunks_with_handler(
         dataset_org_plan_sub.dataset.id,
         pool1,
     ) {
-        Ok(collection) => (collection_id = collection.id,),
+        Ok(group) => (group_id = group.id,),
         Err(err) => return Err(err),
     };
 
-    add_collection_created_notification_query(
-        FileUploadCompletedNotification::from_details(
-            dataset_org_plan_sub.dataset.id,
-            collection_id,
-        ),
+    add_group_created_notification_query(
+        FileUploadCompletedNotification::from_details(dataset_org_plan_sub.dataset.id, group_id),
         pool,
     )
     .map_err(|_| DefaultError {

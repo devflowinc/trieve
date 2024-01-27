@@ -7,15 +7,15 @@ import {
   onCleanup,
 } from "solid-js";
 import {
-  type ChunkCollectionDTO,
-  type ChunkCollectionBookmarkDTO,
+  type ChunkGroupDTO,
+  type ChunkGroupBookmarkDTO,
   ChunkBookmarksDTO,
-  BookmarkDTO,
   ScoreChunkDTO,
-  ChunkCollectionSearchDTO,
+  ChunkGroupSearchDTO,
   isScoreChunkDTO,
-  isChunkCollectionPageDTO,
+  isChunkGroupPageDTO,
   ChunkMetadata,
+  BookmarkDTO,
 } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { BiRegularLogInCircle, BiRegularXCircle } from "solid-icons/bi";
@@ -34,10 +34,10 @@ import { currentUser } from "../stores/userStore";
 import { useStore } from "@nanostores/solid";
 import { currentDataset } from "../stores/datasetStore";
 
-export interface CollectionPageProps {
-  collectionID: string;
-  defaultCollectionChunks: {
-    metadata: ChunkCollectionBookmarkDTO | ChunkCollectionSearchDTO;
+export interface GroupPageProps {
+  groupID: string;
+  defaultGroupChunks: {
+    metadata: ChunkGroupBookmarkDTO | ChunkGroupSearchDTO;
     status: number;
   };
   page: number;
@@ -46,7 +46,7 @@ export interface CollectionPageProps {
   filters: Filters;
 }
 
-export const CollectionPage = (props: CollectionPageProps) => {
+export const GroupPage = (props: GroupPageProps) => {
   const apiHost: string = import.meta.env.VITE_API_HOST as string;
   const $dataset = useStore(currentDataset);
 
@@ -56,18 +56,18 @@ export const CollectionPage = (props: CollectionPageProps) => {
   // Sometimes this will error server-side so we have to handle it
   try {
     if (
-      props.defaultCollectionChunks.metadata.bookmarks.length > 0 &&
-      !isScoreChunkDTO(props.defaultCollectionChunks.metadata.bookmarks[0])
+      props.defaultGroupChunks.metadata.bookmarks.length > 0 &&
+      !isScoreChunkDTO(props.defaultGroupChunks.metadata.bookmarks[0])
     ) {
       chunkMetadatasWithVotes.push(
-        ...(props.defaultCollectionChunks.metadata.bookmarks as BookmarkDTO[]),
+        ...(props.defaultGroupChunks.metadata.bookmarks as BookmarkDTO[])
       );
     } else if (
-      props.defaultCollectionChunks.metadata.bookmarks.length > 0 &&
-      isScoreChunkDTO(props.defaultCollectionChunks.metadata.bookmarks[0])
+      props.defaultGroupChunks.metadata.bookmarks.length > 0  &&
+      isScoreChunkDTO(props.defaultGroupChunks.metadata.bookmarks[0])
     ) {
       searchChunkMetadatasWithVotes.push(
-        ...(props.defaultCollectionChunks.metadata
+      ...(props.defaultGroupChunks.metadata
           .bookmarks as ScoreChunkDTO[]),
       );
     }
@@ -84,20 +84,20 @@ export const CollectionPage = (props: CollectionPageProps) => {
   >(searchChunkMetadatasWithVotes);
   const [clientSideRequestFinished, setClientSideRequestFinished] =
     createSignal(false);
-  const [collectionInfo, setCollectionInfo] = createSignal<ChunkCollectionDTO>(
-    props.defaultCollectionChunks.metadata.collection,
+  const [groupInfo, setGroupInfo] = createSignal<ChunkGroupDTO>(
+    props.defaultGroupChunks.metadata.group,
   );
-  const [chunkCollections, setChunkCollections] = createSignal<
-    ChunkCollectionDTO[]
+  const [chunkGroups, setChunkGroups] = createSignal<
+    ChunkGroupDTO[]
   >([]);
   const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [error, setError] = createSignal("");
-  const [fetchingCollections, setFetchingCollections] = createSignal(false);
+  const [fetchingGroups, setFetchingGroups] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
   const [editing, setEditing] = createSignal(false);
   const $currentUser = useStore(currentUser);
   const [totalPages, setTotalPages] = createSignal(
-    props.defaultCollectionChunks.metadata.total_pages,
+    props.defaultGroupChunks.metadata.total_pages,
   );
   const [loadingRecommendations, setLoadingRecommendations] =
     createSignal(false);
@@ -109,16 +109,16 @@ export const CollectionPage = (props: CollectionPageProps) => {
     createSignal(false);
 
   const [
-    showConfirmCollectionDeleteModal,
-    setShowConfirmCollectionmDeleteModal,
+    showConfirmGroupDeleteModal,
+    setShowConfirmGroupmDeleteModal,
   ] = createSignal(false);
 
-  const [totalCollectionPages, setTotalCollectionPages] = createSignal(1);
+  const [totalGroupPages, setTotalGroupPages] = createSignal(1);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const [onDelete, setOnDelete] = createSignal(() => { });
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onCollectionDelete, setOnCollectionDelete] = createSignal(() => { });
+  const [onGroupDelete, setOnGroupDelete] = createSignal(() => { });
 
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
@@ -136,12 +136,12 @@ export const CollectionPage = (props: CollectionPageProps) => {
 
   createEffect(() => {
     const abortController = new AbortController();
-    let collection_id: string | null = null;
+    let group_id: string | null = null;
     const currentDataset = $dataset();
     if (!currentDataset) return;
     if (props.query === "") {
       void fetch(
-        `${apiHost}/chunk_collection/${props.collectionID}/${props.page}`,
+        `${apiHost}/chunk_group/${props.groupID}/${props.page}`,
         {
           method: "GET",
           credentials: "include",
@@ -153,11 +153,11 @@ export const CollectionPage = (props: CollectionPageProps) => {
       ).then((response) => {
         if (response.ok) {
           void response.json().then((data) => {
-            const collectionBookmarks = data as ChunkCollectionBookmarkDTO;
-            collection_id = collectionBookmarks.collection.id;
-            setCollectionInfo(collectionBookmarks.collection);
-            setTotalPages(collectionBookmarks.total_pages);
-            setMetadatasWithVotes(collectionBookmarks.bookmarks);
+            const groupBookmarks = data as ChunkGroupBookmarkDTO;
+            group_id = groupBookmarks.group.id;
+            setGroupInfo(groupBookmarks.group);
+            setTotalPages(groupBookmarks.total_pages);
+            setMetadatasWithVotes(groupBookmarks.bookmarks);
             setError("");
           });
         }
@@ -174,7 +174,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
         setClientSideRequestFinished(true);
       });
     } else {
-      void fetch(`${apiHost}/chunk_collection/search`, {
+      void fetch(`${apiHost}/chunk_group/search`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -189,17 +189,17 @@ export const CollectionPage = (props: CollectionPageProps) => {
           page: props.page,
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           filters: props.filters.metadataFilters,
-          collection_id: props.collectionID,
+          group_id: props.groupID,
           search_type: props.searchType,
         }),
       }).then((response) => {
         if (response.ok) {
           void response.json().then((data) => {
-            const collectionBookmarks = data as ChunkCollectionSearchDTO;
-            collection_id = collectionBookmarks.collection.id;
-            setCollectionInfo(collectionBookmarks.collection);
-            setTotalPages(collectionBookmarks.total_pages);
-            setSearchMetadatasWithVotes(collectionBookmarks.bookmarks);
+            const groupBookmarks = data as ChunkGroupSearchDTO;
+            group_id = groupBookmarks.group.id;
+            setGroupInfo(groupBookmarks.group);
+            setTotalPages(groupBookmarks.total_pages);
+            setSearchMetadatasWithVotes(groupBookmarks.bookmarks);
             setError("");
           });
         }
@@ -217,14 +217,14 @@ export const CollectionPage = (props: CollectionPageProps) => {
       });
     }
 
-    fetchChunkCollections();
+    fetchChunkGroups();
 
-    setOnCollectionDelete(() => {
+    setOnGroupDelete(() => {
       return () => {
         setDeleting(true);
-        if (collection_id === null) return;
+        if (group_id === null) return;
 
-        void fetch(`${apiHost}/chunk_collection/${collection_id}`, {
+        void fetch(`${apiHost}/chunk_group/${group_id}`, {
           method: "DELETE",
           credentials: "include",
           headers: {
@@ -251,18 +251,18 @@ export const CollectionPage = (props: CollectionPageProps) => {
   createEffect(() => {
     resizeTextarea(
       document.getElementById(
-        "collection-query-textarea",
+        "group-query-textarea",
       ) as HTMLTextAreaElement | null,
     );
   });
 
-  // Fetch the chunk collections for the auth'ed user
-  const fetchChunkCollections = () => {
+  // Fetch the chunk groups for the auth'ed user
+  const fetchChunkGroups = () => {
     const currentDataset = $dataset();
     if (!currentDataset) return;
     if (!$currentUser()) return;
 
-    void fetch(`${apiHost}/chunk_collection/1`, {
+    void fetch(`${apiHost}/dataset/groups/${currentDataset.dataset.id}/1`, {
       method: "GET",
       credentials: "include",
       headers: {
@@ -271,9 +271,9 @@ export const CollectionPage = (props: CollectionPageProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          if (isChunkCollectionPageDTO(data)) {
-            setChunkCollections(data.collections);
-            setTotalCollectionPages(data.total_pages);
+          if (isChunkGroupPageDTO(data)) {
+            setChunkGroups(data.groups);
+            setTotalGroupPages(data.total_pages);
           }
         });
       }
@@ -284,7 +284,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
     const currentDataset = $dataset();
     if (!currentDataset) return;
 
-    void fetch(`${apiHost}/chunk_collection/bookmark`, {
+    void fetch(`${apiHost}/chunk_group/bookmark`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -293,7 +293,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
       },
       body: JSON.stringify({
         chunk_ids: metadatasWithVotes().flatMap((m) => {
-          return m.metadata.map((c) => c.id);
+          return m.metadata.id;
         }),
       }),
     }).then((response) => {
@@ -305,17 +305,17 @@ export const CollectionPage = (props: CollectionPageProps) => {
     });
   };
 
-  const updateCollection = () => {
+  const updateGroup = () => {
     const currentDataset = $dataset();
     if (!currentDataset) return;
 
-    setFetchingCollections(true);
+    setFetchingGroups(true);
     const body = {
-      collection_id: collectionInfo().id,
-      name: collectionInfo().name,
-      description: collectionInfo().description,
+      group_id: groupInfo().id,
+      name: groupInfo().name,
+      description: groupInfo().description,
     };
-    void fetch(`${apiHost}/chunk_collection`, {
+    void fetch(`${apiHost}/chunk_group`, {
       method: "PUT",
       credentials: "include",
       body: JSON.stringify(body),
@@ -324,7 +324,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
         "TR-Dataset": currentDataset.dataset.id,
       },
     }).then((response) => {
-      setFetchingCollections(false);
+      setFetchingGroups(false);
       if (response.ok) {
         setEditing(false);
       }
@@ -403,8 +403,8 @@ export const CollectionPage = (props: CollectionPageProps) => {
         <Show when={error().length == 0}>
           <div class="flex w-full max-w-6xl items-center justify-end space-x-2 px-4 sm:px-8 md:px-20">
             <Show
-              when={chunkCollections().some(
-                (collection) => collection.id == collectionInfo().id,
+              when={chunkGroups().some(
+                (group) => group.id == groupInfo().id,
               )}
             >
               <button
@@ -412,7 +412,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
                   "h-fit text-red-700 dark:text-red-400": true,
                   "animate-pulse": deleting(),
                 }}
-                onClick={() => setShowConfirmCollectionmDeleteModal(true)}
+                onClick={() => setShowConfirmGroupmDeleteModal(true)}
               >
                 <FiTrash class="h-5 w-5" />
               </button>
@@ -424,16 +424,16 @@ export const CollectionPage = (props: CollectionPageProps) => {
           <Show when={!editing()}>
             <div class="flex w-full items-center justify-center">
               <h1 class="break-all text-center text-lg min-[320px]:text-xl sm:text-3xl">
-                {collectionInfo().name}
+                {groupInfo().name}
               </h1>
             </div>
-            <Show when={collectionInfo().description.length > 0 && !editing()}>
+            <Show when={groupInfo().description.length > 0 && !editing()}>
               <div class="mx-auto flex max-w-[300px] justify-items-center gap-x-2 md:max-w-fit">
                 <div class="text-center text-lg font-semibold">
                   Description:
                 </div>
                 <div class="line-clamp-1 flex w-full justify-start text-center text-lg">
-                  {collectionInfo().description}
+                  {groupInfo().description}
                 </div>
               </div>
             </Show>
@@ -447,10 +447,10 @@ export const CollectionPage = (props: CollectionPageProps) => {
               <input
                 type="text"
                 class="mt-10 max-h-fit w-full rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
-                value={collectionInfo().name}
+                value={groupInfo().name}
                 onInput={(e) => {
-                  setCollectionInfo({
-                    ...collectionInfo(),
+                  setGroupInfo({
+                    ...groupInfo(),
                     name: e.target.value,
                   });
                 }}
@@ -458,10 +458,10 @@ export const CollectionPage = (props: CollectionPageProps) => {
               <div class="text-md mr-2 font-semibold">Description:</div>
               <textarea
                 class="w-full justify-start rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
-                value={collectionInfo().description}
+                value={groupInfo().description}
                 onInput={(e) => {
-                  setCollectionInfo({
-                    ...collectionInfo(),
+                  setGroupInfo({
+                    ...groupInfo(),
                     description: e.target.value,
                   });
                 }}
@@ -472,7 +472,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
                 classList={{
                   "!pointer-events-auto relative max-h-10 mt-2 mr-2 items-end justify-end rounded-md p-2 text-center bg-red-500":
                     true,
-                  "animate-pulse": fetchingCollections(),
+                  "animate-pulse": fetchingGroups(),
                 }}
                 onClick={() => setEditing(false)}
               >
@@ -482,9 +482,9 @@ export const CollectionPage = (props: CollectionPageProps) => {
                 classList={{
                   "!pointer-events-auto relative max-h-10 mt-2 mr-2 items-end justify-end rounded-md p-2 text-center bg-green-500":
                     true,
-                  "animate-pulse": fetchingCollections(),
+                  "animate-pulse": fetchingGroups(),
                 }}
-                onClick={() => updateCollection()}
+                onClick={() => updateGroup()}
               >
                 Save
               </button>
@@ -496,7 +496,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
             <button
               class="relative mx-auto ml-8 mt-8 h-fit max-h-[240px] rounded-md bg-neutral-100 p-2 dark:bg-neutral-700"
               onClick={() =>
-                (window.location.href = `/collection/${props.collectionID}`)
+                (window.location.href = `/group/${props.groupID}`)
               }
             >
               ← Back
@@ -515,7 +515,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
                   query={props.query}
                   filters={props.filters}
                   searchType={props.searchType}
-                  collectionID={props.collectionID}
+                  groupID={props.groupID}
                 />
               </div>
             </div>
@@ -537,17 +537,17 @@ export const CollectionPage = (props: CollectionPageProps) => {
             {(chunk) => (
               <div class="mt-4">
                 <ScoreChunkArray
-                  totalCollectionPages={totalCollectionPages()}
-                  chunks={chunk.metadata}
+                  totalGroupPages={totalGroupPages()}
+                  chunks={!isScoreChunkDTO(chunk) ? [chunk.metadata] : chunk.metadata}
                   score={isScoreChunkDTO(chunk) ? chunk.score : 0}
-                  collection={true}
+                  group={true}
                   setShowModal={setShowNeedLoginModal}
-                  chunkCollections={chunkCollections()}
+                  chunkGroups={chunkGroups()}
                   bookmarks={bookmarks()}
                   setOnDelete={setOnDelete}
                   setShowConfirmModal={setShowConfirmDeleteModal}
                   showExpand={clientSideRequestFinished()}
-                  setChunkCollections={setChunkCollections}
+                  setChunkGroups={setChunkGroups}
                   setSelectedIds={setSelectedIds}
                   selectedIds={selectedIds}
                 />
@@ -567,14 +567,14 @@ export const CollectionPage = (props: CollectionPageProps) => {
                   <>
                     <div class="mt-4">
                       <ChunkMetadataDisplay
-                        totalCollectionPages={totalCollectionPages()}
+                        totalGroupPages={totalGroupPages()}
                         chunk={chunk}
-                        chunkCollections={chunkCollections()}
+                        chunkGroups={chunkGroups()}
                         bookmarks={bookmarks()}
                         setShowModal={setShowNeedLoginModal}
                         setShowConfirmModal={setShowConfirmDeleteModal}
-                        fetchChunkCollections={fetchChunkCollections}
-                        setChunkCollections={setChunkCollections}
+                        fetchChunkGroups={fetchChunkGroups}
+                        setChunkGroups={setChunkGroups}
                         setOnDelete={setOnDelete}
                         showExpand={true}
                       />
@@ -595,7 +595,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
                 onClick={() =>
                   fetchRecommendations(
                     metadatasWithVotes().map(
-                      (m) => m.metadata[0].qdrant_point_id,
+                      (m) => m.metadata.qdrant_point_id,
                     ),
                     recommendedChunks(),
                   )
@@ -660,7 +660,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
                   setSelectedIds(
                     searchResults
                       .flatMap((c) => {
-                        return c.metadata.map((m) => m.id);
+                        return c.metadata[0].id;
                       })
                       .slice(0, 10),
                   );
@@ -669,7 +669,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
                   setSelectedIds(
                     metadatasWithVotes()
                       .flatMap((c) => {
-                        return c.metadata.map((m) => m.id);
+                        return c.metadata.id;
                       })
                       .slice(0, 10),
                   );
@@ -713,7 +713,7 @@ export const CollectionPage = (props: CollectionPageProps) => {
             <BiRegularXCircle class="mx-auto h-8 w-8 fill-current  !text-red-500" />
             <div class="mb-4 text-center text-xl font-bold">
               Login or register to bookmark chunks, vote, get recommend chunks
-              or manage your collections
+              or manage your groups
             </div>
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
@@ -735,9 +735,9 @@ export const CollectionPage = (props: CollectionPageProps) => {
         message="Are you sure you want to delete this chunk?"
       />
       <ConfirmModal
-        showConfirmModal={showConfirmCollectionDeleteModal}
-        setShowConfirmModal={setShowConfirmCollectionmDeleteModal}
-        onConfirm={onCollectionDelete}
+        showConfirmModal={showConfirmGroupDeleteModal}
+        setShowConfirmModal={setShowConfirmGroupmDeleteModal}
+        onConfirm={onGroupDelete}
         message="Are you sure you want to delete this theme?"
       />
     </>

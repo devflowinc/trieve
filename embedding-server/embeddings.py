@@ -93,7 +93,7 @@ async def encode(encodingRequest: EncodeRequest):
             "data": [
                 {
                     "object": "embedding",
-                    "embedding": sentence_embeddings[0],
+                    "embedding": list(sentence_embeddings[0].astype(float)),
                     "index": 0,
                 }
             ],

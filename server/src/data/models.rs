@@ -362,10 +362,9 @@ pub struct UserDTO {
 #[derive(
     Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema,
 )]
-#[diesel(table_name = chunk_collection)]
-pub struct ChunkCollection {
+#[diesel(table_name = chunk_group)]
+pub struct ChunkGroup {
     pub id: uuid::Uuid,
-    pub author_id: uuid::Uuid,
     pub name: String,
     pub description: String,
     pub created_at: chrono::NaiveDateTime,
@@ -373,16 +372,10 @@ pub struct ChunkCollection {
     pub dataset_id: uuid::Uuid,
 }
 
-impl ChunkCollection {
-    pub fn from_details(
-        author_id: uuid::Uuid,
-        name: String,
-        description: String,
-        dataset_id: uuid::Uuid,
-    ) -> Self {
-        ChunkCollection {
+impl ChunkGroup {
+    pub fn from_details(name: String, description: String, dataset_id: uuid::Uuid) -> Self {
+        ChunkGroup {
             id: uuid::Uuid::new_v4(),
-            author_id,
             name,
             description,
             dataset_id,
@@ -393,17 +386,17 @@ impl ChunkCollection {
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
-pub struct SlimCollection {
+pub struct SlimGroup {
     pub id: uuid::Uuid,
     pub name: String,
-    pub author_id: uuid::Uuid,
-    pub of_current_user: bool,
+    pub dataset_id: uuid::Uuid,
+    pub of_current_dataset: bool,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Queryable, ToSchema)]
-pub struct ChunkCollectionAndFile {
+pub struct ChunkGroupAndFile {
     pub id: uuid::Uuid,
-    pub author_id: uuid::Uuid,
+    pub dataset_id: uuid::Uuid,
     pub name: String,
     pub description: String,
     pub created_at: chrono::NaiveDateTime,
@@ -412,27 +405,27 @@ pub struct ChunkCollectionAndFile {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Queryable)]
-pub struct ChunkCollectionAndFileWithCount {
+pub struct ChunkGroupAndFileWithCount {
     pub id: uuid::Uuid,
-    pub author_id: uuid::Uuid,
+    pub dataset_id: uuid::Uuid,
     pub name: String,
     pub description: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub file_id: Option<uuid::Uuid>,
-    pub collection_count: Option<i32>,
+    pub group_count: Option<i32>,
 }
 
-impl From<ChunkCollectionAndFileWithCount> for ChunkCollectionAndFile {
-    fn from(collection: ChunkCollectionAndFileWithCount) -> Self {
-        ChunkCollectionAndFile {
-            id: collection.id,
-            author_id: collection.author_id,
-            name: collection.name,
-            description: collection.description,
-            created_at: collection.created_at,
-            updated_at: collection.updated_at,
-            file_id: collection.file_id,
+impl From<ChunkGroupAndFileWithCount> for ChunkGroupAndFile {
+    fn from(group: ChunkGroupAndFileWithCount) -> Self {
+        ChunkGroupAndFile {
+            id: group.id,
+            dataset_id: group.dataset_id,
+            name: group.name,
+            description: group.description,
+            created_at: group.created_at,
+            updated_at: group.updated_at,
+            file_id: group.file_id,
         }
     }
 }
@@ -440,20 +433,20 @@ impl From<ChunkCollectionAndFileWithCount> for ChunkCollectionAndFile {
 #[derive(
     Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema,
 )]
-#[diesel(table_name = chunk_collection_bookmarks)]
-pub struct ChunkCollectionBookmark {
+#[diesel(table_name = chunk_group_bookmarks)]
+pub struct ChunkGroupBookmark {
     pub id: uuid::Uuid,
-    pub collection_id: uuid::Uuid,
+    pub group_id: uuid::Uuid,
     pub chunk_metadata_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
 
-impl ChunkCollectionBookmark {
-    pub fn from_details(collection_id: uuid::Uuid, chunk_metadata_id: uuid::Uuid) -> Self {
-        ChunkCollectionBookmark {
+impl ChunkGroupBookmark {
+    pub fn from_details(group_id: uuid::Uuid, chunk_metadata_id: uuid::Uuid) -> Self {
+        ChunkGroupBookmark {
             id: uuid::Uuid::new_v4(),
-            collection_id,
+            group_id,
             chunk_metadata_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
@@ -462,21 +455,21 @@ impl ChunkCollectionBookmark {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Queryable, Insertable, Clone)]
-#[diesel(table_name = collections_from_files)]
-pub struct FileCollection {
+#[diesel(table_name = groups_from_files)]
+pub struct FileGroup {
     pub id: uuid::Uuid,
     pub file_id: uuid::Uuid,
-    pub collection_id: uuid::Uuid,
+    pub group_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
 
-impl FileCollection {
-    pub fn from_details(file_id: uuid::Uuid, collection_id: uuid::Uuid) -> Self {
-        FileCollection {
+impl FileGroup {
+    pub fn from_details(file_id: uuid::Uuid, group_id: uuid::Uuid) -> Self {
+        FileGroup {
             id: uuid::Uuid::new_v4(),
             file_id,
-            collection_id,
+            group_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
         }
@@ -694,7 +687,7 @@ pub struct ChunkFileWithName {
 #[diesel(table_name = file_upload_completed_notifications)]
 pub struct FileUploadCompletedNotification {
     pub id: uuid::Uuid,
-    pub collection_uuid: uuid::Uuid,
+    pub group_uuid: uuid::Uuid,
     pub user_read: bool,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -702,10 +695,10 @@ pub struct FileUploadCompletedNotification {
 }
 
 impl FileUploadCompletedNotification {
-    pub fn from_details(dataset_id: uuid::Uuid, collection_uuid: uuid::Uuid) -> Self {
+    pub fn from_details(dataset_id: uuid::Uuid, group_uuid: uuid::Uuid) -> Self {
         FileUploadCompletedNotification {
             id: uuid::Uuid::new_v4(),
-            collection_uuid,
+            group_uuid,
             user_read: false,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
@@ -718,8 +711,8 @@ impl FileUploadCompletedNotification {
 pub struct FileUploadCompletedNotificationWithName {
     pub id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
-    pub collection_uuid: uuid::Uuid,
-    pub collection_name: Option<String>,
+    pub group_uuid: uuid::Uuid,
+    pub group_name: Option<String>,
     pub user_read: bool,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -728,13 +721,13 @@ pub struct FileUploadCompletedNotificationWithName {
 impl FileUploadCompletedNotificationWithName {
     pub fn from_file_upload_notification(
         notification: FileUploadCompletedNotification,
-        collection_name: String,
+        group_name: String,
     ) -> Self {
         FileUploadCompletedNotificationWithName {
             id: notification.id,
             dataset_id: notification.dataset_id,
-            collection_uuid: notification.collection_uuid,
-            collection_name: Some(collection_name),
+            group_uuid: notification.group_uuid,
+            group_name: Some(group_name),
             user_read: notification.user_read,
             created_at: notification.created_at,
             updated_at: notification.updated_at,
@@ -743,11 +736,11 @@ impl FileUploadCompletedNotificationWithName {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
-#[diesel(table_name = user_collection_counts)]
-pub struct UserCollectionCount {
+#[diesel(table_name = dataset_group_counts)]
+pub struct DatasetGroupCount {
     pub id: uuid::Uuid,
-    pub user_id: uuid::Uuid,
-    pub collection_count: i32,
+    pub group_count: i32,
+    pub dataset_id: uuid::Uuid,
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
