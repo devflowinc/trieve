@@ -15,7 +15,6 @@ import {
   isScoreChunkDTO,
   isChunkGroupPageDTO,
   ChunkMetadata,
-  ChunkMetadataWithVotes,
   BookmarkDTO,
 } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
