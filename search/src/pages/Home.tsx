@@ -55,7 +55,11 @@ export const Home = () => {
       <div class="space-y mt-12 flex w-full flex-col items-center">
         <div class="flex w-full items-center justify-center">
           <a class="flex items-center justify-center" href="/">
-            <img class="w-12" src="/logo_transparent.png" alt="Logo" />
+            <img
+              class="w-12"
+              src="https://cdn.trieve.ai/trieve-logo.png"
+              alt="Logo"
+            />
             <div>
               <div class="mb-[-4px] w-full text-end align-bottom text-lg leading-3 text-turquoise">
                 {$dataset()?.dataset.name ?? "Dataset"}

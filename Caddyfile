@@ -1,20 +1,20 @@
 # Global options
 {
-    email developer@arguflow.gg
+    email developer@trieve.ai
 }
 
-# Define a site block for chat.arguflow.ai
-self-chat.arguflow.ai {
+# Define a site block for chat.trieve.ai
+self-chat.trieve.ai {
     reverse_proxy localhost:3000
 }
 
-# Define a site block for api.arguflow.ai
-self-api.arguflow.ai {
+# Define a site block for api.trieve.ai
+self-api.trieve.ai {
     reverse_proxy localhost:8090
 }
 
-# Define a site block for search.arguflow.ai
-self-search.arguflow.ai {
+# Define a site block for search.trieve.ai
+self-search.trieve.ai {
     reverse_proxy localhost:3001
 }
 

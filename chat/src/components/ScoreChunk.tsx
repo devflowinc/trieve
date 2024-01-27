@@ -65,18 +65,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
     (import.meta.env.VITE_FRONTMATTER_VALS as string | undefined) ??
     "link,tag_set,time_stamp"
   ).split(",");
-  const searchURL = import.meta.env.VITE_SEARCH_URL as string;
+  const searchURL = "https://search.trieve.ai"
 
-  const linesBeforeShowMore = (() => {
-    const parsedLinesBeforeShowMore = Number.parseInt(
-      (import.meta.env.VITE_LINES_BEFORE_SHOW_MORE as string | undefined) ??
-        "4",
-      10,
-    );
-    return Number.isNaN(parsedLinesBeforeShowMore)
-      ? 4
-      : parsedLinesBeforeShowMore;
-  })();
+  const linesBeforeShowMore = 12;
 
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
   const [copied, setCopied] = createSignal(false);

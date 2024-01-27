@@ -40,8 +40,6 @@ export interface SidebarProps {
 
 export const Sidebar = (props: SidebarProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
-  const showGithubStars = import.meta.env
-    .VITE_SHOW_GITHUB_STARS as unknown as string;
 
   const [editingIndex, setEditingIndex] = createSignal(-1);
   const [editingTopic, setEditingTopic] = createSignal("");
@@ -104,7 +102,7 @@ export const Sidebar = (props: SidebarProps) => {
 
   createEffect(() => {
     try {
-      void fetch(`https://api.github.com/repos/arguflow/arguflow`, {
+      void fetch(`https://api.github.com/repos/devflowinc/trieve`, {
         headers: {
           Accept: "application/vnd.github+json",
         },
@@ -277,24 +275,22 @@ export const Sidebar = (props: SidebarProps) => {
             <FiSettings class="h-6 w-6" />
             <div>Settings</div>
           </button>
-          <Show when={showGithubStars !== "off"}>
-            <a
-              href="https://github.com/arguflow/arguflow"
-              class="flex w-full items-center space-x-4 rounded-md px-3 py-2 hover:bg-neutral-200 dark:hover:bg-neutral-700"
-            >
-              <AiFillGithub class="h-6 w-6 fill-current" />
-              <div class="flex">
-                <p>STAR US</p>
-                <TbMinusVertical class="h-6 w-6" />
-                <p>{starCount()}</p>
-              </div>
-            </a>
-          </Show>
           <a
-            href="https://github.com/arguflow/arguflow"
+            href="https://github.com/devflowinc/trieve"
+            class="flex w-full items-center space-x-4 rounded-md px-3 py-2 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+          >
+            <AiFillGithub class="h-6 w-6 fill-current" />
+            <div class="flex">
+              <p>STAR US</p>
+              <TbMinusVertical class="h-6 w-6" />
+              <p>{starCount()}</p>
+            </div>
+          </a>
+          <a
+            href="https://github.com/devflowinc/trieve"
             class="flex items-center space-x-1 px-3 py-2"
           >
-            <img src="/logo_512.png" class="h-7 w-7" />
+            <img src="https://cdn.trieve.ai/trieve-logo.png" class="h-7 w-7" />
             <div>
               <div class="mb-[-4px] w-full text-end align-bottom text-xs leading-3 text-turquoise">
                 {userContext.currentDataset?.()?.dataset.name}

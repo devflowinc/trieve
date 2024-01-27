@@ -19,7 +19,11 @@ export const Navbar = () => {
         <div class="flex h-16 items-center justify-between">
           <div class="mx-auto flex h-[60px] w-full max-w-6xl items-center justify-between">
             <a class="flex w-full items-center" href="/">
-              <img class="w-6 sm:w-12" src="/logo_transparent.png" alt="Logo" />
+              <img
+                class="w-6 sm:w-12"
+                src="https://cdn.trieve.ai/trieve-logo.png"
+                alt="Logo"
+              />
               <div class="hidden min-[450px]:block ">
                 <div class="mb-[-4px] w-full text-end align-bottom leading-3 text-turquoise sm:mb-[-10px] sm:text-lg">
                   {$datasetName}
@@ -48,7 +52,7 @@ export const Navbar = () => {
                 </A>
               </Show>
               <a
-                href="https://docs.arguflow.ai"
+                href="https://docs.trieve.ai"
                 target="_blank"
                 class="hidden min-[420px]:text-lg min-[920px]:block"
               >
@@ -127,7 +131,7 @@ export const Navbar = () => {
             </a>
           </Show>
           <a
-            href="https://docs.arguflow.ai"
+            href="https://docs.trieve.ai"
             target="_blank"
             class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
           >

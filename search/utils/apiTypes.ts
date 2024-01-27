@@ -465,7 +465,7 @@ export const defaultClientEnvsConfiguration: ClientEnvsConfiguration = {
   CREATE_CHUNK_FEATURE: false,
   DOCUMENT_UPLOAD_FEATURE: false,
   SEARCH_QUERIES:
-    "star github.com/arguflow/arguflow, no seriously please star github.com/arguflow/arguflow, you know you want to star github.com/arguflow/arguflow",
+    "star github.com/devflowinc/trieve, no seriously please star github.com/devflowinc/trieve, you know you want to star github.com/devflowinc/trieve",
   FRONTMATTER_VALS: "link,tag_set,file_name,time_stamp",
   LINES_BEFORE_SHOW_MORE: 10,
   DATE_RANGE_VALUE: "Date",

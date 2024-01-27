@@ -1,3 +1,3 @@
-export const ArguflowLogo = () => {
-  return <img src="/public/logo_transparent.svg" alt="" />;
+export const TrieveLogo = () => {
+  return <img src="https://cdn.trieve.ai/trieve-logo.png" alt="" />;
 };
