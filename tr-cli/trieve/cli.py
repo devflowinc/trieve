@@ -251,7 +251,7 @@ def reset_db() -> None:
 
     subprocess.run(["docker", "compose", "stop", "qdrant-database"])
     subprocess.run(["docker", "compose", "rm", "-f", "qdrant-database"])
-    subprocess.run(["docker", "volume", "rm", "arguflow_qdrant_data"])
+    subprocess.run(["docker", "volume", "rm", "trieve_qdrant_data"])
     subprocess.run(["docker", "compose", "up", "-d", "qdrant-database"])
     terminate_connections(get_value("db_url"))  # type: ignore
     subprocess.run(

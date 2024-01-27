@@ -1081,7 +1081,7 @@ pub async fn generate_off_chunks(
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let openai_api_key = get_env!("LLM_API_KEY", "LLM_API_KEY should be set").into();
+    let llm_api_key = get_env!("LLM_API_KEY", "LLM_API_KEY should be set").into();
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
     let base_url = dataset_config
@@ -1089,7 +1089,7 @@ pub async fn generate_off_chunks(
         .unwrap_or("https://openrouter.ai/v1".into());
 
     let client = Client {
-        api_key: openai_api_key,
+        api_key: llm_api_key,
         http_client: reqwest::Client::new(),
         base_url,
     };

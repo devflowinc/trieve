@@ -35,7 +35,7 @@ export const HomeNavbar = () => {
                 </a>
               </Show>
               <a
-                href="https://docs.arguflow.ai"
+                href="https://docs.trieve.ai"
                 target="_blank"
                 class="hidden min-[420px]:text-lg min-[720px]:block"
               >
@@ -106,7 +106,7 @@ export const HomeNavbar = () => {
             </a>
           </Show>
           <a
-            href="https://docs.arguflow.ai"
+            href="https://docs.trieve.ai"
             target="_blank"
             class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
           >

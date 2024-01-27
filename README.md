@@ -1,25 +1,25 @@
 <p align="center">
-  <img height="100" src="https://raw.githubusercontent.com/arguflow/blog/5ef439020707b0e27bf901c8f6b4fb1f487a78d4/apps/frontend/public/assets/horizontal-logo.svg" alt="Arguflow">
+  <img height="100" src="https://cdn.trieve.ai/trieve-logo.png" alt="Trieve Logo">
 </p>
 <p align="center">
-<strong><a href="https://docs.arguflow.ai">Documentation</a> | <a href="https://blog.arguflow.ai">Blog</a> | <a href="https://www.youtube.com/watch?v=jX84z2QkfUM&t=7s">Demo Video</a>
+<strong><a href="https://docs.trieve.ai">Documentation</a> | <a href="https://blog.trieve.ai">Blog</a> | <a href="https://www.youtube.com/watch?v=jX84z2QkfUM&t=7s">Demo Video</a>
 </strong>
 </p>
 
 <p align="center">
-    <a href="https://github.com/arguflow/arguflow/stargazers">
-        <img src="https://img.shields.io/github/stars/arguflow/arguflow.svg?style=flat&color=yellow" alt="Github stars"/>
+    <a href="https://github.com/devflowinc/trieve/stargazers">
+        <img src="https://img.shields.io/github/stars/devflowinc/trieve.svg?style=flat&color=yellow" alt="Github stars"/>
     </a>
-    <a href="https://github.com/arguflow/arguflow">
-        <img src="https://img.shields.io/github/last-commit/arguflow/arguflow.svg?style=flat&color=blue" alt="GitHub last commit"/>
+    <a href="https://github.com/devflowinc/trieve">
+        <img src="https://img.shields.io/github/last-commit/devflowinc/trieve.svg?style=flat&color=blue" alt="GitHub last commit"/>
     </a>
-    <a href="https://github.com/arguflow/arguflow/issues">
-        <img src="https://img.shields.io/github/issues/arguflow/arguflow.svg?style=flat&color=success" alt="GitHub issues"/>
+    <a href="https://github.com/devflowinc/trieve/issues">
+        <img src="https://img.shields.io/github/issues/devflowinc/trieve.svg?style=flat&color=success" alt="GitHub issues"/>
     </a>
     <a href="https://discord.gg/CuJVfgZf54">
         <img src="https://img.shields.io/discord/1130153053056684123.svg?label=Discord&logo=Discord&colorB=7289da&style=flat" alt="Join Discord"/>
     </a>
-    <a href="https://matrix.to/#/#arguflow-general:matrix.zerodao.gg">
+    <a href="https://matrix.to/#/#trieve-general:matrix.zerodao.gg">
         <img src="https://img.shields.io/badge/matrix-join-purple?style=flat&logo=matrix&logocolor=white" alt="Join Matrix"/>
     </a>
     <a href="https://t.me/+vUOq6omKOn5lY2Zh">
@@ -32,19 +32,19 @@
 </p>
 <a href="https://www.youtube.com/watch?v=jX84z2QkfUM&t=7s">
 
-![arguflow architecture diagram](/assets/arguflow-system-diagram.png)
+![trieve architecture diagram](/assets/trieve-system-diagram.png)
 </a>
 
 ## Live Demos
 
-- [CVE security vulnerability search](https://cve-search.arguflow.ai)
-- [CVE security vulnerability RAG](https://cve-chat.arguflow.ai)
-- [Enron Corpus search](https://enron-search.arguflow.ai)
-- [Enron Corpus RAG](https://enron-chat.arguflow.ai)
+- [CVE security vulnerability search](https://cve-search.trieve.ai)
+- [CVE security vulnerability RAG](https://cve-chat.trieve.ai)
+- [Enron Corpus search](https://enron-search.trieve.ai)
+- [Enron Corpus RAG](https://enron-chat.trieve.ai)
 
 ## How to contribute
 
-1. Find an issue in the [issues tab](https://github.com/arguflow/arguflow/issues) that you would like to work on.
+1. Find an issue in the [issues tab](https://github.com/devflowinc/trieve/issues) that you would like to work on.
 2. Fork the repository and clone it to your local machine
 3. Create a new branch with a descriptive name: git checkout -b your-branch-name
 4. Solve the issue by adding or removing code on your forked branch.
@@ -55,7 +55,7 @@
 
 ## Self-hosting the API and UI's
 
-We have a full self-hosting guide available on our [documentation page here](https://docs.arguflow.ai/self_hosting).
+We have a full self-hosting guide available on our [documentation page here](https://docs.trieve.ai/self_hosting).
 
 ## Local development with Linux
 
@@ -115,14 +115,15 @@ cp .env.search ./search/.env
 cp .env.server ./server/.env
 ```
 
-### Add your `OPENAI_API_KEY` to `./server/.env`
+### Add your `LLM_API_KEY` to `./server/.env`
 
 [Here is a guide for acquiring that](https://blog.streamlit.io/beginners-guide-to-openai-api/#get-your-own-openai-api-key).
 
 #### Steps once you have the key
 
 1. Open the `./server/.env` file
-2. Replace the value for `OPENAI_API_KEY` to be your own OpenAI API key.
+2. Replace the value for `LLM_API_KEY` to be your own OpenAI API key.
+3. Replace the value for `OPENAI_API_KEY` to be your own OpenAI API key.
 
 ### Start docker container services needed for local dev
 
@@ -204,14 +205,15 @@ cp .env.search ./search/.env
 cp .env.server ./server/.env
 ```
 
-### Add your `OPENAI_API_KEY` to `./server/.env`
+### Add your `LLM_API_KEY` to `./server/.env`
 
 [Here is a guide for acquiring that](https://blog.streamlit.io/beginners-guide-to-openai-api/#get-your-own-openai-api-key).
 
 #### Steps once you have the key
 
 1. Open the `./server/.env` file
-2. Replace the value for `OPENAI_API_KEY` to be your own OpenAI API key.
+2. Replace the value for `LLM_API_KEY` to be your own OpenAI API key.
+3. Replace the value for `OPENAI_API_KEY` to be your own OpenAI API key.
 
 ### Start Docker containers
 

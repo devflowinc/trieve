@@ -12,7 +12,7 @@ export const Footer = () => {
     <div class="mt-12 flex w-full flex-col items-center space-y-2 py-4">
       <div class="flex w-full justify-center space-x-3">
         <a
-          href="https://matrix.to/#/#arguflow-general:matrix.zerodao.gg"
+          href="https://matrix.to/#/#trieve-general:matrix.zerodao.gg"
           target="_blank"
           class="hover:text-turquoise-500 dark:hover:text-acid-500"
         >
@@ -33,14 +33,14 @@ export const Footer = () => {
           <BiLogosDiscord size={30} class="fill-current" />
         </a>
         <a
-          href="https://twitter.com/arguflow"
+          href="https://twitter.com/trieveai"
           target="_blank"
           class="hover:text-turquoise-500 dark:hover:text-acid-500"
         >
           <BiLogosTwitter size={30} class="fill-current" />
         </a>
         <a
-          href="https://github.com/orgs/arguflow/repositories"
+          href="https://github.com/orgs/devflowinc/trieve"
           target="_blank"
           class="hover:text-turquoise-500 dark:hover:text-acid-500"
         >
@@ -48,7 +48,7 @@ export const Footer = () => {
         </a>
       </div>
       <div class="flex w-full justify-center space-x-4">
-        <div>humans@ansear.ai</div>
+        <div>humans@trieve.ai</div>
         <div>
           <ThemeModeController />
         </div>

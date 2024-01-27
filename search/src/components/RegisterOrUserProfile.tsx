@@ -27,7 +27,7 @@ const RegisterOrUserProfile = () => {
 
   createEffect(() => {
     try {
-      void fetch(`https://api.github.com/repos/arguflow/arguflow`, {
+      void fetch(`https://api.github.com/repos/devflowinc/trieve`, {
         headers: {
           Accept: "application/vnd.github+json",
         },
@@ -77,7 +77,7 @@ const RegisterOrUserProfile = () => {
               </a>
             </div>
           </Show>
-          <a href="https://github.com/arguflow/arguflow">
+          <a href="https://github.com/devflowinc/trieve">
             <div class="flex items-center justify-center rounded border border-black px-2 py-1 hover:border-gray-300 hover:bg-gray-300 dark:border-white dark:hover:border-neutral-700 dark:hover:bg-neutral-700">
               <AiFillGithub class="mr-2 h-[26px] w-[26px] fill-current" />
               <p class="text-sm">STAR US</p>
