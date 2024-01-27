@@ -132,6 +132,12 @@ async def sparse_encode(encodingRequest: SparseEncodeRequest):
         )
     indices = vec.nonzero().squeeze().cpu().tolist()
     values = vec[indices].cpu().tolist()
+
+    if type(indices) != list:
+        indices = [indices]
+    if type(values) != list:
+        values = [values]
+
     return JSONResponse(
         content={
             "embeddings": list(zip(indices, values)),
