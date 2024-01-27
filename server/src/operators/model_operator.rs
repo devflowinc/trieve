@@ -50,7 +50,9 @@ pub struct CustomSparseEmbedData {
 
 pub async fn get_splade_doc_embedding(message: &str) -> Result<Vec<(u32, f32)>, ServiceError> {
     if message.is_empty() {
-        return Err(ServiceError::BadRequest("Cannot encode empty query".to_string()));
+        return Err(ServiceError::BadRequest(
+            "Cannot encode empty query".to_string(),
+        ));
     }
     let mut embedding_server_call: String = get_env!(
         "GPU_SERVER_ORIGIN",
@@ -143,6 +145,10 @@ pub async fn cross_encoder(
     )
     .to_string();
     embedding_server_call.push_str("/rerank");
+
+    if results.is_empty() {
+        return Err(ServiceError::BadRequest("Cannot rerank empty results".to_string()).into());
+    }
 
     let request_docs = results
         .clone()
