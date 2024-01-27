@@ -36,12 +36,14 @@ use utoipa::ToSchema;
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct CreateMessageData {
-    /// The model to use for the assistant's messages. This can be any model from the model list. If no model is provided, the gryphe/mythomax-l2-13b will be used.
+    /// The model to use for the assistant's messages. This can be any model from the openrouter model list. If no model is provided, the gryphe/mythomax-l2-13b will be used.
     pub model: Option<String>,
     /// The content of the user message to attach to the topic and then generate an assistant message in response to.
     pub new_message_content: String,
     /// The ID of the topic to attach the message to.
     pub topic_id: uuid::Uuid,
+    /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
+    pub stream_response: Option<bool>,
 }
 
 /// create_message
@@ -84,10 +86,10 @@ pub async fn create_message_completion_handler(
     }
 
     let create_message_data = data.into_inner();
-    let pool1 = pool.clone();
-    let pool2 = pool.clone();
-    let pool3 = pool.clone();
-    let pool4 = pool.clone();
+    let user_owns_topic_pool = pool.clone();
+    let get_messages_pool = pool.clone();
+    let create_message_pool = pool.clone();
+    let stream_response_pool = pool.clone();
     let topic_id = create_message_data.topic_id;
 
     let new_message = models::Message::from_details(
@@ -101,16 +103,26 @@ pub async fn create_message_completion_handler(
     );
 
     let _ = web::block(move || {
-        user_owns_topic_query(user.id, topic_id, dataset_org_plan_sub.dataset.id, &pool1)
+        user_owns_topic_query(
+            user.id,
+            topic_id,
+            dataset_org_plan_sub.dataset.id,
+            &user_owns_topic_pool,
+        )
     })
     .await?
     .map_err(|_e| ServiceError::Unauthorized)?;
 
     // get the previous messages
-    let mut previous_messages =
-        web::block(move || get_topic_messages(topic_id, dataset_org_plan_sub.dataset.id, &pool2))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let mut previous_messages = web::block(move || {
+        get_topic_messages(
+            topic_id,
+            dataset_org_plan_sub.dataset.id,
+            &get_messages_pool,
+        )
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     // remove citations from the previous messages
     previous_messages = previous_messages
@@ -136,7 +148,7 @@ pub async fn create_message_completion_handler(
             new_message,
             user.id,
             dataset_org_plan_sub.dataset.id,
-            &pool3,
+            &create_message_pool,
         )
     })
     .await?
@@ -147,8 +159,9 @@ pub async fn create_message_completion_handler(
         user.id,
         topic_id,
         create_message_data.model,
+        create_message_data.stream_response,
         dataset_org_plan_sub.dataset,
-        pool4,
+        stream_response_pool,
     )
     .await
 }
@@ -200,15 +213,17 @@ pub async fn get_all_topic_messages(
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct RegenerateMessageData {
-    /// The model to use for the assistant generative inferences. This can be any model from the model list. If no model is provided, the gryphe/mythomax-l2-13b will be used.~
+    /// The model to use for the assistant generative inferences. This can be any model from the openrouter model list. If no model is provided, the gryphe/mythomax-l2-13b will be used.~
     model: Option<String>,
     /// The id of the topic to regenerate the last message for.
     topic_id: uuid::Uuid,
+    /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
+    pub stream_response: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct EditMessageData {
-    /// The model to use for the assistant generative inferences. This can be any model from the model list. If no model is provided, the gryphe/mythomax-l2-13b will be used.~
+    /// The model to use for the assistant generative inferences. This can be any model from the openrouter model list. If no model is provided, the gryphe/mythomax-l2-13b will be used.~
     model: Option<String>,
     /// The id of the topic to edit the message at the given sort order for.
     topic_id: uuid::Uuid,
@@ -216,6 +231,8 @@ pub struct EditMessageData {
     message_sort_order: i32,
     /// The new content of the message to replace the old content with.
     new_message_content: String,
+    /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
+    pub stream_response: Option<bool>,
 }
 
 /// edit_message
@@ -238,7 +255,8 @@ pub async fn edit_message_handler(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let topic_id = data.topic_id;
+    let topic_id: uuid::Uuid = data.topic_id;
+    let stream_response = data.stream_response;
     let message_sort_order = data.message_sort_order;
     let new_message_content = &data.new_message_content;
     let second_pool = pool.clone();
@@ -277,6 +295,7 @@ pub async fn edit_message_handler(
             model: data.model.clone(),
             new_message_content: new_message_content.to_string(),
             topic_id,
+            stream_response,
         }),
         user,
         dataset_org_plan_sub,
@@ -306,17 +325,21 @@ pub async fn regenerate_message_handler(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
-    let pool1 = pool.clone();
-    let pool2 = pool.clone();
-    let pool3 = pool.clone();
+    let should_stream = data.stream_response;
+
+    let user_owns_topic_pool = pool.clone();
+    let get_messages_pool = pool.clone();
+    let create_message_pool = pool.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
-    let _ = web::block(move || user_owns_topic_query(user.id, topic_id, dataset_id, &pool1))
-        .await?
-        .map_err(|_e| ServiceError::Unauthorized)?;
+    let _ = web::block(move || {
+        user_owns_topic_query(user.id, topic_id, dataset_id, &user_owns_topic_pool)
+    })
+    .await?
+    .map_err(|_e| ServiceError::Unauthorized)?;
 
     let previous_messages_result =
-        web::block(move || get_topic_messages(topic_id, dataset_id, &pool2)).await?;
+        web::block(move || get_topic_messages(topic_id, dataset_id, &get_messages_pool)).await?;
 
     let mut previous_messages = match previous_messages_result {
         Ok(messages) => messages,
@@ -337,8 +360,9 @@ pub async fn regenerate_message_handler(
             user.id,
             topic_id,
             data.model.clone(),
+            should_stream,
             dataset_org_plan_sub.dataset,
-            pool3,
+            create_message_pool,
         )
         .await;
     }
@@ -394,8 +418,9 @@ pub async fn regenerate_message_handler(
         user.id,
         topic_id,
         data.model.clone(),
+        should_stream,
         dataset_org_plan_sub.dataset,
-        pool3,
+        create_message_pool,
     )
     .await
 }
@@ -469,6 +494,7 @@ pub async fn stream_response(
     user_id: uuid::Uuid,
     topic_id: uuid::Uuid,
     model: Option<String>,
+    should_stream: Option<bool>,
     dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -664,6 +690,51 @@ pub async fn stream_response(
         top_logprobs: None,
         seed: None,
     };
+
+    if !should_stream.unwrap_or(true) {
+        let assistant_completion =
+            client
+                .chat()
+                .create(parameters.clone())
+                .await
+                .map_err(|err| {
+                    ServiceError::BadRequest(format!(
+                        "Bad response from LLM server provider: {}",
+                        err
+                    ))
+                })?;
+
+        let completion_content = match &assistant_completion.choices[0].message.content {
+            ChatMessageContent::Text(text) => text.clone(),
+            _ => "".to_string(),
+        };
+
+        let new_message = models::Message::from_details(
+            format!(
+                "{}{}",
+                citation_chunks_stringified,
+                completion_content.clone()
+            ),
+            topic_id,
+            next_message_order()
+                .try_into()
+                .expect("usize to i32 conversion should always succeed"),
+            "assistant".to_string(),
+            None,
+            Some(
+                completion_content
+                    .len()
+                    .try_into()
+                    .expect("usize to i32 conversion should always succeed"),
+            ),
+            dataset.id,
+        );
+
+        let _ = create_message_query(new_message, user_id, &pool);
+
+        let chat_content = assistant_completion.choices[0].message.content.clone();
+        return Ok(HttpResponse::Ok().json(chat_content));
+    }
 
     let (s, r) = unbounded::<String>();
     let stream = client.chat().create_stream(parameters).await.unwrap();

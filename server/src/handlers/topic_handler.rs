@@ -14,9 +14,9 @@ use utoipa::ToSchema;
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct CreateTopicData {
-    /// The first message which will belong to the topic. The topic name is generated based on this message similar to how it works in the OpenAI chat UX.
+    /// The first message which will belong to the topic. The topic name is generated based on this message similar to how it works in the OpenAI chat UX if a name is not explicitly provided on the name request body key.
     pub first_user_message: Option<String>,
-    // The name of the topic. If this is not provided, the topic name is generated from the first_user_message.
+    /// The name of the topic. If this is not provided, the topic name is generated from the first_user_message.
     pub name: Option<String>,
 }
 
