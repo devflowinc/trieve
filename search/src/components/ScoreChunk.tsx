@@ -77,7 +77,6 @@ export interface ScoreChunkProps {
 }
 
 const ScoreChunk = (props: ScoreChunkProps) => {
-  console.log(props.chunk)
   const $dataset = useStore(currentDataset);
   const apiHost = import.meta.env.VITE_API_HOST as string;
   const $envs = useStore(clientConfig);
