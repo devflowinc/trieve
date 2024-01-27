@@ -1051,7 +1051,7 @@ pub struct GenerateChunksRequest {
     pub prev_messages: Vec<ChatMessageProxy>,
     /// The ids of the chunks to be retrieved and injected into the context window for RAG.
     pub chunk_ids: Vec<uuid::Uuid>,
-    /// Prompt for the last message in the prev_messages array. This will be used to generate the next message in the chat. The default is 'Respond to the instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:'.
+    /// Prompt for the last message in the prev_messages array. This will be used to generate the next message in the chat. The default is 'Respond to the instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:'. You can also specify an empty string to leave the final message alone such that your user's final message can be used as the prompt. See docs.trieve.ai or contact us for more information.
     pub prompt: Option<String>,
     /// Whether or not to stream the response. If this is set to true not not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
     pub stream: Option<bool>,
