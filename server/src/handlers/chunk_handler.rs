@@ -1053,11 +1053,11 @@ pub struct GenerateChunksRequest {
     pub chunk_ids: Vec<uuid::Uuid>,
     /// Prompt for the last message in the prev_messages array. This will be used to generate the next message in the chat. The default is 'Respond to the instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:'. You can also specify an empty string to leave the final message alone such that your user's final message can be used as the prompt. See docs.trieve.ai or contact us for more information.
     pub prompt: Option<String>,
-    /// Whether or not to stream the response. If this is set to true not not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
-    pub stream: Option<bool>,
+    /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
+    pub stream_response: Option<bool>,
 }
 
-/// generate_off_chunks
+/// augmented_generation_from_chunks
 ///
 /// This endpoint exists as an alternative to the topic+message concept where our API handles chat memory. With this endpoint, the user is responsible for providing the context window and the prompt. See more in the "search before generate" page at docs.trieve.ai.
 #[utoipa::path(
@@ -1088,7 +1088,7 @@ pub async fn generate_off_chunks(
 
     let chunk_ids = data.chunk_ids.clone();
     let prompt = data.prompt.clone();
-    let stream = data.stream.clone();
+    let stream_response = data.stream_response.clone();
 
     let mut chunks = web::block(move || {
         get_metadata_from_ids_query(chunk_ids, dataset_org_plan_sub.dataset.id, pool)
@@ -1207,9 +1207,16 @@ pub async fn generate_off_chunks(
         seed: None,
     };
 
-    if !stream.unwrap_or(true) {
-        let response = client.chat().create(parameters.clone()).await.unwrap();
-        let chat_content = response.choices[0].message.content.clone();
+    if !stream_response.unwrap_or(true) {
+        let assistant_completion = client
+            .chat()
+            .create(parameters.clone())
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!("Bad response from LLM server provider: {}", err))
+            })?;
+
+        let chat_content = assistant_completion.choices[0].message.content.clone();
         return Ok(HttpResponse::Ok().json(chat_content));
     }
 
