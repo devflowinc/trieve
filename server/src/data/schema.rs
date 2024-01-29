@@ -279,7 +279,6 @@ diesel::joinable!(chunk_group_bookmarks -> chunk_metadata (chunk_metadata_id));
 diesel::joinable!(chunk_metadata -> datasets (dataset_id));
 diesel::joinable!(chunk_metadata -> users (author_id));
 diesel::joinable!(cut_chunks -> users (user_id));
-diesel::joinable!(dataset_group_counts -> datasets (dataset_id));
 diesel::joinable!(dataset_usage_counts -> datasets (dataset_id));
 diesel::joinable!(datasets -> organizations (organization_id));
 diesel::joinable!(file_upload_completed_notifications -> chunk_group (group_uuid));
