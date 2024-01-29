@@ -368,9 +368,8 @@ pub async fn update_qdrant_point_query(
 
 pub async fn search_semantic_qdrant_query(
     page: u64,
-    mut filter: Filter,
+    filter: Filter,
     embedding_vector: Vec<f32>,
-    dataset_id: uuid::Uuid,
 ) -> Result<Vec<SearchResult>, DefaultError> {
     let qdrant = get_qdrant_connection().await?;
 
@@ -379,10 +378,6 @@ pub async fn search_semantic_qdrant_query(
         "QDRANT_COLLECTION should be set if this is called"
     )
     .to_string();
-
-    filter
-        .must
-        .push(Condition::matches("dataset_id", dataset_id.to_string()));
 
     let vector_name = match embedding_vector.len() {
         384 => "384_vectors",
@@ -432,9 +427,8 @@ pub async fn search_semantic_qdrant_query(
 
 pub async fn search_full_text_qdrant_query(
     page: u64,
-    mut filter: Filter,
+    filter: Filter,
     query: String,
-    dataset_id: uuid::Uuid,
 ) -> Result<Vec<SearchResult>, DefaultError> {
     let qdrant = get_qdrant_connection().await?;
 
@@ -450,10 +444,6 @@ pub async fn search_full_text_qdrant_query(
             .map_err(|_err| DefaultError {
                 message: "Failed to get splade query embedding",
             })?;
-
-    filter
-        .must
-        .push(Condition::matches("dataset_id", dataset_id.to_string()));
 
     let sparse_vector: Vector = embedding_vector.into();
 

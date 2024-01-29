@@ -1088,7 +1088,7 @@ pub async fn generate_off_chunks(
 
     let chunk_ids = data.chunk_ids.clone();
     let prompt = data.prompt.clone();
-    let stream_response = data.stream_response.clone();
+    let stream_response = data.stream_response;
 
     let mut chunks = web::block(move || {
         get_metadata_from_ids_query(chunk_ids, dataset_org_plan_sub.dataset.id, pool)
@@ -1208,13 +1208,17 @@ pub async fn generate_off_chunks(
     };
 
     if !stream_response.unwrap_or(true) {
-        let assistant_completion = client
-            .chat()
-            .create(parameters.clone())
-            .await
-            .map_err(|err| {
-                ServiceError::BadRequest(format!("Bad response from LLM server provider: {}", err))
-            })?;
+        let assistant_completion =
+            client
+                .chat()
+                .create(parameters.clone())
+                .await
+                .map_err(|err| {
+                    ServiceError::BadRequest(format!(
+                        "Bad response from LLM server provider: {}",
+                        err
+                    ))
+                })?;
 
         let chat_content = assistant_completion.choices[0].message.content.clone();
         return Ok(HttpResponse::Ok().json(chat_content));
