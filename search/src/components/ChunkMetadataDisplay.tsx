@@ -57,7 +57,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
   const $envs = useStore(clientConfig);
 
-  const frontMatterVals = $envs().FRONTMATTER_VALS?.split(",");
+  const frontMatterValsToHide = $envs().FRONTMATTER_VALS?.split(",");
 
   const linesBeforeShowMore = $envs().LINES_BEFORE_SHOW_MORE;
 
@@ -245,7 +245,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                 }
                 tooltipText="Open in new tab"
               />
-        
+
               <BookmarkPopover
                 totalGroupPages={props.totalGroupPages}
                 chunkGroups={props.chunkGroups}
@@ -258,73 +258,73 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
               />
             </div>
             <div class="flex w-full flex-col">
-              <For each={frontMatterVals}>
-                {(frontMatterVal) => (
+              <Show
+                when={
+                  props.chunk.link &&
+                  !frontMatterValsToHide?.find((val) => val == "link")
+                }
+              >
+                <a
+                  class="line-clamp-1 w-fit break-all text-magenta-500 underline dark:text-turquoise-400"
+                  target="_blank"
+                  href={props.chunk.link ?? ""}
+                >
+                  {props.chunk.link}
+                </a>
+              </Show>
+              <Show
+                when={
+                  props.chunk.tag_set &&
+                  !frontMatterValsToHide?.find((val) => val == "tag_set")
+                }
+              >
+                <div class="flex space-x-2">
+                  <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                    Tag Set:{" "}
+                  </span>
+                  <span class="line-clamp-1 break-all">
+                    {props.chunk.tag_set}
+                  </span>
+                </div>
+              </Show>
+              <Show
+                when={
+                  props.chunk.time_stamp &&
+                  !frontMatterValsToHide?.find((val) => val == "time_stamp")
+                }
+              >
+                <div class="flex space-x-2">
+                  <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                    Time Stamp:{" "}
+                  </span>
+                  <span class="line-clamp-1 break-all">
+                    {formatDate(new Date(props.chunk.time_stamp ?? ""))}
+                  </span>
+                </div>
+              </Show>
+              <For each={Object.keys(props.chunk.metadata ?? {})}>
+                {(key) => (
                   <>
-                    <Show when={props.chunk.link && frontMatterVal == "link"}>
-                      <a
-                        class="line-clamp-1 w-fit break-all text-magenta-500 underline dark:text-turquoise-400"
-                        target="_blank"
-                        href={props.chunk.link ?? ""}
-                      >
-                        {props.chunk.link}
-                      </a>
-                    </Show>
-                    <Show
-                      when={props.chunk.tag_set && frontMatterVal == "tag_set"}
-                    >
-                      <div class="flex space-x-2">
-                        <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                          Tag Set:{" "}
-                        </span>
-                        <span class="line-clamp-1 break-all">
-                          {props.chunk.tag_set}
-                        </span>
-                      </div>
-                    </Show>
-                    <Show
-                      when={
-                        props.chunk.time_stamp && frontMatterVal == "time_stamp"
-                      }
-                    >
-                      <div class="flex space-x-2">
-                        <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                          Time Stamp:{" "}
-                        </span>
-                        <span class="line-clamp-1 break-all">
-                          {formatDate(new Date(props.chunk.time_stamp ?? ""))}
-                        </span>
-                      </div>
-                    </Show>
                     <Show
                       when={
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                        frontMatterVal !== "link" &&
-                        frontMatterVal !== "tag_set" &&
-                        frontMatterVal !== "time_stamp" &&
-                        props.chunk.metadata &&
-                        indirectHasOwnProperty(
-                          props.chunk.metadata,
-                          frontMatterVal,
-                        ) &&
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-                        (props.chunk.metadata as any)[frontMatterVal]
+                        !frontMatterValsToHide?.find((val) => val == key) &&
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        (props.chunk.metadata as any)[key]
                       }
                     >
                       <div class="flex space-x-2">
                         <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                          {frontMatterVal}:{" "}
+                          {key}:{" "}
                         </span>
                         <span class="line-clamp-1 break-all">
                           {props.chunk.metadata &&
-                            indirectHasOwnProperty(
-                              props.chunk.metadata,
-                              frontMatterVal,
-                            ) &&
+                            indirectHasOwnProperty(props.chunk.metadata, key) &&
                             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
-                            (props.chunk.metadata as any)[
-                              frontMatterVal
-                            ].replace(/ +/g, " ")}
+                            (props.chunk.metadata as any)[key].replace(
+                              / +/g,
+                              " ",
+                            )}
                         </span>
                       </div>
                     </Show>

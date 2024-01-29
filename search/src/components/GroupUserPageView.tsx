@@ -30,8 +30,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
   const [deleting, setDeleting] = createSignal(false);
 
   props.initialGroups && setGroups(props.initialGroups);
-  props.initialGroupPageCount &&
-    setGroupPageCount(props.initialGroupPageCount);
+  props.initialGroupPageCount && setGroupPageCount(props.initialGroupPageCount);
 
   createEffect(() => {
     const userId = props.user?.id;
@@ -40,20 +39,21 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
     const currentDataset = $dataset();
     if (!currentDataset) return;
 
-    void fetch(`${apiHost}/dataset/groups/${currentDataset.dataset.id}/${groupPage()}`, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        "TR-Dataset": currentDataset.dataset.id,
+    void fetch(
+      `${apiHost}/dataset/groups/${currentDataset.dataset.id}/${groupPage()}`,
+      {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "TR-Dataset": currentDataset.dataset.id,
+        },
       },
-    }).then((response) => {
+    ).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
           if (isChunkGroupPageDTO(data)) {
             setGroups(data.groups);
-            setGroupPageCount(
-              data.total_pages == 0 ? 1 : data.total_pages,
-            );
+            setGroupPageCount(data.total_pages == 0 ? 1 : data.total_pages);
           } else {
             console.error("Invalid response", data);
           }
@@ -165,9 +165,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                           {group.description}
                         </td>
                         <td class="whitespace-nowrap px-3 py-4 text-left text-sm text-gray-900 dark:text-gray-300">
-                          {getLocalTime(
-                            group.created_at,
-                          ).toLocaleDateString() +
+                          {getLocalTime(group.created_at).toLocaleDateString() +
                             " " +
                             //remove seconds from time
                             getLocalTime(group.created_at)

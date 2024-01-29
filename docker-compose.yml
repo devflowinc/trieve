@@ -171,7 +171,6 @@ services:
     ports:
       - 3000:3000
     environment:
-      - VITE_FRONTMATTER_VALS=${VITE_FRONTMATTER_VALS}
       - VITE_API_HOST=${VITE_API_HOST}
 
   search:

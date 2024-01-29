@@ -106,7 +106,7 @@ export const isScoreChunkDTO = (chunk: unknown): chunk is ScoreChunkDTO => {
 
   return (
     indirectHasOwnProperty(chunk, "metadata") &&
-    Array.isArray((chunk as ScoreChunkDTO).metadata)  &&
+    Array.isArray((chunk as ScoreChunkDTO).metadata) &&
     indirectHasOwnProperty(chunk, "score") &&
     typeof (chunk as ScoreChunkDTO).score === "number"
   );
@@ -297,8 +297,7 @@ export interface ChunkGroupPageDTO {
 export const isChunkGroupPageDTO = (
   groupPage: unknown,
 ): groupPage is ChunkGroupPageDTO => {
-  if (typeof groupPage !== "object" || groupPage === null)
-    return false;
+  if (typeof groupPage !== "object" || groupPage === null) return false;
 
   return (
     indirectHasOwnProperty(groupPage, "groups") &&
@@ -311,9 +310,7 @@ export const isChunkGroupPageDTO = (
   );
 };
 
-export const isChunkGroupDTO = (
-  group: unknown,
-): group is ChunkGroupDTO => {
+export const isChunkGroupDTO = (group: unknown): group is ChunkGroupDTO => {
   if (typeof group !== "object" || group === null) return false;
 
   return (
@@ -407,8 +404,8 @@ export const isFileUploadCompleteNotificationDTO = (
     typeof (notification as FileUploadCompleteNotificationDTO).user_uuid ===
       "string" &&
     indirectHasOwnProperty(notification, "group_uuid") &&
-    typeof (notification as FileUploadCompleteNotificationDTO)
-      .group_uuid === "string" &&
+    typeof (notification as FileUploadCompleteNotificationDTO).group_uuid ===
+      "string" &&
     indirectHasOwnProperty(notification, "user_read") &&
     typeof (notification as FileUploadCompleteNotificationDTO).user_read ===
       "boolean" &&
