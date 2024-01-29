@@ -28,6 +28,7 @@ use diesel::{
 use itertools::Itertools;
 
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
+use qdrant_client::qdrant::Range;
 use qdrant_client::qdrant::{
     point_id::PointIdOptions, Condition, Filter, HasIdCondition, PointId, SearchPoints,
 };
@@ -47,6 +48,159 @@ pub struct SearchChunkQueryResult {
     pub total_chunk_pages: i64,
 }
 
+pub fn assemble_qdrant_filter(
+    tag_set: Option<Vec<String>>,
+    link: Option<Vec<String>>,
+    time_range: Option<(String, String)>,
+    filters: Option<serde_json::Value>,
+    quote_words: Option<Vec<String>>,
+    negated_words: Option<Vec<String>>,
+    dataset_id: uuid::Uuid,
+) -> Result<Filter, DefaultError> {
+    let mut filter = Filter::default();
+
+    let tag_set_inner = tag_set.unwrap_or_default();
+    let link_inner = link.unwrap_or_default();
+
+    filter
+        .must
+        .push(Condition::matches("dataset_id", dataset_id.to_string()));
+    //TODO: fix this after new qdrant rust client gets released
+    if !tag_set_inner.is_empty() {
+        filter
+            .must
+            .push(Condition::matches("tag_set", tag_set_inner));
+    }
+
+    if !link_inner.is_empty() {
+        filter.must.push(Condition::matches("link", link_inner));
+    }
+
+    if let Some(time_range) = time_range {
+        if time_range.0 != "null" && time_range.1 != "null" {
+            filter.must.push(Condition::range(
+                "time_stamp",
+                Range {
+                    gt: None,
+                    lt: None,
+                    gte: Some(
+                        time_range
+                            .0
+                            .clone()
+                            .parse::<DateTimeUtc>()
+                            .map_err(|_| DefaultError {
+                                message: "Failed to parse time range",
+                            })?
+                            .0
+                            .with_timezone(&chrono::Local)
+                            .naive_local()
+                            .timestamp() as f64,
+                    ),
+                    lte: Some(
+                        time_range
+                            .1
+                            .clone()
+                            .parse::<DateTimeUtc>()
+                            .map_err(|_| DefaultError {
+                                message: "Failed to parse time range",
+                            })?
+                            .0
+                            .with_timezone(&chrono::Local)
+                            .naive_local()
+                            .timestamp() as f64,
+                    ),
+                },
+            ));
+        } else if time_range.1 == "null" {
+            filter.must.push(Condition::range(
+                "time_stamp",
+                Range {
+                    gt: None,
+                    lt: None,
+                    gte: Some(
+                        time_range
+                            .0
+                            .clone()
+                            .parse::<DateTimeUtc>()
+                            .map_err(|_| DefaultError {
+                                message: "Failed to parse time range",
+                            })?
+                            .0
+                            .with_timezone(&chrono::Local)
+                            .naive_local()
+                            .timestamp() as f64,
+                    ),
+                    lte: None,
+                },
+            ));
+        } else if time_range.0 == "null" {
+            filter.must.push(Condition::range(
+                "time_stamp",
+                Range {
+                    gt: None,
+                    lt: None,
+                    gte: None,
+                    lte: Some(
+                        time_range
+                            .1
+                            .clone()
+                            .parse::<DateTimeUtc>()
+                            .map_err(|_| DefaultError {
+                                message: "Failed to parse time range",
+                            })?
+                            .0
+                            .with_timezone(&chrono::Local)
+                            .naive_local()
+                            .timestamp() as f64,
+                    ),
+                },
+            ));
+        }
+    }
+
+    if let Some(serde_json::Value::Object(obj)) = &filters {
+        for key in obj.keys() {
+            let value = obj.get(key).expect("Value should exist");
+            match value {
+                serde_json::Value::Array(arr) => {
+                    filter.must.push(Condition::matches(
+                        &format!("metadata.{}", key),
+                        arr.iter()
+                            .map(|item| item.to_string())
+                            .collect::<Vec<String>>(),
+                    ));
+                }
+                _ => {
+                    filter.must.push(Condition::matches(
+                        &format!("metadata.{}", key),
+                        value.to_string().replace('\"', ""),
+                    ));
+                }
+            }
+        }
+    }
+
+    //TODO: fix this after new qdrant rust client gets released
+    if let Some(quote_words) = quote_words {
+        for word in quote_words.iter() {
+            filter
+                .must
+                .push(Condition::matches("card_html", word.clone() + " "));
+        }
+    }
+
+    //TODO: fix this after new qdrant rust client gets released
+    if let Some(negated_words) = negated_words {
+        for word in negated_words.iter() {
+            filter
+                .must_not
+                .push(Condition::matches("card_html", word.clone() + " "));
+        }
+    }
+
+    Ok(filter)
+}
+
 #[allow(clippy::too_many_arguments)]
 pub async fn retrieve_qdrant_points_query(
     embedding_vector: Option<Vec<f32>>,
@@ -57,193 +211,29 @@ pub async fn retrieve_qdrant_points_query(
     filters: Option<serde_json::Value>,
     parsed_query: ParsedQuery,
     dataset_id: uuid::Uuid,
-    pool: web::Data<Pool>,
 ) -> Result<SearchChunkQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
 
-    // TODO: Talk to Qdrant team about how to force substring match on a field instead of keyword match
-    // TEMPORARY: Using postgres to qdrant_point_id's for chunks that match filter conditions
-    // NOTE: Replacement function for native qdrant filters at https://gist.github.com/skeptrunedev/3ede217aa78d6462c5c52c63d0318764
-    use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
-    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
-    let second_join = diesel::alias!(schema::chunk_metadata as second_join);
-    let mut conn = pool.get().unwrap();
-
-    let mut query = chunk_metadata_columns::chunk_metadata
-        .left_outer_join(
-            chunk_collisions_columns::chunk_collisions
-                .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
-        )
-        .left_outer_join(
-            second_join.on(second_join
-                .field(schema::chunk_metadata::qdrant_point_id)
-                .eq(chunk_collisions_columns::collision_qdrant_id)),
-        )
-        .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
-        .select((
-            chunk_metadata_columns::qdrant_point_id,
-            second_join
-                .field(schema::chunk_metadata::qdrant_point_id)
-                .nullable(),
-        ))
-        .distinct_on((
-            chunk_metadata_columns::qdrant_point_id,
-            second_join
-                .field(schema::chunk_metadata::qdrant_point_id)
-                .nullable(),
-        ))
-        .into_boxed();
-
-    let tag_set_inner = tag_set.unwrap_or_default();
-    let link_inner = link.unwrap_or_default();
-    if !tag_set_inner.is_empty() {
-        query = query.filter(chunk_metadata_columns::tag_set.ilike(format!(
-            "%{}%",
-            tag_set_inner.first().unwrap_or(&String::new())
-        )));
-    }
-
-    for tag in tag_set_inner.iter().skip(1) {
-        query = query.or_filter(chunk_metadata_columns::tag_set.ilike(format!("%{}%", tag)));
-    }
-
-    if !link_inner.is_empty() {
-        query = query.filter(chunk_metadata_columns::link.ilike(format!(
-            "%{}%",
-            link_inner.first().unwrap_or(&String::new())
-        )));
-    }
-    for link_url in link_inner.iter().skip(1) {
-        query = query.or_filter(chunk_metadata_columns::link.ilike(format!("%{}%", link_url)));
-    }
-
-    if let Some(time_range) = time_range {
-        if time_range.0 != "null" && time_range.1 != "null" {
-            query = query.filter(
-                chunk_metadata_columns::time_stamp
-                    .ge(time_range
-                        .0
-                        .clone()
-                        .parse::<DateTimeUtc>()
-                        .map_err(|_| DefaultError {
-                            message: "Failed to parse time range",
-                        })?
-                        .0
-                        .with_timezone(&chrono::Local)
-                        .naive_local())
-                    .and(
-                        chunk_metadata_columns::time_stamp.le(time_range
-                            .1
-                            .clone()
-                            .parse::<DateTimeUtc>()
-                            .map_err(|_| DefaultError {
-                                message: "Failed to parse time range",
-                            })?
-                            .0
-                            .with_timezone(&chrono::Local)
-                            .naive_local()),
-                    ),
-            );
-        } else if time_range.0 != "null" {
-            query = query.filter(
-                chunk_metadata_columns::time_stamp.ge(time_range
-                    .0
-                    .clone()
-                    .parse::<DateTimeUtc>()
-                    .map_err(|_| DefaultError {
-                        message: "Failed to parse time range",
-                    })?
-                    .0
-                    .with_timezone(&chrono::Local)
-                    .naive_local()),
-            );
-        } else if time_range.1 != "null" {
-            query = query.filter(
-                chunk_metadata_columns::time_stamp.le(time_range
-                    .1
-                    .clone()
-                    .parse::<DateTimeUtc>()
-                    .map_err(|_| DefaultError {
-                        message: "Failed to parse time range",
-                    })?
-                    .0
-                    .with_timezone(&chrono::Local)
-                    .naive_local()),
-            );
-        }
-    }
-
-    if let Some(serde_json::Value::Object(obj)) = &filters {
-        for key in obj.keys() {
-            let value = obj.get(key).expect("Value should exist");
-            match value {
-                serde_json::Value::Array(arr) => {
-                    query = query.filter(
-                        sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
-                            .ilike(format!("%{}%", arr.first().unwrap().as_str().unwrap_or(""))),
-                    );
-                    for item in arr.iter().skip(1) {
-                        query = query.or_filter(
-                            sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
-                                .ilike(format!("%{}%", item.as_str().unwrap_or(""))),
-                        );
-                    }
-                }
-                _ => {
-                    query = query.filter(
-                        sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
-                            .ilike(format!("%{}%", value.as_str().unwrap_or(""))),
-                    );
-                }
-            }
-        }
-    }
-
-    if let Some(quote_words) = parsed_query.quote_words {
-        for word in quote_words.iter() {
-            query = query.filter(chunk_metadata_columns::content.ilike(format!("%{}%", word)));
-        }
-    }
-
-    if let Some(negated_words) = parsed_query.negated_words {
-        for word in negated_words.iter() {
-            query = query.filter(chunk_metadata_columns::content.not_ilike(format!("%{}%", word)));
-        }
-    }
-
-    let matching_qdrant_point_ids: Vec<(Option<uuid::Uuid>, Option<uuid::Uuid>)> =
-        query.load(&mut conn).map_err(|_| DefaultError {
-            message: "Failed to load full-text searched chunks",
-        })?;
-
-    let matching_point_ids: Vec<PointId> = matching_qdrant_point_ids
-        .iter()
-        .map(|uuid| {
-            uuid.0
-                .unwrap_or(uuid.1.unwrap_or(uuid::Uuid::nil()))
-                .to_string()
-        })
-        .collect::<HashSet<String>>()
-        .iter()
-        .map(|uuid| (*uuid).clone().into())
-        .collect::<Vec<PointId>>();
-
-    let mut filter = Filter::default();
-    filter.should.push(Condition {
-        condition_one_of: Some(HasId(HasIdCondition {
-            has_id: (matching_point_ids).to_vec(),
-        })),
-    });
+    let filter = assemble_qdrant_filter(
+        tag_set,
+        link,
+        time_range,
+        filters,
+        parsed_query.quote_words,
+        parsed_query.negated_words,
+        dataset_id,
+    )?;
 
     let point_ids = if let Some(embedding_vector) = embedding_vector {
-        search_semantic_qdrant_query(page, filter, embedding_vector, dataset_id).await
+        search_semantic_qdrant_query(page, filter, embedding_vector).await?
     } else {
-        search_full_text_qdrant_query(page, filter, parsed_query.query, dataset_id).await
+        search_full_text_qdrant_query(page, filter, parsed_query.query).await?
     };
 
     Ok(SearchChunkQueryResult {
-        search_results: point_ids?,
-        total_chunk_pages: (matching_qdrant_point_ids.len() as f64 / 10.0).ceil() as i64,
+        search_results: point_ids.clone(),
+        //FIXME: dont have total results now
+        total_chunk_pages: (point_ids.len() as f64 / 10.0).ceil() as i64,
     })
 }
 
@@ -457,7 +447,7 @@ pub async fn search_semantic_chunk_groups_query(
     });
 
     let point_ids: Vec<SearchResult> =
-        search_semantic_qdrant_query(page, filter, embedding_vector, dataset_id).await?;
+        search_semantic_qdrant_query(page, filter, embedding_vector).await?;
 
     Ok(SearchChunkQueryResult {
         search_results: point_ids,
@@ -761,7 +751,7 @@ pub async fn search_full_text_group_query(
         })),
     });
 
-    let point_ids = search_full_text_qdrant_query(page, filter, user_query, dataset_uuid).await;
+    let point_ids = search_full_text_qdrant_query(page, filter, user_query).await;
 
     Ok(SearchChunkQueryResult {
         search_results: point_ids?,
@@ -945,7 +935,6 @@ pub async fn search_semantic_chunks(
         data.filters.clone(),
         parsed_query,
         dataset.id,
-        pool.clone(),
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -980,7 +969,6 @@ pub async fn search_full_text_chunks(
         data.filters.clone(),
         parsed_query,
         dataset_id,
-        pool.clone(),
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -1060,7 +1048,6 @@ pub async fn search_hybrid_chunks(
         data.filters.clone(),
         parsed_query.clone(),
         dataset.id,
-        pool.clone(),
     );
 
     let full_text_handler_results = search_full_text_chunks(

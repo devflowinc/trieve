@@ -605,7 +605,6 @@ pub async fn stream_response(
             negated_words: None,
         },
         dataset.id,
-        pool.clone(),
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
