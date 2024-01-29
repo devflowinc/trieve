@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "trieve"
-version = "0.2.0"
-description = "CLI for Trieve RAG Framework @ https://github.com/devflowinc/trieve"
+version = "0.2.1"
+description = "CLI for Trieve Advanced Relevance search API @ https://github.com/devflowinc/trieve"
 authors = ["Dens Sumesh <dens.sumesh79@gmail.com>"]
 license = "MIT"
 readme = "README.md"

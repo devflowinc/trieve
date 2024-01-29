@@ -1,16 +1,10 @@
 """This module provides the Trieve CLI."""
 # rptodo/cli.py
 
-from distutils.command import upload
-from http import client, server
 from re import sub
 import subprocess
 from typing import Optional
-
-from numpy import delete
-
 import typer
-
 from trieve import __app_name__, __version__
 from trieve.config import _init_config_file, get_value, store_value
 from trieve.api import (
@@ -39,6 +33,15 @@ app.add_typer(reset_app, name="reset", help="Reset a service.")
 app.add_typer(delete_app, name="delete", help="Delete a dataset or organization.")
 console = Console()
 
+def get_or_set_db_url() -> str | None:
+    if not get_value("db_url"):
+        db_url = Prompt.ask(
+            "\nWhat is the url of your Postgres db?",
+            default="postgres://postgres:password@localhost:5432/trieve",
+            show_default=False,
+        )
+        store_value("db_url", db_url)
+    return get_value("db_url")
 
 @app.command()
 def init() -> None:
@@ -233,6 +236,34 @@ def add_sample_data() -> None:
     print(f"Dataset Name: {dataset.name}")
     print(f"API Key: {get_value('api_key')}\n")
 
+@reset_app.command("all")
+def reset_all() -> None:
+    """Reset everything, this will delete all data."""
+    typer.confirm(
+        "Are you sure you want to reset everything and delete all existing data?", abort=True
+    )
+    get_or_set_db_url()
+
+    subprocess.run(["docker", "compose", "down", "db", "qdrant-database", "keycloak", "keycloak-db", "redis", "s3", "s3-client"])
+    subprocess.run(["docker", "volume", "rm", "trieve_keycloak-data", "trieve_pg-keycloak-data", "trieve_pgdata", "trieve_qdrant_data", "trieve_redis-data", "trieve_s3-data"])
+    subprocess.run(["docker", "compose", "up", "-d", "db", "qdrant-database", "keycloak", "keycloak-db", "redis", "s3", "s3-client"])
+
+    terminate_connections(get_value("db_url"))  # type: ignore
+    subprocess.run(
+        [
+            "diesel",
+            "db",
+            "reset",
+            "--migration-dir",
+            "../server/migrations",
+            "--config-file",
+            "../server/diesel.toml",
+            "--database-url",
+            get_value("db_url"),  # type: ignore
+        ]
+    )
+
+    print("\nSuccessfully reset your databases!")
 
 @reset_app.command("db")
 def reset_db() -> None:
@@ -240,14 +271,7 @@ def reset_db() -> None:
     typer.confirm(
         "Are you sure you want to reset your Qdrant and Postgres databases?", abort=True
     )
-    if not get_value("db_url"):
-        db_url = Prompt.ask(
-            "\nWhat is the url of your Postgres db?",
-            default="postgres://postgres:password@localhost:5432/vault",
-            show_default=False,
-        )
-
-        store_value("db_url", db_url)
+    get_or_set_db_url()
 
     subprocess.run(["docker", "compose", "stop", "qdrant-database"])
     subprocess.run(["docker", "compose", "rm", "-f", "qdrant-database"])

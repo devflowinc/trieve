@@ -36,7 +36,7 @@ def _init_config_file() -> int:
         "client_url": "http://localhost:5174",
         "server_url": "http://localhost:8090",
         "api_key": "admin",
-        "db_url": "postgres://postgres:password@localhost:5432/vault",
+        "db_url": "postgres://postgres:password@localhost:5432/trieve",
     }
     return SUCCESS
 
