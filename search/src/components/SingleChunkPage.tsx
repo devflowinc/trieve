@@ -36,9 +36,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     createSignal<ChunkMetadataWithVotes | null>(initialChunkMetadata);
   const [error, setError] = createSignal("");
   const [fetching, setFetching] = createSignal(true);
-  const [chunkGroups, setChunkGroups] = createSignal<
-    ChunkGroupDTO[]
-  >([]);
+  const [chunkGroups, setChunkGroups] = createSignal<ChunkGroupDTO[]>([]);
   const $currentUser = useStore(currentUser);
   const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
