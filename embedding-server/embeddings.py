@@ -13,9 +13,11 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-hf_token = os.environ.get('HF_TOKEN')
+hf_token = os.environ.get("HF_TOKEN")
 huggingface_hub.login(token=hf_token)
-embedding_model = AutoModel.from_pretrained('jinaai/jina-embeddings-v2-base-en', token=hf_token, trust_remote_code=True) # trust_remote_code is needed to use the encode method
+embedding_model = AutoModel.from_pretrained(
+    "jinaai/jina-embeddings-v2-base-en", token=hf_token, trust_remote_code=True
+)  # trust_remote_code is needed to use the encode method
 
 # Create a Flask app
 app = FastAPI()
@@ -47,6 +49,7 @@ embedding_model.to(device)
 
 # Create a Flask app
 app = FastAPI()
+
 
 @app.get("/")
 async def health():
@@ -128,7 +131,7 @@ async def sparse_encode(encodingRequest: SparseEncodeRequest):
                 "embeddings": [],
                 "status": 400,
             },
-            status_code=400
+            status_code=400,
         )
     indices = vec.nonzero().squeeze().cpu().tolist()
     values = vec[indices].cpu().tolist()
@@ -143,7 +146,7 @@ async def sparse_encode(encodingRequest: SparseEncodeRequest):
             "embeddings": list(zip(indices, values)),
             "status": 200,
         },
-        status_code=200
+        status_code=200,
     )
 
 
@@ -156,14 +159,14 @@ class ReRankRequest(BaseModel):
 async def rerank(rerankRequest: ReRankRequest):
     combined_docs = [[rerankRequest.query, doc] for doc in rerankRequest.docs]
     doc_scores = cross_encoder_model.predict(combined_docs)
-    sim_scores_argsort = reversed(np.argsort(doc_scores))
+    sim_scores_argsort = np.argsort(doc_scores)
     reranked_docs = [rerankRequest.docs[i] for i in sim_scores_argsort]
     return JSONResponse(
         content={
             "docs": reranked_docs,
             "status": 200,
         },
-        status_code=200
+        status_code=200,
     )
 
 
