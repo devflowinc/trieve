@@ -1,12 +1,9 @@
 import psycopg2
-
+import time
 
 def terminate_connections(db_url: str):
-    connection = None
+    connection = get_db_connection(db_url)
     try:
-        # Connect to the PostgreSQL database
-        connection = psycopg2.connect(db_url)
-
         # Create a cursor
         cursor = connection.cursor()
 
@@ -27,3 +24,15 @@ def terminate_connections(db_url: str):
         # Close the cursor and connection
         if connection:
             connection.close()
+
+def get_db_connection(db_url: str):
+    attempt_num = 1
+    while True:
+        try:
+            print("Attempting to connect to database...")
+            connection = psycopg2.connect(db_url)
+            return connection
+        except Exception as e:
+            print(f"Error connecting to database {db_url} on attempt {attempt_num}: {e}")
+            time.sleep(1)
+            attempt_num += 1
