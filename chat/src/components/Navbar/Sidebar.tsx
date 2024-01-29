@@ -132,7 +132,7 @@ export const Sidebar = (props: SidebarProps) => {
               props.setSideBarOpen(false);
             }}
             disabled={userContext.user?.() === null}
-            class="flex w-full flex-row items-center rounded-md border border-neutral-500 px-3 py-1 hover:bg-neutral-200 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:border-neutral-300 dark:border-neutral-400 dark:hover:bg-neutral-700"
+            class="flex w-full flex-row items-center rounded-md border border-neutral-500 px-3 py-1 hover:bg-neutral-200 disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-400 dark:border-neutral-400 dark:hover:bg-neutral-700"
           >
             <div class="flex flex-row items-center space-x-2">
               <span class="text-xl">
@@ -149,7 +149,7 @@ export const Sidebar = (props: SidebarProps) => {
               props.setSideBarOpen(false);
             }}
             disabled={userContext.user?.() === null}
-            class="flex w-full flex-row items-center rounded-md border border-neutral-500 px-3 py-1 disabled:bg-neutral-200 disabled:border-neutral-300 disabled:text-neutral-400 hover:bg-neutral-200 dark:border-neutral-400 dark:hover:bg-neutral-700"
+            class="flex w-full flex-row items-center rounded-md border border-neutral-500 px-3 py-1 hover:bg-neutral-200 disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-400 dark:border-neutral-400 dark:hover:bg-neutral-700"
           >
             <div class="flex flex-row items-center space-x-2">
               <span class="text-xl">
@@ -269,7 +269,7 @@ export const Sidebar = (props: SidebarProps) => {
           </Show>
           <button
             disabled={userContext.user?.() === null}
-            class="flex w-full items-center space-x-4 rounded-md px-3 py-2 hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:bg-neutral-200 disabled:border-neutral-300 disabled:text-neutral-400"
+            class="flex w-full items-center space-x-4 rounded-md px-3 py-2 hover:bg-neutral-200 disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-400 dark:hover:bg-neutral-700"
             onClick={() => setSettingsModalOpen(true)}
           >
             <FiSettings class="h-6 w-6" />

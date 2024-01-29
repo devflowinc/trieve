@@ -34,8 +34,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
   const $dataset = useStore(currentDataset);
   const $currentUser = useStore(currentUser);
 
-  const [refetchingChunkGroups, setRefetchingChunkGroups] =
-    createSignal(false);
+  const [refetchingChunkGroups, setRefetchingChunkGroups] = createSignal(false);
   const [refetchingBookmarks, setRefetchingBookmarks] = createSignal(false);
   const [showGroupForm, setShowGroupForm] = createSignal(false);
   const [notLoggedIn, setNotLoggedIn] = createSignal(false);
@@ -43,9 +42,9 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
   const [usingPanel, setUsingPanel] = createSignal(false);
   const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [localGroupPage, setLocalGroupPage] = createSignal(1);
-  const [localChunkGroups, setLocalChunkGroups] = createSignal<
-    ChunkGroupDTO[]
-  >([]);
+  const [localChunkGroups, setLocalChunkGroups] = createSignal<ChunkGroupDTO[]>(
+    [],
+  );
 
   createEffect(() => {
     const groupsToAdd: ChunkGroupDTO[] = [];
@@ -116,13 +115,18 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
     const currentDataset = $dataset();
     if (!currentDataset) return;
 
-    void fetch(`${apiHost}/dataset/groups/${currentDataset.dataset.id}/${localGroupPage()}`, {
-      method: "GET",
-      headers: {
-        "TR-Dataset": currentDataset.dataset.id,
+    void fetch(
+      `${apiHost}/dataset/groups/${
+        currentDataset.dataset.id
+      }/${localGroupPage()}`,
+      {
+        method: "GET",
+        headers: {
+          "TR-Dataset": currentDataset.dataset.id,
+        },
+        credentials: "include",
       },
-      credentials: "include",
-    }).then((response) => {
+    ).then((response) => {
       if (!setChunkGroups) return;
 
       if (response.ok) {
@@ -154,9 +158,8 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
 
             const deDupedPrev = data.groups.filter((group) => {
               return (
-                groupsToAdd.find(
-                  (groupToAdd) => groupToAdd.id == group.id,
-                ) == undefined
+                groupsToAdd.find((groupToAdd) => groupToAdd.id == group.id) ==
+                undefined
               );
             });
 
@@ -220,9 +223,8 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
           setLocalChunkGroups((prev) => {
             const deDupedPrev = prev.filter((group) => {
               return (
-                groupsToAdd.find(
-                  (groupToAdd) => groupToAdd.id == group.id,
-                ) == undefined
+                groupsToAdd.find((groupToAdd) => groupToAdd.id == group.id) ==
+                undefined
               );
             });
 
@@ -336,9 +338,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                     <div class="flex items-center">
                       <div class="text-sm text-neutral-400">
                         {localGroupPage()} /{" "}
-                        {props.totalGroupPages == 0
-                          ? 1
-                          : props.totalGroupPages}
+                        {props.totalGroupPages == 0 ? 1 : props.totalGroupPages}
                       </div>
                       <button
                         class="disabled:text-neutral-400 dark:disabled:text-neutral-500"
@@ -370,9 +370,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                 </div>
                 <Show when={showGroupForm()}>
                   <div class="mx-4 rounded bg-gray-100 py-2 dark:bg-neutral-800">
-                    <div class="px-2 text-lg font-bold">
-                      Create New Group
-                    </div>
+                    <div class="px-2 text-lg font-bold">Create New Group</div>
                     <div>
                       <InputRowsForm
                         createButtonText="Create group"

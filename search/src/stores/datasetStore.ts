@@ -23,7 +23,7 @@ export const currentDataset = persistentAtom("dataset", null, {
   encode: (dataset) => {
     if (dataset) {
       const params = new URL(window.location.href).searchParams;
-      params.set("dataset", (dataset as DatasetAndUsageDTO).dataset.id);
+      params.set("dataset", dataset.dataset.id);
       window.history.replaceState(
         {},
         "",

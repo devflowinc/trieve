@@ -60,15 +60,14 @@ export const GroupPage = (props: GroupPageProps) => {
       !isScoreChunkDTO(props.defaultGroupChunks.metadata.bookmarks[0])
     ) {
       chunkMetadatasWithVotes.push(
-        ...(props.defaultGroupChunks.metadata.bookmarks as BookmarkDTO[])
+        ...(props.defaultGroupChunks.metadata.bookmarks as BookmarkDTO[]),
       );
     } else if (
-      props.defaultGroupChunks.metadata.bookmarks.length > 0  &&
+      props.defaultGroupChunks.metadata.bookmarks.length > 0 &&
       isScoreChunkDTO(props.defaultGroupChunks.metadata.bookmarks[0])
     ) {
       searchChunkMetadatasWithVotes.push(
-      ...(props.defaultGroupChunks.metadata
-          .bookmarks as ScoreChunkDTO[]),
+        ...(props.defaultGroupChunks.metadata.bookmarks as ScoreChunkDTO[]),
       );
     }
   } catch (e) {
@@ -87,9 +86,7 @@ export const GroupPage = (props: GroupPageProps) => {
   const [groupInfo, setGroupInfo] = createSignal<ChunkGroupDTO>(
     props.defaultGroupChunks.metadata.group,
   );
-  const [chunkGroups, setChunkGroups] = createSignal<
-    ChunkGroupDTO[]
-  >([]);
+  const [chunkGroups, setChunkGroups] = createSignal<ChunkGroupDTO[]>([]);
   const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [error, setError] = createSignal("");
   const [fetchingGroups, setFetchingGroups] = createSignal(false);
@@ -108,17 +105,15 @@ export const GroupPage = (props: GroupPageProps) => {
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
     createSignal(false);
 
-  const [
-    showConfirmGroupDeleteModal,
-    setShowConfirmGroupmDeleteModal,
-  ] = createSignal(false);
+  const [showConfirmGroupDeleteModal, setShowConfirmGroupmDeleteModal] =
+    createSignal(false);
 
   const [totalGroupPages, setTotalGroupPages] = createSignal(1);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onDelete, setOnDelete] = createSignal(() => { });
+  const [onDelete, setOnDelete] = createSignal(() => {});
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onGroupDelete, setOnGroupDelete] = createSignal(() => { });
+  const [onGroupDelete, setOnGroupDelete] = createSignal(() => {});
 
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
@@ -140,17 +135,14 @@ export const GroupPage = (props: GroupPageProps) => {
     const currentDataset = $dataset();
     if (!currentDataset) return;
     if (props.query === "") {
-      void fetch(
-        `${apiHost}/chunk_group/${props.groupID}/${props.page}`,
-        {
-          method: "GET",
-          credentials: "include",
-          signal: abortController.signal,
-          headers: {
-            "TR-Dataset": currentDataset.dataset.id,
-          },
+      void fetch(`${apiHost}/chunk_group/${props.groupID}/${props.page}`, {
+        method: "GET",
+        credentials: "include",
+        signal: abortController.signal,
+        headers: {
+          "TR-Dataset": currentDataset.dataset.id,
         },
-      ).then((response) => {
+      }).then((response) => {
         if (response.ok) {
           void response.json().then((data) => {
             const groupBookmarks = data as ChunkGroupBookmarkDTO;
@@ -403,9 +395,7 @@ export const GroupPage = (props: GroupPageProps) => {
         <Show when={error().length == 0}>
           <div class="flex w-full max-w-6xl items-center justify-end space-x-2 px-4 sm:px-8 md:px-20">
             <Show
-              when={chunkGroups().some(
-                (group) => group.id == groupInfo().id,
-              )}
+              when={chunkGroups().some((group) => group.id == groupInfo().id)}
             >
               <button
                 classList={{
@@ -495,9 +485,7 @@ export const GroupPage = (props: GroupPageProps) => {
           <Show when={props.query != ""}>
             <button
               class="relative mx-auto ml-8 mt-8 h-fit max-h-[240px] rounded-md bg-neutral-100 p-2 dark:bg-neutral-700"
-              onClick={() =>
-                (window.location.href = `/group/${props.groupID}`)
-              }
+              onClick={() => (window.location.href = `/group/${props.groupID}`)}
             >
               ← Back
             </button>
@@ -538,7 +526,9 @@ export const GroupPage = (props: GroupPageProps) => {
               <div class="mt-4">
                 <ScoreChunkArray
                   totalGroupPages={totalGroupPages()}
-                  chunks={!isScoreChunkDTO(chunk) ? [chunk.metadata] : chunk.metadata}
+                  chunks={
+                    !isScoreChunkDTO(chunk) ? [chunk.metadata] : chunk.metadata
+                  }
                   score={isScoreChunkDTO(chunk) ? chunk.score : 0}
                   group={true}
                   setShowModal={setShowNeedLoginModal}
@@ -594,9 +584,7 @@ export const GroupPage = (props: GroupPageProps) => {
                 }}
                 onClick={() =>
                   fetchRecommendations(
-                    metadatasWithVotes().map(
-                      (m) => m.metadata.qdrant_point_id,
-                    ),
+                    metadatasWithVotes().map((m) => m.metadata.qdrant_point_id),
                     recommendedChunks(),
                   )
                 }
@@ -718,8 +706,9 @@ export const GroupPage = (props: GroupPageProps) => {
             <div class="mx-auto flex w-fit flex-col space-y-3">
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${$dataset()?.dataset.name ?? ""
-                  }`}
+                href={`${apiHost}/auth?dataset_id=${
+                  $dataset()?.dataset.name ?? ""
+                }`}
               >
                 Login/Register
                 <BiRegularLogInCircle class="h-6 w-6  fill-current" />

@@ -33,9 +33,7 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
   const $currentUser = useStore(currentUser);
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
   const [showConfirmModal, setShowConfirmModal] = createSignal(false);
-  const [chunkGroups, setChunkGroups] = createSignal<
-    ChunkGroupDTO[]
-  >([]);
+  const [chunkGroups, setChunkGroups] = createSignal<ChunkGroupDTO[]>([]);
 
   props.initialUser && setUser(props.initialUser);
 
@@ -43,10 +41,8 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
   const [onDelete, setOnDelete] = createSignal<() => void>(() => {});
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const [onGroupDelete, setOnGroupDelete] = createSignal(() => {});
-  const [
-    showConfirmGroupDeleteModal,
-    setShowConfirmGroupmDeleteModal,
-  ] = createSignal(false);
+  const [showConfirmGroupDeleteModal, setShowConfirmGroupmDeleteModal] =
+    createSignal(false);
   const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [totalGroupPages, setTotalGroupPages] = createSignal(0);
 

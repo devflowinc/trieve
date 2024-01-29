@@ -65,7 +65,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
     (import.meta.env.VITE_FRONTMATTER_VALS as string | undefined) ??
     "link,tag_set,time_stamp"
   ).split(",");
-  const searchURL = "https://search.trieve.ai"
+  const searchURL = "https://search.trieve.ai";
 
   const linesBeforeShowMore = 12;
 
