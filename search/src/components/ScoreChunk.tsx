@@ -367,7 +367,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                 }
                 tooltipText="Open in new tab"
               />
-        
+
               <Show when={props.chunkGroups}>
                 {(chunkGroups) => (
                   <BookmarkPopover
@@ -540,7 +540,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
       </Show>
       <Show when={showMetadata()}>
         <FullScreenModal isOpen={showMetadata} setIsOpen={setShowMetadata}>
-          <div class="flex max-h-[60vh] max-w-[75vw] flex-col space-y-2 overflow-auto scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600">
+          <div class="flex max-h-[60vh] max-w-[75vw] flex-col space-y-2 overflow-auto scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-thumb-rounded-md dark:text-white dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600">
             <For each={Object.keys(props.chunk.metadata ?? {})}>
               {(metadataKey) => (
                 <div class="flex flex-wrap space-x-2">
