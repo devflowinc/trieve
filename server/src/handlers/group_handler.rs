@@ -94,7 +94,7 @@ pub struct DatasetGroupQuery {
         (status = 400, description = "Service error relating to getting the groups created by the given dataset", body = DefaultError),
     ),
     params(
-        ("user_id" = uuid::Uuid, description = "The id of the dataset to fetch groups for."),
+        ("dataset_id" = uuid::Uuid, description = "The id of the dataset to fetch groups for."),
         ("page" = i64, description = "The page of groups to fetch. Each page contains 10 groups. Support for custom page size is coming soon."),
     ),
 )]
