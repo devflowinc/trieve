@@ -58,6 +58,7 @@ def init() -> None:
         subprocess.run(["docker", "compose", "up", "-d", "s3-client"])
         subprocess.run(["docker", "compose", "up", "-d", "keycloak"])
         subprocess.run(["docker", "compose", "up", "-d", "keycloak-db"])
+        subprocess.run(["docker", "compose", "up", "-d", "splade-embeddings"])
     print(
         "Ensure that you have the API server and the search client running on your machine.\n"
     )
@@ -135,9 +136,6 @@ def init() -> None:
 
     # TODO: add docs on how to upload data to the dataset
 
-
-
-
 @add_app.command(name="dataset")
 def add_dataset() -> None:
     """Add a dataset to your account."""
@@ -192,7 +190,6 @@ def add_organization() -> None:
 
     add_dataset()
 
-
 @add_app.command("sample")
 def add_sample_data() -> None:
     """Add a sample dataset to your account."""
@@ -246,7 +243,7 @@ def reset_all() -> None:
 
     subprocess.run(["docker", "compose", "down", "db", "qdrant-database", "keycloak", "keycloak-db", "redis", "s3", "s3-client"])
     subprocess.run(["docker", "volume", "rm", "trieve_keycloak-data", "trieve_pg-keycloak-data", "trieve_pgdata", "trieve_qdrant_data", "trieve_redis-data", "trieve_s3-data"])
-    subprocess.run(["docker", "compose", "up", "-d", "db", "qdrant-database", "keycloak", "keycloak-db", "redis", "s3", "s3-client"])
+    subprocess.run(["docker", "compose", "up", "-d", "db", "qdrant-database", "keycloak", "keycloak-db", "redis", "s3", "s3-client", "splade-embeddings"])
 
     terminate_connections(get_value("db_url"))  # type: ignore
     subprocess.run(
