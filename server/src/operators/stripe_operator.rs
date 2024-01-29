@@ -204,6 +204,7 @@ pub async fn create_stripe_payment_link(
         hosted_confirmation: None,
         type_: CreatePaymentLinkAfterCompletionType::Redirect,
     });
+    create_payment_link.allow_promotion_codes = Some(true);
     let mut metadata = std::collections::HashMap::new();
     metadata.insert("organization_id".to_string(), organization_id.to_string());
     metadata.insert("plan_id".to_string(), plan.id.to_string());
