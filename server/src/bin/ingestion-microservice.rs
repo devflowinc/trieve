@@ -1,6 +1,8 @@
+use std::thread;
+
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
-use redis::Commands;
+use redis::AsyncCommands;
 use trieve_server::data::models::{self, ChunkGroupBookmark};
 use trieve_server::get_env;
 use trieve_server::handlers::chunk_handler::IngestionMessage;
@@ -14,11 +16,13 @@ use trieve_server::operators::qdrant_operator::{
 };
 use trieve_server::operators::search_operator::global_unfiltered_top_match_query;
 
+static THREAD_NUM: i32 = 4;
+
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
     let redis_client = redis::Client::open(redis_url).unwrap();
-    let mut redis_connection = redis_client.get_connection().unwrap();
+    let redis_connection = redis_client.get_multiplexed_tokio_connection().await.unwrap();
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
     let manager = ConnectionManager::<PgConnection>::new(database_url);
@@ -27,9 +31,29 @@ async fn main() -> std::io::Result<()> {
         .expect("Failed to create pool.");
 
     let web_pool = actix_web::web::Data::new(pool.clone());
+
+    let threads: Vec<_> = (0..THREAD_NUM)
+        .map(|_i| {
+            let redis_connection = redis_connection.clone();
+            let web_pool = web_pool.clone();
+            thread::spawn(move || {
+                ingestion_service(redis_connection, web_pool)
+            })
+        })
+        .collect();
+
+    for handle in threads {
+        handle.join().unwrap().await;
+    }
+
+    Ok(())
     
+}
+
+
+async fn ingestion_service(mut redis_connection: redis::aio::MultiplexedConnection, web_pool: actix_web::web::Data<models::Pool>) {
     loop {
-        let payload_result = redis_connection.blpop::<&str, Vec<String>>("ingestion", 0.0).map_err(|err| {
+                let payload_result = redis_connection.blpop::<&str, Vec<String>>("ingestion", 0.0).await.map_err(|err| {
             log::error!("Failed to get payload from redis: {:?}", err);
         });
         
@@ -97,30 +121,22 @@ async fn main() -> std::io::Result<()> {
                 match score_chunk_result {
                     Ok(chunk_results) => {
                         if chunk_results.is_empty() {
-                            delete_qdrant_point_id_query(
+                            let _ = delete_qdrant_point_id_query(
                                 first_semantic_result.point_id,
                                 payload.chunk_metadata.dataset_id,
                             )
                             .await
                             .map_err(|_| {
-                                std::io::Error::new(
-                                    std::io::ErrorKind::Other,
-                                    "Could not delete chunk metadata for chunk id",
-                                )
-                            })?;
+                                log::error!("Could not find chunk metadata for chunk id")
 
-                            return Err(std::io::Error::new(
-                                std::io::ErrorKind::Other,
-                                "Could not find chunk metadata for chunk id",
-                            ));
+                            });
+
                         }
                         chunk_results.first().unwrap().clone()
                     }
                     Err(err) => {
-                        return Err(std::io::Error::new(
-                            std::io::ErrorKind::Other,
-                            err.to_string(),
-                        ));
+                        log::error!("Error occurred {:?}", err);
+                        continue;
                     }
                 };
             }
