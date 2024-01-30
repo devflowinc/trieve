@@ -829,7 +829,7 @@ pub async fn retrieve_chunks_from_point_ids(
         .collect::<Vec<_>>();
 
     let (metadata_chunks, collided_chunks) =
-        get_metadata_and_collided_chunks_from_point_ids_query(point_ids, pool)
+        get_metadata_and_collided_chunks_from_point_ids_query(point_ids, data.get_collisions.unwrap_or(false), pool)
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
@@ -1074,7 +1074,7 @@ pub async fn search_hybrid_chunks(
         .collect::<Vec<_>>();
 
     let (metadata_chunks, collided_chunks) =
-        get_metadata_and_collided_chunks_from_point_ids_query(point_ids, pool1)
+        get_metadata_and_collided_chunks_from_point_ids_query(point_ids, data.get_collisions.unwrap_or(false), pool1)
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let semantic_score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
