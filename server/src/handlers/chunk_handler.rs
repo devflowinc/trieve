@@ -157,13 +157,17 @@ pub async fn create_chunk(
     let pool1 = pool.clone();
     let pool2 = pool.clone();
     let pool3 = pool.clone();
-    let count_pool = pool.clone();
     let count_dataset_id = dataset_org_plan_sub.dataset.id;
 
-    let chunk_count =
-        web::block(move || get_row_count_for_dataset_id_query(count_dataset_id, count_pool))
+    let dataset_config =
+        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+
+    let chunk_count = {
+        pool.clone();
+        web::block(move || get_row_count_for_dataset_id_query(count_dataset_id, pool))
             .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+    };
 
     if chunk_count
         >= dataset_org_plan_sub
@@ -188,62 +192,60 @@ pub async fn create_chunk(
         convert_html(chunk.chunk_html.as_ref().unwrap_or(&"".to_string())).map_err(|err| {
             ServiceError::BadRequest(format!("Could not parse html: {}", err.message))
         })?;
-    let dataset_config =
-        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
     let embedding_vector = if let Some(embedding_vector) = chunk.chunk_vector.clone() {
         embedding_vector
     } else {
         create_embedding(&content, dataset_config.clone()).await?
     };
 
-    let first_semantic_result = global_unfiltered_top_match_query(
-        embedding_vector.clone(),
-        dataset_org_plan_sub.dataset.id,
-    )
-    .await
-    .map_err(|err| {
-        ServiceError::BadRequest(format!(
-            "Could not get semantic similarity for collision check: {}",
-            err.message
-        ))
-    })?;
-
     let duplicate_distance_threshold = dataset_config.DUPLICATE_DISTANCE_THRESHOLD.unwrap_or(1.1);
+    if duplicate_distance_threshold > 1.0 || dataset_config.COLLISIONS_ENABLED.unwrap_or(false) {
+        let first_semantic_result = global_unfiltered_top_match_query(
+            embedding_vector.clone(),
+            dataset_org_plan_sub.dataset.id,
+        )
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!(
+                    "Could not get semantic similarity for collision check: {}",
+                    err.message
+                ))
+            })?;
+        if first_semantic_result.score >= duplicate_distance_threshold {
+            //Sets collision to collided chunk id
+            collision = Some(first_semantic_result.point_id);
 
-    if first_semantic_result.score >= duplicate_distance_threshold {
-        //Sets collision to collided chunk id
-        collision = Some(first_semantic_result.point_id);
+            let score_chunk_result = web::block(move || {
+                get_metadata_from_point_ids(vec![first_semantic_result.point_id], pool2)
+            })
+            .await?;
 
-        let score_chunk_result = web::block(move || {
-            get_metadata_from_point_ids(vec![first_semantic_result.point_id], pool2)
-        })
-        .await?;
-
-        match score_chunk_result {
-            Ok(chunk_results) => {
-                if chunk_results.is_empty() {
-                    delete_qdrant_point_id_query(
-                        first_semantic_result.point_id,
-                        dataset_org_plan_sub.dataset.id,
-                    )
-                    .await
-                    .map_err(|_| {
-                        ServiceError::BadRequest(
-                            "Could not delete qdrant point id. Please try again.".into(),
+            match score_chunk_result {
+                Ok(chunk_results) => {
+                    if chunk_results.is_empty() {
+                        delete_qdrant_point_id_query(
+                            first_semantic_result.point_id,
+                            dataset_org_plan_sub.dataset.id,
                         )
-                    })?;
+                            .await
+                            .map_err(|_| {
+                                ServiceError::BadRequest(
+                                    "Could not delete qdrant point id. Please try again.".into(),
+                                )
+                            })?;
 
-                    return Err(ServiceError::BadRequest(
-                        "There was a data inconsistency issue. Please try again.".into(),
-                    )
-                    .into());
+                        return Err(ServiceError::BadRequest(
+                            "There was a data inconsistency issue. Please try again.".into(),
+                        )
+                            .into());
+                    }
+                    chunk_results.first().unwrap().clone()
                 }
-                chunk_results.first().unwrap().clone()
-            }
-            Err(err) => {
-                return Err(ServiceError::BadRequest(err.message.into()).into());
-            }
-        };
+                Err(err) => {
+                    return Err(ServiceError::BadRequest(err.message.into()).into());
+                }
+            };
+        }
     }
 
     let mut chunk_metadata: ChunkMetadata;

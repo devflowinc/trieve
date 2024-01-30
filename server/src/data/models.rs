@@ -838,6 +838,7 @@ pub struct ServerDatasetConfiguration {
     pub RAG_PROMPT: Option<String>,
     pub N_RETRIEVALS_TO_INCLUDE: Option<usize>,
     pub DUPLICATE_DISTANCE_THRESHOLD: Option<f32>,
+    pub COLLISIONS_ENABLED: Option<bool>,
     pub EMBEDDING_SIZE: Option<usize>,
 }
 
@@ -888,6 +889,10 @@ impl ServerDatasetConfiguration {
                 .as_u64()
                 .map(|u| u as usize),
 
+            COLLISIONS_ENABLED: configuration
+                .get("COLLISIONS_ENABLED")
+                .unwrap_or(&json!(false))
+                .as_bool(),
         }
     }
 }
