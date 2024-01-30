@@ -2,7 +2,7 @@
   <img height="100" src="https://cdn.trieve.ai/trieve-logo.png" alt="Trieve Logo">
 </p>
 <p align="center">
-<strong><a href="https://blog.trieve.ai">Sign Up (1k chunks free)</a> | <a href="https://docs.trieve.ai">Documentation</a> | <a href="https://cal.com/nick.k/meet">Meeting Link</a> | <a href="tel:+16282224090">+1 628-222-4090</a> | <a href="https://matrix.to/#/#trieve-general:matrix.zerodao.gg">Community Matrix</a>
+<strong><a href="https://blog.trieve.ai">Sign Up (1k chunks free)</a> | <a href="https://docs.trieve.ai">Documentation</a> | <a href="https://cal.com/nick.k/meet">Meeting Link</a> | <a href="mailto:+16282224090">+1 628-222-4090</a> | <a href="https://matrix.to/#/#trieve-general:matrix.zerodao.gg">Community Matrix</a>
 </strong>
 </p>
 
@@ -48,7 +48,7 @@
 - **🧐 Duplicate Detection**: Check out our docs on [collision-based dup detection](https://docs.trieve.ai/duplicate_detection) to learn about how we handle duplicates. This is a setting you can turn on or off.
 - **👥 Grouping**: Mark multiple chunks as being part of the same file and search on the file-level such that the same top-level result never appears twice
 
-**Are we missing a feature that your use case would need?** - call us at [628-222-4090](tel:+16282224090), make a [Github issue](https://github.com/devflowinc/trieve/issues), or join the [Matrix community](https://matrix.to/#/#trieve-general:matrix.zerodao.gg) and tell us! We are a small company who is still very hands-on and eager to build what you need.
+**Are we missing a feature that your use case would need?** - call us at [628-222-4090](mailto:+16282224090), make a [Github issue](https://github.com/devflowinc/trieve/issues), or join the [Matrix community](https://matrix.to/#/#trieve-general:matrix.zerodao.gg) and tell us! We are a small company who is still very hands-on and eager to build what you need.
 
 ## Roadmap
 
