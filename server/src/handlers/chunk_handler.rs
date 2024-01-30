@@ -163,7 +163,7 @@ pub async fn create_chunk(
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
     let chunk_count = {
-        pool.clone();
+        let pool = pool.clone();
         web::block(move || get_row_count_for_dataset_id_query(count_dataset_id, pool))
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?
@@ -712,6 +712,9 @@ pub struct SearchChunkData {
     pub cross_encoder: Option<bool>,
     /// Weights are a tuple of two floats. The first value is the weight for the semantic search results and the second value is the weight for the full-text search results. This can be used to bias search results towards semantic or full-text results. This will only apply if in hybrid search mode and cross_encoder is set to false.
     pub weights: Option<(f64, f64)>,
+    /// Set get_collisions to true to get the collisions for each chunk. This will only apply if
+    /// environment variable COLLISIONS_ENABLED is set to true.
+    pub get_collisions: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
@@ -844,6 +847,7 @@ impl From<SearchGroupsData> for SearchChunkData {
             weights: None,
             search_type: data.search_type,
             date_bias: data.date_bias,
+            get_collisions: Some(false),
         }
     }
 }

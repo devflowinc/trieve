@@ -617,8 +617,8 @@ pub async fn stream_response(
         .map(|chunk| chunk.point_id)
         .collect::<Vec<uuid::Uuid>>();
 
-    let (metadata_chunks, _collided_chunks) = web::block(move || {
-        get_metadata_and_collided_chunks_from_point_ids_query(retrieval_chunk_ids, pool2)
+    let (metadata_chunks, _) = web::block(move || {
+        get_metadata_and_collided_chunks_from_point_ids_query(retrieval_chunk_ids, false, pool2)
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;

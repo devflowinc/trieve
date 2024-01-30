@@ -132,7 +132,6 @@ pub fn get_metadata_and_collided_chunks_from_point_ids_query(
                     (chunk_collisions_columns::collision_qdrant_id.assume_not_null()),
                 ))
                 .filter(chunk_collisions_columns::collision_qdrant_id.eq_any(point_ids))
-                .limit()
                 .load::<(ChunkMetadata, uuid::Uuid)>(&mut conn)
                 .map_err(|_| DefaultError {
                     message: "Failed to load metadata",
