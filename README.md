@@ -2,16 +2,13 @@
   <img height="100" src="https://cdn.trieve.ai/trieve-logo.png" alt="Trieve Logo">
 </p>
 <p align="center">
-<strong><a href="https://docs.trieve.ai">Documentation</a> | <a href="https://blog.trieve.ai">Blog</a> | <a href="https://www.youtube.com/watch?v=jX84z2QkfUM&t=7s">Demo Video</a>
+<strong><a href="https://blog.trieve.ai">Sign Up (1k chunks free)</a> | <a href="https://docs.trieve.ai">Documentation</a> | <a href="https://cal.com/nick.k/meet">Meeting Link</a> | <a href="tel:+16282224090">+1 628-222-4090</a> | <a href="https://matrix.to/#/#trieve-general:matrix.zerodao.gg">Community Matrix</a>
 </strong>
 </p>
 
 <p align="center">
     <a href="https://github.com/devflowinc/trieve/stargazers">
         <img src="https://img.shields.io/github/stars/devflowinc/trieve.svg?style=flat&color=yellow" alt="Github stars"/>
-    </a>
-    <a href="https://github.com/devflowinc/trieve">
-        <img src="https://img.shields.io/github/last-commit/devflowinc/trieve.svg?style=flat&color=blue" alt="GitHub last commit"/>
     </a>
     <a href="https://github.com/devflowinc/trieve/issues">
         <img src="https://img.shields.io/github/issues/devflowinc/trieve.svg?style=flat&color=success" alt="GitHub issues"/>
@@ -22,25 +19,44 @@
     <a href="https://matrix.to/#/#trieve-general:matrix.zerodao.gg">
         <img src="https://img.shields.io/badge/matrix-join-purple?style=flat&logo=matrix&logocolor=white" alt="Join Matrix"/>
     </a>
-    <a href="https://t.me/+vUOq6omKOn5lY2Zh">
-        <img src="https://img.shields.io/badge/telegram-join-purple?style=flat&logo=telegram&logocolor=white" alt="Join Matrix"/>
-    </a>
 </p>
 
-<p align="center">
-    <b>Trieve is a truly all-in-one service for hosting AI powered semantic search and LLM retrieval-augmented generation (RAG) on your data.</b>
-</p>
-<a href="https://www.youtube.com/watch?v=jX84z2QkfUM&t=7s">
+<h2 align="center">
+    <b>Trieve is an Advanced Relevance API for hybrid search, recommendations, and RAG</b>
+</h2>
 
-![trieve architecture diagram](/assets/trieve-system-diagram.png)
-</a>
+![Trieve OG tag](https://cdn.trieve.ai/trieve-og.png)
 
-## Live Demos
+## Quick Links
 
-- [CVE security vulnerability search](https://cve-search.trieve.ai)
-- [CVE security vulnerability RAG](https://cve-chat.trieve.ai)
-- [Enron Corpus search](https://enron-search.trieve.ai)
-- [Enron Corpus RAG](https://enron-chat.trieve.ai)
+- [Why Search Before Generate](https://docs.trieve.ai/why_search_before_generate)
+- [API Documentation](https://docs.trieve.ai)
+- [OpenAPI specification](https://api.trieve.ai/redoc)
+
+## Features
+
+- **🧠 Semantic Dense Vector Search**: Integrates with OpenAI or Jina embedding models and [Qdrant](https://qdrant.tech) to provide semantic vector search.
+- **🔍 Typo Tolerant Full-Text/Neural Search**: Every uploaded chunk is vector'ized with [naver/efficient-splade-VI-BT-large-query](https://huggingface.co/naver/efficient-splade-VI-BT-large-query) for typo tolerant, quality neural sparse-vector search.
+- **🌟 Recommendations**: Find similar chunks (or files if using grouping) with the recommendation API. Very helpful if you have a platform where users favorite, bookmark, or upvote content. 
+- **🤖 Convenient RAG API Routes**: We integrate with OpenRouter to provide you with access to any LLM you would like for RAG. Try our routes for [fully-managed RAG with topic-based memory management](https://api.trieve.ai/redoc#tag/message/operation/create_message_completion_handler) or [select your own context RAG](https://api.trieve.ai/redoc#tag/chunk/operation/generate_off_chunks).
+- **🔒 Self-Hosting in VPC or on-prem**: Buy a license to host in your company's VPC on prem with our ready-to-go docker containers and terraform templates. 
+- **💼 Bring Your Own Models**: If you'd like, you can bring your own text-embedding, SPLADE, cross-encoder re-ranking, and/or large-language model (LLM) and plug it into our infrastructure.
+- **🔄 Hybrid Search with cross-encoder re-ranking**: For the best results, use hybrid search with [BAAI/bge-reranker-large](https://huggingface.co/BAAI/bge-reranker-large) re-rank optimization. 
+- **📆 Recency Biasing**: Easily bias search results for what was most recent to prevent staleness
+- **🛠️ Tunable Popularity-Based Ranking (Merchandizing)**: Weight indexed documents by popularity, total sales, or any other arbitrary metric for tunable relevancy
+- **🕳️ Filtering**: Date-range, substring match, tag, numeric, and other filter types are supported. 
+- **🧐 Duplicate Detection**: Check out our docs on [collision-based dup detection](https://docs.trieve.ai/duplicate_detection) to learn about how we handle duplicates. This is a setting you can turn on or off.
+- **👥 Grouping**: Mark multiple chunks as being part of the same file and search on the file-level such that the same top-level result never appears twice
+
+**Are we missing a feature that your use case would need?** - call us at [628-222-4090](tel:+16282224090), make a [Github issue](https://github.com/devflowinc/trieve/issues), or join the [Matrix community](https://matrix.to/#/#trieve-general:matrix.zerodao.gg) and tell us! We are a small company who is still very hands-on and eager to build what you need.
+
+## Roadmap
+
+Our current top 2 priorities for the next while are as follows. **Subject to change as current or potential customers ask for things.**
+
+1. Observability and metrics (likely something w/ Clickhouse)
+2. Benchmarking (going to aim for a 1M, 10M, and 100M vector benchmark)
+3. SDKs (can generate from OpenAPI spec, but would like to test a bit more)
 
 ## How to contribute
 
