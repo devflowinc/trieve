@@ -40,7 +40,7 @@ services:
 
   qdrant-database:
     image: qdrant/qdrant:v1.7.0
-    container_name: qdrant-database 
+    container_name: qdrant-database
     environment:
       - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
     ports:
@@ -98,7 +98,11 @@ services:
     image: apache/tika:2.9.1.0-full
     container_name: tika
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -S 'http://tika:9998/version' 2>&1 | grep 'HTTP/' | awk '{print $2}' | grep 200 || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget --spider -S 'http://tika:9998/version' 2>&1 | grep 'HTTP/' | awk '{print $2}' | grep 200 || exit 1",
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -110,7 +114,7 @@ services:
   server:
     image: arguflow/server:no-ocr
     container_name: server
-    build: 
+    build:
       context: ./server/
       dockerfile: Dockerfile.no-ocr
     depends_on:
@@ -210,7 +214,11 @@ services:
       - KC_DB_PASSWORD=password
       - KC_HEALTH_ENABLED=true
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080;echo -e \"GET /health/ready HTTP/1.1\r\nhost: http://localhost\r\nConnection: close\r\n\r\n\" >&3;grep \"HTTP/1.1 200 OK\" <&3"]
+      test:
+        [
+          "CMD-SHELL",
+          "exec 3<>/dev/tcp/127.0.0.1/8080;echo -e \"GET /health/ready HTTP/1.1\r\nhost: http://localhost\r\nConnection: close\r\n\r\n\" >&3;grep \"HTTP/1.1 200 OK\" <&3",
+        ]
       interval: 10s
       timeout: 5s
       retries: 20 # Account for keycloak db starting up and taking time.

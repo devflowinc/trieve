@@ -100,6 +100,7 @@ pub async fn convert_doc_to_html_query(
     user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
+    redis_client: web::Data<redis::Client>,
 ) -> Result<UploadFileResult, DefaultError> {
     let user1 = user.clone();
     let file_name1 = file_name.clone();
@@ -233,6 +234,7 @@ pub async fn convert_doc_to_html_query(
             glob_string,
             dataset_org_plan_sub1,
             pool,
+            redis_client,
         )
         .await;
 
@@ -271,6 +273,7 @@ pub async fn create_chunks_with_handler(
     glob_string: String,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
+    redis_client: web::Data<redis::Client>,
 ) -> Result<(), DefaultError> {
     let parser_command =
         std::env::var("PARSER_COMMAND").unwrap_or("./server-python/chunker.py".to_string());
@@ -346,6 +349,7 @@ pub async fn create_chunks_with_handler(
             pool.clone(),
             AdminOnly(user.clone()),
             dataset_org_plan_sub.clone(),
+            redis_client.clone(),
         )
         .await
         {

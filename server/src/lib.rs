@@ -21,12 +21,12 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use utoipa::OpenApi;
 use utoipa_redoc::{Redoc, Servable};
 
-mod af_middleware;
-mod data;
-mod errors;
-mod handlers;
-mod operators;
-mod randutil;
+pub mod af_middleware;
+pub mod data;
+pub mod errors;
+pub mod handlers;
+pub mod operators;
+pub mod randutil;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 pub const SECONDS_IN_MINUTE: u64 = 60;
@@ -244,6 +244,8 @@ pub async fn main() -> std::io::Result<()> {
 
     let redis_store = RedisSessionStore::new(redis_url).await.unwrap();
 
+    let redis_client = redis::Client::open(redis_url).unwrap();
+
     let oidc_client = build_oidc_client().await;
     run_migrations(&mut pool.get().unwrap());
 
@@ -267,6 +269,7 @@ pub async fn main() -> std::io::Result<()> {
             .app_data(web::JsonConfig::default().limit(134200000))
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(oidc_client.clone()))
+            .app_data(web::Data::new(redis_client.clone()))
             .wrap(af_middleware::auth_middleware::AuthMiddlewareFactory)
             .wrap(
                 IdentityMiddleware::builder()

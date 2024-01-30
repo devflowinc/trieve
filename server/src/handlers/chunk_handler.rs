@@ -1,21 +1,19 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    ChatMessageProxy, ChunkGroup, ChunkGroupBookmark, ChunkMetadata, ChunkMetadataWithFileData,
+    ChatMessageProxy, ChunkGroup, ChunkMetadata, ChunkMetadataWithFileData,
     DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration, StripePlan,
 };
 use crate::errors::{DefaultError, ServiceError};
 use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
-use crate::operators::group_operator::{create_chunk_bookmark_query, get_group_by_id_query};
+use crate::operators::group_operator::get_group_by_id_query;
 use crate::operators::model_operator::create_embedding;
+use crate::operators::qdrant_operator::recommend_qdrant_query;
 use crate::operators::qdrant_operator::update_qdrant_point_query;
-use crate::operators::qdrant_operator::{
-    create_new_qdrant_point_query, delete_qdrant_point_id_query, recommend_qdrant_query,
-};
 use crate::operators::search_operator::{
-    global_unfiltered_top_match_query, search_full_text_chunks, search_full_text_groups,
-    search_hybrid_chunks, search_hybrid_groups, search_semantic_chunks, search_semantic_groups,
+    search_full_text_chunks, search_full_text_groups, search_hybrid_chunks, search_hybrid_groups,
+    search_semantic_chunks, search_semantic_groups,
 };
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
@@ -25,6 +23,7 @@ use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{
     ChatCompletionParameters, ChatMessage, ChatMessageContent, Role,
 };
+use redis::Commands;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -134,6 +133,13 @@ pub struct ReturnCreatedChunk {
     pub duplicate: bool,
 }
 
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
+pub struct IngestionMessage {
+    pub chunk_metadata: ChunkMetadata,
+    pub chunk: CreateChunkData,
+    pub dataset_config: ServerDatasetConfiguration,
+}
+
 /// create_chunk
 ///
 /// Create a new chunk. If the chunk has the same tracking_id as an existing chunk, the request will fail. Once a chunk is created, it can be searched for using the search endpoint.
@@ -153,10 +159,8 @@ pub async fn create_chunk(
     pool: web::Data<Pool>,
     user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    redis_client: web::Data<redis::Client>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool1 = pool.clone();
-    let pool2 = pool.clone();
-    let pool3 = pool.clone();
     let count_dataset_id = dataset_org_plan_sub.dataset.id;
 
     let dataset_config =
@@ -184,181 +188,93 @@ pub async fn create_chunk(
         .tracking_id
         .clone()
         .filter(|chunk_tracking| !chunk_tracking.is_empty());
-    let chunk_group_id = chunk.group_id;
-
-    let mut collision: Option<uuid::Uuid> = None;
 
     let content =
         convert_html(chunk.chunk_html.as_ref().unwrap_or(&"".to_string())).map_err(|err| {
             ServiceError::BadRequest(format!("Could not parse html: {}", err.message))
         })?;
-    let embedding_vector = if let Some(embedding_vector) = chunk.chunk_vector.clone() {
-        embedding_vector
-    } else {
-        create_embedding(&content, dataset_config.clone()).await?
+
+    let chunk_metadata = ChunkMetadata::from_details(
+        content,
+        &chunk.chunk_html,
+        &chunk.link,
+        &chunk.tag_set,
+        user.0.id,
+        None,
+        chunk.metadata.clone(),
+        chunk_tracking_id,
+        chunk
+            .time_stamp
+            .clone()
+            .map(|ts| -> Result<NaiveDateTime, ServiceError> {
+                Ok(ts
+                    .parse::<DateTimeUtc>()
+                    .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))?
+                    .0
+                    .with_timezone(&chrono::Local)
+                    .naive_local())
+            })
+            .transpose()?,
+        dataset_org_plan_sub.dataset.id,
+        0.0,
+    );
+
+    let ingestion_message = IngestionMessage {
+        chunk_metadata: chunk_metadata.clone(),
+        chunk: chunk.clone(),
+        dataset_config,
     };
 
-    let duplicate_distance_threshold = dataset_config.DUPLICATE_DISTANCE_THRESHOLD.unwrap_or(1.1);
-    if duplicate_distance_threshold > 1.0 || dataset_config.COLLISIONS_ENABLED.unwrap_or(false) {
-        let first_semantic_result = global_unfiltered_top_match_query(
-            embedding_vector.clone(),
-            dataset_org_plan_sub.dataset.id,
+    let mut pub_client = redis_client
+        .get_connection()
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    pub_client
+        .publish(
+            "ingestion",
+            serde_json::to_string(&ingestion_message).unwrap(),
         )
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!(
-                "Could not get semantic similarity for collision check: {}",
-                err.message
-            ))
-        })?;
-        if first_semantic_result.score >= duplicate_distance_threshold {
-            //Sets collision to collided chunk id
-            collision = Some(first_semantic_result.point_id);
-
-            let score_chunk_result = web::block(move || {
-                get_metadata_from_point_ids(vec![first_semantic_result.point_id], pool2)
-            })
-            .await?;
-
-            match score_chunk_result {
-                Ok(chunk_results) => {
-                    if chunk_results.is_empty() {
-                        delete_qdrant_point_id_query(
-                            first_semantic_result.point_id,
-                            dataset_org_plan_sub.dataset.id,
-                        )
-                        .await
-                        .map_err(|_| {
-                            ServiceError::BadRequest(
-                                "Could not delete qdrant point id. Please try again.".into(),
-                            )
-                        })?;
-
-                        return Err(ServiceError::BadRequest(
-                            "There was a data inconsistency issue. Please try again.".into(),
-                        )
-                        .into());
-                    }
-                    chunk_results.first().unwrap().clone()
-                }
-                Err(err) => {
-                    return Err(ServiceError::BadRequest(err.message.into()).into());
-                }
-            };
-        }
-    }
-
-    let mut chunk_metadata: ChunkMetadata;
-    let mut duplicate: bool = false;
-
-    //if collision is not nil, insert chunk with collision
-    if collision.is_some() {
-        update_qdrant_point_query(
-            None,
-            collision.expect("Collision must be some"),
-            Some(user.0.id),
-            None,
-            dataset_org_plan_sub.dataset.id,
-        )
-        .await?;
-
-        chunk_metadata = ChunkMetadata::from_details(
-            &content,
-            &chunk.chunk_html,
-            &chunk.link,
-            &chunk.tag_set,
-            user.0.id,
-            None,
-            chunk.metadata.clone(),
-            chunk_tracking_id,
-            chunk
-                .time_stamp
-                .clone()
-                .map(|ts| -> Result<NaiveDateTime, ServiceError> {
-                    //TODO: change all ts parsing to this crate
-                    Ok(ts
-                        .parse::<DateTimeUtc>()
-                        .map_err(|_| {
-                            ServiceError::BadRequest("Invalid timestamp format".to_string())
-                        })?
-                        .0
-                        .with_timezone(&chrono::Local)
-                        .naive_local())
-                })
-                .transpose()?,
-            dataset_org_plan_sub.dataset.id,
-            0.0,
-        );
-        chunk_metadata = web::block(move || {
-            insert_duplicate_chunk_metadata_query(
-                chunk_metadata,
-                collision.expect("Collision should must be some"),
-                chunk.file_uuid,
-                pool1,
-            )
-        })
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-        duplicate = true;
-    }
-    //if collision is nil and embedding vector is some, insert chunk with no collision
-    else {
-        let qdrant_point_id = uuid::Uuid::new_v4();
-
-        chunk_metadata = ChunkMetadata::from_details(
-            &content,
-            &chunk.chunk_html,
-            &chunk.link,
-            &chunk.tag_set,
-            user.0.id,
-            Some(qdrant_point_id),
-            chunk.metadata.clone(),
-            chunk_tracking_id,
-            chunk
-                .time_stamp
-                .clone()
-                .map(|ts| -> Result<NaiveDateTime, ServiceError> {
-                    Ok(ts
-                        .parse::<DateTimeUtc>()
-                        .map_err(|_| {
-                            ServiceError::BadRequest("Invalid timestamp format".to_string())
-                        })?
-                        .0
-                        .with_timezone(&chrono::Local)
-                        .naive_local())
-                })
-                .transpose()?,
-            dataset_org_plan_sub.dataset.id,
-            0.0,
-        );
-
-        chunk_metadata = insert_chunk_metadata_query(chunk_metadata, chunk.file_uuid, pool1)
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-        create_new_qdrant_point_query(
-            qdrant_point_id,
-            embedding_vector,
-            chunk_metadata.clone(),
-            Some(user.0.id),
-            dataset_org_plan_sub.dataset.id,
-        )
-        .await?;
-    }
-
-    if let Some(group_id_to_bookmark) = chunk_group_id {
-        let chunk_group_bookmark =
-            ChunkGroupBookmark::from_details(group_id_to_bookmark, chunk_metadata.id);
-
-        let _ =
-            web::block(move || create_chunk_bookmark_query(pool3, chunk_group_bookmark)).await?;
-    }
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     Ok(HttpResponse::Ok().json(ReturnCreatedChunk {
-        chunk_metadata,
-        duplicate,
+        chunk_metadata: chunk_metadata.clone(),
+        duplicate: false,
     }))
+}
+
+/// bulk_create_chunk
+///
+/// Create a new chunk from an array of chunks. If the chunk has the same tracking_id as an existing chunk, the request will fail. Once a chunk is created, it can be searched for using the search endpoint.
+#[utoipa::path(
+    post,
+    path = "/chunk",
+    context_path = "/api",
+    tag = "chunk",
+    request_body(content = CreateChunkData, description = "JSON request payload to create a new chunk (chunk)", content_type = "application/json"),
+    responses(
+        (status = 200, description = "JSON response payload containing the created chunk", body = ReturnCreatedChunk),
+        (status = 400, description = "Service error relating to to creating a chunk, likely due to conflicting tracking_id", body = DefaultError),
+    )
+)]
+pub async fn bulk_create_chunk(
+    chunks: web::Json<Vec<CreateChunkData>>,
+    pool: web::Data<Pool>,
+    user: AdminOnly,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    redis_client: web::Data<redis::Client>,
+) -> Result<HttpResponse, actix_web::Error> {
+    for chunk in chunks.into_inner() {
+        create_chunk(
+            actix_web::web::Json(chunk),
+            pool.clone(),
+            user.clone(),
+            dataset_org_plan_sub.clone(),
+            redis_client.clone(),
+        )
+        .await?;
+    }
+
+    Ok(HttpResponse::NoContent().finish())
 }
 
 /// delete_chunk
