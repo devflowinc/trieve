@@ -21,7 +21,7 @@ pub async fn create_embedding(
 
     // Vectorize
     let parameters = EmbeddingParameters {
-        model: "text-embedding-ada-002".to_string(),
+        model: "text-embedding-3-small".to_string(),
         input: message.to_string(),
         user: None,
         encoding_format: None,

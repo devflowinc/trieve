@@ -2,7 +2,7 @@ use std::thread;
 
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
-use redis::AsyncCommands;
+use redis::{AsyncCommands};
 use trieve_server::data::models::{self, ChunkGroupBookmark};
 use trieve_server::get_env;
 use trieve_server::handlers::chunk_handler::IngestionMessage;
