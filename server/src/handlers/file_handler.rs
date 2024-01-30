@@ -1,7 +1,7 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
     data::models::{
-        DatasetAndOrgWithSubAndPlan, File, Pool, ServerDatasetConfiguration, StripePlan,
+        DatasetAndOrgWithSubAndPlan, File, Pool, ServerDatasetConfiguration,
     },
     errors::ServiceError,
     operators::{
@@ -113,7 +113,7 @@ pub async fn upload_file_handler(
             .clone()
             .organization
             .plan
-            .unwrap_or(StripePlan::default())
+            .unwrap_or_default()
             .file_storage
     {
         return Err(ServiceError::BadRequest("File size limit reached".to_string()).into());

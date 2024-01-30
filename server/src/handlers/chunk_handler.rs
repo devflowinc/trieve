@@ -1,7 +1,7 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkGroup, ChunkMetadata, ChunkMetadataWithFileData,
-    DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration, StripePlan,
+    DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration,
 };
 use crate::errors::{DefaultError, ServiceError};
 use crate::get_env;
@@ -130,7 +130,7 @@ pub fn convert_html(html: &str) -> Result<String, DefaultError> {
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct ReturnCreatedChunk {
     pub chunk_metadata: ChunkMetadata,
-    pub duplicate: bool,
+    pub pos_in_queue: i32,
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
@@ -177,7 +177,7 @@ pub async fn create_chunk(
         >= dataset_org_plan_sub
             .organization
             .plan
-            .unwrap_or(StripePlan::default())
+            .unwrap_or_default()
             .chunk_count
     {
         return Ok(HttpResponse::UpgradeRequired()
@@ -230,15 +230,16 @@ pub async fn create_chunk(
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     pub_client
-        .publish(
-            "ingestion",
-            serde_json::to_string(&ingestion_message).unwrap(),
-        )
+        .lpush("ingestion", serde_json::to_string(&ingestion_message)?)
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    let pos_in_queue = pub_client
+        .llen("ingestion")
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     Ok(HttpResponse::Ok().json(ReturnCreatedChunk {
         chunk_metadata: chunk_metadata.clone(),
-        duplicate: false,
+        pos_in_queue,
     }))
 }
 

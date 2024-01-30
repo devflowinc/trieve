@@ -13,7 +13,9 @@ use crate::{
 };
 use actix_web::web;
 use diesel::{
-    dsl::sql, sql_types::Int8, BoolExpressionMethods, JoinOnDsl, NullableExpressionMethods,
+    dsl::sql,
+    sql_types::{Int8, Text},
+    BoolExpressionMethods, JoinOnDsl, NullableExpressionMethods,
 };
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -167,16 +169,15 @@ pub fn delete_group_by_id_query(
 ) -> Result<(), DefaultError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
-    use crate::data::schema::file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns;
+    use crate::data::schema::events::dsl as events_columns;
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
     let mut conn = pool.get().unwrap();
 
     let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
-        diesel::delete(
-            file_upload_completed_notifications_columns::file_upload_completed_notifications
-                .filter(file_upload_completed_notifications_columns::group_uuid.eq(group_id)),
-        )
+        diesel::delete(events_columns::events.filter(
+            sql::<Text>(&format!("events.event_data->>'{}'", "group_id")).eq(group_id.to_string()),
+        ))
         .execute(conn)?;
 
         diesel::delete(
