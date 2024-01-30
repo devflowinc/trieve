@@ -3,6 +3,11 @@ name = "trieve-server"
 version = "1.0.0"
 edition = "2021"
 
+[[bin]]
+name = "ingestion-microservice"
+path = "src/bin/ingestion-microservice.rs"
+
+
 [dependencies]
 actix-identity = { version = "0.6.0" }
 actix-session = { version = "0.8.0", features = [

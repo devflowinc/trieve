@@ -88,6 +88,7 @@ pub async fn upload_file_handler(
     pool: web::Data<Pool>,
     user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    redis_client: web::Data<redis::Client>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let document_upload_feature = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
@@ -153,6 +154,7 @@ pub async fn upload_file_handler(
         user.0,
         dataset_org_plan_sub.clone(),
         pool_inner,
+        redis_client,
     )
     .await
     .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
