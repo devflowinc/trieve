@@ -107,13 +107,14 @@ diesel::table! {
 }
 
 diesel::table! {
-    file_upload_completed_notifications (id) {
+    events (id) {
         id -> Uuid,
-        group_uuid -> Uuid,
-        user_read -> Bool,
         created_at -> Timestamp,
         updated_at -> Timestamp,
         dataset_id -> Uuid,
+        #[max_length = 255]
+        event_type -> Varchar,
+        event_data -> Jsonb,
     }
 }
 
@@ -281,8 +282,7 @@ diesel::joinable!(chunk_metadata -> users (author_id));
 diesel::joinable!(cut_chunks -> users (user_id));
 diesel::joinable!(dataset_usage_counts -> datasets (dataset_id));
 diesel::joinable!(datasets -> organizations (organization_id));
-diesel::joinable!(file_upload_completed_notifications -> chunk_group (group_uuid));
-diesel::joinable!(file_upload_completed_notifications -> datasets (dataset_id));
+diesel::joinable!(events -> datasets (dataset_id));
 diesel::joinable!(files -> datasets (dataset_id));
 diesel::joinable!(files -> users (user_id));
 diesel::joinable!(groups_from_files -> chunk_group (group_id));
@@ -309,7 +309,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     dataset_notification_counts,
     dataset_usage_counts,
     datasets,
-    file_upload_completed_notifications,
+    events,
     files,
     groups_from_files,
     invitations,

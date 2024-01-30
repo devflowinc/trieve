@@ -1,7 +1,7 @@
 use super::{auth_handler::LoggedUser, chunk_handler::ParsedQuery};
 use crate::{
     data::models::{self, DatasetAndOrgWithSubAndPlan, ServerDatasetConfiguration},
-    data::models::{ChunkMetadataWithFileData, Dataset, Pool, StripePlan},
+    data::models::{ChunkMetadataWithFileData, Dataset, Pool},
     errors::{DefaultError, ServiceError},
     get_env,
     operators::{
@@ -82,7 +82,7 @@ pub async fn create_message_completion_handler(
         >= dataset_org_plan_sub
             .organization
             .plan
-            .unwrap_or(StripePlan::default())
+            .unwrap_or_default()
             .message_count
     {
         return Ok(HttpResponse::UpgradeRequired().json(json!({

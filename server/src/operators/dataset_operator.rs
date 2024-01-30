@@ -113,8 +113,7 @@ pub async fn delete_dataset_by_id_query(
         chunk_collisions::dsl as chunk_collisions_columns, chunk_files::dsl as chunk_files_columns,
     };
     use crate::data::schema::{
-        chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns,
-        file_upload_completed_notifications::dsl as file_upload_completed_notifications_columns,
+        chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns, events::dsl as events_columns,
         groups_from_files::dsl as groups_from_files_columns,
     };
 
@@ -125,11 +124,8 @@ pub async fn delete_dataset_by_id_query(
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
-        diesel::delete(
-            file_upload_completed_notifications_columns::file_upload_completed_notifications
-                .filter(file_upload_completed_notifications_columns::dataset_id.eq(id)),
-        )
-        .execute(conn)?;
+        diesel::delete(events_columns::events.filter(events_columns::dataset_id.eq(id)))
+            .execute(conn)?;
 
         let group_ids = chunk_group_columns::chunk_group
             .select(chunk_group_columns::id)

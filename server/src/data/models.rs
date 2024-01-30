@@ -684,53 +684,29 @@ pub struct ChunkFileWithName {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable, Selectable)]
-#[diesel(table_name = file_upload_completed_notifications)]
-pub struct FileUploadCompletedNotification {
+#[diesel(table_name = events)]
+pub struct Event {
     pub id: uuid::Uuid,
-    pub group_uuid: uuid::Uuid,
-    pub user_read: bool,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub dataset_id: uuid::Uuid,
+    pub event_type: String,
+    pub event_data: serde_json::Value,
 }
 
-impl FileUploadCompletedNotification {
-    pub fn from_details(dataset_id: uuid::Uuid, group_uuid: uuid::Uuid) -> Self {
-        FileUploadCompletedNotification {
+impl Event {
+    pub fn from_details(
+        dataset_id: uuid::Uuid,
+        event_type: String,
+        event_data: serde_json::Value,
+    ) -> Self {
+        Event {
             id: uuid::Uuid::new_v4(),
-            group_uuid,
-            user_read: false,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             dataset_id,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct FileUploadCompletedNotificationWithName {
-    pub id: uuid::Uuid,
-    pub dataset_id: uuid::Uuid,
-    pub group_uuid: uuid::Uuid,
-    pub group_name: Option<String>,
-    pub user_read: bool,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-}
-
-impl FileUploadCompletedNotificationWithName {
-    pub fn from_file_upload_notification(
-        notification: FileUploadCompletedNotification,
-        group_name: String,
-    ) -> Self {
-        FileUploadCompletedNotificationWithName {
-            id: notification.id,
-            dataset_id: notification.dataset_id,
-            group_uuid: notification.group_uuid,
-            group_name: Some(group_name),
-            user_read: notification.user_read,
-            created_at: notification.created_at,
-            updated_at: notification.updated_at,
+            event_type,
+            event_data,
         }
     }
 }
@@ -1095,8 +1071,10 @@ impl StripePlan {
             name,
         }
     }
+}
 
-    pub fn default() -> Self {
+impl Default for StripePlan {
+    fn default() -> Self {
         StripePlan {
             id: uuid::Uuid::default(),
             stripe_id: "".to_string(),
@@ -1112,7 +1090,6 @@ impl StripePlan {
         }
     }
 }
-
 #[derive(
     Debug, Serialize, Deserialize, Selectable, Clone, Queryable, Insertable, ValidGrouping, ToSchema,
 )]
@@ -1181,7 +1158,7 @@ impl OrganizationWithSubAndPlan {
             registerable: self.registerable,
             created_at: self.created_at,
             updated_at: self.updated_at,
-            plan: Some(self.plan.clone().unwrap_or(StripePlan::default())),
+            plan: Some(self.plan.clone().unwrap_or_default()),
             subscription: self.subscription.clone(),
         }
     }
