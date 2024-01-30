@@ -59,6 +59,7 @@ pub struct ChunkMetadataWithQdrantId {
 
 pub fn get_metadata_and_collided_chunks_from_point_ids_query(
     point_ids: Vec<uuid::Uuid>,
+    get_collisions: bool,
     pool: web::Data<Pool>,
 ) -> Result<
     (
@@ -89,7 +90,8 @@ pub fn get_metadata_and_collided_chunks_from_point_ids_query(
 
     let (collided_search_result, collided_qdrant_ids) = {
         let mut conn = pool.get().unwrap();
-        let chunk_metadata: Vec<(ChunkMetadata, uuid::Uuid)> =
+        if get_collisions {
+            let chunk_metadata: Vec<(ChunkMetadata, uuid::Uuid)> =
             chunk_collisions_columns::chunk_collisions
                 .inner_join(
                     chunk_metadata_columns::chunk_metadata
@@ -107,17 +109,42 @@ pub fn get_metadata_and_collided_chunks_from_point_ids_query(
                     message: "Failed to load metadata",
                 })?;
 
-        let collided_qdrant_ids = chunk_metadata
-            .iter()
-            .map(|(_, qdrant_id)| *qdrant_id)
-            .collect::<Vec<uuid::Uuid>>();
+            let collided_qdrant_ids = chunk_metadata
+                .iter()
+                .map(|(_, qdrant_id)| *qdrant_id)
+                .collect::<Vec<uuid::Uuid>>();
 
-        let converted_chunks: Vec<FullTextSearchResult> = chunk_metadata
-            .iter()
-            .map(|chunk| <ChunkMetadata as Into<FullTextSearchResult>>::into(chunk.0.clone()))
-            .collect::<Vec<FullTextSearchResult>>();
+            let converted_chunks: Vec<FullTextSearchResult> = chunk_metadata
+                .iter()
+                .map(|chunk| <ChunkMetadata as Into<FullTextSearchResult>>::into(chunk.0.clone()))
+                .collect::<Vec<FullTextSearchResult>>();
 
-        (converted_chunks, collided_qdrant_ids)
+            (converted_chunks, collided_qdrant_ids)
+        } else {
+            let chunk_metadata: Vec<(ChunkMetadata, uuid::Uuid)> =
+            chunk_collisions_columns::chunk_collisions
+                .inner_join(
+                    chunk_metadata_columns::chunk_metadata
+                        .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
+                )
+                .select((
+                    ChunkMetadata::as_select(),
+                    (chunk_collisions_columns::collision_qdrant_id.assume_not_null()),
+                ))
+                .filter(chunk_collisions_columns::collision_qdrant_id.eq_any(point_ids))
+                .limit()
+                .load::<(ChunkMetadata, uuid::Uuid)>(&mut conn)
+                .map_err(|_| DefaultError {
+                    message: "Failed to load metadata",
+                })?;
+
+            let converted_chunks: Vec<FullTextSearchResult> = chunk_metadata
+                .iter()
+                .map(|chunk| <ChunkMetadata as Into<FullTextSearchResult>>::into(chunk.0.clone()))
+                .collect::<Vec<FullTextSearchResult>>();
+
+            (converted_chunks, vec![])
+        }
     };
 
     let (chunk_metadata_with_file_id, collided_chunk_metadata_with_file_id) = {
