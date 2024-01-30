@@ -2,7 +2,7 @@ use std::thread;
 
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
-use redis::{AsyncCommands};
+use redis::AsyncCommands;
 use trieve_server::data::models::{self, ChunkGroupBookmark};
 use trieve_server::get_env;
 use trieve_server::handlers::chunk_handler::IngestionMessage;
@@ -22,7 +22,10 @@ static THREAD_NUM: i32 = 4;
 async fn main() -> std::io::Result<()> {
     let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
     let redis_client = redis::Client::open(redis_url).unwrap();
-    let redis_connection = redis_client.get_multiplexed_tokio_connection().await.unwrap();
+    let redis_connection = redis_client
+        .get_multiplexed_tokio_connection()
+        .await
+        .unwrap();
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
     let manager = ConnectionManager::<PgConnection>::new(database_url);
@@ -36,9 +39,7 @@ async fn main() -> std::io::Result<()> {
         .map(|_i| {
             let redis_connection = redis_connection.clone();
             let web_pool = web_pool.clone();
-            thread::spawn(move || {
-                ingestion_service(redis_connection, web_pool)
-            })
+            thread::spawn(move || ingestion_service(redis_connection, web_pool))
         })
         .collect();
 
@@ -47,16 +48,20 @@ async fn main() -> std::io::Result<()> {
     }
 
     Ok(())
-    
 }
 
-
-async fn ingestion_service(mut redis_connection: redis::aio::MultiplexedConnection, web_pool: actix_web::web::Data<models::Pool>) {
+async fn ingestion_service(
+    mut redis_connection: redis::aio::MultiplexedConnection,
+    web_pool: actix_web::web::Data<models::Pool>,
+) {
     loop {
-                let payload_result = redis_connection.blpop::<&str, Vec<String>>("ingestion", 0.0).await.map_err(|err| {
-            log::error!("Failed to get payload from redis: {:?}", err);
-        });
-        
+        let payload_result = redis_connection
+            .blpop::<&str, Vec<String>>("ingestion", 0.0)
+            .await
+            .map_err(|err| {
+                log::error!("Failed to get payload from redis: {:?}", err);
+            });
+
         let payload = if let Ok(payload) = payload_result {
             payload
         } else {
@@ -103,7 +108,7 @@ async fn ingestion_service(mut redis_connection: redis::aio::MultiplexedConnecti
                 log::error!("Failed to get global unfiltered top match: {:?}", err);
             });
 
-            let first_semantic_result = if let Ok(result) =  first_semantic_result_result {
+            let first_semantic_result = if let Ok(result) = first_semantic_result_result {
                 result
             } else {
                 continue;
@@ -126,11 +131,7 @@ async fn ingestion_service(mut redis_connection: redis::aio::MultiplexedConnecti
                                 payload.chunk_metadata.dataset_id,
                             )
                             .await
-                            .map_err(|_| {
-                                log::error!("Could not find chunk metadata for chunk id")
-
-                            });
-
+                            .map_err(|_| log::error!("Could not find chunk metadata for chunk id"));
                         }
                         chunk_results.first().unwrap().clone()
                     }
@@ -199,9 +200,11 @@ async fn ingestion_service(mut redis_connection: redis::aio::MultiplexedConnecti
             let chunk_group_bookmark =
                 ChunkGroupBookmark::from_details(group_id_to_bookmark, payload.chunk_metadata.id);
 
-            let _ = create_chunk_bookmark_query(web_pool.clone(), chunk_group_bookmark).map_err(|err| {
-                log::info!("Failed to create chunk bookmark: {:?}", err);
-            });
+            let _ = create_chunk_bookmark_query(web_pool.clone(), chunk_group_bookmark).map_err(
+                |err| {
+                    log::info!("Failed to create chunk bookmark: {:?}", err);
+                },
+            );
         }
     }
 }
