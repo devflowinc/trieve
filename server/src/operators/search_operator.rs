@@ -1171,6 +1171,7 @@ pub async fn search_hybrid_chunks(
             .chain(full_text_handler_results.score_chunks.into_iter())
             .unique_by(|score_chunk| score_chunk.metadata[0].id)
             .collect::<Vec<ScoreChunkDTO>>();
+
         SearchChunkQueryResponseBody {
             score_chunks: cross_encoder(data.query.clone(), combined_results).await?,
             total_chunk_pages: search_chunk_query_results.total_chunk_pages,
