@@ -762,7 +762,6 @@ pub async fn search_full_text_group_query(
 pub async fn retrieve_chunks_from_point_ids_without_collsions(
     search_chunk_query_results: SearchChunkQueryResult,
     data: &web::Json<SearchChunkData>,
-    dataset_config: &ServerDatasetConfiguration,
     pool: web::Data<Pool>,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let point_ids = search_chunk_query_results
@@ -801,21 +800,18 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
                     weight: 1.0,
                 },
             };
-            if dataset_config.HIGHLIGHT_ENABLED.unwrap_or(true) {
+            if data.highlight_results.unwrap_or(true) {
                 chunk = find_relevant_sentence(
                     chunk.clone(),
                     data.query.clone(),
-                    dataset_config
-                        .HIGHLIGHT_SPLIT_DELIMITERS
-                        .clone()
-                        .unwrap_or(vec![
-                            ".".to_string(),
-                            "!".to_string(),
-                            "?".to_string(),
-                            "\n".to_string(),
-                            "\t".to_string(),
-                            ",".to_string(),
-                        ]),
+                    data.highlight_delimiters.clone().unwrap_or(vec![
+                        ".".to_string(),
+                        "!".to_string(),
+                        "?".to_string(),
+                        "\n".to_string(),
+                        "\t".to_string(),
+                        ",".to_string(),
+                    ]),
                 )
                 .unwrap_or(chunk);
             }
@@ -837,7 +833,6 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
 pub async fn retrieve_chunks_from_point_ids(
     search_chunk_query_results: SearchChunkQueryResult,
     data: &web::Json<SearchChunkData>,
-    dataset_config: &ServerDatasetConfiguration,
     pool: web::Data<Pool>,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let point_ids = search_chunk_query_results
@@ -881,21 +876,18 @@ pub async fn retrieve_chunks_from_point_ids(
                 },
             };
 
-            if dataset_config.HIGHLIGHT_ENABLED.unwrap_or(true) {
+            if data.highlight_results.unwrap_or(true) {
                 chunk = find_relevant_sentence(
                     chunk.clone(),
                     data.query.clone(),
-                    dataset_config
-                        .HIGHLIGHT_SPLIT_DELIMITERS
-                        .clone()
-                        .unwrap_or(vec![
-                            ".".to_string(),
-                            "!".to_string(),
-                            "?".to_string(),
-                            "\n".to_string(),
-                            "\t".to_string(),
-                            ",".to_string(),
-                        ]),
+                    data.highlight_delimiters.clone().unwrap_or(vec![
+                        ".".to_string(),
+                        "!".to_string(),
+                        "?".to_string(),
+                        "\n".to_string(),
+                        "\t".to_string(),
+                        ",".to_string(),
+                    ]),
                 )
                 .unwrap_or(chunk);
             }
@@ -976,13 +968,8 @@ pub async fn search_semantic_chunks(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let mut result_chunks = retrieve_chunks_from_point_ids(
-        search_chunk_query_results,
-        &data,
-        &dataset_config,
-        pool.clone(),
-    )
-    .await?;
+    let mut result_chunks =
+        retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
 
     result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
 
@@ -996,8 +983,6 @@ pub async fn search_full_text_chunks(
     pool: web::Data<Pool>,
     dataset: Dataset,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
-    let dataset_config =
-        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
     parsed_query.query = parsed_query
         .query
         .split_whitespace()
@@ -1018,8 +1003,7 @@ pub async fn search_full_text_chunks(
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let mut result_chunks =
-        retrieve_chunks_from_point_ids(search_chunk_query_results, &data, &dataset_config, pool)
-            .await?;
+        retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool).await?;
 
     result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
 
@@ -1146,21 +1130,18 @@ pub async fn search_hybrid_chunks(
                 },
             };
 
-            if dataset_config.HIGHLIGHT_ENABLED.unwrap_or(true) {
+            if data.highlight_results.unwrap_or(true) {
                 chunk = find_relevant_sentence(
                     chunk.clone(),
                     data.query.clone(),
-                    dataset_config
-                        .HIGHLIGHT_SPLIT_DELIMITERS
-                        .clone()
-                        .unwrap_or(vec![
-                            ".".to_string(),
-                            "!".to_string(),
-                            "?".to_string(),
-                            "\n".to_string(),
-                            "\t".to_string(),
-                            ",".to_string(),
-                        ]),
+                    data.highlight_delimiters.clone().unwrap_or(vec![
+                        ".".to_string(),
+                        "!".to_string(),
+                        "?".to_string(),
+                        "\n".to_string(),
+                        "\t".to_string(),
+                        ",".to_string(),
+                    ]),
                 )
                 .unwrap_or(chunk);
             }
@@ -1257,7 +1238,6 @@ pub async fn search_semantic_groups(
     let mut result_chunks = retrieve_chunks_from_point_ids_without_collsions(
         search_semantic_chunk_query_results,
         &web::Json(data.clone().into()),
-        &dataset_config,
         pool.clone(),
     )
     .await?;
@@ -1281,8 +1261,7 @@ pub async fn search_full_text_groups(
     dataset: Dataset,
 ) -> Result<SearchGroupsResult, actix_web::Error> {
     let data_inner = data.clone();
-    let dataset_config =
-        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+
     let search_chunk_query_results = search_full_text_group_query(
         data_inner.query.clone(),
         page,
@@ -1300,7 +1279,6 @@ pub async fn search_full_text_groups(
     let mut result_chunks = retrieve_chunks_from_point_ids_without_collsions(
         search_chunk_query_results,
         &web::Json(data.clone().into()),
-        &dataset_config,
         pool.clone(),
     )
     .await?;
@@ -1377,7 +1355,6 @@ pub async fn search_hybrid_groups(
     let combined_result_chunks = retrieve_chunks_from_point_ids_without_collsions(
         combined_search_chunk_query_results,
         &web::Json(data.clone().into()),
-        &dataset_config,
         pool.clone(),
     )
     .await?;

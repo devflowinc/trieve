@@ -44,6 +44,10 @@ pub struct CreateMessageData {
     pub topic_id: uuid::Uuid,
     /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
     pub stream_response: Option<bool>,
+    /// Whether or not to highlight the citations in the response. If this is set to true or not included, the citations will be highlighted. If this is set to false, the citations will not be highlighted. Default is true.
+    pub highlight_citations: Option<bool>,
+    /// The delimiters to use for highlighting the citations. If this is not included, the default delimiters will be used. Default is `[".", "!", "?", "\n", "\t", ","]`.
+    pub highlight_delimiters: Option<Vec<String>>,
 }
 
 /// create_message
@@ -161,6 +165,8 @@ pub async fn create_message_completion_handler(
         topic_id,
         create_message_data.model,
         create_message_data.stream_response,
+        create_message_data.highlight_citations,
+        create_message_data.highlight_delimiters,
         dataset_org_plan_sub.dataset,
         stream_response_pool,
     )
@@ -220,6 +226,10 @@ pub struct RegenerateMessageData {
     topic_id: uuid::Uuid,
     /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
     pub stream_response: Option<bool>,
+    /// Whether or not to highlight the citations in the response. If this is set to true or not included, the citations will be highlighted. If this is set to false, the citations will not be highlighted. Default is true.
+    pub highlight_citations: Option<bool>,
+    /// The delimiters to use for highlighting the citations. If this is not included, the default delimiters will be used. Default is `[".", "!", "?", "\n", "\t", ","]`.  
+    pub highlight_delimiters: Option<Vec<String>>,
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
@@ -234,6 +244,10 @@ pub struct EditMessageData {
     new_message_content: String,
     /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
     pub stream_response: Option<bool>,
+    /// Whether or not to highlight the citations in the response. If this is set to true or not included, the citations will be highlighted. If this is set to false, the citations will not be highlighted. Default is true.
+    pub highlight_citations: Option<bool>,
+    /// The delimiters to use for highlighting the citations. If this is not included, the default delimiters will be used. Default is `[".", "!", "?", "\n", "\t", ","]`.
+    pub highlight_delimiters: Option<Vec<String>>,
 }
 
 /// edit_message
@@ -297,6 +311,8 @@ pub async fn edit_message_handler(
             new_message_content: new_message_content.to_string(),
             topic_id,
             stream_response,
+            highlight_citations: data.highlight_citations,
+            highlight_delimiters: data.highlight_delimiters.clone(),
         }),
         user,
         dataset_org_plan_sub,
@@ -363,6 +379,8 @@ pub async fn regenerate_message_handler(
             topic_id,
             data.model.clone(),
             should_stream,
+            data.highlight_citations,
+            data.highlight_delimiters.clone(),
             dataset_org_plan_sub.dataset,
             create_message_pool,
         )
@@ -421,6 +439,8 @@ pub async fn regenerate_message_handler(
         topic_id,
         data.model.clone(),
         should_stream,
+        data.highlight_citations,
+        data.highlight_delimiters.clone(),
         dataset_org_plan_sub.dataset,
         create_message_pool,
     )
@@ -497,6 +517,8 @@ pub async fn stream_response(
     topic_id: uuid::Uuid,
     model: Option<String>,
     should_stream: Option<bool>,
+    highlight_citations: Option<bool>,
+    highlight_delimiters: Option<Vec<String>>,
     dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -625,24 +647,21 @@ pub async fn stream_response(
 
     let citation_chunks: Vec<ChunkMetadataWithFileData> = metadata_chunks.to_vec();
 
-    let highlighted_citation_chunks = if dataset_config.HIGHLIGHT_ENABLED.unwrap_or(true) {
+    let highlighted_citation_chunks = if highlight_citations.unwrap_or(true) {
         citation_chunks
             .iter()
             .map(|chunk| {
                 find_relevant_sentence(
                     chunk.clone(),
                     query.to_string(),
-                    dataset_config
-                        .HIGHLIGHT_SPLIT_DELIMITERS
-                        .clone()
-                        .unwrap_or(vec![
-                            ".".to_string(),
-                            "!".to_string(),
-                            "?".to_string(),
-                            "\n".to_string(),
-                            "\t".to_string(),
-                            ",".to_string(),
-                        ]),
+                    highlight_delimiters.clone().unwrap_or(vec![
+                        ".".to_string(),
+                        "!".to_string(),
+                        "?".to_string(),
+                        "\n".to_string(),
+                        "\t".to_string(),
+                        ",".to_string(),
+                    ]),
                 )
                 .unwrap_or(chunk.clone())
             })

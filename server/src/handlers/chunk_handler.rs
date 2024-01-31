@@ -715,6 +715,10 @@ pub struct SearchChunkData {
     /// Set get_collisions to true to get the collisions for each chunk. This will only apply if
     /// environment variable COLLISIONS_ENABLED is set to true.
     pub get_collisions: Option<bool>,
+    /// Set highlight_results to true to highlight the results.
+    pub highlight_results: Option<bool>,
+    /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting.
+    pub highlight_delimiters: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
@@ -834,6 +838,10 @@ pub struct SearchGroupsData {
     pub cross_encoder: Option<bool>,
     /// Weights are a tuple of two floats. The first value is the weight for the semantic search results and the second value is the weight for the full-text search results. This can be used to bias search results towards semantic or full-text results. This will only apply if in hybrid search mode and cross_encoder is set to false.
     pub weights: Option<(f64, f64)>,
+    /// Set highlight_results to true to highlight the results.
+    pub highlight_results: Option<bool>,
+    /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting.
+    pub highlight_delimiters: Option<Vec<String>>,
 }
 
 impl From<SearchGroupsData> for SearchChunkData {
@@ -850,6 +858,8 @@ impl From<SearchGroupsData> for SearchChunkData {
             search_type: data.search_type,
             date_bias: data.date_bias,
             get_collisions: Some(false),
+            highlight_results: data.highlight_results,
+            highlight_delimiters: data.highlight_delimiters,
         }
     }
 }
