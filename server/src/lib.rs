@@ -187,6 +187,7 @@ pub async fn main() -> std::io::Result<()> {
                 data::models::ChunkMetadata,
                 data::models::ChunkMetadataWithFileData,
                 data::models::ChatMessageProxy,
+                data::models::Event,
                 data::models::SlimGroup,
                 data::models::UserDTOWithChunks,
                 data::models::File,

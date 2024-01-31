@@ -683,7 +683,7 @@ pub struct ChunkFileWithName {
     pub file_name: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable, Selectable)]
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable, Selectable, ToSchema)]
 #[diesel(table_name = events)]
 pub struct Event {
     pub id: uuid::Uuid,

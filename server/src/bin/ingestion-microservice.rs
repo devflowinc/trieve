@@ -59,7 +59,7 @@ async fn ingestion_service(
             .blpop::<&str, Vec<String>>("ingestion", 0.0)
             .await
             .map_err(|err| {
-                log::error!("Failed to get payload from redis: {:?}", err);
+                println!("Failed to get payload from redis: {:?}", err);
             });
 
         let payload = if let Ok(payload) = payload_result {
@@ -68,7 +68,7 @@ async fn ingestion_service(
             continue;
         };
 
-        println!("recieved payload");
+        println!("recieved payload {}", payload.len());
         let mut payload: IngestionMessage = serde_json::from_str(&payload[1]).unwrap();
         let embedding_vector = if let Some(embedding_vector) = payload.chunk.chunk_vector.clone() {
             embedding_vector
@@ -79,7 +79,7 @@ async fn ingestion_service(
             )
             .await
             .map_err(|err| {
-                log::error!("Failed to create embedding: {:?}", err);
+                println!("Failed to create embedding: {:?}", err);
             });
 
             if let Ok(embedding_vector) = embed_result {
@@ -105,7 +105,7 @@ async fn ingestion_service(
             )
             .await
             .map_err(|err| {
-                log::error!("Failed to get global unfiltered top match: {:?}", err);
+                println!("Failed to get global unfiltered top match: {:?}", err);
             });
 
             let first_semantic_result = if let Ok(result) = first_semantic_result_result {
@@ -131,12 +131,12 @@ async fn ingestion_service(
                                 payload.chunk_metadata.dataset_id,
                             )
                             .await
-                            .map_err(|_| log::error!("Could not find chunk metadata for chunk id"));
+                            .map_err(|_| println!("Could not find chunk metadata for chunk id"));
                         }
                         chunk_results.first().unwrap().clone()
                     }
                     Err(err) => {
-                        log::error!("Error occurred {:?}", err);
+                        println!("Error occurred {:?}", err);
                         continue;
                     }
                 };
@@ -196,6 +196,7 @@ async fn ingestion_service(
             });
         }
 
+        println!("finished processing");
         if let Some(group_id_to_bookmark) = payload.chunk.group_id {
             let chunk_group_bookmark =
                 ChunkGroupBookmark::from_details(group_id_to_bookmark, payload.chunk_metadata.id);
