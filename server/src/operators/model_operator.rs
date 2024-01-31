@@ -13,6 +13,13 @@ pub async fn create_embedding(
     let base_url = dataset_config
         .EMBEDDING_BASE_URL
         .unwrap_or("https://api.openai.com/v1".to_string());
+
+    let base_url = if base_url.is_empty() {
+        "https://api.openai.com/v1".to_string()
+    } else {
+        base_url
+    };
+
     let client = Client {
         http_client: reqwest::Client::new(),
         api_key: open_ai_api_key,
