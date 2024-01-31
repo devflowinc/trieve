@@ -1,6 +1,6 @@
-import { useLocation, useNavigate } from "@solidjs/router";
+import { useSearchParams } from "@solidjs/router";
 import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
-import { Show, For, createEffect, createSignal } from "solid-js";
+import { Show, For } from "solid-js";
 
 export const createArrayWithCenteredRange = (center: number, range: number) => {
   const array = [];
@@ -28,26 +28,14 @@ interface PaginationControllerProps {
 }
 
 export const PaginationController = (props: PaginationControllerProps) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const [url, setUrl] = createSignal<URL | null>(null);
-
-  createEffect(() => {
-    const curUrl =
-      "https://" + window.location.host + location.pathname + location.search;
-    setUrl(new URL(curUrl));
-  });
+  const [, setSearchParams] = useSearchParams();
 
   return (
     <>
       <Show when={props.page != 1}>
         <button
           onClick={() => {
-            if (!url()) return;
-
-            url()?.searchParams.set("page", "${props.page - 1}");
-            navigate(url()?.toString() ?? "");
+            setSearchParams({ page: props.page - 1 });
           }}
         >
           <BiRegularChevronLeft class="h-8 w-8 fill-current text-neutral-400 dark:text-neutral-500" />
@@ -70,10 +58,7 @@ export const PaginationController = (props: PaginationControllerProps) => {
               "bg-neutral-200 dark:bg-neutral-700": n !== props.page,
             }}
             onClick={() => {
-              if (!url) return;
-
-              url()?.searchParams.set("page", n.toString());
-              navigate(url()?.toString() ?? "");
+              setSearchParams({ page: n });
             }}
           >
             {n}
@@ -83,10 +68,7 @@ export const PaginationController = (props: PaginationControllerProps) => {
       <Show when={props.page < props.totalPages}>
         <button
           onClick={() => {
-            if (!url) return;
-
-            url()?.searchParams.set("page", `${props.page + 1}`);
-            navigate(url()?.toString() ?? "");
+            setSearchParams({ page: props.page + 1 });
           }}
         >
           <BiRegularChevronRight class="h-8 w-8 fill-current text-neutral-400 dark:text-neutral-500" />
