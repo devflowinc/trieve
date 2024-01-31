@@ -485,6 +485,13 @@ pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<Strin
     let base_url = dataset_config
         .LLM_BASE_URL
         .unwrap_or("https://openrouter.ai/v1".into());
+
+    let base_url = if base_url.is_empty() {
+        "https://openrouter.ai/v1".into()
+    } else {
+        base_url
+    };
+    
     let client = Client {
         api_key: llm_api_key,
         http_client: reqwest::Client::new(),
@@ -536,6 +543,13 @@ pub async fn stream_response(
         .LLM_BASE_URL
         .clone()
         .unwrap_or("https://openrouter.ai/v1".into());
+
+    let base_url = if base_url.is_empty() {
+        "https://openrouter.ai/v1".into()
+    } else {
+        base_url
+    };
+
     let client = Client {
         api_key: llm_api_key,
         http_client: reqwest::Client::new(),
@@ -854,6 +868,11 @@ pub async fn create_suggested_queries_handler(
     let base_url = dataset_config
         .LLM_BASE_URL
         .unwrap_or("https://openrouter.ai/v1".into());
+    let base_url = if base_url.is_empty() {
+        "https://openrouter.ai/v1".into()
+    } else {
+        base_url
+    };
 
     let client = Client {
         api_key: llm_api_key,

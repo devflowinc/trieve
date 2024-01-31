@@ -1045,6 +1045,12 @@ pub async fn generate_off_chunks(
         .LLM_BASE_URL
         .unwrap_or("https://openrouter.ai/v1".into());
 
+    let base_url = if base_url.is_empty() {
+        "https://openrouter.ai/v1".into()
+    } else {
+        base_url
+    };
+
     let client = Client {
         api_key: llm_api_key,
         http_client: reqwest::Client::new(),
