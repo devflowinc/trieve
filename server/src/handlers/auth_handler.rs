@@ -1,4 +1,4 @@
-use crate::data::models::{DatasetAndOrgWithSubAndPlan, Organization, StripePlan, UserRole};
+use crate::data::models::{Organization, StripePlan, UserRole};
 use crate::get_env;
 use crate::operators::invitation_operator::check_inv_valid;
 use crate::operators::organization_operator::{
@@ -6,10 +6,10 @@ use crate::operators::organization_operator::{
 };
 use crate::operators::user_operator::{add_user_to_organization, create_user_query};
 use crate::{
-    data::models::{Pool, ServerDatasetConfiguration, SlimUser, User, UserOrganization},
+    data::models::{Pool, SlimUser, User, UserOrganization},
     errors::ServiceError,
     operators::{
-        self, organization_operator::create_organization_query, user_operator::get_user_by_id_query,
+        organization_operator::create_organization_query, user_operator::get_user_by_id_query,
     },
 };
 use actix_identity::Identity;
