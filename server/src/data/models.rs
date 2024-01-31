@@ -840,6 +840,8 @@ pub struct ServerDatasetConfiguration {
     pub DUPLICATE_DISTANCE_THRESHOLD: Option<f32>,
     pub COLLISIONS_ENABLED: Option<bool>,
     pub EMBEDDING_SIZE: Option<usize>,
+    pub HIGHLIGHT_SPLIT_DELIMITERS: Option<Vec<String>>,
+    pub HIGHLIGHT_ENABLED: Option<bool>,
 }
 
 impl ServerDatasetConfiguration {
@@ -892,6 +894,15 @@ impl ServerDatasetConfiguration {
             COLLISIONS_ENABLED: configuration
                 .get("COLLISIONS_ENABLED")
                 .unwrap_or(&json!(false))
+                .as_bool(),
+            HIGHLIGHT_SPLIT_DELIMITERS: configuration
+                .get("HIGHLIGHT_SPLIT_DELIMITERS")
+                .unwrap_or(&json!([".", "!", "?", "\n", "\t", ","]))
+                .as_array()
+                .map(|a| a.iter().map(|v| v.as_str().unwrap().to_string()).collect()),
+            HIGHLIGHT_ENABLED: configuration
+                .get("HIGHLIGHT_ENABLED")
+                .unwrap_or(&json!(true))
                 .as_bool(),
         }
     }

@@ -92,22 +92,22 @@ pub fn get_metadata_and_collided_chunks_from_point_ids_query(
         let mut conn = pool.get().unwrap();
         if get_collisions {
             let chunk_metadata: Vec<(ChunkMetadata, uuid::Uuid)> =
-            chunk_collisions_columns::chunk_collisions
-                .inner_join(
-                    chunk_metadata_columns::chunk_metadata
-                        .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
-                )
-                .select((
-                    ChunkMetadata::as_select(),
-                    (chunk_collisions_columns::collision_qdrant_id.assume_not_null()),
-                ))
-                .filter(chunk_collisions_columns::collision_qdrant_id.eq_any(point_ids))
-                // TODO: Properly handle this and remove the arbitrary limit
-                .limit(500)
-                .load::<(ChunkMetadata, uuid::Uuid)>(&mut conn)
-                .map_err(|_| DefaultError {
-                    message: "Failed to load metadata",
-                })?;
+                chunk_collisions_columns::chunk_collisions
+                    .inner_join(
+                        chunk_metadata_columns::chunk_metadata
+                            .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
+                    )
+                    .select((
+                        ChunkMetadata::as_select(),
+                        (chunk_collisions_columns::collision_qdrant_id.assume_not_null()),
+                    ))
+                    .filter(chunk_collisions_columns::collision_qdrant_id.eq_any(point_ids))
+                    // TODO: Properly handle this and remove the arbitrary limit
+                    .limit(500)
+                    .load::<(ChunkMetadata, uuid::Uuid)>(&mut conn)
+                    .map_err(|_| DefaultError {
+                        message: "Failed to load metadata",
+                    })?;
 
             let collided_qdrant_ids = chunk_metadata
                 .iter()
@@ -122,20 +122,20 @@ pub fn get_metadata_and_collided_chunks_from_point_ids_query(
             (converted_chunks, collided_qdrant_ids)
         } else {
             let chunk_metadata: Vec<(ChunkMetadata, uuid::Uuid)> =
-            chunk_collisions_columns::chunk_collisions
-                .inner_join(
-                    chunk_metadata_columns::chunk_metadata
-                        .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
-                )
-                .select((
-                    ChunkMetadata::as_select(),
-                    (chunk_collisions_columns::collision_qdrant_id.assume_not_null()),
-                ))
-                .filter(chunk_collisions_columns::collision_qdrant_id.eq_any(point_ids))
-                .load::<(ChunkMetadata, uuid::Uuid)>(&mut conn)
-                .map_err(|_| DefaultError {
-                    message: "Failed to load metadata",
-                })?;
+                chunk_collisions_columns::chunk_collisions
+                    .inner_join(
+                        chunk_metadata_columns::chunk_metadata
+                            .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
+                    )
+                    .select((
+                        ChunkMetadata::as_select(),
+                        (chunk_collisions_columns::collision_qdrant_id.assume_not_null()),
+                    ))
+                    .filter(chunk_collisions_columns::collision_qdrant_id.eq_any(point_ids))
+                    .load::<(ChunkMetadata, uuid::Uuid)>(&mut conn)
+                    .map_err(|_| DefaultError {
+                        message: "Failed to load metadata",
+                    })?;
 
             let converted_chunks: Vec<FullTextSearchResult> = chunk_metadata
                 .iter()
@@ -677,24 +677,24 @@ pub fn get_qdrant_id_from_chunk_id_query(
 pub fn find_relevant_sentence(
     input: ChunkMetadataWithFileData,
     query: String,
+    split_chars: Vec<String>,
 ) -> Result<ChunkMetadataWithFileData, DefaultError> {
     let content = &input.chunk_html.clone().unwrap_or(input.content.clone());
     let mut engine: SimSearch<String> = SimSearch::new();
     let mut split_content = content
-        .split(". ")
-        .map(|x| x.split(',').map(|y| y.to_string()).collect::<Vec<String>>())
-        .collect::<Vec<Vec<String>>>();
+        .split_inclusive(|c: char| split_chars.contains(&c.to_string()))
+        .map(|x| x.to_string())
+        .collect::<Vec<String>>();
+
     //insert all sentences into the engine
     split_content
         .iter()
         .enumerate()
         .for_each(|(idx, sentence)| {
-            sentence.iter().enumerate().for_each(|(idy, phrase)| {
-                engine.insert(
-                    format!("{:?},{:?},{}", idx, idy, &phrase.clone()),
-                    &phrase.clone(),
-                );
-            })
+            engine.insert(
+                format!("{:?}¬{}", idx, &sentence.clone()),
+                &sentence.clone(),
+            );
         });
 
     let mut new_output = input;
@@ -703,22 +703,16 @@ pub fn find_relevant_sentence(
     let results = engine.search(&query);
     let amount = if split_content.len() < 5 { 2 } else { 3 };
     for x in results.iter().take(amount) {
-        let split_x: Vec<&str> = x.split(',').collect();
-        if split_x.len() < 3 {
+        let split_x: Vec<&str> = x.split('¬').collect();
+        if split_x.len() < 2 {
             continue;
         }
         let sentence_index = split_x[0].parse::<usize>().unwrap();
-        let phrase_index = split_x[1].parse::<usize>().unwrap();
-        let highlighted_sentence = format!("{}{}{}", "<b>", split_x[2], "</b>");
-        split_content[sentence_index][phrase_index] = highlighted_sentence;
+        let highlighted_sentence = format!("{}{}{}", "<b>", split_x[1], "</b>");
+        split_content[sentence_index] = highlighted_sentence;
     }
-    new_output.chunk_html = Some(
-        split_content
-            .iter()
-            .map(|x| x.join(", "))
-            .collect::<Vec<String>>()
-            .join(". "),
-    );
+
+    new_output.chunk_html = Some(split_content.iter().join(""));
     Ok(new_output)
 }
 

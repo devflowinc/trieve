@@ -625,12 +625,31 @@ pub async fn stream_response(
 
     let citation_chunks: Vec<ChunkMetadataWithFileData> = metadata_chunks.to_vec();
 
-    let highlighted_citation_chunks = citation_chunks
-        .iter()
-        .map(|chunk| {
-            find_relevant_sentence(chunk.clone(), query.to_string()).unwrap_or(chunk.clone())
-        })
-        .collect::<Vec<ChunkMetadataWithFileData>>();
+    let highlighted_citation_chunks = if dataset_config.HIGHLIGHT_ENABLED.unwrap_or(true) {
+        citation_chunks
+            .iter()
+            .map(|chunk| {
+                find_relevant_sentence(
+                    chunk.clone(),
+                    query.to_string(),
+                    dataset_config
+                        .HIGHLIGHT_SPLIT_DELIMITERS
+                        .clone()
+                        .unwrap_or(vec![
+                            ".".to_string(),
+                            "!".to_string(),
+                            "?".to_string(),
+                            "\n".to_string(),
+                            "\t".to_string(),
+                            ",".to_string(),
+                        ]),
+                )
+                .unwrap_or(chunk.clone())
+            })
+            .collect::<Vec<ChunkMetadataWithFileData>>()
+    } else {
+        citation_chunks.clone()
+    };
 
     citation_chunks_stringified = serde_json::to_string(&highlighted_citation_chunks)
         .expect("Failed to serialize citation chunks");
