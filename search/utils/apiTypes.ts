@@ -449,7 +449,6 @@ export interface ClientEnvsConfiguration {
   DATE_RANGE_VALUE?: string;
   FILTER_ITEMS?: ComboboxSection[];
   SUGGESTED_QUERIES?: string;
-  SHOW_GITHUB_STARS?: boolean;
   IMAGE_RANGE_START_KEY?: string;
   IMAGE_RANGE_END_KEY?: string;
   DOCUMENT_UPLOAD_FEATURE?: boolean;
@@ -465,7 +464,6 @@ export const defaultClientEnvsConfiguration: ClientEnvsConfiguration = {
   DATE_RANGE_VALUE: "Date",
   FILTER_ITEMS: [],
   SUGGESTED_QUERIES: "",
-  SHOW_GITHUB_STARS: false,
   IMAGE_RANGE_START_KEY: "",
   IMAGE_RANGE_END_KEY: "",
 };
