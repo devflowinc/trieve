@@ -172,12 +172,19 @@ pub async fn cross_encoder(
                 "Failed parsing response from custom embedding server".to_string(),
             )
         })?;
+
     results.sort_by(|a, b| {
         let index_a = resp.docs.iter().position(|s| s == &a.metadata[0].content);
         let index_b = resp.docs.iter().position(|s| s == &b.metadata[0].content);
 
-        index_a.cmp(&index_b)
+        index_b.cmp(&index_a)
     });
+    let results_len = results.len() as f32;
+
+    // set the scores to the new order
+    for (i, result) in results.iter_mut().enumerate() {
+        result.score = (results_len - i as f32) as f64;
+    }
 
     Ok(results)
 }
