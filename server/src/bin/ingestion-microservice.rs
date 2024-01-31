@@ -1,5 +1,3 @@
-use std::thread;
-
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
 use redis::AsyncCommands;
@@ -42,13 +40,11 @@ async fn main() -> std::io::Result<()> {
         .map(|_i| {
             let redis_connection = redis_connection.clone();
             let web_pool = web_pool.clone();
-            thread::spawn(move || ingestion_service(redis_connection, web_pool))
+            ingestion_service(redis_connection, web_pool)
         })
         .collect();
 
-    for handle in threads {
-        handle.join().unwrap().await;
-    }
+    futures::future::join_all(threads).await;
 
     Ok(())
 }
@@ -57,7 +53,7 @@ async fn ingestion_service(
     mut redis_connection: redis::aio::MultiplexedConnection,
     web_pool: actix_web::web::Data<models::Pool>,
 ) {
-    log::info!("Starting ingestion service");
+    log::info!("Starting ingestion service thread");
     loop {
         let payload_result = redis_connection
             .blpop::<&str, Vec<String>>("ingestion", 0.0)
@@ -72,7 +68,6 @@ async fn ingestion_service(
             continue;
         };
 
-        log::info!("recieved payload {}", payload.len());
         let mut payload: IngestionMessage = serde_json::from_str(&payload[1]).unwrap();
         let embedding_vector = if let Some(embedding_vector) = payload.chunk.chunk_vector.clone() {
             embedding_vector
