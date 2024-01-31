@@ -105,7 +105,7 @@ export const AfMessage = (props: AfMessageProps) => {
               </Show>
               <Show when={props.role == "assistant" && metadata().length > 0}>
                 <div class="max-h-[600px] w-full flex-col space-y-3 overflow-scroll overflow-x-hidden scrollbar-thin scrollbar-track-neutral-200 dark:scrollbar-track-zinc-700">
-                  <For each={metadata()}>
+                  <For each={props.chunks()}>
                     {(chunk) => (
                       <ScoreChunk
                         group={undefined}

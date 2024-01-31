@@ -1,6 +1,6 @@
 import { BiRegularSearch, BiRegularX } from "solid-icons/bi";
 import { AiOutlineClockCircle } from "solid-icons/ai";
-import { A } from "@solidjs/router";
+import { A, useNavigate } from "@solidjs/router";
 import {
   For,
   Match,
@@ -35,6 +35,7 @@ const SearchForm = (props: {
 }) => {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const $envs = useStore(clientConfig);
+  const navigate = useNavigate();
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const comboboxSections: ComboboxSection[] = $envs().FILTER_ITEMS ?? [];
@@ -167,7 +168,7 @@ const SearchForm = (props: {
       ? `&weight=${semanticWeightVal}`
       : "";
 
-    window.location.href = props.groupID
+    const urlToNavigateTo = props.groupID
       ? `/group/${props.groupID}?q=${searchQuery}` +
         (filters ? `&${filters}` : "") +
         (timeRange().start ? `&start=${timeRange().start}` : "") +
@@ -180,6 +181,8 @@ const SearchForm = (props: {
         (timeRange().end ? `&end=${timeRange().end}` : "") +
         searchTypeUrlParam +
         semanticWeightUrlParam;
+
+    navigate(urlToNavigateTo);
   };
 
   onMount(() => {
