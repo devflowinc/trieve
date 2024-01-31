@@ -762,6 +762,7 @@ pub async fn search_full_text_group_query(
 pub async fn retrieve_chunks_from_point_ids_without_collsions(
     search_chunk_query_results: SearchChunkQueryResult,
     data: &web::Json<SearchChunkData>,
+    dataset_config: &ServerDatasetConfiguration,
     pool: web::Data<Pool>,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let point_ids = search_chunk_query_results
@@ -800,8 +801,24 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
                     weight: 1.0,
                 },
             };
-
-            chunk = find_relevant_sentence(chunk.clone(), data.query.clone()).unwrap_or(chunk);
+            if dataset_config.HIGHLIGHT_ENABLED.unwrap_or(true) {
+                chunk = find_relevant_sentence(
+                    chunk.clone(),
+                    data.query.clone(),
+                    dataset_config
+                        .HIGHLIGHT_SPLIT_DELIMITERS
+                        .clone()
+                        .unwrap_or(vec![
+                            ".".to_string(),
+                            "!".to_string(),
+                            "?".to_string(),
+                            "\n".to_string(),
+                            "\t".to_string(),
+                            ",".to_string(),
+                        ]),
+                )
+                .unwrap_or(chunk);
+            }
 
             ScoreChunkDTO {
                 metadata: vec![chunk],
@@ -820,6 +837,7 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
 pub async fn retrieve_chunks_from_point_ids(
     search_chunk_query_results: SearchChunkQueryResult,
     data: &web::Json<SearchChunkData>,
+    dataset_config: &ServerDatasetConfiguration,
     pool: web::Data<Pool>,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let point_ids = search_chunk_query_results
@@ -828,9 +846,12 @@ pub async fn retrieve_chunks_from_point_ids(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
-    let (metadata_chunks, collided_chunks) =
-        get_metadata_and_collided_chunks_from_point_ids_query(point_ids, data.get_collisions.unwrap_or(false), pool)
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let (metadata_chunks, collided_chunks) = get_metadata_and_collided_chunks_from_point_ids_query(
+        point_ids,
+        data.get_collisions.unwrap_or(false),
+        pool,
+    )
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
         .search_results
@@ -860,7 +881,25 @@ pub async fn retrieve_chunks_from_point_ids(
                 },
             };
 
-            chunk = find_relevant_sentence(chunk.clone(), data.query.clone()).unwrap_or(chunk);
+            if dataset_config.HIGHLIGHT_ENABLED.unwrap_or(true) {
+                chunk = find_relevant_sentence(
+                    chunk.clone(),
+                    data.query.clone(),
+                    dataset_config
+                        .HIGHLIGHT_SPLIT_DELIMITERS
+                        .clone()
+                        .unwrap_or(vec![
+                            ".".to_string(),
+                            "!".to_string(),
+                            "?".to_string(),
+                            "\n".to_string(),
+                            "\t".to_string(),
+                            ",".to_string(),
+                        ]),
+                )
+                .unwrap_or(chunk);
+            }
+
             let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
                 .iter()
                 .filter(|chunk| chunk.qdrant_id == search_result.point_id)
@@ -920,11 +959,9 @@ pub async fn search_semantic_chunks(
     pool: web::Data<Pool>,
     dataset: Dataset,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
-    let embedding_vector = create_embedding(
-        &data.query,
-        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
-    )
-    .await?;
+    let dataset_config =
+        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
         Some(embedding_vector),
@@ -939,8 +976,13 @@ pub async fn search_semantic_chunks(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let mut result_chunks =
-        retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
+    let mut result_chunks = retrieve_chunks_from_point_ids(
+        search_chunk_query_results,
+        &data,
+        &dataset_config,
+        pool.clone(),
+    )
+    .await?;
 
     result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
 
@@ -952,8 +994,10 @@ pub async fn search_full_text_chunks(
     mut parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
-    dataset_id: uuid::Uuid,
+    dataset: Dataset,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
+    let dataset_config =
+        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
     parsed_query.query = parsed_query
         .query
         .split_whitespace()
@@ -968,13 +1012,14 @@ pub async fn search_full_text_chunks(
         data.time_range.clone(),
         data.filters.clone(),
         parsed_query,
-        dataset_id,
+        dataset.id,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let mut result_chunks =
-        retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool).await?;
+        retrieve_chunks_from_point_ids(search_chunk_query_results, &data, &dataset_config, pool)
+            .await?;
 
     result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
 
@@ -1032,11 +1077,9 @@ pub async fn search_hybrid_chunks(
     pool: web::Data<Pool>,
     dataset: Dataset,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
-    let embedding_vector = create_embedding(
-        &data.query,
-        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
-    )
-    .await?;
+    let dataset_config =
+        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
     let pool1 = pool.clone();
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
@@ -1050,13 +1093,8 @@ pub async fn search_hybrid_chunks(
         dataset.id,
     );
 
-    let full_text_handler_results = search_full_text_chunks(
-        web::Json(data.clone()),
-        parsed_query,
-        page,
-        pool,
-        dataset.id,
-    );
+    let full_text_handler_results =
+        search_full_text_chunks(web::Json(data.clone()), parsed_query, page, pool, dataset);
 
     let (search_chunk_query_results, full_text_handler_results) =
         futures::join!(search_chunk_query_results, full_text_handler_results);
@@ -1073,9 +1111,12 @@ pub async fn search_hybrid_chunks(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
-    let (metadata_chunks, collided_chunks) =
-        get_metadata_and_collided_chunks_from_point_ids_query(point_ids, data.get_collisions.unwrap_or(false), pool1)
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let (metadata_chunks, collided_chunks) = get_metadata_and_collided_chunks_from_point_ids_query(
+        point_ids,
+        data.get_collisions.unwrap_or(false),
+        pool1,
+    )
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let semantic_score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
         .search_results
@@ -1105,7 +1146,25 @@ pub async fn search_hybrid_chunks(
                 },
             };
 
-            chunk = find_relevant_sentence(chunk.clone(), data.query.clone()).unwrap_or(chunk);
+            if dataset_config.HIGHLIGHT_ENABLED.unwrap_or(true) {
+                chunk = find_relevant_sentence(
+                    chunk.clone(),
+                    data.query.clone(),
+                    dataset_config
+                        .HIGHLIGHT_SPLIT_DELIMITERS
+                        .clone()
+                        .unwrap_or(vec![
+                            ".".to_string(),
+                            "!".to_string(),
+                            "?".to_string(),
+                            "\n".to_string(),
+                            "\t".to_string(),
+                            ",".to_string(),
+                        ]),
+                )
+                .unwrap_or(chunk);
+            }
+
             let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
                 .iter()
                 .filter(|chunk| chunk.qdrant_id == search_result.point_id)
@@ -1177,11 +1236,9 @@ pub async fn search_semantic_groups(
     pool: web::Data<Pool>,
     dataset: Dataset,
 ) -> Result<SearchGroupsResult, actix_web::Error> {
-    let embedding_vector: Vec<f32> = create_embedding(
-        &data.query,
-        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
-    )
-    .await?;
+    let dataset_config =
+        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let embedding_vector: Vec<f32> = create_embedding(&data.query, dataset_config.clone()).await?;
 
     let search_semantic_chunk_query_results = search_semantic_chunk_groups_query(
         embedding_vector,
@@ -1200,6 +1257,7 @@ pub async fn search_semantic_groups(
     let mut result_chunks = retrieve_chunks_from_point_ids_without_collsions(
         search_semantic_chunk_query_results,
         &web::Json(data.clone().into()),
+        &dataset_config,
         pool.clone(),
     )
     .await?;
@@ -1220,10 +1278,11 @@ pub async fn search_full_text_groups(
     group: ChunkGroup,
     page: u64,
     pool: web::Data<Pool>,
-    dataset_id: uuid::Uuid,
+    dataset: Dataset,
 ) -> Result<SearchGroupsResult, actix_web::Error> {
     let data_inner = data.clone();
-
+    let dataset_config =
+        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
     let search_chunk_query_results = search_full_text_group_query(
         data_inner.query.clone(),
         page,
@@ -1233,7 +1292,7 @@ pub async fn search_full_text_groups(
         data_inner.tag_set.clone(),
         data_inner.group_id,
         parsed_query,
-        dataset_id,
+        dataset.id,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -1241,6 +1300,7 @@ pub async fn search_full_text_groups(
     let mut result_chunks = retrieve_chunks_from_point_ids_without_collsions(
         search_chunk_query_results,
         &web::Json(data.clone().into()),
+        &dataset_config,
         pool.clone(),
     )
     .await?;
@@ -1264,11 +1324,10 @@ pub async fn search_hybrid_groups(
     dataset: Dataset,
 ) -> Result<SearchGroupsResult, actix_web::Error> {
     let data_inner = data.clone();
-    let embedding_vector = create_embedding(
-        &data.query,
-        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
-    )
-    .await?;
+    let dataset_config =
+        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+
+    let embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
 
     let semantic_future = search_semantic_chunk_groups_query(
         embedding_vector,
@@ -1318,6 +1377,7 @@ pub async fn search_hybrid_groups(
     let combined_result_chunks = retrieve_chunks_from_point_ids_without_collsions(
         combined_search_chunk_query_results,
         &web::Json(data.clone().into()),
+        &dataset_config,
         pool.clone(),
     )
     .await?;

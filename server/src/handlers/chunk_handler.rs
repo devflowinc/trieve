@@ -204,13 +204,13 @@ pub async fn create_chunk(
             embedding_vector.clone(),
             dataset_org_plan_sub.dataset.id,
         )
-            .await
-            .map_err(|err| {
-                ServiceError::BadRequest(format!(
-                    "Could not get semantic similarity for collision check: {}",
-                    err.message
-                ))
-            })?;
+        .await
+        .map_err(|err| {
+            ServiceError::BadRequest(format!(
+                "Could not get semantic similarity for collision check: {}",
+                err.message
+            ))
+        })?;
         if first_semantic_result.score >= duplicate_distance_threshold {
             //Sets collision to collided chunk id
             collision = Some(first_semantic_result.point_id);
@@ -227,17 +227,17 @@ pub async fn create_chunk(
                             first_semantic_result.point_id,
                             dataset_org_plan_sub.dataset.id,
                         )
-                            .await
-                            .map_err(|_| {
-                                ServiceError::BadRequest(
-                                    "Could not delete qdrant point id. Please try again.".into(),
-                                )
-                            })?;
+                        .await
+                        .map_err(|_| {
+                            ServiceError::BadRequest(
+                                "Could not delete qdrant point id. Please try again.".into(),
+                            )
+                        })?;
 
                         return Err(ServiceError::BadRequest(
                             "There was a data inconsistency issue. Please try again.".into(),
                         )
-                            .into());
+                        .into());
                     }
                     chunk_results.first().unwrap().clone()
                 }
@@ -790,11 +790,13 @@ pub async fn search_chunk(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let page = data.page.unwrap_or(1);
-    let dataset_id = dataset_org_plan_sub.dataset.id;
     let parsed_query = parse_query(data.query.clone());
 
     let result_chunks = match data.search_type.as_str() {
-        "fulltext" => search_full_text_chunks(data, parsed_query, page, pool, dataset_id).await?,
+        "fulltext" => {
+            search_full_text_chunks(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
+                .await?
+        }
         "hybrid" => {
             search_hybrid_chunks(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
                 .await?
@@ -897,8 +899,15 @@ pub async fn search_groups(
 
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => {
-            search_full_text_groups(data, parsed_query, group, page, search_pool, dataset_id)
-                .await?
+            search_full_text_groups(
+                data,
+                parsed_query,
+                group,
+                page,
+                search_pool,
+                dataset_org_plan_sub.dataset,
+            )
+            .await?
         }
         "hybrid" => {
             search_hybrid_groups(
