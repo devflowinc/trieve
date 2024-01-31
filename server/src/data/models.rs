@@ -907,7 +907,6 @@ pub struct ClientDatasetConfiguration {
     pub DATE_RANGE_VALUE: Option<String>,
     pub FILTER_ITEMS: Option<serde_json::Value>,
     pub SUGGESTED_QUERIES: Option<String>,
-    pub SHOW_GITHUB_STARS: Option<bool>,
     pub IMAGE_RANGE_START_KEY: Option<String>,
     pub IMAGE_RANGE_END_KEY: Option<String>,
     pub DOCUMENT_UPLOAD_FEATURE: Option<bool>,
@@ -955,10 +954,6 @@ impl ClientDatasetConfiguration {
                 .unwrap_or(&json!(""))
                 .as_str()
                 .map(|s| s.to_string()),
-            SHOW_GITHUB_STARS: configuration
-                .get("SHOW_GITHUB_STARS")
-                .unwrap_or(&json!(false))
-                .as_bool(),
             IMAGE_RANGE_START_KEY: configuration
                 .get("IMAGE_RANGE_START_KEY")
                 .unwrap_or(&json!(""))

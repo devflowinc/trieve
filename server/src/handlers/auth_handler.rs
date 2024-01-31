@@ -273,8 +273,7 @@ pub async fn logout(
         data.redirect_uri.clone().unwrap_or(
             req.headers()
                 .get("Referer")
-                .map(|h| h.to_str().unwrap_or("/"))
-                .unwrap_or("/")
+                .map_or("/", |h| h.to_str().unwrap_or("/"))
                 .to_string()
         ),
         client_id
