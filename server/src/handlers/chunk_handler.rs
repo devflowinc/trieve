@@ -1136,7 +1136,7 @@ pub async fn generate_off_chunks(
         model: data
             .model
             .clone()
-            .unwrap_or("gryphe/mythomax-l2-13b".to_string()),
+            .unwrap_or("gpt-3.5-turbo".to_string()),
         messages,
         temperature: None,
         top_p: None,
