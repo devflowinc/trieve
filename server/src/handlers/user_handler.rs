@@ -206,13 +206,10 @@ pub async fn set_user_api_key(
     data: web::Json<SetUserApiKeyRequest>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let role = data.role;
+
     let new_api_key = web::block(move || {
-        set_user_api_key_query(
-            user.id,
-            data.name.clone(),
-            data.role.unwrap_or(0).into(),
-            pool,
-        )
+        set_user_api_key_query(user.id, data.name.clone(), role.unwrap_or(0).into(), pool)
     })
     .await?
     .map_err(|_err| ServiceError::BadRequest("Failed to set new API key for user".into()))?;
