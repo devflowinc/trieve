@@ -567,15 +567,6 @@ pub async fn get_me(
         (status = 400, description = "Service error relating to making an embedding or overall service health", body = DefaultError),
     ),
 )]
-pub async fn health_check(
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-) -> Result<HttpResponse, actix_web::Error> {
-    let result = operators::model_operator::create_embedding(
-        "health check",
-        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration),
-    )
-    .await;
-
-    result?;
+pub async fn health_check() -> Result<HttpResponse, actix_web::Error> {
     Ok(HttpResponse::Ok().finish())
 }
