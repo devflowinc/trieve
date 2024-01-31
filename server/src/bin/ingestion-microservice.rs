@@ -20,6 +20,9 @@ static THREAD_NUM: i32 = 4;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
+
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+
     let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
     let redis_client = redis::Client::open(redis_url).unwrap();
     let redis_connection = redis_client
@@ -54,12 +57,13 @@ async fn ingestion_service(
     mut redis_connection: redis::aio::MultiplexedConnection,
     web_pool: actix_web::web::Data<models::Pool>,
 ) {
+    log::info!("Starting ingestion service");
     loop {
         let payload_result = redis_connection
             .blpop::<&str, Vec<String>>("ingestion", 0.0)
             .await
             .map_err(|err| {
-                println!("Failed to get payload from redis: {:?}", err);
+                log::info!("Failed to get payload from redis: {:?}", err);
             });
 
         let payload = if let Ok(payload) = payload_result {
@@ -68,7 +72,7 @@ async fn ingestion_service(
             continue;
         };
 
-        println!("recieved payload {}", payload.len());
+        log::info!("recieved payload {}", payload.len());
         let mut payload: IngestionMessage = serde_json::from_str(&payload[1]).unwrap();
         let embedding_vector = if let Some(embedding_vector) = payload.chunk.chunk_vector.clone() {
             embedding_vector
@@ -79,7 +83,7 @@ async fn ingestion_service(
             )
             .await
             .map_err(|err| {
-                println!("Failed to create embedding: {:?}", err);
+                log::info!("Failed to create embedding: {:?}", err);
             });
 
             if let Ok(embedding_vector) = embed_result {
@@ -105,7 +109,7 @@ async fn ingestion_service(
             )
             .await
             .map_err(|err| {
-                println!("Failed to get global unfiltered top match: {:?}", err);
+                log::info!("Failed to get global unfiltered top match: {:?}", err);
             });
 
             let first_semantic_result = if let Ok(result) = first_semantic_result_result {
@@ -131,12 +135,12 @@ async fn ingestion_service(
                                 payload.chunk_metadata.dataset_id,
                             )
                             .await
-                            .map_err(|_| println!("Could not find chunk metadata for chunk id"));
+                            .map_err(|_| log::info!("Could not find chunk metadata for chunk id"));
                         }
                         chunk_results.first().unwrap().clone()
                     }
                     Err(err) => {
-                        println!("Error occurred {:?}", err);
+                        log::info!("Error occurred {:?}", err);
                         continue;
                     }
                 };
@@ -196,7 +200,6 @@ async fn ingestion_service(
             });
         }
 
-        println!("finished processing");
         if let Some(group_id_to_bookmark) = payload.chunk.group_id {
             let chunk_group_bookmark =
                 ChunkGroupBookmark::from_details(group_id_to_bookmark, payload.chunk_metadata.id);
