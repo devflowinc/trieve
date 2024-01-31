@@ -836,7 +836,7 @@ impl ServerDatasetConfiguration {
                 .as_bool(),
             LLM_BASE_URL: configuration
                 .get("LLM_BASE_URL")
-                .unwrap_or(&json!("https://openrouter.ai/api/v1".to_string()))
+                .unwrap_or(&json!("https://api.openai.com/api/v1".to_string()))
                 .as_str()
                 .map(|s| s.to_string()),
             EMBEDDING_BASE_URL: configuration

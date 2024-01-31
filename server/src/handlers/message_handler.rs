@@ -484,10 +484,10 @@ pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<Strin
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
     let base_url = dataset_config
         .LLM_BASE_URL
-        .unwrap_or("https://openrouter.ai/v1".into());
+        .unwrap_or("https://api.openai.com/v1".into());
 
     let base_url = if base_url.is_empty() {
-        "https://openrouter.ai/v1".into()
+        "https://api.openai.com/v1".into()
     } else {
         base_url
     };
@@ -542,10 +542,10 @@ pub async fn stream_response(
     let base_url = dataset_config
         .LLM_BASE_URL
         .clone()
-        .unwrap_or("https://openrouter.ai/v1".into());
+        .unwrap_or("https://api.openai.com/v1".into());
 
     let base_url = if base_url.is_empty() {
-        "https://openrouter.ai/v1".into()
+        "https://api.openai.com/v1".into()
     } else {
         base_url
     };
@@ -867,9 +867,9 @@ pub async fn create_suggested_queries_handler(
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
     let base_url = dataset_config
         .LLM_BASE_URL
-        .unwrap_or("https://openrouter.ai/v1".into());
+        .unwrap_or("https://api.openai.com/v1".into());
     let base_url = if base_url.is_empty() {
-        "https://openrouter.ai/v1".into()
+        "https://api.openai.com/v1".into()
     } else {
         base_url
     };
