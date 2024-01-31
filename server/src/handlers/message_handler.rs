@@ -460,7 +460,7 @@ pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<Strin
     };
     let openai_messages = vec![prompt_topic_message];
     let parameters = ChatCompletionParameters {
-        model: "gryphe/mythomax-l2-13b".to_string(),
+        model: "gpt3.5-turbo".to_string(),
         messages: openai_messages,
         temperature: None,
         top_p: None,
@@ -573,7 +573,7 @@ pub async fn stream_response(
     let counter_arg_parameters = ChatCompletionParameters {
         model: model
             .clone()
-            .unwrap_or("gryphe/mythomax-l2-13b".to_string()),
+            .unwrap_or("gpt-3.5-turbo".to_string()),
         messages: vec![ChatMessage {
             role: Role::User,
             content: ChatMessageContent::Text(format!(
