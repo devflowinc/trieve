@@ -1229,13 +1229,11 @@ pub struct OrganizationUsageCount {
 pub enum ApiKeyRole {
     Read = 0,
     ReadAndWrite = 1,
-    FullAccess = 2,
 }
 
 impl From<i32> for ApiKeyRole {
     fn from(role: i32) -> Self {
         match role {
-            2 => ApiKeyRole::FullAccess,
             1 => ApiKeyRole::ReadAndWrite,
             _ => ApiKeyRole::Read,
         }
@@ -1245,7 +1243,6 @@ impl From<i32> for ApiKeyRole {
 impl From<ApiKeyRole> for i32 {
     fn from(role: ApiKeyRole) -> Self {
         match role {
-            ApiKeyRole::FullAccess => 2,
             ApiKeyRole::ReadAndWrite => 1,
             ApiKeyRole::Read => 0,
         }

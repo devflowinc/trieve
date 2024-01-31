@@ -353,13 +353,16 @@ pub fn get_user_from_api_key_query(
 
             //TODO: change this so that it is not above user current role
             user_orgs.iter_mut().for_each(|user_org| {
-                user_org.role = user_orgs_orgs
+                if user_orgs_orgs
                     .iter()
                     .find(|user_org_org| user_org_org.1.id == user_org.id)
                     .unwrap()
                     .3
-                    .clone()
-                    .role;
+                    .role
+                    == 0
+                {
+                    user_org.role = 0;
+                }
             });
 
             let orgs = user_orgs_orgs
