@@ -2,6 +2,11 @@
 name = "trieve-server"
 version = "1.0.0"
 edition = "2021"
+default-run = "trieve-server"
+
+[[bin]]
+name = "trieve-server"
+path = "src/main.rs"
 
 [[bin]]
 name = "ingestion-microservice"

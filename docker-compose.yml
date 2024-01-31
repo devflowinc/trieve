@@ -166,6 +166,24 @@ services:
       - OIDC_ISSUER_URL=${OIDC_ISSUER_URL}
       - GPU_SERVER_ORIGIN=${GPU_SERVER_ORIGIN}
 
+  ingestion-service:
+    image: arguflow/ingest
+    container_name: ingestion-service 
+    build:
+      context: ./server/
+      dockerfile: Dockerfile.microservice
+    depends_on:
+      tika:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      qdrant-database:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
   chat:
     image: arguflow/chat
     container_name: chat
