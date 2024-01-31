@@ -22,7 +22,7 @@ embedding_model = AutoModel.from_pretrained(
 # Create a Flask app
 app = FastAPI()
 
-doc_model_id = "naver/efficient-splade-VI-BT-large-doc"
+doc_model_id = "cross-encoder/ms-marco-MiniLM-L-12-v2"
 doc_tokenizer = AutoTokenizer.from_pretrained(
     doc_model_id, use_fast=True, truncation=True, max_length=512
 )

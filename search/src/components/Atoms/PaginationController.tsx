@@ -1,5 +1,6 @@
+import { useLocation, useNavigate } from "@solidjs/router";
 import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
-import { Show, For } from "solid-js";
+import { Show, For, createEffect, createSignal } from "solid-js";
 
 export const createArrayWithCenteredRange = (center: number, range: number) => {
   const array = [];
@@ -27,19 +28,26 @@ interface PaginationControllerProps {
 }
 
 export const PaginationController = (props: PaginationControllerProps) => {
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  const url =
-    typeof window !== "undefined" ? new URL(window.location.href) : null;
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [url, setUrl] = createSignal<URL | null>(null);
+
+  createEffect(() => {
+    const curUrl =
+      "https://" + window.location.host + location.pathname + location.search;
+    setUrl(new URL(curUrl));
+  });
 
   return (
     <>
       <Show when={props.page != 1}>
         <button
           onClick={() => {
-            if (!url) return;
+            if (!url()) return;
 
-            url.searchParams.set("page", "${props.page - 1}");
-            window.location.href = url.toString();
+            url()?.searchParams.set("page", "${props.page - 1}");
+            navigate(url()?.toString() ?? "");
           }}
         >
           <BiRegularChevronLeft class="h-8 w-8 fill-current text-neutral-400 dark:text-neutral-500" />
@@ -64,8 +72,8 @@ export const PaginationController = (props: PaginationControllerProps) => {
             onClick={() => {
               if (!url) return;
 
-              url.searchParams.set("page", n.toString());
-              window.location.href = url.toString();
+              url()?.searchParams.set("page", n.toString());
+              navigate(url()?.toString() ?? "");
             }}
           >
             {n}
@@ -77,8 +85,8 @@ export const PaginationController = (props: PaginationControllerProps) => {
           onClick={() => {
             if (!url) return;
 
-            url.searchParams.set("page", `${props.page + 1}`);
-            window.location.href = url.toString();
+            url()?.searchParams.set("page", `${props.page + 1}`);
+            navigate(url()?.toString() ?? "");
           }}
         >
           <BiRegularChevronRight class="h-8 w-8 fill-current text-neutral-400 dark:text-neutral-500" />

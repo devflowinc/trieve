@@ -1016,7 +1016,8 @@ fn reciprocal_rank_fusion(
     weights: Option<(f64, f64)>,
 ) -> Vec<ScoreChunkDTO> {
     let mut fused_ranking: Vec<ScoreChunkDTO> = Vec::new();
-    let weights = weights.unwrap_or((1.0, 1.0));
+    let weights = weights.unwrap_or((0.5, 0.5));
+
     // Iterate through the union of the two result sets
     for mut document in full_text_results
         .clone()
@@ -1031,6 +1032,9 @@ fn reciprocal_rank_fusion(
         let rank_full_text = full_text_results
             .iter()
             .position(|doc| doc.metadata[0].id == document.metadata[0].id);
+
+        let rank_semantic = rank_semantic.map(|rank| semantic_results.len() - rank);
+        let rank_full_text = rank_full_text.map(|rank| full_text_results.len() - rank);
 
         // Combine Reciprocal Ranks using average or another strategy
         let combined_rank = weights.0 * (rank_semantic.unwrap_or(0) as f64)
