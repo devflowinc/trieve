@@ -175,9 +175,14 @@ pub fn delete_group_by_id_query(
     let mut conn = pool.get().unwrap();
 
     let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
-        diesel::delete(events_columns::events.filter(
-            sql::<Text>(&format!("events.event_data->>'{}'", "group_id")).eq(group_id.to_string()),
-        ))
+        diesel::delete(
+            events_columns::events
+                .filter(events_columns::event_type.eq("file_uploaded"))
+                .filter(
+                    sql::<Text>(&format!("events.event_data->>'{}'", "group_id"))
+                        .eq(group_id.to_string()),
+                ),
+        )
         .execute(conn)?;
 
         diesel::delete(

@@ -694,19 +694,57 @@ pub struct Event {
     pub event_data: serde_json::Value,
 }
 
+#[derive(Debug, Deserialize, Clone, ToSchema)]
+pub enum EventType {
+    FileUploaded {
+        group_id: uuid::Uuid,
+        file_name: String,
+    },
+    CardUploaded {
+        chunk_id: uuid::Uuid,
+    },
+    CardUploadFailed {
+        chunk_id: uuid::Uuid,
+        error: String,
+    },
+}
+
+impl EventType {
+    pub fn as_str(&self) -> String {
+        match self {
+            EventType::FileUploaded { .. } => "file_uploaded".to_string(),
+            EventType::CardUploaded { .. } => "card_uploaded".to_string(),
+            EventType::CardUploadFailed { .. } => "card_upload_failed".to_string(),
+        }
+    }
+}
+
+impl From<EventType> for serde_json::Value {
+    fn from(val: EventType) -> Self {
+        match val {
+            EventType::FileUploaded {
+                group_id,
+                file_name,
+            } => {
+                json!({"group_id": group_id, "file_name": file_name})
+            }
+            EventType::CardUploaded { chunk_id } => json!({"chunk_id": chunk_id}),
+            EventType::CardUploadFailed { chunk_id, error } => {
+                json!({"chunk_id": chunk_id, "error": error})
+            }
+        }
+    }
+}
+
 impl Event {
-    pub fn from_details(
-        dataset_id: uuid::Uuid,
-        event_type: String,
-        event_data: serde_json::Value,
-    ) -> Self {
+    pub fn from_details(dataset_id: uuid::Uuid, event_type: EventType) -> Self {
         Event {
             id: uuid::Uuid::new_v4(),
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             dataset_id,
-            event_type,
-            event_data,
+            event_type: event_type.as_str(),
+            event_data: event_type.into(),
         }
     }
 }
@@ -720,8 +758,8 @@ pub struct DatasetGroupCount {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping)]
-#[diesel(table_name = dataset_notification_counts)]
-pub struct DatasetNotificationCount {
+#[diesel(table_name = dataset_event_counts)]
+pub struct DatasetEventCount {
     pub id: uuid::Uuid,
     pub dataset_uuid: uuid::Uuid,
     pub notification_count: i32,

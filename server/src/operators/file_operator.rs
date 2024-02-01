@@ -1,6 +1,6 @@
-use super::event_operator::add_group_created_event_query;
+use super::event_operator::create_event_query;
 use super::group_operator::create_group_and_add_bookmarks_query;
-use crate::data::models::DatasetAndOrgWithSubAndPlan;
+use crate::data::models::{DatasetAndOrgWithSubAndPlan, EventType};
 use crate::handlers::auth_handler::AdminOnly;
 use crate::{data::models::ChunkGroup, handlers::chunk_handler::ReturnCreatedChunk};
 use crate::{
@@ -24,7 +24,6 @@ use actix_web::{body::MessageBody, web};
 
 use diesel::RunQueryDsl;
 use s3::{creds::Credentials, Bucket, Region};
-use serde_json::json;
 use std::{path::PathBuf, process::Command};
 
 pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
@@ -387,14 +386,13 @@ pub async fn create_chunks_with_handler(
         Err(err) => return Err(err),
     };
 
-    add_group_created_event_query(
+    create_event_query(
         Event::from_details(
             dataset_org_plan_sub.dataset.id,
-            "file_upload".to_owned(),
-            json!({
-                "group_id": group_id,
-                "name": name
-            }),
+            EventType::FileUploaded {
+                group_id,
+                file_name: name,
+            },
         ),
         pool,
     )
