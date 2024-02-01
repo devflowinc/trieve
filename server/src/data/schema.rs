@@ -61,28 +61,18 @@ diesel::table! {
 }
 
 diesel::table! {
-    cut_chunks (id) {
-        id -> Uuid,
-        user_id -> Uuid,
-        cut_chunk_content -> Text,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
-    }
-}
-
-diesel::table! {
-    dataset_event_counts (id) {
-        id -> Uuid,
-        notification_count -> Int4,
-        dataset_uuid -> Nullable<Uuid>,
-    }
-}
-
-diesel::table! {
     dataset_group_counts (id) {
         id -> Uuid,
         group_count -> Int4,
         dataset_id -> Nullable<Uuid>,
+    }
+}
+
+diesel::table! {
+    dataset_notification_counts (id) {
+        id -> Uuid,
+        notification_count -> Int4,
+        dataset_uuid -> Nullable<Uuid>,
     }
 }
 
@@ -279,7 +269,6 @@ diesel::joinable!(chunk_group_bookmarks -> chunk_group (group_id));
 diesel::joinable!(chunk_group_bookmarks -> chunk_metadata (chunk_metadata_id));
 diesel::joinable!(chunk_metadata -> datasets (dataset_id));
 diesel::joinable!(chunk_metadata -> users (author_id));
-diesel::joinable!(cut_chunks -> users (user_id));
 diesel::joinable!(dataset_usage_counts -> datasets (dataset_id));
 diesel::joinable!(datasets -> organizations (organization_id));
 diesel::joinable!(events -> datasets (dataset_id));
@@ -304,9 +293,8 @@ diesel::allow_tables_to_appear_in_same_query!(
     chunk_group,
     chunk_group_bookmarks,
     chunk_metadata,
-    cut_chunks,
-    dataset_event_counts,
     dataset_group_counts,
+    dataset_notification_counts,
     dataset_usage_counts,
     datasets,
     events,
