@@ -425,7 +425,6 @@ pub fn get_bookmarks_for_group_query(
                     chunk_metadata_columns::id,
                     chunk_metadata_columns::content,
                     chunk_metadata_columns::link,
-                    chunk_metadata_columns::author_id,
                     chunk_metadata_columns::qdrant_point_id,
                     chunk_metadata_columns::created_at,
                     chunk_metadata_columns::updated_at,

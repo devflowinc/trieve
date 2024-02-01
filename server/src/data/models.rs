@@ -176,7 +176,6 @@ pub struct ChunkMetadataWithCount {
     pub id: uuid::Uuid,
     pub content: String,
     pub link: Option<String>,
-    pub author_id: uuid::Uuid,
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -195,7 +194,6 @@ pub struct ChunkMetadata {
     pub id: uuid::Uuid,
     pub content: String,
     pub link: Option<String>,
-    pub author_id: uuid::Uuid,
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -210,12 +208,11 @@ pub struct ChunkMetadata {
 
 impl ChunkMetadata {
     #[allow(clippy::too_many_arguments)]
-    pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(
+    pub fn from_details<S: Into<String>>(
         content: S,
         chunk_html: &Option<String>,
         link: &Option<String>,
         tag_set: &Option<String>,
-        author_id: T,
         qdrant_point_id: Option<uuid::Uuid>,
         metadata: Option<serde_json::Value>,
         tracking_id: Option<String>,
@@ -228,7 +225,6 @@ impl ChunkMetadata {
             content: content.into(),
             chunk_html: chunk_html.clone(),
             link: link.clone(),
-            author_id: author_id.into(),
             qdrant_point_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
@@ -250,7 +246,6 @@ impl ChunkMetadata {
         chunk_html: &Option<String>,
         link: &Option<String>,
         tag_set: &Option<String>,
-        author_id: T,
         qdrant_point_id: Option<uuid::Uuid>,
         metadata: Option<serde_json::Value>,
         tracking_id: Option<String>,
@@ -263,7 +258,6 @@ impl ChunkMetadata {
             content: content.into(),
             chunk_html: chunk_html.clone(),
             link: link.clone(),
-            author_id: author_id.into(),
             qdrant_point_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
@@ -302,7 +296,6 @@ impl ChunkCollision {
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct ChunkMetadataWithFileData {
     pub id: uuid::Uuid,
-    pub author: Option<UserDTO>,
     pub content: String,
     pub chunk_html: Option<String>,
     pub link: Option<String>,
@@ -493,7 +486,6 @@ pub struct FullTextSearchResult {
     pub id: uuid::Uuid,
     pub content: String,
     pub link: Option<String>,
-    pub author_id: uuid::Uuid,
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -513,7 +505,6 @@ impl From<ChunkMetadata> for FullTextSearchResult {
             id: chunk.id,
             content: chunk.content,
             link: chunk.link,
-            author_id: chunk.author_id,
             qdrant_point_id: chunk.qdrant_point_id,
             created_at: chunk.created_at,
             updated_at: chunk.updated_at,
@@ -535,7 +526,6 @@ impl From<&ChunkMetadata> for FullTextSearchResult {
             id: chunk.id,
             content: chunk.content.clone(),
             link: chunk.link.clone(),
-            author_id: chunk.author_id,
             qdrant_point_id: chunk.qdrant_point_id,
             created_at: chunk.created_at,
             updated_at: chunk.updated_at,
@@ -557,7 +547,6 @@ impl From<ChunkMetadataWithCount> for FullTextSearchResult {
             id: chunk.id,
             content: chunk.content,
             link: chunk.link,
-            author_id: chunk.author_id,
             qdrant_point_id: chunk.qdrant_point_id,
             created_at: chunk.created_at,
             updated_at: chunk.updated_at,

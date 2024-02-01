@@ -91,7 +91,6 @@ pub async fn main() -> std::io::Result<()> {
             handlers::user_handler::update_user,
             handlers::user_handler::set_user_api_key,
             handlers::user_handler::delete_user_api_key,
-            handlers::user_handler::get_user_with_chunks_by_id,
             handlers::file_handler::get_user_files_handler,
             handlers::group_handler::get_specific_dataset_chunk_groups,
             handlers::group_handler::create_chunk_group,
@@ -447,9 +446,6 @@ pub async fn main() -> std::io::Result<()> {
                             ))
                             .service(web::resource("/files/{user_id}").route(
                                 web::get().to(handlers::file_handler::get_user_files_handler),
-                            ))
-                            .service(web::resource("/{user_id}/{page}").route(
-                                web::get().to(handlers::user_handler::get_user_with_chunks_by_id),
                             )),
                     )
                     .service(
