@@ -69,8 +69,8 @@ pub struct CreateMessageData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 pub async fn create_message_completion_handler(
@@ -198,8 +198,8 @@ pub async fn create_message_completion_handler(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 pub async fn get_all_topic_messages(
@@ -282,8 +282,8 @@ pub struct EditMessageData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 pub async fn edit_message_handler(
@@ -361,8 +361,8 @@ pub async fn edit_message_handler(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 pub async fn regenerate_message_handler(
@@ -918,8 +918,8 @@ pub struct SuggestedQueriesResponse {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 
 )]

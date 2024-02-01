@@ -68,8 +68,8 @@ pub struct CreateDatasetRequest {
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
     security(
-        ("Api Key" = ["owner"]),
-        ("Cookie Auth" = ["owner"])
+        ("ApiKey" = ["owner"]),
+        ("Cookie" = ["owner"])
     )
 )]
 pub async fn create_dataset(
@@ -141,8 +141,8 @@ pub struct UpdateDatasetRequest {
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
     security(
-        ("Api Key" = ["owner"]),
-        ("Cookie Auth" = ["owner"])
+        ("ApiKey" = ["owner"]),
+        ("Cookie" = ["owner"])
     )
 )]
 pub async fn update_dataset(
@@ -197,8 +197,8 @@ pub struct DeleteDatasetRequest {
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
     security(
-        ("Api Key" = ["owner"]),
-        ("Cookie Auth" = ["owner"])
+        ("ApiKey" = ["owner"]),
+        ("Cookie" = ["owner"])
     )
 )]
 pub async fn delete_dataset(
@@ -228,8 +228,8 @@ pub async fn delete_dataset(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["admin"]),
-        ("Cookie Auth" = ["admin"])
+        ("ApiKey" = ["admin"]),
+        ("Cookie" = ["admin"])
     )
 )]
 pub async fn get_dataset(
@@ -264,8 +264,8 @@ pub async fn get_dataset(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
     security(
-        ("Api Key" = ["admin"]),
-        ("Cookie Auth" = ["admin"])
+        ("ApiKey" = ["admin"]),
+        ("Cookie" = ["admin"])
     )
 )]
 pub async fn get_datasets_from_organization(
@@ -304,8 +304,8 @@ pub async fn get_datasets_from_organization(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 pub async fn get_client_dataset_config(

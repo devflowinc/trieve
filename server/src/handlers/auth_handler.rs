@@ -543,8 +543,8 @@ pub async fn callback(
         (status = 400, description = "Error message indicitating you are not currently signed in", body = DefaultError),
     ),
     security(
-        ("Api Key" = []),
-        ("Cookie Auth" = [])
+        ("ApiKey" = []),
+        ("Cookie" = [])
     )
 )]
 pub async fn get_me(

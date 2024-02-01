@@ -55,8 +55,8 @@ pub struct CreateChunkGroupData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["admin"]),
-        ("Cookie Auth" = ["admin"])
+        ("ApiKey" = ["admin"]),
+        ("Cookie" = ["admin"])
     )
 )]
 pub async fn create_chunk_group(
@@ -109,8 +109,8 @@ pub struct DatasetGroupQuery {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 pub async fn get_specific_dataset_chunk_groups(
@@ -171,8 +171,8 @@ pub struct DeleteGroupData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["admin"]),
-        ("Cookie Auth" = ["admin"])
+        ("ApiKey" = ["admin"]),
+        ("Cookie" = ["admin"])
     )
 )]
 pub async fn delete_chunk_group(
@@ -226,8 +226,8 @@ pub struct UpdateChunkGroupData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["admin"]),
-        ("Cookie Auth" = ["admin"])
+        ("ApiKey" = ["admin"]),
+        ("Cookie" = ["admin"])
     )
 )]
 pub async fn update_chunk_group(
@@ -283,8 +283,8 @@ pub struct AddChunkToGroupData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["admin"]),
-        ("Cookie Auth" = ["admin"])
+        ("ApiKey" = ["admin"]),
+        ("Cookie" = ["admin"])
     )
 )]
 pub async fn add_bookmark(
@@ -354,8 +354,8 @@ pub struct BookmarkChunks {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 pub async fn get_all_bookmarks(
@@ -408,8 +408,8 @@ pub struct GetGroupsForChunksData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 pub async fn get_groups_chunk_is_in(
@@ -453,8 +453,8 @@ pub struct DeleteBookmarkPathData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["admin"]),
-        ("Cookie Auth" = ["admin"])
+        ("ApiKey" = ["admin"]),
+        ("Cookie" = ["admin"])
     )
 )]
 pub async fn delete_bookmark(

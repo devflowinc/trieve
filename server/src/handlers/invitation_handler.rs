@@ -49,8 +49,8 @@ pub struct InvitationData {
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
     security(
-        ("Api Key" = ["admin"]),
-        ("Cookie Auth" = ["admin"])
+        ("ApiKey" = ["admin"]),
+        ("Cookie" = ["admin"])
     )
 )]
 pub async fn post_invitation(
