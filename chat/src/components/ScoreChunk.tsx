@@ -191,10 +191,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                           frontMatterVal,
                         ) &&
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
-                        (props.chunk.metadata as any)[frontMatterVal].replace(
-                          / +/g,
-                          " ",
-                        )}
+                        (props.chunk.metadata as any)[frontMatterVal]}
                     </span>
                   </div>
                 </Show>
