@@ -137,7 +137,7 @@ pub struct SetUserApiKeyRequest {
     /// The name which will be assigned to the new api key.
     name: String,
     /// The role which will be assigned to the new api key. Either 0 (read), 1 (read and write). If not provided, the user role will be used. The auth'ed user must have a role greater than or equal to the role being assigned.
-    role: Option<i32>,
+    role: i32,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -166,11 +166,12 @@ pub async fn set_user_api_key(
 ) -> Result<HttpResponse, actix_web::Error> {
     let role = data.role;
 
-    let new_api_key = web::block(move || {
-        set_user_api_key_query(user.id, data.name.clone(), role.unwrap_or(0).into(), pool)
-    })
-    .await?
-    .map_err(|_err| ServiceError::BadRequest("Failed to set new API key for user".into()))?;
+    let new_api_key =
+        web::block(move || set_user_api_key_query(user.id, data.name.clone(), role.into(), pool))
+            .await?
+            .map_err(|_err| {
+                ServiceError::BadRequest("Failed to set new API key for user".into())
+            })?;
 
     Ok(HttpResponse::Ok().json(SetUserApiKeyResponse {
         api_key: new_api_key,
