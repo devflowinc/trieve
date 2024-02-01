@@ -18,7 +18,10 @@ use actix_web::{
 };
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use utoipa::{openapi::security::{ApiKey, ApiKeyValue, SecurityScheme}, Modify, OpenApi};
+use utoipa::{
+    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
+    Modify, OpenApi,
+};
 use utoipa_redoc::{Redoc, Servable};
 
 pub mod af_middleware;
@@ -73,7 +76,6 @@ impl Modify for SecurityAddon {
         );
     }
 }
-
 
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
