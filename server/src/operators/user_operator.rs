@@ -493,9 +493,17 @@ pub fn create_user_query(
 
             Ok(())
         })
-        .map_err(|_| DefaultError {
-            message: "Error creating user",
+        .map_err(|e| {
+            log::error!("Error updating ids: {:?}", e);
+
+            DefaultError {
+                message: "Error creating user",
+            }
         })?;
+
+        let user = get_user_by_id_query(&user_id, pool)?;
+
+        return Ok(user);
     }
 
     let user = User::from_details_with_id(user_id, email, name);
