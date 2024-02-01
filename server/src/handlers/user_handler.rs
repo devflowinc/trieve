@@ -136,7 +136,7 @@ pub async fn update_user(
 pub struct SetUserApiKeyRequest {
     /// The name which will be assigned to the new api key.
     name: String,
-    /// The role which will be assigned to the new api key. Either 0 (read), 1 (read and write). If not provided, the user role will be used. The auth'ed user must have a role greater than or equal to the role being assigned.
+    /// The role which will be assigned to the new api key. Either 0 (read), 1 (read and write at the level of the currently auth'ed user). The auth'ed user must have a role greater than or equal to the role being assigned which means they must be an admin (1) or owner (2) of the organization to assign write permissions with a role of 1.
     role: i32,
 }
 
@@ -148,12 +148,13 @@ pub struct SetUserApiKeyResponse {
 
 /// set_user_api_key
 ///
-/// Create a new api key for the auth'ed user. Successful response will contain the newly created api key.
+/// Create a new api key for the auth'ed user. Successful response will contain the newly created api key. If a write role is assigned the api key will have permission level of the auth'ed user who calls this endpoint.
 #[utoipa::path(
     post,
     path = "/user/set_api_key",
     context_path = "/api",
     tag = "user",
+    request_body(content = SetUserApiKeyRequest, description = "JSON request payload to create a new user api key", content_type = "application/json"),
     responses(
         (status = 200, description = "JSON body representing the api_key for the user", body = SetUserApiKeyResponse),
         (status = 400, description = "Service error relating to creating api_key for the user", body = DefaultError),
