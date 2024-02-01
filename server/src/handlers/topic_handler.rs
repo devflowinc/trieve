@@ -39,7 +39,7 @@ pub struct CreateTopicData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["readonly"]),
+        ("Api Key" = ["readonly"]),
         ("Cookie Auth" = ["readonly"])
     )
 )]
@@ -101,7 +101,7 @@ pub struct DeleteTopicData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["readonly"]),
+        ("Api Key" = ["readonly"]),
         ("Cookie Auth" = ["readonly"])
     )
 )]
@@ -166,7 +166,7 @@ pub struct UpdateTopicData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["readonly"]),
+        ("Api Key" = ["readonly"]),
         ("Cookie Auth" = ["readonly"])
     )
 )]
@@ -230,7 +230,7 @@ pub async fn update_topic(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["readonly"]),
+        ("Api Key" = ["readonly"]),
         ("Cookie Auth" = ["readonly"])
     )
 )]

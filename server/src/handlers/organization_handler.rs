@@ -31,7 +31,7 @@ use utoipa::ToSchema;
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["admin"]),
+        ("Api Key" = ["admin"]),
         ("Cookie Auth" = ["admin"])
     )
 )]
@@ -74,7 +74,7 @@ pub struct UpdateOrganizationData {
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["owner"]),
+        ("Api Key" = ["owner"]),
         ("Cookie Auth" = ["owner"])
     )
 )]
@@ -125,7 +125,7 @@ pub struct CreateOrganizationData {
         (status = 400, description = "Service error relating to creating the organization", body = DefaultError),
     ),
     security(
-        ("Api Auth" = ["readonly"]),
+        ("Api Key" = ["readonly"]),
         ("Cookie Auth" = ["readonly"])
     )
 )]
@@ -172,7 +172,7 @@ pub async fn create_organization(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["admin"]),
+        ("Api Key" = ["admin"]),
         ("Cookie Auth" = ["admin"])
     )
 )]
@@ -207,7 +207,7 @@ pub async fn get_organization_usage(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["admin"]),
+        ("Api Key" = ["admin"]),
         ("Cookie Auth" = ["admin"])
     )
 )]

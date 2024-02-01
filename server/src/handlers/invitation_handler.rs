@@ -49,7 +49,7 @@ pub struct InvitationData {
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["admin"]),
+        ("Api Key" = ["admin"]),
         ("Cookie Auth" = ["admin"])
     )
 )]

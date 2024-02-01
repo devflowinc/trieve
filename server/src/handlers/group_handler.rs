@@ -55,7 +55,7 @@ pub struct CreateChunkGroupData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["admin"]),
+        ("Api Key" = ["admin"]),
         ("Cookie Auth" = ["admin"])
     )
 )]
@@ -109,7 +109,7 @@ pub struct DatasetGroupQuery {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["readonly"]),
+        ("Api Key" = ["readonly"]),
         ("Cookie Auth" = ["readonly"])
     )
 )]
@@ -171,7 +171,7 @@ pub struct DeleteGroupData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["admin"]),
+        ("Api Key" = ["admin"]),
         ("Cookie Auth" = ["admin"])
     )
 )]
@@ -226,7 +226,7 @@ pub struct UpdateChunkGroupData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["admin"]),
+        ("Api Key" = ["admin"]),
         ("Cookie Auth" = ["admin"])
     )
 )]
@@ -283,7 +283,7 @@ pub struct AddChunkToGroupData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["admin"]),
+        ("Api Key" = ["admin"]),
         ("Cookie Auth" = ["admin"])
     )
 )]
@@ -354,7 +354,7 @@ pub struct BookmarkChunks {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["readonly"]),
+        ("Api Key" = ["readonly"]),
         ("Cookie Auth" = ["readonly"])
     )
 )]
@@ -408,7 +408,7 @@ pub struct GetGroupsForChunksData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["readonly"]),
+        ("Api Key" = ["readonly"]),
         ("Cookie Auth" = ["readonly"])
     )
 )]
@@ -453,7 +453,7 @@ pub struct DeleteBookmarkPathData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["admin"]),
+        ("Api Key" = ["admin"]),
         ("Cookie Auth" = ["admin"])
     )
 )]
