@@ -31,41 +31,6 @@ use std::process::Command;
 use tokio_stream::StreamExt;
 use utoipa::{IntoParams, ToSchema};
 
-pub async fn user_owns_chunk(
-    user_id: uuid::Uuid,
-    chunk_id: uuid::Uuid,
-    dataset_id: uuid::Uuid,
-    pool: web::Data<Pool>,
-) -> Result<ChunkMetadata, actix_web::Error> {
-    let chunks = web::block(move || get_metadata_from_id_query(chunk_id, dataset_id, pool))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    if chunks.author_id != user_id {
-        return Err(ServiceError::Forbidden.into());
-    }
-
-    Ok(chunks)
-}
-
-pub async fn user_owns_chunk_tracking_id(
-    user_id: uuid::Uuid,
-    tracking_id: String,
-    dataset_id: uuid::Uuid,
-    pool: web::Data<Pool>,
-) -> Result<ChunkMetadata, actix_web::Error> {
-    let chunks =
-        web::block(move || get_metadata_from_tracking_id_query(tracking_id, dataset_id, pool))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    if chunks.author_id != user_id {
-        return Err(ServiceError::Forbidden.into());
-    }
-
-    Ok(chunks)
-}
-
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
 pub struct CreateChunkData {
     /// HTML content of the chunk. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content.
@@ -157,7 +122,7 @@ pub struct IngestionMessage {
 pub async fn create_chunk(
     chunk: web::Json<CreateChunkData>,
     pool: web::Data<Pool>,
-    user: AdminOnly,
+    _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     redis_client: web::Data<redis::Client>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -199,7 +164,6 @@ pub async fn create_chunk(
         &chunk.chunk_html,
         &chunk.link,
         &chunk.tag_set,
-        user.0.id,
         None,
         chunk.metadata.clone(),
         chunk_tracking_id,
@@ -297,13 +261,11 @@ pub async fn bulk_create_chunk(
 pub async fn delete_chunk(
     chunk_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-    user: AdminOnly,
+    _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let chunk_id_inner = chunk_id.into_inner();
     let pool1 = pool.clone();
-    let dataset_id = dataset_org_plan_sub.dataset.id;
-    let _ = user_owns_chunk(user.0.id, chunk_id_inner, dataset_id, pool).await?;
 
     delete_chunk_metadata_query(chunk_id_inner, dataset_org_plan_sub.dataset, pool1)
         .await
@@ -331,15 +293,18 @@ pub async fn delete_chunk(
 pub async fn delete_chunk_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
-    user: AdminOnly,
+    _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let tracking_id_inner = tracking_id.into_inner();
     let pool1 = pool.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
-    let chunk_metadata =
-        user_owns_chunk_tracking_id(user.0.id, tracking_id_inner, dataset_id, pool).await?;
+    let chunk_metadata = web::block(move || {
+        get_metadata_from_tracking_id_query(tracking_id_inner, dataset_id, pool)
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     delete_chunk_metadata_query(chunk_metadata.id, dataset_org_plan_sub.dataset, pool1)
         .await
@@ -388,13 +353,17 @@ pub struct ChunkHtmlUpdateError {
 pub async fn update_chunk(
     chunk: web::Json<UpdateChunkData>,
     pool: web::Data<Pool>,
-    user: AdminOnly,
+    _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
     let pool2 = pool.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
-    let chunk_metadata = user_owns_chunk(user.0.id, chunk.chunk_uuid, dataset_id, pool).await?;
+    let chunk_id = chunk.chunk_uuid.clone();
+
+    let chunk_metadata = web::block(move || get_metadata_from_id_query(chunk_id, dataset_id, pool))
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let link = chunk
         .link
@@ -432,7 +401,6 @@ pub async fn update_chunk(
         &chunk_html,
         &Some(link),
         &chunk_metadata.tag_set,
-        user.0.id,
         chunk_metadata.qdrant_point_id,
         <std::option::Option<serde_json::Value> as Clone>::clone(&chunk.metadata)
             .or(chunk_metadata.metadata),
@@ -467,7 +435,6 @@ pub async fn update_chunk(
             Some(metadata1)
         },
         qdrant_point_id,
-        Some(user.0.id),
         Some(embedding_vector),
         dataset_id,
     )
@@ -509,7 +476,7 @@ pub struct UpdateChunkByTrackingIdData {
 pub async fn update_chunk_by_tracking_id(
     chunk: web::Json<UpdateChunkByTrackingIdData>,
     pool: web::Data<Pool>,
-    user: AdminOnly,
+    _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     if chunk.tracking_id.is_empty() {
@@ -520,16 +487,14 @@ pub async fn update_chunk_by_tracking_id(
     }
     let tracking_id = chunk.tracking_id.clone();
     let tracking_id1 = tracking_id.clone();
+    let dataset_id = dataset_org_plan_sub.dataset.id.clone();
 
     let pool1 = pool.clone();
     let pool2 = pool.clone();
-    let chunk_metadata = user_owns_chunk_tracking_id(
-        user.0.id,
-        tracking_id,
-        dataset_org_plan_sub.dataset.id,
-        pool,
-    )
-    .await?;
+    let chunk_metadata =
+        web::block(move || get_metadata_from_tracking_id_query(tracking_id, dataset_id, pool))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let link = chunk
         .link
@@ -563,7 +528,6 @@ pub async fn update_chunk_by_tracking_id(
         &chunk_html,
         &Some(link),
         &chunk_metadata.tag_set,
-        user.0.id,
         chunk_metadata.qdrant_point_id,
         <std::option::Option<serde_json::Value> as Clone>::clone(&chunk.metadata)
             .or(chunk_metadata.metadata),
@@ -598,7 +562,6 @@ pub async fn update_chunk_by_tracking_id(
             Some(metadata1)
         },
         qdrant_point_id,
-        Some(user.0.id),
         Some(embedding_vector),
         dataset_org_plan_sub.dataset.id,
     )
@@ -1133,10 +1096,7 @@ pub async fn generate_off_chunks(
     });
 
     let parameters = ChatCompletionParameters {
-        model: data
-            .model
-            .clone()
-            .unwrap_or("gpt-3.5-turbo".to_string()),
+        model: data.model.clone().unwrap_or("gpt-3.5-turbo".to_string()),
         messages,
         temperature: None,
         top_p: None,

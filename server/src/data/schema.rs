@@ -46,7 +46,6 @@ diesel::table! {
         id -> Uuid,
         content -> Text,
         link -> Nullable<Text>,
-        author_id -> Uuid,
         qdrant_point_id -> Nullable<Uuid>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
@@ -268,7 +267,6 @@ diesel::joinable!(chunk_group -> datasets (dataset_id));
 diesel::joinable!(chunk_group_bookmarks -> chunk_group (group_id));
 diesel::joinable!(chunk_group_bookmarks -> chunk_metadata (chunk_metadata_id));
 diesel::joinable!(chunk_metadata -> datasets (dataset_id));
-diesel::joinable!(chunk_metadata -> users (author_id));
 diesel::joinable!(dataset_usage_counts -> datasets (dataset_id));
 diesel::joinable!(datasets -> organizations (organization_id));
 diesel::joinable!(events -> datasets (dataset_id));

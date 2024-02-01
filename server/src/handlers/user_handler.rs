@@ -1,10 +1,10 @@
 use super::auth_handler::LoggedUser;
 use crate::{
-    data::models::{DatasetAndOrgWithSubAndPlan, Pool, SlimUser},
+    data::models::{Pool, SlimUser},
     errors::{DefaultError, ServiceError},
     operators::user_operator::{
         delete_user_api_keys_query, get_user_api_keys_query, get_user_by_id_query,
-        get_user_with_chunks_by_id_query, set_user_api_key_query, update_user_query,
+        set_user_api_key_query, update_user_query,
     },
 };
 use actix_web::{web, HttpResponse};
@@ -35,48 +35,6 @@ pub struct GetUserWithChunksData {
     pub user_id: uuid::Uuid,
     /// The page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon.
     pub page: i64,
-}
-
-/// get_user_chunks
-///
-/// Get the chunks which were made by a given user.
-#[utoipa::path(
-    get,
-    path = "/user/{user_id}/{page}",
-    context_path = "/api",
-    tag = "user",
-    responses(
-        (status = 200, description = "JSON body representing the chunks made by a given user with their chunks", body = UserDTOWithChunks),
-        (status = 400, description = "Service error relating to getting the chunks for the given user", body = DefaultError),
-    ),
-    params(
-        ("user_id" = uuid::Uuid, description = "The id of the user to fetch."),
-        ("page" = i64, description = "The page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon."),
-    ),
-)]
-pub async fn get_user_with_chunks_by_id(
-    path_data: web::Path<GetUserWithChunksData>,
-    pool: web::Data<Pool>,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    _required_user: LoggedUser,
-) -> Result<HttpResponse, actix_web::Error> {
-    let user_query_id = path_data.user_id;
-    let page = path_data.page;
-
-    let user_result = web::block(move || {
-        get_user_with_chunks_by_id_query(
-            user_query_id,
-            dataset_org_plan_sub.dataset.id,
-            &page,
-            pool,
-        )
-    })
-    .await?;
-
-    match user_result {
-        Ok(user_with_chunks) => Ok(HttpResponse::Ok().json(user_with_chunks)),
-        Err(e) => Err(ServiceError::BadRequest(e.message.into()).into()),
-    }
 }
 
 /// update_user

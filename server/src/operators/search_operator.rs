@@ -5,7 +5,7 @@ use super::chunk_operator::{
 use super::model_operator::{create_embedding, cross_encoder};
 use crate::data::models::{
     ChunkFileWithName, ChunkGroup, ChunkMetadataWithFileData, Dataset, FullTextSearchResult,
-    ServerDatasetConfiguration, User, UserDTO,
+    ServerDatasetConfiguration,
 };
 use crate::data::schema::{self};
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
@@ -463,7 +463,6 @@ pub fn get_metadata_query(
     use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::files::dsl as files_columns;
-    use crate::data::schema::users::dsl as user_columns;
 
     let all_datas = chunk_metadata_columns::chunk_metadata
         .filter(
@@ -474,9 +473,6 @@ pub fn get_metadata_query(
                     .collect::<Vec<uuid::Uuid>>()
                     .as_slice(),
             ),
-        )
-        .left_outer_join(
-            user_columns::users.on(chunk_metadata_columns::author_id.eq(user_columns::id)),
         )
         .left_outer_join(
             chunk_files_columns::chunk_files
@@ -497,57 +493,24 @@ pub fn get_metadata_query(
             )
                 .nullable(),
             (
-                user_columns::id,
-                user_columns::email,
-                user_columns::created_at,
-                user_columns::updated_at,
-                user_columns::username,
-                user_columns::website,
-                user_columns::visible_email,
-                user_columns::name,
-            )
-                .nullable(),
-            (
                 chunk_metadata_columns::id,
                 chunk_collisions_columns::collision_qdrant_id.nullable(),
             ),
         ))
-        .load::<(
-            Option<ChunkFileWithName>,
-            Option<User>,
-            (uuid::Uuid, Option<uuid::Uuid>),
-        )>(&mut conn)
+        .load::<(Option<ChunkFileWithName>, (uuid::Uuid, Option<uuid::Uuid>))>(&mut conn)
         .map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
 
     #[allow(clippy::type_complexity)]
-    let (file_ids, chunk_creators, chunk_collisions): (
+    let (file_ids, chunk_collisions): (
         Vec<Option<ChunkFileWithName>>,
-        Vec<Option<User>>,
         Vec<(uuid::Uuid, Option<uuid::Uuid>)>,
     ) = itertools::multiunzip(all_datas);
 
     let chunk_metadata_with_file_id: Vec<ChunkMetadataWithFileData> = chunk_metadata
         .into_iter()
         .map(|metadata| {
-            let author = chunk_creators
-                .iter()
-                .flatten()
-                .find(|user| user.id == metadata.author_id)
-                .map(|user| UserDTO {
-                    id: user.id,
-                    username: user.username.clone(),
-                    email: if user.visible_email {
-                        Some(user.email.clone())
-                    } else {
-                        None
-                    },
-                    website: user.website.clone(),
-                    visible_email: user.visible_email,
-                    created_at: user.created_at,
-                });
-
             let chunk_with_file_name = file_ids
                 .iter()
                 .flatten()
@@ -570,7 +533,6 @@ pub fn get_metadata_query(
                 content: metadata.content,
                 link: metadata.link,
                 tag_set: metadata.tag_set,
-                author,
                 qdrant_point_id,
                 created_at: metadata.created_at,
                 updated_at: metadata.updated_at,
@@ -784,7 +746,6 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
                 Some(metadata_chunk) => metadata_chunk.clone(),
                 None => ChunkMetadataWithFileData {
                     id: uuid::Uuid::default(),
-                    author: None,
                     qdrant_point_id: uuid::Uuid::default(),
                     created_at: chrono::Utc::now().naive_local(),
                     updated_at: chrono::Utc::now().naive_local(),
@@ -859,7 +820,6 @@ pub async fn retrieve_chunks_from_point_ids(
                 Some(metadata_chunk) => metadata_chunk.clone(),
                 None => ChunkMetadataWithFileData {
                     id: uuid::Uuid::default(),
-                    author: None,
                     qdrant_point_id: uuid::Uuid::default(),
                     created_at: chrono::Utc::now().naive_local(),
                     updated_at: chrono::Utc::now().naive_local(),
@@ -1117,7 +1077,6 @@ pub async fn search_hybrid_chunks(
                 Some(metadata_chunk) => metadata_chunk.clone(),
                 None => ChunkMetadataWithFileData {
                     id: uuid::Uuid::default(),
-                    author: None,
                     qdrant_point_id: uuid::Uuid::default(),
                     created_at: chrono::Utc::now().naive_local(),
                     updated_at: chrono::Utc::now().naive_local(),

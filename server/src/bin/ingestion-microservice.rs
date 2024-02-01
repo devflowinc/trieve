@@ -181,7 +181,6 @@ async fn upload_chunk(
         update_qdrant_point_query(
             None,
             collision.expect("Collision must be some"),
-            Some(payload.chunk_metadata.author_id),
             None,
             payload.chunk_metadata.dataset_id,
         )
@@ -223,7 +222,6 @@ async fn upload_chunk(
             qdrant_point_id,
             embedding_vector,
             payload.chunk_metadata.clone(),
-            Some(payload.chunk_metadata.author_id),
             payload.chunk_metadata.dataset_id,
         )
         .await

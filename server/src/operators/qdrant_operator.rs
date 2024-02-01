@@ -193,7 +193,6 @@ pub async fn create_new_qdrant_point_query(
     point_id: uuid::Uuid,
     embedding_vector: Vec<f32>,
     chunk_metadata: ChunkMetadata,
-    author_id: Option<uuid::Uuid>,
     dataset_id: uuid::Uuid,
 ) -> Result<(), actix_web::Error> {
     let qdrant_collection = get_env!(
@@ -214,7 +213,7 @@ pub async fn create_new_qdrant_point_query(
     )
     .await?;
 
-    let payload = json!({"authors": vec![author_id.unwrap_or_default().to_string()], "tag_set": chunk_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": chunk_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "chunk_html": chunk_metadata.chunk_html.unwrap_or("".to_string()), "metadata": chunk_metadata.metadata.unwrap_or_default(), "time_stamp": chunk_metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string()})
+    let payload = json!({"tag_set": chunk_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": chunk_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "chunk_html": chunk_metadata.chunk_html.unwrap_or("".to_string()), "metadata": chunk_metadata.metadata.unwrap_or_default(), "time_stamp": chunk_metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string()})
                 .try_into()
                 .expect("A json! Value must always be a valid Payload");
 
@@ -249,7 +248,6 @@ pub async fn create_new_qdrant_point_query(
 pub async fn update_qdrant_point_query(
     metadata: Option<ChunkMetadata>,
     point_id: uuid::Uuid,
-    author_id: Option<uuid::Uuid>,
     updated_vector: Option<Vec<f32>>,
     dataset_id: uuid::Uuid,
 ) -> Result<(), actix_web::Error> {
@@ -288,33 +286,10 @@ pub async fn update_qdrant_point_query(
         }
     };
 
-    let mut current_author_ids = match current_point.payload.get("authors") {
-        Some(authors) => match authors.as_list() {
-            Some(authors) => authors
-                .iter()
-                .map(|author| match author.as_str() {
-                    Some(author) => author.to_string(),
-                    None => "".to_string(),
-                })
-                .filter(|author| !author.is_empty())
-                .collect::<Vec<String>>(),
-            None => {
-                vec![]
-            }
-        },
-        None => {
-            vec![]
-        }
-    };
-
-    if !current_author_ids.contains(&author_id.unwrap().to_string()) {
-        current_author_ids.push(author_id.unwrap().to_string());
-    }
-
     let payload = if let Some(metadata) = metadata.clone() {
-        json!({"authors": current_author_ids, "tag_set": metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "chunk_html": metadata.chunk_html.unwrap_or("".to_string()), "metadata": metadata.metadata.unwrap_or_default(), "time_stamp": metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string()})
+        json!({"tag_set": metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "chunk_html": metadata.chunk_html.unwrap_or("".to_string()), "metadata": metadata.metadata.unwrap_or_default(), "time_stamp": metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string()})
     } else {
-        json!({"authors": current_author_ids, "tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "chunk_html": current_point.payload.get("chunk_html").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")), "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from(""))})
+        json!({"tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "chunk_html": current_point.payload.get("chunk_html").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")), "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from(""))})
     };
     let points_selector = qdrant_point_id.into();
 
