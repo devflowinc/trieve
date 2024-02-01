@@ -51,8 +51,8 @@ pub struct GetUserWithChunksData {
         (status = 400, description = "Service error relating to updating the user", body = DefaultError),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 pub async fn update_user(
@@ -164,8 +164,8 @@ pub struct SetUserApiKeyResponse {
         (status = 400, description = "Service error relating to creating api_key for the user", body = DefaultError),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 pub async fn set_user_api_key(
@@ -200,8 +200,8 @@ pub async fn set_user_api_key(
         (status = 400, description = "Service error relating to creating api_key for the user", body = DefaultError),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 pub async fn get_user_api_keys(
@@ -235,8 +235,8 @@ pub struct DeleteUserApiKeyRequest {
         (status = 400, description = "Service error relating to creating api_key for the user", body = DefaultError),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 pub async fn delete_user_api_key(

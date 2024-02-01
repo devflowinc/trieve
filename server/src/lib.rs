@@ -66,12 +66,12 @@ impl Modify for SecurityAddon {
     fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
         let components = openapi.components.as_mut().unwrap(); // we can unwrap safely since there already is components registered.
         components.add_security_scheme(
-            "Api Key",
+            "ApiKey",
             SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("Authorization"))),
         );
 
         components.add_security_scheme(
-            "Cookie Auth",
+            "Cookie",
             SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::new("Authorization"))),
         );
     }

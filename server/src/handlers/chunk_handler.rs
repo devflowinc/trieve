@@ -123,8 +123,8 @@ pub struct IngestionMessage {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["admin"]),
-        ("Cookie Auth" = ["admin"])
+        ("ApiKey" = ["admin"]),
+        ("Cookie" = ["admin"])
     )
 )]
 pub async fn create_chunk(
@@ -238,8 +238,8 @@ pub async fn create_chunk(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["admin"]),
-        ("Cookie Auth" = ["admin"])
+        ("ApiKey" = ["admin"]),
+        ("Cookie" = ["admin"])
     )
 )]
 pub async fn bulk_create_chunk(
@@ -280,8 +280,8 @@ pub async fn bulk_create_chunk(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["admin"]),
-        ("Cookie Auth" = ["admin"]),
+        ("ApiKey" = ["admin"]),
+        ("Cookie" = ["admin"]),
     )
 )]
 pub async fn delete_chunk(
@@ -317,8 +317,8 @@ pub async fn delete_chunk(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["admin"]),
-        ("Cookie Auth" = ["admin"])
+        ("ApiKey" = ["admin"]),
+        ("Cookie" = ["admin"])
     )
 )]
 pub async fn delete_chunk_by_tracking_id(
@@ -384,8 +384,8 @@ pub struct ChunkHtmlUpdateError {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["admin"]),
-        ("Cookie Auth" = ["admin"])
+        ("ApiKey" = ["admin"]),
+        ("Cookie" = ["admin"])
     )
 )]
 pub async fn update_chunk(
@@ -514,8 +514,8 @@ pub struct UpdateChunkByTrackingIdData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["admin"]),
-        ("Cookie Auth" = ["admin"])
+        ("ApiKey" = ["admin"]),
+        ("Cookie" = ["admin"])
     )
 )]
 pub async fn update_chunk_by_tracking_id(
@@ -709,8 +709,8 @@ fn parse_query(query: String) -> ParsedQuery {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 #[allow(clippy::too_many_arguments)]
@@ -809,8 +809,8 @@ pub struct SearchGroupsResult {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 #[allow(clippy::too_many_arguments)]
@@ -946,8 +946,8 @@ pub async fn search_over_groups(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 pub async fn get_chunk_by_id(
@@ -982,8 +982,8 @@ pub async fn get_chunk_by_id(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 pub async fn get_chunk_by_tracking_id(
@@ -1028,8 +1028,8 @@ pub struct RecommendChunksRequest {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 pub async fn get_recommended_chunks(
@@ -1099,8 +1099,8 @@ pub struct GenerateChunksRequest {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Key" = ["readonly"]),
-        ("Cookie Auth" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 pub async fn generate_off_chunks(
