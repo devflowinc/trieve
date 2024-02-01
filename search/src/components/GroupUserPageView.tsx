@@ -63,7 +63,6 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
   });
 
   const deleteGroup = (group: ChunkGroupDTO) => {
-    if (props.user?.id !== group.author_id) return;
     const currentDataset = $dataset();
     if (!currentDataset) return;
 
@@ -134,12 +133,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                     >
                       Created at
                     </th>
-                    <Show
-                      when={
-                        props.loggedUser != undefined &&
-                        props.loggedUser.id == groups()[0]?.author_id
-                      }
-                    >
+                    <Show when={props.loggedUser != undefined}>
                       <th
                         scope="col"
                         class="relative hidden py-3.5 pl-3 pr-4 sm:pr-0"
@@ -172,32 +166,17 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                               .toLocaleTimeString()
                               .replace(/:\d+\s/, " ")}
                         </td>
-                        <Show
-                          when={
-                            props.user != undefined &&
-                            props.user.id == group.author_id
-                          }
-                        >
-                          <td
+                        <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                          <button
                             classList={{
-                              "relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0":
-                                true,
-                              "hidden block":
-                                props.loggedUser == undefined ||
-                                props.loggedUser.id != group.author_id,
+                              "h-fit text-red-700 dark:text-red-400": true,
+                              "animate-pulse": deleting(),
                             }}
+                            onClick={() => deleteGroup(group)}
                           >
-                            <button
-                              classList={{
-                                "h-fit text-red-700 dark:text-red-400": true,
-                                "animate-pulse": deleting(),
-                              }}
-                              onClick={() => deleteGroup(group)}
-                            >
-                              <FiTrash class="h-5 w-5" />
-                            </button>
-                          </td>
-                        </Show>
+                            <FiTrash class="h-5 w-5" />
+                          </button>
+                        </td>
                       </tr>
                     )}
                   </For>

@@ -48,7 +48,6 @@ export const isChunkMetadata = (chunk: unknown): chunk is ChunkMetadata => {
 
 export type ChunkMetadataWithVotes = Exclude<ChunkMetadata, "author"> & {
   author: UserDTO | null;
-  author_id: UserDTO | null;
 };
 
 export const isChunkMetadataWithVotes = (
@@ -59,9 +58,6 @@ export const isChunkMetadataWithVotes = (
   return (
     indirectHasOwnProperty(chunk, "id") &&
     typeof (chunk as ChunkMetadataWithVotes).id === "string" &&
-    indirectHasOwnProperty(chunk, "author_id") &&
-    (typeof (chunk as ChunkMetadataWithVotes).author_id == "string" ||
-      (chunk as ChunkMetadataWithVotes).author_id === null) &&
     indirectHasOwnProperty(chunk, "content") &&
     typeof (chunk as ChunkMetadataWithVotes).content === "string" &&
     indirectHasOwnProperty(chunk, "qdrant_point_id") &&
@@ -82,7 +78,6 @@ export interface ChunkGroupDTO {
 export interface SlimGroup {
   id: string;
   name: string;
-  author_id: string;
   of_current_user: boolean;
 }
 
@@ -282,7 +277,6 @@ export const isUserDTOWithScore = (user: unknown): user is UserDTOWithScore => {
 
 export interface ChunkGroupDTO {
   id: string;
-  author_id: string;
   name: string;
   description: string;
   created_at: string;

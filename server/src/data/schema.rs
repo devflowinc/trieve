@@ -63,7 +63,7 @@ diesel::table! {
     dataset_event_counts (id) {
         id -> Uuid,
         notification_count -> Int4,
-        dataset_uuid -> Nullable<Uuid>,
+        dataset_uuid -> Uuid,
     }
 }
 
@@ -267,6 +267,7 @@ diesel::joinable!(chunk_group -> datasets (dataset_id));
 diesel::joinable!(chunk_group_bookmarks -> chunk_group (group_id));
 diesel::joinable!(chunk_group_bookmarks -> chunk_metadata (chunk_metadata_id));
 diesel::joinable!(chunk_metadata -> datasets (dataset_id));
+diesel::joinable!(dataset_event_counts -> datasets (dataset_uuid));
 diesel::joinable!(dataset_usage_counts -> datasets (dataset_id));
 diesel::joinable!(datasets -> organizations (organization_id));
 diesel::joinable!(events -> datasets (dataset_id));
