@@ -224,7 +224,12 @@ pub async fn direct_to_payment_link(
     ),
     params(
         ("subscription_id" = uuid, Path, description = "id of the subscription you want to cancel"),
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
+    security(
+        ("api_key" = ["owner"]),
+        ("cookie" = ["owner"])
+    )
 )]
 pub async fn cancel_subscription(
     subscription_id: web::Path<uuid::Uuid>,
@@ -270,7 +275,12 @@ pub struct UpdateSubscriptionData {
     params(
         ("subscription_id" = uuid::Uuid, Path, description = "id of the subscription you want to update"),
         ("plan_id" = uuid::Uuid, Path, description = "id of the plan you want to subscribe to"),
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
+    security(
+        ("api_key" = ["readonly"]),
+        ("cookie" = ["readonly"])
+    )
 )]
 pub async fn update_subscription_plan(
     path_data: web::Path<UpdateSubscriptionData>,

@@ -27,8 +27,13 @@ use utoipa::ToSchema;
         (status = 400, description = "Service error relating to finding the organization by id", body = DefaultError),
     ),
     params(
-        ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch.")
+        ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch."),
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"])
+    )
 )]
 pub async fn get_organization_by_id(
     organization_id: web::Path<uuid::Uuid>,
@@ -65,6 +70,13 @@ pub struct UpdateOrganizationData {
         (status = 200, description = "Updated organization object", body = Organization),
         (status = 400, description = "Service error relating to updating the organization", body = DefaultError),
     ),
+    params(
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["owner"]),
+        ("Cookie Auth" = ["owner"])
+    )
 )]
 pub async fn update_organization(
     organization: web::Json<UpdateOrganizationData>,
@@ -112,6 +124,10 @@ pub struct CreateOrganizationData {
         (status = 200, description = "Created organization object", body = Organization),
         (status = 400, description = "Service error relating to creating the organization", body = DefaultError),
     ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 pub async fn create_organization(
     organization: web::Json<CreateOrganizationData>,
@@ -152,8 +168,13 @@ pub async fn create_organization(
         (status = 400, description = "Service error relating to finding the organization's usage by id", body = DefaultError),
     ),
     params(
-        ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch the usage of.")
+        ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch the usage of."),
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"])
+    )
 )]
 pub async fn get_organization_usage(
     organization: web::Path<uuid::Uuid>,
@@ -182,8 +203,13 @@ pub async fn get_organization_usage(
         (status = 400, description = "Service error relating to finding the organization's users by id", body = DefaultError),
     ),
     params(
-        ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch the users of.")
+        ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch the users of."),
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"])
+    )
 )]
 pub async fn get_organization_users(
     organization: web::Path<uuid::Uuid>,

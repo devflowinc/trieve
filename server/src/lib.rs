@@ -18,7 +18,7 @@ use actix_web::{
 };
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use utoipa::OpenApi;
+use utoipa::{openapi::security::{ApiKey, ApiKeyValue, SecurityScheme}, Modify, OpenApi};
 use utoipa_redoc::{Redoc, Servable};
 
 pub mod af_middleware;
@@ -57,12 +57,30 @@ macro_rules! get_env {
         ENV_VAR.as_str()
     }};
 }
+struct SecurityAddon;
+
+impl Modify for SecurityAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        let components = openapi.components.as_mut().unwrap(); // we can unwrap safely since there already is components registered.
+        components.add_security_scheme(
+            "Api Auth",
+            SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("Authorization"))),
+        );
+
+        components.add_security_scheme(
+            "Cookie Auth",
+            SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::new("Authorization"))),
+        );
+    }
+}
+
 
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
     #[derive(OpenApi)]
     #[openapi(
         info(description = "Trieve REST API OpenAPI Documentation", version = "0.3.0"),
+        modifiers(&SecurityAddon),
         paths(
             handlers::invitation_handler::post_invitation,
             handlers::auth_handler::login,
@@ -224,7 +242,7 @@ pub async fn main() -> std::io::Result<()> {
             (name = "message", description = "Message chat endpoint. Messages are units belonging to a topic in the context of a chat with a LLM. There are system, user, and assistant messages."),
             (name = "stripe", description = "Stripe endpoint. Used for the managed SaaS version of this app. Eventually this will become a micro-service. Reach out to the team using contact info found at `docs.trieve.ai` for more information."),
             (name = "health", description = "Health check endpoint. Used to check if the server is up and running."),
-        )
+        ),
     )]
     struct ApiDoc;
 

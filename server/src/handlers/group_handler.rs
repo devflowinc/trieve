@@ -51,6 +51,13 @@ pub struct CreateChunkGroupData {
         (status = 200, description = "Returns the created chunkGroup", body = ChunkGroup),
         (status = 400, description = "Service error relating to creating the chunkGroup", body = DefaultError),
     ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"])
+    )
 )]
 pub async fn create_chunk_group(
     body: web::Json<CreateChunkGroupData>,
@@ -99,7 +106,12 @@ pub struct DatasetGroupQuery {
     params(
         ("dataset_id" = uuid::Uuid, description = "The id of the dataset to fetch groups for."),
         ("page" = i64, description = "The page of groups to fetch. Each page contains 10 groups. Support for custom page size is coming soon."),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 pub async fn get_specific_dataset_chunk_groups(
     dataset_and_page: web::Path<DatasetGroupQuery>,
@@ -156,7 +168,12 @@ pub struct DeleteGroupData {
     ),
     params(
         ("group_id" = uuid, description = "Id of the chunk_group to delete"),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"])
+    )
 )]
 pub async fn delete_chunk_group(
     group_id: web::Path<uuid::Uuid>,
@@ -205,6 +222,13 @@ pub struct UpdateChunkGroupData {
         (status = 204, description = "Confirmation that the chunkGroup was updated"),
         (status = 400, description = "Service error relating to updating the chunkGroup", body = DefaultError),
     ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"])
+    )
 )]
 pub async fn update_chunk_group(
     body: web::Json<UpdateChunkGroupData>,
@@ -256,7 +280,12 @@ pub struct AddChunkToGroupData {
     ),
     params(
         ("group_id" = uuid, description = "Id of the group to add the chunk to as a bookmark"),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"])
+    )
 )]
 pub async fn add_bookmark(
     body: web::Json<AddChunkToGroupData>,
@@ -322,7 +351,12 @@ pub struct BookmarkChunks {
     params(
         ("group_id" = uuid::Uuid, description = "The id of the group to get the chunks from"),
         ("page" = u64, description = "The page of chunks to get from the group"),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 pub async fn get_all_bookmarks(
     path_data: web::Path<GetAllBookmarksData>,
@@ -370,6 +404,13 @@ pub struct GetGroupsForChunksData {
         (status = 200, description = "JSON body representing the groups that the chunk is in", body = Vec<BookmarkGroupResult>),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = DefaultError),
     ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 pub async fn get_groups_chunk_is_in(
     data: web::Json<GetGroupsForChunksData>,
@@ -409,7 +450,12 @@ pub struct DeleteBookmarkPathData {
     params(
         ("group_id" = uuid::Uuid, description = "Id of the group to remove the bookmark'ed chunk from"),
         ("bookmark_id" = uuid::Uuid, description = "Id of the bookmark to remove"),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"])
+    )
 )]
 pub async fn delete_bookmark(
     path_data: web::Path<DeleteBookmarkPathData>,

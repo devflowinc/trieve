@@ -28,7 +28,12 @@ pub enum Events {
     ),
     params(
         ("page" = i64, description = "Page number of events to get"),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 pub async fn get_events(
     _user: LoggedUser,

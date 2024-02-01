@@ -44,6 +44,13 @@ pub struct InvitationData {
     responses(
         (status = 204, description = "Ok response. Indicates that invitation email was sent correctly."),
         (status = 400, description = "Invalid email or some other error", body = DefaultError),
+    ),
+    params(
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"])
     )
 )]
 pub async fn post_invitation(

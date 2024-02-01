@@ -50,6 +50,10 @@ pub struct GetUserWithChunksData {
         (status = 200, description = "JSON body representing the updated user information", body = SlimUser),
         (status = 400, description = "Service error relating to updating the user", body = DefaultError),
     ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 pub async fn update_user(
     data: web::Json<UpdateUserData>,
@@ -159,6 +163,10 @@ pub struct SetUserApiKeyResponse {
         (status = 200, description = "JSON body representing the api_key for the user", body = SetUserApiKeyResponse),
         (status = 400, description = "Service error relating to creating api_key for the user", body = DefaultError),
     ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 pub async fn set_user_api_key(
     user: LoggedUser,
@@ -191,6 +199,10 @@ pub async fn set_user_api_key(
         (status = 200, description = "JSON body representing the api_key for the user", body = Vec<ApiKeyDTO>),
         (status = 400, description = "Service error relating to creating api_key for the user", body = DefaultError),
     ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 pub async fn get_user_api_keys(
     user: LoggedUser,
@@ -222,6 +234,10 @@ pub struct DeleteUserApiKeyRequest {
         (status = 200, description = "JSON body representing the api_key for the user", body = Vec<ApiKeyDTO>),
         (status = 400, description = "Service error relating to creating api_key for the user", body = DefaultError),
     ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 pub async fn delete_user_api_key(
     user: LoggedUser,

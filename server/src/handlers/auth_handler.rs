@@ -250,7 +250,7 @@ pub struct LogoutRequest {
     tag = "auth",
     responses(
         (status = 204, description = "Confirmation that your current auth token has been invalidated. This does not invalidate your API key."),
-    )
+    ),
 )]
 pub async fn logout(
     id: Identity,
@@ -542,6 +542,10 @@ pub async fn callback(
         (status = 200, description = "The user corresponding to your current auth credentials", body = SlimUser),
         (status = 400, description = "Error message indicitating you are not currently signed in", body = DefaultError),
     ),
+    security(
+        ("Api Auth" = []),
+        ("Cookie Auth" = [])
+    )
 )]
 pub async fn get_me(
     logged_user: LoggedUser,
