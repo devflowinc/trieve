@@ -223,9 +223,9 @@ pub async fn delete_dataset(
         (status = 400, description = "Service error relating to retrieving the dataset", body = DefaultError),
     ),
     params(
-        ("dataset_id" = uuid, Path, description = "The id of the dataset you want to retrieve."),
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("dataset_id" = uuid, Path, description = "The id of the dataset you want to retrieve."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -260,8 +260,8 @@ pub async fn get_dataset(
         (status = 400, description = "Service error relating to retrieving the dataset", body = DefaultError),
     ),
     params(
-        ("organization_id" = uuid, Path, description = "id of the organization you want to retrieve datasets for"),
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("organization_id" = uuid, Path, description = "id of the organization you want to retrieve datasets for"),
     ),
     security(
         ("ApiKey" = ["admin"]),
