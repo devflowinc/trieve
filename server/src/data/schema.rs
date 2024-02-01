@@ -61,18 +61,18 @@ diesel::table! {
 }
 
 diesel::table! {
-    dataset_group_counts (id) {
+    dataset_event_counts (id) {
         id -> Uuid,
-        group_count -> Int4,
-        dataset_id -> Nullable<Uuid>,
+        notification_count -> Int4,
+        dataset_uuid -> Nullable<Uuid>,
     }
 }
 
 diesel::table! {
-    dataset_notification_counts (id) {
+    dataset_group_counts (id) {
         id -> Uuid,
-        notification_count -> Int4,
-        dataset_uuid -> Nullable<Uuid>,
+        group_count -> Int4,
+        dataset_id -> Nullable<Uuid>,
     }
 }
 
@@ -293,8 +293,8 @@ diesel::allow_tables_to_appear_in_same_query!(
     chunk_group,
     chunk_group_bookmarks,
     chunk_metadata,
+    dataset_event_counts,
     dataset_group_counts,
-    dataset_notification_counts,
     dataset_usage_counts,
     datasets,
     events,
