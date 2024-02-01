@@ -9,7 +9,6 @@ import { BiRegularLogOut, BiRegularUser } from "solid-icons/bi";
 import { AiOutlineProfile } from "solid-icons/ai";
 import { IoSettingsOutline } from "solid-icons/io";
 import { Show, createEffect, createSignal } from "solid-js";
-import { NotificationPopover } from "./Atoms/NotificationPopover";
 import { AiFillGithub } from "solid-icons/ai";
 import { TbMinusVertical } from "solid-icons/tb";
 import { useStore } from "@nanostores/solid";
@@ -85,7 +84,6 @@ const RegisterOrUserProfile = () => {
               <p>{starCount()}</p>
             </div>
           </a>
-          <NotificationPopover />
           <Show when={!!$currentUser()}>
             <Popover defaultOpen={false} class="relative flex items-center">
               {({ isOpen }) => (

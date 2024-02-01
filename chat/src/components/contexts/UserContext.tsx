@@ -34,8 +34,6 @@ export interface UserStore {
   datasetsAndUsages: Accessor<DatasetAndUsageDTO[]> | null;
   login: () => void;
   logout: () => void;
-  notify: (notification: Notification) => void;
-  notifications: Accessor<Notification[]> | null;
 }
 
 export const UserContext = createContext<UserStore>({
@@ -49,15 +47,12 @@ export const UserContext = createContext<UserStore>({
   datasetsAndUsages: null,
   login: () => {},
   logout: () => {},
-  notify: () => {},
-  notifications: null,
 });
 
 export const UserContextWrapper = (props: UserStoreContextProps) => {
   const [user, setUser] = createSignal<UserDTO | null>(null);
   const [selectedOrganization, setSelectedOrganization] =
     createSignal<OrganizationDTO | null>(null);
-  const [notifications, setNotifications] = createSignal<Notification[]>([]);
   const [organizations, setOrganizations] = createSignal<OrganizationDTO[]>([]);
 
   const [currentDataset, setCurrentDataset] =
@@ -148,15 +143,6 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     datasetsAndUsages: datasetsAndUsages,
     login: login,
     logout: () => {},
-    notify: (notification: Notification) => {
-      setNotifications([...notifications(), notification]);
-      setTimeout(() => {
-        setNotifications(
-          notifications().filter((n) => n.message !== notification.message),
-        );
-      }, notification.timeout || 3000);
-    },
-    notifications: notifications,
   };
 
   return (
