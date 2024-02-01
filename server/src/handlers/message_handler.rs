@@ -194,8 +194,8 @@ pub async fn create_message_completion_handler(
         (status = 400, description = "Service error relating to getting the messages", body = DefaultError),
     ),
     params(
-        ("messages_topic_id" = uuid, description = "The ID of the topic to get messages for."),
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("messages_topic_id" = uuid, description = "The ID of the topic to get messages for."),
     ),
     security(
         ("ApiKey" = ["readonly"]),

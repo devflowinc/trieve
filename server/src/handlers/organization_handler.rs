@@ -27,8 +27,8 @@ use utoipa::ToSchema;
         (status = 400, description = "Service error relating to finding the organization by id", body = DefaultError),
     ),
     params(
-        ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch."),
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -168,8 +168,8 @@ pub async fn create_organization(
         (status = 400, description = "Service error relating to finding the organization's usage by id", body = DefaultError),
     ),
     params(
-        ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch the usage of."),
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch the usage of."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -203,8 +203,8 @@ pub async fn get_organization_usage(
         (status = 400, description = "Service error relating to finding the organization's users by id", body = DefaultError),
     ),
     params(
-        ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch the users of."),
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch the users of."),
     ),
     security(
         ("ApiKey" = ["admin"]),

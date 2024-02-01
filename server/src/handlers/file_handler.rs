@@ -186,8 +186,8 @@ pub async fn upload_file_handler(
         (status = 400, description = "Service error relating to finding the file", body = DefaultError),
     ),
     params(
-        ("file_id" = uuid::Uuid, description = "The id of the file to fetch"),
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("file_id" = uuid::Uuid, description = "The id of the file to fetch"),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -228,8 +228,8 @@ pub async fn get_file_handler(
         (status = 400, description = "Service error relating to getting the files uploaded by the given user", body = DefaultError),
     ),
     params(
-        ("user_id" = uuid::Uuid, description = "The id of the user to fetch files for."),
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("user_id" = uuid::Uuid, description = "The id of the user to fetch files for."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -263,9 +263,10 @@ pub async fn get_user_files_handler(
         (status = 400, description = "Service error relating to finding or deleting the file", body = DefaultError),
     ),
     params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
         ("file_id" = uuid::Uuid, description = "The id of the file to delete"),
         ("delete_chunks" = Option<bool>, Query, description = "Whether or not to delete the chunks associated with the file"),
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("file_id" = uuid::Uuid, description = "The id of the file to delete"),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -303,8 +304,8 @@ pub async fn delete_file_handler(
         (status = 400, description = "Service error relating to finding the file", body = DefaultError),
     ),
     params(
-        ("file_name" = string, description = "The name of the image file to return"),
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("file_name" = string, description = "The name of the image file to return"),
     ),
     security(
         ("ApiKey" = ["readonly"]),

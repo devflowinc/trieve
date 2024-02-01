@@ -104,9 +104,9 @@ pub struct DatasetGroupQuery {
         (status = 400, description = "Service error relating to getting the groups created by the given dataset", body = DefaultError),
     ),
     params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
         ("dataset_id" = uuid::Uuid, description = "The id of the dataset to fetch groups for."),
         ("page" = i64, description = "The page of groups to fetch. Each page contains 10 groups. Support for custom page size is coming soon."),
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -167,8 +167,8 @@ pub struct DeleteGroupData {
         (status = 400, description = "Service error relating to deleting the chunkGroup", body = DefaultError),
     ),
     params(
-        ("group_id" = uuid, description = "Id of the chunk_group to delete"),
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("group_id" = uuid, description = "Id of the chunk_group to delete"),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -279,8 +279,8 @@ pub struct AddChunkToGroupData {
         (status = 400, description = "Service error relating to getting the groups that the chunk is in.", body = DefaultError),
     ),
     params(
-        ("group_id" = uuid, description = "Id of the group to add the chunk to as a bookmark"),
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("group_id" = uuid, description = "Id of the group to add the chunk to as a bookmark"),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -349,9 +349,9 @@ pub struct BookmarkChunks {
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = DefaultError),
     ),
     params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
         ("group_id" = uuid::Uuid, description = "The id of the group to get the chunks from"),
         ("page" = u64, description = "The page of chunks to get from the group"),
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -448,9 +448,9 @@ pub struct DeleteBookmarkPathData {
         (status = 400, description = "Service error relating to removing the chunk from the group", body = DefaultError),
     ),
     params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
         ("group_id" = uuid::Uuid, description = "Id of the group to remove the bookmark'ed chunk from"),
         ("bookmark_id" = uuid::Uuid, description = "Id of the bookmark to remove"),
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
         ("ApiKey" = ["admin"]),

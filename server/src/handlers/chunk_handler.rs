@@ -276,8 +276,8 @@ pub async fn bulk_create_chunk(
         (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = DefaultError),
     ),
     params(
-        ("chunk_id" = Option<uuid>, Path, description = "id of the chunk you want to delete"),
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("chunk_id" = Option<uuid>, Path, description = "id of the chunk you want to delete"),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -313,8 +313,8 @@ pub async fn delete_chunk(
         (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = DefaultError),
     ),
     params(
-        ("tracking_id" = Option<String>, Path, description = "tracking_id of the chunk you want to delete"),
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("tracking_id" = Option<String>, Path, description = "tracking_id of the chunk you want to delete"),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -942,8 +942,8 @@ pub async fn search_over_groups(
         (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = DefaultError),
     ),
     params(
-        ("chunk_id" = Option<uuid>, Path, description = "Id of the chunk you want to fetch."),
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("chunk_id" = Option<uuid>, Path, description = "Id of the chunk you want to fetch."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -978,8 +978,8 @@ pub async fn get_chunk_by_id(
         (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = DefaultError),
     ),
     params(
-        ("tracking_id" = Option<String>, Path, description = "tracking_id of the chunk you want to fetch"),
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("tracking_id" = Option<String>, Path, description = "tracking_id of the chunk you want to fetch"),
     ),
     security(
         ("ApiKey" = ["readonly"]),

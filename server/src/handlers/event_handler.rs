@@ -27,8 +27,8 @@ pub enum Events {
         (status = 400, description = "Service error relating to getting events for the dataset", body = DefaultError),
     ),
     params(
-        ("page" = i64, description = "Page number of events to get"),
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("page" = i64, description = "Page number of events to get"),
     ),
     security(
         ("ApiKey" = ["readonly"]),
