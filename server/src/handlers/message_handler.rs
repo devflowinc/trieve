@@ -64,6 +64,13 @@ pub struct CreateMessageData {
         (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this. Response if streaming.",),
         (status = 200, description = "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.", body = String),
         (status = 400, description = "Service error relating to getting a chat completion", body = DefaultError),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
     )
 )]
 pub async fn create_message_completion_handler(
@@ -186,7 +193,14 @@ pub async fn create_message_completion_handler(
         (status = 200, description = "All messages relating to the topic with the given ID", body = Vec<Message>),
         (status = 400, description = "Service error relating to getting the messages", body = DefaultError),
     ),
-    params(("messages_topic_id" = uuid, description = "The ID of the topic to get messages for."))
+    params(
+        ("messages_topic_id" = uuid, description = "The ID of the topic to get messages for."),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 pub async fn get_all_topic_messages(
     user: LoggedUser,
@@ -263,6 +277,13 @@ pub struct EditMessageData {
     responses(
         (status = 200, description = "This will be a HTTP stream, check the chat or search UI for an example how to process this"),
         (status = 400, description = "Service error relating to getting a chat completion", body = DefaultError),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
     )
 )]
 pub async fn edit_message_handler(
@@ -335,6 +356,13 @@ pub async fn edit_message_handler(
         (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this. Response if streaming.",),
         (status = 200, description = "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.", body = String),
         (status = 400, description = "Service error relating to getting a chat completion", body = DefaultError),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
     )
 )]
 pub async fn regenerate_message_handler(
@@ -885,7 +913,15 @@ pub struct SuggestedQueriesResponse {
     responses(
         (status = 200, description = "A JSON object containing a list of alternative suggested queries", body = SuggestedQueriesResponse),
         (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = DefaultError),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
     )
+
 )]
 pub async fn create_suggested_queries_handler(
     data: web::Json<SuggestedQueriesRequest>,

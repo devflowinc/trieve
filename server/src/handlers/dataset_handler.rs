@@ -64,6 +64,13 @@ pub struct CreateDatasetRequest {
         (status = 200, description = "Dataset created successfully", body = Dataset),
         (status = 400, description = "Service error relating to creating the dataset", body = DefaultError),
     ),
+    params(
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["owner"]),
+        ("Cookie Auth" = ["owner"])
+    )
 )]
 pub async fn create_dataset(
     data: web::Json<CreateDatasetRequest>,
@@ -130,6 +137,13 @@ pub struct UpdateDatasetRequest {
         (status = 200, description = "Dataset updated successfully", body = Dataset),
         (status = 400, description = "Service error relating to updating the dataset", body = DefaultError),
     ),
+    params(
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["owner"]),
+        ("Cookie Auth" = ["owner"])
+    )
 )]
 pub async fn update_dataset(
     data: web::Json<UpdateDatasetRequest>,
@@ -179,6 +193,13 @@ pub struct DeleteDatasetRequest {
         (status = 204, description = "Dataset deleted successfully"),
         (status = 400, description = "Service error relating to deleting the dataset", body = DefaultError),
     ),
+    params(
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["owner"]),
+        ("Cookie Auth" = ["owner"])
+    )
 )]
 pub async fn delete_dataset(
     data: web::Json<DeleteDatasetRequest>,
@@ -203,7 +224,13 @@ pub async fn delete_dataset(
     ),
     params(
         ("dataset_id" = uuid, Path, description = "The id of the dataset you want to retrieve."),
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"])
+    )
 )]
 pub async fn get_dataset(
     pool: web::Data<Pool>,
@@ -234,7 +261,12 @@ pub async fn get_dataset(
     ),
     params(
         ("organization_id" = uuid, Path, description = "id of the organization you want to retrieve datasets for"),
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"])
+    )
 )]
 pub async fn get_datasets_from_organization(
     organization_id: web::Path<uuid::Uuid>,
@@ -268,6 +300,13 @@ pub async fn get_datasets_from_organization(
         (status = 200, description = "Dataset environment variables", body = ClientDatasetConfiguration),
         (status = 400, description = "Service error relating to retrieving the dataset. Typically this only happens when your auth credentials are invalid.", body = DefaultError),
     ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 pub async fn get_client_dataset_config(
     dataset: DatasetAndOrgWithSubAndPlan,

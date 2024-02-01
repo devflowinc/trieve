@@ -118,6 +118,13 @@ pub struct IngestionMessage {
     responses(
         (status = 200, description = "JSON response payload containing the created chunk", body = ReturnCreatedChunk),
         (status = 400, description = "Service error relating to to creating a chunk, likely due to conflicting tracking_id", body = DefaultError),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"])
     )
 )]
 pub async fn create_chunk(
@@ -226,6 +233,13 @@ pub async fn create_chunk(
     responses(
         (status = 200, description = "JSON response payload containing the created chunk", body = ReturnCreatedChunk),
         (status = 400, description = "Service error relating to to creating a chunk, likely due to conflicting tracking_id", body = DefaultError),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"])
     )
 )]
 pub async fn bulk_create_chunk(
@@ -262,8 +276,13 @@ pub async fn bulk_create_chunk(
         (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = DefaultError),
     ),
     params(
-        ("chunk_id" = Option<uuid>, Path, description = "id of the chunk you want to delete")
+        ("chunk_id" = Option<uuid>, Path, description = "id of the chunk you want to delete"),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"]),
+    )
 )]
 pub async fn delete_chunk(
     chunk_id: web::Path<uuid::Uuid>,
@@ -294,8 +313,13 @@ pub async fn delete_chunk(
         (status = 400, description = "Service error relating to finding a chunk by tracking_id", body = DefaultError),
     ),
     params(
-        ("tracking_id" = Option<String>, Path, description = "tracking_id of the chunk you want to delete")
+        ("tracking_id" = Option<String>, Path, description = "tracking_id of the chunk you want to delete"),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"])
+    )
 )]
 pub async fn delete_chunk_by_tracking_id(
     tracking_id: web::Path<String>,
@@ -355,6 +379,13 @@ pub struct ChunkHtmlUpdateError {
     responses(
         (status = 204, description = "No content Ok response indicating the chunk was updated as requested",),
         (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = DefaultError),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"])
     )
 )]
 pub async fn update_chunk(
@@ -479,6 +510,13 @@ pub struct UpdateChunkByTrackingIdData {
         (status = 204, description = "Confirmation that the chunk has been updated as per your request",),
         (status = 400, description = "Service error relating to to updating chunk", body = DefaultError),
     ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"])
+    )
 )]
 pub async fn update_chunk_by_tracking_id(
     chunk: web::Json<UpdateChunkByTrackingIdData>,
@@ -667,6 +705,13 @@ fn parse_query(query: String) -> ParsedQuery {
         (status = 200, description = "chunks which are similar to the embedding vector of the search query", body = SearchChunkQueryResponseBody),
         (status = 400, description = "Service error relating to searching", body = DefaultError),
     ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 #[allow(clippy::too_many_arguments)]
 pub async fn search_chunk(
@@ -760,6 +805,13 @@ pub struct SearchGroupsResult {
         (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchGroupsResult),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = DefaultError),
     ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 #[allow(clippy::too_many_arguments)]
 pub async fn search_groups(
@@ -890,8 +942,13 @@ pub async fn search_over_groups(
         (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = DefaultError),
     ),
     params(
-        ("chunk_id" = Option<uuid>, Path, description = "Id of the chunk you want to fetch.")
+        ("chunk_id" = Option<uuid>, Path, description = "Id of the chunk you want to fetch."),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 pub async fn get_chunk_by_id(
     chunk_id: web::Path<uuid::Uuid>,
@@ -921,14 +978,18 @@ pub async fn get_chunk_by_id(
         (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = DefaultError),
     ),
     params(
-        ("tracking_id" = Option<String>, Path, description = "tracking_id of the chunk you want to fetch")
+        ("tracking_id" = Option<String>, Path, description = "tracking_id of the chunk you want to fetch"),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 pub async fn get_chunk_by_tracking_id(
     tracking_id: web::Path<String>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
-    _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let chunk = web::block(move || {
@@ -962,6 +1023,13 @@ pub struct RecommendChunksRequest {
     responses(
         (status = 200, description = "JSON response payload containing chunks with scores which are similar to those in the request body", body = Vec<ChunkMetadataWithFileData>),
         (status = 400, description = "Service error relating to to getting similar chunks", body = DefaultError),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
     )
 )]
 pub async fn get_recommended_chunks(
@@ -1027,6 +1095,13 @@ pub struct GenerateChunksRequest {
         (status = 200, description = "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.", body = String),
         (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = DefaultError),
     ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 pub async fn generate_off_chunks(
     data: web::Json<GenerateChunksRequest>,

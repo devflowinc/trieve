@@ -34,6 +34,13 @@ pub struct CreateTopicData {
     responses(
         (status = 200, description = "The JSON response payload containing the created topic", body = Topic),
         (status = 400, description = "Topic name empty or a service error", body = DefaultError),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
     )
 )]
 pub async fn create_topic(
@@ -89,6 +96,13 @@ pub struct DeleteTopicData {
     responses(
         (status = 204, description = "Confirmation that the topic was deleted"),
         (status = 400, description = "Service error relating to topic deletion", body = DefaultError),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
     )
 )]
 pub async fn delete_topic(
@@ -147,6 +161,13 @@ pub struct UpdateTopicData {
     responses(
         (status = 204, description = "Confirmation that the topic was updated"),
         (status = 400, description = "Service error relating to topic update", body = DefaultError),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
     )
 )]
 pub async fn update_topic(
@@ -205,7 +226,12 @@ pub async fn update_topic(
         (status = 400, description = "Service error relating to topic get", body = DefaultError),
     ),
     params (
-        ("user_id", description="The id of the user to get topics for")
+        ("user_id", description="The id of the user to get topics for"),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
     )
 )]
 pub async fn get_all_topics_for_user(

@@ -80,6 +80,13 @@ pub struct UploadFileResult {
         (status = 200, description = "Confirmation that the file is uploading", body = UploadFileResult),
         (status = 400, description = "Service error relating to uploading the file", body = DefaultError),
     ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"])
+    )
 )]
 pub async fn upload_file_handler(
     data: web::Json<UploadFileData>,
@@ -180,7 +187,12 @@ pub async fn upload_file_handler(
     ),
     params(
         ("file_id" = uuid::Uuid, description = "The id of the file to fetch"),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 pub async fn get_file_handler(
     file_id: web::Path<uuid::Uuid>,
@@ -217,7 +229,12 @@ pub async fn get_file_handler(
     ),
     params(
         ("user_id" = uuid::Uuid, description = "The id of the user to fetch files for."),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 pub async fn get_user_files_handler(
     user_id: web::Path<uuid::Uuid>,
@@ -247,8 +264,13 @@ pub async fn get_user_files_handler(
     ),
     params(
         ("file_id" = uuid::Uuid, description = "The id of the file to delete"),
-        ("delete_chunks" = Option<bool>, description = "Whether or not to delete the chunks associated with the file"),
+        ("delete_chunks" = Option<bool>, Query, description = "Whether or not to delete the chunks associated with the file"),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["admin"]),
+        ("Cookie Auth" = ["admin"])
+    )
 )]
 pub async fn delete_file_handler(
     file_id: web::Path<uuid::Uuid>,
@@ -282,7 +304,12 @@ pub async fn delete_file_handler(
     ),
     params(
         ("file_name" = string, description = "The name of the image file to return"),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
+    security(
+        ("Api Auth" = ["readonly"]),
+        ("Cookie Auth" = ["readonly"])
+    )
 )]
 pub async fn get_image_file(
     file_name: web::Path<String>,
