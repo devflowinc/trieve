@@ -8,10 +8,7 @@ use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-pub fn add_group_created_event_query(
-    event: Event,
-    pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
+pub fn create_event_query(event: Event, pool: web::Data<Pool>) -> Result<(), DefaultError> {
     use crate::data::schema::events::dsl as events_columns;
 
     let mut conn = pool.get().unwrap();
