@@ -123,7 +123,7 @@ pub struct IngestionMessage {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["admin"]),
+        ("Api Key" = ["admin"]),
         ("Cookie Auth" = ["admin"])
     )
 )]
@@ -238,7 +238,7 @@ pub async fn create_chunk(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["admin"]),
+        ("Api Key" = ["admin"]),
         ("Cookie Auth" = ["admin"])
     )
 )]
@@ -280,7 +280,7 @@ pub async fn bulk_create_chunk(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["admin"]),
+        ("Api Key" = ["admin"]),
         ("Cookie Auth" = ["admin"]),
     )
 )]
@@ -317,7 +317,7 @@ pub async fn delete_chunk(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["admin"]),
+        ("Api Key" = ["admin"]),
         ("Cookie Auth" = ["admin"])
     )
 )]
@@ -384,7 +384,7 @@ pub struct ChunkHtmlUpdateError {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["admin"]),
+        ("Api Key" = ["admin"]),
         ("Cookie Auth" = ["admin"])
     )
 )]
@@ -514,7 +514,7 @@ pub struct UpdateChunkByTrackingIdData {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["admin"]),
+        ("Api Key" = ["admin"]),
         ("Cookie Auth" = ["admin"])
     )
 )]
@@ -709,7 +709,7 @@ fn parse_query(query: String) -> ParsedQuery {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["readonly"]),
+        ("Api Key" = ["readonly"]),
         ("Cookie Auth" = ["readonly"])
     )
 )]
@@ -809,7 +809,7 @@ pub struct SearchGroupsResult {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["readonly"]),
+        ("Api Key" = ["readonly"]),
         ("Cookie Auth" = ["readonly"])
     )
 )]
@@ -946,7 +946,7 @@ pub async fn search_over_groups(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["readonly"]),
+        ("Api Key" = ["readonly"]),
         ("Cookie Auth" = ["readonly"])
     )
 )]
@@ -982,7 +982,7 @@ pub async fn get_chunk_by_id(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["readonly"]),
+        ("Api Key" = ["readonly"]),
         ("Cookie Auth" = ["readonly"])
     )
 )]
@@ -1028,7 +1028,7 @@ pub struct RecommendChunksRequest {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["readonly"]),
+        ("Api Key" = ["readonly"]),
         ("Cookie Auth" = ["readonly"])
     )
 )]
@@ -1099,7 +1099,7 @@ pub struct GenerateChunksRequest {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["readonly"]),
+        ("Api Key" = ["readonly"]),
         ("Cookie Auth" = ["readonly"])
     )
 )]

@@ -68,7 +68,7 @@ pub struct CreateDatasetRequest {
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["owner"]),
+        ("Api Key" = ["owner"]),
         ("Cookie Auth" = ["owner"])
     )
 )]
@@ -141,7 +141,7 @@ pub struct UpdateDatasetRequest {
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["owner"]),
+        ("Api Key" = ["owner"]),
         ("Cookie Auth" = ["owner"])
     )
 )]
@@ -197,7 +197,7 @@ pub struct DeleteDatasetRequest {
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["owner"]),
+        ("Api Key" = ["owner"]),
         ("Cookie Auth" = ["owner"])
     )
 )]
@@ -228,7 +228,7 @@ pub async fn delete_dataset(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["admin"]),
+        ("Api Key" = ["admin"]),
         ("Cookie Auth" = ["admin"])
     )
 )]
@@ -264,7 +264,7 @@ pub async fn get_dataset(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["admin"]),
+        ("Api Key" = ["admin"]),
         ("Cookie Auth" = ["admin"])
     )
 )]
@@ -304,7 +304,7 @@ pub async fn get_datasets_from_organization(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["readonly"]),
+        ("Api Key" = ["readonly"]),
         ("Cookie Auth" = ["readonly"])
     )
 )]

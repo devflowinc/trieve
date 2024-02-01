@@ -31,7 +31,7 @@ pub enum Events {
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
-        ("Api Auth" = ["readonly"]),
+        ("Api Key" = ["readonly"]),
         ("Cookie Auth" = ["readonly"])
     )
 )]
