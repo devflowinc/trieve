@@ -433,10 +433,73 @@ pub fn create_user_query(
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
 
+    let mut conn = pool.get().unwrap();
+
+    let old_user: Option<User> = users_columns::users
+        .select(User::as_select())
+        .filter(users_columns::email.eq(&email))
+        .first::<User>(&mut conn)
+        .optional()
+        .map_err(|_| DefaultError {
+            message: "Error loading user",
+        })?;
+
+    if let Some(old_user) = old_user {
+        use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+        use crate::data::schema::files::dsl as files_columns;
+        use crate::data::schema::topics::dsl as topics_columns;
+        use crate::data::schema::user_api_key::dsl as user_api_key_columns;
+
+        let mut conn = pool.get().unwrap();
+        conn.transaction::<_, diesel::result::Error, _>(|conn| {
+            // user_organizations
+            diesel::update(
+                user_organizations_columns::user_organizations
+                    .filter(user_organizations_columns::user_id.eq(old_user.id)),
+            )
+            .set(user_organizations_columns::user_id.eq(user_id))
+            .execute(conn)?;
+
+            // user_api_key
+            diesel::update(
+                user_api_key_columns::user_api_key
+                    .filter(user_api_key_columns::user_id.eq(old_user.id)),
+            )
+            .set(user_api_key_columns::user_id.eq(user_id))
+            .execute(conn)?;
+
+            // files
+            diesel::update(files_columns::files.filter(files_columns::user_id.eq(old_user.id)))
+                .set(files_columns::user_id.eq(user_id))
+                .execute(conn)?;
+
+            //chunk_metadata
+            diesel::update(
+                chunk_metadata_columns::chunk_metadata
+                    .filter(chunk_metadata_columns::author_id.eq(old_user.id)),
+            )
+            .set(chunk_metadata_columns::author_id.eq(user_id))
+            .execute(conn)?;
+
+            //topics
+            diesel::update(topics_columns::topics.filter(topics_columns::user_id.eq(old_user.id)))
+                .set(topics_columns::user_id.eq(user_id))
+                .execute(conn)?;
+
+            //users
+            diesel::update(users_columns::users.filter(users_columns::id.eq(old_user.id)))
+                .set(users_columns::id.eq(user_id))
+                .execute(conn)?;
+
+            Ok(())
+        })
+        .map_err(|_| DefaultError {
+            message: "Error creating user",
+        })?;
+    }
+
     let user = User::from_details_with_id(user_id, email, name);
     let user_org = UserOrganization::from_details(user_id, org_id, role);
-
-    let mut conn = pool.get().unwrap();
 
     let user_org = conn
         .transaction::<_, diesel::result::Error, _>(|conn| {
