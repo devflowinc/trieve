@@ -136,7 +136,7 @@ pub async fn get_specific_dataset_chunk_groups(
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct DeleteGroupData {
-    pub group_id: uuid::Uuid,
+    pub delete_chunks: Option<bool>,
 }
 
 /// delete_chunk_group
@@ -157,6 +157,7 @@ pub struct DeleteGroupData {
 )]
 pub async fn delete_chunk_group(
     group_id: web::Path<uuid::Uuid>,
+    data: web::Query<DeleteGroupData>,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _user: AdminOnly,
@@ -166,10 +167,13 @@ pub async fn delete_chunk_group(
 
     dataset_owns_group(group_id, dataset_org_plan_sub.dataset.id, pool).await?;
 
-    web::block(move || {
-        delete_group_by_id_query(group_id, dataset_org_plan_sub.dataset.id, delete_group_pool)
-    })
-    .await?
+    delete_group_by_id_query(
+        group_id,
+        dataset_org_plan_sub.dataset.id,
+        data.delete_chunks,
+        delete_group_pool,
+    )
+    .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
