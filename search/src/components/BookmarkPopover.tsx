@@ -55,7 +55,6 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
             id: c.id,
             name: c.name,
             description: "",
-            author_id: c.author_id,
             created_at: "",
             updated_at: "",
           });
@@ -146,7 +145,6 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                     id: group.id,
                     name: group.name,
                     description: "",
-                    author_id: group.author_id,
                     created_at: "",
                     updated_at: "",
                   };
@@ -210,7 +208,6 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                   id: group.id,
                   name: group.name,
                   description: "",
-                  author_id: group.author_id,
                   created_at: "",
                   updated_at: "",
                 };
