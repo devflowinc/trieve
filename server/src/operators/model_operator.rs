@@ -2,7 +2,10 @@ use crate::{
     data::models::ServerDatasetConfiguration, errors::ServiceError, get_env,
     handlers::chunk_handler::ScoreChunkDTO,
 };
-use openai_dive::v1::{api::Client, resources::embedding::{EmbeddingInput, EmbeddingParameters}};
+use openai_dive::v1::{
+    api::Client,
+    resources::embedding::{EmbeddingInput, EmbeddingParameters},
+};
 use serde::{Deserialize, Serialize};
 
 pub async fn create_embedding(

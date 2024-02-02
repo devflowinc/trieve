@@ -1,8 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
-    data::models::{
-        DatasetAndOrgWithSubAndPlan, File, Pool, ServerDatasetConfiguration,
-    },
+    data::models::{DatasetAndOrgWithSubAndPlan, File, Pool, ServerDatasetConfiguration},
     errors::ServiceError,
     operators::{
         file_operator::{
