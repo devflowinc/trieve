@@ -251,7 +251,7 @@ pub async fn delete_dataset_by_id_query(
         .map_err(|_| ServiceError::BadRequest("Could not find files".to_string()))?;
 
     for file_id in file_ids {
-        delete_file_query(file_id, dataset.id, pool.clone())
+        delete_file_query(file_id, dataset.id, Some(false), pool.clone())
             .await
             .map_err(|_| {
                 ServiceError::BadRequest("Failed to delete files for dataset".to_string())

@@ -1,6 +1,6 @@
 use super::event_operator::create_event_query;
 use super::group_operator::create_group_and_add_bookmarks_query;
-use crate::data::models::{DatasetAndOrgWithSubAndPlan, EventType};
+use crate::data::models::{ChunkCollision, ChunkMetadata, DatasetAndOrgWithSubAndPlan, EventType};
 use crate::handlers::auth_handler::AdminOnly;
 use crate::{data::models::ChunkGroup, handlers::chunk_handler::ReturnCreatedChunk};
 use crate::{
@@ -22,7 +22,7 @@ use crate::{
 };
 use actix_web::{body::MessageBody, web};
 
-use diesel::RunQueryDsl;
+use diesel::{JoinOnDsl, RunQueryDsl, SelectableHelper};
 use s3::{creds::Credentials, Bucket, Region};
 use std::{path::PathBuf, process::Command};
 
@@ -454,14 +454,32 @@ pub async fn get_user_file_query(
 pub async fn delete_file_query(
     file_uuid: uuid::Uuid,
     dataset_id: uuid::Uuid,
+    delete_chunks: Option<bool>,
     pool: web::Data<Pool>,
 ) -> Result<(), actix_web::Error> {
+    use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
     use crate::data::schema::chunk_files::dsl as chunk_files_columns;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::files::dsl as files_columns;
 
     let mut conn = pool
         .get()
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let mut chunk_ids = vec![];
+    let delete_chunks = delete_chunks.unwrap_or(false);
+
+    if delete_chunks {
+        chunk_ids = chunk_files_columns::chunk_files
+            .filter(chunk_files_columns::file_id.eq(file_uuid))
+            .select(chunk_files_columns::chunk_id)
+            .load::<uuid::Uuid>(&mut conn)
+            .map_err(|_| {
+                ServiceError::InternalServerError(
+                    "Could not find chunks associated with file".to_owned(),
+                )
+            })?;
+    }
 
     let file_metadata: File = files_columns::files
         .filter(files_columns::id.eq(file_uuid))
@@ -482,6 +500,76 @@ pub async fn delete_file_query(
                 .filter(files_columns::dataset_id.eq(dataset_id)),
         )
         .execute(conn)?;
+
+        if delete_chunks {
+            diesel::delete(
+                chunk_files_columns::chunk_files
+                    .filter(chunk_files_columns::chunk_id.eq_any(chunk_ids.clone())),
+            )
+            .execute(conn)?;
+
+            let deleted_chunk_collision_count = diesel::delete(
+                chunk_collisions_columns::chunk_collisions
+                    .filter(chunk_collisions_columns::chunk_id.eq_any(chunk_ids.clone())),
+            )
+            .execute(conn)?;
+
+            if deleted_chunk_collision_count > 0 {
+                // there cannot be collisions for a collision, just delete the chunk_metadata without issue
+                diesel::delete(
+                    chunk_metadata_columns::chunk_metadata
+                        .filter(chunk_metadata_columns::id.eq_any(chunk_ids.clone()))
+                        .filter(chunk_metadata_columns::dataset_id.eq(dataset_id)),
+                )
+                .execute(conn)?;
+            } else {
+                let chunk_collisions: Vec<(ChunkCollision, ChunkMetadata)> =
+                    chunk_collisions_columns::chunk_collisions
+                        .inner_join(
+                            chunk_metadata_columns::chunk_metadata
+                                .on(chunk_metadata_columns::qdrant_point_id
+                                    .eq(chunk_collisions_columns::collision_qdrant_id)),
+                        )
+                        .filter(chunk_metadata_columns::id.eq_any(chunk_ids.clone()))
+                        .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
+                        .select((ChunkCollision::as_select(), ChunkMetadata::as_select()))
+                        .order_by(chunk_collisions_columns::created_at.asc())
+                        .load::<(ChunkCollision, ChunkMetadata)>(conn)?;
+
+                if !chunk_collisions.is_empty() {
+                    let chunk_metadata_ids = chunk_collisions
+                        .iter()
+                        .map(|(_, chunk_metadata)| chunk_metadata.id)
+                        .collect::<Vec<uuid::Uuid>>();
+
+                    diesel::delete(
+                        chunk_metadata_columns::chunk_metadata
+                            .filter(chunk_metadata_columns::id.eq_any(chunk_metadata_ids))
+                            .filter(chunk_metadata_columns::dataset_id.eq(dataset_id)),
+                    )
+                    .execute(conn)?;
+
+                    let collision_ids = chunk_collisions
+                        .iter()
+                        .map(|(chunk_collision, _)| chunk_collision.id)
+                        .collect::<Vec<uuid::Uuid>>();
+
+                    diesel::delete(
+                        chunk_collisions_columns::chunk_collisions
+                            .filter(chunk_collisions_columns::id.eq_any(collision_ids)),
+                    )
+                    .execute(conn)?;
+                }
+
+                // if there were no collisions, just delete the chunk_metadata without issue
+                diesel::delete(
+                    chunk_metadata_columns::chunk_metadata
+                        .filter(chunk_metadata_columns::id.eq_any(chunk_ids.clone()))
+                        .filter(chunk_metadata_columns::dataset_id.eq(dataset_id)),
+                )
+                .execute(conn)?;
+            }
+        }
 
         diesel::delete(
             chunk_files_columns::chunk_files.filter(chunk_files_columns::file_id.eq(file_uuid)),
