@@ -2393,7 +2393,8 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 [[package]]
 name = "openai_dive"
 version = "0.4.4"
-source = "git+https://github.com/devflowinc/openai-client#3bfa33245c993dec72d8eed7175f30e83e213ed8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c70bafa98b1b7252ad82051239176e86328d03edf7be28e4afb91542e3f355a"
 dependencies = [
  "bytes",
  "futures",
