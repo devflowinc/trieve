@@ -241,6 +241,7 @@ pub async fn get_user_files_handler(
     ),
     params(
         ("file_id" = uuid::Uuid, description = "The id of the file to delete"),
+        ("delete_chunks" = Option<bool>, description = "Whether or not to delete the chunks associated with the file"),
     ),
 )]
 pub async fn delete_file_handler(
