@@ -359,7 +359,7 @@ pub async fn update_chunk(
     let pool1 = pool.clone();
     let pool2 = pool.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
-    let chunk_id = chunk.chunk_uuid.clone();
+    let chunk_id = chunk.chunk_uuid;
 
     let chunk_metadata = web::block(move || get_metadata_from_id_query(chunk_id, dataset_id, pool))
         .await?
@@ -487,7 +487,7 @@ pub async fn update_chunk_by_tracking_id(
     }
     let tracking_id = chunk.tracking_id.clone();
     let tracking_id1 = tracking_id.clone();
-    let dataset_id = dataset_org_plan_sub.dataset.id.clone();
+    let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let pool1 = pool.clone();
     let pool2 = pool.clone();

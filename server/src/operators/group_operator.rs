@@ -1,7 +1,7 @@
 use crate::{
-    data::models::{ChunkCollision, ChunkGroup, ChunkMetadata, Pool},
+    data::models::{ChunkGroup, ChunkMetadata, Dataset, Pool},
     errors::DefaultError,
-    operators::qdrant_operator::get_qdrant_connection,
+    operators::chunk_operator::delete_chunk_metadata_query,
 };
 use crate::{
     data::models::{
@@ -18,7 +18,6 @@ use diesel::{
     sql_types::{Int8, Text},
     BoolExpressionMethods, JoinOnDsl, NullableExpressionMethods, SelectableHelper,
 };
-use qdrant_client::qdrant::PointId;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -166,7 +165,7 @@ pub fn get_group_by_id_query(
 
 pub async fn delete_group_by_id_query(
     group_id: uuid::Uuid,
-    dataset_uuid: uuid::Uuid,
+    dataset: Dataset,
     delete_chunks: Option<bool>,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
@@ -178,14 +177,15 @@ pub async fn delete_group_by_id_query(
         chunk_collisions::dsl as chunk_collisions_columns, chunk_files::dsl as chunk_files_columns,
         chunk_metadata::dsl as chunk_metadata_columns,
     };
-    let mut chunks = vec![];
-    let mut chunk_ids = vec![];
+
     let mut conn = pool.get().unwrap();
 
+    let mut chunk_ids = vec![];
+    let mut collisions = vec![];
     let delete_chunks = delete_chunks.unwrap_or(false);
 
     if delete_chunks {
-        chunks = chunk_group_bookmarks_columns::chunk_group_bookmarks
+        let chunks = chunk_group_bookmarks_columns::chunk_group_bookmarks
             .inner_join(chunk_metadata_columns::chunk_metadata)
             .filter(chunk_group_bookmarks_columns::group_id.eq(group_id))
             .select(ChunkMetadata::as_select())
@@ -196,8 +196,25 @@ pub async fn delete_group_by_id_query(
 
         chunk_ids = chunks
             .iter()
-            .map(|chunk| chunk.id)
-            .collect::<Vec<uuid::Uuid>>();
+            .filter_map(|chunk| {
+                if chunk.qdrant_point_id.is_some() {
+                    Some(chunk.id)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        collisions = chunks
+            .iter()
+            .filter_map(|chunk| {
+                if chunk.qdrant_point_id.is_none() {
+                    Some(chunk.id)
+                } else {
+                    None
+                }
+            })
+            .collect();
     }
 
     let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
@@ -214,71 +231,22 @@ pub async fn delete_group_by_id_query(
         if delete_chunks {
             diesel::delete(
                 chunk_files_columns::chunk_files
-                    .filter(chunk_files_columns::chunk_id.eq_any(chunk_ids.clone())),
+                    .filter(chunk_files_columns::chunk_id.eq_any(collisions.clone())),
             )
             .execute(conn)?;
 
-            let deleted_chunk_collision_count = diesel::delete(
+            diesel::delete(
                 chunk_collisions_columns::chunk_collisions
-                    .filter(chunk_collisions_columns::chunk_id.eq_any(chunk_ids.clone())),
+                    .filter(chunk_collisions_columns::chunk_id.eq_any(collisions.clone())),
             )
             .execute(conn)?;
-
-            if deleted_chunk_collision_count > 0 {
-                // there cannot be collisions for a collision, just delete the chunk_metadata without issue
-                diesel::delete(
-                    chunk_metadata_columns::chunk_metadata
-                        .filter(chunk_metadata_columns::id.eq_any(chunk_ids.clone()))
-                        .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid)),
-                )
-                .execute(conn)?;
-            } else {
-                let chunk_collisions: Vec<(ChunkCollision, ChunkMetadata)> =
-                    chunk_collisions_columns::chunk_collisions
-                        .inner_join(
-                            chunk_metadata_columns::chunk_metadata
-                                .on(chunk_metadata_columns::qdrant_point_id
-                                    .eq(chunk_collisions_columns::collision_qdrant_id)),
-                        )
-                        .filter(chunk_metadata_columns::id.eq_any(chunk_ids.clone()))
-                        .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid))
-                        .select((ChunkCollision::as_select(), ChunkMetadata::as_select()))
-                        .order_by(chunk_collisions_columns::created_at.asc())
-                        .load::<(ChunkCollision, ChunkMetadata)>(conn)?;
-
-                if !chunk_collisions.is_empty() {
-                    let chunk_metadata_ids = chunk_collisions
-                        .iter()
-                        .map(|(_, chunk_metadata)| chunk_metadata.id)
-                        .collect::<Vec<uuid::Uuid>>();
-
-                    diesel::delete(
-                        chunk_metadata_columns::chunk_metadata
-                            .filter(chunk_metadata_columns::id.eq_any(chunk_metadata_ids))
-                            .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid)),
-                    )
-                    .execute(conn)?;
-
-                    let collision_ids = chunk_collisions
-                        .iter()
-                        .map(|(chunk_collision, _)| chunk_collision.id)
-                        .collect::<Vec<uuid::Uuid>>();
-
-                    diesel::delete(
-                        chunk_collisions_columns::chunk_collisions
-                            .filter(chunk_collisions_columns::id.eq_any(collision_ids)),
-                    )
-                    .execute(conn)?;
-                }
-
-                // if there were no collisions, just delete the chunk_metadata without issue
-                diesel::delete(
-                    chunk_metadata_columns::chunk_metadata
-                        .filter(chunk_metadata_columns::id.eq_any(chunk_ids.clone()))
-                        .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid)),
-                )
-                .execute(conn)?;
-            }
+            // there cannot be collisions for a collision, just delete the chunk_metadata without issue
+            diesel::delete(
+                chunk_metadata_columns::chunk_metadata
+                    .filter(chunk_metadata_columns::id.eq_any(collisions.clone()))
+                    .filter(chunk_metadata_columns::dataset_id.eq(dataset.id)),
+            )
+            .execute(conn)?;
         }
 
         diesel::delete(
@@ -296,41 +264,21 @@ pub async fn delete_group_by_id_query(
         diesel::delete(
             chunk_group_columns::chunk_group
                 .filter(chunk_group_columns::id.eq(group_id))
-                .filter(chunk_group_columns::dataset_id.eq(dataset_uuid)),
+                .filter(chunk_group_columns::dataset_id.eq(dataset.id)),
         )
         .execute(conn)?;
 
         Ok(())
     });
 
-    match transaction_result {
-        Ok(_) => {
-            if delete_chunks {
-                let qdrant_group =
-                    std::env::var("QDRANT_COLLECTION").unwrap_or("debate_chunks".to_owned());
-
-                let qdrant = get_qdrant_connection().await.map_err(|_err| DefaultError {
-                    message: "Could not connect to qdrant",
-                })?;
-
-                let selector = chunks
-                    .iter()
-                    .map(|chunk| {
-                        <String as Into<PointId>>::into(
-                            chunk.qdrant_point_id.unwrap_or_default().to_string(),
-                        )
-                    })
-                    .collect::<Vec<PointId>>();
-
-                let _ = qdrant
-                    .delete_points(qdrant_group, None, &selector.into(), None)
-                    .await
-                    .map_err(|_err| DefaultError {
-                        message: "Could not delete points from qdrant",
-                    })?;
-            }
-            Ok(())
+    if delete_chunks {
+        for chunk_id in chunk_ids {
+            delete_chunk_metadata_query(chunk_id, dataset.clone(), pool.clone()).await?;
         }
+    }
+
+    match transaction_result {
+        Ok(_) => Ok(()),
         Err(_) => Err(DefaultError {
             message: "Error deleting group",
         }),

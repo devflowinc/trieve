@@ -253,7 +253,7 @@ pub async fn delete_file_handler(
 ) -> Result<HttpResponse, actix_web::Error> {
     delete_file_query(
         file_id.into_inner(),
-        dataset_org_plan_sub.dataset.id,
+        dataset_org_plan_sub.dataset,
         delete_chunks.into_inner(),
         pool,
     )

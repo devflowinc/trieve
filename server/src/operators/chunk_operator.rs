@@ -402,7 +402,7 @@ pub async fn update_chunk_metadata_query(
     Ok(())
 }
 
-enum TransactionResult {
+pub enum TransactionResult {
     ChunkCollisionDetected(ChunkMetadata),
     ChunkCollisionNotDetected,
 }
