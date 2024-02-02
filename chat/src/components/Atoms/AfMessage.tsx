@@ -151,7 +151,7 @@ export const AfMessage = (props: AfMessageProps) => {
                   </div>
                 </Show>
                 <Show when={metadata()}>
-                  <div class="scrollbar-thin scrollbar-track-neutral-200 dark:scrollbar-track-zinc-700 max-h-[600px] w-full flex-col space-y-3 overflow-scroll overflow-x-hidden">
+                  <div class="scrollbar-thin scrollbar-track-neutral-200 dark:scrollbar-track-zinc-700 max-h-[800px] w-full flex-col space-y-3 overflow-scroll overflow-x-hidden pr-2">
                     <For each={chunkMetadatas()}>
                       {(chunk, i) => (
                         <ScoreChunk

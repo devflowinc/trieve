@@ -3,13 +3,16 @@ import {
   For,
   Setter,
   Show,
+  Switch,
   createEffect,
   createSignal,
   onCleanup,
   useContext,
+  Match,
 } from "solid-js";
 import {
-  FiArrowDown,
+  FiArrowRight,
+  FiInfo,
   FiRefreshCcw,
   FiSend,
   FiStopCircle,
@@ -19,14 +22,14 @@ import {
   messageRoleFromIndex,
   type Message,
 } from "../../types/messages";
-import { Topic } from "../../types/topics";
 import { AfMessage } from "../Atoms/AfMessage";
 import { UserContext } from "../contexts/UserContext";
-import { FaSolidUserSlash } from "solid-icons/fa";
+import { Topic } from "../../utils/apiTypes";
+import { HiOutlineAdjustmentsHorizontal } from "solid-icons/hi";
+import { FullScreenModal } from "../Atoms/FullScreenModal";
 
 export interface LayoutProps {
   setTopics: Setter<Topic[]>;
-  isCreatingNormalTopic: Accessor<boolean>;
   setSelectedTopic: Setter<Topic | undefined>;
   selectedTopic: Accessor<Topic | undefined>;
 }
@@ -54,7 +57,6 @@ const MainLayout = (props: LayoutProps) => {
   const [loadingMessages, setLoadingMessages] = createSignal<boolean>(true);
   const [messages, setMessages] = createSignal<Message[]>([]);
   const [newMessageContent, setNewMessageContent] = createSignal<string>("");
-  const [atMessageBottom, setAtMessageBottom] = createSignal<boolean>(true);
   const [streamingCompletion, setStreamingCompletion] =
     createSignal<boolean>(false);
   const [completionAbortController, setCompletionAbortController] =
@@ -63,32 +65,11 @@ const MainLayout = (props: LayoutProps) => {
     createSignal<boolean>(false);
   const [triggerScrollToBottom, setTriggerScrollToBottom] =
     createSignal<boolean>(false);
-
-  createEffect(() => {
-    const element = document.getElementById("topic-layout");
-    if (!element) {
-      console.error("Could not find element with id 'topic-layout'");
-      return;
-    }
-
-    setAtMessageBottom(
-      element.scrollHeight - element.scrollTop === element.clientHeight,
-    );
-
-    element.addEventListener("scroll", () => {
-      setAtMessageBottom(
-        element.scrollHeight - element.scrollTop === element.clientHeight,
-      );
-    });
-
-    onCleanup(() => {
-      element.removeEventListener("scroll", () => {
-        setAtMessageBottom(
-          element.scrollHeight - element.scrollTop === element.clientHeight,
-        );
-      });
-    });
-  });
+  const [showChatTuningParams, setShowChatTuningParams] =
+    createSignal<boolean>(false);
+  const [modelName, setModelName] = createSignal<string>(
+    "openai/gpt-3.5-turbo-1106",
+  );
 
   createEffect(() => {
     window.addEventListener("wheel", (event) => {
@@ -122,12 +103,16 @@ const MainLayout = (props: LayoutProps) => {
       }
       if (value) {
         const decoder = new TextDecoder();
-        const chunk = decoder.decode(value);
+        const newText = decoder.decode(value);
 
         setMessages((prev) => {
           const lastMessage = prev[prev.length - 1];
+          if (!lastMessage) {
+            return prev;
+          }
+
           const newMessage = {
-            content: lastMessage.content + chunk,
+            content: lastMessage.content + newText,
           };
           return [...prev.slice(0, prev.length - 1), newMessage];
         });
@@ -154,18 +139,6 @@ const MainLayout = (props: LayoutProps) => {
 
     if (!finalTopicId) {
       setNewMessageContent("");
-      const isNormalTopic = props.isCreatingNormalTopic();
-
-      let body: object = {
-        name: new_message_content,
-      };
-
-      if (isNormalTopic) {
-        body = {
-          name: new_message_content,
-          normal_chat: true,
-        };
-      }
 
       const topicResponse = await fetch(`${apiHost}/topic`, {
         method: "POST",
@@ -174,7 +147,10 @@ const MainLayout = (props: LayoutProps) => {
           "TR-Dataset": dataset.dataset.id,
         },
         credentials: "include",
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          first_user_message: new_message_content,
+          model: modelName(),
+        }),
       });
 
       if (!topicResponse.ok) {
@@ -193,12 +169,7 @@ const MainLayout = (props: LayoutProps) => {
       props.setTopics((prev) => {
         return [newTopic, ...prev];
       });
-      props.setSelectedTopic({
-        id: newTopic.id,
-        name: newTopic.name,
-        side: newTopic.side,
-        normal_chat: newTopic.normal_chat,
-      });
+      props.setSelectedTopic(newTopic);
       finalTopicId = newTopic.id;
     }
 
@@ -240,6 +211,7 @@ const MainLayout = (props: LayoutProps) => {
         body: JSON.stringify({
           new_message_content,
           topic_id: finalTopicId,
+          model: modelName(),
         }),
         signal: completionAbortController().signal,
       });
@@ -283,17 +255,26 @@ const MainLayout = (props: LayoutProps) => {
     scrollToBottomOfMessages();
   };
 
-  createEffect(() => {
+  createEffect((previousTopic: Topic | undefined) => {
     const curTopic = props.selectedTopic();
 
-    setMessages([]);
-    const fetchMessagesAbortController = new AbortController();
-    void fetchMessages(curTopic?.id, fetchMessagesAbortController);
+    if (!previousTopic) {
+      const streamingCompletionVal = streamingCompletion();
+      if (streamingCompletionVal) {
+        console.log("aborting streaming completion");
+        return curTopic;
+      }
+    }
 
+    const fetchMessagesAbortController = new AbortController();
+    setMessages([]);
+    void fetchMessages(curTopic?.id, fetchMessagesAbortController);
     onCleanup(() => {
       fetchMessagesAbortController.abort();
     });
-  });
+
+    return curTopic;
+  }, undefined);
 
   const submitNewMessage = () => {
     const topic_id = props.selectedTopic()?.id;
@@ -320,99 +301,78 @@ const MainLayout = (props: LayoutProps) => {
           </div>
         </div>
       </Show>
-      <Show when={userContext.user?.() === null}>
-        <div class="mx-10 mt-32 flex flex-col items-center justify-between rounded-lg border-2 border-dashed border-neutral-300 p-12 text-center hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-magenta-500 focus:ring-offset-2">
-          <FaSolidUserSlash class="h-20 w-20 text-neutral-500" />
-          <p class="mt-2 flex text-sm font-semibold text-neutral-900">
-            No user found
-          </p>
-          <p class="text-sm text-neutral-500">Please Login to continue</p>
-          <a
-            type="button"
-            class="mt-2 w-fit cursor-pointer rounded-lg bg-magenta px-5 py-3 text-center text-white"
-            onClick={() => {
-              window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}/dashboard`;
-            }}
-          >
-            Login
-          </a>
-        </div>
-      </Show>
-      <Show when={!loadingMessages() || !props.selectedTopic()}>
-        <div class="relative flex w-full flex-col justify-between">
-          <div class="flex flex-col items-center pb-32" id="topic-messages">
-            <For each={messages()}>
-              {(message, idx) => {
-                return (
-                  <AfMessage
-                    normalChat={!!props.selectedTopic()?.normal_chat}
-                    role={messageRoleFromIndex(idx())}
-                    content={message.content}
-                    streamingCompletion={streamingCompletion}
-                    onEdit={(content: string) => {
-                      const dataset = userContext.currentDataset?.();
-                      if (!dataset) return;
+      <div class="relative flex w-full flex-col justify-between">
+        <div class="flex flex-col items-center pb-32" id="topic-messages">
+          <For each={messages()}>
+            {(message, idx) => {
+              return (
+                <AfMessage
+                  normalChat={false}
+                  role={messageRoleFromIndex(idx())}
+                  content={message.content}
+                  streamingCompletion={streamingCompletion}
+                  onEdit={(content: string) => {
+                    const dataset = userContext.currentDataset?.();
+                    if (!dataset) return;
 
-                      const newMessage: Message = {
-                        content: "",
-                      };
-                      setMessages((prev) => {
-                        return [...prev.slice(0, idx() + 1), newMessage];
-                      });
-                      completionAbortController().abort();
-                      setCompletionAbortController(new AbortController());
-                      fetch(`${apiHost}/message`, {
-                        method: "PUT",
-                        headers: {
-                          "Content-Type": "application/json",
-                          "TR-Dataset": dataset.dataset.id,
-                        },
-                        credentials: "include",
-                        signal: completionAbortController().signal,
-                        body: JSON.stringify({
-                          new_message_content: content,
-                          message_sort_order: idx(),
-                          topic_id: props.selectedTopic()?.id,
-                        }),
-                      })
-                        .then((response) => {
-                          if (!response.ok) {
-                            return;
-                          }
-                          const reader = response.body?.getReader();
-                          if (!reader) {
-                            return;
-                          }
-                          setStreamingCompletion(true);
-                          setDisableAutoScroll(false);
-                          handleReader(reader).catch((e) => {
-                            console.error("Error handling reader: ", e);
-                          });
-                        })
-                        .catch((e) => {
-                          console.error(
-                            "Error fetching completion on edit message: ",
-                            e,
-                          );
+                    const newMessage: Message = {
+                      content: "",
+                    };
+                    setMessages((prev) => {
+                      return [...prev.slice(0, idx() + 1), newMessage];
+                    });
+                    completionAbortController().abort();
+                    setCompletionAbortController(new AbortController());
+                    fetch(`${apiHost}/message`, {
+                      method: "PUT",
+                      headers: {
+                        "Content-Type": "application/json",
+                        "TR-Dataset": dataset.dataset.id,
+                      },
+                      credentials: "include",
+                      signal: completionAbortController().signal,
+                      body: JSON.stringify({
+                        new_message_content: content,
+                        message_sort_order: idx(),
+                        topic_id: props.selectedTopic()?.id,
+                        model: modelName(),
+                      }),
+                    })
+                      .then((response) => {
+                        if (!response.ok) {
+                          return;
+                        }
+                        const reader = response.body?.getReader();
+                        if (!reader) {
+                          return;
+                        }
+                        setStreamingCompletion(true);
+                        setDisableAutoScroll(false);
+                        handleReader(reader).catch((e) => {
+                          console.error("Error handling reader: ", e);
                         });
-                    }}
-                    order={idx()}
-                  />
-                );
-              }}
-            </For>
-          </div>
+                      })
+                      .catch((e) => {
+                        console.error(
+                          "Error fetching completion on edit message: ",
+                          e,
+                        );
+                      });
+                  }}
+                  order={idx()}
+                />
+              );
+            }}
+          </For>
+        </div>
 
-          <div class="fixed bottom-0 right-0 flex w-full flex-col items-center space-y-4 bg-gradient-to-b from-transparent via-zinc-200 to-zinc-100 p-4 dark:via-zinc-800 dark:to-zinc-900 lg:w-4/5">
-            <Show when={messages().length > 0}>
-              <div class="flex w-full justify-center">
-                <Show when={!streamingCompletion()}>
+        <div class="fixed bottom-0 right-0 flex w-full flex-col items-center space-y-4 bg-gradient-to-b from-transparent via-zinc-200 to-zinc-100 p-4 dark:via-zinc-800 dark:to-zinc-900 lg:w-4/5">
+          <Show when={messages().length > 0}>
+            <div class="flex w-full justify-center">
+              <Switch>
+                <Match when={!streamingCompletion()}>
                   <button
-                    classList={{
-                      "flex w-fit items-center justify-center space-x-4 rounded-xl bg-neutral-50 px-4 py-2 text-sm dark:bg-neutral-700 dark:text-white":
-                        true,
-                      "ml-auto": !atMessageBottom(),
-                    }}
+                    class="flex w-fit items-center justify-center space-x-4 rounded-xl bg-neutral-50 px-4 py-2 text-sm dark:bg-neutral-700 dark:text-white"
                     onClick={(e) => {
                       e.preventDefault();
                       const topic_id = props.selectedTopic()?.id;
@@ -429,14 +389,10 @@ const MainLayout = (props: LayoutProps) => {
                     <FiRefreshCcw />
                     <p>Regenerate Response</p>
                   </button>
-                </Show>
-                <Show when={streamingCompletion()}>
+                </Match>
+                <Match when={streamingCompletion()}>
                   <button
-                    classList={{
-                      "flex w-fit items-center justify-center space-x-4 rounded-xl bg-neutral-50 px-4 py-2 text-sm dark:bg-neutral-700 dark:text-white":
-                        true,
-                      "ml-auto": !atMessageBottom(),
-                    }}
+                    class="flex w-fit items-center justify-center space-x-4 rounded-xl bg-neutral-50 px-4 py-2 text-sm dark:bg-neutral-700 dark:text-white"
                     onClick={() => {
                       completionAbortController().abort();
                       setCompletionAbortController(new AbortController());
@@ -446,65 +402,99 @@ const MainLayout = (props: LayoutProps) => {
                     <FiStopCircle class="h-5 w-5" />
                     <p>Stop Generating</p>
                   </button>
-                </Show>
-                <Show when={!atMessageBottom()}>
-                  <button
-                    class="ml-auto flex w-fit items-center justify-center space-x-4 rounded-full bg-neutral-50 p-2 text-sm dark:bg-neutral-700 dark:text-white"
-                    onClick={() => {
-                      scrollToBottomOfMessages();
-                    }}
-                  >
-                    <FiArrowDown class="h-5 w-5" />
-                  </button>
-                </Show>
-              </div>
-            </Show>
-            <div class="flex w-full flex-row space-x-2">
-              <form class="relative flex h-fit max-h-[calc(100vh-32rem)] w-full flex-col items-center overflow-y-auto rounded-xl bg-neutral-50 py-1 pl-4 pr-6 text-neutral-800 dark:bg-neutral-700 dark:text-white">
-                <textarea
-                  id="new-message-content-textarea"
-                  class="scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600 w-full resize-none whitespace-pre-wrap bg-transparent py-1 focus:outline-none dark:bg-neutral-700 dark:text-white"
-                  placeholder="Write a question or prompt for the assistant..."
-                  value={newMessageContent()}
-                  disabled={streamingCompletion()}
-                  onInput={(e) => resizeTextarea(e.target)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      const new_message_content = newMessageContent();
-                      if (!new_message_content) {
-                        return;
-                      }
-                      const topic_id = props.selectedTopic()?.id;
-                      void fetchCompletion({
-                        new_message_content,
-                        topic_id,
-                      });
+                </Match>
+              </Switch>
+            </div>
+          </Show>
+          <div class="flex w-full flex-row items-center space-x-2">
+            <form class="relative flex h-fit max-h-[calc(100vh-32rem)] w-full flex-col items-center overflow-y-auto rounded-xl bg-neutral-50 py-1 pl-4 pr-6 text-neutral-800 dark:bg-neutral-700 dark:text-white">
+              <textarea
+                id="new-message-content-textarea"
+                class="scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600 w-full resize-none whitespace-pre-wrap bg-transparent py-1 focus:outline-none dark:bg-neutral-700 dark:text-white"
+                placeholder="Write a question or prompt for the assistant..."
+                value={newMessageContent()}
+                disabled={streamingCompletion()}
+                onInput={(e) => resizeTextarea(e.target)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const new_message_content = newMessageContent();
+                    if (!new_message_content) {
                       return;
                     }
-                  }}
-                  rows="1"
-                />
-                <button
-                  type="submit"
-                  classList={{
-                    "flex h-10 w-10 items-center justify-center absolute right-[0px] bottom-0":
-                      true,
-                    "text-neutral-400": !newMessageContent(),
-                  }}
-                  disabled={!newMessageContent() || streamingCompletion()}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    submitNewMessage();
-                  }}
-                >
-                  <FiSend />
-                </button>
-              </form>
-            </div>
+                    const topic_id = props.selectedTopic()?.id;
+                    void fetchCompletion({
+                      new_message_content,
+                      topic_id,
+                    });
+                    return;
+                  }
+                }}
+                rows="1"
+              />
+              <button
+                type="submit"
+                classList={{
+                  "flex h-10 w-10 items-center justify-center absolute right-[30px] bottom-0":
+                    true,
+                  "text-neutral-400": !newMessageContent(),
+                }}
+                disabled={!newMessageContent() || streamingCompletion()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  submitNewMessage();
+                }}
+              >
+                <FiSend />
+              </button>
+              <button
+                class="absolute bottom-0 right-[0px] flex h-10 w-10 items-center justify-center"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowChatTuningParams(true);
+                }}
+              >
+                <HiOutlineAdjustmentsHorizontal />
+              </button>
+            </form>
           </div>
         </div>
-      </Show>
+      </div>
+      <FullScreenModal
+        isOpen={showChatTuningParams}
+        setIsOpen={setShowChatTuningParams}
+      >
+        <div class="rounded-md bg-blue-50 p-4 dark:bg-blue-900">
+          <div class="flex justify-between">
+            <div class="flex-shrink-0">
+              <FiInfo class="h-5 w-5 text-blue-400 dark:text-blue-50" />
+            </div>
+            <p class="mt-3 text-sm md:ml-6 md:mt-0">
+              <a
+                href="https://openrouter.ai/docs#models"
+                class="flex items-center space-x-1 whitespace-nowrap font-medium text-blue-700 underline hover:text-blue-600 dark:text-blue-50"
+              >
+                <span>Supported Models</span>
+                <FiArrowRight />
+              </a>
+            </p>
+          </div>
+          <div class="mt-2 flex-1 md:flex md:justify-between">
+            <p class="text-sm text-blue-700 dark:text-blue-50">
+              Copy and paste any model name from OpenRouter to use it here.
+            </p>
+          </div>
+        </div>
+        <label class="mt-4 block text-sm font-semibold dark:text-white">
+          Model Name
+        </label>
+        <input
+          type="text"
+          class="mt-1 w-full rounded-md border border-neutral-300 p-1 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+          value={modelName()}
+          onInput={(e) => setModelName(e.currentTarget.value)}
+        />
+      </FullScreenModal>
     </>
   );
 };
