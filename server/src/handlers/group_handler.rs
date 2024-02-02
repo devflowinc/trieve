@@ -169,7 +169,7 @@ pub async fn delete_chunk_group(
 
     delete_group_by_id_query(
         group_id,
-        dataset_org_plan_sub.dataset.id,
+        dataset_org_plan_sub.dataset,
         data.delete_chunks,
         delete_group_pool,
     )
