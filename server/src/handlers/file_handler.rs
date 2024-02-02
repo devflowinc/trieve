@@ -245,11 +245,18 @@ pub async fn get_user_files_handler(
 )]
 pub async fn delete_file_handler(
     file_id: web::Path<uuid::Uuid>,
+    delete_chunks: web::Query<Option<bool>>,
     pool: web::Data<Pool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    delete_file_query(file_id.into_inner(), dataset_org_plan_sub.dataset.id, pool).await?;
+    delete_file_query(
+        file_id.into_inner(),
+        dataset_org_plan_sub.dataset.id,
+        delete_chunks.into_inner(),
+        pool,
+    )
+    .await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
