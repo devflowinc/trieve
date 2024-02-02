@@ -826,6 +826,39 @@ pub async fn search_groups(
     Ok(HttpResponse::Ok().json(result_chunks))
 }
 
+
+pub struct SearchOverGroupsQuery {
+    pub query: String,
+    pub page: Option<u64>,
+    pub link: Option<Vec<String>>,
+    pub tag_set: Option<Vec<String>>,
+    pub filters: Option<serde_json::Value>,
+    pub search_type: String,
+    pub date_bias: Option<bool>,
+    pub cross_encoder: Option<bool>,
+    pub weights: Option<(f64, f64)>,
+    pub highlight_results: Option<bool>,
+    pub highlight_delimiters: Option<Vec<String>>,
+}
+
+pub async fn search_over_groups(
+    data: web::Json<SearchOverGroupsQuery>,
+    pool: web::Data<Pool>,
+    _required_user: LoggedUser,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, actix_web::Error> {
+    //search over the links as well
+    let page = data.page.unwrap_or(1);
+    let dataset_id = dataset_org_plan_sub.dataset.id;
+    let search_pool = pool.clone();
+
+    let parsed_query = parse_query(data.query.clone());
+
+    
+
+    Ok(HttpResponse::Ok().json(result_chunks))
+}
+
 /// get_chunk
 ///
 /// Get a singular chunk by id.

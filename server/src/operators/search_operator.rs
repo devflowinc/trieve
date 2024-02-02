@@ -3,6 +3,7 @@ use super::chunk_operator::{
     get_metadata_from_point_ids,
 };
 use super::model_operator::{create_embedding, cross_encoder};
+use super::qdrant_operator::{search_over_groups_query, GroupSearchResults};
 use crate::data::models::{
     ChunkFileWithName, ChunkGroup, ChunkMetadataWithFileData, Dataset, FullTextSearchResult,
     ServerDatasetConfiguration,
@@ -13,7 +14,7 @@ use crate::errors::ServiceError;
 use crate::get_env;
 use crate::handlers::chunk_handler::{
     ParsedQuery, ScoreChunkDTO, SearchChunkData, SearchChunkQueryResponseBody, SearchGroupsData,
-    SearchGroupsResult,
+    SearchGroupsResult, SearchOverGroupsQuery,
 };
 use crate::operators::qdrant_operator::{
     get_qdrant_connection, search_full_text_qdrant_query, search_semantic_qdrant_query,
@@ -233,6 +234,42 @@ pub async fn retrieve_qdrant_points_query(
     Ok(SearchChunkQueryResult {
         search_results: point_ids.clone(),
         //FIXME: dont have total results now
+        total_chunk_pages: (point_ids.len() as f64 / 10.0).ceil() as i64,
+    })
+}
+
+pub struct SearchOverGroupsQueryResult {
+    pub search_results: Vec<GroupSearchResults>,
+    pub total_chunk_pages: i64,
+}
+
+pub async fn retrieve_group_qdrant_points_query(
+    embedding_vector: Vec<f32>,
+    page: u64,
+    link: Option<Vec<String>>,
+    tag_set: Option<Vec<String>>,
+    time_range: Option<(String, String)>,
+    filters: Option<serde_json::Value>,
+    parsed_query: ParsedQuery,
+    dataset_id: uuid::Uuid,
+    group_id: uuid::Uuid,
+) -> Result<SearchOverGroupsQueryResult, DefaultError> {
+    let page = if page == 0 { 1 } else { page };
+
+    let filter = assemble_qdrant_filter(
+        tag_set,
+        link,
+        time_range,
+        filters,
+        parsed_query.quote_words,
+        parsed_query.negated_words,
+        dataset_id,
+    )?;
+
+    let point_ids = search_over_groups_query(embedding_vector, page, filter).await?;
+
+    Ok(SearchOverGroupsQueryResult {
+        search_results: point_ids.clone(),
         total_chunk_pages: (point_ids.len() as f64 / 10.0).ceil() as i64,
     })
 }
@@ -1411,4 +1448,40 @@ pub async fn search_hybrid_groups(
         group,
         total_pages: combined_result_chunks.total_chunk_pages,
     })
+}
+
+pub async fn semantic_search_over_groups(
+    data: web::Json<SearchOverGroupsQuery>,
+    parsed_query: ParsedQuery,
+    page: u64,
+    pool: web::Data<Pool>,
+    dataset: Dataset,
+) -> Result<SearchGroupsResult, actix_web::Error> {
+    let dataset_config =
+        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
+
+    let search_chunk_query_results = retrieve_group_qdrant_points_query(
+        Some(embedding_vector),
+        page,
+        data.link.clone(),
+        data.tag_set.clone(),
+        data.time_range.clone(),
+        data.filters.clone(),
+        parsed_query,
+        dataset.id,
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let mut result_chunks = retrieve_chunks_from_point_ids_without_collsions(
+        search_chunk_query_results,
+        &data,
+        pool.clone(),
+    )
+    .await?;
+
+    result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
+
+    Ok(result_chunks)
 }
