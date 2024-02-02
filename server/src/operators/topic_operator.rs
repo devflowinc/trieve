@@ -55,10 +55,7 @@ pub fn update_topic_query(
             .filter(id.eq(topic_id))
             .filter(dataset_id.eq(given_dataset_id)),
     )
-    .set((
-        name.eq(topic_name),
-        updated_at.eq(diesel::dsl::now),
-    ))
+    .set((name.eq(topic_name), updated_at.eq(diesel::dsl::now)))
     .execute(&mut conn)
     .map_err(|_db_error| DefaultError {
         message: "Error updating topic, try again",
