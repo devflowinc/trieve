@@ -485,7 +485,6 @@ pub async fn get_topic_string(
         seed: None,
     };
 
-    let llm_api_key = get_env!("LLM_API_KEY", "LLM_API_KEY should be set").into();
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
     let base_url = dataset_config
@@ -496,6 +495,16 @@ pub async fn get_topic_string(
         "https://openrouter.ai/api/v1".into()
     } else {
         base_url
+    };
+
+    let llm_api_key = if base_url.contains("openai.com") {
+        get_env!("OPENAI_API_KEY", "OPENAI_API_KEY for openai should be set").into()
+    } else {
+        get_env!(
+            "LLM_API_KEY",
+            "LLM_API_KEY for openrouter or self-hosted should be set"
+        )
+        .into()
     };
 
     let client = Client {
@@ -545,7 +554,6 @@ pub async fn stream_response(
         .map(|message| ChatMessage::from(message.clone()))
         .collect();
 
-    let llm_api_key = get_env!("LLM_API_KEY", "LLM_API_KEY should be set").into();
     let base_url = dataset_config
         .LLM_BASE_URL
         .clone()
@@ -555,6 +563,16 @@ pub async fn stream_response(
         "https://openrouter.ai/api/v1".into()
     } else {
         base_url
+    };
+
+    let llm_api_key = if base_url.contains("openai.com") {
+        get_env!("OPENAI_API_KEY", "OPENAI_API_KEY for openai should be set").into()
+    } else {
+        get_env!(
+            "LLM_API_KEY",
+            "LLM_API_KEY for openrouter or self-hosted should be set"
+        )
+        .into()
     };
 
     let client = Client {
@@ -870,16 +888,25 @@ pub async fn create_suggested_queries_handler(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, ServiceError> {
-    let llm_api_key = get_env!("LLM_API_KEY", "LLM_API_KEY should be set").into();
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
     let base_url = dataset_config
         .LLM_BASE_URL
-        .unwrap_or("https://api.openai.com/v1".into());
+        .unwrap_or("https://openrouter.ai/api/v1".into());
     let base_url = if base_url.is_empty() {
-        "https://api.openai.com/v1".into()
+        "https://openrouter.ai/api/v1".into()
     } else {
         base_url
+    };
+
+    let llm_api_key = if base_url.contains("openai.com") {
+        get_env!("OPENAI_API_KEY", "OPENAI_API_KEY for openai should be set").into()
+    } else {
+        get_env!(
+            "LLM_API_KEY",
+            "LLM_API_KEY for openrouter or self-hosted should be set"
+        )
+        .into()
     };
 
     let client = Client {
