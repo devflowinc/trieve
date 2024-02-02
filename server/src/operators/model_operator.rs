@@ -2,7 +2,7 @@ use crate::{
     data::models::ServerDatasetConfiguration, errors::ServiceError, get_env,
     handlers::chunk_handler::ScoreChunkDTO,
 };
-use openai_dive::v1::{api::Client, resources::embedding::EmbeddingParameters};
+use openai_dive::v1::{api::Client, resources::embedding::{EmbeddingInput, EmbeddingParameters}};
 use serde::{Deserialize, Serialize};
 
 pub async fn create_embedding(
@@ -24,14 +24,16 @@ pub async fn create_embedding(
         http_client: reqwest::Client::new(),
         api_key: open_ai_api_key,
         base_url,
+        organization: None,
     };
 
     // Vectorize
     let parameters = EmbeddingParameters {
         model: "text-embedding-3-small".to_string(),
-        input: message.to_string(),
+        input: EmbeddingInput::String(message.to_string()),
         user: None,
         encoding_format: None,
+        dimensions: None,
     };
 
     let embeddings = client

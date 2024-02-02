@@ -498,3 +498,13 @@ export const isDatasetAndUsageDTO = (
     isUsageDTO((datasetAndUsage as DatasetAndUsageDTO).dataset_usage)
   );
 };
+
+export interface Topic {
+  id: string;
+  user_id: string;
+  name: string;
+  deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  dataset_id: string;
+}

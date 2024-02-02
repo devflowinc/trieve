@@ -1,10 +1,7 @@
 /* eslint-disable prettier/prettier */
 import {
-  BiRegularBrain,
   BiRegularChat,
   BiRegularCheck,
-  BiRegularLogIn,
-  BiRegularLogOut,
   BiRegularPlus,
   BiRegularTrash,
   BiRegularX,
@@ -18,7 +15,6 @@ import {
   Show,
   useContext,
 } from "solid-js";
-import type { Topic } from "../../types/topics";
 import { FiSettings } from "solid-icons/fi";
 import { FullScreenModal } from "../Atoms/FullScreenModal";
 import { OnScreenThemeModeController } from "../Atoms/OnScreenThemeModeController";
@@ -27,6 +23,7 @@ import { TbMinusVertical } from "solid-icons/tb";
 import { DatasetSelectBox } from "../Atoms/DatasetSelectBox";
 import { OrganizationSelectBox } from "../Atoms/OrganizationSelectBox";
 import { UserContext } from "../contexts/UserContext";
+import { Topic } from "../../utils/apiTypes";
 
 export interface SidebarProps {
   topics: Accessor<Topic[]>;
@@ -35,7 +32,6 @@ export interface SidebarProps {
   currentTopic: Accessor<Topic | undefined>;
   setCurrentTopic: (topic: Topic | undefined) => void;
   setSideBarOpen: Setter<boolean>;
-  setIsCreatingNormalTopic: Setter<boolean>;
 }
 
 export const Sidebar = (props: SidebarProps) => {
@@ -64,8 +60,7 @@ export const Sidebar = (props: SidebarProps) => {
       credentials: "include",
       body: JSON.stringify({
         topic_id: topic.id,
-        side: topic.side,
-        resolution: editingTopic(),
+        name: editingTopic(),
       }),
     });
 
@@ -126,7 +121,6 @@ export const Sidebar = (props: SidebarProps) => {
         <div class="flex w-full flex-col space-y-2 px-2 py-2 ">
           <button
             onClick={() => {
-              props.setIsCreatingNormalTopic(false);
               props.setIsCreatingTopic(true);
               props.setCurrentTopic(undefined);
               props.setSideBarOpen(false);
@@ -138,24 +132,7 @@ export const Sidebar = (props: SidebarProps) => {
               <span class="text-xl">
                 <BiRegularPlus class="fill-current" />
               </span>
-              <span>Retrieval Augmented Chat</span>
-            </div>
-          </button>
-          <button
-            onClick={() => {
-              props.setIsCreatingTopic(false);
-              props.setIsCreatingNormalTopic(true);
-              props.setCurrentTopic(undefined);
-              props.setSideBarOpen(false);
-            }}
-            disabled={userContext.user?.() === null}
-            class="flex w-full flex-row items-center rounded-md border border-neutral-500 px-3 py-1 hover:bg-neutral-200 disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-400 dark:border-neutral-400 dark:hover:bg-neutral-700"
-          >
-            <div class="flex flex-row items-center space-x-2">
-              <span class="text-xl">
-                <BiRegularPlus class="fill-current" />
-              </span>
-              <span>Normal Chat</span>
+              <span>RAG Chat</span>
             </div>
           </button>
         </div>
@@ -174,7 +151,6 @@ export const Sidebar = (props: SidebarProps) => {
 
                   props.setCurrentTopic(topic);
                   props.setIsCreatingTopic(false);
-                  props.setIsCreatingNormalTopic(false);
                   props.setSideBarOpen(false);
                 }}
               >
@@ -216,12 +192,7 @@ export const Sidebar = (props: SidebarProps) => {
                 )}
                 {editingIndex() !== index() && (
                   <div class="flex flex-1 items-center px-3">
-                    <Show when={topic.normal_chat}>
                       <BiRegularChat class="mr-2 fill-current" />
-                    </Show>
-                    <Show when={!topic.normal_chat}>
-                      <BiRegularBrain class="mr-2 fill-current" />
-                    </Show>
                     <p class="line-clamp-1 break-all">{topic.name}</p>
                     <div class="flex-1" />
                     <div class="flex flex-row items-center space-x-2">
@@ -249,24 +220,6 @@ export const Sidebar = (props: SidebarProps) => {
             <p class="text-2xl">/</p>
             <DatasetSelectBox />
           </div>
-          <Show when={userContext.user?.() !== null}>
-            <button
-              class="flex w-full items-center space-x-4  rounded-md px-3 py-2 hover:bg-neutral-200   dark:hover:bg-neutral-700"
-              onClick={userContext.logout}
-            >
-              <BiRegularLogOut class="h-6 w-6 fill-current" />
-              <div>Logout</div>
-            </button>
-          </Show>
-          <Show when={userContext.user?.() === null}>
-            <button
-              class="flex w-full items-center space-x-4  rounded-md px-3 py-2 hover:bg-neutral-200   dark:hover:bg-neutral-700"
-              onClick={userContext.logout}
-            >
-              <BiRegularLogIn class="h-6 w-6 fill-current" />
-              <div>Login</div>
-            </button>
-          </Show>
           <button
             disabled={userContext.user?.() === null}
             class="flex w-full items-center space-x-4 rounded-md px-3 py-2 hover:bg-neutral-200 disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-400 dark:hover:bg-neutral-700"

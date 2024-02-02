@@ -22,7 +22,7 @@ actix-session = { version = "0.8.0", features = [
 actix-web = { version = "4.3" }
 actix-cors = { version = "0.7" }
 
-async-stripe = { git = "https://github.com/arlyon/async-stripe", features = [
+async-stripe = { version = "0.31.0", features = [
     "runtime-tokio-hyper",
     "checkout",
     "webhook-events",
@@ -48,7 +48,9 @@ time = { version = "0.3" }
 uuid = { version = "1", features = ["v4", "serde"] }
 diesel_migrations = { version = "2.0" }
 regex = "1.7.3"
-openai_dive = { version = "0.4.2", features = ["stream"] }
+openai_dive = { git = "https://github.com/devflowinc/openai-client", features = [
+    "stream",
+] }
 tokio = "1.27.0"
 tokio-stream = "0.1.12"
 futures-util = "0.3.28"

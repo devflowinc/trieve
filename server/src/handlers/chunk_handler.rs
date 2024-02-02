@@ -1018,6 +1018,7 @@ pub async fn generate_off_chunks(
         api_key: llm_api_key,
         http_client: reqwest::Client::new(),
         base_url,
+        organization: None,
     };
 
     let mut messages: Vec<ChatMessage> = vec![];

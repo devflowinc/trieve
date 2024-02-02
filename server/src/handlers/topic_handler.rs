@@ -14,6 +14,8 @@ use utoipa::ToSchema;
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct CreateTopicData {
+    /// The model to use for the assistant's messages. This can be any model from the openrouter model list. If no model is provided, the gryphe/mythomax-l2-13b will be used.
+    pub model: Option<String>,
     /// The first message which will belong to the topic. The topic name is generated based on this message similar to how it works in the OpenAI chat UX if a name is not explicitly provided on the name request body key.
     pub first_user_message: Option<String>,
     /// The name of the topic. If this is not provided, the topic name is generated from the first_user_message.
@@ -41,16 +43,17 @@ pub async fn create_topic(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let data_inner = data.into_inner();
-    let message = data_inner.first_user_message;
+    let model = data_inner.model.clone();
+    let first_message = data_inner.first_user_message;
 
-    if message.is_none() && data_inner.name.is_none() {
+    if first_message.is_none() && data_inner.name.is_none() {
         return Ok(HttpResponse::BadRequest().json(DefaultError {
             message: "first_user_message and name must not be empty",
         }));
     }
 
-    let topic_name = if let Some(name) = message {
-        get_topic_string(name, &dataset_org_plan_sub.dataset)
+    let topic_name = if let Some(first_user_message) = first_message {
+        get_topic_string(model, first_user_message, &dataset_org_plan_sub.dataset)
             .await
             .map_err(|e| ServiceError::BadRequest(format!("Error getting topic string: {}", e)))?
     } else {

@@ -1,14 +1,12 @@
 import { BiRegularMenuAltLeft, BiRegularPlus } from "solid-icons/bi";
 import { Setter } from "solid-js";
-import { Topic } from "../../types/topics";
+import { Topic } from "../../utils/apiTypes";
 
 export interface NavbarProps {
   setSideBarOpen: Setter<boolean>;
   selectedTopic: () => Topic | undefined;
   isCreatingTopic: () => boolean;
   setIsCreatingTopic: Setter<boolean>;
-  isCreatingNormalTopic: () => boolean;
-  setIsCreatingNormalTopic: Setter<boolean>;
 }
 
 export const Navbar = (props: NavbarProps) => {
@@ -21,19 +19,13 @@ export const Navbar = (props: NavbarProps) => {
         />
       </div>
       <div class="flex w-full items-center justify-center px-2 text-center">
-        <p>
-          {props.selectedTopic()?.name ??
-            (props.isCreatingNormalTopic()
-              ? "New Normal Chat"
-              : "New Retrieval Augmented Chat")}
-        </p>
+        <p>{props.selectedTopic()?.name ?? "New RAG Chat"}</p>
       </div>
       <div class="lg:hidden">
         <BiRegularPlus
           onClick={() => {
             props.setSideBarOpen(false);
             props.setIsCreatingTopic(true);
-            props.setIsCreatingNormalTopic(false);
           }}
           class="fill-current text-4xl"
         />

@@ -62,12 +62,15 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
   >([]);
 
   const login = () => {
-    const api_host: string = import.meta.env.VITE_API_HOST as string;
-    fetch(`${api_host}/auth/me`, {
+    const apiHost: string = import.meta.env.VITE_API_HOST as string;
+    fetch(`${apiHost}/auth/me`, {
       credentials: "include",
     })
       .then((res) => {
         if (res.status === 401) {
+          if (res.status === 401) {
+            window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}`;
+          }
           setUser(null);
           setOrganizations([]);
           return null;

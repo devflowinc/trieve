@@ -522,8 +522,9 @@ dependencies = [
 
 [[package]]
 name = "async-stripe"
-version = "0.28.1"
-source = "git+https://github.com/arlyon/async-stripe#09ca099a50a457be81a20e972787748374cf9cd8"
+version = "0.31.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32ec9b47d8a0e06f51491bc78d3f05bb77c02dd015643eb48bd56996164dcd2e"
 dependencies = [
  "chrono",
  "futures-util",
@@ -2391,9 +2392,8 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "openai_dive"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "184b608400bc556911f5179fabd41728670dfa98b68c841ebe9cad98ad1c3122"
+version = "0.4.4"
+source = "git+https://github.com/devflowinc/openai-client#3bfa33245c993dec72d8eed7175f30e83e213ed8"
 dependencies = [
  "bytes",
  "futures",

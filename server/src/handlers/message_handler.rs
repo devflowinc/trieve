@@ -447,12 +447,16 @@ pub async fn regenerate_message_handler(
     .await
 }
 
-pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<String, DefaultError> {
+pub async fn get_topic_string(
+    model: Option<String>,
+    first_message: String,
+    dataset: &Dataset,
+) -> Result<String, DefaultError> {
     let prompt_topic_message = ChatMessage {
         role: Role::User,
         content: ChatMessageContent::Text(format!(
             "Write a 2-3 word topic name from the following prompt: {}",
-            prompt
+            first_message
         )),
         tool_calls: None,
         name: None,
@@ -460,7 +464,9 @@ pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<Strin
     };
     let openai_messages = vec![prompt_topic_message];
     let parameters = ChatCompletionParameters {
-        model: "gpt3.5-turbo".to_string(),
+        model: model
+            .clone()
+            .unwrap_or("openai/gpt-3.5-turbo-1106".to_string()),
         messages: openai_messages,
         temperature: None,
         top_p: None,
@@ -484,18 +490,19 @@ pub async fn get_topic_string(prompt: String, dataset: &Dataset) -> Result<Strin
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
     let base_url = dataset_config
         .LLM_BASE_URL
-        .unwrap_or("https://api.openai.com/v1".into());
+        .unwrap_or("https://openrouter.ai/api/v1".into());
 
     let base_url = if base_url.is_empty() {
-        "https://api.openai.com/v1".into()
+        "https://openrouter.ai/api/v1".into()
     } else {
         base_url
     };
-    
+
     let client = Client {
         api_key: llm_api_key,
         http_client: reqwest::Client::new(),
         base_url,
+        organization: None,
     };
 
     let query = client
@@ -542,10 +549,10 @@ pub async fn stream_response(
     let base_url = dataset_config
         .LLM_BASE_URL
         .clone()
-        .unwrap_or("https://api.openai.com/v1".into());
+        .unwrap_or("https://openrouter.ai/api/v1".into());
 
     let base_url = if base_url.is_empty() {
-        "https://api.openai.com/v1".into()
+        "https://openrouter.ai/api/v1".into()
     } else {
         base_url
     };
@@ -554,6 +561,7 @@ pub async fn stream_response(
         api_key: llm_api_key,
         http_client: reqwest::Client::new(),
         base_url,
+        organization: None,
     };
 
     let next_message_order = move || {
@@ -570,10 +578,10 @@ pub async fn stream_response(
     let rag_prompt = dataset_config.RAG_PROMPT.clone().unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string());
 
     // find evidence for the counter-argument
-    let counter_arg_parameters = ChatCompletionParameters {
+    let gen_inference_parameters = ChatCompletionParameters {
         model: model
             .clone()
-            .unwrap_or("gpt-3.5-turbo".to_string()),
+            .unwrap_or("openai/gpt-3.5-turbo-1106".to_string()),
         messages: vec![ChatMessage {
             role: Role::User,
             content: ChatMessageContent::Text(format!(
@@ -611,12 +619,12 @@ pub async fn stream_response(
         seed: None,
     };
 
-    let evidence_search_query = client
+    let search_query_from_rag_prompt = client
         .chat()
-        .create(counter_arg_parameters)
+        .create(gen_inference_parameters)
         .await
         .expect("No OpenAI Completion for evidence search");
-    let query = match &evidence_search_query
+    let query = match &search_query_from_rag_prompt
         .choices
         .first()
         .expect("No response for OpenAI completion")
@@ -644,7 +652,7 @@ pub async fn stream_response(
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    let n_retrievals_to_include = dataset_config.N_RETRIEVALS_TO_INCLUDE.unwrap_or(3);
+    let n_retrievals_to_include = dataset_config.N_RETRIEVALS_TO_INCLUDE.unwrap_or(5);
 
     let retrieval_chunk_ids = search_chunk_query_results
         .search_results
@@ -696,7 +704,7 @@ pub async fn stream_response(
         .join("\n\n");
 
     let last_message = ChatMessageContent::Text(format!(
-            "Here's my prompt. Include the document numbers that you used in square brackets at the end of the sentences that you used the docs for: {} \n\n Pretending you found it, use the following retrieved information as the basis of your response.: {}",
+            "Here's my prompt: {} \n\n Use the following retrieved documents as the basis of your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [Doc n] where n is the doc number. Thesea are the docs: {}",
             match &openai_messages.last().expect("There needs to be at least 1 prior message").content {
                 ChatMessageContent::Text(text) => text.clone(),
                 _ => "".to_string(),
@@ -725,7 +733,7 @@ pub async fn stream_response(
         .collect();
 
     let parameters = ChatCompletionParameters {
-        model: "gpt-3.5-turbo".into(),
+        model: model.unwrap_or("openai/gpt-3.5-turbo-1106".to_string()),
         messages: open_ai_messages,
         temperature: None,
         top_p: None,
@@ -878,6 +886,7 @@ pub async fn create_suggested_queries_handler(
         api_key: llm_api_key,
         http_client: reqwest::Client::new(),
         base_url,
+        organization: None,
     };
     let query = format!("generate 3 suggested queries based off this query a user made. Your only response should be the 3 queries which are comma seperated and are just text and you do not add any other context or information about the queries.  Here is the query: {}", data.query);
     let message = ChatMessage {

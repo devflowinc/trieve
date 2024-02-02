@@ -2,9 +2,8 @@ import { Show, createEffect, createSignal, useContext } from "solid-js";
 import MainLayout from "../components/Layouts/MainLayout";
 import { Navbar } from "../components/Navbar/Navbar";
 import { Sidebar } from "../components/Navbar/Sidebar";
-import { Topic } from "../types/topics";
 import { UserContext } from "../components/contexts/UserContext";
-import { isTopic } from "../types/actix-api";
+import { Topic } from "../utils/apiTypes";
 
 export const Chat = () => {
   const userContext = useContext(UserContext);
@@ -13,8 +12,6 @@ export const Chat = () => {
   );
   const [sidebarOpen, setSideBarOpen] = createSignal<boolean>(true);
   const [isCreatingTopic, setIsCreatingTopic] = createSignal<boolean>(true);
-  const [isCreatingNormalTopic, setIsCreatingNormalTopic] =
-    createSignal<boolean>(false);
   const [topics, setTopics] = createSignal<Topic[]>([]);
 
   const refetchTopics = async (): Promise<Topic[]> => {
@@ -23,20 +20,21 @@ export const Chat = () => {
 
     const dataset = userContext.currentDataset?.();
     if (!dataset) return [];
-    const response = await fetch(`${api_host}/topic`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "TR-Dataset": dataset.dataset.id,
+    const response = await fetch(
+      `${api_host}/topic/user/${userContext.user?.()?.id ?? ""}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "TR-Dataset": dataset.dataset.id,
+        },
+        credentials: "include",
       },
-      credentials: "include",
-    });
+    );
     if (!response.ok) return [];
     const data: unknown = await response.json();
     if (data !== null && typeof data === "object" && Array.isArray(data)) {
-      const topics = data.filter((topic: unknown) => {
-        return isTopic(topic);
-      }) as Topic[];
+      const topics = data as Topic[];
       setTopics(topics);
       return topics;
     } else {
@@ -59,7 +57,6 @@ export const Chat = () => {
           topics={topics}
           setIsCreatingTopic={setIsCreatingTopic}
           setSideBarOpen={setSideBarOpen}
-          setIsCreatingNormalTopic={setIsCreatingNormalTopic}
         />
       </div>
       <div class="lg:hidden">
@@ -74,7 +71,6 @@ export const Chat = () => {
             topics={topics}
             setIsCreatingTopic={setIsCreatingTopic}
             setSideBarOpen={setSideBarOpen}
-            setIsCreatingNormalTopic={setIsCreatingNormalTopic}
           />
         </Show>
       </div>
@@ -87,13 +83,10 @@ export const Chat = () => {
           setSideBarOpen={setSideBarOpen}
           isCreatingTopic={isCreatingTopic}
           setIsCreatingTopic={setIsCreatingTopic}
-          isCreatingNormalTopic={isCreatingNormalTopic}
-          setIsCreatingNormalTopic={setIsCreatingNormalTopic}
         />
         <MainLayout
           setTopics={setTopics}
           setSelectedTopic={setSelectedTopic}
-          isCreatingNormalTopic={isCreatingNormalTopic}
           selectedTopic={selectedTopic}
         />
       </div>

@@ -1,5 +1,3 @@
-import { Topic } from "./topics";
-
 export interface ActixApiDefaultError {
   message: string;
 }
@@ -7,32 +5,6 @@ export interface ActixApiDefaultError {
 export interface StripeCheckoutSessionResponse {
   checkout_session_url: string;
 }
-
-export const isActixApiDefaultError = (
-  data: unknown,
-): data is ActixApiDefaultError => {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "message" in data &&
-    typeof (data as ActixApiDefaultError).message === "string"
-  );
-};
-
-export const isTopic = (data: unknown): data is Topic => {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "name" in data &&
-    "side" in data &&
-    "id" in data &&
-    typeof (data as Topic).name === "string" &&
-    typeof (data as Topic).side === "boolean" &&
-    typeof (data as Topic).id === "string" &&
-    (typeof (data as Topic).normal_chat === "undefined" ||
-      typeof (data as Topic).normal_chat === "boolean")
-  );
-};
 
 export const detectReferralToken = (queryParamT: string | undefined) => {
   if (queryParamT) {

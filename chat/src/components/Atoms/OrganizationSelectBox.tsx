@@ -42,7 +42,7 @@ export const OrganizationSelectBox = () => {
               <Show when={isOpen()}>
                 <PopoverPanel
                   unmount={false}
-                  class="absolute bottom-7 left-0 z-20 mt-2 h-fit w-[180px] rounded-md border bg-white p-1 dark:bg-neutral-800"
+                  class="absolute bottom-7 left-0 z-40 mt-2 h-fit w-[180px] rounded-md border bg-white p-1 dark:bg-neutral-800"
                 >
                   <Menu class="mx-1 space-y-0.5">
                     <For each={userContext.organizations?.()}>
