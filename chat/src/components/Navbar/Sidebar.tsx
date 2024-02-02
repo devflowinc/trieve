@@ -192,7 +192,7 @@ export const Sidebar = (props: SidebarProps) => {
                 )}
                 {editingIndex() !== index() && (
                   <div class="flex flex-1 items-center px-3">
-                      <BiRegularChat class="mr-2 fill-current" />
+                    <BiRegularChat class="mr-2 fill-current" />
                     <p class="line-clamp-1 break-all">{topic.name}</p>
                     <div class="flex-1" />
                     <div class="flex flex-row items-center space-x-2">

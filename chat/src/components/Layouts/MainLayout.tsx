@@ -274,7 +274,7 @@ const MainLayout = (props: LayoutProps) => {
     });
 
     return curTopic;
-  }, undefined);
+  });
 
   const submitNewMessage = () => {
     const topic_id = props.selectedTopic()?.id;
