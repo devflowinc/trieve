@@ -302,9 +302,12 @@ pub async fn delete_dataset_by_id_query(
 
             Ok(())
         }
-        Err(_) => Err(ServiceError::BadRequest(
-            "Failed to delete dataset".to_string(),
-        )),
+        Err(e) => {
+            log::error!("Failed to delete dataset: {}", e);
+            Err(ServiceError::BadRequest(
+                "Failed to delete dataset".to_string(),
+            ))
+        }
     }
 }
 
