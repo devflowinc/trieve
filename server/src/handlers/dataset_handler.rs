@@ -62,7 +62,7 @@ pub struct CreateDatasetRequest {
     request_body(content = CreateDatasetRequest, description = "JSON request payload to create a new dataset", content_type = "application/json"),
     responses(
         (status = 200, description = "Dataset created successfully", body = Dataset),
-        (status = 400, description = "Service error relating to creating the dataset", body = DefaultError),
+        (status = 400, description = "Service error relating to creating the dataset", body = ErrorResponseBody),
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
@@ -135,7 +135,7 @@ pub struct UpdateDatasetRequest {
     request_body(content = UpdateDatasetRequest, description = "JSON request payload to update a dataset", content_type = "application/json"),
     responses(
         (status = 200, description = "Dataset updated successfully", body = Dataset),
-        (status = 400, description = "Service error relating to updating the dataset", body = DefaultError),
+        (status = 400, description = "Service error relating to updating the dataset", body = ErrorResponseBody),
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
@@ -191,7 +191,7 @@ pub struct DeleteDatasetRequest {
     request_body(content = DeleteDatasetRequest, description = "JSON request payload to delete a dataset", content_type = "application/json"),
     responses(
         (status = 204, description = "Dataset deleted successfully"),
-        (status = 400, description = "Service error relating to deleting the dataset", body = DefaultError),
+        (status = 400, description = "Service error relating to deleting the dataset", body = ErrorResponseBody),
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
@@ -220,7 +220,7 @@ pub async fn delete_dataset(
     tag = "dataset",
     responses(
         (status = 200, description = "Dataset retrieved successfully", body = Dataset),
-        (status = 400, description = "Service error relating to retrieving the dataset", body = DefaultError),
+        (status = 400, description = "Service error relating to retrieving the dataset", body = ErrorResponseBody),
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
@@ -257,7 +257,7 @@ pub async fn get_dataset(
     tag = "dataset",
     responses(
         (status = 200, description = "Datasets retrieved successfully", body = Vec<DatasetAndUsage>),
-        (status = 400, description = "Service error relating to retrieving the dataset", body = DefaultError),
+        (status = 400, description = "Service error relating to retrieving the dataset", body = ErrorResponseBody),
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
@@ -298,7 +298,7 @@ pub async fn get_datasets_from_organization(
     tag = "dataset",
     responses(
         (status = 200, description = "Dataset environment variables", body = ClientDatasetConfiguration),
-        (status = 400, description = "Service error relating to retrieving the dataset. Typically this only happens when your auth credentials are invalid.", body = DefaultError),
+        (status = 400, description = "Service error relating to retrieving the dataset. Typically this only happens when your auth credentials are invalid.", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),

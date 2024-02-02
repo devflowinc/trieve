@@ -43,7 +43,7 @@ pub struct InvitationData {
     request_body(content = InvitationData, description = "JSON request payload to send an invitation", content_type = "application/json"),
     responses(
         (status = 204, description = "Ok response. Indicates that invitation email was sent correctly."),
-        (status = 400, description = "Invalid email or some other error", body = DefaultError),
+        (status = 400, description = "Invalid email or some other error", body = ErrorResponseBody),
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),

@@ -167,7 +167,7 @@ pub struct GetDirectPaymentLinkData {
     tag = "stripe",
     responses(
         (status = 303, description = "SeeOther response redirecting user to stripe checkout page"),
-        (status = 400, description = "Service error relating to creating a URL for a stripe checkout page", body = DefaultError),
+        (status = 400, description = "Service error relating to creating a URL for a stripe checkout page", body = ErrorResponseBody),
     ),
     params(
         ("plan_id" = uuid::Uuid, Path, description = "id of the plan you want to subscribe to"),
@@ -220,7 +220,7 @@ pub async fn direct_to_payment_link(
     tag = "stripe",
     responses(
         (status = 200, description = "Confirmation that the subscription was cancelled"),
-        (status = 400, description = "Service error relating to creating a URL for a stripe checkout page", body = DefaultError),
+        (status = 400, description = "Service error relating to creating a URL for a stripe checkout page", body = ErrorResponseBody),
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
@@ -270,7 +270,7 @@ pub struct UpdateSubscriptionData {
     tag = "stripe",
     responses(
         (status = 200, description = "Confirmation that the subscription was updated to the new plan"),
-        (status = 400, description = "Service error relating to updating the subscription to the new plan", body = DefaultError),
+        (status = 400, description = "Service error relating to updating the subscription to the new plan", body = ErrorResponseBody),
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
@@ -325,7 +325,7 @@ pub async fn update_subscription_plan(
     tag = "stripe",
     responses(
         (status = 200, description = "List of all plans", body = Vec<StripePlan>),
-        (status = 400, description = "Service error relating to getting all plans", body = DefaultError),
+        (status = 400, description = "Service error relating to getting all plans", body = ErrorResponseBody),
     ),
 )]
 pub async fn get_all_plans(pool: web::Data<Pool>) -> Result<HttpResponse, actix_web::Error> {

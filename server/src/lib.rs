@@ -227,7 +227,7 @@ pub async fn main() -> std::io::Result<()> {
                 data::models::ClientDatasetConfiguration,
                 data::models::StripePlan,
                 data::models::StripeSubscription,
-                errors::DefaultError,
+                errors::ErrorResponseBody,
             )
         ),
         tags(

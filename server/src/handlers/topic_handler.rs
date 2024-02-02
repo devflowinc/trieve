@@ -33,7 +33,7 @@ pub struct CreateTopicData {
     request_body(content = CreateTopicData, description = "JSON request payload to create chat topic", content_type = "application/json"),
     responses(
         (status = 200, description = "The JSON response payload containing the created topic", body = Topic),
-        (status = 400, description = "Topic name empty or a service error", body = DefaultError),
+        (status = 400, description = "Topic name empty or a service error", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -95,7 +95,7 @@ pub struct DeleteTopicData {
     request_body(content = DeleteTopicData, description = "JSON request payload to delete a chat topic", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the topic was deleted"),
-        (status = 400, description = "Service error relating to topic deletion", body = DefaultError),
+        (status = 400, description = "Service error relating to topic deletion", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -160,7 +160,7 @@ pub struct UpdateTopicData {
     request_body(content = UpdateTopicData, description = "JSON request payload to update a chat topic", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the topic was updated"),
-        (status = 400, description = "Service error relating to topic update", body = DefaultError),
+        (status = 400, description = "Service error relating to topic update", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -223,7 +223,7 @@ pub async fn update_topic(
     tag = "topic",
     responses(
         (status = 200, description = "All topics belonging to a given user", body = Vec<Topic>),
-        (status = 400, description = "Service error relating to topic get", body = DefaultError),
+        (status = 400, description = "Service error relating to topic get", body = ErrorResponseBody),
     ),
     params (
         ("user_id", description="The id of the user to get topics for"),

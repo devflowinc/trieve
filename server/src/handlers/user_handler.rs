@@ -48,7 +48,7 @@ pub struct GetUserWithChunksData {
     request_body(content = UpdateUserData, description = "JSON request payload to update user information for the auth'ed user", content_type = "application/json"),
     responses(
         (status = 200, description = "JSON body representing the updated user information", body = SlimUser),
-        (status = 400, description = "Service error relating to updating the user", body = DefaultError),
+        (status = 400, description = "Service error relating to updating the user", body = ErrorResponseBody),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -161,7 +161,7 @@ pub struct SetUserApiKeyResponse {
     request_body(content = SetUserApiKeyRequest, description = "JSON request payload to create a new user api key", content_type = "application/json"),
     responses(
         (status = 200, description = "JSON body representing the api_key for the user", body = SetUserApiKeyResponse),
-        (status = 400, description = "Service error relating to creating api_key for the user", body = DefaultError),
+        (status = 400, description = "Service error relating to creating api_key for the user", body = ErrorResponseBody),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -197,7 +197,7 @@ pub async fn set_user_api_key(
     tag = "user",
     responses(
         (status = 200, description = "JSON body representing the api_key for the user", body = Vec<ApiKeyDTO>),
-        (status = 400, description = "Service error relating to creating api_key for the user", body = DefaultError),
+        (status = 400, description = "Service error relating to creating api_key for the user", body = ErrorResponseBody),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -232,7 +232,7 @@ pub struct DeleteUserApiKeyRequest {
     request_body(content = DeleteUserApiKeyRequest, description = "JSON request payload to delete a user api key", content_type = "application/json"),
     responses(
         (status = 200, description = "JSON body representing the api_key for the user", body = Vec<ApiKeyDTO>),
-        (status = 400, description = "Service error relating to creating api_key for the user", body = DefaultError),
+        (status = 400, description = "Service error relating to creating api_key for the user", body = ErrorResponseBody),
     ),
     security(
         ("ApiKey" = ["readonly"]),
