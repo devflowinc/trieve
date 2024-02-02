@@ -1001,17 +1001,26 @@ pub async fn generate_off_chunks(
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let llm_api_key = get_env!("LLM_API_KEY", "LLM_API_KEY should be set").into();
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
     let base_url = dataset_config
         .LLM_BASE_URL
-        .unwrap_or("https://api.openai.com/v1".into());
+        .unwrap_or("https://openrouter.ai/api/v1".into());
 
     let base_url = if base_url.is_empty() {
-        "https://api.openai.com/v1".into()
+        "https://openrouter.ai/api/v1".into()
     } else {
         base_url
+    };
+
+    let llm_api_key = if base_url.contains("openai.com") {
+        get_env!("OPENAI_API_KEY", "OPENAI_API_KEY for openai should be set").into()
+    } else {
+        get_env!(
+            "LLM_API_KEY",
+            "LLM_API_KEY for openrouter or self-hosted should be set"
+        )
+        .into()
     };
 
     let client = Client {
