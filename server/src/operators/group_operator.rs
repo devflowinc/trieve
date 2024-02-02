@@ -316,8 +316,9 @@ pub fn update_chunk_group_query(
 pub fn create_chunk_bookmark_query(
     pool: web::Data<Pool>,
     bookmark: ChunkGroupBookmark,
-) -> Result<(), DefaultError> {
+) -> Result<Option<uuid::Uuid>, DefaultError> {
     use crate::data::schema::chunk_group_bookmarks::dsl::*;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let mut conn = pool.get().unwrap();
 
@@ -331,7 +332,18 @@ pub fn create_chunk_bookmark_query(
             }
         })?;
 
-    Ok(())
+    let qdrant_point_id = chunk_metadata_columns::chunk_metadata
+        .filter(chunk_metadata_columns::id.eq(bookmark.chunk_metadata_id))
+        .select(chunk_metadata_columns::qdrant_point_id)
+        .first::<Option<uuid::Uuid>>(&mut conn)
+        .map_err(|_err| {
+            log::error!("Error getting qdrant_point_id {:}", _err);
+            DefaultError {
+                message: "Error getting qdrant_point_id",
+            }
+        })?;
+
+    Ok(qdrant_point_id)
 }
 pub struct GroupsBookmarkQueryResult {
     pub metadata: Vec<ChunkMetadataWithFileData>,
@@ -508,24 +520,16 @@ pub fn get_groups_for_bookmark_query(
 
     Ok(bookmark_groups)
 }
+
 pub fn delete_bookmark_query(
     bookmark_id: uuid::Uuid,
     group_id: uuid::Uuid,
-    dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
-    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
+) -> Result<Option<uuid::Uuid>, DefaultError> {
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let mut conn = pool.get().unwrap();
-
-    chunk_group_columns::chunk_group
-        .filter(chunk_group_columns::id.eq(group_id))
-        .filter(chunk_group_columns::dataset_id.eq(dataset_id))
-        .first::<ChunkGroup>(&mut conn)
-        .map_err(|_err| DefaultError {
-            message: "Group not found, likely incorrect dataset_id",
-        })?;
 
     diesel::delete(
         chunk_group_bookmarks_columns::chunk_group_bookmarks
@@ -540,5 +544,16 @@ pub fn delete_bookmark_query(
         }
     })?;
 
-    Ok(())
+    let qdrant_point_id = chunk_metadata_columns::chunk_metadata
+        .filter(chunk_metadata_columns::id.eq(bookmark_id))
+        .select(chunk_metadata_columns::qdrant_point_id)
+        .first::<Option<uuid::Uuid>>(&mut conn)
+        .map_err(|_err| {
+            log::error!("Error getting qdrant_point_id {:}", _err);
+            DefaultError {
+                message: "Error getting qdrant_point_id",
+            }
+        })?;
+
+    Ok(qdrant_point_id)
 }

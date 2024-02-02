@@ -5,7 +5,10 @@ use crate::{
         DatasetAndOrgWithSubAndPlan, Pool,
     },
     errors::ServiceError,
-    operators::group_operator::*,
+    operators::{
+        group_operator::*,
+        qdrant_operator::{add_bookmark_to_qdrant_query, remove_bookmark_from_qdrant_query},
+    },
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -269,7 +272,7 @@ pub async fn add_bookmark(
 
     dataset_owns_group(group_id, dataset_id, pool).await?;
 
-    web::block(move || {
+    let qdrant_point_id = web::block(move || {
         create_chunk_bookmark_query(
             pool2,
             ChunkGroupBookmark::from_details(group_id, chunk_metadata_id),
@@ -277,6 +280,12 @@ pub async fn add_bookmark(
     })
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    if let Some(qdrant_point_id) = qdrant_point_id {
+        add_bookmark_to_qdrant_query(qdrant_point_id, group_id)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    }
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -416,11 +425,29 @@ pub async fn delete_bookmark(
     let pool = pool.clone();
     dataset_owns_group(group_id, dataset_id, pool1).await?;
 
-    web::block(move || delete_bookmark_query(bookmark_id, group_id, dataset_id, pool))
+    let qdrant_point_id = web::block(move || delete_bookmark_query(bookmark_id, group_id, pool))
         .await?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
+    if let Some(qdrant_point_id) = qdrant_point_id {
+        remove_bookmark_from_qdrant_query(qdrant_point_id, group_id)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    }
+
     Ok(HttpResponse::NoContent().finish())
+}
+
+pub async fn group_unique_search(
+    group_id: uuid::Uuid,
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<ChunkGroup, actix_web::Error> {
+    let group = web::block(move || get_group_by_id_query(group_id, dataset_id, pool))
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    Ok(group)
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]

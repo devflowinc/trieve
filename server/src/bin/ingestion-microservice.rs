@@ -12,7 +12,8 @@ use trieve_server::operators::event_operator::create_event_query;
 use trieve_server::operators::group_operator::create_chunk_bookmark_query;
 use trieve_server::operators::model_operator::create_embedding;
 use trieve_server::operators::qdrant_operator::{
-    create_new_qdrant_point_query, delete_qdrant_point_id_query, update_qdrant_point_query,
+    add_bookmark_to_qdrant_query, create_new_qdrant_point_query, delete_qdrant_point_id_query,
+    update_qdrant_point_query,
 };
 use trieve_server::operators::search_operator::global_unfiltered_top_match_query;
 
@@ -249,6 +250,17 @@ async fn upload_chunk(
                     ))
                 },
             );
+
+            if let Some(qdrant_point_id) = payload.chunk_metadata.qdrant_point_id {
+                add_bookmark_to_qdrant_query(qdrant_point_id, group_id_to_bookmark)
+                    .await
+                    .map_err(|err| {
+                        ServiceError::InternalServerError(format!(
+                            "Failed to add bookmark to qdrant: {:?}",
+                            err
+                        ))
+                    })?;
+            }
         });
     }
 
