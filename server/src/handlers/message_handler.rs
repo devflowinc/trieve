@@ -63,7 +63,7 @@ pub struct CreateMessageData {
     responses(
         (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this. Response if streaming.",),
         (status = 200, description = "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.", body = String),
-        (status = 400, description = "Service error relating to getting a chat completion", body = DefaultError),
+        (status = 400, description = "Service error relating to getting a chat completion", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -191,7 +191,7 @@ pub async fn create_message_completion_handler(
     tag = "message",
     responses(
         (status = 200, description = "All messages relating to the topic with the given ID", body = Vec<Message>),
-        (status = 400, description = "Service error relating to getting the messages", body = DefaultError),
+        (status = 400, description = "Service error relating to getting the messages", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -276,7 +276,7 @@ pub struct EditMessageData {
     request_body(content = EditMessageData, description = "JSON request payload to edit a message and get a new stream", content_type = "application/json"),
     responses(
         (status = 200, description = "This will be a HTTP stream, check the chat or search UI for an example how to process this"),
-        (status = 400, description = "Service error relating to getting a chat completion", body = DefaultError),
+        (status = 400, description = "Service error relating to getting a chat completion", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -355,7 +355,7 @@ pub async fn edit_message_handler(
     responses(
         (status = 200, description = "This will be a HTTP stream of a string, check the chat or search UI for an example how to process this. Response if streaming.",),
         (status = 200, description = "This will be a JSON response of a string containing the LLM's generated inference. Response if not streaming.", body = String),
-        (status = 400, description = "Service error relating to getting a chat completion", body = DefaultError),
+        (status = 400, description = "Service error relating to getting a chat completion", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -912,7 +912,7 @@ pub struct SuggestedQueriesResponse {
     request_body(content = SuggestedQueriesRequest, description = "JSON request payload to get alternative suggested queries", content_type = "application/json"),
     responses(
         (status = 200, description = "A JSON object containing a list of alternative suggested queries", body = SuggestedQueriesResponse),
-        (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = DefaultError),
+        (status = 400, description = "Service error relating to to updating chunk, likely due to conflicting tracking_id", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),

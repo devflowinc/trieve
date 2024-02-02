@@ -325,7 +325,7 @@ pub struct LoginState {
     request_body(content = AuthQuery, description = "Query parameters for login to be included as kv pairs after ? on the request URL.", content_type = "application/x-www-form-urlencoded"),
     responses(
         (status = 303, description = "Response that redirects to OAuth provider through a Location header to be handled by browser."),
-        (status = 400, description = "OAuth error likely with OIDC provider.", body = DefaultError),
+        (status = 400, description = "OAuth error likely with OIDC provider.", body = ErrorResponseBody),
     )
 )]
 pub async fn login(
@@ -392,7 +392,7 @@ pub async fn login(
     tag = "auth",
     responses(
         (status = 200, description = "Response that returns with set-cookie header", body = SlimUser),
-        (status = 400, description = "Email or password empty or incorrect", body = DefaultError),
+        (status = 400, description = "Email or password empty or incorrect", body = ErrorResponseBody),
     )
 )]
 pub async fn callback(
@@ -540,7 +540,7 @@ pub async fn callback(
     tag = "auth",
     responses(
         (status = 200, description = "The user corresponding to your current auth credentials", body = SlimUser),
-        (status = 400, description = "Error message indicitating you are not currently signed in", body = DefaultError),
+        (status = 400, description = "Error message indicitating you are not currently signed in", body = ErrorResponseBody),
     ),
     security(
         ("ApiKey" = []),
@@ -568,7 +568,7 @@ pub async fn get_me(
     tag = "health",
     responses(
         (status = 200, description = "Confirmation that the service is healthy and can make embedding vectors"),
-        (status = 400, description = "Service error relating to making an embedding or overall service health", body = DefaultError),
+        (status = 400, description = "Service error relating to making an embedding or overall service health", body = ErrorResponseBody),
     ),
 )]
 pub async fn health_check() -> Result<HttpResponse, actix_web::Error> {

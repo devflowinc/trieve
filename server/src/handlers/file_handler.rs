@@ -78,7 +78,7 @@ pub struct UploadFileResult {
     request_body(content = UploadFileData, description = "JSON request payload to upload a file", content_type = "application/json"),
     responses(
         (status = 200, description = "Confirmation that the file is uploading", body = UploadFileResult),
-        (status = 400, description = "Service error relating to uploading the file", body = DefaultError),
+        (status = 400, description = "Service error relating to uploading the file", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -183,7 +183,7 @@ pub async fn upload_file_handler(
     tag = "file",
     responses(
         (status = 200, description = "The signed s3 url corresponding to the file_id requested", body = FileDTO),
-        (status = 400, description = "Service error relating to finding the file", body = DefaultError),
+        (status = 400, description = "Service error relating to finding the file", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -225,7 +225,7 @@ pub async fn get_file_handler(
     tag = "user",
     responses(
         (status = 200, description = "JSON body representing the files uploaded by the given user", body = Vec<File>),
-        (status = 400, description = "Service error relating to getting the files uploaded by the given user", body = DefaultError),
+        (status = 400, description = "Service error relating to getting the files uploaded by the given user", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -260,7 +260,7 @@ pub async fn get_user_files_handler(
     tag = "file",
     responses(
         (status = 204, description = "Confirmation that the file has been deleted"),
-        (status = 400, description = "Service error relating to finding or deleting the file", body = DefaultError),
+        (status = 400, description = "Service error relating to finding or deleting the file", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -301,7 +301,7 @@ pub async fn delete_file_handler(
     tag = "file",
     responses(
         (status = 200, description = "The raw image file corresponding to the file_name requested such that it can be a src for an img tag"),
-        (status = 400, description = "Service error relating to finding the file", body = DefaultError),
+        (status = 400, description = "Service error relating to finding the file", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),

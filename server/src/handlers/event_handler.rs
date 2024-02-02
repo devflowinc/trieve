@@ -24,7 +24,7 @@ pub enum Events {
     tag = "events",
     responses(
         (status = 200, description = "Events for the dataset", body = EventReturn),
-        (status = 400, description = "Service error relating to getting events for the dataset", body = DefaultError),
+        (status = 400, description = "Service error relating to getting events for the dataset", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),

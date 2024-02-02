@@ -49,7 +49,7 @@ pub struct CreateChunkGroupData {
     request_body(content = CreateChunkGroupData, description = "JSON request payload to cretea a chunkGroup", content_type = "application/json"),
     responses(
         (status = 200, description = "Returns the created chunkGroup", body = ChunkGroup),
-        (status = 400, description = "Service error relating to creating the chunkGroup", body = DefaultError),
+        (status = 400, description = "Service error relating to creating the chunkGroup", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -101,7 +101,7 @@ pub struct DatasetGroupQuery {
     tag = "chunk_group",
     responses(
         (status = 200, description = "JSON body representing the groups created by the given dataset", body = GroupData),
-        (status = 400, description = "Service error relating to getting the groups created by the given dataset", body = DefaultError),
+        (status = 400, description = "Service error relating to getting the groups created by the given dataset", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -164,7 +164,7 @@ pub struct DeleteGroupData {
     tag = "chunk_group",
     responses(
         (status = 204, description = "Confirmation that the chunkGroup was deleted"),
-        (status = 400, description = "Service error relating to deleting the chunkGroup", body = DefaultError),
+        (status = 400, description = "Service error relating to deleting the chunkGroup", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -220,7 +220,7 @@ pub struct UpdateChunkGroupData {
     request_body(content = UpdateChunkGroupData, description = "JSON request payload to update a chunkGroup", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the chunkGroup was updated"),
-        (status = 400, description = "Service error relating to updating the chunkGroup", body = DefaultError),
+        (status = 400, description = "Service error relating to updating the chunkGroup", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -276,7 +276,7 @@ pub struct AddChunkToGroupData {
     request_body(content = AddChunkToGroupData, description = "JSON request payload to add a chunk to a group (bookmark it)", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the chunk was added to the group (bookmark'ed)."),
-        (status = 400, description = "Service error relating to getting the groups that the chunk is in.", body = DefaultError),
+        (status = 400, description = "Service error relating to getting the groups that the chunk is in.", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -346,7 +346,7 @@ pub struct BookmarkChunks {
     tag = "chunk_group",
     responses(
         (status = 200, description = "Bookmark'ed chunks present within the specified group", body = BookmarkData),
-        (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = DefaultError),
+        (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -402,7 +402,7 @@ pub struct GetGroupsForChunksData {
     request_body(content = GetGroupsForChunksData, description = "JSON request payload to get the groups that a chunk is in", content_type = "application/json"),
     responses(
         (status = 200, description = "JSON body representing the groups that the chunk is in", body = Vec<BookmarkGroupResult>),
-        (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = DefaultError),
+        (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -445,7 +445,7 @@ pub struct DeleteBookmarkPathData {
     tag = "chunk_group",
     responses(
         (status = 204, description = "Confirmation that the chunk was removed to the group"),
-        (status = 400, description = "Service error relating to removing the chunk from the group", body = DefaultError),
+        (status = 400, description = "Service error relating to removing the chunk from the group", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
