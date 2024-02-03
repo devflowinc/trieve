@@ -243,6 +243,7 @@ pub struct SearchOverGroupsQueryResult {
     pub total_chunk_pages: i64,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn retrieve_group_qdrant_points_query(
     embedding_vector: Vec<f32>,
     page: u64,
@@ -252,7 +253,6 @@ pub async fn retrieve_group_qdrant_points_query(
     filters: Option<serde_json::Value>,
     parsed_query: ParsedQuery,
     dataset_id: uuid::Uuid,
-    group_id: uuid::Uuid,
 ) -> Result<SearchOverGroupsQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
 
@@ -266,7 +266,7 @@ pub async fn retrieve_group_qdrant_points_query(
         dataset_id,
     )?;
 
-    let point_ids = search_over_groups_query(embedding_vector, page, filter).await?;
+    let point_ids = search_over_groups_query(page, filter, embedding_vector).await?;
 
     Ok(SearchOverGroupsQueryResult {
         search_results: point_ids.clone(),
@@ -824,6 +824,111 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
     Ok(SearchChunkQueryResponseBody {
         score_chunks,
         total_chunk_pages: search_chunk_query_results.total_chunk_pages,
+    })
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct GroupScoreChunkDTO {
+    pub group_id: uuid::Uuid,
+    pub metadata: Vec<ScoreChunkDTO>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SearchOverGroupsResponseBody {
+    pub group_chunks: Vec<GroupScoreChunkDTO>,
+    pub total_chunk_pages: i64,
+}
+
+pub async fn retrieve_chunks_for_groups(
+    search_over_groups_query_result: SearchOverGroupsQueryResult,
+    data: &web::Json<SearchOverGroupsQuery>,
+    pool: web::Data<Pool>,
+) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
+    let point_ids = search_over_groups_query_result
+        .search_results
+        .iter()
+        .flat_map(|hit| hit.hits.iter().map(|point| point.point_id).collect_vec())
+        .collect_vec();
+
+    let (metadata_chunks, collided_chunks) = get_metadata_and_collided_chunks_from_point_ids_query(
+        point_ids,
+        data.get_collisions.unwrap_or(false),
+        pool,
+    )
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let group_chunks: Vec<GroupScoreChunkDTO> = search_over_groups_query_result
+        .search_results
+        .iter()
+        .map(|group| {
+            let score_chunk: Vec<ScoreChunkDTO> = group
+                .hits
+                .iter()
+                .map(|search_result| {
+                    let mut chunk: ChunkMetadataWithFileData =
+                        match metadata_chunks.iter().find(|metadata_chunk| {
+                            metadata_chunk.qdrant_point_id == search_result.point_id
+                        }) {
+                            Some(metadata_chunk) => metadata_chunk.clone(),
+                            None => ChunkMetadataWithFileData {
+                                id: uuid::Uuid::default(),
+                                qdrant_point_id: uuid::Uuid::default(),
+                                created_at: chrono::Utc::now().naive_local(),
+                                updated_at: chrono::Utc::now().naive_local(),
+                                file_id: None,
+                                file_name: None,
+                                content: "".to_string(),
+                                chunk_html: Some("".to_string()),
+                                link: Some("".to_string()),
+                                tag_set: Some("".to_string()),
+                                metadata: None,
+                                tracking_id: None,
+                                time_stamp: None,
+                                weight: 1.0,
+                            },
+                        };
+
+                    if data.highlight_results.unwrap_or(true) {
+                        chunk = find_relevant_sentence(
+                            chunk.clone(),
+                            data.query.clone(),
+                            data.highlight_delimiters.clone().unwrap_or(vec![
+                                ".".to_string(),
+                                "!".to_string(),
+                                "?".to_string(),
+                                "\n".to_string(),
+                                "\t".to_string(),
+                                ",".to_string(),
+                            ]),
+                        )
+                        .unwrap_or(chunk);
+                    }
+
+                    let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
+                        .iter()
+                        .filter(|chunk| chunk.qdrant_id == search_result.point_id)
+                        .map(|chunk| chunk.metadata.clone())
+                        .collect();
+
+                    collided_chunks.insert(0, chunk);
+
+                    ScoreChunkDTO {
+                        metadata: collided_chunks,
+                        score: search_result.score.into(),
+                    }
+                })
+                .collect_vec();
+
+            GroupScoreChunkDTO {
+                group_id: group.group_id,
+                metadata: score_chunk,
+            }
+        })
+        .collect_vec();
+
+    Ok(SearchOverGroupsResponseBody {
+        group_chunks,
+        total_chunk_pages: search_over_groups_query_result.total_chunk_pages,
     })
 }
 
@@ -1456,13 +1561,13 @@ pub async fn semantic_search_over_groups(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
-) -> Result<SearchGroupsResult, actix_web::Error> {
+) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
     let embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
 
     let search_chunk_query_results = retrieve_group_qdrant_points_query(
-        Some(embedding_vector),
+        embedding_vector,
         page,
         data.link.clone(),
         data.tag_set.clone(),
@@ -1474,14 +1579,8 @@ pub async fn semantic_search_over_groups(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let mut result_chunks = retrieve_chunks_from_point_ids_without_collsions(
-        search_chunk_query_results,
-        &data,
-        pool.clone(),
-    )
-    .await?;
-
-    result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
+    let result_chunks =
+        retrieve_chunks_for_groups(search_chunk_query_results, &data, pool.clone()).await?;
 
     Ok(result_chunks)
 }

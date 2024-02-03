@@ -467,6 +467,11 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(web::post().to(handlers::chunk_handler::search_groups)),
                             )
                             .service(
+                                web::resource("/search_over_groups").route(
+                                    web::post().to(handlers::chunk_handler::search_over_groups),
+                                ),
+                            )
+                            .service(
                                 web::resource("/bookmark/{group_id}/{bookmark_id}").route(
                                     web::delete().to(handlers::group_handler::delete_bookmark),
                                 ),

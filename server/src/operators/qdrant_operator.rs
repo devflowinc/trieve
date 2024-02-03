@@ -549,6 +549,7 @@ pub async fn remove_bookmark_from_qdrant_query(
     Ok(())
 }
 
+#[derive(Clone)]
 pub struct GroupSearchResults {
     pub group_id: uuid::Uuid,
     pub hits: Vec<SearchResult>,
@@ -588,6 +589,7 @@ pub async fn search_over_groups_query(
             with_payload: None,
             filter: Some(filter),
             group_by: "group_ids".to_string(),
+            group_size: 3,
             ..Default::default()
         })
         .await
