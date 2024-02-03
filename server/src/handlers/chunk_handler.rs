@@ -13,7 +13,7 @@ use crate::operators::qdrant_operator::recommend_qdrant_query;
 use crate::operators::qdrant_operator::update_qdrant_point_query;
 use crate::operators::search_operator::{
     search_full_text_chunks, search_full_text_groups, search_hybrid_chunks, search_hybrid_groups,
-    search_semantic_chunks, search_semantic_groups,
+    search_semantic_chunks, search_semantic_groups, semantic_search_over_groups,
 };
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
@@ -826,18 +826,28 @@ pub async fn search_groups(
     Ok(HttpResponse::Ok().json(result_chunks))
 }
 
-
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchOverGroupsQuery {
+    /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
     pub query: String,
+    /// Page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon.
     pub page: Option<u64>,
+    /// Link set is a comma separated list of links. This can be used to filter chunks by link. HNSW indices do not exist for links, so there is a performance hit for filtering on them.
     pub link: Option<Vec<String>>,
+    /// Tag_set is a comma separated list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
     pub tag_set: Option<Vec<String>>,
+    /// Time_range is a tuple of two ISO 8601 combined date and time without timezone. The first value is the start of the time range and the second value is the end of the time range. This can be used to filter chunks by time range. HNSW indices do not exist for time range, so there is a performance hit for filtering on them.
+    pub time_range: Option<(String, String)>,
+    /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<serde_json::Value>,
-    pub search_type: String,
+    /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
     pub date_bias: Option<bool>,
-    pub cross_encoder: Option<bool>,
-    pub weights: Option<(f64, f64)>,
+    /// Set get_collisions to true to get the collisions for each chunk. This will only apply if
+    /// environment variable COLLISIONS_ENABLED is set to true.
+    pub get_collisions: Option<bool>,
+    /// Set highlight_results to true to highlight the results.
     pub highlight_results: Option<bool>,
+    /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting.
     pub highlight_delimiters: Option<Vec<String>>,
 }
 
@@ -849,12 +859,12 @@ pub async fn search_over_groups(
 ) -> Result<HttpResponse, actix_web::Error> {
     //search over the links as well
     let page = data.page.unwrap_or(1);
-    let dataset_id = dataset_org_plan_sub.dataset.id;
-    let search_pool = pool.clone();
 
     let parsed_query = parse_query(data.query.clone());
 
-    
+    let result_chunks =
+        semantic_search_over_groups(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
+            .await?;
 
     Ok(HttpResponse::Ok().json(result_chunks))
 }
