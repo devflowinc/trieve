@@ -19,7 +19,6 @@ export interface AfMessageProps {
 
 export const AfMessage = (props: AfMessageProps) => {
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
-  const [metadata, setMetadata] = createSignal<ScoreChunkDTO[]>([]);
   const [content, setContent] = createSignal<string>("");
 
   createEffect(() => {
@@ -29,32 +28,7 @@ export const AfMessage = (props: AfMessageProps) => {
   createEffect(() => {
     if (props.streamingCompletion()) return;
     const curOrder = props.order;
-    const bracketRe = /\[(.*?)\]/g;
-    const numRe = /\d+/g;
-    let match;
-    let chunkNums;
-    const chunkNumList = [];
 
-    while ((match = bracketRe.exec(props.content)) !== null) {
-      const chunkIndex = match[0];
-      while ((chunkNums = numRe.exec(chunkIndex)) !== null) {
-        for (const num1 of chunkNums) {
-          const chunkNum = parseInt(num1);
-          chunkNumList.push(chunkNum);
-        }
-      }
-    }
-    chunkNumList.sort((a, b) => a - b);
-    for (const num of chunkNumList) {
-      const chunk = props.chunks()[num - 1];
-      chunk.score = num;
-      if (!metadata().includes(chunk)) {
-        // the linter does not understand that the chunk can sometimes be undefined or null
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        if (!chunk) return;
-        setMetadata((prev) => [...prev, chunk]);
-      }
-    }
     setContent(
       props.content.replace(/\[([^,\]]+)/g, (_, content: string) => {
         const match = content.match(/\d+\.\d+|\d+/);
@@ -82,13 +56,7 @@ export const AfMessage = (props: AfMessageProps) => {
             ) : (
               <AiFillRobot class="fill-current" />
             )}
-            <div
-              classList={{
-                "w-full": true,
-                "flex flex-col gap-y-8 items-start lg:gap-4 lg:grid lg:grid-cols-3 flex-col-reverse lg:flex-row":
-                  !!metadata(),
-              }}
-            >
+            <div class="flex flex-col items-start gap-y-8 lg:grid lg:grid-cols-3 lg:flex-row lg:gap-4">
               <div class="col-span-2 whitespace-pre-line text-neutral-800 dark:text-neutral-50">
                 <div
                   // eslint-disable-next-line solid/no-innerhtml
@@ -103,16 +71,16 @@ export const AfMessage = (props: AfMessageProps) => {
                   />
                 </div>
               </Show>
-              <Show when={props.role == "assistant" && metadata().length > 0}>
+              <Show when={props.role == "assistant"}>
                 <div class="max-h-[600px] w-full flex-col space-y-3 overflow-scroll overflow-x-hidden scrollbar-thin scrollbar-track-neutral-200 dark:scrollbar-track-zinc-700">
                   <For each={props.chunks()}>
-                    {(chunk) => (
+                    {(chunk, idx) => (
                       <ScoreChunk
                         group={undefined}
                         chunk={chunk.metadata[0]}
                         score={0}
                         showExpand={!props.streamingCompletion()}
-                        counter={chunk.score.toString()}
+                        counter={(idx() + 1).toString()}
                         order={props.order.toString()}
                         begin={undefined}
                         end={undefined}

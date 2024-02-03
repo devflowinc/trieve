@@ -2,7 +2,6 @@ import { SearchLayout } from "../layouts/SearchLayout";
 import { Footer } from "../components/Footer";
 import ResultsPage, { Filters } from "../components/ResultsPage";
 import SearchForm from "../components/SearchForm";
-import { SuggestedQueries } from "../components/SuggestedQueries";
 import { useLocation } from "@solidjs/router";
 import { Show, createEffect, createSignal } from "solid-js";
 
@@ -72,7 +71,7 @@ export const Search = () => {
                   searchType={searchType()}
                   weight={weight()}
                 />
-                <SuggestedQueries query={query()} />
+                {/* <SuggestedQueries query={query()} /> */}
               </div>
             </div>
             <ResultsPage

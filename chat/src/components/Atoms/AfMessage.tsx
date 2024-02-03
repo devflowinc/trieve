@@ -38,8 +38,7 @@ export const AfMessage = (props: AfMessageProps) => {
   });
 
   const displayMessage = createMemo(() => {
-    if (props.normalChat || props.role !== "assistant")
-      return { content: props.content };
+    if (props.role !== "assistant") return { content: props.content };
 
     const curOrder = props.order;
     const split_content = props.content.split("||");

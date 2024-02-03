@@ -45,7 +45,6 @@ export interface ChunkMetadataDisplayProps {
   chunk: ChunkMetadataWithVotes | ChunkMetadata;
   chunkGroups: ChunkGroupDTO[];
   bookmarks: ChunkBookmarksDTO[];
-  setShowModal: Setter<boolean>;
   setShowConfirmModal: Setter<boolean>;
   fetchChunkGroups: () => void;
   setChunkGroups: Setter<ChunkGroupDTO[]>;
@@ -250,7 +249,6 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                 totalGroupPages={props.totalGroupPages}
                 chunkGroups={props.chunkGroups}
                 chunkMetadata={props.chunk}
-                setLoginModal={props.setShowModal}
                 bookmarks={props.bookmarks.filter(
                   (bookmark) => bookmark.chunk_uuid == props.chunk.id,
                 )}

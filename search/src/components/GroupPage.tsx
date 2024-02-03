@@ -5,6 +5,9 @@ import {
   For,
   onMount,
   onCleanup,
+  Switch,
+  Match,
+  createMemo,
 } from "solid-js";
 import {
   type ChunkGroupDTO,
@@ -18,7 +21,6 @@ import {
   BookmarkDTO,
 } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
-import { BiRegularLogInCircle, BiRegularXCircle } from "solid-icons/bi";
 import { FiEdit, FiTrash } from "solid-icons/fi";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
 import { PaginationController } from "./Atoms/PaginationController";
@@ -33,48 +35,26 @@ import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
 import { currentUser } from "../stores/userStore";
 import { useStore } from "@nanostores/solid";
 import { currentDataset } from "../stores/datasetStore";
+import { useLocation, useNavigate } from "@solidjs/router";
 
 export interface GroupPageProps {
   groupID: string;
-  defaultGroupChunks: {
-    metadata: ChunkGroupBookmarkDTO | ChunkGroupSearchDTO;
-    status: number;
-  };
-  page: number;
-  query: string;
-  searchType: string;
-  filters: Filters;
 }
 
 export const GroupPage = (props: GroupPageProps) => {
   const apiHost: string = import.meta.env.VITE_API_HOST as string;
   const $dataset = useStore(currentDataset);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const chunkMetadatasWithVotes: BookmarkDTO[] = [];
   const searchChunkMetadatasWithVotes: ScoreChunkDTO[] = [];
 
-  // Sometimes this will error server-side so we have to handle it
-  try {
-    if (
-      props.defaultGroupChunks.metadata.bookmarks.length > 0 &&
-      !isScoreChunkDTO(props.defaultGroupChunks.metadata.bookmarks[0])
-    ) {
-      chunkMetadatasWithVotes.push(
-        ...(props.defaultGroupChunks.metadata.bookmarks as BookmarkDTO[]),
-      );
-    } else if (
-      props.defaultGroupChunks.metadata.bookmarks.length > 0 &&
-      isScoreChunkDTO(props.defaultGroupChunks.metadata.bookmarks[0])
-    ) {
-      searchChunkMetadatasWithVotes.push(
-        ...(props.defaultGroupChunks.metadata.bookmarks as ScoreChunkDTO[]),
-      );
-    }
-  } catch (e) {
-    console.error(e);
-  }
-
-  const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
+  const [query, setQuery] = createSignal<string>("");
+  const [page, setPage] = createSignal<number>(1);
+  const [searchType, setSearchType] = createSignal<string>("semantic");
+  const [filters, setFilters] = createSignal<Filters | undefined>(undefined);
+  const [searchLoading, setSearchLoading] = createSignal(false);
   const [metadatasWithVotes, setMetadatasWithVotes] = createSignal<
     BookmarkDTO[]
   >(chunkMetadatasWithVotes);
@@ -83,9 +63,7 @@ export const GroupPage = (props: GroupPageProps) => {
   >(searchChunkMetadatasWithVotes);
   const [clientSideRequestFinished, setClientSideRequestFinished] =
     createSignal(false);
-  const [groupInfo, setGroupInfo] = createSignal<ChunkGroupDTO>(
-    props.defaultGroupChunks.metadata.group,
-  );
+  const [groupInfo, setGroupInfo] = createSignal<ChunkGroupDTO | null>(null);
   const [chunkGroups, setChunkGroups] = createSignal<ChunkGroupDTO[]>([]);
   const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [error, setError] = createSignal("");
@@ -93,28 +71,21 @@ export const GroupPage = (props: GroupPageProps) => {
   const [deleting, setDeleting] = createSignal(false);
   const [editing, setEditing] = createSignal(false);
   const $currentUser = useStore(currentUser);
-  const [totalPages, setTotalPages] = createSignal(
-    props.defaultGroupChunks.metadata.total_pages,
-  );
+  const [totalPages, setTotalPages] = createSignal(0);
   const [loadingRecommendations, setLoadingRecommendations] =
     createSignal(false);
   const [recommendedChunks, setRecommendedChunks] = createSignal<
     ChunkMetadata[]
   >([]);
-
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
     createSignal(false);
-
   const [showConfirmGroupDeleteModal, setShowConfirmGroupmDeleteModal] =
     createSignal(false);
-
   const [totalGroupPages, setTotalGroupPages] = createSignal(1);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const [onDelete, setOnDelete] = createSignal(() => {});
-
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const [onGroupDelete, setOnGroupDelete] = createSignal(() => {});
-
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
 
@@ -130,12 +101,53 @@ export const GroupPage = (props: GroupPageProps) => {
   });
 
   createEffect(() => {
+    setQuery(location.query.q ?? "");
+    setPage(Number(location.query.page) || 1);
+    setSearchType(location.query.searchType ?? "semantic");
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const metadataFilters: any = {};
+
+    const params = new URLSearchParams(location.search);
+    params.forEach((value, key) => {
+      if (
+        key === "q" ||
+        key === "page" ||
+        key === "searchType" ||
+        key === "Tag Set" ||
+        key === "link" ||
+        key === "start" ||
+        key === "end" ||
+        key === "weight" ||
+        key === "dataset"
+      ) {
+        return;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      metadataFilters[key] = value.split(",");
+    });
+
+    const dataTypeFilters: Filters = {
+      tagSet: params.get("Tag Set")?.split(",") ?? [],
+      link: params.get("link")?.split(",") ?? [],
+      start: params.get("start") ?? "",
+      end: params.get("end") ?? "",
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      metadataFilters,
+    };
+
+    setFilters(dataTypeFilters);
+  });
+
+  createEffect(() => {
     const abortController = new AbortController();
     let group_id: string | null = null;
     const currentDataset = $dataset();
     if (!currentDataset) return;
-    if (props.query === "") {
-      void fetch(`${apiHost}/chunk_group/${props.groupID}/${props.page}`, {
+
+    if (query() === "") {
+      void fetch(`${apiHost}/chunk_group/${props.groupID}/${page()}`, {
         method: "GET",
         credentials: "include",
         signal: abortController.signal,
@@ -159,13 +171,11 @@ export const GroupPage = (props: GroupPageProps) => {
         if (response.status == 404) {
           setError("Theme not found, it never existed or was deleted");
         }
-        if (response.status == 401) {
-          setError("You must be logged in and authorized to view this theme");
-          setShowNeedLoginModal(true);
-        }
         setClientSideRequestFinished(true);
       });
     } else {
+      setSearchLoading(true);
+
       void fetch(`${apiHost}/chunk_group/search`, {
         method: "POST",
         headers: {
@@ -175,14 +185,14 @@ export const GroupPage = (props: GroupPageProps) => {
         signal: abortController.signal,
         credentials: "include",
         body: JSON.stringify({
-          query: props.query,
-          tag_set: props.filters.tagSet,
-          link: props.filters.link,
-          page: props.page,
+          query: query(),
+          tag_set: filters()?.tagSet,
+          link: filters()?.link,
+          page: page(),
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          filters: props.filters.metadataFilters,
+          filters: filters()?.metadataFilters,
           group_id: props.groupID,
-          search_type: props.searchType,
+          search_type: searchType(),
         }),
       }).then((response) => {
         if (response.ok) {
@@ -198,10 +208,8 @@ export const GroupPage = (props: GroupPageProps) => {
         if (response.status == 403) {
           setError("You are not authorized to view this theme");
         }
-        if (response.status == 401) {
-          setShowNeedLoginModal(true);
-        }
         setClientSideRequestFinished(true);
+        setSearchLoading(false);
       });
 
       onCleanup(() => {
@@ -227,13 +235,10 @@ export const GroupPage = (props: GroupPageProps) => {
         }).then((response) => {
           setDeleting(false);
           if (response.ok) {
-            window.location.href = "/";
+            navigate(`/`);
           }
           if (response.status == 403) {
             setDeleting(false);
-          }
-          if (response.status == 401) {
-            setShowNeedLoginModal(true);
           }
         });
       };
@@ -303,9 +308,9 @@ export const GroupPage = (props: GroupPageProps) => {
 
     setFetchingGroups(true);
     const body = {
-      group_id: groupInfo().id,
-      name: groupInfo().name,
-      description: groupInfo().description,
+      group_id: groupInfo()?.id,
+      name: groupInfo()?.name,
+      description: groupInfo()?.description,
     };
     void fetch(`${apiHost}/chunk_group`, {
       method: "PUT",
@@ -319,9 +324,6 @@ export const GroupPage = (props: GroupPageProps) => {
       setFetchingGroups(false);
       if (response.ok) {
         setEditing(false);
-      }
-      if (response.status == 401) {
-        setShowNeedLoginModal(true);
       }
     });
   };
@@ -356,14 +358,19 @@ export const GroupPage = (props: GroupPageProps) => {
             ...prev_recommendations,
             ...deduped_data,
           ];
-          setLoadingRecommendations(false);
           setRecommendedChunks(new_recommendations);
         });
+      } else {
+        const newEvent = new CustomEvent("show-toast", {
+          detail: {
+            type: "error",
+            message: "Failed to fetch recommendations",
+          },
+        });
+        window.dispatchEvent(newEvent);
       }
-      if (response.status == 401) {
-        setShowNeedLoginModal(true);
-        setLoadingRecommendations(false);
-      }
+
+      setLoadingRecommendations(false);
     });
   };
 
@@ -373,6 +380,21 @@ export const GroupPage = (props: GroupPageProps) => {
     textarea.style.height = `${textarea.scrollHeight}px`;
   };
 
+  const chatPopupChunks = createMemo(() => {
+    const curSearchMetadatasWithVotes = searchMetadatasWithVotes();
+    if (curSearchMetadatasWithVotes.length > 0) {
+      return curSearchMetadatasWithVotes;
+    }
+    const curMetadatasWithVotes = metadatasWithVotes();
+    return curMetadatasWithVotes.map((m) => {
+      return {
+        metadata: [m.metadata],
+        author: null,
+        score: 0,
+      } as ScoreChunkDTO;
+    });
+  });
+
   return (
     <>
       <Show when={openChat()}>
@@ -380,11 +402,8 @@ export const GroupPage = (props: GroupPageProps) => {
           <FullScreenModal isOpen={openChat} setIsOpen={setOpenChat}>
             <div class="max-h-[75vh] min-h-[75vh] min-w-[75vw] max-w-[75vw] overflow-y-auto rounded-md scrollbar-thin">
               <ChatPopup
-                chunks={() =>
-                  metadatasWithVotes() as unknown as ScoreChunkDTO[]
-                }
+                chunks={chatPopupChunks}
                 selectedIds={selectedIds}
-                setShowNeedLoginModal={setShowNeedLoginModal}
                 setOpenChat={setOpenChat}
               />
             </div>
@@ -395,7 +414,7 @@ export const GroupPage = (props: GroupPageProps) => {
         <Show when={error().length == 0}>
           <div class="flex w-full max-w-6xl items-center justify-end space-x-2 px-4 sm:px-8 md:px-20">
             <Show
-              when={chunkGroups().some((group) => group.id == groupInfo().id)}
+              when={chunkGroups().some((group) => group.id == groupInfo()?.id)}
             >
               <button
                 classList={{
@@ -414,16 +433,18 @@ export const GroupPage = (props: GroupPageProps) => {
           <Show when={!editing()}>
             <div class="flex w-full items-center justify-center">
               <h1 class="break-all text-center text-lg min-[320px]:text-xl sm:text-3xl">
-                {groupInfo().name}
+                {groupInfo()?.name}
               </h1>
             </div>
-            <Show when={groupInfo().description.length > 0 && !editing()}>
+            <Show
+              when={groupInfo()?.description.length ?? (0 > 0 && !editing())}
+            >
               <div class="mx-auto flex max-w-[300px] justify-items-center gap-x-2 md:max-w-fit">
                 <div class="text-center text-lg font-semibold">
                   Description:
                 </div>
                 <div class="line-clamp-1 flex w-full justify-start text-center text-lg">
-                  {groupInfo().description}
+                  {groupInfo()?.description}
                 </div>
               </div>
             </Show>
@@ -437,23 +458,29 @@ export const GroupPage = (props: GroupPageProps) => {
               <input
                 type="text"
                 class="mt-10 max-h-fit w-full rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
-                value={groupInfo().name}
+                value={groupInfo()?.name}
                 onInput={(e) => {
-                  setGroupInfo({
-                    ...groupInfo(),
-                    name: e.target.value,
-                  });
+                  const curGroupInfo = groupInfo();
+                  if (curGroupInfo) {
+                    setGroupInfo({
+                      ...curGroupInfo,
+                      name: e.target.value,
+                    });
+                  }
                 }}
               />
               <div class="text-md mr-2 font-semibold">Description:</div>
               <textarea
                 class="w-full justify-start rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
-                value={groupInfo().description}
+                value={groupInfo()?.description}
                 onInput={(e) => {
-                  setGroupInfo({
-                    ...groupInfo(),
-                    description: e.target.value,
-                  });
+                  const curGroupInfo = groupInfo();
+                  if (curGroupInfo) {
+                    setGroupInfo({
+                      ...curGroupInfo,
+                      description: e.target.value,
+                    });
+                  }
                 }}
               />
             </div>
@@ -482,10 +509,10 @@ export const GroupPage = (props: GroupPageProps) => {
           </Show>
         </Show>
         <div class="flex w-full max-w-6xl flex-col space-y-4 border-t border-neutral-500 px-4 sm:px-8 md:px-20">
-          <Show when={props.query != ""}>
+          <Show when={query() != ""}>
             <button
               class="relative mx-auto ml-8 mt-8 h-fit max-h-[240px] rounded-md bg-neutral-100 p-2 dark:bg-neutral-700"
-              onClick={() => (window.location.href = `/group/${props.groupID}`)}
+              onClick={() => navigate(`/group/${props.groupID}`)}
             >
               ← Back
             </button>
@@ -496,56 +523,75 @@ export const GroupPage = (props: GroupPageProps) => {
                 classList={{
                   "mx-auto w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]":
                     true,
-                  "mt-8": props.query == "",
+                  "mt-8": query() == "",
                 }}
               >
-                <SearchForm
-                  query={props.query}
-                  filters={props.filters}
-                  searchType={props.searchType}
-                  groupID={props.groupID}
-                />
+                <Show when={filters()}>
+                  {(nonUndefinedFilters) => (
+                    <SearchForm
+                      query={query()}
+                      filters={nonUndefinedFilters()}
+                      searchType={searchType()}
+                      groupID={props.groupID}
+                    />
+                  )}
+                </Show>
               </div>
             </div>
           </Show>
-          <Show when={props.query != ""}>
+          <Show when={query() != ""}>
             <div class="flex w-full flex-col items-center rounded-md p-2">
               <div class="text-xl font-semibold">
-                Search results for "{props.query}"
+                Search results for "{query()}"
               </div>
             </div>
           </Show>
-          <For
-            each={
-              props.query == ""
-                ? metadatasWithVotes()
-                : searchMetadatasWithVotes()
-            }
-          >
-            {(chunk) => (
-              <div class="mt-4">
-                <ScoreChunkArray
-                  totalGroupPages={totalGroupPages()}
-                  chunks={
-                    !isScoreChunkDTO(chunk) ? [chunk.metadata] : chunk.metadata
-                  }
-                  score={isScoreChunkDTO(chunk) ? chunk.score : 0}
-                  group={true}
-                  setShowModal={setShowNeedLoginModal}
-                  chunkGroups={chunkGroups()}
-                  bookmarks={bookmarks()}
-                  setOnDelete={setOnDelete}
-                  setShowConfirmModal={setShowConfirmDeleteModal}
-                  showExpand={clientSideRequestFinished()}
-                  setChunkGroups={setChunkGroups}
-                  setSelectedIds={setSelectedIds}
-                  selectedIds={selectedIds}
-                />
+          <Switch>
+            <Match when={searchLoading()}>
+              <div
+                class="text-primary inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-magenta border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+                role="status"
+              >
+                <span class="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+                  Loading...
+                </span>
               </div>
-            )}
-          </For>
+            </Match>
+            <Match when={!searchLoading()}>
+              <For
+                each={
+                  query() == ""
+                    ? metadatasWithVotes()
+                    : searchMetadatasWithVotes()
+                }
+              >
+                {(chunk) => (
+                  <div class="mt-4">
+                    <ScoreChunkArray
+                      totalGroupPages={totalGroupPages()}
+                      chunks={
+                        !isScoreChunkDTO(chunk)
+                          ? [chunk.metadata]
+                          : chunk.metadata
+                      }
+                      score={isScoreChunkDTO(chunk) ? chunk.score : 0}
+                      group={true}
+                      chunkGroups={chunkGroups()}
+                      bookmarks={bookmarks()}
+                      setOnDelete={setOnDelete}
+                      setShowConfirmModal={setShowConfirmDeleteModal}
+                      showExpand={clientSideRequestFinished()}
+                      setChunkGroups={setChunkGroups}
+                      setSelectedIds={setSelectedIds}
+                      selectedIds={selectedIds}
+                    />
+                  </div>
+                )}
+              </For>
+            </Match>
+          </Switch>
           <div class="mx-auto my-12 flex items-center justify-center space-x-2">
-            <PaginationController page={props.page} totalPages={totalPages()} />
+            <PaginationController page={page()} totalPages={totalPages()} />
           </div>
           <Show when={recommendedChunks().length > 0}>
             <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
@@ -561,7 +607,6 @@ export const GroupPage = (props: GroupPageProps) => {
                         chunk={chunk}
                         chunkGroups={chunkGroups()}
                         bookmarks={bookmarks()}
-                        setShowModal={setShowNeedLoginModal}
                         setShowConfirmModal={setShowConfirmDeleteModal}
                         fetchChunkGroups={fetchChunkGroups}
                         setChunkGroups={setChunkGroups}
@@ -692,31 +737,6 @@ export const GroupPage = (props: GroupPageProps) => {
           </button>
         </div>
       </div>
-      <Show when={showNeedLoginModal()}>
-        <FullScreenModal
-          isOpen={showNeedLoginModal}
-          setIsOpen={setShowNeedLoginModal}
-        >
-          <div class="min-w-[250px] sm:min-w-[300px]">
-            <BiRegularXCircle class="mx-auto h-8 w-8 fill-current  !text-red-500" />
-            <div class="mb-4 text-center text-xl font-bold">
-              Login or register to bookmark chunks, vote, get recommend chunks
-              or manage your groups
-            </div>
-            <div class="mx-auto flex w-fit flex-col space-y-3">
-              <a
-                class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${
-                  $dataset()?.dataset.name ?? ""
-                }`}
-              >
-                Login/Register
-                <BiRegularLogInCircle class="h-6 w-6  fill-current" />
-              </a>
-            </div>
-          </div>
-        </FullScreenModal>
-      </Show>
       <ConfirmModal
         showConfirmModal={showConfirmDeleteModal}
         setShowConfirmModal={setShowConfirmDeleteModal}

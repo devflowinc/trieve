@@ -895,9 +895,9 @@ pub async fn create_suggested_queries_handler(
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
     let base_url = dataset_config
         .LLM_BASE_URL
-        .unwrap_or("https://openrouter.ai/api/v1".into());
+        .unwrap_or("https://api.openai.com/api/v1".into());
     let base_url = if base_url.is_empty() {
-        "https://openrouter.ai/api/v1".into()
+        "https://api.openai.com/api/v1".into()
     } else {
         base_url
     };

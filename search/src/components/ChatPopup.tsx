@@ -23,7 +23,6 @@ import { currentDataset } from "../stores/datasetStore";
 export interface LayoutProps {
   selectedIds: Accessor<string[]>;
   chunks: Accessor<ScoreChunkDTO[]>;
-  setShowNeedLoginModal: Setter<boolean>;
   setOpenChat: Setter<boolean>;
 }
 
@@ -125,11 +124,6 @@ const ChatPopup = (props: LayoutProps) => {
         signal: completionAbortController().signal,
       });
 
-      if (res.status === 401) {
-        props.setOpenChat(false);
-        props.setShowNeedLoginModal(true);
-        return;
-      }
       // get the response as a stream
       const reader = res.body?.getReader();
       if (!reader) {
@@ -137,7 +131,15 @@ const ChatPopup = (props: LayoutProps) => {
       }
       await handleReader(reader);
     } catch (e) {
-      console.error(e);
+      const newEvent = new CustomEvent("show-toast", {
+        detail: {
+          type: "error",
+          message:
+            "Error generating completion, likely openrouter/openai is temporarily down",
+        },
+      });
+      window.dispatchEvent(newEvent);
+      return;
     }
   };
 
