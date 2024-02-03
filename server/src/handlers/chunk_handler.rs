@@ -1035,7 +1035,7 @@ pub async fn generate_off_chunks(
     messages.truncate(prev_messages.len() - 1);
     messages.push(ChatMessage {
         role: Role::User,
-        content: ChatMessageContent::Text("I am going to provide several pieces of information for you to use in response to a request or question. You will not respond until I ask you to.".to_string()),
+        content: ChatMessageContent::Text("I am going to provide several pieces of information (docs) for you to use in response to a request or question.".to_string()),
         tool_calls: None,
         name: None,
         tool_call_id: None,
@@ -1043,7 +1043,7 @@ pub async fn generate_off_chunks(
     messages.push(ChatMessage {
         role: Role::Assistant,
         content: ChatMessageContent::Text(
-            "Understood, I will not reply until I receive a direct request or question."
+            "Understood, I will use the provided docs as information to respond to any future questions or instructions."
                 .to_string(),
         ),
         tool_calls: None,
@@ -1091,7 +1091,7 @@ pub async fn generate_off_chunks(
         .iter()
         .for_each(|message| messages.push(ChatMessage::from(message.clone())));
 
-    let prompt = prompt.unwrap_or("Respond to the instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:".to_string());
+    let prompt = prompt.unwrap_or("Respond to the question or instruction using the docs and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:\n\n".to_string());
 
     messages.push(ChatMessage {
         role: Role::User,
@@ -1106,7 +1106,7 @@ pub async fn generate_off_chunks(
     });
 
     let parameters = ChatCompletionParameters {
-        model: data.model.clone().unwrap_or("openai/gpt-3.5-turbo-1106".to_string()),
+        model: data.model.clone().unwrap_or("mistralai/mixtral-8x7b-instruct".to_string()),
         stream: Some(true),
         messages,
         temperature: None,

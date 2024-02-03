@@ -19,6 +19,7 @@ import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
 import { useStore } from "@nanostores/solid";
 import { currentUser } from "../stores/userStore";
 import { currentDataset } from "../stores/datasetStore";
+import { A } from "@solidjs/router";
 
 export interface BookmarkPopoverProps {
   chunkMetadata: ChunkMetadata;
@@ -278,12 +279,12 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                             <div class="h-px w-full bg-neutral-200 dark:bg-neutral-700" />
                           </Show>
                           <div class="flex w-full items-center justify-between space-x-2">
-                            <a
+                            <A
                               href={`/group/${group.id}`}
                               class="max-w-[80%] underline"
                             >
                               {group.name}
-                            </a>
+                            </A>
 
                             <input
                               type="checkbox"

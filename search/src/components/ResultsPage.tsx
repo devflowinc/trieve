@@ -13,9 +13,7 @@ import {
   type ChunkGroupDTO,
   type ScoreChunkDTO,
   ChunkBookmarksDTO,
-  isChunkGroupPageDTO,
 } from "../../utils/apiTypes";
-import { BiRegularLogIn, BiRegularXCircle } from "solid-icons/bi";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { PaginationController } from "./Atoms/PaginationController";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
@@ -56,7 +54,6 @@ const ResultsPage = (props: ResultsPageProps) => {
   const [resultChunks, setResultChunks] = createSignal<ScoreChunkDTO[]>([]);
   const [clientSideRequestFinished, setClientSideRequestFinished] =
     createSignal(false);
-  const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
     createSignal(false);
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
@@ -70,7 +67,7 @@ const ResultsPage = (props: ResultsPageProps) => {
     if (!$currentUser()) return;
     const dataset = $dataset();
     if (!dataset) return;
-    void fetch(`${apiHost}/chunk_group/1`, {
+    void fetch(`${apiHost}/dataset/groups/${dataset.dataset.id}/1`, {
       method: "GET",
       credentials: "include",
       headers: {
@@ -79,10 +76,10 @@ const ResultsPage = (props: ResultsPageProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          if (isChunkGroupPageDTO(data)) {
-            setChunkCollections(data.groups);
-            setTotalCollectionPages(data.total_pages);
-          }
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          setChunkCollections(data.groups);
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          setTotalCollectionPages(data.total_pages);
         });
       }
     });
@@ -168,9 +165,6 @@ const ResultsPage = (props: ResultsPageProps) => {
           });
         });
       } else {
-        if (response.status === 401 || response.status === 403) {
-          setShowNeedLoginModal(true);
-        }
         setClientSideRequestFinished(true);
         createEffect(() => {
           props.setLoading(false);
@@ -200,7 +194,6 @@ const ResultsPage = (props: ResultsPageProps) => {
               <ChatPopup
                 chunks={resultChunks}
                 selectedIds={selectedIds}
-                setShowNeedLoginModal={setShowNeedLoginModal}
                 setOpenChat={setOpenChat}
               />
             </div>
@@ -247,7 +240,6 @@ const ResultsPage = (props: ResultsPageProps) => {
                       chunkGroups={chunkCollections()}
                       chunks={chunk.metadata}
                       score={chunk.score}
-                      setShowModal={setShowNeedLoginModal}
                       bookmarks={bookmarks()}
                       setOnDelete={setOnDelete}
                       setShowConfirmModal={setShowConfirmDeleteModal}
@@ -334,30 +326,6 @@ const ResultsPage = (props: ResultsPageProps) => {
           </Match>
         </Switch>
       </div>
-      <Show when={showNeedLoginModal()}>
-        <FullScreenModal
-          isOpen={showNeedLoginModal}
-          setIsOpen={setShowNeedLoginModal}
-        >
-          <div class="min-w-[250px] sm:min-w-[300px]">
-            <BiRegularXCircle class="mx-auto h-8 w-8 fill-current !text-red-500" />
-            <div class="mb-4 text-center text-xl font-bold">
-              Cannot use this feature without an account
-            </div>
-            <div class="mx-auto flex w-fit flex-col space-y-3">
-              <a
-                class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${
-                  $dataset()?.dataset.id ?? ""
-                }`}
-              >
-                Login/Register
-                <BiRegularLogIn class="h-6 w-6 fill-current" />
-              </a>
-            </div>
-          </div>
-        </FullScreenModal>
-      </Show>
       <ConfirmModal
         showConfirmModal={showConfirmDeleteModal}
         setShowConfirmModal={setShowConfirmDeleteModal}

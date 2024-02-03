@@ -482,7 +482,11 @@ pub async fn recommend_qdrant_query(
     dataset_id: uuid::Uuid,
     embed_size: usize,
 ) -> Result<Vec<uuid::Uuid>, DefaultError> {
-    let collection_name = dataset_id.to_string();
+    let collection_name = get_env!(
+        "QDRANT_COLLECTION",
+        "QDRANT_COLLECTION should be set if this is called"
+    )
+    .to_string();
 
     let point_ids: Vec<PointId> = positive_ids
         .iter()
