@@ -2,6 +2,7 @@
 extern crate diesel;
 
 use crate::{
+    errors::ServiceError,
     handlers::auth_handler::build_oidc_client,
     operators::{
         qdrant_operator::create_new_qdrant_collection_query, user_operator::create_default_user,
@@ -285,7 +286,16 @@ pub async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(PayloadConfig::new(134200000))
-            .app_data(web::JsonConfig::default().limit(134200000))
+            .app_data(
+                web::JsonConfig::default()
+                    .limit(134200000)
+                    .error_handler(|err, _req| {
+                        ServiceError::BadRequest(format!("{}", err)).into()
+                    }),
+            )
+            .app_data(web::PathConfig::default().error_handler(|err, _req| {
+                ServiceError::BadRequest(format!("{}", err)).into()
+            }))
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(oidc_client.clone()))
             .app_data(web::Data::new(redis_client.clone()))
