@@ -3,7 +3,7 @@ use super::chunk_operator::{
     get_metadata_from_point_ids,
 };
 use super::model_operator::{create_embedding, cross_encoder};
-use super::qdrant_operator::{search_over_groups_query, GroupSearchResults};
+use super::qdrant_operator::{search_over_groups_query, GroupSearchResults, VectorType};
 use crate::data::models::{
     ChunkFileWithName, ChunkGroup, ChunkMetadataWithFileData, Dataset, FullTextSearchResult,
     ServerDatasetConfiguration,
@@ -14,11 +14,10 @@ use crate::errors::ServiceError;
 use crate::get_env;
 use crate::handlers::chunk_handler::{
     ParsedQuery, ScoreChunkDTO, SearchChunkData, SearchChunkQueryResponseBody, SearchGroupsData,
-    SearchGroupsResult, SearchOverGroupsQuery,
+    SearchGroupsResult,
 };
-use crate::operators::qdrant_operator::{
-    get_qdrant_connection, search_full_text_qdrant_query, search_semantic_qdrant_query,
-};
+use crate::operators::model_operator::get_splade_query_embedding;
+use crate::operators::qdrant_operator::{get_qdrant_connection, search_qdrant_query};
 use crate::{data::models::Pool, errors::DefaultError};
 use actix_web::web;
 use dateparser::DateTimeUtc;
@@ -204,7 +203,7 @@ pub fn assemble_qdrant_filter(
 
 #[allow(clippy::too_many_arguments)]
 pub async fn retrieve_qdrant_points_query(
-    embedding_vector: Option<Vec<f32>>,
+    vector: VectorType,
     page: u64,
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
@@ -225,11 +224,7 @@ pub async fn retrieve_qdrant_points_query(
         dataset_id,
     )?;
 
-    let point_ids = if let Some(embedding_vector) = embedding_vector {
-        search_semantic_qdrant_query(page, filter, embedding_vector).await?
-    } else {
-        search_full_text_qdrant_query(page, filter, parsed_query.query).await?
-    };
+    let point_ids = search_qdrant_query(page, filter, vector).await?;
 
     Ok(SearchChunkQueryResult {
         search_results: point_ids.clone(),
@@ -238,6 +233,7 @@ pub async fn retrieve_qdrant_points_query(
     })
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SearchOverGroupsQueryResult {
     pub search_results: Vec<GroupSearchResults>,
     pub total_chunk_pages: i64,
@@ -245,7 +241,7 @@ pub struct SearchOverGroupsQueryResult {
 
 #[allow(clippy::too_many_arguments)]
 pub async fn retrieve_group_qdrant_points_query(
-    embedding_vector: Vec<f32>,
+    vector: VectorType,
     page: u64,
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
@@ -266,7 +262,7 @@ pub async fn retrieve_group_qdrant_points_query(
         dataset_id,
     )?;
 
-    let point_ids = search_over_groups_query(page, filter, embedding_vector).await?;
+    let point_ids = search_over_groups_query(page, filter, vector).await?;
 
     Ok(SearchOverGroupsQueryResult {
         search_results: point_ids.clone(),
@@ -484,7 +480,7 @@ pub async fn search_semantic_chunk_groups_query(
     });
 
     let point_ids: Vec<SearchResult> =
-        search_semantic_qdrant_query(page, filter, embedding_vector).await?;
+        search_qdrant_query(page, filter, VectorType::Dense(embedding_vector)).await?;
 
     Ok(SearchChunkQueryResult {
         search_results: point_ids,
@@ -750,7 +746,14 @@ pub async fn search_full_text_group_query(
         })),
     });
 
-    let point_ids = search_full_text_qdrant_query(page, filter, user_query).await;
+    let embedding_vector =
+        get_splade_query_embedding(&user_query)
+            .await
+            .map_err(|_| DefaultError {
+                message: "Failed to get splade query embedding",
+            })?;
+
+    let point_ids = search_qdrant_query(page, filter, VectorType::Sparse(embedding_vector)).await;
 
     Ok(SearchChunkQueryResult {
         search_results: point_ids?,
@@ -827,7 +830,7 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
     })
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GroupScoreChunkDTO {
     pub group_id: uuid::Uuid,
     pub metadata: Vec<ScoreChunkDTO>,
@@ -841,7 +844,7 @@ pub struct SearchOverGroupsResponseBody {
 
 pub async fn retrieve_chunks_for_groups(
     search_over_groups_query_result: SearchOverGroupsQueryResult,
-    data: &web::Json<SearchOverGroupsQuery>,
+    data: &web::Json<SearchChunkData>,
     pool: web::Data<Pool>,
 ) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
     let point_ids = search_over_groups_query_result
@@ -1058,7 +1061,7 @@ pub async fn search_semantic_chunks(
     let embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
-        Some(embedding_vector),
+        VectorType::Dense(embedding_vector),
         page,
         data.link.clone(),
         data.tag_set.clone(),
@@ -1091,8 +1094,12 @@ pub async fn search_full_text_chunks(
         .join(" AND ")
         .replace('\"', "");
 
+    let embedding_vector = get_splade_query_embedding(&parsed_query.query)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
+
     let search_chunk_query_results = retrieve_qdrant_points_query(
-        None,
+        VectorType::Sparse(embedding_vector),
         page,
         data.link.clone(),
         data.tag_set.clone(),
@@ -1173,7 +1180,7 @@ pub async fn search_hybrid_chunks(
     let pool1 = pool.clone();
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
-        Some(embedding_vector),
+        VectorType::Dense(embedding_vector),
         page,
         data.link.clone(),
         data.tag_set.clone(),
@@ -1266,7 +1273,7 @@ pub async fn search_hybrid_chunks(
         })
         .collect();
 
-    let mut result_chunks = if data.cross_encoder.unwrap_or(false) {
+    let mut result_chunks = {
         let combined_results = semantic_score_chunks
             .into_iter()
             .chain(full_text_handler_results.score_chunks.into_iter())
@@ -1275,36 +1282,6 @@ pub async fn search_hybrid_chunks(
 
         SearchChunkQueryResponseBody {
             score_chunks: cross_encoder(data.query.clone(), combined_results).await?,
-            total_chunk_pages: search_chunk_query_results.total_chunk_pages,
-        }
-    } else if let Some(weights) = data.weights {
-        if weights.0 == 1.0 {
-            SearchChunkQueryResponseBody {
-                score_chunks: semantic_score_chunks,
-                total_chunk_pages: search_chunk_query_results.total_chunk_pages,
-            }
-        } else if weights.1 == 1.0 {
-            SearchChunkQueryResponseBody {
-                score_chunks: full_text_handler_results.score_chunks,
-                total_chunk_pages: full_text_handler_results.total_chunk_pages,
-            }
-        } else {
-            SearchChunkQueryResponseBody {
-                score_chunks: reciprocal_rank_fusion(
-                    semantic_score_chunks,
-                    full_text_handler_results.score_chunks,
-                    data.weights,
-                ),
-                total_chunk_pages: search_chunk_query_results.total_chunk_pages,
-            }
-        }
-    } else {
-        SearchChunkQueryResponseBody {
-            score_chunks: reciprocal_rank_fusion(
-                semantic_score_chunks,
-                full_text_handler_results.score_chunks,
-                data.weights,
-            ),
             total_chunk_pages: search_chunk_query_results.total_chunk_pages,
         }
     };
@@ -1556,7 +1533,7 @@ pub async fn search_hybrid_groups(
 }
 
 pub async fn semantic_search_over_groups(
-    data: web::Json<SearchOverGroupsQuery>,
+    data: web::Json<SearchChunkData>,
     parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
@@ -1567,7 +1544,7 @@ pub async fn semantic_search_over_groups(
     let embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
 
     let search_chunk_query_results = retrieve_group_qdrant_points_query(
-        embedding_vector,
+        VectorType::Dense(embedding_vector),
         page,
         data.link.clone(),
         data.tag_set.clone(),
@@ -1581,6 +1558,146 @@ pub async fn semantic_search_over_groups(
 
     let result_chunks =
         retrieve_chunks_for_groups(search_chunk_query_results, &data, pool.clone()).await?;
+
+    //TODO: rerank for groups
+
+    Ok(result_chunks)
+}
+
+pub async fn full_text_search_over_groups(
+    data: web::Json<SearchChunkData>,
+    parsed_query: ParsedQuery,
+    page: u64,
+    pool: web::Data<Pool>,
+    dataset: Dataset,
+) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
+    let embedding_vector = get_splade_query_embedding(&data.query)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
+
+    let search_chunk_query_results = retrieve_group_qdrant_points_query(
+        VectorType::Sparse(embedding_vector),
+        page,
+        data.link.clone(),
+        data.tag_set.clone(),
+        data.time_range.clone(),
+        data.filters.clone(),
+        parsed_query,
+        dataset.id,
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let result_chunks =
+        retrieve_chunks_for_groups(search_chunk_query_results, &data, pool.clone()).await?;
+
+    //TODO: rerank for groups
+
+    Ok(result_chunks)
+}
+
+async fn cross_encoder_for_groups(
+    query: String,
+    groups_chunks: Vec<GroupScoreChunkDTO>,
+) -> Result<Vec<GroupScoreChunkDTO>, actix_web::Error> {
+    let score_chunks = groups_chunks
+        .iter()
+        .flat_map(|group| group.metadata.clone().into_iter().collect_vec())
+        .collect_vec();
+    let cross_encoder_results = cross_encoder(query, score_chunks).await?;
+    let mut group_results = cross_encoder_results
+        .into_iter()
+        .map(|score_chunk| {
+            let group = groups_chunks
+                .iter()
+                .find(|group| {
+                    group
+                        .metadata
+                        .iter()
+                        .any(|chunk| chunk.metadata[0].id == score_chunk.metadata[0].id)
+                })
+                .expect("Group not found");
+            group.clone()
+        })
+        .collect_vec();
+    group_results.dedup_by(|a, b| a.group_id == b.group_id);
+    Ok(group_results)
+}
+
+pub async fn hybrid_search_over_groups(
+    data: web::Json<SearchChunkData>,
+    parsed_query: ParsedQuery,
+    page: u64,
+    pool: web::Data<Pool>,
+    dataset: Dataset,
+) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
+    let dataset_config =
+        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let dense_embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
+    let sparse_embedding_vector = get_splade_query_embedding(&data.query)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
+
+    let semantic_future = retrieve_group_qdrant_points_query(
+        VectorType::Dense(dense_embedding_vector),
+        page,
+        data.link.clone(),
+        data.tag_set.clone(),
+        data.time_range.clone(),
+        data.filters.clone(),
+        parsed_query.clone(),
+        dataset.id,
+    );
+
+    let full_text_future = retrieve_group_qdrant_points_query(
+        VectorType::Sparse(sparse_embedding_vector),
+        page,
+        data.link.clone(),
+        data.tag_set.clone(),
+        data.time_range.clone(),
+        data.filters.clone(),
+        parsed_query.clone(),
+        dataset.id,
+    );
+
+    let (semantic_results, full_text_results) = futures::join!(semantic_future, full_text_future);
+
+    let semantic_results =
+        semantic_results.map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let full_text_results =
+        full_text_results.map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    let combined_results = semantic_results
+        .clone()
+        .search_results
+        .into_iter()
+        .chain(full_text_results.clone().search_results.into_iter())
+        .unique_by(|chunk| chunk.group_id)
+        .collect::<Vec<GroupSearchResults>>();
+
+    let combined_search_chunk_query_results = SearchOverGroupsQueryResult {
+        search_results: combined_results,
+        total_chunk_pages: semantic_results.total_chunk_pages,
+    };
+
+    let combined_result_chunks = retrieve_chunks_for_groups(
+        combined_search_chunk_query_results.clone(),
+        &data,
+        pool.clone(),
+    )
+    .await?;
+
+    let result_chunks = SearchOverGroupsResponseBody {
+        group_chunks: cross_encoder_for_groups(
+            data.query.clone(),
+            combined_result_chunks.group_chunks,
+        )
+        .await?,
+        total_chunk_pages: combined_search_chunk_query_results.total_chunk_pages,
+    };
+
+    //TODO: rerank for groups
 
     Ok(result_chunks)
 }

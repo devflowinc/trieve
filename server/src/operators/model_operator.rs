@@ -133,7 +133,7 @@ pub async fn get_splade_query_embedding(message: &str) -> Result<Vec<(u32, f32)>
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ReRankResponse {
-    pub docs: Vec<String>,
+    pub docs: Vec<(String, f32)>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -185,18 +185,16 @@ pub async fn cross_encoder(
             )
         })?;
 
-    results.sort_by(|a, b| {
-        let index_a = resp.docs.iter().position(|s| s == &a.metadata[0].content);
-        let index_b = resp.docs.iter().position(|s| s == &b.metadata[0].content);
-
-        index_b.cmp(&index_a)
+    results.clone().iter_mut().for_each(|x| {
+        x.score = resp
+            .docs
+            .iter()
+            .find(|s| s.0 == x.metadata[0].content)
+            .unwrap()
+            .1 as f64;
     });
-    let results_len = results.len() as f32;
 
-    // set the scores to the new order
-    for (i, result) in results.iter_mut().enumerate() {
-        result.score = (results_len - i as f32) as f64;
-    }
+    results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
 
     Ok(results)
 }

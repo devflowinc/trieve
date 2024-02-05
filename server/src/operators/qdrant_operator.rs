@@ -1,7 +1,4 @@
-use super::{
-    model_operator::{get_splade_doc_embedding, get_splade_query_embedding},
-    search_operator::SearchResult,
-};
+use super::{model_operator::get_splade_doc_embedding, search_operator::SearchResult};
 use crate::{
     data::models::ChunkMetadata,
     errors::{DefaultError, ServiceError},
@@ -19,6 +16,7 @@ use qdrant_client::{
         VectorsConfig, WithPayloadSelector,
     },
 };
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{collections::HashMap, str::FromStr};
 
@@ -549,16 +547,21 @@ pub async fn remove_bookmark_from_qdrant_query(
     Ok(())
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct GroupSearchResults {
     pub group_id: uuid::Uuid,
     pub hits: Vec<SearchResult>,
 }
 
+pub enum VectorType {
+    Sparse(Vec<(u32, f32)>),
+    Dense(Vec<f32>),
+}
+
 pub async fn search_over_groups_query(
     page: u64,
     filter: Filter,
-    embedding_vector: Vec<f32>,
+    vector: VectorType,
 ) -> Result<Vec<GroupSearchResults>, DefaultError> {
     let qdrant = get_qdrant_connection().await?;
 
@@ -568,37 +571,62 @@ pub async fn search_over_groups_query(
     )
     .to_string();
 
-    let vector_name = match embedding_vector.len() {
-        384 => "384_vectors",
-        768 => "768_vectors",
-        1024 => "1024_vectors",
-        1536 => "1536_vectors",
-        _ => {
-            return Err(DefaultError {
-                message: "Invalid embedding vector size",
-            })
-        }
+    let vector_name = match vector {
+        VectorType::Sparse(_) => "sparse_vectors",
+        VectorType::Dense(ref embedding_vector) => match embedding_vector.len() {
+            384 => "384_vectors",
+            768 => "768_vectors",
+            1024 => "1024_vectors",
+            1536 => "1536_vectors",
+            _ => {
+                return Err(DefaultError {
+                    message: "Invalid embedding vector size",
+                })
+            }
+        },
     };
 
-    let data = qdrant
-        .search_groups(&SearchPointGroups {
-            collection_name: qdrant_collection.to_string(),
-            vector: embedding_vector,
-            vector_name: Some(vector_name.to_string()),
-            limit: (10 * page as u32),
-            with_payload: None,
-            filter: Some(filter),
-            group_by: "group_ids".to_string(),
-            group_size: 3,
-            ..Default::default()
-        })
-        .await
-        .map_err(|e| {
-            log::error!("Failed to search points on Qdrant {:?}", e);
-            DefaultError {
-                message: "Failed to search points on Qdrant",
-            }
-        })?;
+    let data = match vector {
+        VectorType::Dense(embedding_vector) => {
+            qdrant
+                .search_groups(&SearchPointGroups {
+                    collection_name: qdrant_collection.to_string(),
+                    vector: embedding_vector,
+                    vector_name: Some(vector_name.to_string()),
+                    limit: (10 * page as u32),
+                    with_payload: None,
+                    filter: Some(filter),
+                    group_by: "group_ids".to_string(),
+                    group_size: 3,
+                    ..Default::default()
+                })
+                .await
+        }
+
+        VectorType::Sparse(sparse_vector) => {
+            let sparse_vector: Vector = sparse_vector.into();
+            qdrant
+                .search_groups(&SearchPointGroups {
+                    collection_name: qdrant_collection.to_string(),
+                    vector: sparse_vector.data,
+                    sparse_indices: sparse_vector.indices,
+                    vector_name: Some(vector_name.to_string()),
+                    limit: (10 * page as u32),
+                    with_payload: None,
+                    filter: Some(filter),
+                    group_by: "group_ids".to_string(),
+                    group_size: 3,
+                    ..Default::default()
+                })
+                .await
+        }
+    }
+    .map_err(|e| {
+        log::error!("Failed to search points on Qdrant {:?}", e);
+        DefaultError {
+            message: "Failed to search points on Qdrant",
+        }
+    })?;
 
     let point_ids: Vec<GroupSearchResults> = data
         .result
@@ -632,10 +660,10 @@ pub async fn search_over_groups_query(
     Ok(point_ids)
 }
 
-pub async fn search_semantic_qdrant_query(
+pub async fn search_qdrant_query(
     page: u64,
     filter: Filter,
-    embedding_vector: Vec<f32>,
+    vector: VectorType,
 ) -> Result<Vec<SearchResult>, DefaultError> {
     let qdrant = get_qdrant_connection().await?;
 
@@ -645,93 +673,60 @@ pub async fn search_semantic_qdrant_query(
     )
     .to_string();
 
-    let vector_name = match embedding_vector.len() {
-        384 => "384_vectors",
-        768 => "768_vectors",
-        1024 => "1024_vectors",
-        1536 => "1536_vectors",
-        _ => {
-            return Err(DefaultError {
-                message: "Invalid embedding vector size",
-            })
-        }
+    let vector_name = match vector {
+        VectorType::Sparse(_) => "sparse_vectors",
+        VectorType::Dense(ref embedding_vector) => match embedding_vector.len() {
+            384 => "384_vectors",
+            768 => "768_vectors",
+            1024 => "1024_vectors",
+            1536 => "1536_vectors",
+            _ => {
+                return Err(DefaultError {
+                    message: "Invalid embedding vector size",
+                })
+            }
+        },
     };
 
-    let data = qdrant
-        .search_points(&SearchPoints {
-            collection_name: qdrant_collection.to_string(),
-            vector: embedding_vector,
-            vector_name: Some(vector_name.to_string()),
-            limit: 10,
-            offset: Some((page - 1) * 10),
-            with_payload: None,
-            filter: Some(filter),
-            ..Default::default()
-        })
-        .await
-        .map_err(|e| {
-            log::error!("Failed to search points on Qdrant {:?}", e);
-            DefaultError {
-                message: "Failed to search points on Qdrant",
-            }
-        })?;
+    let data = match vector {
+        VectorType::Dense(embedding_vector) => {
+            qdrant
+                .search_points(&SearchPoints {
+                    collection_name: qdrant_collection.to_string(),
+                    vector: embedding_vector,
+                    vector_name: Some(vector_name.to_string()),
+                    limit: 10,
+                    offset: Some((page - 1) * 10),
+                    with_payload: None,
+                    filter: Some(filter),
+                    ..Default::default()
+                })
+                .await
+        }
 
-    let point_ids: Vec<SearchResult> = data
-        .result
-        .iter()
-        .filter_map(|point| match point.clone().id?.point_id_options? {
-            PointIdOptions::Uuid(id) => Some(SearchResult {
-                score: point.score,
-                point_id: uuid::Uuid::parse_str(&id).ok()?,
-            }),
-            PointIdOptions::Num(_) => None,
-        })
-        .collect();
-
-    Ok(point_ids)
-}
-
-pub async fn search_full_text_qdrant_query(
-    page: u64,
-    filter: Filter,
-    query: String,
-) -> Result<Vec<SearchResult>, DefaultError> {
-    let qdrant = get_qdrant_connection().await?;
-
-    let qdrant_collection = get_env!(
-        "QDRANT_COLLECTION",
-        "QDRANT_COLLECTION should be set if this is called"
-    )
-    .to_string();
-
-    let embedding_vector =
-        get_splade_query_embedding(&query)
-            .await
-            .map_err(|_err| DefaultError {
-                message: "Failed to get splade query embedding",
-            })?;
-
-    let sparse_vector: Vector = embedding_vector.into();
-
-    let data = qdrant
-        .search_points(&SearchPoints {
-            collection_name: qdrant_collection.to_string(),
-            vector: sparse_vector.data,
-            sparse_indices: sparse_vector.indices,
-            vector_name: Some("sparse_vectors".to_string()),
-            limit: 10,
-            offset: Some((page - 1) * 10),
-            with_payload: None,
-            filter: Some(filter),
-            ..Default::default()
-        })
-        .await
-        .map_err(|e| {
-            log::error!("Failed to search points on Qdrant {:?}", e);
-            DefaultError {
-                message: "Failed to search points on Qdrant",
-            }
-        })?;
+        VectorType::Sparse(sparse_vector) => {
+            let sparse_vector: Vector = sparse_vector.into();
+            qdrant
+                .search_points(&SearchPoints {
+                    collection_name: qdrant_collection.to_string(),
+                    vector: sparse_vector.data,
+                    sparse_indices: sparse_vector.indices,
+                    vector_name: Some(vector_name.to_string()),
+                    limit: 10,
+                    offset: Some((page - 1) * 10),
+                    with_payload: None,
+                    filter: Some(filter),
+                    ..Default::default()
+                })
+                .await
+        }
+    }
+    .map_err(|e| {
+        log::error!("Failed to search points on Qdrant {:?}", e);
+        DefaultError {
+            message: "Failed to search points on Qdrant",
+        }
+    })?;
 
     let point_ids: Vec<SearchResult> = data
         .result
