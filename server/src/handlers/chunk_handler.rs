@@ -821,6 +821,18 @@ pub async fn search_groups(
     Ok(HttpResponse::Ok().json(result_chunks))
 }
 
+
+#[utoipa::path(
+    post,
+    path = "/chunk_group/search_over_groups",
+    context_path = "/api",
+    tag = "chunk_group",
+    request_body(content = SearchChunkData, description = "JSON request payload to semantically search over groups", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchOverGroupsResponseBody),
+        (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = DefaultError),
+    ),
+)]
 pub async fn search_over_groups(
     data: web::Json<SearchChunkData>,
     pool: web::Data<Pool>,
