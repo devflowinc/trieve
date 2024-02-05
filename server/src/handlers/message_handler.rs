@@ -15,6 +15,7 @@ use crate::{
         },
         model_operator::create_embedding,
         organization_operator::get_message_org_count,
+        qdrant_operator::VectorType,
         search_operator::retrieve_qdrant_points_query,
     },
 };
@@ -657,7 +658,7 @@ pub async fn stream_response(
     let embedding_vector = create_embedding(query.as_str(), dataset_config.clone()).await?;
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
-        Some(embedding_vector),
+        VectorType::Dense(embedding_vector),
         1,
         None,
         None,

@@ -12,8 +12,9 @@ use crate::operators::model_operator::create_embedding;
 use crate::operators::qdrant_operator::recommend_qdrant_query;
 use crate::operators::qdrant_operator::update_qdrant_point_query;
 use crate::operators::search_operator::{
-    search_full_text_chunks, search_full_text_groups, search_hybrid_chunks, search_hybrid_groups,
-    search_semantic_chunks, search_semantic_groups, semantic_search_over_groups,
+    full_text_search_over_groups, hybrid_search_over_groups, search_full_text_chunks,
+    search_full_text_groups, search_hybrid_chunks, search_hybrid_groups, search_semantic_chunks,
+    search_semantic_groups, semantic_search_over_groups,
 };
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
@@ -588,10 +589,6 @@ pub struct SearchChunkData {
     pub filters: Option<serde_json::Value>,
     /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
     pub date_bias: Option<bool>,
-    /// Set cross_encoder to true to use the BAAI/bge-reranker-large model to re-rank search results. This will only apply if in hybrid search mode. Reciprocal rank fusion will be used if cross_encoder is set to false or not set.
-    pub cross_encoder: Option<bool>,
-    /// Weights are a tuple of two floats. The first value is the weight for the semantic search results and the second value is the weight for the full-text search results. This can be used to bias search results towards semantic or full-text results. This will only apply if in hybrid search mode and cross_encoder is set to false.
-    pub weights: Option<(f64, f64)>,
     /// Set get_collisions to true to get the collisions for each chunk. This will only apply if
     /// environment variable COLLISIONS_ENABLED is set to true.
     pub get_collisions: Option<bool>,
@@ -733,8 +730,6 @@ impl From<SearchGroupsData> for SearchChunkData {
             tag_set: data.tag_set,
             time_range: None,
             filters: data.filters,
-            cross_encoder: None,
-            weights: None,
             search_type: data.search_type,
             date_bias: data.date_bias,
             get_collisions: Some(false),
@@ -826,33 +821,8 @@ pub async fn search_groups(
     Ok(HttpResponse::Ok().json(result_chunks))
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct SearchOverGroupsQuery {
-    /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
-    pub query: String,
-    /// Page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon.
-    pub page: Option<u64>,
-    /// Link set is a comma separated list of links. This can be used to filter chunks by link. HNSW indices do not exist for links, so there is a performance hit for filtering on them.
-    pub link: Option<Vec<String>>,
-    /// Tag_set is a comma separated list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
-    pub tag_set: Option<Vec<String>>,
-    /// Time_range is a tuple of two ISO 8601 combined date and time without timezone. The first value is the start of the time range and the second value is the end of the time range. This can be used to filter chunks by time range. HNSW indices do not exist for time range, so there is a performance hit for filtering on them.
-    pub time_range: Option<(String, String)>,
-    /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
-    pub filters: Option<serde_json::Value>,
-    /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
-    pub date_bias: Option<bool>,
-    /// Set get_collisions to true to get the collisions for each chunk. This will only apply if
-    /// environment variable COLLISIONS_ENABLED is set to true.
-    pub get_collisions: Option<bool>,
-    /// Set highlight_results to true to highlight the results.
-    pub highlight_results: Option<bool>,
-    /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting.
-    pub highlight_delimiters: Option<Vec<String>>,
-}
-
 pub async fn search_over_groups(
-    data: web::Json<SearchOverGroupsQuery>,
+    data: web::Json<SearchChunkData>,
     pool: web::Data<Pool>,
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -862,9 +832,32 @@ pub async fn search_over_groups(
 
     let parsed_query = parse_query(data.query.clone());
 
-    let result_chunks =
-        semantic_search_over_groups(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
-            .await?;
+    let result_chunks = match data.search_type.as_str() {
+        "fulltext" => {
+            full_text_search_over_groups(
+                data,
+                parsed_query,
+                page,
+                pool,
+                dataset_org_plan_sub.dataset,
+            )
+            .await?
+        }
+        "hybrid" => {
+            hybrid_search_over_groups(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
+                .await?
+        }
+        _ => {
+            semantic_search_over_groups(
+                data,
+                parsed_query,
+                page,
+                pool,
+                dataset_org_plan_sub.dataset,
+            )
+            .await?
+        }
+    };
 
     Ok(HttpResponse::Ok().json(result_chunks))
 }
