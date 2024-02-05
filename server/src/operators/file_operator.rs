@@ -336,7 +336,7 @@ pub async fn create_chunks_with_handler(
             tag_set: tag_set.clone(),
             file_uuid: Some(created_file_id),
             metadata: metadata.clone(),
-            group_id: None,
+            group_ids: None,
             tracking_id: None,
             time_stamp: time_stamp.clone(),
             chunk_vector: None,

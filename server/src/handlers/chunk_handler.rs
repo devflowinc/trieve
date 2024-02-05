@@ -47,8 +47,8 @@ pub struct CreateChunkData {
     pub chunk_vector: Option<Vec<f32>>,
     /// Tracking_id is a string which can be used to identify a chunk. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk.
     pub tracking_id: Option<String>,
-    /// Group is the id of the group that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group in one request.
-    pub group_id: Option<uuid::Uuid>,
+    /// Group ids are the ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. Necessary because this route queues the chunk for ingestion and the chunk may not exist yet immediatley after response.
+    pub group_ids: Option<Vec<uuid::Uuid>>,
     /// Time_stamp should be an ISO 8601 combined date and time without timezone. It is used for time window filtering and recency-biasing search results.
     pub time_stamp: Option<String>,
     /// Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset.
@@ -1106,7 +1106,10 @@ pub async fn generate_off_chunks(
     });
 
     let parameters = ChatCompletionParameters {
-        model: data.model.clone().unwrap_or("mistralai/mixtral-8x7b-instruct".to_string()),
+        model: data
+            .model
+            .clone()
+            .unwrap_or("mistralai/mixtral-8x7b-instruct".to_string()),
         stream: Some(true),
         messages,
         temperature: None,
