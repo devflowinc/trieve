@@ -233,13 +233,23 @@ async fn upload_chunk(
         })?;
     }
 
-    if let Some(group_id_to_bookmark) = payload.chunk.group_id {
-        let chunk_group_bookmark =
-            ChunkGroupBookmark::from_details(group_id_to_bookmark, payload.chunk_metadata.id);
+    if let Some(group_ids_to_bookmark) = payload.chunk.group_ids {
+        group_ids_to_bookmark.iter().for_each(|group_id| {
+            let chunk_group_bookmark = ChunkGroupBookmark::from_details(
+                group_id.clone(),
+                payload.chunk_metadata.id.clone(),
+            );
 
-        create_chunk_bookmark_query(web_pool.clone(), chunk_group_bookmark).map_err(|err| {
-            ServiceError::InternalServerError(format!("Failed to create chunk bookmark: {:?}", err))
-        })?;
+            let _ = create_chunk_bookmark_query(web_pool.clone(), chunk_group_bookmark).map_err(
+                |err| {
+                    log::error!("Failed to create chunk bookmark: {:?}", err);
+                    ServiceError::InternalServerError(format!(
+                        "Failed to create chunk bookmark: {:?}",
+                        err
+                    ))
+                },
+            );
+        });
     }
 
     Ok(())
