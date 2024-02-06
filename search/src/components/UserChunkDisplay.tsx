@@ -199,7 +199,6 @@ export const UserChunkDisplay = (props: UserChunkDisplayProps) => {
                       setShowConfirmModal={setShowConfirmModal}
                       viewingUserId={props.id}
                       chunk={chunk}
-                      setShowModal={setShowNeedLoginModal}
                       chunkGroups={chunkGroups()}
                       fetchChunkGroups={fetchChunkGroups}
                       setChunkGroups={setChunkGroups}
