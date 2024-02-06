@@ -53,7 +53,7 @@ export const CreateNewDocChunkForm = () => {
     const requestBody: any = {
       chunk_html: chunkHTMLContentValue,
       link: docChunkLinkValue,
-      tag_set: tagSet(),
+      tag_set: tagSet().split(","),
     };
 
     if (timestamp()) {

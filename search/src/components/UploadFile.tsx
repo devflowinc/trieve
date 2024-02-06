@@ -63,7 +63,7 @@ export const UploadFile = () => {
       file_name: file_name,
       file_mime_type: file_mime_type,
       link: link(),
-      tag_set: tagSet(),
+      tag_set: tagSet().split(","),
     };
 
     if (timestamp()) {
