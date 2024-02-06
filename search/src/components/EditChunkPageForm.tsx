@@ -80,7 +80,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
       body: JSON.stringify({
         chunk_uuid: curChunkId,
         link: evidenceLinkValue,
-        tag_set: tagSet(),
+        tag_set: tagSet().split(","),
         tracking_id: trackingId(),
         metadata: metadata(),
         chunk_html: chunkHTMLContentValue,
