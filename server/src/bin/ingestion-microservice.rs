@@ -193,7 +193,7 @@ async fn upload_chunk(
         insert_duplicate_chunk_metadata_query(
             payload.chunk_metadata.clone(),
             collision.expect("Collision should must be some"),
-            payload.chunk.file_uuid,
+            payload.chunk.file_id,
             web_pool.clone(),
         )
         .map_err(|err| {
@@ -211,7 +211,7 @@ async fn upload_chunk(
 
         insert_chunk_metadata_query(
             payload.chunk_metadata.clone(),
-            payload.chunk.file_uuid,
+            payload.chunk.file_id,
             web_pool.clone(),
         )
         .await

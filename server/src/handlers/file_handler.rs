@@ -49,7 +49,7 @@ pub struct UploadFileData {
     /// MIME type of the file being uploaded.
     pub file_mime_type: String,
     /// Tag set is a comma separated list of tags which will be passed down to the chunks made from the file. Tags are used to filter chunks when searching. HNSW indices are created for each tag such that there is no performance loss when filtering on them.
-    pub tag_set: Option<String>,
+    pub tag_set: Option<Vec<String>>,
     /// Description is an optional convience field so you do not have to remember what the file contains or is about. It will be included on the group resulting from the file which will hold its chunk.
     pub description: Option<String>,
     /// Link to the file. This can also be any string. This can be used to filter when searching for the file's resulting chunks. The link value will not affect embedding creation.
@@ -140,10 +140,16 @@ pub async fn upload_file_handler(
         None
     };
 
+    let file_tag_set = if let Some(tag_set) = upload_file_data.tag_set.clone() {
+        Some(tag_set.join(","))
+    } else {
+        None
+    };
+
     let conversion_result = convert_doc_to_html_query(
         upload_file_data.file_name,
         decoded_file_data,
-        upload_file_data.tag_set,
+        file_tag_set,
         decoded_description_file_data,
         upload_file_data.link,
         upload_file_data.metadata,
