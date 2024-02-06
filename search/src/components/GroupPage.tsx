@@ -118,7 +118,6 @@ export const GroupPage = (props: GroupPageProps) => {
         key === "link" ||
         key === "start" ||
         key === "end" ||
-        key === "weight" ||
         key === "dataset"
       ) {
         return;

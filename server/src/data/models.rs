@@ -925,7 +925,7 @@ impl ClientDatasetConfiguration {
         ClientDatasetConfiguration {
             CREATE_CHUNK_FEATURE: configuration
                 .get("CREATE_CHUNK_FEATURE")
-                .unwrap_or(&json!(false))
+                .unwrap_or(&json!(true))
                 .as_bool(),
             SEARCH_QUERIES: configuration
                 .get("SEARCH_QUERIES")

@@ -550,3 +550,13 @@ export const isDatasetAndUsageDTO = (
     isUsageDTO((datasetAndUsage as DatasetAndUsageDTO).dataset_usage)
   );
 };
+
+export interface GroupScoreChunkDTO {
+  group_id: string;
+  metadata: ScoreChunkDTO[];
+}
+
+export interface SearchOverGropsResponseBody {
+  group_chunks: GroupScoreChunkDTO[];
+  total_chunk_pages: number;
+}

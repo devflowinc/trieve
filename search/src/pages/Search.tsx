@@ -12,7 +12,7 @@ export const Search = () => {
   const [query, setQuery] = createSignal<string>("");
   const [page, setPage] = createSignal<number>(1);
   const [searchType, setSearchType] = createSignal<string>("semantic");
-  const [weight, setWeight] = createSignal<string>("0.5");
+  const [groupUnique, setGroupUnique] = createSignal<boolean>(false);
   const [filters, setFilters] = createSignal<Filters | undefined>(undefined);
 
   createEffect(() => {
@@ -21,7 +21,7 @@ export const Search = () => {
     setQuery(location.query.q ?? "");
     setPage(Number(location.query.page) || 1);
     setSearchType(location.query.searchType ?? "semantic");
-    setWeight(location.query.weight ?? "0.5");
+    setGroupUnique(location.query.groupUnique === "true" || false);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const metadataFilters: any = {};
@@ -36,8 +36,8 @@ export const Search = () => {
         key === "link" ||
         key === "start" ||
         key === "end" ||
-        key === "weight" ||
-        key === "dataset"
+        key === "dataset" ||
+        key === "groupUnique"
       ) {
         return;
       }
@@ -68,8 +68,8 @@ export const Search = () => {
                 <SearchForm
                   query={query()}
                   filters={nonUndefinedFilters()}
+                  groupUniqueSearch={groupUnique()}
                   searchType={searchType()}
-                  weight={weight()}
                 />
                 {/* <SuggestedQueries query={query()} /> */}
               </div>
@@ -77,9 +77,9 @@ export const Search = () => {
             <ResultsPage
               page={page()}
               query={query()}
+              groupUnique={groupUnique()}
               filters={nonUndefinedFilters()}
               searchType={searchType()}
-              weight={weight()}
               loading={loading}
               setLoading={setLoading}
             />
