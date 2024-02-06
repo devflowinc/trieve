@@ -72,16 +72,6 @@ export const Home = () => {
             </div>
           </a>
         </div>
-        <div class="text-center text-lg">
-          Discover More with{" "}
-          <a
-            href="https://en.wikipedia.org/wiki/Semantic_search"
-            class="text-turquoise-500 underline dark:text-acid-500"
-          >
-            Semantic Search
-          </a>
-          : Find Meaningful Results, Not Just Exact Matches
-        </div>
         <div class="mt-8 w-full max-w-4xl px-4 sm:px-8 md:px-20">
           <SearchForm
             filters={dataTypeFilters}
