@@ -235,9 +235,9 @@ async fn upload_chunk(
     }
 
     if let Some(group_ids_to_bookmark) = payload.chunk.group_ids {
-        group_ids_to_bookmark.iter().for_each(|group_id| {
+        for group_id_to_bookmark in group_ids_to_bookmark {
             let chunk_group_bookmark = ChunkGroupBookmark::from_details(
-                group_id.clone(),
+                group_id_to_bookmark.clone(),
                 payload.chunk_metadata.id.clone(),
             );
 
@@ -261,7 +261,7 @@ async fn upload_chunk(
                         ))
                     })?;
             }
-        });
+        }
     }
 
     Ok(())
