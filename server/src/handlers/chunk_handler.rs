@@ -579,9 +579,9 @@ pub struct SearchChunkData {
     pub query: String,
     /// Page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon.
     pub page: Option<u64>,
-    /// Link set is a comma separated list of links. This can be used to filter chunks by link. HNSW indices do not exist for links, so there is a performance hit for filtering on them.
+    /// Link set is a list of links. This can be used to filter chunks by link. HNSW indices do not exist for links, so there is a performance hit for filtering on them.
     pub link: Option<Vec<String>>,
-    /// Tag_set is a comma separated list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
+    /// Tag_set is a list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
     pub tag_set: Option<Vec<String>>,
     /// Time_range is a tuple of two ISO 8601 combined date and time without timezone. The first value is the start of the time range and the second value is the end of the time range. This can be used to filter chunks by time range. HNSW indices do not exist for time range, so there is a performance hit for filtering on them.
     pub time_range: Option<(String, String)>,
@@ -589,8 +589,7 @@ pub struct SearchChunkData {
     pub filters: Option<serde_json::Value>,
     /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
     pub date_bias: Option<bool>,
-    /// Set get_collisions to true to get the collisions for each chunk. This will only apply if
-    /// environment variable COLLISIONS_ENABLED is set to true.
+    /// Set get_collisions to true to get the collisions for each chunk. This will only apply if environment variable COLLISIONS_ENABLED is set to true.
     pub get_collisions: Option<bool>,
     /// Set highlight_results to true to highlight the results.
     pub highlight_results: Option<bool>,
@@ -698,9 +697,9 @@ pub struct SearchGroupsData {
     pub query: String,
     /// The page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon.
     pub page: Option<u64>,
-    /// The link set is a comma separated list of links. This can be used to filter chunks by link. HNSW indices do not exist for links, so there is a performance hit for filtering on them.
+    /// The link set is a list of links. This can be used to filter chunks by link. HNSW indices do not exist for links, so there is a performance hit for filtering on them.
     pub link: Option<Vec<String>>,
-    /// The tag set is a comma separated list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
+    /// The tag set is a list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
     pub tag_set: Option<Vec<String>>,
     /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<serde_json::Value>,
