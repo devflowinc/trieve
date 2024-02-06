@@ -160,7 +160,9 @@ async def rerank(rerankRequest: ReRankRequest):
     combined_docs = [[rerankRequest.query, doc] for doc in rerankRequest.docs]
     doc_scores = cross_encoder_model.predict(combined_docs)
     sim_scores_argsort = np.argsort(doc_scores)
-    reranked_docs = [(rerankRequest.docs[i], doc_scores[i]) for i in sim_scores_argsort]
+    reranked_docs = [
+        (rerankRequest.docs[i], doc_scores[i].astype(float)) for i in sim_scores_argsort
+    ]
     return JSONResponse(
         content={
             "docs": reranked_docs,
