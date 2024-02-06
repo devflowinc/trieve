@@ -236,7 +236,6 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
                 <ChatPopup
                   chunks={scoreChunk}
                   selectedIds={selectedIds}
-                  setShowNeedLoginModal={setShowNeedLoginModal}
                   setOpenChat={setOpenChat}
                 />
               </div>
@@ -281,7 +280,6 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
                           chunk={chunk}
                           chunkGroups={chunkGroups()}
                           bookmarks={bookmarks()}
-                          setShowModal={setShowNeedLoginModal}
                           setShowConfirmModal={setShowConfirmDeleteModal}
                           fetchChunkGroups={fetchChunkGroups}
                           setChunkGroups={setChunkGroups}
