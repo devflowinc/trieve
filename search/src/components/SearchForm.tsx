@@ -30,8 +30,8 @@ const SearchForm = (props: {
   query?: string;
   filters: Filters;
   searchType: string;
+  groupUniqueSearch?: boolean;
   groupID?: string;
-  weight?: string;
 }) => {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const $envs = useStore(clientConfig);
@@ -64,8 +64,11 @@ const SearchForm = (props: {
     start: props.filters.start,
     end: props.filters.end,
   });
-  const [semanticWeight, setSemanticWeight] = createSignal("0.5");
   const [usingPanel, setUsingPanel] = createSignal("");
+  const [groupUniqueSearch] = createSignal(
+    // eslint-disable-next-line solid/reactivity
+    props.groupUniqueSearch ?? false,
+  );
 
   createEffect(() => {
     // get the previous searched queries from localStorage and set them into the state;
@@ -162,11 +165,7 @@ const SearchForm = (props: {
       ? `&searchType=${searchTypeRoute}`
       : "";
 
-    const semanticWeightVal =
-      searchTypeRoute === "hybrid" ? semanticWeight() : "";
-    const semanticWeightUrlParam = semanticWeightVal
-      ? `&weight=${semanticWeightVal}`
-      : "";
+    const groupUniqueUrlParam = groupUniqueSearch() ? "&groupUnique=true" : "";
 
     const urlToNavigateTo = props.groupID
       ? `/group/${props.groupID}?q=${searchQuery}` +
@@ -174,13 +173,13 @@ const SearchForm = (props: {
         (timeRange().start ? `&start=${timeRange().start}` : "") +
         (timeRange().end ? `&end=${timeRange().end}` : "") +
         searchTypeUrlParam +
-        semanticWeightUrlParam
+        groupUniqueUrlParam
       : `/search?q=${searchQuery}` +
         (filters ? `&${filters}` : "") +
         (timeRange().start ? `&start=${timeRange().start}` : "") +
         (timeRange().end ? `&end=${timeRange().end}` : "") +
         searchTypeUrlParam +
-        semanticWeightUrlParam;
+        groupUniqueUrlParam;
 
     navigate(urlToNavigateTo);
   };
@@ -300,7 +299,6 @@ const SearchForm = (props: {
   });
 
   createEffect(() => {
-    setSemanticWeight(props.weight ?? "0.5");
     setTextareaInput(props.query ?? "");
 
     setSearchTypes((prev) => {
@@ -605,62 +603,29 @@ const SearchForm = (props: {
               </>
             )}
           </Popover>
-          <Show
-            when={
-              searchTypes().find((type) => type.isSelected)?.route === "hybrid"
-            }
-          >
-            <Popover defaultOpen={false} class="relative">
-              {({ isOpen }) => (
-                <>
-                  <PopoverButton
-                    aria-label="Toggle filters"
-                    type="button"
-                    class="flex items-center space-x-1 pb-1 text-sm"
-                  >
-                    <span>Weight</span>{" "}
-                    <svg
-                      fill="currentColor"
-                      stroke-width="0"
-                      style={{ overflow: "visible", color: "currentColor" }}
-                      viewBox="0 0 16 16"
-                      class="h-3.5 w-3.5 "
-                      height="1em"
-                      width="1em"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />
-                    </svg>
-                  </PopoverButton>
-                  <Show when={isOpen()}>
-                    <PopoverPanel
-                      unmount={false}
-                      class="absolute z-10 mt-2 h-fit w-[180px]  rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-800"
-                    >
-                      <label
-                        for="minmax-range"
-                        class="mb-2 block space-y-1 text-sm font-medium"
-                      >
-                        <div>Semantic Weight {semanticWeight()}</div>
-                      </label>
-                      <input
-                        id="minmax-range"
-                        type="range"
-                        min="0"
-                        max="1"
-                        value={semanticWeight()}
-                        step="0.1"
-                        class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-neutral-100 dark:bg-neutral-700"
-                        onInput={(e) =>
-                          setSemanticWeight(e.currentTarget.value)
-                        }
-                      />
-                    </PopoverPanel>
-                  </Show>
-                </>
-              )}
-            </Popover>
-          </Show>
+          {/* <Show when={!props.groupID}>
+            <div class="flex items-center space-x-2">
+              <div class="flex items-center space-x-1">
+                <label class="text-sm">Group Unique</label>
+                <Tooltip
+                  body={<FiInfo class="h-4 w-4" />}
+                  tooltipText="Only show one result per group. Group is determined by how chunks are placed into groups."
+                />
+              </div>
+              <input
+                class="h-4 w-4"
+                type="checkbox"
+                checked={props.groupID ? true : false}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setGroupUniqueSearch(true);
+                  } else {
+                    setGroupUniqueSearch(false);
+                  }
+                }}
+              />
+            </div>
+          </Show> */}
         </div>
         <Show when={showFilters()}>
           <div class="flex gap-x-2">
@@ -672,7 +637,7 @@ const SearchForm = (props: {
                       <PopoverButton
                         aria-label="Toggle filters"
                         type="button"
-                        class="flex items-center space-x-1 text-sm "
+                        class="flex items-center space-x-1 text-sm"
                       >
                         <span>{comboBoxSection.name}</span>{" "}
                         <svg

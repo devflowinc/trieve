@@ -19,6 +19,7 @@ export const Home = () => {
 
   const params = new URLSearchParams(requestParams);
   const searchType: string = params.get("searchType") ?? "search";
+  const groupUnique = params.get("groupUnique") === "true" || false;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const metadataFilters: any[] = [];
@@ -82,7 +83,11 @@ export const Home = () => {
           : Find Meaningful Results, Not Just Exact Matches
         </div>
         <div class="mt-8 w-full max-w-4xl px-4 sm:px-8 md:px-20">
-          <SearchForm filters={dataTypeFilters} searchType={searchType} />
+          <SearchForm
+            filters={dataTypeFilters}
+            searchType={searchType}
+            groupUniqueSearch={groupUnique}
+          />
         </div>
       </div>
       <DefaultQueries suggestedQueries={suggestedQueries ?? []} />

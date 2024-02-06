@@ -13,6 +13,7 @@ import {
   type ChunkGroupDTO,
   type ScoreChunkDTO,
   ChunkBookmarksDTO,
+  GroupScoreChunkDTO,
 } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { PaginationController } from "./Atoms/PaginationController";
@@ -38,7 +39,7 @@ export interface ResultsPageProps {
   page: number;
   filters: Filters;
   searchType: string;
-  weight?: string;
+  groupUnique?: boolean;
   loading: Accessor<boolean>;
   setLoading: Setter<boolean>;
 }
@@ -133,18 +134,13 @@ const ResultsPage = (props: ResultsPageProps) => {
       search_type: props.searchType,
     };
 
-    if (props.searchType === "hybrid") {
-      const semanticWeight = parseFloat(props.weight ?? "0.5");
-      if (semanticWeight != 0.5) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        requestBody.weights = [semanticWeight, 1 - semanticWeight];
-      } else {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        requestBody.cross_encoder = true;
-      }
+    let searchRoute = "chunk/search";
+    const groupUnique = props.groupUnique;
+    if (groupUnique) {
+      searchRoute = "chunk_group/search_over_groups";
     }
 
-    void fetch(`${apiHost}/chunk/search`, {
+    void fetch(`${apiHost}/${searchRoute}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -155,21 +151,36 @@ const ResultsPage = (props: ResultsPageProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          const result = data.score_chunks as ScoreChunkDTO[];
-          setResultChunks(result);
-          setClientSideRequestFinished(true);
-
-          createEffect(() => {
-            props.setLoading(false);
-          });
-        });
-      } else {
-        setClientSideRequestFinished(true);
-        createEffect(() => {
-          props.setLoading(false);
+          let resultingChunks: ScoreChunkDTO[] = [];
+          if (!groupUnique) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            resultingChunks = data.score_chunks as ScoreChunkDTO[];
+          } else {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            const result = data.group_chunks as GroupScoreChunkDTO[];
+            result.forEach((group) => {
+              let chunkToAdd = group.metadata[0];
+              let i = 1;
+              while (
+                resultingChunks.some(
+                  (c) => c.metadata[0].id === chunkToAdd.metadata[0].id,
+                )
+              ) {
+                chunkToAdd = group.metadata[i];
+                i++;
+              }
+              resultingChunks.push(chunkToAdd);
+            });
+          }
+          setResultChunks(resultingChunks);
         });
       }
+
+      setClientSideRequestFinished(true);
+
+      createEffect(() => {
+        props.setLoading(false);
+      });
     });
 
     fetchChunkCollections();
@@ -220,15 +231,7 @@ const ResultsPage = (props: ResultsPageProps) => {
           <Match
             when={resultChunks().length === 0 && clientSideRequestFinished()}
           >
-            <button
-              onClick={() => {
-                window.location.href = `/search?q=${props.query}&page=${
-                  props.page + 1
-                }`;
-              }}
-            >
-              <div class="text-2xl">No results found</div>
-            </button>
+            <div class="text-2xl">No results found</div>
           </Match>
           <Match when={!props.loading()}>
             <div class="flex w-full max-w-6xl flex-col space-y-4 px-1 min-[360px]:px-4 sm:px-8 md:px-20">
