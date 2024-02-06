@@ -329,12 +329,18 @@ pub async fn create_chunks_with_handler(
 
     let pool1 = pool.clone();
 
+    let split_tag_set: Option<Vec<String>> = if let Some(tag_set) = tag_set {
+        Some(tag_set.split(',').map(|x| x.to_string()).collect())
+    } else {
+        None
+    };
+
     for chunk_html in chunk_htmls {
         let create_chunk_data = CreateChunkData {
             chunk_html: Some(chunk_html.clone()),
             link: link.clone(),
-            tag_set: tag_set.clone(),
-            file_uuid: Some(created_file_id),
+            tag_set: split_tag_set.clone(),
+            file_id: Some(created_file_id),
             metadata: metadata.clone(),
             group_ids: None,
             tracking_id: None,

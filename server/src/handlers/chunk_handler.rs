@@ -38,10 +38,10 @@ pub struct CreateChunkData {
     pub chunk_html: Option<String>,
     /// Link to the chunk. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation.
     pub link: Option<String>,
-    /// Tag set is a comma separated list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
-    pub tag_set: Option<String>,
+    /// Tag set is a list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
+    pub tag_set: Option<Vec<String>>,
     /// File_uuid is the uuid of the file that the chunk is associated with. This is used to associate chunks with files. This is useful for when you want to delete a file and all of its associated chunks.
-    pub file_uuid: Option<uuid::Uuid>,
+    pub file_id: Option<uuid::Uuid>,
     /// Metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub metadata: Option<serde_json::Value>,
     /// Chunk_vector is a vector of floats which can be used instead of generating a new embedding. This is useful for when you are using a pre-embedded dataset. If this is not provided, the innerText of the chunk_html will be used to create the embedding.
@@ -160,11 +160,17 @@ pub async fn create_chunk(
             ServiceError::BadRequest(format!("Could not parse html: {}", err.message))
         })?;
 
+    let chunk_tag_set = if let Some(tag_set) = chunk.tag_set.clone() {
+        Some(tag_set.join(","))
+    } else {
+        None
+    };
+
     let chunk_metadata = ChunkMetadata::from_details(
         content,
         &chunk.chunk_html,
         &chunk.link,
-        &chunk.tag_set,
+        &chunk_tag_set,
         None,
         chunk.metadata.clone(),
         chunk_tracking_id,
@@ -816,7 +822,9 @@ pub async fn search_groups(
     Ok(HttpResponse::Ok().json(result_chunks))
 }
 
-
+/// group_oriented_search
+///
+/// This route allows you to get groups as results instead of chunks. Each group returned will have the matching chunks sorted by similarity within the group. This is useful for when you want to get groups of chunks which are similar to the search query. If choosing hybrid search, the results will be re-ranked using BAAI/bge-reranker-large. Compatible with semantic, fulltext, or hybrid search modes.
 #[utoipa::path(
     post,
     path = "/chunk_group/search_over_groups",
