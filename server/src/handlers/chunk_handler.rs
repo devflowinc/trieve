@@ -710,10 +710,6 @@ pub struct SearchGroupsData {
     pub search_type: String,
     /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
     pub date_bias: Option<bool>,
-    /// Set cross_encoder to true to use the BAAI/bge-reranker-large model to re-rank search results. This will only apply if in hybrid search mode. If no weighs are specified, the re-ranker will be used by default.
-    pub cross_encoder: Option<bool>,
-    /// Weights are a tuple of two floats. The first value is the weight for the semantic search results and the second value is the weight for the full-text search results. This can be used to bias search results towards semantic or full-text results. This will only apply if in hybrid search mode and cross_encoder is set to false.
-    pub weights: Option<(f64, f64)>,
     /// Set highlight_results to true to highlight the results.
     pub highlight_results: Option<bool>,
     /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting.
@@ -747,7 +743,7 @@ pub struct SearchGroupsResult {
 
 /// group_search
 ///
-/// This route allows you to search only within a group. This is useful for when you only want search results to contain chunks which are members of a specific group. Think about this like searching within a playlist or bookmark folder.
+/// This route allows you to search only within a group. This is useful for when you only want search results to contain chunks which are members of a specific group. Think about this like searching within a playlist or bookmark folder. If choosing hybrid search, the results will be re-ranked using BAAI/bge-reranker-large.
 #[utoipa::path(
     post,
     path = "/chunk_group/search",

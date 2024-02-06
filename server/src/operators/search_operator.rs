@@ -1119,53 +1119,6 @@ pub async fn search_full_text_chunks(
     Ok(result_chunks)
 }
 
-fn reciprocal_rank_fusion(
-    semantic_results: Vec<ScoreChunkDTO>,
-    full_text_results: Vec<ScoreChunkDTO>,
-    weights: Option<(f64, f64)>,
-) -> Vec<ScoreChunkDTO> {
-    let mut fused_ranking: Vec<ScoreChunkDTO> = Vec::new();
-    let weights = weights.unwrap_or((0.5, 0.5));
-
-    // Iterate through the union of the two result sets
-    for mut document in full_text_results
-        .clone()
-        .into_iter()
-        .chain(semantic_results.clone().into_iter())
-        .unique_by(|chunk| chunk.metadata[0].id)
-    {
-        // Find the rank of the document in each result set
-        let rank_semantic = semantic_results
-            .iter()
-            .position(|doc| doc.metadata[0].id == document.metadata[0].id);
-        let rank_full_text = full_text_results
-            .iter()
-            .position(|doc| doc.metadata[0].id == document.metadata[0].id);
-
-        let rank_semantic = rank_semantic.map(|rank| semantic_results.len() - rank);
-        let rank_full_text = rank_full_text.map(|rank| full_text_results.len() - rank);
-
-        // Combine Reciprocal Ranks using average or another strategy
-        let combined_rank = weights.0 * (rank_semantic.unwrap_or(0) as f64)
-            + weights.1 * (rank_full_text.unwrap_or(0) as f64);
-        document.score = combined_rank;
-
-        // Add the document ID and combined rank to the fused ranking
-        fused_ranking.push(document.clone());
-    }
-
-    // Sort the fused ranking by combined rank in descending order
-    fused_ranking.sort_by(|a, b| {
-        b.score
-            .partial_cmp(&a.score)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
-
-    fused_ranking.truncate(10);
-
-    fused_ranking
-}
-
 #[allow(clippy::too_many_arguments)]
 pub async fn search_hybrid_chunks(
     data: web::Json<SearchChunkData>,
@@ -1481,7 +1434,7 @@ pub async fn search_hybrid_groups(
         })
         .collect::<Vec<ScoreChunkDTO>>();
 
-    let mut result_chunks = if data.cross_encoder.unwrap_or(false) {
+    let mut result_chunks = {
         let combined_results = semantic_chunk_dtos
             .into_iter()
             .chain(full_text_chunk_dtos.into_iter())
@@ -1489,36 +1442,6 @@ pub async fn search_hybrid_groups(
             .collect::<Vec<ScoreChunkDTO>>();
         SearchChunkQueryResponseBody {
             score_chunks: cross_encoder(data.query.clone(), combined_results).await?,
-            total_chunk_pages: semantic_results.total_chunk_pages,
-        }
-    } else if let Some(weights) = data.weights {
-        if weights.0 == 1.0 {
-            SearchChunkQueryResponseBody {
-                score_chunks: semantic_chunk_dtos,
-                total_chunk_pages: semantic_results.total_chunk_pages,
-            }
-        } else if weights.1 == 1.0 {
-            SearchChunkQueryResponseBody {
-                score_chunks: full_text_chunk_dtos,
-                total_chunk_pages: full_text_results.total_chunk_pages,
-            }
-        } else {
-            SearchChunkQueryResponseBody {
-                score_chunks: reciprocal_rank_fusion(
-                    semantic_chunk_dtos,
-                    full_text_chunk_dtos,
-                    data.weights,
-                ),
-                total_chunk_pages: semantic_results.total_chunk_pages,
-            }
-        }
-    } else {
-        SearchChunkQueryResponseBody {
-            score_chunks: reciprocal_rank_fusion(
-                semantic_chunk_dtos,
-                full_text_chunk_dtos,
-                data.weights,
-            ),
             total_chunk_pages: semantic_results.total_chunk_pages,
         }
     };
