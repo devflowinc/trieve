@@ -195,6 +195,8 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::organization_handler::CreateOrganizationData,
                 handlers::organization_handler::UpdateOrganizationData,
                 operators::event_operator::EventReturn,
+                operators::search_operator::SearchOverGroupsResponseBody,
+                operators::search_operator::GroupScoreChunkDTO,
                 handlers::dataset_handler::CreateDatasetRequest,
                 handlers::dataset_handler::UpdateDatasetRequest,
                 handlers::dataset_handler::DeleteDatasetRequest,

@@ -885,7 +885,7 @@ pub async fn search_groups(
     request_body(content = SearchChunkData, description = "JSON request payload to semantically search over groups", content_type = "application/json"),
     responses(
         (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchOverGroupsResponseBody),
-        (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = DefaultError),
+        (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
     ),
 )]
 pub async fn search_over_groups(
