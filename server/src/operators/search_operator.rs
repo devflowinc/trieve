@@ -1,3 +1,4 @@
+use utoipa::ToSchema;
 use super::chunk_operator::{
     find_relevant_sentence, get_metadata_and_collided_chunks_from_point_ids_query,
     get_metadata_from_point_ids,
@@ -830,13 +831,13 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
     })
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct GroupScoreChunkDTO {
     pub group_id: uuid::Uuid,
     pub metadata: Vec<ScoreChunkDTO>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchOverGroupsResponseBody {
     pub group_chunks: Vec<GroupScoreChunkDTO>,
     pub total_chunk_pages: i64,
