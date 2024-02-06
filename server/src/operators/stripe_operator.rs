@@ -9,10 +9,7 @@ use actix_web::web;
 use diesel::{
     ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl, RunQueryDsl, Table,
 };
-use stripe::{
-    CreatePaymentLink, CreatePaymentLinkAfterCompletion, CreatePaymentLinkAfterCompletionRedirect,
-    CreatePaymentLinkAfterCompletionType, PaymentLink,
-};
+use serde_json::json;
 
 pub fn get_stripe_client() -> stripe::Client {
     let stripe_secret = get_env!("STRIPE_SECRET", "STRIPE_SECRET must be set");
@@ -189,40 +186,52 @@ pub async fn create_stripe_payment_link(
     plan: StripePlan,
     organization_id: uuid::Uuid,
 ) -> Result<String, DefaultError> {
-    let payment_link_line_items = stripe::CreatePaymentLinkLineItems {
-        quantity: 1,
-        price: plan.stripe_id,
-        ..Default::default()
-    };
-
     let admin_dashboard_url = get_env!("ADMIN_DASHBOARD_URL", "ADMIN_DASHBOARD_URL must be set");
-    let mut create_payment_link = CreatePaymentLink::new(vec![payment_link_line_items]);
-    create_payment_link.after_completion = Some(CreatePaymentLinkAfterCompletion {
-        redirect: Some(CreatePaymentLinkAfterCompletionRedirect {
-            url: format!("{}/dashboard/billing", admin_dashboard_url),
-        }),
-        hosted_confirmation: None,
-        type_: CreatePaymentLinkAfterCompletionType::Redirect,
+
+    let stripe_secret = get_env!("STRIPE_SECRET", "STRIPE_SECRET must be set");
+    let payment_link_create_request = reqwest::Client::new()
+        .post("https://api.stripe.com/v1/payment_links")
+        .header("Authorization", format!("Bearer {}", stripe_secret));
+
+    let payment_link_form_url_encoded = json!({
+        "line_items[0][price]": plan.stripe_id,
+        "line_items[0][quantity]": 1,
+        "allow_promotion_codes": true,
+        "after_completion[redirect][url]": format!("{}/dashboard/billing", admin_dashboard_url),
+        "after_completion[type]": "redirect",
+        "metadata[organization_id]": organization_id.to_string(),
+        "metadata[plan_id]": plan.id.to_string()
     });
-    create_payment_link.allow_promotion_codes = Some(true);
-    let mut metadata = std::collections::HashMap::new();
-    metadata.insert("organization_id".to_string(), organization_id.to_string());
-    metadata.insert("plan_id".to_string(), plan.id.to_string());
-    create_payment_link.metadata = Some(metadata);
 
-    let stripe_client = get_stripe_client();
-
-    let payment_link = PaymentLink::create(&stripe_client, create_payment_link)
+    let payment_link_response = payment_link_create_request
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .form(&payment_link_form_url_encoded)
+        .send()
         .await
         .map_err(|e| {
             log::error!("Failed to create stripe payment link: {}", e);
             DefaultError {
                 message: "Failed to create stripe payment link",
             }
-        })?
-        .url;
+        })?;
 
-    Ok(payment_link)
+    let payment_link_response_json: serde_json::Value =
+        payment_link_response.json().await.map_err(|e| {
+            log::error!("Failed to get stripe payment link json: {}", e);
+            DefaultError {
+                message: "Failed to get stripe payment link json",
+            }
+        })?;
+
+    log::info!("Payment link response: {:?}", payment_link_response_json);
+
+    let payment_link = payment_link_response_json["url"]
+        .as_str()
+        .ok_or(DefaultError {
+            message: "Failed to get stripe payment link url",
+        })?;
+
+    Ok(payment_link.to_string())
 }
 
 pub fn get_subscription_by_id_query(
