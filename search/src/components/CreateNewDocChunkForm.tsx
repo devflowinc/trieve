@@ -16,6 +16,7 @@ export const CreateNewDocChunkForm = () => {
   const $dataset = useStore(currentDataset);
   const [docChunkLink, setDocChunkLink] = createSignal("");
   const [tagSet, setTagSet] = createSignal("");
+  const [weight, setWeight] = createSignal(1);
   const [errorText, setErrorText] = createSignal<
     string | number | boolean | Node | JSX.ArrayElement | null | undefined
   >("");
@@ -54,6 +55,7 @@ export const CreateNewDocChunkForm = () => {
       chunk_html: chunkHTMLContentValue,
       link: docChunkLinkValue,
       tag_set: tagSet().split(","),
+      weight: weight(),
     };
 
     if (timestamp()) {
@@ -253,6 +255,13 @@ export const CreateNewDocChunkForm = () => {
             onInput={(e) => {
               setTimestamp(e.currentTarget.value);
             }}
+          />
+          <div>Weight for Merchandise Tuning</div>
+          <input
+            type="number"
+            value={weight()}
+            onInput={(e) => setWeight(Number(e.currentTarget.value))}
+            class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
           />
         </div>
         <div class="flex flex-col space-y-2">

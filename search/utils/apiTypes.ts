@@ -14,6 +14,7 @@ export interface ChunkMetadata {
   file_id: string | null;
   file_name: string | null;
   metadata: Record<string, never> | null;
+  weight: number;
 }
 
 export const indirectHasOwnProperty = (obj: unknown, prop: string): boolean => {

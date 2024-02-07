@@ -34,6 +34,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   const [tagSet, setTagSet] = createSignal<string>(
     initialChunkMetadata?.tag_set ?? "",
   );
+  const [weight, setWeight] = createSignal(initialChunkMetadata?.weight ?? 0);
   const [metadata, setMetadata] = createSignal(initialChunkMetadata?.metadata);
   const [trackingId, setTrackingId] = createSignal(
     initialChunkMetadata?.tracking_id,
@@ -84,6 +85,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
         tracking_id: trackingId(),
         metadata: metadata(),
         chunk_html: chunkHTMLContentValue,
+        weight: weight() ?? 1,
       }),
     }).then((response) => {
       if (response.ok) {
@@ -153,6 +155,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
           setMetadata(data.metadata);
           setTrackingId(data.tracking_id);
           setChunkHtml(data.chunk_html ?? "");
+          setWeight(data.weight ?? 0);
           setTopLevelError("");
           setFetching(false);
         });
@@ -314,6 +317,13 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
                     "border border-red-500":
                       formErrorFields().includes("tagset"),
                   }}
+                />
+                <div>Weight for Merchandise Tuning</div>
+                <input
+                  type="number"
+                  value={weight()}
+                  onInput={(e) => setWeight(Number(e.currentTarget.value))}
+                  class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
                 />
               </div>
               <div class="flex flex-col space-y-2">
