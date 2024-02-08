@@ -1236,7 +1236,7 @@ pub async fn generate_off_chunks(
             .model
             .clone()
             .unwrap_or("mistralai/mixtral-8x7b-instruct".to_string()),
-        stream: Some(true),
+        stream: stream_response,
         messages,
         temperature: None,
         top_p: None,
