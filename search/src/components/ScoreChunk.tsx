@@ -200,6 +200,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const currentUserRole = createMemo(() => {
     const curUser = $currentUser();
     const curDatasetOrg = $currentDataset()?.dataset.organization_id;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const curUserOrg = curUser?.user_orgs?.find(
       (org) => org.organization_id === curDatasetOrg,
     );
