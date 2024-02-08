@@ -497,7 +497,7 @@ pub async fn get_topic_string(
             .clone()
             .unwrap_or("openai/gpt-3.5-turbo-1106".to_string()),
         messages: openai_messages,
-        stream: Some(true),
+        stream: Some(false),
         temperature: None,
         top_p: None,
         n: None,
@@ -651,7 +651,7 @@ pub async fn stream_response(
             name: None,
             tool_call_id: None,
         }],
-        stream: Some(true),
+        stream: Some(false),
         temperature: None,
         top_p: None,
         n: None,
@@ -785,7 +785,7 @@ pub async fn stream_response(
 
     let parameters = ChatCompletionParameters {
         model: model.unwrap_or("openai/gpt-3.5-turbo-1106".to_string()),
-        stream: Some(true),
+        stream: should_stream,
         messages: open_ai_messages,
         temperature: None,
         top_p: None,
