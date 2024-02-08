@@ -34,7 +34,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   const [tagSet, setTagSet] = createSignal<string>(
     initialChunkMetadata?.tag_set ?? "",
   );
-  const [weight, setWeight] = createSignal(initialChunkMetadata?.weight ?? 0);
+  const [weight, setWeight] = createSignal(initialChunkMetadata?.weight ?? 1);
   const [metadata, setMetadata] = createSignal(initialChunkMetadata?.metadata);
   const [trackingId, setTrackingId] = createSignal(
     initialChunkMetadata?.tracking_id,
@@ -273,8 +273,36 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
 
   return (
     <>
-      <div class="mt-12 flex w-full flex-col items-center space-y-4">
-        <div class="flex w-full max-w-6xl flex-col space-y-4 px-4 sm:px-8 md:px-20">
+      <div class="rounded-md bg-yellow-50 p-4">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg
+              class="h-5 w-5 text-yellow-400"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-yellow-800">Warning</h3>
+            <div class="mt-2 text-sm text-yellow-700">
+              <p>
+                If the textarea below for chunk content is not showing up,
+                please refresh the page. This is a known bug, and we are working
+                on fixing it asap.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mb-8 flex h-full w-full flex-col space-y-4 text-neutral-800 dark:text-white">
+        <div class="flex w-full flex-col space-y-4">
           <Show when={topLevelError().length > 0 && !fetching()}>
             <div class="flex w-full flex-col items-center rounded-md p-2">
               <div class="text-xl font-bold text-red-500">
@@ -294,7 +322,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
               <div class="flex flex-col space-y-2">
                 <div>Link</div>
                 <input
-                  type="url"
+                  type="text"
                   placeholder="(Optional) https://example.com"
                   value={evidenceLink()}
                   onInput={(e) => setEvidenceLink(e.target.value)}

@@ -2,11 +2,13 @@ import { Footer } from "../../components/Footer";
 import { SearchLayout } from "../../layouts/SearchLayout";
 import { SingleChunkPage } from "../../components/SingleChunkPage";
 
-export const ViewChunk = () => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const ViewChunk = (props: any) => {
   return (
     <SearchLayout>
       <SingleChunkPage
-        chunkId={undefined}
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        chunkId={props.params.id}
         defaultResultChunk={{
           metadata: null,
           status: 0,
