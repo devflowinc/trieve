@@ -29,9 +29,9 @@ import { Tooltip } from "./Atoms/Tooltip";
 import { AiOutlineCopy } from "solid-icons/ai";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { useStore } from "@nanostores/solid";
-import { currentUser } from "../stores/userStore";
 import { clientConfig } from "../stores/envsStore";
 import { currentDataset } from "../stores/datasetStore";
+import { A } from "@solidjs/router";
 
 export const sanitzerOptions = {
   allowedTags: [...sanitizeHtml.defaults.allowedTags, "font", "button", "span"],
@@ -84,8 +84,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const frontMatterValsToHide = $envs().FRONTMATTER_VALS?.split(",");
 
   const linesBeforeShowMore = $envs().LINES_BEFORE_SHOW_MORE;
-
-  const $currentUser = useStore(currentUser);
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
   const [showPropsModal, setShowPropsModal] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
@@ -141,9 +139,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
     if (!props.setOnDelete) return;
     const dataset = $dataset();
     if (!dataset) return;
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if ($currentUser()?.id !== props.chunk.author?.id) return;
 
     const curChunkMetadataId = props.chunk.id;
 
@@ -337,12 +332,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                 }
                 tooltipText="Copy to clipboard"
               />
-              <Show
-                when={
-                  props.setOnDelete &&
-                  $currentUser()?.id == props.chunk.author?.id
-                }
-              >
+              <Show when={props.setOnDelete}>
                 <button
                   classList={{
                     "h-fit text-red-700 dark:text-red-400": true,
@@ -354,11 +344,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                   <FiTrash class="h-5 w-5" />
                 </button>
               </Show>
-              <Show when={$currentUser()?.id == props.chunk.author?.id}>
-                <a title="Edit" href={`/chunk/edit/${props.chunk.id}`}>
-                  <FiEdit class="h-5 w-5" />
-                </a>
-              </Show>
+              <A title="Edit" href={`/chunk/edit/${props.chunk.id}`}>
+                <FiEdit class="h-5 w-5" />
+              </A>
               <Tooltip
                 body={
                   <a title="Open" href={`/chunk/${props.chunk.id}`}>
