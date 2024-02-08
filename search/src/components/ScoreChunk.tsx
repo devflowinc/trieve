@@ -32,6 +32,7 @@ import { useStore } from "@nanostores/solid";
 import { clientConfig } from "../stores/envsStore";
 import { currentDataset } from "../stores/datasetStore";
 import { A } from "@solidjs/router";
+import { currentUser } from "../stores/userStore";
 
 export const sanitzerOptions = {
   allowedTags: [...sanitizeHtml.defaults.allowedTags, "font", "button", "span"],
@@ -77,7 +78,8 @@ export interface ScoreChunkProps {
 }
 
 const ScoreChunk = (props: ScoreChunkProps) => {
-  const $dataset = useStore(currentDataset);
+  const $currentDataset = useStore(currentDataset);
+  const $currentUser = useStore(currentUser);
   const apiHost = import.meta.env.VITE_API_HOST as string;
   const $envs = useStore(clientConfig);
 
@@ -137,7 +139,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
 
   const deleteChunk = () => {
     if (!props.setOnDelete) return;
-    const dataset = $dataset();
+    const dataset = $currentDataset();
     if (!dataset) return;
 
     const curChunkMetadataId = props.chunk.id;
@@ -193,6 +195,15 @@ const ScoreChunk = (props: ScoreChunkProps) => {
     return (
       props.chunk.content.split(" ").length > 20 * (linesBeforeShowMore ?? 0)
     );
+  });
+
+  const currentUserRole = createMemo(() => {
+    const curUser = $currentUser();
+    const curDatasetOrg = $currentDataset()?.dataset.organization_id;
+    const curUserOrg = curUser?.user_orgs?.find(
+      (org) => org.organization_id === curDatasetOrg,
+    );
+    return curUserOrg?.role ?? 0;
   });
 
   return (
@@ -332,7 +343,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                 }
                 tooltipText="Copy to clipboard"
               />
-              <Show when={props.setOnDelete}>
+              <Show when={currentUserRole() > 0 && props.setOnDelete}>
                 <button
                   classList={{
                     "h-fit text-red-700 dark:text-red-400": true,
@@ -344,9 +355,11 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                   <FiTrash class="h-5 w-5" />
                 </button>
               </Show>
-              <A title="Edit" href={`/chunk/edit/${props.chunk.id}`}>
-                <FiEdit class="h-5 w-5" />
-              </A>
+              <Show when={currentUserRole() > 0}>
+                <A title="Edit" href={`/chunk/edit/${props.chunk.id}`}>
+                  <FiEdit class="h-5 w-5" />
+                </A>
+              </Show>
               <Tooltip
                 body={
                   <a title="Open" href={`/chunk/${props.chunk.id}`}>
