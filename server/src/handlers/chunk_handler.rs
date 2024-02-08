@@ -20,14 +20,17 @@ use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
 use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
+use itertools::Itertools;
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{
     ChatCompletionParameters, ChatMessage, ChatMessageContent, Role,
 };
+use qdrant_client::qdrant::Value;
 use redis::Commands;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::collections::HashMap;
 use std::process::Command;
 use tokio_stream::StreamExt;
 use utoipa::{IntoParams, ToSchema};
@@ -42,6 +45,8 @@ pub struct CreateChunkData {
     pub tag_set: Option<Vec<String>>,
     /// File_uuid is the uuid of the file that the chunk is associated with. This is used to associate chunks with files. This is useful for when you want to delete a file and all of its associated chunks.
     pub file_id: Option<uuid::Uuid>,
+    /// File_name is the name of the file that the chunk is associated with. This is used to associate chunks with files. This is useful for when you want to delete a file and all of its associated chunks.
+    pub file_name: Option<String>,
     /// Metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub metadata: Option<serde_json::Value>,
     /// Chunk_vector is a vector of floats which can be used instead of generating a new embedding. This is useful for when you are using a pre-embedded dataset. If this is not provided, the innerText of the chunk_html will be used to create the embedding.
@@ -167,11 +172,7 @@ pub async fn create_chunk(
             ServiceError::BadRequest(format!("Could not parse html: {}", err.message))
         })?;
 
-    let chunk_tag_set = if let Some(tag_set) = chunk.tag_set.clone() {
-        Some(tag_set.join(","))
-    } else {
-        None
-    };
+    let chunk_tag_set = chunk.tag_set.clone().map(|tag_set| tag_set.join(","));
 
     let chunk_metadata = ChunkMetadata::from_details(
         content,
@@ -645,6 +646,106 @@ pub struct SearchChunkData {
 pub struct ScoreChunkDTO {
     pub metadata: Vec<ChunkMetadataWithFileData>,
     pub score: f64,
+}
+
+impl ScoreChunkDTO {
+    pub fn from_qdrant_metadata(
+        map: HashMap<String, Value>,
+        point_id: uuid::Uuid,
+        score: f64,
+    ) -> Self {
+        let metadata = ChunkMetadataWithFileData {
+            id: map.get("id").unwrap().as_str().unwrap().parse().unwrap(),
+            content: map.get("content").unwrap().as_str().unwrap().to_string(),
+            chunk_html: Some(map.get("chunk_html").unwrap().as_str().unwrap().to_string()),
+            link: Some(map.get("link").unwrap().as_str().unwrap().to_string()),
+            tag_set: Some(
+                map.get("tag_set")
+                    .unwrap()
+                    .as_list()
+                    .unwrap()
+                    .iter()
+                    .map(|value| value.as_str().unwrap().to_string())
+                    .collect_vec()
+                    .join(","),
+            ),
+            metadata: serde_json::from_str(map.get("metadata").unwrap().as_str().unwrap()).unwrap(),
+            tracking_id: map
+                .get("tracking_id")
+                .unwrap()
+                .as_str()
+                .map(|s| s.to_string()),
+            time_stamp: map
+                .get("time_stamp")
+                .unwrap()
+                .as_str()
+                .map(|s| s.to_string())
+                .map(|ts| -> Result<NaiveDateTime, ServiceError> {
+                    Ok(ts
+                        .parse::<DateTimeUtc>()
+                        .map_err(|_| {
+                            ServiceError::BadRequest("Invalid timestamp format".to_string())
+                        })?
+                        .0
+                        .with_timezone(&chrono::Local)
+                        .naive_local())
+                })
+                .transpose()
+                .unwrap(),
+            weight: map.get("weight").unwrap().as_double().unwrap(),
+            file_id: Some(
+                map.get("file_id")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .parse::<uuid::Uuid>()
+                    .unwrap(),
+            ),
+            file_name: Some(map.get("file_name").unwrap().as_str().unwrap().to_string()),
+            qdrant_point_id: point_id,
+            created_at: map
+                .get("created_at")
+                .unwrap()
+                .as_str()
+                .map(|s| s.to_string())
+                .map(|ts| -> Result<NaiveDateTime, ServiceError> {
+                    Ok(ts
+                        .parse::<DateTimeUtc>()
+                        .map_err(|_| {
+                            ServiceError::BadRequest("Invalid timestamp format".to_string())
+                        })?
+                        .0
+                        .with_timezone(&chrono::Local)
+                        .naive_local())
+                })
+                .transpose()
+                .unwrap()
+                .expect("Must have a created_at field"),
+            updated_at: map
+                .get("updated_at")
+                .unwrap()
+                .as_str()
+                .map(|s| s.to_string())
+                .map(|ts| -> Result<NaiveDateTime, ServiceError> {
+                    Ok(ts
+                        .parse::<DateTimeUtc>()
+                        .map_err(|_| {
+                            ServiceError::BadRequest("Invalid timestamp format".to_string())
+                        })?
+                        .0
+                        .with_timezone(&chrono::Local)
+                        .naive_local())
+                })
+                .transpose()
+                .unwrap()
+                .expect("Must have a updated_at field"),
+        };
+
+        ScoreChunkDTO {
+            metadata: vec![metadata],
+            score,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Debug)]
