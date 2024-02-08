@@ -1,4 +1,3 @@
-use utoipa::ToSchema;
 use super::chunk_operator::{
     find_relevant_sentence, get_metadata_and_collided_chunks_from_point_ids_query,
     get_metadata_from_point_ids,
@@ -27,6 +26,7 @@ use diesel::{
     BoolExpressionMethods, JoinOnDsl, NullableExpressionMethods, PgTextExpressionMethods,
 };
 use itertools::Itertools;
+use utoipa::ToSchema;
 
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::qdrant::Range;
@@ -57,6 +57,7 @@ pub fn assemble_qdrant_filter(
     quote_words: Option<Vec<String>>,
     negated_words: Option<Vec<String>>,
     dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
 ) -> Result<Filter, DefaultError> {
     let mut filter = Filter::default();
 
@@ -181,22 +182,27 @@ pub fn assemble_qdrant_filter(
         }
     }
 
-    //TODO: fix this after new qdrant rust client gets released
-    if let Some(quote_words) = quote_words {
-        for word in quote_words.iter() {
-            filter
-                .must
-                .push(Condition::matches("card_html", word.clone() + " "));
-        }
-    }
+    if quote_words.is_some() || negated_words.is_some() {
+        let available_qdrant_ids = get_qdrant_point_ids_from_pg_for_quote_negated_words(
+            quote_words,
+            negated_words,
+            dataset_id,
+            pool,
+        )?;
 
-    //TODO: fix this after new qdrant rust client gets released
-    if let Some(negated_words) = negated_words {
-        for word in negated_words.iter() {
-            filter
-                .must_not
-                .push(Condition::matches("card_html", word.clone() + " "));
-        }
+        let available_point_ids = available_qdrant_ids
+            .iter()
+            .map(|id| id.to_string())
+            .collect::<HashSet<String>>()
+            .iter()
+            .map(|id| (*id).clone().into())
+            .collect::<Vec<PointId>>();
+
+        filter.should.push(Condition {
+            condition_one_of: Some(HasId(HasIdCondition {
+                has_id: (available_point_ids).to_vec(),
+            })),
+        });
     }
 
     Ok(filter)
@@ -212,6 +218,7 @@ pub async fn retrieve_qdrant_points_query(
     filters: Option<serde_json::Value>,
     parsed_query: ParsedQuery,
     dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
 ) -> Result<SearchChunkQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
 
@@ -223,6 +230,7 @@ pub async fn retrieve_qdrant_points_query(
         parsed_query.quote_words,
         parsed_query.negated_words,
         dataset_id,
+        pool,
     )?;
 
     let point_ids = search_qdrant_query(page, filter, vector).await?;
@@ -250,6 +258,7 @@ pub async fn retrieve_group_qdrant_points_query(
     filters: Option<serde_json::Value>,
     parsed_query: ParsedQuery,
     dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
 ) -> Result<SearchOverGroupsQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
 
@@ -261,6 +270,7 @@ pub async fn retrieve_group_qdrant_points_query(
         parsed_query.quote_words,
         parsed_query.negated_words,
         dataset_id,
+        pool,
     )?;
 
     let point_ids = search_over_groups_query(page, filter, vector).await?;
@@ -1070,6 +1080,7 @@ pub async fn search_semantic_chunks(
         data.filters.clone(),
         parsed_query,
         dataset.id,
+        pool.clone(),
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -1108,6 +1119,7 @@ pub async fn search_full_text_chunks(
         data.filters.clone(),
         parsed_query,
         dataset.id,
+        pool.clone(),
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -1142,6 +1154,7 @@ pub async fn search_hybrid_chunks(
         data.filters.clone(),
         parsed_query.clone(),
         dataset.id,
+        pool.clone(),
     );
 
     let full_text_handler_results =
@@ -1476,6 +1489,7 @@ pub async fn semantic_search_over_groups(
         data.filters.clone(),
         parsed_query,
         dataset.id,
+        pool.clone(),
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -1508,6 +1522,7 @@ pub async fn full_text_search_over_groups(
         data.filters.clone(),
         parsed_query,
         dataset.id,
+        pool.clone(),
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -1571,6 +1586,7 @@ pub async fn hybrid_search_over_groups(
         data.filters.clone(),
         parsed_query.clone(),
         dataset.id,
+        pool.clone(),
     );
 
     let full_text_future = retrieve_group_qdrant_points_query(
@@ -1582,6 +1598,7 @@ pub async fn hybrid_search_over_groups(
         data.filters.clone(),
         parsed_query.clone(),
         dataset.id,
+        pool.clone(),
     );
 
     let (semantic_results, full_text_results) = futures::join!(semantic_future, full_text_future);
@@ -1624,4 +1641,50 @@ pub async fn hybrid_search_over_groups(
     //TODO: rerank for groups
 
     Ok(result_chunks)
+}
+
+pub fn get_qdrant_point_ids_from_pg_for_quote_negated_words(
+    quote_words: Option<Vec<String>>,
+    negated_words: Option<Vec<String>>,
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Vec<uuid::Uuid>, DefaultError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+    let mut conn = pool.get().unwrap();
+    let mut query = chunk_metadata_columns::chunk_metadata
+        .select(chunk_metadata_columns::qdrant_point_id)
+        .filter(chunk_metadata_columns::qdrant_point_id.is_not_null())
+        .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
+        .into_boxed();
+
+    if let Some(quote_words) = quote_words {
+        for word in quote_words.iter() {
+            let word_without_quotes = word.trim_matches('\"');
+            query = query.filter(
+                chunk_metadata_columns::chunk_html.ilike(format!("%{}%", word_without_quotes)),
+            );
+        }
+    }
+
+    if let Some(negated_words) = negated_words {
+        for word in negated_words.iter() {
+            let word_without_negation = word.trim_matches('-');
+            query = query.filter(
+                chunk_metadata_columns::chunk_html
+                    .not_ilike(format!("%{}%", word_without_negation)),
+            );
+        }
+    }
+
+    let matching_qdrant_point_ids: Vec<Option<uuid::Uuid>> =
+        query.load(&mut conn).map_err(|_| DefaultError {
+            message: "Failed to load full-text searched chunks",
+        })?;
+
+    let matching_qdrant_point_ids = matching_qdrant_point_ids
+        .into_iter()
+        .filter_map(|uuid| uuid)
+        .collect::<Vec<uuid::Uuid>>();
+
+    Ok(matching_qdrant_point_ids)
 }

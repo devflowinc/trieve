@@ -575,6 +575,7 @@ pub async fn stream_response(
     dataset: Dataset,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let qdrant_search_pool = pool.clone();
     let pool2 = pool.clone();
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
@@ -698,6 +699,7 @@ pub async fn stream_response(
             negated_words: None,
         },
         dataset.id,
+        qdrant_search_pool,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
