@@ -206,6 +206,7 @@ export interface UserDTO {
   username: string | null;
   website: string | null;
   visible_email: boolean;
+  user_orgs: [UserOrganization];
   orgs: [OrganizationDTO];
 }
 
