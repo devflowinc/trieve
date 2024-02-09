@@ -319,10 +319,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                           {props.chunk.metadata &&
                             indirectHasOwnProperty(props.chunk.metadata, key) &&
                             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
-                            (props.chunk.metadata as any)[key].replace(
-                              / +/g,
-                              " ",
-                            )}
+                            (props.chunk.metadata as any)[key]}
                         </span>
                       </div>
                     </Show>

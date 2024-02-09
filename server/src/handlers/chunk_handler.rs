@@ -1035,6 +1035,8 @@ pub async fn get_chunk_by_tracking_id(
 pub struct RecommendChunksRequest {
     /// The ids of the chunks to be used as positive examples for the recommendation. The chunks in this array will be used to find similar chunks.
     pub positive_chunk_ids: Vec<uuid::Uuid>,
+    /// The number of chunks to return. This is the number of chunks which will be returned in the response. The default is 10.
+    pub limit: Option<u64>,
 }
 
 /// get_recommended_chunks
@@ -1065,6 +1067,7 @@ pub async fn get_recommended_chunks(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let positive_chunk_ids = data.positive_chunk_ids.clone();
+    let limit = data.limit.unwrap_or(10);
     let embed_size =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration)
             .EMBEDDING_SIZE
@@ -1072,6 +1075,7 @@ pub async fn get_recommended_chunks(
 
     let recommended_qdrant_point_ids = recommend_qdrant_query(
         positive_chunk_ids,
+        limit,
         dataset_org_plan_sub.dataset.id,
         embed_size,
     )

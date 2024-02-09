@@ -765,6 +765,7 @@ pub async fn delete_qdrant_point_id_query(
 
 pub async fn recommend_qdrant_query(
     positive_ids: Vec<uuid::Uuid>,
+    limit: u64,
     dataset_id: uuid::Uuid,
     embed_size: usize,
 ) -> Result<Vec<uuid::Uuid>, DefaultError> {
@@ -800,7 +801,7 @@ pub async fn recommend_qdrant_query(
         positive: point_ids,
         negative: vec![],
         filter: dataset_filter,
-        limit: 10,
+        limit,
         with_payload: Some(WithPayloadSelector {
             selector_options: Some(SelectorOptions::Enable(true)),
         }),
