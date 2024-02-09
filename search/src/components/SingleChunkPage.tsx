@@ -11,7 +11,6 @@ import {
 } from "../../utils/apiTypes";
 import ScoreChunk from "./ScoreChunk";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
-import { BiRegularLogIn, BiRegularXCircle } from "solid-icons/bi";
 import { ConfirmModal } from "./Atoms/ConfirmModal";
 import ChunkMetadataDisplay from "./ChunkMetadataDisplay";
 import { Portal } from "solid-js/web";
@@ -31,7 +30,6 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   const $dataset = useStore(currentDataset);
   const initialChunkMetadata = props.defaultResultChunk.metadata;
 
-  const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
   const [chunkMetadata, setChunkMetadata] =
     createSignal<ChunkMetadataWithVotes | null>(initialChunkMetadata);
   const [error, setError] = createSignal("");
@@ -68,7 +66,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     const currentDataset = $dataset();
     if (!currentDataset) return;
 
-    void fetch(`${apiHost}/chunk_group/1`, {
+    void fetch(`${apiHost}/dataset/groups/${currentDataset.dataset.id}/1`, {
       method: "GET",
       credentials: "include",
       headers: {
@@ -138,14 +136,10 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
             ...prev_recommendations,
             ...deduped_data,
           ];
-          setLoadingRecommendations(false);
           setRecommendedChunks(new_recommendations);
         });
       }
-      if (response.status == 401) {
-        setShowNeedLoginModal(true);
-        setLoadingRecommendations(false);
-      }
+      setLoadingRecommendations(false);
     });
   };
 
@@ -179,15 +173,8 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
           setError("");
         });
       }
-      if (response.status == 403) {
-        setError("You are not authorized to view this chunk.");
-      }
       if (response.status == 404) {
         setError("This chunk could not be found.");
-      }
-      if (response.status == 401) {
-        setError("Sign in to view this chunk.");
-        setShowNeedLoginModal(true);
       }
       setClientSideRequestFinished(true);
       setFetching(false);
@@ -208,7 +195,6 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
         totalGroupPages={totalGroupPages()}
         chunk={curChunkMetadata}
         score={0}
-        setShowModal={setShowNeedLoginModal}
         chunkGroups={chunkGroups()}
         bookmarks={bookmarks()}
         setOnDelete={setOnDelete}
@@ -361,31 +347,6 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
           </button>
         </div>
       </div>
-      <Show when={showNeedLoginModal()}>
-        <FullScreenModal
-          isOpen={showNeedLoginModal}
-          setIsOpen={setShowNeedLoginModal}
-        >
-          <div class="min-w-[250px] sm:min-w-[300px]">
-            <BiRegularXCircle class="mx-auto h-8 w-8 fill-current !text-red-500" />
-            <div class="mb-4 text-center text-xl font-bold dark:text-white">
-              You must be signed in to vote, bookmark, get recommended chunks,
-              or view this chunk it if it's private
-            </div>
-            <div class="mx-auto flex w-fit flex-col space-y-3">
-              <a
-                class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${
-                  $dataset()?.dataset.id ?? ""
-                }`}
-              >
-                Login/Register
-                <BiRegularLogIn class="h-6 w-6 fill-current" />
-              </a>
-            </div>
-          </div>
-        </FullScreenModal>
-      </Show>
       <ConfirmModal
         showConfirmModal={showConfirmDeleteModal}
         setShowConfirmModal={setShowConfirmDeleteModal}
