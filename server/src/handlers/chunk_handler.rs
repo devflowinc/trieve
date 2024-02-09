@@ -28,6 +28,7 @@ use redis::Commands;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use simple_server_timing_header::Timer;
 use std::process::Command;
 use tokio_stream::StreamExt;
 use utoipa::{IntoParams, ToSchema};
@@ -723,22 +724,47 @@ pub async fn search_chunk(
     let page = data.page.unwrap_or(1);
     let parsed_query = parse_query(data.query.clone());
 
+    let mut timer = Timer::new();
+
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => {
-            search_full_text_chunks(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
-                .await?
+            search_full_text_chunks(
+                data,
+                parsed_query,
+                page,
+                pool,
+                dataset_org_plan_sub.dataset,
+                &mut timer,
+            )
+            .await?
         }
         "hybrid" => {
-            search_hybrid_chunks(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
-                .await?
+            search_hybrid_chunks(
+                data,
+                parsed_query,
+                page,
+                pool,
+                dataset_org_plan_sub.dataset,
+                &mut timer,
+            )
+            .await?
         }
         _ => {
-            search_semantic_chunks(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
-                .await?
+            search_semantic_chunks(
+                data,
+                parsed_query,
+                page,
+                pool,
+                dataset_org_plan_sub.dataset,
+                &mut timer,
+            )
+            .await?
         }
     };
 
-    Ok(HttpResponse::Ok().json(result_chunks))
+    Ok(HttpResponse::Ok()
+        .insert_header((Timer::header_key(), timer.header_value()))
+        .json(result_chunks))
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema, IntoParams)]

@@ -329,11 +329,7 @@ pub async fn create_chunks_with_handler(
 
     let pool1 = pool.clone();
 
-    let split_tag_set: Option<Vec<String>> = if let Some(tag_set) = tag_set {
-        Some(tag_set.split(',').map(|x| x.to_string()).collect())
-    } else {
-        None
-    };
+    let split_tag_set: Option<Vec<String>> = tag_set.map(|tag_set| tag_set.split(',').map(|x| x.to_string()).collect());
 
     for chunk_html in chunk_htmls {
         let create_chunk_data = CreateChunkData {

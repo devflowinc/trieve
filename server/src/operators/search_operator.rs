@@ -26,6 +26,7 @@ use diesel::{
     BoolExpressionMethods, JoinOnDsl, NullableExpressionMethods, PgTextExpressionMethods,
 };
 use itertools::Itertools;
+use simple_server_timing_header::Timer;
 use utoipa::ToSchema;
 
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
@@ -49,6 +50,7 @@ pub struct SearchChunkQueryResult {
     pub total_chunk_pages: i64,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn assemble_qdrant_filter(
     tag_set: Option<Vec<String>>,
     link: Option<Vec<String>>,
@@ -1066,10 +1068,12 @@ pub async fn search_semantic_chunks(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
+    timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
     let embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
+    timer.add("Got embedding vector");
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
         VectorType::Dense(embedding_vector),
@@ -1085,10 +1089,16 @@ pub async fn search_semantic_chunks(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
+    timer.add("Got qdrant points");
+
     let mut result_chunks =
         retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
 
+    timer.add("Got metadata chunks");
+
     result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
+
+    timer.add("Reranked chunks");
 
     Ok(result_chunks)
 }
@@ -1099,6 +1109,7 @@ pub async fn search_full_text_chunks(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
+    timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     parsed_query.query = parsed_query
         .query
@@ -1109,6 +1120,7 @@ pub async fn search_full_text_chunks(
     let embedding_vector = get_splade_query_embedding(&parsed_query.query)
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
+    timer.add("Got splade query embedding");
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
         VectorType::Sparse(embedding_vector),
@@ -1124,10 +1136,16 @@ pub async fn search_full_text_chunks(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
+    timer.add("Got qdrant points");
+
     let mut result_chunks =
         retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool).await?;
 
+    timer.add("Got metadata chunks");
+
     result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
+
+    timer.add("Reranked chunks");
 
     Ok(result_chunks)
 }
@@ -1139,11 +1157,13 @@ pub async fn search_hybrid_chunks(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
+    timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
     let embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
     let pool1 = pool.clone();
+    timer.add("Got embedding vector");
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
         VectorType::Dense(embedding_vector),
@@ -1157,11 +1177,19 @@ pub async fn search_hybrid_chunks(
         pool.clone(),
     );
 
-    let full_text_handler_results =
-        search_full_text_chunks(web::Json(data.clone()), parsed_query, page, pool, dataset);
+    let full_text_handler_results = search_full_text_chunks(
+        web::Json(data.clone()),
+        parsed_query,
+        page,
+        pool,
+        dataset,
+        timer,
+    );
 
     let (search_chunk_query_results, full_text_handler_results) =
         futures::join!(search_chunk_query_results, full_text_handler_results);
+
+    timer.add("Got qdrant points and full text chunks");
 
     let search_chunk_query_results =
         search_chunk_query_results.map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -1181,6 +1209,8 @@ pub async fn search_hybrid_chunks(
         pool1,
     )
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    timer.add("Got metadata chunks and collided chunks");
 
     let semantic_score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
         .search_results
@@ -1240,6 +1270,8 @@ pub async fn search_hybrid_chunks(
         })
         .collect();
 
+    timer.add("Got semantic score chunks");
+
     let mut result_chunks = {
         let combined_results = semantic_score_chunks
             .into_iter()
@@ -1247,8 +1279,11 @@ pub async fn search_hybrid_chunks(
             .unique_by(|score_chunk| score_chunk.metadata[0].id)
             .collect::<Vec<ScoreChunkDTO>>();
 
+        let reranked_chunks = cross_encoder(data.query.clone(), combined_results).await?;
+        timer.add("Got reranked chunks");
+
         SearchChunkQueryResponseBody {
-            score_chunks: cross_encoder(data.query.clone(), combined_results).await?,
+            score_chunks: reranked_chunks,
             total_chunk_pages: search_chunk_query_results.total_chunk_pages,
         }
     };
@@ -1683,7 +1718,7 @@ pub fn get_qdrant_point_ids_from_pg_for_quote_negated_words(
 
     let matching_qdrant_point_ids = matching_qdrant_point_ids
         .into_iter()
-        .filter_map(|uuid| uuid)
+        .flatten()
         .collect::<Vec<uuid::Uuid>>();
 
     Ok(matching_qdrant_point_ids)
