@@ -147,11 +147,10 @@ pub async fn upload_file_handler(
         None
     };
 
-    let file_tag_set = if let Some(tag_set) = upload_file_data.tag_set.clone() {
-        Some(tag_set.join(","))
-    } else {
-        None
-    };
+    let file_tag_set = upload_file_data
+        .tag_set
+        .clone()
+        .map(|tag_set| tag_set.join(","));
 
     let conversion_result = convert_doc_to_html_query(
         upload_file_data.file_name,
