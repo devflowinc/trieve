@@ -144,7 +144,7 @@ pub struct CrossEncoderData {
 
 pub async fn cross_encoder(
     query: String,
-    mut results: Vec<ScoreChunkDTO>,
+    results: Vec<ScoreChunkDTO>,
 ) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
     let mut embedding_server_call: String = get_env!(
         "GPU_SERVER_ORIGIN",
@@ -185,14 +185,20 @@ pub async fn cross_encoder(
             )
         })?;
 
-    results.clone().iter_mut().for_each(|x| {
-        x.score = resp
-            .docs
-            .iter()
-            .find(|s| s.0 == x.metadata[0].content)
-            .unwrap()
-            .1 as f64;
-    });
+    let mut results: Vec<ScoreChunkDTO> = results
+        .clone()
+        .iter_mut()
+        .map(|x| {
+            x.score = resp
+                .docs
+                .iter()
+                .find(|s| s.0 == x.metadata[0].content)
+                .unwrap()
+                .1 as f64;
+
+            x.clone()
+        })
+        .collect();
 
     results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
 
