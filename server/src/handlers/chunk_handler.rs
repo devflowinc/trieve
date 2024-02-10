@@ -725,6 +725,7 @@ pub async fn search_chunk(
     let parsed_query = parse_query(data.query.clone());
 
     let mut timer = Timer::new();
+    timer.add("Just got to handler");
 
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => {
