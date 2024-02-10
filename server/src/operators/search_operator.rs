@@ -1072,6 +1072,7 @@ pub async fn search_semantic_chunks(
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    timer.add("Getting embedding vector"");
     let embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
     timer.add("Got embedding vector");
 
@@ -1161,6 +1162,7 @@ pub async fn search_hybrid_chunks(
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    timer.add("Getting embedding vector"");
     let embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
     let pool1 = pool.clone();
     timer.add("Got embedding vector");
