@@ -855,11 +855,11 @@ impl ServerDatasetConfiguration {
         ServerDatasetConfiguration {
             DOCUMENT_UPLOAD_FEATURE: configuration
                 .get("DOCUMENT_UPLOAD_FEATURE")
-                .unwrap_or(&json!(false))
+                .unwrap_or(&json!(true))
                 .as_bool(),
             DOCUMENT_DOWNLOAD_FEATURE: configuration
                 .get("DOCUMENT_DOWNLOAD_FEATURE")
-                .unwrap_or(&json!(false))
+                .unwrap_or(&json!(true))
                 .as_bool(),
             LLM_BASE_URL: configuration
                 .get("LLM_BASE_URL")
@@ -969,7 +969,7 @@ impl ClientDatasetConfiguration {
                 .map(|s| s.to_string()),
             DOCUMENT_UPLOAD_FEATURE: configuration
                 .get("DOCUMENT_UPLOAD_FEATURE")
-                .unwrap_or(&json!(false))
+                .unwrap_or(&json!(true))
                 .as_bool(),
         }
     }

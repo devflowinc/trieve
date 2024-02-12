@@ -265,7 +265,6 @@ pub async fn get_user_files_handler(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
         ("file_id" = uuid::Uuid, description = "The id of the file to delete"),
         ("delete_chunks" = Option<bool>, Query, description = "Whether or not to delete the chunks associated with the file"),
-        ("file_id" = uuid::Uuid, description = "The id of the file to delete"),
     ),
     security(
         ("ApiKey" = ["admin"]),
