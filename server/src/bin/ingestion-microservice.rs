@@ -130,7 +130,7 @@ async fn upload_chunk(
     let duplicate_distance_threshold = payload
         .dataset_config
         .DUPLICATE_DISTANCE_THRESHOLD
-        .unwrap_or(1.1);
+        .unwrap_or(1.1f32);
 
     if duplicate_distance_threshold > 1.0
         || payload.dataset_config.COLLISIONS_ENABLED.unwrap_or(false)

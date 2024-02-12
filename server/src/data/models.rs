@@ -883,8 +883,7 @@ impl ServerDatasetConfiguration {
                 .map(|u| u as usize),
             DUPLICATE_DISTANCE_THRESHOLD: configuration
                 .get("DUPLICATE_DISTANCE_THRESHOLD")
-                .unwrap_or(&json!(1.1))
-                .as_f64()
+                .and_then(|v| v.as_f64())
                 .map(|f| f as f32),
             EMBEDDING_SIZE: configuration
                 .get("EMBEDDING_SIZE")
