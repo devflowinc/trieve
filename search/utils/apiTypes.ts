@@ -451,8 +451,8 @@ export interface ClientEnvsConfiguration {
 }
 
 export const defaultClientEnvsConfiguration: ClientEnvsConfiguration = {
-  CREATE_CHUNK_FEATURE: false,
-  DOCUMENT_UPLOAD_FEATURE: false,
+  CREATE_CHUNK_FEATURE: true,
+  DOCUMENT_UPLOAD_FEATURE: true,
   SEARCH_QUERIES:
     "star github.com/devflowinc/trieve, no seriously please star github.com/devflowinc/trieve, you know you want to star github.com/devflowinc/trieve",
   FRONTMATTER_VALS: "link,tag_set,file_name,time_stamp",
