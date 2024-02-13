@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
     data::models::{DatasetAndOrgWithSubAndPlan, File, Pool, ServerDatasetConfiguration},
@@ -318,19 +320,27 @@ pub struct GetImageResponse {
 pub async fn get_image_file(
     file_name: web::Path<String>,
     _user: LoggedUser,
-) -> Result<HttpResponse, actix_web::Error> {
+) -> Result<NamedFile, actix_web::Error> {
     let validated_file_name = validate_file_name(file_name.into_inner())?;
 
     let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
-    let file = bucket
-        .presign_get(
-            format!("images/{}", validated_file_name).as_str(),
-            24 * 60 * 60, // 1 day
-            None,
-        )
-        .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
 
-    Ok(HttpResponse::Ok().json(GetImageResponse { signed_url: file }))
+    let file_data = bucket
+        .get_object(format!("images/{}", validated_file_name).as_str())
+        .await
+        .map_err(|e| {
+            log::error!("Error getting image file: {}", e);
+            ServiceError::BadRequest(e.to_string())
+        })?;
+
+    let mut file = std::fs::File::create(format!("./tmp/{}", validated_file_name))?;
+    file.write_all(file_data.as_slice())?;
+
+    let named_file = NamedFile::open(format!("./tmp/{}", validated_file_name))?;
+
+    std::fs::remove_file(format!("./tmp/{}", validated_file_name.clone()))?;
+
+    Ok(named_file)
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
