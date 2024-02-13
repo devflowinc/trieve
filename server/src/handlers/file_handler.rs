@@ -359,7 +359,6 @@ pub async fn get_pdf_from_range(
 ) -> Result<NamedFile, actix_web::Error> {
     cfg_if::cfg_if! {
         if #[cfg(feature = "ocr")] {
-    let root_dir = "images";
 
     let validated_prefix = validate_file_name(path_data.prefix.clone())?;
 
@@ -368,9 +367,12 @@ pub async fn get_pdf_from_range(
 
     for i in path_data.file_start..=path_data.file_end {
         let file = bucket
-            .get_object(format!("{}/{}{}", root_dir, validated_prefix, i).as_str())
+            .get_object(format!("images/{}{}.png", validated_prefix, i).as_str())
             .await
-            .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+            .map_err(|e| {
+                log::error!("Error getting image file: {}", e);
+                ServiceError::BadRequest(e.to_string())
+            })?;
 
         wand.read_image_blob(file.as_slice()).map_err(|e| {
             ServiceError::BadRequest(format!("Could not read image to wand: {}", e))
