@@ -35,7 +35,7 @@ pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
     let aws_region_name = std::env::var("AWS_REGION").unwrap_or("".to_string());
 
     let aws_region = Region::Custom {
-        region: aws_region_name.into(),
+        region: aws_region_name,
         endpoint: s3_endpoint,
     };
 
@@ -356,7 +356,7 @@ pub async fn create_chunks_with_handler(
             tag_set: split_tag_set.clone(),
             file_id: Some(created_file_id),
             metadata: metadata.clone(),
-            group_ids: Some(vec![group_id.clone()]),
+            group_ids: Some(vec![group_id]),
             tracking_id: None,
             time_stamp: time_stamp.clone(),
             chunk_vector: None,
