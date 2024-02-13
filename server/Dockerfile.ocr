@@ -89,6 +89,7 @@ RUN pip install --break-system-packages -r /app/requirements.txt; \
     mkdir /app/tmp
 
 WORKDIR /app
+RUN mkdir /app/tmp
 COPY ./server-python/ /app/server-python
 COPY ./migrations/ /app/migrations
 COPY --from=builder /imgs/app/target/release/trieve-server /app/trieve-server

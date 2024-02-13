@@ -23,6 +23,7 @@ RUN apt-get update -y && apt-get -y install pkg-config libssl-dev libpq-dev
 WORKDIR /app
 COPY ./server-python/requirements.txt /app/requirements.txt
 RUN pip install --break-system-packages -r /app/requirements.txt;
+RUN mkdir /app/tmp
 COPY ./migrations/ /app/migrations
 COPY ./server-python/ /app/server-python
 COPY --from=builder /app/target/release/trieve-server /app/trieve-server
