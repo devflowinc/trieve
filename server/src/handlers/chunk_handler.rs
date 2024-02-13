@@ -168,11 +168,7 @@ pub async fn create_chunk(
             ServiceError::BadRequest(format!("Could not parse html: {}", err.message))
         })?;
 
-    let chunk_tag_set = if let Some(tag_set) = chunk.tag_set.clone() {
-        Some(tag_set.join(","))
-    } else {
-        None
-    };
+    let chunk_tag_set = chunk.tag_set.clone().map(|tag_set| tag_set.join(","));
 
     let chunk_metadata = ChunkMetadata::from_details(
         content,

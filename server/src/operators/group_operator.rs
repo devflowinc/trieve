@@ -6,7 +6,7 @@ use crate::{
 use crate::{
     data::models::{
         ChunkGroupAndFileWithCount, ChunkGroupBookmark, ChunkMetadataWithCount,
-        ChunkMetadataWithFileData, FileGroup, FullTextSearchResult, SlimGroup,
+        ChunkMetadataWithFileData, FullTextSearchResult, SlimGroup,
     },
     diesel::{Connection, ExpressionMethods, QueryDsl, RunQueryDsl},
     errors::ServiceError,
