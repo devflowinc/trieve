@@ -32,9 +32,10 @@ pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
     let s3_secret_key = get_env!("S3_SECRET_KEY", "S3_SECRET_KEY should be set").into();
     let s3_endpoint = get_env!("S3_ENDPOINT", "S3_ENDPOINT should be set").into();
     let s3_bucket_name = get_env!("S3_BUCKET", "S3_BUCKET should be set");
+    let aws_region_name = std::env::var("AWS_REGION").unwrap_or("".to_string());
 
     let aws_region = Region::Custom {
-        region: "".to_owned(),
+        region: aws_region_name.into(),
         endpoint: s3_endpoint,
     };
 

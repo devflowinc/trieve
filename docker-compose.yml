@@ -165,6 +165,7 @@ services:
       - OIDC_AUTH_REDIRECT_URL=${OIDC_AUTH_REDIRECT_URL}
       - OIDC_ISSUER_URL=${OIDC_ISSUER_URL}
       - GPU_SERVER_ORIGIN=${GPU_SERVER_ORIGIN}
+      - AWS_REGION=${AWS_REGION}
 
   ingestion-service:
     image: arguflow/ingest
