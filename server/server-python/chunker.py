@@ -149,7 +149,6 @@ class Chunk:
             cur_html += f"<div>{body}</div>"
             cur_html += "</div>"
             html_chunks.append(cur_html)
-
         return html_chunks
 
 
@@ -166,10 +165,9 @@ def parse_html(html_content):
             continue
 
         if child.name in ["h1", "h2", "h3", "h4", "h5", "h6"]:
-            cur_heading = child.contents
+            cur_heading = str(child.contents)
         elif child.name in ["ul", "ol"]:
-            temp_chunk = Chunk(cur_heading, str(child))
-            chunks.append(temp_chunk)
+            chunks.append(Chunk(cur_heading, str(child)))
             cur_heading = ""
         elif child.name in ["p", "div"]:
             sub_children = list(child.children)
@@ -187,12 +185,10 @@ def parse_html(html_content):
                 cur_heading = sub_children[0].text
                 continue
 
-            temp_chunk = Chunk(cur_heading, str(child))
-            chunks.append(temp_chunk)
+            chunks.append(Chunk(cur_heading, str(child)))
             cur_heading = ""
         elif not child.name:
-            temp_chunk = Chunk(cur_heading, str(child))
-            chunks.append(temp_chunk)
+            chunks.append(Chunk(cur_heading, str(child)))
             cur_heading = ""
 
     return chunks
@@ -208,11 +204,13 @@ def main(html_file_path):
         results = []
         for chunk in chunks:
             results += chunk.output()
-        print(json.dumps(results))
-    except:
-        print(json.dumps([]))
+        return results
+    except Exception as e:
+        print(f'Chunker error {e}', file=sys.stderr)
+        return []
 
 
 if __name__ == "__main__":
     html_file_path = sys.argv[1]
-    main(html_file_path)
+    result = main(html_file_path)
+    print(json.dumps(result))

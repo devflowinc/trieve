@@ -1106,7 +1106,7 @@ impl Default for StripePlan {
             id: uuid::Uuid::default(),
             stripe_id: "".to_string(),
             chunk_count: 1000,
-            file_storage: 0,
+            file_storage: 512,
             user_count: 5,
             dataset_count: 1,
             message_count: 1000,
