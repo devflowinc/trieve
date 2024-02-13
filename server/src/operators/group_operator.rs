@@ -24,7 +24,7 @@ use utoipa::ToSchema;
 pub fn create_group_query(
     new_group: ChunkGroup,
     pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
+) -> Result<ChunkGroup, DefaultError> {
     use crate::data::schema::chunk_group::dsl::*;
 
     let mut conn = pool.get().unwrap();
@@ -39,62 +39,6 @@ pub fn create_group_query(
             }
         })?;
 
-    Ok(())
-}
-
-pub fn create_group_and_add_bookmarks_query(
-    new_group: ChunkGroup,
-    bookmark_ids: Vec<uuid::Uuid>,
-    created_file_id: uuid::Uuid,
-    given_dataset_id: uuid::Uuid,
-    pool: web::Data<Pool>,
-) -> Result<ChunkGroup, DefaultError> {
-    use crate::data::schema::chunk_group::dsl::*;
-
-    let mut conn = pool.get().unwrap();
-
-    chunk_group
-        .filter(dataset_id.eq(given_dataset_id))
-        .filter(id.eq(new_group.id))
-        .first::<ChunkGroup>(&mut conn)
-        .map_err(|_err| DefaultError {
-            message: "Group not found, likely incorrect dataset_id",
-        })?;
-
-    let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
-        diesel::insert_into(chunk_group)
-            .values(&new_group)
-            .execute(conn)?;
-
-        use crate::data::schema::chunk_group_bookmarks::dsl::*;
-
-        diesel::insert_into(chunk_group_bookmarks)
-            .values(
-                bookmark_ids
-                    .iter()
-                    .map(|bookmark| ChunkGroupBookmark::from_details(new_group.id, *bookmark))
-                    .collect::<Vec<ChunkGroupBookmark>>(),
-            )
-            .execute(conn)?;
-
-        use crate::data::schema::groups_from_files::dsl::*;
-
-        diesel::insert_into(groups_from_files)
-            .values(&FileGroup::from_details(created_file_id, new_group.id))
-            .execute(conn)?;
-
-        Ok(())
-    });
-
-    match transaction_result {
-        Ok(_) => (),
-        Err(err) => {
-            log::error!("Error creating group {:}", err);
-            return Err(DefaultError {
-                message: "Error creating group",
-            });
-        }
-    }
     Ok(new_group)
 }
 

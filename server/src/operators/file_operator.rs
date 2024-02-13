@@ -1,5 +1,5 @@
 use super::event_operator::create_event_query;
-use super::group_operator::create_group_and_add_bookmarks_query;
+use super::group_operator::create_group_query;
 use crate::data::models::{ChunkMetadata, Dataset, DatasetAndOrgWithSubAndPlan, EventType};
 use crate::handlers::auth_handler::AdminOnly;
 use crate::operators::chunk_operator::delete_chunk_metadata_query;
@@ -328,9 +328,26 @@ pub async fn create_chunks_with_handler(
 
     let mut chunk_ids: Vec<uuid::Uuid> = [].to_vec();
 
-    let pool1 = pool.clone();
+    let split_tag_set: Option<Vec<String>> =
+        tag_set.map(|tag_set| tag_set.split(',').map(|x| x.to_string()).collect());
 
-    let split_tag_set: Option<Vec<String>> = tag_set.map(|tag_set| tag_set.split(',').map(|x| x.to_string()).collect());
+    let name = format!("Group for file {}", file_name);
+    let converted_description = convert_html(&description.unwrap_or("".to_string()))?;
+
+    let chunk_group = ChunkGroup::from_details(
+        name.clone(),
+        converted_description,
+        dataset_org_plan_sub.dataset.id,
+    );
+
+    let chunk_group = create_group_query(chunk_group, pool.clone()).map_err(|e| {
+        log::error!("Could not create group {:?}", e);
+        DefaultError {
+            message: "Could not create group",
+        }
+    })?;
+
+    let group_id = chunk_group.id;
 
     for chunk_html in chunk_htmls {
         let create_chunk_data = CreateChunkData {
@@ -339,7 +356,7 @@ pub async fn create_chunks_with_handler(
             tag_set: split_tag_set.clone(),
             file_id: Some(created_file_id),
             metadata: metadata.clone(),
-            group_ids: None,
+            group_ids: Some(vec![group_id.clone()]),
             tracking_id: None,
             time_stamp: time_stamp.clone(),
             chunk_vector: None,
@@ -372,23 +389,6 @@ pub async fn create_chunks_with_handler(
             }
         }
     }
-    let converted_description = convert_html(&description.unwrap_or("".to_string()))?;
-    let group_id;
-    let name = format!("Group for file {}", file_name);
-    match create_group_and_add_bookmarks_query(
-        ChunkGroup::from_details(
-            name.clone(),
-            converted_description,
-            dataset_org_plan_sub.dataset.id,
-        ),
-        chunk_ids,
-        created_file_id,
-        dataset_org_plan_sub.dataset.id,
-        pool1,
-    ) {
-        Ok(group) => (group_id = group.id,),
-        Err(err) => return Err(err),
-    };
 
     create_event_query(
         Event::from_details(
