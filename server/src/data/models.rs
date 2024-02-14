@@ -583,6 +583,7 @@ pub struct File {
 impl File {
     #[allow(clippy::too_many_arguments)]
     pub fn from_details(
+        file_id: Option<uuid::Uuid>,
         user_id: uuid::Uuid,
         file_name: &str,
         size: i64,
@@ -593,7 +594,7 @@ impl File {
         dataset_id: uuid::Uuid,
     ) -> Self {
         File {
-            id: uuid::Uuid::new_v4(),
+            id: file_id.unwrap_or(uuid::Uuid::new_v4()),
             user_id,
             file_name: file_name.to_string(),
             created_at: chrono::Utc::now().naive_local(),
