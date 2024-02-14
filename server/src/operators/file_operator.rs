@@ -525,6 +525,11 @@ pub async fn delete_file_query(
 
     let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
         diesel::delete(
+            chunk_files_columns::chunk_files.filter(chunk_files_columns::file_id.eq(file_uuid)),
+        )
+        .execute(conn)?;
+
+        diesel::delete(
             files_columns::files
                 .filter(files_columns::id.eq(file_uuid))
                 .filter(files_columns::dataset_id.eq(dataset.clone().id)),
@@ -552,11 +557,6 @@ pub async fn delete_file_query(
             .execute(conn)?;
         }
 
-        diesel::delete(
-            chunk_files_columns::chunk_files.filter(chunk_files_columns::file_id.eq(file_uuid)),
-        )
-        .execute(conn)?;
-
         Ok(())
     });
 
@@ -570,7 +570,10 @@ pub async fn delete_file_query(
 
     match transaction_result {
         Ok(_) => (),
-        Err(_) => return Err(ServiceError::BadRequest("Could not delete file".to_string()).into()),
+        Err(e) => {
+            log::error!("Error deleting file with transaction {:?}", e);
+            return Err(ServiceError::BadRequest("Could not delete file".to_string()).into());
+        }
     }
 
     Ok(())
