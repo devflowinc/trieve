@@ -82,7 +82,7 @@ impl Modify for SecurityAddon {
 pub async fn main() -> std::io::Result<()> {
     #[derive(OpenApi)]
     #[openapi(
-        info(description = "Trieve REST API OpenAPI Documentation", version = "0.3.1"),
+        info(description = "Trieve REST API OpenAPI Documentation", version = "0.3.2"),
         modifiers(&SecurityAddon),
         paths(
             handlers::invitation_handler::post_invitation,
