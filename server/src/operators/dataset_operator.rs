@@ -123,6 +123,21 @@ pub async fn delete_dataset_by_id_query(
         .get()
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
+    let file_ids = files_columns::files
+        .select(files_columns::id)
+        .filter(files_columns::dataset_id.eq(dataset.id))
+        .load::<uuid::Uuid>(&mut conn)
+        .map_err(|_| ServiceError::BadRequest("Could not find files".to_string()))?;
+
+    for file_id in file_ids {
+        delete_file_query(file_id, dataset.clone(), Some(false), pool.clone())
+            .await
+            .map_err(|e| {
+                log::error!("Failed to delete files for dataset: {}", e);
+                ServiceError::BadRequest("Failed to delete files for dataset".to_string())
+            })?;
+    }
+
     let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
         diesel::delete(events_columns::events.filter(events_columns::dataset_id.eq(id)))
             .execute(conn)?;
@@ -243,20 +258,6 @@ pub async fn delete_dataset_by_id_query(
 
         Ok(chunks)
     });
-
-    let file_ids = files_columns::files
-        .select(files_columns::id)
-        .filter(files_columns::dataset_id.eq(dataset.id))
-        .load::<uuid::Uuid>(&mut conn)
-        .map_err(|_| ServiceError::BadRequest("Could not find files".to_string()))?;
-
-    for file_id in file_ids {
-        delete_file_query(file_id, dataset.clone(), Some(false), pool.clone())
-            .await
-            .map_err(|_| {
-                ServiceError::BadRequest("Failed to delete files for dataset".to_string())
-            })?;
-    }
 
     let qdrant_group = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_chunks".to_owned());
 
