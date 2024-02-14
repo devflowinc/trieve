@@ -349,11 +349,9 @@ pub async fn create_chunks_with_handler(
 
     let group_id = chunk_group.id;
 
-    let _ = create_group_from_file_query(group_id, created_file_id, pool.clone()).map_err(|e| {
+    create_group_from_file_query(group_id, created_file_id, pool.clone()).map_err(|e| {
         log::error!("Could not create group from file {:?}", e);
-        DefaultError {
-            message: "Could not create group from file",
-        }
+        e
     })?;
 
     for chunk_html in chunk_htmls {
