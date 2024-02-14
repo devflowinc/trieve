@@ -223,7 +223,7 @@ pub async fn get_file_handler(
     get,
     path = "/user/files/{user_id}",
     context_path = "/api",
-    tag = "user",
+    tag = "file",
     responses(
         (status = 200, description = "JSON body representing the files uploaded by the given user", body = Vec<File>),
         (status = 400, description = "Service error relating to getting the files uploaded by the given user", body = ErrorResponseBody),
