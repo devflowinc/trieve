@@ -4,4 +4,5 @@ Dockerfile.no-ocr
 Dockerfile.ocr
 Dockerfile
 tmp
+src/tmp
 images

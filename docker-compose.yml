@@ -112,11 +112,11 @@ services:
       - 9998:9998
 
   server:
-    image: arguflow/server:no-ocr
+    image: arguflow/server:ocr
     container_name: server
     build:
       context: ./server/
-      dockerfile: Dockerfile.no-ocr
+      dockerfile: Dockerfile.ocr
     depends_on:
       tika:
         condition: service_healthy
@@ -145,6 +145,7 @@ services:
       - SMTP_USERNAME=${SMTP_USERNAME}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - SMTP_EMAIL_ADDRESS=${SMTP_EMAIL_ADDRESS}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - LLM_API_KEY=${LLM_API_KEY}
       - SECRET_KEY=${SECRET_KEY}
       - SALT=${SALT}

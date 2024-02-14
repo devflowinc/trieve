@@ -1,4 +1,4 @@
-FROM rustlang/rust:nightly-bookworm AS chef
+FROM rust:1.76-bookworm AS chef
 
 RUN cargo install cargo-chef
 WORKDIR app
@@ -85,11 +85,10 @@ RUN apt-get update; \
     ;
 
 COPY ./server-python/requirements.txt /app/requirements.txt
-RUN pip install --break-system-packages -r /app/requirements.txt; \
-    mkdir /app/tmp
+RUN pip install --break-system-packages -r /app/requirements.txt;
 
 WORKDIR /app
-RUN mkdir /app/tmp
+RUN mkdir -p /app/tmp
 COPY ./server-python/ /app/server-python
 COPY ./migrations/ /app/migrations
 COPY --from=builder /imgs/app/target/release/trieve-server /app/trieve-server
