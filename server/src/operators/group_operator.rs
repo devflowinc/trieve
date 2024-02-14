@@ -1,5 +1,5 @@
 use crate::{
-    data::models::{ChunkGroup, ChunkMetadata, Dataset, Pool},
+    data::models::{ChunkGroup, ChunkMetadata, Dataset, FileGroup, Pool},
     errors::DefaultError,
     operators::chunk_operator::delete_chunk_metadata_query,
 };
@@ -500,4 +500,28 @@ pub fn delete_bookmark_query(
         })?;
 
     Ok(qdrant_point_id)
+}
+
+pub fn create_group_from_file_query(
+    group_id: uuid::Uuid,
+    file_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
+
+    let file_group = FileGroup::from_details(file_id, group_id);
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::insert_into(groups_from_files_columns::groups_from_files)
+        .values(&file_group)
+        .execute(&mut conn)
+        .map_err(|_err| {
+            log::error!("Error creating group from file {:}", _err);
+            DefaultError {
+                message: "Error creating group from file",
+            }
+        })?;
+
+    Ok(())
 }

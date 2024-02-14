@@ -1,5 +1,5 @@
 use super::event_operator::create_event_query;
-use super::group_operator::create_group_query;
+use super::group_operator::{create_group_from_file_query, create_group_query};
 use crate::data::models::{ChunkMetadata, Dataset, DatasetAndOrgWithSubAndPlan, EventType};
 use crate::handlers::auth_handler::AdminOnly;
 use crate::operators::chunk_operator::delete_chunk_metadata_query;
@@ -348,6 +348,13 @@ pub async fn create_chunks_with_handler(
     })?;
 
     let group_id = chunk_group.id;
+
+    let _ = create_group_from_file_query(group_id, created_file_id, pool.clone()).map_err(|e| {
+        log::error!("Could not create group from file {:?}", e);
+        DefaultError {
+            message: "Could not create group from file",
+        }
+    })?;
 
     for chunk_html in chunk_htmls {
         let create_chunk_data = CreateChunkData {
