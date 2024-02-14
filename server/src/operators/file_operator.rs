@@ -58,6 +58,7 @@ pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
 
 #[allow(clippy::too_many_arguments)]
 pub fn create_file_query(
+    file_id: uuid::Uuid,
     user_id: uuid::Uuid,
     file_name: &str,
     file_size: i64,
@@ -75,7 +76,15 @@ pub fn create_file_query(
     })?;
 
     let new_file = File::from_details(
-        user_id, file_name, file_size, tag_set, metadata, link, time_stamp, dataset_id,
+        Some(file_id),
+        user_id,
+        file_name,
+        file_size,
+        tag_set,
+        metadata,
+        link,
+        time_stamp,
+        dataset_id,
     );
 
     let created_file: File = diesel::insert_into(files_columns::files)
@@ -104,6 +113,8 @@ pub async fn convert_doc_to_html_query(
     redis_client: web::Data<redis::Client>,
 ) -> Result<UploadFileResult, DefaultError> {
     let user1 = user.clone();
+    let file_id = uuid::Uuid::new_v4();
+    let file_id_query_clone = file_id.clone();
     let file_name1 = file_name.clone();
     let file_data1 = file_data.clone();
     let tag_set1 = tag_set.clone();
@@ -196,6 +207,7 @@ pub async fn convert_doc_to_html_query(
         };
 
         let created_file = create_file_query(
+            file_id_query_clone,
             user.id,
             &file_name,
             file_size,
@@ -248,6 +260,7 @@ pub async fn convert_doc_to_html_query(
 
     Ok(UploadFileResult {
         file_metadata: File::from_details(
+            Some(file_id),
             user1.id,
             &file_name1,
             file_data1.len().try_into().unwrap(),
