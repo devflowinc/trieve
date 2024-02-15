@@ -26,7 +26,7 @@ services:
     container_name: redis
     restart: always
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -132,8 +132,6 @@ services:
       - app-network
     ports:
       - 8090:8090
-    volumes:
-      - ./server/images:/app/images
     environment:
       - ADMIN_API_KEY=${ADMIN_API_KEY}
       - BASE_SERVER_URL=${BASE_SERVER_URL}

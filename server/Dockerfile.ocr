@@ -1,4 +1,4 @@
-FROM rustlang/rust:nightly-bookworm AS chef
+FROM rust:1.75-slim-bookworm AS chef
 
 RUN cargo install cargo-chef
 WORKDIR app
@@ -10,7 +10,8 @@ RUN cargo chef prepare --recipe-path recipe.json
 FROM dpokidov/imagemagick:7.1.1-21-bookworm AS builder-base
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
-    PATH=/usr/local/cargo/bin:$PATH
+    PATH=/usr/local/cargo/bin:$PATH \
+    RUST_VERSION=1.75.0
 
 RUN set -eux; \
     apt-get update; \
@@ -40,7 +41,7 @@ RUN set -eux; \
     wget "$url"; \
     echo "${rustupSha256} *rustup-init" | sha256sum -c -; \
     chmod +x rustup-init; \
-    ./rustup-init -y --no-modify-path --default-toolchain nightly; \
+    ./rustup-init -y --no-modify-path --profile minimal --default-toolchain $RUST_VERSION --default-host ${rustArch}; \
     rm rustup-init; \
     chmod -R a+w $RUSTUP_HOME $CARGO_HOME; \
     rustup --version; \
@@ -86,10 +87,15 @@ RUN apt-get update; \
 
 COPY ./server-python/requirements.txt /app/requirements.txt
 RUN pip install --break-system-packages -r /app/requirements.txt; \
+    pip install --break-system-packages ocrmypdf; \
     mkdir /app/tmp
 
+
+RUN apt-get install -y \
+    tesseract-ocr \
+    libtesseract-dev
+
 WORKDIR /app
-RUN mkdir /app/tmp
 COPY ./server-python/ /app/server-python
 COPY ./migrations/ /app/migrations
 COPY --from=builder /imgs/app/target/release/trieve-server /app/trieve-server
