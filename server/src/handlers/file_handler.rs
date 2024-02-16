@@ -6,8 +6,8 @@ use crate::{
     errors::ServiceError,
     operators::{
         file_operator::{
-            convert_doc_to_html_query, delete_file_query, get_aws_bucket, get_file_query,
-            get_user_file_query,
+            convert_doc_to_html_query, delete_file_query, get_aws_bucket, get_dataset_file_query,
+            get_file_query,
         },
         organization_operator::get_file_size_sum_org,
     },
@@ -216,39 +216,55 @@ pub async fn get_file_handler(
     Ok(HttpResponse::Ok().json(file))
 }
 
-/// get_user_files
+#[derive(Deserialize, Serialize, ToSchema)]
+pub struct DatasetFileQuery {
+    pub dataset_id: uuid::Uuid,
+    pub page: u64,
+}
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct FileData {
+    pub files: Vec<File>,
+    pub total_pages: i64,
+}
+
+/// get_dataset_files
 ///
-/// Get all files which belong to a given user specified by the user_id parameter.
+/// Get all files which belong to a given dataset specified by the dataset_id parameter.
 #[utoipa::path(
     get,
     path = "/user/files/{user_id}",
     context_path = "/api",
     tag = "file",
     responses(
-        (status = 200, description = "JSON body representing the files uploaded by the given user", body = Vec<File>),
-        (status = 400, description = "Service error relating to getting the files uploaded by the given user", body = ErrorResponseBody),
+        (status = 200, description = "JSON body representing the files in the current dataset", body = Vec<File>),
+        (status = 400, description = "Service error relating to getting the files in the current datase", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("user_id" = uuid::Uuid, description = "The id of the user to fetch files for."),
+        ("dataset_id" = uuid::Uuid, description = "The id of the dataset to fetch files for."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
         ("Cookie" = ["readonly"])
     )
 )]
-pub async fn get_user_files_handler(
-    user_id: web::Path<uuid::Uuid>,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+pub async fn get_dataset_files_handler(
+    data: web::Path<DatasetFileQuery>,
     pool: web::Data<Pool>,
-    _user: Option<LoggedUser>,
+    _dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let user_id = user_id.into_inner();
+    let data = data.into_inner();
 
-    let files = get_user_file_query(user_id, dataset_org_plan_sub.dataset.id, pool).await?;
+    let files = get_dataset_file_query(data.dataset_id, data.page, pool).await?;
 
-    Ok(HttpResponse::Ok().json(files))
+    Ok(HttpResponse::Ok().json(FileData {
+        files: files.iter().map(|f| f.0.clone()).collect(),
+        total_pages: files
+            .first()
+            .map(|file| (file.1 as f64 / 10.0).ceil() as i64)
+            .unwrap_or(1),
+    }))
 }
 
 /// delete_file

@@ -113,7 +113,7 @@ pub async fn main() -> std::io::Result<()> {
             handlers::user_handler::update_user,
             handlers::user_handler::set_user_api_key,
             handlers::user_handler::delete_user_api_key,
-            handlers::file_handler::get_user_files_handler,
+            handlers::file_handler::get_dataset_files_handler,
             handlers::group_handler::get_specific_dataset_chunk_groups,
             handlers::group_handler::create_chunk_group,
             handlers::group_handler::delete_chunk_group,
@@ -291,13 +291,12 @@ pub async fn main() -> std::io::Result<()> {
             .app_data(
                 web::JsonConfig::default()
                     .limit(134200000)
-                    .error_handler(|err, _req| {
-                        ServiceError::BadRequest(format!("{}", err)).into()
-                    }),
+                    .error_handler(|err, _req| ServiceError::BadRequest(format!("{}", err)).into()),
             )
-            .app_data(web::PathConfig::default().error_handler(|err, _req| {
-                ServiceError::BadRequest(format!("{}", err)).into()
-            }))
+            .app_data(
+                web::PathConfig::default()
+                    .error_handler(|err, _req| ServiceError::BadRequest(format!("{}", err)).into()),
+            )
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(oidc_client.clone()))
             .app_data(web::Data::new(redis_client.clone()))
@@ -367,7 +366,10 @@ pub async fn main() -> std::io::Result<()> {
                                 web::resource("/groups/{dataset_id}/{page}").route(web::get().to(
                                     handlers::group_handler::get_specific_dataset_chunk_groups,
                                 )),
-                            ),
+                            )
+                            .service(web::resource("/files/{dataset_id}/{page}").route(
+                                web::get().to(handlers::file_handler::get_dataset_files_handler),
+                            )),
                     )
                     .service(
                         web::scope("/auth")
@@ -477,9 +479,6 @@ pub async fn main() -> std::io::Result<()> {
                             )
                             .service(web::resource("/delete_api_key").route(
                                 web::delete().to(handlers::user_handler::delete_user_api_key),
-                            ))
-                            .service(web::resource("/files/{user_id}").route(
-                                web::get().to(handlers::file_handler::get_user_files_handler),
                             )),
                     )
                     .service(

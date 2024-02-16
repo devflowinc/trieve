@@ -568,7 +568,6 @@ impl From<ChunkMetadataWithCount> for FullTextSearchResult {
 #[diesel(table_name = files)]
 pub struct File {
     pub id: uuid::Uuid,
-    pub user_id: uuid::Uuid,
     pub file_name: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -584,7 +583,6 @@ impl File {
     #[allow(clippy::too_many_arguments)]
     pub fn from_details(
         file_id: Option<uuid::Uuid>,
-        user_id: uuid::Uuid,
         file_name: &str,
         size: i64,
         tag_set: Option<String>,
@@ -595,7 +593,6 @@ impl File {
     ) -> Self {
         File {
             id: file_id.unwrap_or(uuid::Uuid::new_v4()),
-            user_id,
             file_name: file_name.to_string(),
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
@@ -618,7 +615,6 @@ impl File {
 #[derive(Debug, Default, Serialize, Deserialize, ToSchema)]
 pub struct FileDTO {
     pub id: uuid::Uuid,
-    pub user_id: uuid::Uuid,
     pub file_name: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -632,7 +628,6 @@ impl From<File> for FileDTO {
     fn from(file: File) -> Self {
         FileDTO {
             id: file.id,
-            user_id: file.user_id,
             file_name: file.file_name,
             created_at: file.created_at,
             updated_at: file.updated_at,

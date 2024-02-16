@@ -23,6 +23,8 @@ use crate::{
 };
 use actix_web::{body::MessageBody, web};
 
+use diesel::dsl::sql;
+use diesel::sql_types::Integer;
 use diesel::{RunQueryDsl, SelectableHelper};
 use s3::{creds::Credentials, Bucket, Region};
 use std::{path::PathBuf, process::Command};
@@ -59,7 +61,6 @@ pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
 #[allow(clippy::too_many_arguments)]
 pub fn create_file_query(
     file_id: uuid::Uuid,
-    user_id: uuid::Uuid,
     file_name: &str,
     file_size: i64,
     tag_set: Option<String>,
@@ -77,7 +78,6 @@ pub fn create_file_query(
 
     let new_file = File::from_details(
         Some(file_id),
-        user_id,
         file_name,
         file_size,
         tag_set,
@@ -112,9 +112,8 @@ pub async fn convert_doc_to_html_query(
     pool: web::Data<Pool>,
     redis_client: web::Data<redis::Client>,
 ) -> Result<UploadFileResult, DefaultError> {
-    let user1 = user.clone();
     let file_id = uuid::Uuid::new_v4();
-    let file_id_query_clone = file_id.clone();
+    let file_id_query_clone = file_id;
     let file_name1 = file_name.clone();
     let file_data1 = file_data.clone();
     let tag_set1 = tag_set.clone();
@@ -208,7 +207,6 @@ pub async fn convert_doc_to_html_query(
 
         let created_file = create_file_query(
             file_id_query_clone,
-            user.id,
             &file_name,
             file_size,
             tag_set.clone(),
@@ -261,7 +259,6 @@ pub async fn convert_doc_to_html_query(
     Ok(UploadFileResult {
         file_metadata: File::from_details(
             Some(file_id),
-            user1.id,
             &file_name1,
             file_data1.len().try_into().unwrap(),
             tag_set1,
@@ -453,11 +450,11 @@ pub async fn get_file_query(
     Ok(file_dto)
 }
 
-pub async fn get_user_file_query(
-    user_uuid: uuid::Uuid,
+pub async fn get_dataset_file_query(
     dataset_id: uuid::Uuid,
+    page: u64,
     pool: web::Data<Pool>,
-) -> Result<Vec<File>, actix_web::Error> {
+) -> Result<Vec<(File, i32)>, actix_web::Error> {
     use crate::data::schema::files::dsl as files_columns;
 
     let mut conn = pool
@@ -465,9 +462,11 @@ pub async fn get_user_file_query(
         .get()
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let file_metadata: Vec<File> = files_columns::files
-        .filter(files_columns::user_id.eq(user_uuid))
+    let file_metadata: Vec<(File, i32)> = files_columns::files
         .filter(files_columns::dataset_id.eq(dataset_id))
+        .select((File::as_select(), sql::<Integer>("count(*) OVER()")))
+        .limit(10)
+        .offset(((page - 1) * 10).try_into().unwrap_or(0))
         .load(&mut conn)
         .map_err(|_| ServiceError::NotFound)?;
 
