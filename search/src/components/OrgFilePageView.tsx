@@ -1,9 +1,8 @@
 import { FiTrash } from "solid-icons/fi";
 import {
-  isChunkGroupPageDTO,
-  type ChunkGroupDTO,
+    ChunkFile,
+  isChunkFilePagesDTO,
   type UserDTO,
-  type UserDTOWithVotesAndChunks,
 } from "../../utils/apiTypes";
 import { For, Setter, Show, createEffect, createSignal } from "solid-js";
 import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
@@ -12,35 +11,30 @@ import { Transition } from "solid-headless";
 import { useStore } from "@nanostores/solid";
 import { currentDataset } from "../stores/datasetStore";
 
-export interface GroupUserPageViewProps {
-  user: UserDTOWithVotesAndChunks | undefined;
+export interface FileUserPageViewProps {
   loggedUser: UserDTO | null;
   setOnDelete: Setter<() => void>;
   setShowConfirmModal: Setter<boolean>;
-  initialGroups?: ChunkGroupDTO[];
-  initialGroupPageCount?: number;
 }
 
-export const GroupUserPageView = (props: GroupUserPageViewProps) => {
+export const OrgFileViewPage = (props: FileUserPageViewProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
   const $dataset = useStore(currentDataset);
-  const [groups, setGroups] = createSignal<ChunkGroupDTO[]>([]);
-  const [groupPage, setGroupPage] = createSignal(1);
-  const [groupPageCount, setGroupPageCount] = createSignal(1);
+  const [files, setFiles] = createSignal<ChunkFile[]>([]);
+  const [filePage, setFilePage] = createSignal(1);
+  const [filePageCount, setFilePageCount] = createSignal(1);
   const [deleting, setDeleting] = createSignal(false);
 
-  props.initialGroups && setGroups(props.initialGroups);
-  props.initialGroupPageCount && setGroupPageCount(props.initialGroupPageCount);
 
   createEffect(() => {
-    const userId = props.user?.id;
+    const userId = props.loggedUser?.id;
     if (userId === undefined) return;
 
     const currentDataset = $dataset();
     if (!currentDataset) return;
 
     void fetch(
-      `${apiHost}/dataset/groups/${currentDataset.dataset.id}/${groupPage()}`,
+      `${apiHost}/dataset/files/${currentDataset.dataset.id}/${filePage()}`,
       {
         method: "GET",
         credentials: "include",
@@ -51,9 +45,9 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
     ).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          if (isChunkGroupPageDTO(data)) {
-            setGroups(data.groups);
-            setGroupPageCount(data.total_pages == 0 ? 1 : data.total_pages);
+          if (isChunkFilePagesDTO(data)) {
+            setFiles(data.files);
+            setFilePageCount(data.total_pages == 0 ? 1 : data.total_pages);
           } else {
             console.error("Invalid response", data);
           }
@@ -62,14 +56,14 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
     });
   });
 
-  const deleteGroup = (group: ChunkGroupDTO) => {
+  const deleteFile = (file: ChunkFile) => {
     const currentDataset = $dataset();
     if (!currentDataset) return;
 
     props.setOnDelete(() => {
       return () => {
         setDeleting(true);
-        void fetch(`${apiHost}/chunk_group/${group.id}`, {
+        void fetch(`${apiHost}/file/${file.id}`, {
           method: "DELETE",
           credentials: "include",
           headers: {
@@ -79,8 +73,8 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
         }).then((response) => {
           if (response.ok) {
             setDeleting(false);
-            setGroups((prev) => {
-              return prev.filter((c) => c.id != group.id);
+            setFiles((prev) => {
+              return prev.filter((c) => c.id != file.id);
             });
           }
           if (response.status == 403) {
@@ -96,8 +90,14 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
     props.setShowConfirmModal(true);
   };
   return (
+    <>
+    <Show when={files().length == 0}>
+      <div class="text-center text-2xl font-bold">
+        No files found for this dataset
+      </div>
+    </Show>
     <Transition
-      show={props.user !== undefined && groups().length > 0}
+      show={props.loggedUser !== undefined && files().length > 0}
       enter="transition duration-200"
       enterFrom="opacity-0"
       enterTo="opacity-100"
@@ -107,7 +107,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
     >
       <div>
         <div class="mx-auto w-full text-center text-2xl font-bold">
-          {$dataset()?.dataset.name}'s Groups
+          {$dataset()?.dataset.name}'s Files
         </div>
         <div class="mt-2 flow-root">
           <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -121,12 +121,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                     >
                       Name
                     </th>
-                    <th
-                      scope="col"
-                      class="px-3 py-3.5 text-left text-base font-semibold dark:text-white"
-                    >
-                      Description
-                    </th>
+                    
                     <th
                       scope="col"
                       class="px-3 py-3.5 text-left text-base font-semibold dark:text-white"
@@ -144,25 +139,23 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
-                  <For each={groups()}>
-                    {(group) => (
+                  <For each={files()}>
+                    {(file) => (
                       <tr>
                         <td class="cursor-pointer whitespace-nowrap py-4 pl-4 pr-3 text-sm font-semibold text-gray-900 dark:text-white">
                           <a
                             class="w-full underline"
-                            href={`/group/${group.id}`}
+                            href={`/file/${file.id}`}
                           >
-                            {group.name}
+                            {file.file_name}
                           </a>
                         </td>
-                        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-300">
-                          {group.description}
-                        </td>
+                        
                         <td class="whitespace-nowrap px-3 py-4 text-left text-sm text-gray-900 dark:text-gray-300">
-                          {getLocalTime(group.created_at).toLocaleDateString() +
+                          {getLocalTime(file.created_at).toLocaleDateString() +
                             " " +
                             //remove seconds from time
-                            getLocalTime(group.created_at)
+                            getLocalTime(file.created_at)
                               .toLocaleTimeString()
                               .replace(/:\d+\s/, " ")}
                         </td>
@@ -172,7 +165,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                               "h-fit text-red-700 dark:text-red-400": true,
                               "animate-pulse": deleting(),
                             }}
-                            onClick={() => deleteGroup(group)}
+                            onClick={() => deleteFile(file)}
                           >
                             <FiTrash class="h-5 w-5" />
                           </button>
@@ -189,22 +182,22 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
           <div />
           <div class="flex items-center">
             <div class="text-sm text-neutral-400">
-              {groupPage()} / {groupPageCount()}
+              {filePage()} / {filePageCount()}
             </div>
             <button
               class="disabled:text-neutral-400 dark:disabled:text-neutral-500"
-              disabled={groupPage() == 1}
+              disabled={filePage() == 1}
               onClick={() => {
-                setGroupPage((prev) => prev - 1);
+                setFilePage((prev) => prev - 1);
               }}
             >
               <BiRegularChevronLeft class="h-6 w-6 fill-current" />
             </button>
             <button
               class="disabled:text-neutral-400 dark:disabled:text-neutral-500"
-              disabled={groupPage() == groupPageCount()}
+              disabled={filePage() == filePageCount()}
               onClick={() => {
-                setGroupPage((prev) => prev + 1);
+                setFilePage((prev) => prev + 1);
               }}
             >
               <BiRegularChevronRight class="h-6 w-6 fill-current" />
@@ -213,5 +206,6 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
         </div>
       </div>
     </Transition>
+    </>
   );
 };

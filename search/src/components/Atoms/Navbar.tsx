@@ -18,7 +18,7 @@ export const Navbar = () => {
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 items-center justify-between">
           <div class="mx-auto flex h-[60px] w-full max-w-6xl items-center justify-between">
-            <a class="flex w-full items-center" href="/">
+            <a class="flex items-center space-x-2" href="/">
               <img
                 class="w-6 sm:w-12"
                 src="https://cdn.trieve.ai/trieve-logo.png"
@@ -35,6 +35,18 @@ export const Navbar = () => {
               </div>
             </a>
             <div class="flex w-full items-center justify-end space-x-1 sm:space-x-4">
+              <A
+                href="/group"
+                class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+              >
+                Groups
+              </A>
+              <A
+                href="/file"
+                class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+              >
+                Files
+              </A>
               <Show when={createChunkFeature}>
                 <A
                   href="/create"

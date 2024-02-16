@@ -5,11 +5,14 @@ import { DatasetSelectBox } from "../DatasetSelectBox";
 import { useStore } from "@nanostores/solid";
 import { clientConfig } from "../../stores/envsStore";
 import { currentUser } from "../../stores/userStore";
+import { A } from "@solidjs/router";
 
 export const HomeNavbar = () => {
   const $envs = useStore(clientConfig);
   const $currentUser = useStore(currentUser);
   const uploadDocumentFeature = $envs().DOCUMENT_UPLOAD_FEATURE;
+  const createChunkFeature = $envs().CREATE_CHUNK_FEATURE;
+
 
   const [isOpen, setIsOpen] = createSignal(false);
 
@@ -26,13 +29,33 @@ export const HomeNavbar = () => {
               </div>
             </Show>
             <div class="flex w-full items-center justify-end space-x-1 sm:space-x-4">
+              <A
+                href="/group"
+                class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+              >
+                Groups
+              </A>
+              <A
+                href="/file"
+                class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+              >
+                Files
+              </A>
+              <Show when={createChunkFeature}>
+                <A
+                  href="/create"
+                  class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+                >
+                  Create Doc Chunk
+                </A>
+              </Show>
               <Show when={uploadDocumentFeature}>
-                <a
+                <A
                   href="/upload"
-                  class="hidden min-[420px]:text-lg min-[720px]:block"
+                  class="hidden text-center min-[420px]:text-lg min-[920px]:block"
                 >
                   Upload Files
-                </a>
+                </A>
               </Show>
               <a
                 href="https://docs.trieve.ai"

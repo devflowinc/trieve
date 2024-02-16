@@ -165,10 +165,10 @@ export const GroupPage = (props: GroupPageProps) => {
           });
         }
         if (response.status == 403) {
-          setError("You are not authorized to view this theme");
+          setError("You are not authorized to view this group");
         }
         if (response.status == 404) {
-          setError("Theme not found, it never existed or was deleted");
+          setError("Group not found, it never existed or was deleted");
         }
         setClientSideRequestFinished(true);
       });
@@ -205,7 +205,7 @@ export const GroupPage = (props: GroupPageProps) => {
           });
         }
         if (response.status == 403) {
-          setError("You are not authorized to view this theme");
+          setError("You are not authorized to view this group");
         }
         setClientSideRequestFinished(true);
         setSearchLoading(false);
@@ -652,7 +652,7 @@ export const GroupPage = (props: GroupPageProps) => {
           >
             <div class="flex w-full flex-col items-center rounded-md p-2">
               <div class="text-xl font-semibold">
-                This theme is currently empty
+                This group is currently empty
               </div>
             </div>
           </Show>
@@ -746,7 +746,7 @@ export const GroupPage = (props: GroupPageProps) => {
         showConfirmModal={showConfirmGroupDeleteModal}
         setShowConfirmModal={setShowConfirmGroupmDeleteModal}
         onConfirm={onGroupDelete}
-        message="Are you sure you want to delete this theme?"
+        message="Are you sure you want to delete this group?"
       />
     </>
   );

@@ -10,7 +10,8 @@ import { EditChunk } from "./pages/chunk/edit/EditChunk";
 import { ViewChunk } from "./pages/chunk/ViewChunk";
 import { ViewGroup } from "./pages/group/ViewGroup";
 import { Settings } from "./pages/user/Settings";
-import { ViewUser } from "./pages/user/ViewUser";
+import { OrgGroups } from "./pages/group/OrgGroups";
+import { OrgFiles } from "./pages/file/OrgFiles";
 
 const root = document.getElementById("root");
 
@@ -25,10 +26,11 @@ render(
         <Route path="/edit/:id" component={EditChunk} />
         <Route path="/:id" component={ViewChunk} />
       </Route>
+      <Route path="/group" component={OrgGroups} />
       <Route path="/group/:id" component={ViewGroup} />
+      <Route path="/file" component={OrgFiles} />
       <Route path="/user">
         <Route path="/settings" component={Settings} />
-        <Route path="/:id" component={ViewUser} />
       </Route>
     </Router>
   ),

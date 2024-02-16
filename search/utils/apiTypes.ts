@@ -562,3 +562,54 @@ export interface SearchOverGropsResponseBody {
   group_chunks: GroupScoreChunkDTO[];
   total_chunk_pages: number;
 }
+
+
+
+export interface ChunkFile {
+  id: string;
+  file_name: string;
+  created_at: string;
+  updated_at: string;
+  size: number;
+  tag_set?: string;
+  metadata?: any;
+  link?: string;
+  time_stamp?: string;
+  dataset_id: string;
+}
+
+export const isChunkFile = (file: unknown): file is ChunkFile => {
+  if (typeof file !== "object" || file === null) return false;
+
+  return (
+    indirectHasOwnProperty(file, "id") &&
+    typeof (file as ChunkFile).id === "string" &&
+    indirectHasOwnProperty(file, "file_name") &&
+    typeof (file as ChunkFile).file_name === "string" &&
+    indirectHasOwnProperty(file, "created_at") &&
+    typeof (file as ChunkFile).created_at === "string" &&
+    indirectHasOwnProperty(file, "updated_at") &&
+    typeof (file as ChunkFile).updated_at === "string" &&
+    indirectHasOwnProperty(file, "size") &&
+    typeof (file as ChunkFile).size === "number" &&
+    indirectHasOwnProperty(file, "dataset_id") &&
+    typeof (file as ChunkFile).dataset_id === "string"
+  );
+}
+
+export interface ChunkFilePagesDTO {
+  files: ChunkFile[];
+  total_pages: number;
+}
+
+export function isChunkFilePagesDTO(file: unknown): file is ChunkFilePagesDTO {
+  if (typeof file !== "object" || file === null) return false;
+
+  return (
+    indirectHasOwnProperty(file, "files") &&
+    Array.isArray((file as ChunkFilePagesDTO).files) &&
+    (file as ChunkFilePagesDTO).files.every((val) => isChunkFile(val)) &&
+    indirectHasOwnProperty(file, "total_pages") &&
+    typeof (file as ChunkFilePagesDTO).total_pages === "number"
+  );
+}
