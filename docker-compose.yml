@@ -164,6 +164,7 @@ services:
       - OIDC_ISSUER_URL=${OIDC_ISSUER_URL}
       - GPU_SERVER_ORIGIN=${GPU_SERVER_ORIGIN}
       - AWS_REGION=${AWS_REGION}
+      - UNLIMITED=${UNLIMITED}
 
   ingestion-service:
     image: arguflow/ingest
