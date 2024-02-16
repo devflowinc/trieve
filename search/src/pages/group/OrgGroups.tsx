@@ -17,7 +17,7 @@ export const OrgGroups = () => {
 
     return (
         <SearchLayout>
-            <div class="mb-4 mt-4 flex  flex-col overflow-hidden  pt-4 text-xl px-5">
+            <div class="mb-4 mt-4 flex  flex-col overflow-hidden  pt-4 text-xl mx-[10rem]">
                 <GroupUserPageView
                     loggedUser={$currentUser()}
                     setOnDelete={setOnGroupDelete}
