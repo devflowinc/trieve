@@ -1,5 +1,8 @@
+import { useStore } from "@nanostores/solid";
 import { HomeNavbar } from "../components/Atoms/HomeNavbar";
 import type { JSX } from "solid-js";
+import { currentDataset } from "../stores/datasetStore";
+import { useSearchParams } from "@solidjs/router";
 
 export const HomeLayout = (props: { children: JSX.Element }) => {
   const theme = (() => {
@@ -33,6 +36,13 @@ export const HomeLayout = (props: { children: JSX.Element }) => {
       );
     });
   }
+
+  currentDataset.subscribe((dataset) => {
+    if (dataset) {
+      const [_, setParams] = useSearchParams();
+      setParams({ dataset: dataset.dataset.id });
+    }
+  })
 
   return (
     <div class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white">
