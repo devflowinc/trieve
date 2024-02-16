@@ -1103,6 +1103,23 @@ impl StripePlan {
 
 impl Default for StripePlan {
     fn default() -> Self {
+        let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
+        if unlimited == "true" {
+            return StripePlan {
+                id: uuid::Uuid::default(),
+                stripe_id: "".to_string(),
+                chunk_count: i32::MAX,
+                file_storage: i64::MAX,
+                user_count: i32::MAX,
+                dataset_count: i32::MAX,
+                message_count: i32::MAX,
+                amount: 0,
+                created_at: chrono::Utc::now().naive_local(),
+                updated_at: chrono::Utc::now().naive_local(),
+                name: "Unlimited".to_string(),
+            };
+        }
+
         StripePlan {
             id: uuid::Uuid::default(),
             stripe_id: "".to_string(),
