@@ -38,6 +38,7 @@ export const SearchLayout = (props: { children: JSX.Element }) => {
 
   currentDataset.subscribe((dataset) => {
     if (dataset) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const [_, setParams] = useSearchParams();
       setParams({ dataset: dataset.dataset.id });
     }

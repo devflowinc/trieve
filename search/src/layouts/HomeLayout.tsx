@@ -1,4 +1,3 @@
-import { useStore } from "@nanostores/solid";
 import { HomeNavbar } from "../components/Atoms/HomeNavbar";
 import type { JSX } from "solid-js";
 import { currentDataset } from "../stores/datasetStore";
@@ -39,6 +38,7 @@ export const HomeLayout = (props: { children: JSX.Element }) => {
 
   currentDataset.subscribe((dataset) => {
     if (dataset) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const [_, setParams] = useSearchParams();
       setParams({ dataset: dataset.dataset.id });
     }
