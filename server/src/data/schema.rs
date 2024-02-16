@@ -110,7 +110,6 @@ diesel::table! {
 diesel::table! {
     files (id) {
         id -> Uuid,
-        user_id -> Uuid,
         file_name -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,
@@ -272,7 +271,6 @@ diesel::joinable!(dataset_usage_counts -> datasets (dataset_id));
 diesel::joinable!(datasets -> organizations (organization_id));
 diesel::joinable!(events -> datasets (dataset_id));
 diesel::joinable!(files -> datasets (dataset_id));
-diesel::joinable!(files -> users (user_id));
 diesel::joinable!(groups_from_files -> chunk_group (group_id));
 diesel::joinable!(groups_from_files -> files (file_id));
 diesel::joinable!(messages -> datasets (dataset_id));
