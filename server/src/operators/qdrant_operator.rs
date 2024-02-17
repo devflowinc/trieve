@@ -308,21 +308,16 @@ pub async fn update_qdrant_point_query(
         .map_err(|_err| ServiceError::BadRequest("Failed to search_points from qdrant".into()))?
         .result;
 
-    let current_point = match current_point_vec.first() {
-        Some(point) => point,
-        None => {
-            return Err(ServiceError::BadRequest(
-                "Failed getting vec.first chunk from qdrant".into(),
-            )
-            .into())
-        }
-    };
+    let current_point = current_point_vec.first();
 
     let payload = if let Some(metadata) = metadata.clone() {
         json!({"tag_set": metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "chunk_html": metadata.chunk_html.unwrap_or("".to_string()), "metadata": metadata.metadata.unwrap_or_default(), "time_stamp": metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string(), "group_ids": current_point.payload.get("group_ids").unwrap_or(&Value::from(vec![] as Vec<String>))})
-    } else {
+    } else if let Some(current_point) = current_point {
         json!({"tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "chunk_html": current_point.payload.get("chunk_html").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")), "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from("")), "group_ids": current_point.payload.get("group_ids").unwrap_or(&Value::from(vec![] as Vec<String>))})
+    } else {
+        return Err(ServiceError::BadRequest("No metadata points found".into()).into());
     };
+
     let points_selector = qdrant_point_id.into();
 
     if let Some(updated_vector) = updated_vector {
