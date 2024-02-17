@@ -18,7 +18,7 @@ use qdrant_client::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::{collections::HashMap, str::FromStr, thread::current};
+use std::{collections::HashMap, str::FromStr};
 
 pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
     let qdrant_url = get_env!("QDRANT_URL", "QDRANT_URL should be set");
