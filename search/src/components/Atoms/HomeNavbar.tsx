@@ -13,7 +13,6 @@ export const HomeNavbar = () => {
   const uploadDocumentFeature = $envs().DOCUMENT_UPLOAD_FEATURE;
   const createChunkFeature = $envs().CREATE_CHUNK_FEATURE;
 
-
   const [isOpen, setIsOpen] = createSignal(false);
 
   return (

@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { persistentAtom } from "@nanostores/persistent";
 import { atom } from "nanostores";
 import type { DatasetAndUsageDTO } from "../../utils/apiTypes";
@@ -34,6 +38,7 @@ export const currentDataset = persistentAtom("dataset", null, {
   },
   decode: tryParse,
 });
+
 export const datasetsAndUsagesStore = atom<DatasetAndUsageDTO[]>([]);
 
 currentOrganization.subscribe((organization) => {
@@ -46,38 +51,38 @@ currentOrganization.subscribe((organization) => {
         "TR-Organization": organization.id,
       },
     }).then((res) => {
-      if (res.ok) {
-        void res
-          .json()
-          .then((data) => {
-            if (data && Array.isArray(data)) {
-              if (data.length === 0) {
-                datasetsAndUsagesStore.set([]);
-              }
-              if (data.length > 0 && data.every(isDatasetAndUsageDTO)) {
-                if (
-                  currentDataset.get() === null ||
-                  params.get("dataset") === null
-                ) {
-                  currentDataset.set(data[0]);
-                } else if (params.get("dataset") !== null) {
-                  const dataset = data.find(
-                    (d) => d.dataset.id === params.get("dataset"),
-                  );
-                  if (dataset) {
-                    currentDataset.set(dataset);
-                  } else {
-                    currentDataset.set(data[0]);
-                  }
-                }
-                datasetsAndUsagesStore.set(data);
+      void res
+        .json()
+        .then((data) => {
+          console.log("datasets", data);
+
+          if (data.length === 0) {
+            datasetsAndUsagesStore.set([]);
+          }
+
+          if (data.length > 0) {
+            if (
+              currentDataset.get() === null ||
+              params.get("dataset") === null
+            ) {
+              currentDataset.set(data[0]);
+            } else if (params.get("dataset") !== null) {
+              const dataset = data.find(
+                (d: DatasetAndUsageDTO) =>
+                  d.dataset.id === params.get("dataset"),
+              );
+              if (dataset) {
+                currentDataset.set(dataset);
+              } else {
+                currentDataset.set(data[0]);
               }
             }
-          })
-          .catch((err) => {
-            console.log(err);
-          });
-      }
+            datasetsAndUsagesStore.set(data);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     });
   }
 });
