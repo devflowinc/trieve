@@ -51,6 +51,7 @@ export const Home = () => {
     end: params.get("end") ?? "",
     metadataFilters,
   };
+
   return (
     <HomeLayout>
       <div class="space-y mt-12 flex w-full flex-col items-center">
