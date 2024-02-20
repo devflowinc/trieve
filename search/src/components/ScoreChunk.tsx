@@ -13,6 +13,7 @@ import {
   createSignal,
 } from "solid-js";
 import {
+  ChunkBookmarksDTO,
   ChunkMetadataWithFileData,
   indirectHasOwnProperty,
   type ChunkGroupDTO,
@@ -67,7 +68,7 @@ export interface ScoreChunkProps {
   setOnDelete?: Setter<() => void>;
   setShowConfirmModal?: Setter<boolean>;
   initialExpanded?: boolean;
-  bookmarks?: ChunkMetadataWithFileData[];
+  bookmarks?: ChunkBookmarksDTO[];
   showExpand?: boolean;
   setChunkGroups?: Setter<ChunkGroupDTO[]>;
   counter: string;

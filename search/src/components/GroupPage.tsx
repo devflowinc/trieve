@@ -17,7 +17,7 @@ import {
   isScoreChunkDTO,
   isChunkGroupPageDTO,
   ChunkMetadataWithFileData,
-  BookmarkData,
+  ChunkBookmarksDTO,
 } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { FiEdit, FiTrash } from "solid-icons/fi";
@@ -63,9 +63,7 @@ export const GroupPage = (props: GroupPageProps) => {
     createSignal(false);
   const [groupInfo, setGroupInfo] = createSignal<ChunkGroupDTO | null>(null);
   const [chunkGroups, setChunkGroups] = createSignal<ChunkGroupDTO[]>([]);
-  const [bookmarks, setBookmarks] = createSignal<ChunkMetadataWithFileData[]>(
-    [],
-  );
+  const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [error, setError] = createSignal("");
   const [fetchingGroups, setFetchingGroups] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
@@ -294,8 +292,8 @@ export const GroupPage = (props: GroupPageProps) => {
       }),
     }).then((response) => {
       if (response.ok) {
-        void response.json().then((data: BookmarkData) => {
-          setBookmarks(data.chunks);
+        void response.json().then((data: ChunkBookmarksDTO[]) => {
+          setBookmarks(data);
         });
       }
     });
