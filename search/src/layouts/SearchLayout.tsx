@@ -4,6 +4,9 @@ import { currentDataset } from "../stores/datasetStore";
 import { useSearchParams } from "@solidjs/router";
 
 export const SearchLayout = (props: { children: JSX.Element }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_, setParams] = useSearchParams();
+
   const theme = (() => {
     if (typeof localStorage !== "undefined" && localStorage.getItem("theme")) {
       return localStorage.getItem("theme");
@@ -38,11 +41,9 @@ export const SearchLayout = (props: { children: JSX.Element }) => {
 
   currentDataset.subscribe((dataset) => {
     if (dataset) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [_, setParams] = useSearchParams();
       setParams({ dataset: dataset.dataset.id });
     }
-  })
+  });
 
   return (
     <div class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white">

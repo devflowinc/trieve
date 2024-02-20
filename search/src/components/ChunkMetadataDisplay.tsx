@@ -5,8 +5,7 @@ import {
   indirectHasOwnProperty,
   type ChunkBookmarksDTO,
   type ChunkGroupDTO,
-  type ChunkMetadataWithVotes,
-  ChunkMetadata,
+  ChunkMetadataWithFileData,
 } from "../../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import sanitizeHtml from "sanitize-html";
@@ -42,7 +41,7 @@ export interface ChunkMetadataDisplayProps {
   totalGroupPages: number;
   signedInUserId?: string;
   viewingUserId?: string;
-  chunk: ChunkMetadataWithVotes | ChunkMetadata;
+  chunk: ChunkMetadataWithFileData;
   chunkGroups: ChunkGroupDTO[];
   bookmarks: ChunkBookmarksDTO[];
   setShowConfirmModal: Setter<boolean>;
@@ -111,9 +110,9 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
     const imgRangeStartVal =
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-      (props.chunk.metadata as any)[imgRangeStartKey] as unknown as string;
+      props.chunk.metadata[imgRangeStartKey] as unknown as string;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    const imgRangeEndVal = (props.chunk.metadata as any)[
+    const imgRangeEndVal = props.chunk.metadata[
       imgRangeEndKey
     ] as unknown as string;
     const imgRangeStart = parseInt(imgRangeStartVal.replace(/\D+/g, ""), 10);
@@ -319,7 +318,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                           {props.chunk.metadata &&
                             indirectHasOwnProperty(props.chunk.metadata, key) &&
                             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
-                            (props.chunk.metadata as any)[key]}
+                            props.chunk.metadata[key]}
                         </span>
                       </div>
                     </Show>

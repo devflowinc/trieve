@@ -184,7 +184,6 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::group_handler::DeleteBookmarkPathData,
                 handlers::group_handler::GenerateOffGroupData,
                 handlers::group_handler::GetAllBookmarksData,
-                handlers::group_handler::BookmarkChunks,
                 handlers::group_handler::BookmarkData,
                 operators::group_operator::BookmarkGroupResult,
                 handlers::file_handler::UploadFileData,

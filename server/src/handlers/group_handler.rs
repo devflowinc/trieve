@@ -320,7 +320,7 @@ pub async fn add_bookmark(
 }
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct BookmarkData {
-    pub bookmarks: Vec<BookmarkChunks>,
+    pub chunks: Vec<ChunkMetadataWithFileData>,
     pub group: ChunkGroup,
     pub total_pages: i64,
 }
@@ -329,11 +329,6 @@ pub struct BookmarkData {
 pub struct GetAllBookmarksData {
     pub group_id: uuid::Uuid,
     pub page: Option<u64>,
-}
-
-#[derive(Deserialize, Serialize, ToSchema)]
-pub struct BookmarkChunks {
-    pub metadata: ChunkMetadataWithFileData,
 }
 
 /// get_all_bookmarks
@@ -345,7 +340,7 @@ pub struct BookmarkChunks {
     context_path = "/api",
     tag = "chunk_group",
     responses(
-        (status = 200, description = "Bookmark'ed chunks present within the specified group", body = BookmarkData),
+        (status = 200, description = "Chunks present within the specified group", body = BookmarkData),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
     ),
     params(
@@ -374,16 +369,8 @@ pub async fn get_all_bookmarks(
             .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?
     };
 
-    let group_chunks = bookmarks
-        .metadata
-        .iter()
-        .map(|search_result| BookmarkChunks {
-            metadata: search_result.clone(),
-        })
-        .collect();
-
     Ok(HttpResponse::Ok().json(BookmarkData {
-        bookmarks: group_chunks,
+        chunks: bookmarks.metadata,
         group: bookmarks.group,
         total_pages: bookmarks.total_pages,
     }))

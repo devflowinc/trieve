@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ComboboxSection } from "../src/components/Atoms/ComboboxChecklist";
 
-export interface ChunkMetadata {
+export interface ChunkMetadataWithFileData {
   id: string;
   content: string;
   chunk_html?: string;
@@ -25,48 +26,27 @@ export interface APIRequest {
   api_key: string;
 }
 
-export const isChunkMetadata = (chunk: unknown): chunk is ChunkMetadata => {
-  if (typeof chunk !== "object" || chunk === null) return false;
-
-  return (
-    indirectHasOwnProperty(chunk, "id") &&
-    typeof (chunk as ChunkMetadata).id === "string" &&
-    indirectHasOwnProperty(chunk, "content") &&
-    typeof (chunk as ChunkMetadata).content === "string" &&
-    indirectHasOwnProperty(chunk, "qdrant_point_id") &&
-    typeof (chunk as ChunkMetadata).qdrant_point_id === "string" &&
-    indirectHasOwnProperty(chunk, "created_at") &&
-    typeof (chunk as ChunkMetadata).created_at === "string" &&
-    indirectHasOwnProperty(chunk, "updated_at") &&
-    typeof (chunk as ChunkMetadata).updated_at === "string" &&
-    indirectHasOwnProperty(chunk, "tag_set") &&
-    (typeof (chunk as ChunkMetadata).tag_set === "string" ||
-      (chunk as ChunkMetadata).tag_set === null) &&
-    (typeof (chunk as ChunkMetadata).metadata === "object" ||
-      (chunk as ChunkMetadata).metadata === null)
-  );
-};
-
-export type ChunkMetadataWithVotes = Exclude<ChunkMetadata, "author"> & {
-  author: UserDTO | null;
-};
-
-export const isChunkMetadataWithVotes = (
+export const isChunkMetadata = (
   chunk: unknown,
-): chunk is ChunkMetadataWithVotes => {
+): chunk is ChunkMetadataWithFileData => {
   if (typeof chunk !== "object" || chunk === null) return false;
 
   return (
     indirectHasOwnProperty(chunk, "id") &&
-    typeof (chunk as ChunkMetadataWithVotes).id === "string" &&
+    typeof (chunk as ChunkMetadataWithFileData).id === "string" &&
     indirectHasOwnProperty(chunk, "content") &&
-    typeof (chunk as ChunkMetadataWithVotes).content === "string" &&
+    typeof (chunk as ChunkMetadataWithFileData).content === "string" &&
     indirectHasOwnProperty(chunk, "qdrant_point_id") &&
-    typeof (chunk as ChunkMetadataWithVotes).qdrant_point_id === "string" &&
+    typeof (chunk as ChunkMetadataWithFileData).qdrant_point_id === "string" &&
     indirectHasOwnProperty(chunk, "created_at") &&
-    typeof (chunk as ChunkMetadataWithVotes).created_at === "string" &&
+    typeof (chunk as ChunkMetadataWithFileData).created_at === "string" &&
     indirectHasOwnProperty(chunk, "updated_at") &&
-    typeof (chunk as ChunkMetadataWithVotes).updated_at === "string"
+    typeof (chunk as ChunkMetadataWithFileData).updated_at === "string" &&
+    indirectHasOwnProperty(chunk, "tag_set") &&
+    (typeof (chunk as ChunkMetadataWithFileData).tag_set === "string" ||
+      (chunk as ChunkMetadataWithFileData).tag_set === null) &&
+    (typeof (chunk as ChunkMetadataWithFileData).metadata === "object" ||
+      (chunk as ChunkMetadataWithFileData).metadata === null)
   );
 };
 
@@ -79,12 +59,12 @@ export interface ChunkGroupDTO {
 export interface SlimGroup {
   id: string;
   name: string;
-  of_current_user: boolean;
+  of_current_dataset: boolean;
 }
 
 export interface ChunkBookmarksDTO {
   chunk_uuid: string;
-  slim_groups: [SlimGroup];
+  slim_groups: SlimGroup[];
 }
 
 export interface ChunksWithTotalPagesDTO {
@@ -93,7 +73,7 @@ export interface ChunksWithTotalPagesDTO {
 }
 
 export interface ScoreChunkDTO {
-  metadata: [ChunkMetadataWithVotes];
+  metadata: [ChunkMetadataWithFileData];
   score: number;
 }
 
@@ -235,7 +215,7 @@ export const isUserDTO = (user: unknown): user is UserDTO => {
 
 export type UserDTOWithVotesAndChunks = UserDTO & {
   created_at: string;
-  chunks: ChunkMetadataWithVotes[];
+  chunks: ChunkMetadataWithFileData[];
   total_chunks_created: number;
 };
 
@@ -320,7 +300,7 @@ export const isChunkGroupDTO = (group: unknown): group is ChunkGroupDTO => {
 };
 
 export interface ChunkGroupBookmarkDTO {
-  bookmarks: BookmarkDTO[];
+  chunks: ChunkMetadataWithFileData[];
   group: ChunkGroupDTO;
   total_pages: number;
 }
@@ -345,22 +325,20 @@ export const isChunkGroupSearchDTO = (
     typeof (group as ChunkGroupSearchDTO).total_pages === "number"
   );
 };
-export interface BookmarkDTO {
-  metadata: ChunkMetadataWithVotes;
-}
+
 export interface CreateChunkDTO {
   message?: string;
-  chunk_metadata: ChunkMetadataWithVotes;
+  chunk_metadata: ChunkMetadataWithFileData;
   duplicate: boolean;
 }
 
 export interface SingleChunkDTO {
-  metadata: ChunkMetadataWithVotes | null;
+  metadata: ChunkMetadataWithFileData | null;
   status: number;
 }
 
 export interface ChunkGroupBookmarksDTO {
-  bookmarks: ChunkMetadataWithVotes[];
+  bookmarks: ChunkMetadataWithFileData[];
   group: ChunkGroupDTO;
 }
 export interface ChunkGroupBookmarksWithStatusDTO {
@@ -385,6 +363,11 @@ export interface FileUploadCompleteNotificationDTO {
   user_read: boolean;
   created_at: Date;
   updated_at: Date;
+}
+
+export interface FileAndGroupId {
+  file: ChunkFile;
+  group_id: string;
 }
 
 export const isFileUploadCompleteNotificationDTO = (
@@ -563,18 +546,16 @@ export interface SearchOverGropsResponseBody {
   total_chunk_pages: number;
 }
 
-
-
 export interface ChunkFile {
   id: string;
   file_name: string;
   created_at: string;
   updated_at: string;
   size: number;
-  tag_set?: string;
-  metadata?: any;
-  link?: string;
-  time_stamp?: string;
+  tag_set: string | null;
+  metadata: object | null;
+  link: string | null;
+  time_stamp: string | null;
   dataset_id: string;
 }
 
@@ -595,7 +576,7 @@ export const isChunkFile = (file: unknown): file is ChunkFile => {
     indirectHasOwnProperty(file, "dataset_id") &&
     typeof (file as ChunkFile).dataset_id === "string"
   );
-}
+};
 
 export interface ChunkFilePagesDTO {
   files: ChunkFile[];
@@ -612,4 +593,10 @@ export function isChunkFilePagesDTO(file: unknown): file is ChunkFilePagesDTO {
     indirectHasOwnProperty(file, "total_pages") &&
     typeof (file as ChunkFilePagesDTO).total_pages === "number"
   );
+}
+
+export interface BookmarkData {
+  chunks: ChunkMetadataWithFileData[];
+  group: ChunkGroupDTO;
+  total_pages: number;
 }

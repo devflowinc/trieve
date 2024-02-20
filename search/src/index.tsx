@@ -28,7 +28,7 @@ render(
       </Route>
       <Route path="/group" component={OrgGroups} />
       <Route path="/group/:id" component={ViewGroup} />
-      <Route path="/file" component={OrgFiles} />
+      <Route path="/files" component={OrgFiles} />
       <Route path="/user">
         <Route path="/settings" component={Settings} />
       </Route>

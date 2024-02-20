@@ -42,7 +42,7 @@ export const Navbar = () => {
                 Groups
               </A>
               <A
-                href="/file"
+                href="/files"
                 class="hidden text-center min-[420px]:text-lg min-[920px]:block"
               >
                 Files

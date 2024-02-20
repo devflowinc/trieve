@@ -2,7 +2,9 @@ use std::io::Write;
 
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
-    data::models::{DatasetAndOrgWithSubAndPlan, File, Pool, ServerDatasetConfiguration},
+    data::models::{
+        DatasetAndOrgWithSubAndPlan, File, FileAndGroupId, Pool, ServerDatasetConfiguration,
+    },
     errors::ServiceError,
     operators::{
         file_operator::{
@@ -223,16 +225,16 @@ pub struct DatasetFileQuery {
 }
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct FileData {
-    pub files: Vec<File>,
+    pub file_and_group_ids: Vec<FileAndGroupId>,
     pub total_pages: i64,
 }
 
 /// get_dataset_files
 ///
-/// Get all files which belong to a given dataset specified by the dataset_id parameter.
+/// Get all files which belong to a given dataset specified by the dataset_id parameter. 10 files are returned per page.
 #[utoipa::path(
     get,
-    path = "/user/files/{user_id}",
+    path = "/dataset/files/{dataset_id}/{page}",
     context_path = "/api",
     tag = "file",
     responses(
@@ -242,6 +244,7 @@ pub struct FileData {
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
         ("dataset_id" = uuid::Uuid, description = "The id of the dataset to fetch files for."),
+        ("page" = u64, description = "The page number of files you wish to fetch. Each page contains at most 10 files."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -259,12 +262,23 @@ pub async fn get_dataset_files_handler(
     let files = get_dataset_file_query(data.dataset_id, data.page, pool).await?;
 
     Ok(HttpResponse::Ok().json(FileData {
-        files: files.iter().map(|f| f.0.clone()).collect(),
+        file_and_group_ids: files
+            .iter()
+            .map(|f| FileAndGroupId {
+                file: f.0.clone(),
+                group_id: f.2,
+            })
+            .collect(),
         total_pages: files
             .first()
             .map(|file| (file.1 as f64 / 10.0).ceil() as i64)
             .unwrap_or(1),
     }))
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct DeleteFileQueryParams {
+    pub delete_chunks: Option<bool>,
 }
 
 /// delete_file
@@ -282,7 +296,7 @@ pub async fn get_dataset_files_handler(
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
         ("file_id" = uuid::Uuid, description = "The id of the file to delete"),
-        ("delete_chunks" = Option<bool>, Query, description = "Whether or not to delete the chunks associated with the file"),
+        ("delete_chunks" = bool, Query, description = "Whether or not to delete the chunks associated with the file"),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -291,7 +305,7 @@ pub async fn get_dataset_files_handler(
 )]
 pub async fn delete_file_handler(
     file_id: web::Path<uuid::Uuid>,
-    delete_chunks: web::Query<Option<bool>>,
+    query_params: web::Query<DeleteFileQueryParams>,
     pool: web::Data<Pool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -299,7 +313,7 @@ pub async fn delete_file_handler(
     delete_file_query(
         file_id.into_inner(),
         dataset_org_plan_sub.dataset,
-        delete_chunks.into_inner(),
+        query_params.delete_chunks,
         pool,
     )
     .await?;
