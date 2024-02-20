@@ -657,10 +657,12 @@ pub struct ParsedQuery {
     pub negated_words: Option<Vec<String>>,
 }
 fn parse_query(query: String) -> ParsedQuery {
-    let re = Regex::new(r#""(.*?)""#).unwrap();
+    let re = Regex::new(r#""(?:[^"\\]|\\.)*""#).expect("Regex pattern is always valid");
     let quote_words: Vec<String> = re
-        .captures_iter(&query.replace('\\', ""))
-        .map(|capture| capture[1].to_string())
+        .captures_iter(&query)
+        .map(|capture| {
+            capture[0].to_string()
+        })
         .filter(|word| !word.is_empty())
         .collect::<Vec<String>>();
 
