@@ -1,12 +1,10 @@
 import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
 import {
   type ChunkGroupDTO,
-  type ChunkMetadataWithVotes,
-  isChunkMetadataWithVotes,
   SingleChunkDTO,
   ChunkBookmarksDTO,
   isChunkGroupPageDTO,
-  ChunkMetadata,
+  ChunkMetadataWithFileData,
   ScoreChunkDTO,
 } from "../../utils/apiTypes";
 import ScoreChunk from "./ScoreChunk";
@@ -31,7 +29,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   const initialChunkMetadata = props.defaultResultChunk.metadata;
 
   const [chunkMetadata, setChunkMetadata] =
-    createSignal<ChunkMetadataWithVotes | null>(initialChunkMetadata);
+    createSignal<ChunkMetadataWithFileData | null>(initialChunkMetadata);
   const [error, setError] = createSignal("");
   const [fetching, setFetching] = createSignal(true);
   const [chunkGroups, setChunkGroups] = createSignal<ChunkGroupDTO[]>([]);
@@ -47,7 +45,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   const [loadingRecommendations, setLoadingRecommendations] =
     createSignal(false);
   const [recommendedChunks, setRecommendedChunks] = createSignal<
-    ChunkMetadata[]
+    ChunkMetadataWithFileData[]
   >([]);
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
@@ -108,7 +106,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
 
   const fetchRecommendations = (
     ids: string[],
-    prev_recommendations: ChunkMetadata[],
+    prev_recommendations: ChunkMetadataWithFileData[],
   ) => {
     setLoadingRecommendations(true);
     const currentDataset = $dataset();
@@ -128,7 +126,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          const typed_data = data as ChunkMetadata[];
+          const typed_data = data as ChunkMetadataWithFileData[];
           const deduped_data = typed_data.filter((d) => {
             return !prev_recommendations.some((c) => c.id == d.id);
           });
@@ -161,13 +159,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
       },
     }).then((response) => {
       if (response.ok) {
-        void response.json().then((data) => {
-          if (!isChunkMetadataWithVotes(data)) {
-            setError("This chunk could not be found.");
-            setFetching(false);
-            return;
-          }
-
+        void response.json().then((data: ChunkMetadataWithFileData) => {
           setChunkMetadata(data);
           setScoreChunk([{ metadata: [data], score: 0 }]);
           setError("");

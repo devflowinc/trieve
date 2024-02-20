@@ -447,7 +447,9 @@ impl ChunkGroupBookmark {
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, Queryable, Insertable, Clone)]
+#[derive(
+    Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema,
+)]
 #[diesel(table_name = groups_from_files)]
 pub struct FileGroup {
     pub id: uuid::Uuid,
@@ -610,6 +612,12 @@ impl File {
             dataset_id,
         }
     }
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct FileAndGroupId {
+    pub file: File,
+    pub group_id: Option<uuid::Uuid>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, ToSchema)]

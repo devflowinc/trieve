@@ -11,7 +11,7 @@ import {
   isChunkGroupPageDTO,
   type ChunkBookmarksDTO,
   type ChunkGroupDTO,
-  type ChunkMetadata,
+  type ChunkMetadataWithFileData,
 } from "../../utils/apiTypes";
 import InputRowsForm from "./Atoms/InputRowsForm";
 import { VsBookmark } from "solid-icons/vs";
@@ -22,7 +22,7 @@ import { currentDataset } from "../stores/datasetStore";
 import { A } from "@solidjs/router";
 
 export interface BookmarkPopoverProps {
-  chunkMetadata: ChunkMetadata;
+  chunkMetadata: ChunkMetadataWithFileData;
   chunkGroups: ChunkGroupDTO[];
   totalGroupPages: number;
   setLoginModal?: Setter<boolean>;
@@ -51,7 +51,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
     const groupsToAdd: ChunkGroupDTO[] = [];
     props.bookmarks.forEach((b) => {
       b.slim_groups.forEach((c) => {
-        c.of_current_user &&
+        c.of_current_dataset &&
           groupsToAdd.push({
             id: c.id,
             name: c.name,
@@ -141,7 +141,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
 
             chunkBookmarks.forEach((chunkBookmark) => {
               chunkBookmark.slim_groups.forEach((group) => {
-                if (group.of_current_user) {
+                if (group.of_current_dataset) {
                   const chunkGroup: ChunkGroupDTO = {
                     id: group.id,
                     name: group.name,
@@ -194,7 +194,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
         void response.json().then((data) => {
           const chunkBookmarks = data as ChunkBookmarksDTO[];
 
-          setBookmarks(data as ChunkBookmarksDTO[]);
+          setBookmarks(chunkBookmarks);
 
           if (curPage !== 1) {
             return;
@@ -204,7 +204,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
 
           chunkBookmarks.forEach((chunkBookmark) => {
             chunkBookmark.slim_groups.forEach((group) => {
-              if (group.of_current_user) {
+              if (group.of_current_dataset) {
                 const chunkGroup: ChunkGroupDTO = {
                   id: group.id,
                   name: group.name,

@@ -12,13 +12,12 @@ import {
 import {
   type ChunkGroupDTO,
   type ChunkGroupBookmarkDTO,
-  ChunkBookmarksDTO,
   ScoreChunkDTO,
   ChunkGroupSearchDTO,
   isScoreChunkDTO,
   isChunkGroupPageDTO,
-  ChunkMetadata,
-  BookmarkDTO,
+  ChunkMetadataWithFileData,
+  BookmarkData,
 } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { FiEdit, FiTrash } from "solid-icons/fi";
@@ -47,7 +46,6 @@ export const GroupPage = (props: GroupPageProps) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const chunkMetadatasWithVotes: BookmarkDTO[] = [];
   const searchChunkMetadatasWithVotes: ScoreChunkDTO[] = [];
 
   const [query, setQuery] = createSignal<string>("");
@@ -55,9 +53,9 @@ export const GroupPage = (props: GroupPageProps) => {
   const [searchType, setSearchType] = createSignal<string>("semantic");
   const [filters, setFilters] = createSignal<Filters | undefined>(undefined);
   const [searchLoading, setSearchLoading] = createSignal(false);
-  const [metadatasWithVotes, setMetadatasWithVotes] = createSignal<
-    BookmarkDTO[]
-  >(chunkMetadatasWithVotes);
+  const [chunkMetadatas, setChunkMetadatas] = createSignal<
+    ChunkMetadataWithFileData[]
+  >([]);
   const [searchMetadatasWithVotes, setSearchMetadatasWithVotes] = createSignal<
     ScoreChunkDTO[]
   >(searchChunkMetadatasWithVotes);
@@ -65,7 +63,9 @@ export const GroupPage = (props: GroupPageProps) => {
     createSignal(false);
   const [groupInfo, setGroupInfo] = createSignal<ChunkGroupDTO | null>(null);
   const [chunkGroups, setChunkGroups] = createSignal<ChunkGroupDTO[]>([]);
-  const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
+  const [bookmarks, setBookmarks] = createSignal<ChunkMetadataWithFileData[]>(
+    [],
+  );
   const [error, setError] = createSignal("");
   const [fetchingGroups, setFetchingGroups] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
@@ -75,7 +75,7 @@ export const GroupPage = (props: GroupPageProps) => {
   const [loadingRecommendations, setLoadingRecommendations] =
     createSignal(false);
   const [recommendedChunks, setRecommendedChunks] = createSignal<
-    ChunkMetadata[]
+    ChunkMetadataWithFileData[]
   >([]);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
     createSignal(false);
@@ -94,7 +94,7 @@ export const GroupPage = (props: GroupPageProps) => {
   });
 
   createEffect(() => {
-    const resultsLength = metadatasWithVotes().length;
+    const resultsLength = chunkMetadatas().length;
     if (!openChat()) {
       setSelectedIds((prev) => (prev.length < resultsLength ? prev : []));
     }
@@ -160,7 +160,7 @@ export const GroupPage = (props: GroupPageProps) => {
             group_id = groupBookmarks.group.id;
             setGroupInfo(groupBookmarks.group);
             setTotalPages(groupBookmarks.total_pages);
-            setMetadatasWithVotes(groupBookmarks.bookmarks);
+            setChunkMetadatas(groupBookmarks.chunks);
             setError("");
           });
         }
@@ -288,14 +288,14 @@ export const GroupPage = (props: GroupPageProps) => {
         "TR-Dataset": currentDataset.dataset.id,
       },
       body: JSON.stringify({
-        chunk_ids: metadatasWithVotes().flatMap((m) => {
-          return m.metadata.id;
+        chunk_ids: chunkMetadatas().flatMap((m) => {
+          return m.id;
         }),
       }),
     }).then((response) => {
       if (response.ok) {
-        void response.json().then((data) => {
-          setBookmarks(data as ChunkBookmarksDTO[]);
+        void response.json().then((data: BookmarkData) => {
+          setBookmarks(data.chunks);
         });
       }
     });
@@ -329,7 +329,7 @@ export const GroupPage = (props: GroupPageProps) => {
 
   const fetchRecommendations = (
     ids: string[],
-    prev_recommendations: ChunkMetadata[],
+    prev_recommendations: ChunkMetadataWithFileData[],
   ) => {
     const currentDataset = $dataset();
     if (!currentDataset) return;
@@ -349,7 +349,7 @@ export const GroupPage = (props: GroupPageProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          const typed_data = data as ChunkMetadata[];
+          const typed_data = data as ChunkMetadataWithFileData[];
           const deduped_data = typed_data.filter((d) => {
             return !prev_recommendations.some((c) => c.id == d.id);
           });
@@ -384,13 +384,13 @@ export const GroupPage = (props: GroupPageProps) => {
     if (curSearchMetadatasWithVotes.length > 0) {
       return curSearchMetadatasWithVotes;
     }
-    const curMetadatasWithVotes = metadatasWithVotes();
+    const curMetadatasWithVotes = chunkMetadatas();
     return curMetadatasWithVotes.map((m) => {
       return {
-        metadata: [m.metadata],
+        metadata: [m],
         author: null,
         score: 0,
-      } as ScoreChunkDTO;
+      } as unknown as ScoreChunkDTO;
     });
   });
 
@@ -516,7 +516,7 @@ export const GroupPage = (props: GroupPageProps) => {
               ← Back
             </button>
           </Show>
-          <Show when={metadatasWithVotes().length > 0}>
+          <Show when={chunkMetadatas().length > 0}>
             <div class="mx-auto w-full max-w-6xl">
               <div
                 classList={{
@@ -539,7 +539,7 @@ export const GroupPage = (props: GroupPageProps) => {
             </div>
           </Show>
           <Show when={query() != ""}>
-            <div class="flex w-full flex-col items-center rounded-md p-2">
+            <div class="flex w-full flex-col items-center rounded-md px-8 py-2">
               <div class="text-xl font-semibold">
                 Search results for "{query()}"
               </div>
@@ -547,21 +547,21 @@ export const GroupPage = (props: GroupPageProps) => {
           </Show>
           <Switch>
             <Match when={searchLoading()}>
-              <div
-                class="text-primary inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-magenta border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                role="status"
-              >
-                <span class="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
-                  Loading...
-                </span>
+              <div class="flex w-full justify-center">
+                <div
+                  class="text-primary inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-magenta border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+                  role="status"
+                >
+                  <span class="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+                    Loading...
+                  </span>
+                </div>
               </div>
             </Match>
             <Match when={!searchLoading()}>
               <For
                 each={
-                  query() == ""
-                    ? metadatasWithVotes()
-                    : searchMetadatasWithVotes()
+                  query() == "" ? chunkMetadatas() : searchMetadatasWithVotes()
                 }
               >
                 {(chunk) => (
@@ -569,9 +569,7 @@ export const GroupPage = (props: GroupPageProps) => {
                     <ScoreChunkArray
                       totalGroupPages={totalGroupPages()}
                       chunks={
-                        !isScoreChunkDTO(chunk)
-                          ? [chunk.metadata]
-                          : chunk.metadata
+                        !isScoreChunkDTO(chunk) ? [chunk] : chunk.metadata
                       }
                       score={isScoreChunkDTO(chunk) ? chunk.score : 0}
                       group={true}
@@ -605,7 +603,7 @@ export const GroupPage = (props: GroupPageProps) => {
                         totalGroupPages={totalGroupPages()}
                         chunk={chunk}
                         chunkGroups={chunkGroups()}
-                        bookmarks={bookmarks()}
+                        bookmarks={[]}
                         setShowConfirmModal={setShowConfirmDeleteModal}
                         fetchChunkGroups={fetchChunkGroups}
                         setChunkGroups={setChunkGroups}
@@ -618,7 +616,7 @@ export const GroupPage = (props: GroupPageProps) => {
               </For>
             </div>
           </Show>
-          <Show when={metadatasWithVotes().length > 0}>
+          <Show when={chunkMetadatas().length > 0}>
             <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]">
               <button
                 classList={{
@@ -628,7 +626,7 @@ export const GroupPage = (props: GroupPageProps) => {
                 }}
                 onClick={() =>
                   fetchRecommendations(
-                    metadatasWithVotes().map((m) => m.metadata.qdrant_point_id),
+                    chunkMetadatas().map((m) => m.qdrant_point_id),
                     recommendedChunks(),
                   )
                 }
@@ -645,7 +643,7 @@ export const GroupPage = (props: GroupPageProps) => {
           </Show>
           <Show
             when={
-              metadatasWithVotes().length == 0 &&
+              chunkMetadatas().length == 0 &&
               searchMetadatasWithVotes().length == 0 &&
               clientSideRequestFinished()
             }
@@ -699,9 +697,9 @@ export const GroupPage = (props: GroupPageProps) => {
                   setOpenChat(true);
                 } else {
                   setSelectedIds(
-                    metadatasWithVotes()
+                    chunkMetadatas()
                       .flatMap((c) => {
-                        return c.metadata.id;
+                        return c.id ?? "";
                       })
                       .slice(0, 10),
                   );

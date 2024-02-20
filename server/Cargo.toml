@@ -22,7 +22,7 @@ actix-session = { version = "0.8.0", features = [
 actix-web = { version = "4.3" }
 actix-cors = { version = "0.7" }
 
-async-stripe = { version = "0.31.0", features = [
+async-stripe = { version = "0.34.1", features = [
     "runtime-tokio-hyper",
     "checkout",
     "webhook-events",

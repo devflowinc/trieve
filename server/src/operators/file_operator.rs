@@ -24,8 +24,8 @@ use crate::{
 use actix_web::{body::MessageBody, web};
 
 use diesel::dsl::sql;
-use diesel::sql_types::Integer;
-use diesel::{RunQueryDsl, SelectableHelper};
+use diesel::sql_types::BigInt;
+use diesel::{JoinOnDsl, NullableExpressionMethods, RunQueryDsl, SelectableHelper};
 use s3::{creds::Credentials, Bucket, Region};
 use std::{path::PathBuf, process::Command};
 
@@ -454,17 +454,26 @@ pub async fn get_dataset_file_query(
     dataset_id: uuid::Uuid,
     page: u64,
     pool: web::Data<Pool>,
-) -> Result<Vec<(File, i32)>, actix_web::Error> {
+) -> Result<Vec<(File, i64, Option<uuid::Uuid>)>, actix_web::Error> {
     use crate::data::schema::files::dsl as files_columns;
+    use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
     let mut conn = pool
         .clone()
         .get()
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let file_metadata: Vec<(File, i32)> = files_columns::files
+    let file_metadata: Vec<(File, i64, Option<uuid::Uuid>)> = files_columns::files
+        .left_join(
+            groups_from_files_columns::groups_from_files
+                .on(groups_from_files_columns::file_id.eq(files_columns::id)),
+        )
         .filter(files_columns::dataset_id.eq(dataset_id))
-        .select((File::as_select(), sql::<Integer>("count(*) OVER()")))
+        .select((
+            File::as_select(),
+            sql::<BigInt>("count(*) OVER()"),
+            groups_from_files_columns::group_id.nullable(),
+        ))
         .limit(10)
         .offset(((page - 1) * 10).try_into().unwrap_or(0))
         .load(&mut conn)

@@ -54,8 +54,6 @@ currentOrganization.subscribe((organization) => {
       void res
         .json()
         .then((data) => {
-          console.log("datasets", data);
-
           if (data.length === 0) {
             datasetsAndUsagesStore.set([]);
           }

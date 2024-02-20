@@ -1,8 +1,8 @@
 import type { Setter } from "solid-js";
 import { Show, createSignal, onMount } from "solid-js";
 import type {
-  ChunkMetadataWithVotes,
   ChunkGroupDTO,
+  ChunkMetadataWithFileData,
 } from "../../utils/apiTypes";
 import type { ScoreChunkProps } from "./ScoreChunk";
 import { FiChevronLeft, FiChevronRight } from "solid-icons/fi";
@@ -14,7 +14,7 @@ export type ScoreChunkAraryProps = Omit<
   ScoreChunkProps,
   "chunk" | "counter" | "total" | "begin" | "end"
 > & {
-  chunks: ChunkMetadataWithVotes[];
+  chunks: ChunkMetadataWithFileData[];
   setChunkGroups: Setter<ChunkGroupDTO[]>;
 };
 

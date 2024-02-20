@@ -1,7 +1,7 @@
 import { JSX, Show, createEffect, createSignal } from "solid-js";
 import {
+  ChunkMetadataWithFileData,
   isActixChunkUpdateError,
-  isChunkMetadataWithVotes,
 } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import {
@@ -142,14 +142,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
       credentials: "include",
     }).then((response) => {
       if (response.ok) {
-        void response.json().then((data) => {
-          console.log(isChunkMetadataWithVotes(data));
-          if (!isChunkMetadataWithVotes(data)) {
-            setTopLevelError("This chunk could not be found.");
-            setFetching(false);
-            return;
-          }
-
+        void response.json().then((data: ChunkMetadataWithFileData) => {
           setEvidenceLink(data.link ?? "");
           setTagSet(data.tag_set ?? "");
           setMetadata(data.metadata);
@@ -161,10 +154,8 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
         });
       }
       if (response.status == 403 || response.status == 404) {
+        setTopLevelError("This chunk could not be found.");
         setFetching(false);
-      }
-      if (response.status == 401) {
-        setShowNeedLoginModal(true);
       }
     });
   });

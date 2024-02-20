@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   Accessor,
@@ -9,10 +13,9 @@ import {
   createSignal,
 } from "solid-js";
 import {
+  ChunkMetadataWithFileData,
   indirectHasOwnProperty,
-  type ChunkBookmarksDTO,
   type ChunkGroupDTO,
-  type ChunkMetadataWithVotes,
 } from "../../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import { RiOthersCharacterRecognitionLine } from "solid-icons/ri";
@@ -58,13 +61,13 @@ export interface ScoreChunkProps {
   chunkGroups?: ChunkGroupDTO[];
   totalGroupPages?: number;
   group?: boolean;
-  chunk: ChunkMetadataWithVotes;
+  chunk: ChunkMetadataWithFileData;
   score: number;
   setShowModal?: Setter<boolean>;
   setOnDelete?: Setter<() => void>;
   setShowConfirmModal?: Setter<boolean>;
   initialExpanded?: boolean;
-  bookmarks?: ChunkBookmarksDTO[];
+  bookmarks?: ChunkMetadataWithFileData[];
   showExpand?: boolean;
   setChunkGroups?: Setter<ChunkGroupDTO[]>;
   counter: string;
@@ -377,11 +380,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                     chunkGroups={chunkGroups()}
                     chunkMetadata={props.chunk}
                     setLoginModal={props.setShowModal}
-                    bookmarks={
-                      props.bookmarks?.filter(
-                        (bookmark) => bookmark.chunk_uuid === props.chunk.id,
-                      ) ?? []
-                    }
+                    bookmarks={[]}
                     setChunkGroups={props.setChunkGroups}
                   />
                 )}
