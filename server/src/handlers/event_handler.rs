@@ -1,18 +1,12 @@
 use super::auth_handler::LoggedUser;
 use crate::{
-    data::models::{DatasetAndOrgWithSubAndPlan, Event, Pool},
+    data::models::{DatasetAndOrgWithSubAndPlan, Pool},
     errors::ServiceError,
     operators::event_operator::get_events_query,
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-
-#[derive(Debug, Deserialize, Serialize, Clone, ToSchema)]
-#[serde(untagged)]
-pub enum Events {
-    FileUploadComplete(Event),
-}
 
 /// get_events
 ///

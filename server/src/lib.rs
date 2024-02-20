@@ -190,7 +190,6 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::file_handler::UploadFileResult,
                 handlers::invitation_handler::InvitationData,
                 handlers::event_handler::EventId,
-                handlers::event_handler::Events,
                 handlers::organization_handler::CreateOrganizationData,
                 handlers::organization_handler::UpdateOrganizationData,
                 operators::event_operator::EventReturn,
