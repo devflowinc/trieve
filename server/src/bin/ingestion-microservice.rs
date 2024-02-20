@@ -236,10 +236,8 @@ async fn upload_chunk(
 
     if let Some(group_ids_to_bookmark) = payload.chunk.group_ids {
         for group_id_to_bookmark in group_ids_to_bookmark {
-            let chunk_group_bookmark = ChunkGroupBookmark::from_details(
-                group_id_to_bookmark,
-                payload.chunk_metadata.id,
-            );
+            let chunk_group_bookmark =
+                ChunkGroupBookmark::from_details(group_id_to_bookmark, payload.chunk_metadata.id);
 
             let _ = create_chunk_bookmark_query(web_pool.clone(), chunk_group_bookmark).map_err(
                 |err| {
