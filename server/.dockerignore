@@ -5,3 +5,4 @@ Dockerfile.ocr
 Dockerfile
 tmp
 images
+venv
