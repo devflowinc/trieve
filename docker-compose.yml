@@ -196,6 +196,7 @@ services:
       - 3000:3000
     environment:
       - VITE_API_HOST=${VITE_API_HOST}
+      - VITE_SEARCH_UI_URL=${VITE_SEARCH_UI_URL}
 
   search:
     image: arguflow/search:no-ocr
