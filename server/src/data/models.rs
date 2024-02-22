@@ -922,11 +922,11 @@ impl ServerDatasetConfiguration {
                 .unwrap_or(1536),
             LLM_DEFAULT_MODEL: configuration
                 .get("LLM_DEFAULT_MODEL")
-                .unwrap_or(&json!("gpt-3.5-turbo"))
+                .unwrap_or(&json!("gpt-3.5-turbo-1106"))
                 .as_str()
                 .map(|s| {
                     if s.is_empty() {
-                        "gpt-3.5-turbo".to_string()
+                        "gpt-3.5-turbo-1106".to_string()
                     } else {
                         s.to_string()
                     }
