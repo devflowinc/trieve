@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { For, Show, createMemo, createSignal } from "solid-js";
 import {
   indirectHasOwnProperty,
@@ -65,7 +66,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
     (import.meta.env.VITE_FRONTMATTER_VALS as string | undefined) ??
     "link,tag_set,time_stamp"
   ).split(",");
-  const searchURL = "https://search.trieve.ai";
+  const searchURL =
+    (import.meta.env.VITE_SEARCH_UI_URL as string | undefined) ??
+    "https://search.trieve.ai";
 
   const linesBeforeShowMore = 12;
 
