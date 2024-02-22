@@ -477,7 +477,7 @@ pub async fn regenerate_message_handler(
 }
 
 pub async fn get_topic_string(
-    model: Option<String>,
+    model: String,
     first_message: String,
     dataset: &Dataset,
 ) -> Result<String, DefaultError> {
@@ -493,9 +493,7 @@ pub async fn get_topic_string(
     };
     let openai_messages = vec![prompt_topic_message];
     let parameters = ChatCompletionParameters {
-        model: model
-            .clone()
-            .unwrap_or("openai/gpt-3.5-turbo-1106".to_string()),
+        model: model,
         messages: openai_messages,
         stream: Some(false),
         temperature: None,
@@ -625,12 +623,21 @@ pub async fn stream_response(
     let mut citation_chunks_stringified1;
 
     let rag_prompt = dataset_config.RAG_PROMPT.clone().unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string());
+    let default_model = dataset_config.LLM_DEFAULT_MODEL.clone();
+
+    let chosen_model = if let Some(model) = model.clone() {
+        if model.is_empty() {
+            default_model
+        } else {
+            model
+        }
+    } else {
+        default_model
+    };
 
     // find evidence for the counter-argument
     let gen_inference_parameters = ChatCompletionParameters {
-        model: model
-            .clone()
-            .unwrap_or("openai/gpt-3.5-turbo-1106".to_string()),
+        model: chosen_model.clone(),
         messages: vec![ChatMessage {
             role: Role::User,
             content: ChatMessageContent::Text(format!(
@@ -784,7 +791,7 @@ pub async fn stream_response(
         .collect();
 
     let parameters = ChatCompletionParameters {
-        model: model.unwrap_or("openai/gpt-3.5-turbo-1106".to_string()),
+        model: chosen_model,
         stream: should_stream,
         messages: open_ai_messages,
         temperature: None,
@@ -935,6 +942,7 @@ pub async fn create_suggested_queries_handler(
     let base_url = dataset_config
         .LLM_BASE_URL
         .unwrap_or("https://api.openai.com/api/v1".into());
+    let default_model = dataset_config.LLM_DEFAULT_MODEL;
     let base_url = if base_url.is_empty() {
         "https://api.openai.com/api/v1".into()
     } else {
@@ -966,7 +974,7 @@ pub async fn create_suggested_queries_handler(
         tool_call_id: None,
     };
     let parameters = ChatCompletionParameters {
-        model: "gpt-3.5-turbo".into(),
+        model: default_model.into(),
         stream: Some(true),
         messages: vec![message],
         temperature: None,

@@ -847,6 +847,7 @@ pub struct ServerDatasetConfiguration {
     pub DUPLICATE_DISTANCE_THRESHOLD: Option<f32>,
     pub COLLISIONS_ENABLED: Option<bool>,
     pub EMBEDDING_SIZE: Option<usize>,
+    pub LLM_DEFAULT_MODEL: String,
 }
 
 impl ServerDatasetConfiguration {
@@ -895,7 +896,18 @@ impl ServerDatasetConfiguration {
                 .unwrap_or(&json!(1536))
                 .as_u64()
                 .map(|u| u as usize),
-
+            LLM_DEFAULT_MODEL: configuration
+                .get("LLM_DEFAULT_MODEL")
+                .unwrap_or(&json!("gpt-3.5-turbo"))
+                .as_str()
+                .map(|s| {
+                    if s.is_empty() {
+                        "gpt-3.5-turbo".to_string()
+                    } else {
+                        s.to_string()
+                    }
+                })
+                .expect("LLM_DEFAULT_MODEL must be a string"),
             COLLISIONS_ENABLED: configuration
                 .get("COLLISIONS_ENABLED")
                 .unwrap_or(&json!(false))
