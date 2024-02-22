@@ -50,7 +50,7 @@ export const GroupPage = (props: GroupPageProps) => {
 
   const [query, setQuery] = createSignal<string>("");
   const [page, setPage] = createSignal<number>(1);
-  const [searchType, setSearchType] = createSignal<string>("semantic");
+  const [searchType, setSearchType] = createSignal<string>("hybrid");
   const [filters, setFilters] = createSignal<Filters | undefined>(undefined);
   const [searchLoading, setSearchLoading] = createSignal(false);
   const [chunkMetadatas, setChunkMetadatas] = createSignal<
@@ -101,7 +101,7 @@ export const GroupPage = (props: GroupPageProps) => {
   createEffect(() => {
     setQuery(location.query.q ?? "");
     setPage(Number(location.query.page) || 1);
-    setSearchType(location.query.searchType ?? "semantic");
+    setSearchType(location.query.searchType ?? "hybrid");
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const metadataFilters: any = {};
