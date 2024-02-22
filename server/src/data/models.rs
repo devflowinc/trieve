@@ -838,15 +838,15 @@ impl DatasetAndUsage {
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[allow(non_snake_case)]
 pub struct ServerDatasetConfiguration {
-    pub DOCUMENT_UPLOAD_FEATURE: Option<bool>,
-    pub DOCUMENT_DOWNLOAD_FEATURE: Option<bool>,
+    pub DOCUMENT_UPLOAD_FEATURE: bool,
+    pub DOCUMENT_DOWNLOAD_FEATURE: bool,
     pub LLM_BASE_URL: String,
-    pub EMBEDDING_BASE_URL: Option<String>,
-    pub RAG_PROMPT: Option<String>,
-    pub N_RETRIEVALS_TO_INCLUDE: Option<usize>,
-    pub DUPLICATE_DISTANCE_THRESHOLD: Option<f32>,
-    pub COLLISIONS_ENABLED: Option<bool>,
-    pub EMBEDDING_SIZE: Option<usize>,
+    pub EMBEDDING_BASE_URL: String,
+    pub RAG_PROMPT: String,
+    pub N_RETRIEVALS_TO_INCLUDE: usize,
+    pub DUPLICATE_DISTANCE_THRESHOLD: f32,
+    pub COLLISIONS_ENABLED: bool,
+    pub EMBEDDING_SIZE: usize,
     pub LLM_DEFAULT_MODEL: String,
 }
 
@@ -861,11 +861,13 @@ impl ServerDatasetConfiguration {
             DOCUMENT_UPLOAD_FEATURE: configuration
                 .get("DOCUMENT_UPLOAD_FEATURE")
                 .unwrap_or(&json!(true))
-                .as_bool(),
+                .as_bool()
+                .expect("DOCUMENT_UPLOAD_FEATURE should exist QED"),
             DOCUMENT_DOWNLOAD_FEATURE: configuration
                 .get("DOCUMENT_DOWNLOAD_FEATURE")
                 .unwrap_or(&json!(true))
-                .as_bool(),
+                .as_bool()
+                .expect("DOCUMENT_DOWNLOAD_FEATURE should exist QED"),
             LLM_BASE_URL: configuration
                 .get("LLM_BASE_URL")
                 .unwrap_or(&json!("https://api.openai.com/v1".to_string()))
@@ -882,27 +884,42 @@ impl ServerDatasetConfiguration {
                 .get("EMBEDDING_BASE_URL")
                 .unwrap_or(&json!("https://api.openai.com/v1".to_string()))
                 .as_str()
-                .map(|s| s.to_string()),
+                .map(|s| {
+                    if s.is_empty() {
+                        "https://api.openai.com/v1".to_string()
+                    } else {
+                        s.to_string()
+                    }
+                }).expect("EMBEDDING_BASE_URL should exist QED"),
             RAG_PROMPT: configuration
                 .get("RAG_PROMPT")
                 .unwrap_or(&json!("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string()))
                 .as_str()
-                .map(|s| s.to_string()),
+                .map(|s| {
+                    if s.is_empty() {
+                        "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string()
+                    } else {
+                        s.to_string()
+                    }
+                }).expect("RAG_PROMPT should exist QED"),
             N_RETRIEVALS_TO_INCLUDE: configuration
                 .get("N_RETRIEVALS_TO_INCLUDE")
-                .unwrap_or(&json!(3))
+                .unwrap_or(&json!(5))
                 .as_u64()
-                .map(|u| u as usize),
+                .map(|u| u as usize)
+                .unwrap_or(5),
             DUPLICATE_DISTANCE_THRESHOLD: configuration
                 .get("DUPLICATE_DISTANCE_THRESHOLD")
                 .unwrap_or(&json!(1.1))
                 .as_f64()
-                .map(|f| f as f32),
+                .map(|f| f as f32)
+                .unwrap_or(1.1),
             EMBEDDING_SIZE: configuration
                 .get("EMBEDDING_SIZE")
                 .unwrap_or(&json!(1536))
                 .as_u64()
-                .map(|u| u as usize),
+                .map(|u| u as usize)
+                .unwrap_or(1536),
             LLM_DEFAULT_MODEL: configuration
                 .get("LLM_DEFAULT_MODEL")
                 .unwrap_or(&json!("gpt-3.5-turbo"))
@@ -918,7 +935,8 @@ impl ServerDatasetConfiguration {
             COLLISIONS_ENABLED: configuration
                 .get("COLLISIONS_ENABLED")
                 .unwrap_or(&json!(false))
-                .as_bool(),
+                .as_bool()
+                .expect("COLLISIONS_ENABLED should exist QED"),
         }
     }
 }

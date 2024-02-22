@@ -1065,8 +1065,7 @@ pub async fn get_recommended_chunks(
     let limit = data.limit.unwrap_or(10);
     let embed_size =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration)
-            .EMBEDDING_SIZE
-            .unwrap_or(1536);
+            .EMBEDDING_SIZE;
 
     let recommended_qdrant_point_ids = recommend_qdrant_query(
         positive_chunk_ids,

@@ -102,8 +102,7 @@ pub async fn upload_file_handler(
     let document_upload_feature = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     )
-    .DOCUMENT_UPLOAD_FEATURE
-    .unwrap_or(false);
+    .DOCUMENT_UPLOAD_FEATURE;
 
     if document_upload_feature {
         return Err(
@@ -205,8 +204,7 @@ pub async fn get_file_handler(
 ) -> Result<HttpResponse, actix_web::Error> {
     let download_enabled =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration)
-            .DOCUMENT_DOWNLOAD_FEATURE
-            .unwrap_or(false);
+            .DOCUMENT_DOWNLOAD_FEATURE;
     if download_enabled {
         return Err(
             ServiceError::BadRequest("Document download feature is disabled".to_string()).into(),

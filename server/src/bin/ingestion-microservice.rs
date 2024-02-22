@@ -129,11 +129,10 @@ async fn upload_chunk(
     let mut collision: Option<uuid::Uuid> = None;
 
     let duplicate_distance_threshold = dataset_config
-        .DUPLICATE_DISTANCE_THRESHOLD
-        .unwrap_or(1.1);
+        .DUPLICATE_DISTANCE_THRESHOLD;
 
     if duplicate_distance_threshold > 1.0
-        || dataset_config.COLLISIONS_ENABLED.unwrap_or(false)
+        || dataset_config.COLLISIONS_ENABLED
     {
         let first_semantic_result = global_unfiltered_top_match_query(
             embedding_vector.clone(),
