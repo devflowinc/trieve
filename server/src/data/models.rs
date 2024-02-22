@@ -840,7 +840,7 @@ impl DatasetAndUsage {
 pub struct ServerDatasetConfiguration {
     pub DOCUMENT_UPLOAD_FEATURE: Option<bool>,
     pub DOCUMENT_DOWNLOAD_FEATURE: Option<bool>,
-    pub LLM_BASE_URL: Option<String>,
+    pub LLM_BASE_URL: String,
     pub EMBEDDING_BASE_URL: Option<String>,
     pub RAG_PROMPT: Option<String>,
     pub N_RETRIEVALS_TO_INCLUDE: Option<usize>,
@@ -868,9 +868,16 @@ impl ServerDatasetConfiguration {
                 .as_bool(),
             LLM_BASE_URL: configuration
                 .get("LLM_BASE_URL")
-                .unwrap_or(&json!("https://openrouter.ai/api/v1".to_string()))
+                .unwrap_or(&json!("https://api.openai.com/v1".to_string()))
                 .as_str()
-                .map(|s| s.to_string()),
+                .map(|s| {
+                    if s.is_empty() {
+                        "https://api.openai.com/v1".to_string()
+                    } else {
+                        s.to_string()
+                    }
+                })
+                .expect("LLM_BASE_URL should exist QED"),
             EMBEDDING_BASE_URL: configuration
                 .get("EMBEDDING_BASE_URL")
                 .unwrap_or(&json!("https://api.openai.com/v1".to_string()))
@@ -907,7 +914,7 @@ impl ServerDatasetConfiguration {
                         s.to_string()
                     }
                 })
-                .expect("LLM_DEFAULT_MODEL must be a string"),
+                .expect("LLM_DEFAULT_MODEL should exist QED"),
             COLLISIONS_ENABLED: configuration
                 .get("COLLISIONS_ENABLED")
                 .unwrap_or(&json!(false))

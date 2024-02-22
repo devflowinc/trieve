@@ -1,7 +1,7 @@
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
 use redis::AsyncCommands;
-use trieve_server::data::models::{self, ChunkGroupBookmark, Event};
+use trieve_server::data::models::{self, ChunkGroupBookmark, Event, ServerDatasetConfiguration};
 use trieve_server::errors::ServiceError;
 use trieve_server::get_env;
 use trieve_server::handlers::chunk_handler::IngestionMessage;
@@ -112,12 +112,13 @@ async fn upload_chunk(
     mut payload: IngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
 ) -> Result<(), ServiceError> {
+    let dataset_config = ServerDatasetConfiguration::from_json(payload.dataset_config);
     let embedding_vector = if let Some(embedding_vector) = payload.chunk.chunk_vector.clone() {
         embedding_vector
     } else {
         create_embedding(
             &payload.chunk_metadata.content,
-            payload.dataset_config.clone(),
+            dataset_config.clone(),
         )
         .await
         .map_err(|err| {
@@ -127,13 +128,12 @@ async fn upload_chunk(
 
     let mut collision: Option<uuid::Uuid> = None;
 
-    let duplicate_distance_threshold = payload
-        .dataset_config
+    let duplicate_distance_threshold = dataset_config
         .DUPLICATE_DISTANCE_THRESHOLD
         .unwrap_or(1.1);
 
     if duplicate_distance_threshold > 1.0
-        || payload.dataset_config.COLLISIONS_ENABLED.unwrap_or(false)
+        || dataset_config.COLLISIONS_ENABLED.unwrap_or(false)
     {
         let first_semantic_result = global_unfiltered_top_match_query(
             embedding_vector.clone(),

@@ -67,9 +67,7 @@ const MainLayout = (props: LayoutProps) => {
     createSignal<boolean>(false);
   const [showChatTuningParams, setShowChatTuningParams] =
     createSignal<boolean>(false);
-  const [modelName, setModelName] = createSignal<string>(
-    "openai/gpt-3.5-turbo-1106",
-  );
+  const [modelName, setModelName] = createSignal<string>("");
 
   createEffect(() => {
     window.addEventListener("wheel", (event) => {
@@ -490,8 +488,11 @@ const MainLayout = (props: LayoutProps) => {
         </label>
         <input
           type="text"
+          disabled
           class="mt-1 w-full rounded-md border border-neutral-300 p-1 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-          value={modelName()}
+          value={
+            modelName() == "" ? "Using Default Model for Dataset" : modelName()
+          }
           onInput={(e) => setModelName(e.currentTarget.value)}
         />
       </FullScreenModal>
