@@ -2,7 +2,10 @@ use super::auth_handler::AdminOnly;
 use crate::{
     data::models::{Invitation, Pool},
     errors::{DefaultError, ServiceError},
-    operators::invitation_operator::{create_invitation_query, send_invitation},
+    operators::{
+        invitation_operator::{create_invitation_query, send_invitation},
+        user_operator::add_existing_user_to_org,
+    },
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -18,7 +21,7 @@ pub struct InvitationResponse {
     pub registration_url: String,
 }
 
-#[derive(Deserialize, ToSchema)]
+#[derive(Deserialize, ToSchema, Serialize, Clone, Debug)]
 pub struct InvitationData {
     /// The id of the organization to invite the user to.
     pub organization_id: uuid::Uuid,
@@ -80,6 +83,26 @@ pub async fn post_invitation(
                 message: "Can not invite user with higher role than yours",
             }),
         );
+    }
+
+    let existing_user_pool = pool.clone();
+    let existing_user_email = email.clone();
+    let existing_user_org_id = invitation_data.organization_id;
+    let existing_user_role = invitation_data.user_role;
+
+    let added_user_to_org = web::block(move || {
+        add_existing_user_to_org(
+            existing_user_email,
+            existing_user_org_id,
+            existing_user_role.into(),
+            existing_user_pool,
+        )
+    })
+    .await?
+    .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+
+    if added_user_to_org {
+        return Ok(HttpResponse::NoContent().finish());
     }
 
     let invitation = create_invitation(

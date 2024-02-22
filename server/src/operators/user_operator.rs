@@ -83,6 +83,37 @@ pub fn get_user_by_id_query(
     }
 }
 
+pub fn add_existing_user_to_org(
+    email: String,
+    organization_id: uuid::Uuid,
+    user_role: UserRole,
+    pool: web::Data<Pool>,
+) -> Result<bool, DefaultError> {
+    use crate::data::schema::users::dsl as users_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    let user: Vec<User> = users_columns::users
+        .filter(users_columns::email.eq(email))
+        .select(User::as_select())
+        .load::<User>(&mut conn)
+        .map_err(|e| {
+            log::error!("Error loading users: {:?}", e);
+            DefaultError {
+                message: "Error loading users",
+            }
+        })?;
+
+    match user.first() {
+        Some(user) => Ok(add_user_to_organization(
+            UserOrganization::from_details(user.id, organization_id, user_role),
+            pool,
+        )
+        .is_ok()),
+        None => Ok(false),
+    }
+}
+
 pub fn update_user_query(
     user: &LoggedUser,
     username: &Option<String>,
