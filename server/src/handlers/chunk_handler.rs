@@ -104,7 +104,7 @@ pub struct ReturnCreatedChunk {
 pub struct IngestionMessage {
     pub chunk_metadata: ChunkMetadata,
     pub chunk: CreateChunkData,
-    pub dataset_config: ServerDatasetConfiguration,
+    pub dataset_config: serde_json::Value,
 }
 
 /// create_chunk
@@ -136,9 +136,6 @@ pub async fn create_chunk(
     redis_client: web::Data<redis::Client>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let count_dataset_id = dataset_org_plan_sub.dataset.id;
-
-    let dataset_config =
-        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
     let chunk_count = {
         let pool = pool.clone();
@@ -197,7 +194,7 @@ pub async fn create_chunk(
     let ingestion_message = IngestionMessage {
         chunk_metadata: chunk_metadata.clone(),
         chunk: chunk.clone(),
-        dataset_config,
+        dataset_config: dataset_org_plan_sub.dataset.server_configuration
     };
 
     let mut pub_client = redis_client
@@ -1158,8 +1155,7 @@ pub async fn generate_off_chunks(
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
     let base_url = dataset_config
-        .LLM_BASE_URL
-        .unwrap_or("https://openrouter.ai/api/v1".into());
+        .LLM_BASE_URL;
     let default_model = dataset_config.LLM_DEFAULT_MODEL;
 
     let base_url = if base_url.is_empty() {
