@@ -1,4 +1,4 @@
-import { Show, For } from "solid-js";
+import { Show, For, createMemo } from "solid-js";
 import {
   Menu,
   MenuItem,
@@ -15,8 +15,9 @@ import { FaSolidCheck } from "solid-icons/fa";
 
 export const OrganizationSelectBox = () => {
   const $organizations = useStore(organizations);
-  const organizationsList = $organizations();
+  const organizationsList = createMemo(() => $organizations());
   const $currentOrganization = useStore(currentOrganization);
+
   return (
     <div>
       <div class="flex flex-col">
@@ -50,7 +51,7 @@ export const OrganizationSelectBox = () => {
                   class="absolute left-0 z-10 mt-2 h-fit w-[180px] rounded-md border p-1 dark:bg-neutral-800"
                 >
                   <Menu class="mx-1 space-y-0.5">
-                    <For each={organizationsList}>
+                    <For each={organizationsList()}>
                       {(organizationItem) => {
                         const onClick = (e: Event) => {
                           e.preventDefault();

@@ -1,5 +1,5 @@
 import { FaSolidCheck } from "solid-icons/fa";
-import { Show, For } from "solid-js";
+import { Show, For, createMemo } from "solid-js";
 import { currentDataset, datasetsAndUsagesStore } from "../stores/datasetStore";
 import { useStore } from "@nanostores/solid";
 import {
@@ -12,6 +12,7 @@ import {
 
 export const DatasetSelectBox = () => {
   const $datasetsAndUsages = useStore(datasetsAndUsagesStore);
+  const datasetList = createMemo(() => $datasetsAndUsages());
   const $currentDataset = useStore(currentDataset);
 
   return (
@@ -46,7 +47,7 @@ export const DatasetSelectBox = () => {
                 class="absolute right-0 z-10 mt-2 h-fit w-[180px] rounded-md border p-1 dark:bg-neutral-800"
               >
                 <Menu class="mx-1 space-y-0.5">
-                  <For each={$datasetsAndUsages()}>
+                  <For each={datasetList()}>
                     {(datasetItem) => {
                       const onClick = (e: Event) => {
                         e.preventDefault();
