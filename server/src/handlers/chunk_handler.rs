@@ -1160,6 +1160,7 @@ pub async fn generate_off_chunks(
     let base_url = dataset_config
         .LLM_BASE_URL
         .unwrap_or("https://openrouter.ai/api/v1".into());
+    let default_model = dataset_config.LLM_DEFAULT_MODEL;
 
     let base_url = if base_url.is_empty() {
         "https://openrouter.ai/api/v1".into()
@@ -1263,7 +1264,7 @@ pub async fn generate_off_chunks(
         model: data
             .model
             .clone()
-            .unwrap_or("mistralai/mixtral-8x7b-instruct".to_string()),
+            .unwrap_or(default_model),
         stream: stream_response,
         messages,
         temperature: None,

@@ -1,6 +1,6 @@
 use super::message_handler::get_topic_string;
 use crate::{
-    data::models::{DatasetAndOrgWithSubAndPlan, Pool, Topic},
+    data::models::{DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration, Topic},
     errors::{DefaultError, ServiceError},
     handlers::auth_handler::LoggedUser,
     operators::topic_operator::{
@@ -50,7 +50,19 @@ pub async fn create_topic(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let data_inner = data.into_inner();
-    let model = data_inner.model.clone();
+    let default_model = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    )
+    .LLM_DEFAULT_MODEL;
+
+    let model = data_inner.model.unwrap_or("".to_string());
+
+    let model = if model.is_empty() {
+        default_model
+    } else {
+        model
+    };
+
     let first_message = data_inner.first_user_message;
 
     if first_message.is_none() && data_inner.name.is_none() {
