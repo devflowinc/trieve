@@ -614,7 +614,7 @@ pub async fn stream_response(
     let mut citation_chunks_stringified;
     let mut citation_chunks_stringified1;
 
-    let rag_prompt = dataset_config.RAG_PROMPT.clone().unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string());
+    let rag_prompt = dataset_config.RAG_PROMPT.clone();
     let default_model = dataset_config.LLM_DEFAULT_MODEL.clone();
 
     let chosen_model = if let Some(model) = model.clone() {
@@ -702,7 +702,7 @@ pub async fn stream_response(
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    let n_retrievals_to_include = dataset_config.N_RETRIEVALS_TO_INCLUDE.unwrap_or(5);
+    let n_retrievals_to_include = dataset_config.N_RETRIEVALS_TO_INCLUDE;
 
     let retrieval_chunk_ids = search_chunk_query_results
         .search_results
