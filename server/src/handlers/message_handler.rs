@@ -493,7 +493,7 @@ pub async fn get_topic_string(
     };
     let openai_messages = vec![prompt_topic_message];
     let parameters = ChatCompletionParameters {
-        model: model,
+        model,
         messages: openai_messages,
         stream: Some(false),
         temperature: None,
