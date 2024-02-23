@@ -523,7 +523,7 @@ const SearchForm = (props: {
                 setShowFilters(!showFilters());
               }}
             >
-              <span>Filters</span>
+              <span class="p-1">Filters</span>
             </button>
           </Show>
           <Popover defaultOpen={false} class="relative">
@@ -534,7 +534,7 @@ const SearchForm = (props: {
                   type="button"
                   class="flex items-center space-x-1 pb-1 text-sm"
                 >
-                  <span>Search Type</span>{" "}
+                  <span class="p-1">Search Type</span>{" "}
                   <svg
                     fill="currentColor"
                     stroke-width="0"

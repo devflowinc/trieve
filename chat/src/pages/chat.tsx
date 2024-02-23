@@ -13,6 +13,8 @@ export const Chat = () => {
   const [sidebarOpen, setSideBarOpen] = createSignal<boolean>(true);
   const [isCreatingTopic, setIsCreatingTopic] = createSignal<boolean>(true);
   const [topics, setTopics] = createSignal<Topic[]>([]);
+  const [loadingNewTopic, setLoadingNewTopic] = createSignal<boolean>(false);
+  const [selectedNewTopic, setSelectedNewTopic] = createSignal<boolean>(false);
 
   const refetchTopics = async (): Promise<Topic[]> => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -31,6 +33,11 @@ export const Chat = () => {
         credentials: "include",
       },
     );
+
+    setIsCreatingTopic(true);
+    setSelectedNewTopic(true);
+    setSelectedTopic(undefined);
+
     if (!response.ok) return [];
     const data: unknown = await response.json();
     if (data !== null && typeof data === "object" && Array.isArray(data)) {
@@ -40,6 +47,7 @@ export const Chat = () => {
     } else {
       console.log("bye");
     }
+
     return [];
   };
 
@@ -57,6 +65,7 @@ export const Chat = () => {
           topics={topics}
           setIsCreatingTopic={setIsCreatingTopic}
           setSideBarOpen={setSideBarOpen}
+          setSelectedNewTopic={setSelectedNewTopic}
         />
       </div>
       <div class="lg:hidden">
@@ -70,6 +79,7 @@ export const Chat = () => {
             }}
             topics={topics}
             setIsCreatingTopic={setIsCreatingTopic}
+            setSelectedNewTopic={setSelectedNewTopic}
             setSideBarOpen={setSideBarOpen}
           />
         </Show>
@@ -83,11 +93,17 @@ export const Chat = () => {
           setSideBarOpen={setSideBarOpen}
           isCreatingTopic={isCreatingTopic}
           setIsCreatingTopic={setIsCreatingTopic}
+          loadingNewTopic={loadingNewTopic()}
+          setSelectedNewTopic={setSelectedNewTopic}
         />
         <MainLayout
           setTopics={setTopics}
           setSelectedTopic={setSelectedTopic}
-          selectedTopic={selectedTopic}
+          selectedTopic={selectedTopic()}
+          isCreatingTopic={isCreatingTopic()}
+          setLoadingNewTopic={setLoadingNewTopic}
+          selectedNewTopic={selectedNewTopic}
+          setSelectedNewTopic={setSelectedNewTopic}
         />
       </div>
     </div>

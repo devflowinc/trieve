@@ -1,14 +1,13 @@
 import {
-  Accessor,
   For,
   Setter,
   Show,
   Switch,
   createEffect,
   createSignal,
-  onCleanup,
   useContext,
   Match,
+  Accessor,
 } from "solid-js";
 import {
   FiArrowRight,
@@ -31,7 +30,11 @@ import { FullScreenModal } from "../Atoms/FullScreenModal";
 export interface LayoutProps {
   setTopics: Setter<Topic[]>;
   setSelectedTopic: Setter<Topic | undefined>;
-  selectedTopic: Accessor<Topic | undefined>;
+  selectedTopic: Topic | undefined;
+  isCreatingTopic: boolean;
+  setLoadingNewTopic: Setter<boolean>;
+  selectedNewTopic: Accessor<boolean>;
+  setSelectedNewTopic: Setter<boolean>;
 }
 
 const scrollToBottomOfMessages = () => {
@@ -54,7 +57,6 @@ const MainLayout = (props: LayoutProps) => {
 
   const userContext = useContext(UserContext);
 
-  const [loadingMessages, setLoadingMessages] = createSignal<boolean>(true);
   const [messages, setMessages] = createSignal<Message[]>([]);
   const [newMessageContent, setNewMessageContent] = createSignal<string>("");
   const [streamingCompletion, setStreamingCompletion] =
@@ -98,8 +100,7 @@ const MainLayout = (props: LayoutProps) => {
       if (doneReading) {
         done = doneReading;
         setStreamingCompletion(false);
-      }
-      if (value) {
+      } else if (value) {
         const decoder = new TextDecoder();
         const newText = decoder.decode(value);
 
@@ -138,6 +139,7 @@ const MainLayout = (props: LayoutProps) => {
     if (!finalTopicId) {
       setNewMessageContent("");
 
+      props.setLoadingNewTopic(true);
       const topicResponse = await fetch(`${apiHost}/topic`, {
         method: "POST",
         headers: {
@@ -169,6 +171,7 @@ const MainLayout = (props: LayoutProps) => {
       });
       props.setSelectedTopic(newTopic);
       finalTopicId = newTopic.id;
+      props.setLoadingNewTopic(false);
     }
 
     let requestMethod = "POST";
@@ -235,7 +238,6 @@ const MainLayout = (props: LayoutProps) => {
     const dataset = userContext.currentDataset?.();
     if (!dataset) return;
 
-    setLoadingMessages(true);
     const res = await fetch(`${apiHost}/messages/${topicId}`, {
       method: "GET",
       headers: {
@@ -249,33 +251,26 @@ const MainLayout = (props: LayoutProps) => {
     if (data && isMessageArray(data)) {
       setMessages(data);
     }
-    setLoadingMessages(false);
+
     scrollToBottomOfMessages();
   };
 
-  createEffect((previousTopic: Topic | undefined) => {
-    const curTopic = props.selectedTopic();
-
-    if (!previousTopic) {
-      const streamingCompletionVal = streamingCompletion();
-      if (streamingCompletionVal) {
-        console.log("aborting streaming completion");
-        return curTopic;
-      }
+  createEffect(() => {
+    const curTopic = props.selectedTopic;
+    const selectedNewTopic = props.selectedNewTopic();
+    if (!selectedNewTopic) {
+      return;
     }
 
     const fetchMessagesAbortController = new AbortController();
     setMessages([]);
     void fetchMessages(curTopic?.id, fetchMessagesAbortController);
-    onCleanup(() => {
-      fetchMessagesAbortController.abort();
-    });
 
-    return curTopic;
+    props.setSelectedNewTopic(false);
   });
 
   const submitNewMessage = () => {
-    const topic_id = props.selectedTopic()?.id;
+    const topic_id = props.selectedTopic?.id;
     if (!topic_id || !newMessageContent() || streamingCompletion()) {
       return;
     }
@@ -287,18 +282,6 @@ const MainLayout = (props: LayoutProps) => {
 
   return (
     <>
-      <Show
-        when={
-          (loadingMessages() && props.selectedTopic()) ||
-          (streamingCompletion() && messages().length == 0)
-        }
-      >
-        <div class="flex w-full flex-col">
-          <div class="flex w-full flex-col items-center justify-center">
-            <img src="/cooking-crab.gif" class="aspect-square w-[128px]" />
-          </div>
-        </div>
-      </Show>
       <div class="relative flex w-full flex-col justify-between">
         <div class="flex flex-col items-center pb-32" id="topic-messages">
           <For each={messages()}>
@@ -332,7 +315,7 @@ const MainLayout = (props: LayoutProps) => {
                       body: JSON.stringify({
                         new_message_content: content,
                         message_sort_order: idx(),
-                        topic_id: props.selectedTopic()?.id,
+                        topic_id: props.selectedTopic?.id,
                         model: modelName(),
                       }),
                     })
@@ -373,7 +356,7 @@ const MainLayout = (props: LayoutProps) => {
                     class="flex w-fit items-center justify-center space-x-4 rounded-xl bg-neutral-50 px-4 py-2 text-sm dark:bg-neutral-700 dark:text-white"
                     onClick={(e) => {
                       e.preventDefault();
-                      const topic_id = props.selectedTopic()?.id;
+                      const topic_id = props.selectedTopic?.id;
                       if (!topic_id) {
                         return;
                       }
@@ -420,7 +403,7 @@ const MainLayout = (props: LayoutProps) => {
                     if (!new_message_content) {
                       return;
                     }
-                    const topic_id = props.selectedTopic()?.id;
+                    const topic_id = props.selectedTopic?.id;
                     void fetchCompletion({
                       new_message_content,
                       topic_id,
