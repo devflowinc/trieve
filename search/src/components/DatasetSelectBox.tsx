@@ -12,8 +12,9 @@ import {
 
 export const DatasetSelectBox = () => {
   const $datasetsAndUsages = useStore(datasetsAndUsagesStore);
-  const datasetList = createMemo(() => $datasetsAndUsages());
   const $currentDataset = useStore(currentDataset);
+
+  const datasetList = createMemo(() => $datasetsAndUsages());
 
   return (
     <Show when={$datasetsAndUsages().length != 0}>
@@ -49,12 +50,6 @@ export const DatasetSelectBox = () => {
                 <Menu class="mx-1 space-y-0.5">
                   <For each={datasetList()}>
                     {(datasetItem) => {
-                      const onClick = (e: Event) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        currentDataset.set(datasetItem);
-                        setState(false);
-                      };
                       return (
                         <MenuItem
                           as="button"
@@ -65,19 +60,28 @@ export const DatasetSelectBox = () => {
                               datasetItem.dataset.id ===
                               $currentDataset()?.dataset.id,
                           }}
-                          onClick={onClick}
+                          onClick={(e: Event) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            currentDataset.set(datasetItem);
+                            setState(false);
+                          }}
                         >
                           <div class="flex flex-row justify-start space-x-2">
                             <span class="line-clamp-1 text-left text-sm">
                               {datasetItem.dataset.name}
                             </span>
                           </div>
-                          {datasetItem.dataset.id ==
-                            $currentDataset()?.dataset.id && (
+                          <Show
+                            when={
+                              datasetItem.dataset.id ==
+                              $currentDataset()?.dataset.id
+                            }
+                          >
                             <span>
                               <FaSolidCheck class="text-sm" />
                             </span>
-                          )}
+                          </Show>
                         </MenuItem>
                       );
                     }}
