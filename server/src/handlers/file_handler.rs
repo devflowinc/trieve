@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::collections::HashMap;
 
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
@@ -17,7 +17,10 @@ use crate::{
 use actix_files::NamedFile;
 #[cfg(feature = "ocr")]
 use actix_web::http::header::ContentDisposition;
-use actix_web::{web, HttpResponse};
+use actix_web::{
+    web,
+    HttpResponse
+};
 use base64::{
     alphabet,
     engine::{self, general_purpose},
@@ -324,51 +327,19 @@ pub struct GetImageResponse {
     pub signed_url: String,
 }
 
-/// get_image_file
-///
-/// We strongly recommend not using this endpoint. It is disabled on the managed version and only meant for niche on-prem use cases where an image directory is mounted. Get in touch with us thru information on docs.trieve.ai for more information.
-#[utoipa::path(
-    get,
-    path = "/image/{file_name}",
-    context_path = "/api",
-    tag = "file",
-    responses(
-        (status = 200, description = "The raw image file corresponding to the file_name requested such that it can be a src for an img tag"),
-        (status = 400, description = "Service error relating to finding the file", body = ErrorResponseBody),
-    ),
-    params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("file_name" = string, description = "The name of the image file to return"),
-    ),
-    security(
-        ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
-    )
-)]
-pub async fn get_image_file(
-    file_name: web::Path<String>,
+pub async fn get_signed_url(
+    file_metadata_id: web::Path<String>,
     _user: LoggedUser,
-) -> Result<NamedFile, actix_web::Error> {
-    let validated_file_name = validate_file_name(file_name.into_inner())?;
-
+) -> Result<HttpResponse, ServiceError> {
     let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+     
+    let signed_url = bucket
+        .presign_get(format!("/files/{}",file_metadata_id.into_inner()), 300, None)
+        .map_err(|e| ServiceError::BadRequest(format!("Error getting signed url: {}", e)))?;
 
-    let file_data = bucket
-        .get_object(format!("images/{}", validated_file_name).as_str())
-        .await
-        .map_err(|e| {
-            log::error!("Error getting image file: {}", e);
-            ServiceError::BadRequest(e.to_string())
-        })?;
-
-    let mut file = std::fs::File::create(format!("./tmp/{}", validated_file_name))?;
-    file.write_all(file_data.as_slice())?;
-
-    let named_file = NamedFile::open(format!("./tmp/{}", validated_file_name))?;
-
-    std::fs::remove_file(format!("./tmp/{}", validated_file_name.clone()))?;
-
-    Ok(named_file)
+    Ok(HttpResponse::PermanentRedirect()
+        .append_header(("Location", signed_url))
+        .finish())
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
