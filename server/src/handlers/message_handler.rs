@@ -965,7 +965,7 @@ pub async fn create_suggested_queries_handler(
         tool_call_id: None,
     };
     let parameters = ChatCompletionParameters {
-        model: default_model.into(),
+        model: default_model,
         stream: Some(true),
         messages: vec![message],
         temperature: None,
