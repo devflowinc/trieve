@@ -332,7 +332,7 @@ pub async fn get_signed_url(
     let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
     let signed_url = bucket
-        .presign_get(format!("/files/{}",file_metadata_id.into_inner()), 300, None)
+        .presign_get(format!("/files/{}", file_name.into_inner()), 300, None)
         .map_err(|e| ServiceError::BadRequest(format!("Error getting signed url: {}", e)))?;
 
     Ok(HttpResponse::SeeOther()
