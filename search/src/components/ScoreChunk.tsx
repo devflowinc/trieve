@@ -30,7 +30,7 @@ import {
   FaRegularFilePdf,
 } from "solid-icons/fa";
 import { Tooltip } from "./Atoms/Tooltip";
-import { AiOutlineCopy } from "solid-icons/ai";
+import { AiOutlineCopy, AiOutlineFile } from "solid-icons/ai";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { useStore } from "@nanostores/solid";
 import { clientConfig } from "../stores/envsStore";
@@ -287,21 +287,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               />
               <Tooltip
                 body={
-                  <Show when={fileName()}>
-                    <a
-                      class="h-fit"
-                      href={`${apiHost}/pdf_from_range/${fileName()}`}
-                      target="_blank"
-                      title="Open PDF"
-                    >
-                      <FaRegularFilePdf class="h-5 w-5 fill-current" />
-                    </a>
-                  </Show>
-                }
-                tooltipText="View PDF"
-              />
-              <Tooltip
-                body={
                   <Show when={imgInformation()}>
                     <a
                       class="h-fit"
@@ -347,6 +332,21 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                   </Show>
                 }
                 tooltipText="View PDF With OCR"
+              />
+              <Tooltip
+                body={
+                  <Show when={fileName()}>
+                    <a
+                      class="h-fit"
+                      href={`${apiHost}/get_signed_url/${fileName()}`}
+                      target="_blank"
+                      title="Open PDF"
+                    >
+                      <AiOutlineFile class="h-5 w-5 fill-current" />
+                    </a>
+                  </Show>
+                }
+                tooltipText="View File"
               />
               <Tooltip
                 body={
