@@ -862,12 +862,12 @@ impl ServerDatasetConfiguration {
                 .get("DOCUMENT_UPLOAD_FEATURE")
                 .unwrap_or(&json!(true))
                 .as_bool()
-                .expect("DOCUMENT_UPLOAD_FEATURE should exist QED"),
+                .expect("DOCUMENT_UPLOAD_FEATURE should exist"),
             DOCUMENT_DOWNLOAD_FEATURE: configuration
                 .get("DOCUMENT_DOWNLOAD_FEATURE")
                 .unwrap_or(&json!(true))
                 .as_bool()
-                .expect("DOCUMENT_DOWNLOAD_FEATURE should exist QED"),
+                .expect("DOCUMENT_DOWNLOAD_FEATURE should exist"),
             LLM_BASE_URL: configuration
                 .get("LLM_BASE_URL")
                 .unwrap_or(&json!("https://api.openai.com/v1".to_string()))
@@ -879,7 +879,7 @@ impl ServerDatasetConfiguration {
                         s.to_string()
                     }
                 })
-                .expect("LLM_BASE_URL should exist QED"),
+                .expect("LLM_BASE_URL should exist"),
             EMBEDDING_BASE_URL: configuration
                 .get("EMBEDDING_BASE_URL")
                 .unwrap_or(&json!("https://api.openai.com/v1".to_string()))
@@ -890,7 +890,7 @@ impl ServerDatasetConfiguration {
                     } else {
                         s.to_string()
                     }
-                }).expect("EMBEDDING_BASE_URL should exist QED"),
+                }).expect("EMBEDDING_BASE_URL should exist"),
             RAG_PROMPT: configuration
                 .get("RAG_PROMPT")
                 .unwrap_or(&json!("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string()))
@@ -901,7 +901,7 @@ impl ServerDatasetConfiguration {
                     } else {
                         s.to_string()
                     }
-                }).expect("RAG_PROMPT should exist QED"),
+                }).expect("RAG_PROMPT should exist"),
             N_RETRIEVALS_TO_INCLUDE: configuration
                 .get("N_RETRIEVALS_TO_INCLUDE")
                 .unwrap_or(&json!(5))
@@ -931,12 +931,12 @@ impl ServerDatasetConfiguration {
                         s.to_string()
                     }
                 })
-                .expect("LLM_DEFAULT_MODEL should exist QED"),
+                .expect("LLM_DEFAULT_MODEL should exist"),
             COLLISIONS_ENABLED: configuration
                 .get("COLLISIONS_ENABLED")
                 .unwrap_or(&json!(false))
                 .as_bool()
-                .expect("COLLISIONS_ENABLED should exist QED"),
+                .expect("COLLISIONS_ENABLED should exist"),
         }
     }
 }
@@ -1017,7 +1017,7 @@ impl ClientDatasetConfiguration {
                 .get("FILE_NAME_KEY")
                 .unwrap_or(&json!(""))
                 .as_str()
-                .expect("FILE_NAME_KEY should exist QED")
+                .expect("FILE_NAME_KEY should exist")
                 .to_string(),
         }
     }
