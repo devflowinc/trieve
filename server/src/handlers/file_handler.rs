@@ -326,7 +326,7 @@ pub struct GetImageResponse {
 }
 
 pub async fn get_signed_url(
-    file_metadata_id: web::Path<String>,
+    file_name: web::Path<String>,
     _user: LoggedUser,
 ) -> Result<HttpResponse, ServiceError> {
     let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
