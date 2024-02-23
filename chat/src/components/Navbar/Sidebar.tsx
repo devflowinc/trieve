@@ -32,6 +32,7 @@ export interface SidebarProps {
   currentTopic: Accessor<Topic | undefined>;
   setCurrentTopic: (topic: Topic | undefined) => void;
   setSideBarOpen: Setter<boolean>;
+  setSelectedNewTopic: Setter<boolean>;
 }
 
 export const Sidebar = (props: SidebarProps) => {
@@ -123,6 +124,7 @@ export const Sidebar = (props: SidebarProps) => {
             onClick={() => {
               props.setIsCreatingTopic(true);
               props.setCurrentTopic(undefined);
+              props.setSelectedNewTopic(true);
               props.setSideBarOpen(false);
             }}
             disabled={userContext.user?.() === null}
@@ -150,6 +152,7 @@ export const Sidebar = (props: SidebarProps) => {
                   const topic = topics[index()];
 
                   props.setCurrentTopic(topic);
+                  props.setSelectedNewTopic(true);
                   props.setIsCreatingTopic(false);
                   props.setSideBarOpen(false);
                 }}

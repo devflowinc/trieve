@@ -178,8 +178,8 @@ const ChatPopup = (props: LayoutProps) => {
         }
       >
         <div class="flex w-full flex-col">
-          <div class="flex w-full flex-col items-center justify-center">
-            <img src="/cooking-crab.gif" class="aspect-square w-[128px]" />
+          <div class="mt-8 flex w-full flex-col items-center justify-center">
+            <div class="h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-fuchsia-300" />
           </div>
         </div>
       </Show>

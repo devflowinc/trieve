@@ -69,10 +69,9 @@ export const AfMessage = (props: AfMessageProps) => {
               </div>
               <Show when={!props.content}>
                 <div class="col-span-2 w-full whitespace-pre-line">
-                  <img
-                    src="/cooking-crab.gif"
-                    class="aspect-square w-[128px]"
-                  />
+                  <div class="flex w-full flex-col items-center justify-center">
+                    <div class="h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-fuchsia-300" />
+                  </div>
                 </div>
               </Show>
               <Show when={props.role == "assistant"}>
