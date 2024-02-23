@@ -431,6 +431,7 @@ export interface ClientEnvsConfiguration {
   IMAGE_RANGE_START_KEY?: string;
   IMAGE_RANGE_END_KEY?: string;
   DOCUMENT_UPLOAD_FEATURE?: boolean;
+  FILE_NAME_KEY?: string;
 }
 
 export const defaultClientEnvsConfiguration: ClientEnvsConfiguration = {
@@ -445,6 +446,7 @@ export const defaultClientEnvsConfiguration: ClientEnvsConfiguration = {
   SUGGESTED_QUERIES: "",
   IMAGE_RANGE_START_KEY: "",
   IMAGE_RANGE_END_KEY: "",
+  FILE_NAME_KEY: "",
 };
 
 export interface OrganizationDTO {

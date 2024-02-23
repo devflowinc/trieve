@@ -954,6 +954,7 @@ pub struct ClientDatasetConfiguration {
     pub IMAGE_RANGE_START_KEY: Option<String>,
     pub IMAGE_RANGE_END_KEY: Option<String>,
     pub DOCUMENT_UPLOAD_FEATURE: Option<bool>,
+    pub FILE_NAME_KEY: String,
 }
 
 impl ClientDatasetConfiguration {
@@ -1012,6 +1013,12 @@ impl ClientDatasetConfiguration {
                 .get("DOCUMENT_UPLOAD_FEATURE")
                 .unwrap_or(&json!(true))
                 .as_bool(),
+            FILE_NAME_KEY: configuration
+                .get("FILE_NAME_KEY")
+                .unwrap_or(&json!(""))
+                .as_str()
+                .expect("FILE_NAME_KEY should exist QED")
+                .to_string(),
         }
     }
 }

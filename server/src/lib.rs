@@ -126,7 +126,6 @@ pub async fn main() -> std::io::Result<()> {
             handlers::file_handler::upload_file_handler,
             handlers::file_handler::get_file_handler,
             handlers::file_handler::delete_file_handler,
-            handlers::file_handler::get_image_file,
             handlers::event_handler::get_events,
             handlers::auth_handler::health_check,
             handlers::organization_handler::get_organization_by_id,
@@ -538,8 +537,8 @@ pub async fn main() -> std::io::Result<()> {
                             ),
                     )
                     .service(
-                        web::resource("/image/{file_name}")
-                            .route(web::get().to(handlers::file_handler::get_image_file)),
+                        web::resource("/get_signed_url/{file_name}")
+                            .route(web::get().to(handlers::file_handler::get_signed_url)),
                     )
                     .service(
                         web::resource(

@@ -98,6 +98,20 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const [showImageModal, setShowImageModal] = createSignal(false);
   const [showMetadata, setShowMetadata] = createSignal(false);
 
+  const fileName = createMemo(() => {
+    const fileNameKey = $envs().FILE_NAME_KEY;
+
+    if (
+      !fileNameKey ||
+      !props.chunk.metadata ||
+      !indirectHasOwnProperty(props.chunk.metadata, fileNameKey)
+    ) {
+      return null;
+    }
+
+    return props.chunk.metadata[fileNameKey];
+  });
+
   const imgInformation = createMemo(() => {
     const imgRangeStartKey = $envs().IMAGE_RANGE_START_KEY;
     const imgRangeEndKey = $envs().IMAGE_RANGE_END_KEY;
@@ -270,6 +284,21 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                   </Show>
                 }
                 tooltipText="View Full Document"
+              />
+              <Tooltip
+                body={
+                  <Show when={fileName()}>
+                    <a
+                      class="h-fit"
+                      href={`${apiHost}/pdf_from_range/${fileName()}`}
+                      target="_blank"
+                      title="Open PDF"
+                    >
+                      <FaRegularFilePdf class="h-5 w-5 fill-current" />
+                    </a>
+                  </Show>
+                }
+                tooltipText="View PDF"
               />
               <Tooltip
                 body={
