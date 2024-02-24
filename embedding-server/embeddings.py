@@ -1,9 +1,9 @@
 from math import trunc
-from typing import Optional
+from typing import Optional, Annotated
 import uvicorn
 import torch
 import numpy as np
-from fastapi import FastAPI
+from fastapi import FastAPI, Header
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from transformers import AutoModelForMaskedLM, AutoTokenizer, AutoModel
@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 hf_token = os.environ.get("HF_TOKEN")
+api_key = os.environ.get("API_KEY")
 huggingface_hub.login(token=hf_token)
 embedding_model = AutoModel.from_pretrained(
     "jinaai/jina-embeddings-v2-base-en", token=hf_token, trust_remote_code=True
@@ -52,8 +53,10 @@ app = FastAPI()
 
 
 @app.get("/")
-async def health():
-    return {"message": "hello embeddings"}
+async def health(
+    Authorization: Annotated[str | None, Header()] = None
+    ):
+    return {"message": "hello embeddings", "Auth": Authorization}
 
 
 def compute_vector(text, tokenizer, model):
@@ -87,7 +90,17 @@ class EncodeRequest(BaseModel):
 
 
 @app.post("/embeddings")
-async def encode(encodingRequest: EncodeRequest):
+async def encode(encodingRequest: EncodeRequest, Authorization: Annotated[str | None, Header()] = None):
+    if api_key is not None:
+        if Authorization is None or Authorization != f"Bearer: {api_key}":
+            return JSONResponse(
+                content={
+                    "message": "Unauthorized",
+                    "status": 401,
+                },
+                status_code=401,
+            )
+
     sentence_embeddings = embedding_model.encode([encodingRequest.input])
 
     return JSONResponse(
@@ -115,7 +128,17 @@ class SparseEncodeRequest(BaseModel):
 
 
 @app.post("/sparse_encode")
-async def sparse_encode(encodingRequest: SparseEncodeRequest):
+async def sparse_encode(encodingRequest: SparseEncodeRequest, Authorization: Annotated[str | None, Header()] = None):
+    if api_key is not None:
+        if Authorization is None or Authorization != f"Bearer: {api_key}":
+            return JSONResponse(
+                content={
+                    "message": "Unauthorized",
+                    "status": 401,
+                },
+                status_code=401,
+            )
+    print(encodingRequest)
     vec = []
     if encodingRequest.encode_type == "doc":
         vec = compute_vector(
@@ -156,7 +179,17 @@ class ReRankRequest(BaseModel):
 
 
 @app.post("/rerank")
-async def rerank(rerankRequest: ReRankRequest):
+async def rerank(rerankRequest: ReRankRequest, Authorization: Annotated[str | None, Header()] = None):
+    if api_key is not None:
+        if Authorization is None or Authorization != f"Bearer: {api_key}":
+            return JSONResponse(
+                content={
+                    "message": "Unauthorized",
+                    "status": 401,
+                },
+                status_code=401,
+            )
+
     combined_docs = [[rerankRequest.query, doc] for doc in rerankRequest.docs]
     doc_scores = cross_encoder_model.predict(combined_docs)
     sim_scores_argsort = np.argsort(doc_scores)
