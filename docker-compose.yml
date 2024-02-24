@@ -143,6 +143,7 @@ services:
       - SMTP_USERNAME=${SMTP_USERNAME}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - SMTP_EMAIL_ADDRESS=${SMTP_EMAIL_ADDRESS}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - LLM_API_KEY=${LLM_API_KEY}
       - SECRET_KEY=${SECRET_KEY}
       - SALT=${SALT}
@@ -219,6 +220,7 @@ services:
       - 7070:7070
     environment:
       - HF_TOKEN=${HF_TOKEN}
+      - API_KEY=${OPENAI_API_KEY}
 
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.1
