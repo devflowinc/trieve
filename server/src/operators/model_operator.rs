@@ -65,12 +65,12 @@ pub async fn get_splade_doc_embedding(message: &str) -> Result<Vec<(u32, f32)>, 
             "Cannot encode empty query".to_string(),
         ));
     }
-    let mut embedding_server_call: String = get_env!(
+    let server_origin: String = get_env!(
         "GPU_SERVER_ORIGIN",
         "GPU_SERVER_ORIGIN should be set if this is called"
     )
     .to_string();
-    embedding_server_call.push_str("/sparse_encode");
+    let embedding_server_call = format!("{}/sparse_encode", server_origin);
 
     let client = reqwest::Client::new();
     let resp = client
@@ -79,6 +79,10 @@ pub async fn get_splade_doc_embedding(message: &str) -> Result<Vec<(u32, f32)>, 
             input: message.to_string(),
             encode_type: "doc".to_string(),
         })
+        .bearer_auth(get_env!(
+            "OPENAI_API_KEY",
+            "OPENAI_API_KEY should be set"
+        ))
         .send()
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
@@ -98,12 +102,12 @@ pub async fn get_splade_doc_embedding(message: &str) -> Result<Vec<(u32, f32)>, 
 }
 
 pub async fn get_splade_query_embedding(message: &str) -> Result<Vec<(u32, f32)>, ServiceError> {
-    let mut embedding_server_call: String = get_env!(
+    let server_origin: String = get_env!(
         "GPU_SERVER_ORIGIN",
         "GPU_SERVER_ORIGIN should be set if this is called"
     )
     .to_string();
-    embedding_server_call.push_str("/sparse_encode");
+    let embedding_server_call = format!("{}/sparse_encode", server_origin);
 
     let client = reqwest::Client::new();
     let resp = client
@@ -112,6 +116,10 @@ pub async fn get_splade_query_embedding(message: &str) -> Result<Vec<(u32, f32)>
             input: message.to_string(),
             encode_type: "query".to_string(),
         })
+        .bearer_auth(get_env!(
+            "OPENAI_API_KEY",
+            "OPENAI_API_KEY should be set"
+        ))
         .send()
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
@@ -145,12 +153,13 @@ pub async fn cross_encoder(
     query: String,
     results: Vec<ScoreChunkDTO>,
 ) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
-    let mut embedding_server_call: String = get_env!(
+    
+    let server_origin: String = get_env!(
         "GPU_SERVER_ORIGIN",
         "GPU_SERVER_ORIGIN should be set if this is called"
     )
     .to_string();
-    embedding_server_call.push_str("/rerank");
+    let embedding_server_call = format!("{}/rerank", server_origin);
 
     if results.is_empty() {
         return Err(ServiceError::BadRequest("Cannot rerank empty results".to_string()).into());
@@ -169,6 +178,10 @@ pub async fn cross_encoder(
             query: query.to_string(),
             docs: request_docs,
         })
+        .bearer_auth(get_env!(
+            "OPENAI_API_KEY",
+            "OPENAI_API_KEY should be set"
+        ))
         .send()
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
