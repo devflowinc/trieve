@@ -4,8 +4,8 @@ use crate::{
     errors::ServiceError,
     operators::{
         organization_operator::{
-            create_organization_query, get_org_usage_by_id_query, get_org_users_by_id_query,
-            get_organization_by_key_query, update_organization_query,
+            create_organization_query, delete_organization_query, get_org_usage_by_id_query,
+            get_org_users_by_id_query, get_organization_by_key_query, update_organization_query,
         },
         user_operator::add_user_to_organization,
     },
@@ -47,6 +47,41 @@ pub async fn get_organization_by_id(
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(org_plan_sub.with_defaults()))
+}
+
+/// delete_organization
+///
+/// Delete an organization by its id. The auth'ed user must be an admin or owner of the organization to delete it.
+#[utoipa::path(
+    delete,
+    path = "/organization/{organization_id}",
+    context_path = "/api",
+    tag = "organization",
+    responses(
+        (status = 200, description = "Confirmation that the organization was deleted", body = Organization),
+        (status = 400, description = "Service error relating to deleting the organization by id", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+        ("Cookie" = ["admin"])
+    )
+)]
+pub async fn delete_organization_by_id(
+    organization_id: web::Path<uuid::Uuid>,
+    pool: web::Data<Pool>,
+    _user: AdminOnly,
+) -> Result<HttpResponse, actix_web::Error> {
+    let organization_id = organization_id.into_inner();
+
+    let org = delete_organization_query(organization_id.into(), pool)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    Ok(HttpResponse::Ok().json(org))
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]

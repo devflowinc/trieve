@@ -128,9 +128,10 @@ pub async fn main() -> std::io::Result<()> {
             handlers::file_handler::delete_file_handler,
             handlers::event_handler::get_events,
             handlers::auth_handler::health_check,
+            handlers::organization_handler::create_organization,
             handlers::organization_handler::get_organization_by_id,
             handlers::organization_handler::update_organization,
-            handlers::organization_handler::create_organization,
+            handlers::organization_handler::delete_organization_by_id,
             handlers::organization_handler::get_organization_usage,
             handlers::organization_handler::get_organization_users,
             handlers::dataset_handler::create_dataset,
@@ -572,8 +573,13 @@ pub async fn main() -> std::io::Result<()> {
                             )
                             .service(
                                 web::resource("/{organization_id}")
-                                    .route(web::get().to(
-                                        handlers::organization_handler::get_organization_by_id,
+                                    .route(
+                                        web::get().to(
+                                            handlers::organization_handler::get_organization_by_id,
+                                        ),
+                                    )
+                                    .route(web::delete().to(
+                                        handlers::organization_handler::delete_organization_by_id,
                                     )),
                             )
                             .service(

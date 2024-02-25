@@ -204,7 +204,7 @@ pub async fn update_dataset_query(
 }
 
 pub fn get_datasets_by_organization_id(
-    id: web::Path<uuid::Uuid>,
+    org_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<Vec<DatasetAndUsage>, ServiceError> {
     use crate::data::schema::dataset_usage_counts::dsl as dataset_usage_counts_columns;
@@ -216,7 +216,7 @@ pub fn get_datasets_by_organization_id(
 
     let dataset_and_usages: Vec<(Dataset, DatasetUsageCount)> = datasets_columns::datasets
         .inner_join(dataset_usage_counts_columns::dataset_usage_counts)
-        .filter(datasets_columns::organization_id.eq(id.into_inner()))
+        .filter(datasets_columns::organization_id.eq(org_id.into_inner()))
         .select((Dataset::as_select(), DatasetUsageCount::as_select()))
         .load::<(Dataset, DatasetUsageCount)>(&mut conn)
         .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?;

@@ -1,10 +1,12 @@
 use crate::{
     data::models::{
-        Organization, OrganizationUsageCount, OrganizationWithSubAndPlan, Pool, SlimUser,
+        Dataset, Organization, OrganizationUsageCount, OrganizationWithSubAndPlan, Pool, SlimUser,
         StripePlan, StripeSubscription, User, UserOrganization,
     },
     errors::DefaultError,
-    operators::stripe_operator::refresh_redis_org_plan_sub,
+    operators::{
+        dataset_operator::delete_dataset_by_id_query, stripe_operator::refresh_redis_org_plan_sub,
+    },
     randutil,
 };
 use actix_web::web;
@@ -88,6 +90,56 @@ pub async fn update_organization_query(
     refresh_redis_org_plan_sub(updated_organization.id, pool).await?;
 
     Ok(updated_organization)
+}
+
+pub async fn delete_organization_query(
+    org_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Organization, DefaultError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+    use crate::data::schema::organizations::dsl as organizations_columns;
+
+    let mut conn = pool.get().map_err(|_| DefaultError {
+        message: "Could not get database connection",
+    })?;
+
+    let datasets: Vec<Dataset> = datasets_columns::datasets
+        .filter(datasets_columns::organization_id.eq(org_id))
+        .select(Dataset::as_select())
+        .load::<Dataset>(&mut conn)
+        .map_err(|e| {
+            log::error!(
+                "Error loading datasets in delete_organization_query: {:?}",
+                e
+            );
+            DefaultError {
+                message: "Error loading datasets",
+            }
+        })?;
+
+    for dataset in datasets {
+        delete_dataset_by_id_query(dataset.id, pool.clone())
+            .await
+            .map_err(|e| {
+                log::error!(
+                    "Error deleting dataset in delete_organization_query: {:?}",
+                    e
+                );
+                DefaultError {
+                    message: "Error deleting dataset",
+                }
+            })?;
+    }
+
+    let deleted_organization: Organization = diesel::delete(
+        organizations_columns::organizations.filter(organizations_columns::id.eq(org_id)),
+    )
+    .get_result(&mut conn)
+    .map_err(|_| DefaultError {
+        message: "Could not delete organization, try again",
+    })?;
+
+    Ok(deleted_organization)
 }
 
 pub enum OrganizationKey {
