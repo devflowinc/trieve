@@ -40,6 +40,21 @@ ALTER TABLE files
 ADD CONSTRAINT files_dataset_id_fkey
 FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
+-- chunk_files -> files
+ALTER TABLE chunk_files
+DROP CONSTRAINT if exists card_files_file_id_fkey;
+
+ALTER TABLE chunk_files
+ADD CONSTRAINT chunk_files_file_id_fkey
+FOREIGN KEY (file_id) REFERENCES files(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+-- chunk_files -> chunks
+ALTER TABLE chunk_files
+DROP CONSTRAINT if exists card_files_card_id_fkey;
+
+ALTER TABLE chunk_files
+ADD CONSTRAINT chunk_files_chunk_id_fkey
+FOREIGN KEY (chunk_id) REFERENCES chunk_metadata(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 -- messages
 ALTER TABLE messages

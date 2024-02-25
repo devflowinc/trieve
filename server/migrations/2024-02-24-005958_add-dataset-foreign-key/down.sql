@@ -2,10 +2,10 @@
 
 -- dataset_usage_counts
 ALTER TABLE dataset_usage_counts
-DROP CONSTRAINT if exists datasets_usage_counts_dataset_id_fkey;
+DROP CONSTRAINT if exists dataset_usage_counts_dataset_id_fkey;
 
 ALTER TABLE dataset_usage_counts
-ADD CONSTRAINT datasets_usage_counts_dataset_id_fkey
+ADD CONSTRAINT dataset_usage_counts_dataset_id_fkey
 FOREIGN KEY (dataset_id) REFERENCES datasets(id);
 
 -- events
@@ -40,6 +40,21 @@ ALTER TABLE files
 ADD CONSTRAINT files_dataset_id_fkey
 FOREIGN KEY (dataset_id) REFERENCES datasets(id);
 
+-- chunk_files -> files
+ALTER TABLE chunk_files
+DROP CONSTRAINT if exists chunk_files_file_id_fkey;
+
+ALTER TABLE chunk_files
+ADD CONSTRAINT card_files_file_id_fkey
+FOREIGN KEY (file_id) REFERENCES files(id);
+
+-- chunk_files -> chunks
+ALTER TABLE chunk_files
+DROP CONSTRAINT if exists chunk_files_chunk_id_fkey;
+
+ALTER TABLE chunk_files
+ADD CONSTRAINT card_files_card_id_fkey
+FOREIGN KEY (chunk_id) REFERENCES chunk_metadata(id);
 
 -- messages
 ALTER TABLE messages
