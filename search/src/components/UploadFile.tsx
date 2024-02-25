@@ -199,9 +199,9 @@ export const UploadFile = () => {
             disabled={isSubmitting()}
             onClick={(e) => void submitEvidence(e)}
           >
-            <Show when={!isSubmitting()}>Submit New Evidence</Show>
+            <Show when={!isSubmitting()}>Upload and Chunk New File</Show>
             <Show when={isSubmitting()}>
-              <div class="animate-pulse">Submitting...</div>
+              <div class="animate-pulse">Uploading...</div>
             </Show>
           </button>
         </div>
