@@ -1,15 +1,14 @@
-use crate::data::models::{ChunkCollision, ChunkMetadata, DatasetAndUsage, DatasetUsageCount};
+use crate::data::models::{DatasetAndUsage, DatasetUsageCount};
 use crate::diesel::RunQueryDsl;
-
-use crate::operators::file_operator::delete_file_query;
+use crate::get_env;
 use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::{
     data::models::{Dataset, Pool},
     errors::ServiceError,
 };
 use actix_web::web;
-use diesel::{Connection, ExpressionMethods, JoinOnDsl, QueryDsl, SelectableHelper};
-use qdrant_client::qdrant::PointId;
+use diesel::{ExpressionMethods, QueryDsl, SelectableHelper};
+use qdrant_client::qdrant::{Condition, Filter};
 
 pub async fn create_dataset_query(
     new_dataset: Dataset,
@@ -104,212 +103,54 @@ pub async fn delete_dataset_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
-    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
-    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::datasets::dsl as datasets_columns;
-    use crate::data::schema::files::dsl as files_columns;
-    use crate::data::schema::topics::dsl as topics_columns;
-    use crate::data::schema::{
-        chunk_collisions::dsl as chunk_collisions_columns, chunk_files::dsl as chunk_files_columns,
-    };
-    use crate::data::schema::{
-        chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns, events::dsl as events_columns,
-        groups_from_files::dsl as groups_from_files_columns,
-    };
 
     let dataset = get_dataset_by_id_query(id, pool.clone()).await?;
 
-    let mut conn = pool
-        .get()
-        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+    let mut conn = pool.get().unwrap();
 
-    let file_ids = files_columns::files
-        .select(files_columns::id)
-        .filter(files_columns::dataset_id.eq(dataset.id))
-        .load::<uuid::Uuid>(&mut conn)
-        .map_err(|_| ServiceError::BadRequest("Could not find files".to_string()))?;
+    diesel::delete(datasets_columns::datasets.filter(datasets_columns::id.eq(id)))
+        .execute(&mut conn)
+        .map_err(|err| {
+            log::error!("Could not delete dataset: {}", err);
+            ServiceError::BadRequest("Could not delete dataset".to_string())
+        })?;
 
-    for file_id in file_ids {
-        delete_file_query(file_id, dataset.clone(), Some(false), pool.clone())
-            .await
-            .map_err(|e| {
-                log::error!("Failed to delete files for dataset: {}", e);
-                ServiceError::BadRequest("Failed to delete files for dataset".to_string())
-            })?;
-    }
+    let redis_url = get_env!("REDIS_URL", "REDIS_URL must be set");
+    let client = redis::Client::open(redis_url).map_err(|err| {
+        ServiceError::BadRequest(format!("Could not create redis client: {}", err))
+    })?;
+    let mut redis_conn = client
+        .get_async_connection()
+        .await
+        .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
+    redis::cmd("DEL")
+        .arg(format!("dataset:{}", dataset.id))
+        .query_async(&mut redis_conn)
+        .await
+        .map_err(|err| {
+            ServiceError::BadRequest(format!("Could not delete dataset in redis: {}", err))
+        })?;
 
-    let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
-        diesel::delete(events_columns::events.filter(events_columns::dataset_id.eq(id)))
-            .execute(conn)?;
+    let qdrant = get_qdrant_connection()
+        .await
+        .map_err(|err| ServiceError::BadRequest(format!("Could not connect to qdrant: {}", err)))?;
 
-        let group_ids = chunk_group_columns::chunk_group
-            .select(chunk_group_columns::id)
-            .filter(chunk_group_columns::dataset_id.eq(dataset.id))
-            .load::<uuid::Uuid>(conn)?;
+    let qdrant_collection = get_env!("QDRANT_COLLECTION", "QDRANT_COLLECTION must be set");
 
-        diesel::delete(
-            groups_from_files_columns::groups_from_files
-                .filter(groups_from_files_columns::group_id.eq_any(group_ids.clone())),
+    qdrant
+        .delete_points(
+            qdrant_collection,
+            None,
+            &Filter::must([Condition::matches("dataset_id", id.to_string())]).into(),
+            None,
         )
-        .execute(conn)?;
+        .await
+        .map_err(|err| {
+            ServiceError::BadRequest(format!("Could not delete points from qdrant: {}", err))
+        })?;
 
-        diesel::delete(
-            chunk_group_bookmarks_columns::chunk_group_bookmarks
-                .filter(chunk_group_bookmarks_columns::group_id.eq_any(group_ids.clone())),
-        )
-        .execute(conn)?;
-
-        diesel::delete(
-            chunk_group_columns::chunk_group
-                .filter(chunk_group_columns::id.eq_any(group_ids.clone()))
-                .filter(chunk_group_columns::dataset_id.eq(id)),
-        )
-        .execute(conn)?;
-        let chunks = chunk_metadata_columns::chunk_metadata
-            .select(ChunkMetadata::as_select())
-            .filter(chunk_metadata_columns::dataset_id.eq(dataset.id))
-            .load::<ChunkMetadata>(conn)?;
-
-        let chunk_ids = chunks
-            .iter()
-            .map(|chunk| chunk.id)
-            .collect::<Vec<uuid::Uuid>>();
-
-        diesel::delete(
-            chunk_files_columns::chunk_files
-                .filter(chunk_files_columns::chunk_id.eq_any(chunk_ids.clone())),
-        )
-        .execute(conn)?;
-
-        diesel::delete(
-            chunk_group_bookmarks_columns::chunk_group_bookmarks
-                .filter(chunk_group_bookmarks_columns::chunk_metadata_id.eq_any(chunk_ids.clone())),
-        )
-        .execute(conn)?;
-
-        let deleted_chunk_collision_count = diesel::delete(
-            chunk_collisions_columns::chunk_collisions
-                .filter(chunk_collisions_columns::chunk_id.eq_any(chunk_ids.clone())),
-        )
-        .execute(conn)?;
-
-        if deleted_chunk_collision_count > 0 {
-            // there cannot be collisions for a collision, just delete the chunk_metadata without issue
-            diesel::delete(
-                chunk_metadata_columns::chunk_metadata
-                    .filter(chunk_metadata_columns::id.eq_any(chunk_ids))
-                    .filter(chunk_metadata_columns::dataset_id.eq(id)),
-            )
-            .execute(conn)?;
-        } else {
-            let chunk_collisions: Vec<(ChunkCollision, ChunkMetadata)> =
-                chunk_collisions_columns::chunk_collisions
-                    .inner_join(
-                        chunk_metadata_columns::chunk_metadata
-                            .on(chunk_metadata_columns::qdrant_point_id
-                                .eq(chunk_collisions_columns::collision_qdrant_id)),
-                    )
-                    .filter(chunk_metadata_columns::id.eq_any(chunk_ids.clone()))
-                    .filter(chunk_metadata_columns::dataset_id.eq(id))
-                    .select((ChunkCollision::as_select(), ChunkMetadata::as_select()))
-                    .order_by(chunk_collisions_columns::created_at.asc())
-                    .load::<(ChunkCollision, ChunkMetadata)>(conn)?;
-
-            if !chunk_collisions.is_empty() {
-                let chunk_metadata_ids = chunk_collisions
-                    .iter()
-                    .map(|(_, chunk_metadata)| chunk_metadata.id)
-                    .collect::<Vec<uuid::Uuid>>();
-
-                diesel::delete(
-                    chunk_metadata_columns::chunk_metadata
-                        .filter(chunk_metadata_columns::id.eq_any(chunk_metadata_ids))
-                        .filter(chunk_metadata_columns::dataset_id.eq(id)),
-                )
-                .execute(conn)?;
-
-                let collision_ids = chunk_collisions
-                    .iter()
-                    .map(|(chunk_collision, _)| chunk_collision.id)
-                    .collect::<Vec<uuid::Uuid>>();
-
-                diesel::delete(
-                    chunk_collisions_columns::chunk_collisions
-                        .filter(chunk_collisions_columns::id.eq_any(collision_ids)),
-                )
-                .execute(conn)?;
-            }
-
-            // if there were no collisions, just delete the chunk_metadata without issue
-            diesel::delete(
-                chunk_metadata_columns::chunk_metadata
-                    .filter(chunk_metadata_columns::id.eq_any(chunk_ids.clone()))
-                    .filter(chunk_metadata_columns::dataset_id.eq(dataset.id)),
-            )
-            .execute(conn)?;
-        }
-
-        diesel::delete(topics_columns::topics.filter(topics_columns::dataset_id.eq(id)))
-            .execute(conn)?;
-
-        diesel::delete(datasets_columns::datasets)
-            .filter(datasets_columns::id.eq(id))
-            .execute(conn)?;
-
-        Ok(chunks)
-    });
-
-    let qdrant_group = std::env::var("QDRANT_COLLECTION").unwrap_or("debate_chunks".to_owned());
-
-    match transaction_result {
-        Ok(chunks) => {
-            let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
-            let client = redis::Client::open(redis_url).map_err(|err| {
-                ServiceError::BadRequest(format!("Could not create redis client: {}", err))
-            })?;
-            let mut redis_conn = client.get_async_connection().await.map_err(|err| {
-                ServiceError::BadRequest(format!("Could not connect to redis: {}", err))
-            })?;
-            redis::cmd("DEL")
-                .arg(format!("dataset:{}", dataset.id))
-                .query_async(&mut redis_conn)
-                .await
-                .map_err(|err| {
-                    ServiceError::BadRequest(format!("Could not delete dataset in redis: {}", err))
-                })?;
-
-            let qdrant = get_qdrant_connection().await.map_err(|err| {
-                ServiceError::BadRequest(format!("Could not connect to qdrant: {}", err))
-            })?;
-
-            let selector = chunks
-                .iter()
-                .map(|chunk| {
-                    <String as Into<PointId>>::into(
-                        chunk.qdrant_point_id.unwrap_or_default().to_string(),
-                    )
-                })
-                .collect::<Vec<PointId>>();
-
-            let _ = qdrant
-                .delete_points(qdrant_group, None, &selector.into(), None)
-                .await
-                .map_err(|err| {
-                    ServiceError::BadRequest(format!(
-                        "Could not delete points from qdrant: {}",
-                        err
-                    ))
-                })?;
-
-            Ok(())
-        }
-        Err(e) => {
-            log::error!("Failed to delete dataset: {}", e);
-            Err(ServiceError::BadRequest(
-                "Failed to delete dataset".to_string(),
-            ))
-        }
-    }
+    Ok(())
 }
 
 pub async fn update_dataset_query(
