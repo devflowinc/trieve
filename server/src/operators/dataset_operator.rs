@@ -107,15 +107,6 @@ pub async fn delete_dataset_by_id_query(
 
     let dataset = get_dataset_by_id_query(id, pool.clone()).await?;
 
-    let mut conn = pool.get().unwrap();
-
-    diesel::delete(datasets_columns::datasets.filter(datasets_columns::id.eq(id)))
-        .execute(&mut conn)
-        .map_err(|err| {
-            log::error!("Could not delete dataset: {}", err);
-            ServiceError::BadRequest("Could not delete dataset".to_string())
-        })?;
-
     let redis_url = get_env!("REDIS_URL", "REDIS_URL must be set");
     let client = redis::Client::open(redis_url).map_err(|err| {
         ServiceError::BadRequest(format!("Could not create redis client: {}", err))
@@ -148,6 +139,15 @@ pub async fn delete_dataset_by_id_query(
         .await
         .map_err(|err| {
             ServiceError::BadRequest(format!("Could not delete points from qdrant: {}", err))
+        })?;
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::delete(datasets_columns::datasets.filter(datasets_columns::id.eq(id)))
+        .execute(&mut conn)
+        .map_err(|err| {
+            log::error!("Could not delete dataset: {}", err);
+            ServiceError::BadRequest("Could not delete dataset".to_string())
         })?;
 
     Ok(())
