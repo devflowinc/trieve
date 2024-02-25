@@ -135,8 +135,14 @@ pub async fn delete_organization_query(
         organizations_columns::organizations.filter(organizations_columns::id.eq(org_id)),
     )
     .get_result(&mut conn)
-    .map_err(|_| DefaultError {
-        message: "Could not delete organization, try again",
+    .map_err(|e| {
+        log::error!(
+            "Error deleting organization in delete_organization_query: {:?}",
+            e
+        );
+        DefaultError {
+            message: "Could not delete organization, try again",
+        }
     })?;
 
     Ok(deleted_organization)
