@@ -51,7 +51,7 @@ pub async fn get_organization_by_id(
 
 /// delete_organization
 ///
-/// Delete an organization by its id. The auth'ed user must be an admin or owner of the organization to delete it.
+/// Delete an organization by its id. The auth'ed user must be an owner of the organization to delete it.
 #[utoipa::path(
     delete,
     path = "/organization/{organization_id}",
@@ -74,7 +74,7 @@ pub async fn delete_organization_by_id(
     req: HttpRequest,
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-    user: AdminOnly,
+    user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_id = organization_id.into_inner();
 
