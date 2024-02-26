@@ -512,7 +512,7 @@ pub async fn callback(
                 invitation.organization_id,
                 invitation.role.into(),
             );
-            add_user_to_organization(user_org, pool).await?;
+            add_user_to_organization(None, None, user_org, pool).await?;
         }
     }
 
@@ -520,8 +520,7 @@ pub async fn callback(
         ServiceError::InternalServerError("Failed to serialize user to JSON".into())
     })?;
 
-    Identity::login(&req.extensions(), user_string).unwrap();
-
+    Identity::login(&req.extensions(), user_string).expect("Failed to set login state for user");
     session.remove(OIDC_SESSION_KEY);
     session.remove("login_state");
 
