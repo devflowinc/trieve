@@ -1,9 +1,4 @@
-import {
-  BiLogosDiscord,
-  BiLogosGithub,
-  BiLogosTelegram,
-  BiLogosTwitter,
-} from "solid-icons/bi";
+import { BiLogosDiscord, BiLogosGithub, BiLogosTwitter } from "solid-icons/bi";
 import { SiMatrix } from "solid-icons/si";
 import ThemeModeController from "./ThemeModeController";
 
@@ -17,13 +12,6 @@ export const Footer = () => {
           class="hover:text-turquoise-500 dark:hover:text-acid-500"
         >
           <SiMatrix size={30} class="fill-current" />
-        </a>
-        <a
-          href="https://t.me/+vUOq6omKOn5lY2Zh"
-          target="_blank"
-          class="hover:text-turquoise-500 dark:hover:text-acid-500"
-        >
-          <BiLogosTelegram size={30} class="fill-current" />
         </a>
         <a
           href="https://discord.gg/CuJVfgZf54"

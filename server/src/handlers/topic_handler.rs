@@ -14,7 +14,7 @@ use utoipa::ToSchema;
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct CreateTopicData {
-    /// The model to use for the assistant's messages. This can be any model from the openrouter model list. If no model is provided, the gryphe/mythomax-l2-13b will be used.
+    /// The model to use for the assistant's messages. This can be any model from the openrouter model list. If no model is provided, the gpt-3.5-turbo will be used.
     pub model: Option<String>,
     /// The first message which will belong to the topic. The topic name is generated based on this message similar to how it works in the OpenAI chat UX if a name is not explicitly provided on the name request body key.
     pub first_user_message: Option<String>,

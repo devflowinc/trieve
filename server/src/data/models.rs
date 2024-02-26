@@ -981,7 +981,7 @@ impl ClientDatasetConfiguration {
                 .map(|s| s.to_string()),
             LINES_BEFORE_SHOW_MORE: configuration
                 .get("LINES_BEFORE_SHOW_MORE")
-                .unwrap_or(&json!(3))
+                .unwrap_or(&json!(10))
                 .as_u64()
                 .map(|u| u as usize),
             DATE_RANGE_VALUE: configuration

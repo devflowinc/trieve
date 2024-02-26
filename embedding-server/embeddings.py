@@ -138,7 +138,6 @@ async def sparse_encode(encodingRequest: SparseEncodeRequest, Authorization: Ann
                 },
                 status_code=401,
             )
-    print(encodingRequest)
     vec = []
     if encodingRequest.encode_type == "doc":
         vec = compute_vector(
