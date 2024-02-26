@@ -6,10 +6,12 @@ use crate::{
     errors::DefaultError,
     operators::{
         dataset_operator::delete_dataset_by_id_query, stripe_operator::refresh_redis_org_plan_sub,
+        user_operator::get_user_by_id_query,
     },
     randutil,
 };
-use actix_web::web;
+use actix_identity::Identity;
+use actix_web::{web, HttpMessage, HttpRequest};
 use diesel::{
     result::DatabaseErrorKind, upsert::on_constraint, ExpressionMethods, JoinOnDsl,
     NullableExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper, Table,
@@ -93,6 +95,8 @@ pub async fn update_organization_query(
 }
 
 pub async fn delete_organization_query(
+    req: Option<&HttpRequest>,
+    calling_user_id: Option<uuid::Uuid>,
     org_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Organization, DefaultError> {
@@ -144,6 +148,31 @@ pub async fn delete_organization_query(
             message: "Could not delete organization, try again",
         }
     })?;
+
+    if req.is_some() && calling_user_id.is_some() {
+        let user = get_user_by_id_query(
+            &calling_user_id.expect("calling_user_id cannot be null here"),
+            pool,
+        )?;
+
+        let slim_user: SlimUser = SlimUser::from_details(user.0, user.1, user.2);
+
+        let user_string = serde_json::to_string(&slim_user).map_err(|e| {
+            log::error!(
+                "Error serializing user in delete_organization_query: {:?}",
+                e
+            );
+            DefaultError {
+                message: "Could not serialize user",
+            }
+        })?;
+
+        Identity::login(
+            &req.expect("Cannot be none at this point").extensions(),
+            user_string,
+        )
+        .expect("Failed to refresh login for user");
+    }
 
     Ok(deleted_organization)
 }
