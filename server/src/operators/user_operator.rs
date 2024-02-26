@@ -63,7 +63,7 @@ pub fn get_user_by_id_query(
         ))
         .load::<(User, UserOrganization, Organization)>(&mut conn)
         .map_err(|_| DefaultError {
-            message: "Error loading user",
+            message: "Error loading user with organizations and roles for get_user_by_id_query",
         })?;
 
     match user_orgs_orgs.first() {
@@ -79,9 +79,17 @@ pub fn get_user_by_id_query(
                 .collect::<Vec<Organization>>();
             Ok((user, user_orgs, orgs))
         }
-        None => Err(DefaultError {
-            message: "User not found",
-        }),
+        None => {
+            let user = users_columns::users
+                .filter(users_columns::id.eq(user_id))
+                .select(User::as_select())
+                .first::<User>(&mut conn)
+                .map_err(|_| DefaultError {
+                    message: "Error loading user by itself for get_user_by_id_query",
+                })?;
+            
+            Ok((user, vec![], vec![]))
+        }
     }
 }
 
