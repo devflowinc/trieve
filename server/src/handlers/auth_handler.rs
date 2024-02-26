@@ -512,7 +512,7 @@ pub async fn callback(
                 invitation.organization_id,
                 invitation.role.into(),
             );
-            add_user_to_organization(user_org, pool)?;
+            add_user_to_organization(user_org, pool).await?;
         }
     }
 

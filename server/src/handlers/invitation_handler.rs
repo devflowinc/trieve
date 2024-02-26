@@ -90,15 +90,13 @@ pub async fn post_invitation(
     let existing_user_org_id = invitation_data.organization_id;
     let existing_user_role = invitation_data.user_role;
 
-    let added_user_to_org = web::block(move || {
-        add_existing_user_to_org(
-            existing_user_email,
-            existing_user_org_id,
-            existing_user_role.into(),
-            existing_user_pool,
-        )
-    })
-    .await?
+    let added_user_to_org = add_existing_user_to_org(
+        existing_user_email,
+        existing_user_org_id,
+        existing_user_role.into(),
+        existing_user_pool,
+    )
+    .await
     .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
     if added_user_to_org {
