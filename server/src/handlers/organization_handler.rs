@@ -10,7 +10,7 @@ use crate::{
         user_operator::add_user_to_organization,
     },
 };
-use actix_web::{web, HttpResponse};
+use actix_web::{web, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -165,6 +165,7 @@ pub struct CreateOrganizationData {
     )
 )]
 pub async fn create_organization(
+    req: HttpRequest,
     organization: web::Json<CreateOrganizationData>,
     pool: web::Data<Pool>,
     user: LoggedUser,
@@ -179,6 +180,8 @@ pub async fn create_organization(
     };
 
     add_user_to_organization(
+        Some(&req),
+        Some(user.id),
         UserOrganization::from_details(user.id, created_organization.id, UserRole::Owner),
         pool,
     )

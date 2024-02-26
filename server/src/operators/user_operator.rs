@@ -9,7 +9,8 @@ use crate::{
     data::models::{Pool, User},
     errors::DefaultError,
 };
-use actix_web::web;
+use actix_identity::Identity;
+use actix_web::{web, HttpMessage, HttpRequest};
 use argon2::Config;
 use once_cell::sync::Lazy;
 use rand::distributions::Alphanumeric;
@@ -107,6 +108,8 @@ pub async fn add_existing_user_to_org(
 
     match user.first() {
         Some(user) => Ok(add_user_to_organization(
+            None,
+            None,
             UserOrganization::from_details(user.id, organization_id, user_role),
             pool,
         )
@@ -406,12 +409,16 @@ pub fn create_user_query(
 }
 
 pub async fn add_user_to_organization(
+    req: Option<&HttpRequest>,
+    calling_user_id: Option<uuid::Uuid>,
     user_org: UserOrganization,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
 
     let org_id_refresh = user_org.organization_id.clone();
+    let user_id_refresh = user_org.user_id.clone();
+    let user_id_refresh_pool = pool.clone();
 
     let mut conn = pool.get().unwrap();
 
@@ -428,6 +435,25 @@ pub async fn add_user_to_organization(
             log::error!("Error refreshing redis org plan sub: {:?}", e);
             ServiceError::InternalServerError("Failed to refresh redis org plan sub".to_string())
         })?;
+
+    if req.is_some() && calling_user_id.is_some_and(|id| id == user_id_refresh) {
+        let user = get_user_by_id_query(&user_id_refresh, user_id_refresh_pool).map_err(|e| {
+            log::error!("Error getting user by id: {:?}", e);
+            ServiceError::InternalServerError("Failed to get user by id".to_string())
+        })?;
+
+        let slim_user: SlimUser = SlimUser::from_details(user.0, user.1, user.2);
+
+        let user_string = serde_json::to_string(&slim_user).map_err(|_| {
+            ServiceError::InternalServerError("Failed to serialize user to JSON".into())
+        })?;
+
+        Identity::login(
+            &req.expect("Cannot be none at this point").extensions(),
+            user_string,
+        )
+        .expect("Failed to refresh login for user");
+    }
 
     Ok(())
 }
