@@ -4,6 +4,7 @@ use crate::data::models::{
 use crate::diesel::prelude::*;
 use crate::errors::ServiceError;
 use crate::handlers::auth_handler::LoggedUser;
+use crate::operators::stripe_operator::refresh_redis_org_plan_sub;
 use crate::{
     data::models::{Pool, User},
     errors::DefaultError,
@@ -83,7 +84,7 @@ pub fn get_user_by_id_query(
     }
 }
 
-pub fn add_existing_user_to_org(
+pub async fn add_existing_user_to_org(
     email: String,
     organization_id: uuid::Uuid,
     user_role: UserRole,
@@ -109,6 +110,7 @@ pub fn add_existing_user_to_org(
             UserOrganization::from_details(user.id, organization_id, user_role),
             pool,
         )
+        .await
         .is_ok()),
         None => Ok(false),
     }
@@ -403,19 +405,28 @@ pub fn create_user_query(
     Ok(user_org)
 }
 
-pub fn add_user_to_organization(
-    user_organizations: UserOrganization,
+pub async fn add_user_to_organization(
+    user_org: UserOrganization,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
 
+    let org_id_refresh = user_org.organization_id.clone();
+
     let mut conn = pool.get().unwrap();
 
     diesel::insert_into(user_organizations_columns::user_organizations)
-        .values(user_organizations)
+        .values(user_org)
         .execute(&mut conn)
         .map_err(|_| {
             ServiceError::InternalServerError("Failed to add user to organization".to_string())
+        })?;
+
+    refresh_redis_org_plan_sub(org_id_refresh, pool)
+        .await
+        .map_err(|e| {
+            log::error!("Error refreshing redis org plan sub: {:?}", e);
+            ServiceError::InternalServerError("Failed to refresh redis org plan sub".to_string())
         })?;
 
     Ok(())

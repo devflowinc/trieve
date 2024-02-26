@@ -178,14 +178,11 @@ pub async fn create_organization(
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?
     };
 
-    web::block(move || {
-        add_user_to_organization(
-            UserOrganization::from_details(user.id, created_organization.id, UserRole::Owner),
-            pool,
-        )
-    })
-    .await
-    .map_err(|_| ServiceError::BadRequest("Thread pool error".to_owned()))??;
+    add_user_to_organization(
+        UserOrganization::from_details(user.id, created_organization.id, UserRole::Owner),
+        pool,
+    )
+    .await?;
 
     Ok(HttpResponse::Ok().json(created_organization))
 }
