@@ -71,13 +71,14 @@ pub async fn get_organization_by_id(
     )
 )]
 pub async fn delete_organization_by_id(
+    req: HttpRequest,
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-    _user: AdminOnly,
+    user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_id = organization_id.into_inner();
 
-    let org = delete_organization_query(organization_id.into(), pool)
+    let org = delete_organization_query(Some(&req), Some(user.0.id), organization_id.into(), pool)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
