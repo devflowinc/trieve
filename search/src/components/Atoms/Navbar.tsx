@@ -1,6 +1,5 @@
 import { A } from "@solidjs/router";
 import { Show, createSignal } from "solid-js";
-import RegisterOrUserProfile from "../RegisterOrUserProfile";
 import { useStore } from "@nanostores/solid";
 import { clientConfig } from "../../stores/envsStore";
 import { currentDataset } from "../../stores/datasetStore";
@@ -63,16 +62,6 @@ export const Navbar = () => {
                   Upload Files
                 </A>
               </Show>
-              <a
-                href="https://docs.trieve.ai"
-                target="_blank"
-                class="hidden min-[420px]:text-lg min-[920px]:block"
-              >
-                Docs
-              </a>
-              <div>
-                <RegisterOrUserProfile />
-              </div>
             </div>
           </div>
           <div class="-mr-2 flex md:hidden">
@@ -142,13 +131,6 @@ export const Navbar = () => {
               Upload Files
             </a>
           </Show>
-          <a
-            href="https://docs.trieve.ai"
-            target="_blank"
-            class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
-          >
-            Docs
-          </a>
         </div>
       </div>
     </nav>

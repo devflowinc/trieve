@@ -8,9 +8,11 @@ import {
   For,
   Setter,
   Show,
+  Switch,
   createEffect,
   createMemo,
   createSignal,
+  Match,
 } from "solid-js";
 import {
   ChunkBookmarksDTO,
@@ -97,6 +99,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const [copied, setCopied] = createSignal(false);
   const [showImageModal, setShowImageModal] = createSignal(false);
   const [showMetadata, setShowMetadata] = createSignal(false);
+  const [expandMetadata, setExpandMetadata] = createSignal(false);
 
   const fileName = createMemo(() => {
     const fileNameKey = $envs().FILE_NAME_KEY;
@@ -467,32 +470,57 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                   </span>
                 </div>
               </Show>
-              <For each={Object.keys(props.chunk.metadata ?? {})}>
-                {(key) => (
-                  <>
-                    <Show
-                      when={
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                        !frontMatterValsToHide?.find((val) => val == key) &&
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        (props.chunk.metadata as any)[key]
-                      }
-                    >
-                      <div class="flex space-x-2">
-                        <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                          {key}:{" "}
-                        </span>
-                        <span class="line-clamp-1 break-all">
-                          {props.chunk.metadata &&
-                            indirectHasOwnProperty(props.chunk.metadata, key) &&
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
-                            (props.chunk.metadata as any)[key]}
-                        </span>
-                      </div>
-                    </Show>
-                  </>
-                )}
-              </For>
+              <Show when={Object.keys(props.chunk.metadata ?? {}).length > 0}>
+                <button
+                  class="mt-2 flex w-fit items-center space-x-1 rounded-md border bg-neutral-200/50 px-2 py-1 font-semibold text-magenta-500 hover:bg-neutral-200/90 dark:text-magenta-400"
+                  onClick={() => setExpandMetadata((prev) => !prev)}
+                >
+                  <span>
+                    {expandMetadata() ? "Collapse Metadata" : "Expand Metadata"}
+                  </span>
+                  <Switch>
+                    <Match when={expandMetadata()}>
+                      <BiRegularChevronUp class="h-5 w-5 fill-current" />
+                    </Match>
+                    <Match when={!expandMetadata()}>
+                      <BiRegularChevronDown class="h-5 w-5 fill-current" />
+                    </Match>
+                  </Switch>
+                </button>
+              </Show>
+              <Show when={expandMetadata()}>
+                <div class="pl-2">
+                  <For each={Object.keys(props.chunk.metadata ?? {})}>
+                    {(key) => (
+                      <>
+                        <Show
+                          when={
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                            !frontMatterValsToHide?.find((val) => val == key) &&
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            (props.chunk.metadata as any)[key]
+                          }
+                        >
+                          <div class="flex space-x-2">
+                            <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                              {key}:{" "}
+                            </span>
+                            <span class="line-clamp-1 break-all">
+                              {props.chunk.metadata &&
+                                indirectHasOwnProperty(
+                                  props.chunk.metadata,
+                                  key,
+                                ) &&
+                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
+                                (props.chunk.metadata as any)[key]}
+                            </span>
+                          </div>
+                        </Show>
+                      </>
+                    )}
+                  </For>
+                </div>
+              </Show>
             </div>
           </div>
           <div class="mb-1 h-1 w-full border-b border-neutral-300 dark:border-neutral-600" />

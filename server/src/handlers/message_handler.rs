@@ -37,7 +37,7 @@ use utoipa::ToSchema;
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct CreateMessageData {
-    /// The model to use for the assistant's messages. This can be any model from the openrouter model list. If no model is provided, the gryphe/mythomax-l2-13b will be used.
+    /// The model to use for the assistant's messages. This can be any model from the openrouter model list. If no model is provided, gpt-3.5-turbo will be used.
     pub model: Option<String>,
     /// The content of the user message to attach to the topic and then generate an assistant message in response to.
     pub new_message_content: String,
@@ -235,7 +235,7 @@ pub async fn get_all_topic_messages(
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct RegenerateMessageData {
-    /// The model to use for the assistant generative inferences. This can be any model from the openrouter model list. If no model is provided, the gryphe/mythomax-l2-13b will be used.~
+    /// The model to use for the assistant generative inferences. This can be any model from the openrouter model list. If no model is provided, the gpt-3.5-turbo will be used.~
     model: Option<String>,
     /// The id of the topic to regenerate the last message for.
     topic_id: uuid::Uuid,
@@ -249,7 +249,7 @@ pub struct RegenerateMessageData {
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct EditMessageData {
-    /// The model to use for the assistant generative inferences. This can be any model from the openrouter model list. If no model is provided, the gryphe/mythomax-l2-13b will be used.~
+    /// The model to use for the assistant generative inferences. This can be any model from the openrouter model list. If no model is provided, the gpt-3.5-turbo will be used.~
     model: Option<String>,
     /// The id of the topic to edit the message at the given sort order for.
     topic_id: uuid::Uuid,

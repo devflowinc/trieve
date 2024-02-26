@@ -8,7 +8,7 @@ module.exports = {
   content: ["./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}"],
   theme: {
     fontFamily: {
-      sans: ["Quicksand", ...defaultTheme.fontFamily.sans],
+      sans: ["Maven Pro", ...defaultTheme.fontFamily.sans],
     },
     extend: {
       colors: {

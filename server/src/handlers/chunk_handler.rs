@@ -1093,7 +1093,7 @@ pub async fn get_recommended_chunks(
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct GenerateChunksRequest {
-    /// The model to use for the chat. This can be any model from the openrouter model list. If no model is provided, gryphe/mythomax-l2-13b will be used.
+    /// The model to use for the chat. This can be any model from the openrouter model list. If no model is provided, gpt-3.5-turbo will be used.
     pub model: Option<String>,
     /// The previous messages to be placed into the chat history. The last message in this array will be the prompt for the model to inference on. The length of this array must be at least 1.
     pub prev_messages: Vec<ChatMessageProxy>,

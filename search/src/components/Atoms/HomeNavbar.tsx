@@ -1,5 +1,4 @@
 import { Show, createSignal } from "solid-js";
-import RegisterOrUserProfile from "../RegisterOrUserProfile";
 import { OrganizationSelectBox } from "../OrganizationSelectBox";
 import { DatasetSelectBox } from "../DatasetSelectBox";
 import { useStore } from "@nanostores/solid";
@@ -56,16 +55,6 @@ export const HomeNavbar = () => {
                   Upload Files
                 </A>
               </Show>
-              <a
-                href="https://docs.trieve.ai"
-                target="_blank"
-                class="hidden min-[420px]:text-lg min-[720px]:block"
-              >
-                Docs
-              </a>
-              <div>
-                <RegisterOrUserProfile />
-              </div>
             </div>
           </div>
           <div class="-mr-2 flex md:hidden">
@@ -127,13 +116,6 @@ export const HomeNavbar = () => {
               Upload Files
             </a>
           </Show>
-          <a
-            href="https://docs.trieve.ai"
-            target="_blank"
-            class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
-          >
-            Docs
-          </a>
         </div>
       </div>
     </nav>
