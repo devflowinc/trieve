@@ -81,7 +81,7 @@ pub fn assemble_qdrant_filter(
     }
 
     if let Some(time_range) = time_range {
-        if time_range.0 != "null" && time_range.1 != "null" {
+        if time_range.0 != "" && time_range.1 != "" {
             filter.must.push(Condition::range(
                 "time_stamp",
                 Range {
@@ -115,7 +115,7 @@ pub fn assemble_qdrant_filter(
                     ),
                 },
             ));
-        } else if time_range.1 == "null" {
+        } else if time_range.1 == "" {
             filter.must.push(Condition::range(
                 "time_stamp",
                 Range {
@@ -137,7 +137,7 @@ pub fn assemble_qdrant_filter(
                     lte: None,
                 },
             ));
-        } else if time_range.0 == "null" {
+        } else if time_range.0 == "" {
             filter.must.push(Condition::range(
                 "time_stamp",
                 Range {
