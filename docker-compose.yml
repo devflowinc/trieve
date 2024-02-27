@@ -223,7 +223,7 @@ services:
       - API_KEY=${OPENAI_API_KEY}
 
   keycloak:
-    image: quay.io/keycloak/keycloak:23.0.1
+    image: quay.io/keycloak/keycloak:23.0.7
     container_name: keycloak
     depends_on:
       keycloak-db:
@@ -231,8 +231,8 @@ services:
     environment:
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=aintsecure
-      - KC_DATABASE=postgres
-      - KC_DATABASE_URL=jdbc:postgresql://keycloak-db:5432/keycloak
+      - KC_DB=postgres
+      - KC_DATABASE_URL=jdbc:postgresql://keycloak-db:5434/keycloak
       - KC_DB_USERNAME=postgres
       - KC_DB_PASSWORD=password
       - KC_HEALTH_ENABLED=true
