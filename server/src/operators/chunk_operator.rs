@@ -255,10 +255,34 @@ pub fn get_metadata_from_ids_query(
 pub async fn insert_chunk_metadata_query(
     chunk_data: ChunkMetadata,
     file_uuid: Option<uuid::Uuid>,
+    dataset_uuid: uuid::Uuid,
+    upsert_by_tracking_id: bool,
     pool: web::Data<Pool>,
 ) -> Result<ChunkMetadata, DefaultError> {
     use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::chunk_metadata::dsl::*;
+
+    if upsert_by_tracking_id && chunk_data.tracking_id.is_some() {
+        if let Ok(existing_chunk) = get_metadata_from_tracking_id_query(
+            chunk_data
+                .tracking_id
+                .clone()
+                .expect("tracking_id must be Some at this point"),
+            chunk_data.dataset_id,
+            pool.clone(),
+        ) {
+            let mut update_chunk = chunk_data.clone();
+            update_chunk.id = existing_chunk.id;
+            update_chunk.created_at = existing_chunk.created_at;
+            update_chunk.qdrant_point_id = existing_chunk.qdrant_point_id;
+
+            let updated_chunk =
+                update_chunk_metadata_query(update_chunk, file_uuid, dataset_uuid, pool.clone())
+                    .await?;
+
+            return Ok(updated_chunk);
+        }
+    }
 
     let mut conn = pool.get().unwrap();
 
@@ -357,14 +381,14 @@ pub async fn update_chunk_metadata_query(
     file_uuid: Option<uuid::Uuid>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
+) -> Result<ChunkMetadata, DefaultError> {
     use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let mut conn = pool.get().unwrap();
 
     let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
-        diesel::update(
+        let updated_chunks: Vec<ChunkMetadata> = diesel::update(
             chunk_metadata_columns::chunk_metadata
                 .filter(chunk_metadata_columns::id.eq(chunk_data.id))
                 .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid)),
@@ -377,7 +401,7 @@ pub async fn update_chunk_metadata_query(
             chunk_metadata_columns::tag_set.eq(chunk_data.tag_set),
             chunk_metadata_columns::weight.eq(chunk_data.weight),
         ))
-        .execute(conn)?;
+        .load(conn)?;
 
         if file_uuid.is_some() {
             diesel::insert_into(chunk_files_columns::chunk_files)
@@ -387,19 +411,24 @@ pub async fn update_chunk_metadata_query(
                 ))
                 .execute(conn)?;
         }
-        Ok(())
+
+        Ok(updated_chunks)
     });
 
     match transaction_result {
-        Ok(_) => (),
-        Err(_) => {
-            return Err(DefaultError {
-                message: "Failed to update chunk metadata",
-            })
+        Ok(updated_chunks) => {
+            if let Some(updated_chunk) = updated_chunks.first() {
+                Ok(updated_chunk.clone())
+            } else {
+                Err(DefaultError {
+                    message: "Failed to update chunk metadata",
+                })
+            }
         }
-    };
-
-    Ok(())
+        Err(_) => Err(DefaultError {
+            message: "Failed to update chunk metadata",
+        }),
+    }
 }
 
 pub enum TransactionResult {

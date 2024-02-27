@@ -377,6 +377,7 @@ pub async fn create_chunks_with_handler(
             metadata: metadata.clone(),
             group_ids: Some(vec![group_id]),
             tracking_id: None,
+            upsert_by_tracking_id: None,
             time_stamp: time_stamp.clone(),
             chunk_vector: None,
             weight: None,

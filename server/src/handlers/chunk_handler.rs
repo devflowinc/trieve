@@ -49,6 +49,8 @@ pub struct CreateChunkData {
     pub chunk_vector: Option<Vec<f32>>,
     /// Tracking_id is a string which can be used to identify a chunk. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk.
     pub tracking_id: Option<String>,
+    /// Upsert when a chunk with the same tracking_id exists. By default this is false, and the request will fail if a chunk with the same tracking_id exists. If this is true, the chunk will be updated if a chunk with the same tracking_id exists.
+    pub upsert_by_tracking_id: Option<bool>,
     /// Group ids are the ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. Necessary because this route queues the chunk for ingestion and the chunk may not exist yet immediatley after response.
     pub group_ids: Option<Vec<uuid::Uuid>>,
     /// Time_stamp should be an ISO 8601 combined date and time without timezone. It is used for time window filtering and recency-biasing search results.
@@ -104,7 +106,9 @@ pub struct ReturnCreatedChunk {
 pub struct IngestionMessage {
     pub chunk_metadata: ChunkMetadata,
     pub chunk: CreateChunkData,
+    pub dataset_id: uuid::Uuid,
     pub dataset_config: serde_json::Value,
+    pub upsert_by_tracking_id: bool,
 }
 
 /// create_chunk
@@ -194,7 +198,9 @@ pub async fn create_chunk(
     let ingestion_message = IngestionMessage {
         chunk_metadata: chunk_metadata.clone(),
         chunk: chunk.clone(),
-        dataset_config: dataset_org_plan_sub.dataset.server_configuration
+        dataset_id: count_dataset_id.clone(),
+        dataset_config: dataset_org_plan_sub.dataset.server_configuration,
+        upsert_by_tracking_id: chunk.upsert_by_tracking_id.unwrap_or(false),
     };
 
     let mut pub_client = redis_client
@@ -657,9 +663,7 @@ fn parse_query(query: String) -> ParsedQuery {
     let re = Regex::new(r#""(?:[^"\\]|\\.)*""#).expect("Regex pattern is always valid");
     let quote_words: Vec<String> = re
         .captures_iter(&query)
-        .map(|capture| {
-            capture[0].to_string()
-        })
+        .map(|capture| capture[0].to_string())
         .filter(|word| !word.is_empty())
         .collect::<Vec<String>>();
 
@@ -1153,8 +1157,7 @@ pub async fn generate_off_chunks(
 
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
-    let base_url = dataset_config
-        .LLM_BASE_URL;
+    let base_url = dataset_config.LLM_BASE_URL;
     let default_model = dataset_config.LLM_DEFAULT_MODEL;
 
     let base_url = if base_url.is_empty() {
@@ -1256,10 +1259,7 @@ pub async fn generate_off_chunks(
     });
 
     let parameters = ChatCompletionParameters {
-        model: data
-            .model
-            .clone()
-            .unwrap_or(default_model),
+        model: data.model.clone().unwrap_or(default_model),
         stream: stream_response,
         messages,
         temperature: None,

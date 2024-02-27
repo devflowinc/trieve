@@ -112,28 +112,28 @@ async fn upload_chunk(
     mut payload: IngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
 ) -> Result<(), ServiceError> {
+    let mut new_chunk_id = payload.chunk_metadata.id;
+    let mut qdrant_point_id = payload
+        .chunk_metadata
+        .qdrant_point_id
+        .unwrap_or(uuid::Uuid::new_v4());
+
     let dataset_config = ServerDatasetConfiguration::from_json(payload.dataset_config);
     let embedding_vector = if let Some(embedding_vector) = payload.chunk.chunk_vector.clone() {
         embedding_vector
     } else {
-        create_embedding(
-            &payload.chunk_metadata.content,
-            dataset_config.clone(),
-        )
-        .await
-        .map_err(|err| {
-            ServiceError::InternalServerError(format!("Failed to create embedding: {:?}", err))
-        })?
+        create_embedding(&payload.chunk_metadata.content, dataset_config.clone())
+            .await
+            .map_err(|err| {
+                ServiceError::InternalServerError(format!("Failed to create embedding: {:?}", err))
+            })?
     };
 
     let mut collision: Option<uuid::Uuid> = None;
 
-    let duplicate_distance_threshold = dataset_config
-        .DUPLICATE_DISTANCE_THRESHOLD;
+    let duplicate_distance_threshold = dataset_config.DUPLICATE_DISTANCE_THRESHOLD;
 
-    if duplicate_distance_threshold > 1.0
-        || dataset_config.COLLISIONS_ENABLED
-    {
+    if duplicate_distance_threshold < 1.0 || dataset_config.COLLISIONS_ENABLED {
         let first_semantic_result = global_unfiltered_top_match_query(
             embedding_vector.clone(),
             payload.chunk_metadata.dataset_id,
@@ -204,19 +204,22 @@ async fn upload_chunk(
     }
     //if collision is nil and embedding vector is some, insert chunk with no collision
     else {
-        let qdrant_point_id = uuid::Uuid::new_v4();
-
         payload.chunk_metadata.qdrant_point_id = Some(qdrant_point_id);
 
-        insert_chunk_metadata_query(
+        let inserted_chunk = insert_chunk_metadata_query(
             payload.chunk_metadata.clone(),
             payload.chunk.file_id,
+            payload.dataset_id,
+            payload.upsert_by_tracking_id,
             web_pool.clone(),
         )
         .await
         .map_err(|err| {
             ServiceError::InternalServerError(format!("Failed to insert chunk metadata: {:?}", err))
         })?;
+
+        qdrant_point_id = inserted_chunk.qdrant_point_id.unwrap_or(qdrant_point_id);
+        new_chunk_id = inserted_chunk.id;
 
         create_new_qdrant_point_query(
             qdrant_point_id,
@@ -236,7 +239,7 @@ async fn upload_chunk(
     if let Some(group_ids_to_bookmark) = payload.chunk.group_ids {
         for group_id_to_bookmark in group_ids_to_bookmark {
             let chunk_group_bookmark =
-                ChunkGroupBookmark::from_details(group_id_to_bookmark, payload.chunk_metadata.id);
+                ChunkGroupBookmark::from_details(group_id_to_bookmark, new_chunk_id);
 
             let _ = create_chunk_bookmark_query(web_pool.clone(), chunk_group_bookmark).map_err(
                 |err| {
@@ -248,16 +251,14 @@ async fn upload_chunk(
                 },
             );
 
-            if let Some(qdrant_point_id) = payload.chunk_metadata.qdrant_point_id {
-                add_bookmark_to_qdrant_query(qdrant_point_id, group_id_to_bookmark)
-                    .await
-                    .map_err(|err| {
-                        ServiceError::InternalServerError(format!(
-                            "Failed to add bookmark to qdrant: {:?}",
-                            err
-                        ))
-                    })?;
-            }
+            add_bookmark_to_qdrant_query(qdrant_point_id, group_id_to_bookmark)
+                .await
+                .map_err(|err| {
+                    ServiceError::InternalServerError(format!(
+                        "Failed to add bookmark to qdrant: {:?}",
+                        err
+                    ))
+                })?;
         }
     }
 
