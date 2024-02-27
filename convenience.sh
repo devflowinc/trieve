@@ -37,6 +37,7 @@ reset_script_redis() {
 
 start_local_services() {
     echo "Starting local services..."
+    COMPOSE_PROFILE=dev docker compose up 
     docker compose up -d db
     docker compose up -d redis
     docker compose up -d qdrant-database
