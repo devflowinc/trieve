@@ -188,7 +188,7 @@ pub struct ChunkMetadataWithCount {
     pub count: i64,
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema, AsChangeset)]
 #[diesel(table_name = chunk_metadata)]
 pub struct ChunkMetadata {
     pub id: uuid::Uuid,

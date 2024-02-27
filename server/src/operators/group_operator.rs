@@ -268,6 +268,8 @@ pub fn create_chunk_bookmark_query(
 
     diesel::insert_into(chunk_group_bookmarks)
         .values(&bookmark)
+        .on_conflict((group_id, chunk_metadata_id))
+        .do_nothing()
         .execute(&mut conn)
         .map_err(|_err| {
             log::error!("Error creating bookmark {:}", _err);
