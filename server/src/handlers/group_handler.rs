@@ -179,7 +179,7 @@ pub struct GetGroupByTrackingIDData {
 
 #[utoipa::path(
     get,
-    path = "/chunk_group/{tracking_id}",
+    path = "/chunk_group/tracking_id/{tracking_id}",
     context_path = "/api",
     tag = "chunk_group",
     responses(
@@ -201,7 +201,7 @@ pub async fn get_group_by_tracking_id(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _user: LoggedUser,
     pool: web::Data<Pool>,
-) -> Result<ChunkGroup, actix_web::Error> {
+) -> Result<HttpResponse, actix_web::Error> {
     let group = web::block(move || {
         get_group_from_tracking_id_query(
             data.tracking_id.clone(),
@@ -212,11 +212,11 @@ pub async fn get_group_by_tracking_id(
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    Ok(group)
+    Ok(HttpResponse::Ok().json(group))
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]
-pub struct UpdateChunkGroupByTrackingIDData {
+pub struct UpdateGroupByTrackingIDData {
     /// Tracking Id of the chunk_group to update.
     pub tracking_id: String,
     /// Name to assign to the chunk_group. Does not need to be unique. If not provided, the name will not be updated.
@@ -227,7 +227,7 @@ pub struct UpdateChunkGroupByTrackingIDData {
 
 #[utoipa::path(
     put,
-    path = "/chunk_group/{tracking_id}",
+    path = "/chunk_group/tracking_id",
     context_path = "/api",
     tag = "chunk_group",
     request_body(content = UpdateChunkGroupByTrackingIDData, description = "JSON request payload to update a chunkGroup", content_type = "application/json"),
@@ -245,7 +245,7 @@ pub struct UpdateChunkGroupByTrackingIDData {
     )
 )]
 pub async fn update_group_by_tracking_id(
-    data: web::Json<UpdateChunkGroupByTrackingIDData>,
+    data: web::Json<UpdateGroupByTrackingIDData>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _user: AdminOnly,
     pool: web::Data<Pool>,
@@ -279,7 +279,7 @@ pub struct DeleteGroupByTrackingIDData {
 
 #[utoipa::path(
     delete,
-    path = "/chunk_group/{tracking_id}",
+    path = "/chunk_group/tracking_id/{tracking_id}",
     context_path = "/api",
     tag = "chunk_group",
     responses(
