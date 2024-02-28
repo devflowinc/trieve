@@ -230,7 +230,7 @@ pub struct UpdateGroupByTrackingIDData {
     path = "/chunk_group/tracking_id",
     context_path = "/api",
     tag = "chunk_group",
-    request_body(content = UpdateChunkGroupByTrackingIDData, description = "JSON request payload to update a chunkGroup", content_type = "application/json"),
+    request_body(content = UpdateGroupByTrackingIDData, description = "JSON request payload to update a chunkGroup", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the chunkGroup was updated"),
         (status = 400, description = "Service error relating to updating the chunkGroup", body = ErrorResponseBody),
