@@ -2,7 +2,7 @@ use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFile, ChunkGroupBookmark, ChunkMetadataWithFileData,
-        DatasetAndOrgWithSubAndPlan, Pool,
+        DatasetAndOrgWithSubAndPlan, Pool, UnifiedId,
     },
     errors::ServiceError,
     operators::{
@@ -15,29 +15,22 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 pub async fn dataset_owns_group(
-    group_id: uuid::Uuid,
+    unified_group_id: UnifiedId,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<ChunkGroup, actix_web::Error> {
-    let group = web::block(move || get_group_by_id_query(group_id, dataset_id, pool))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    if group.dataset_id != dataset_id {
-        return Err(ServiceError::Forbidden.into());
-    }
-
-    Ok(group)
-}
-
-pub async fn dataset_owns_group_by_tracking_id(
-    tracking_id: String,
-    dataset_id: uuid::Uuid,
-    pool: web::Data<Pool>,
-) -> Result<ChunkGroup, actix_web::Error> {
-    let group = web::block(move || get_group_from_tracking_id_query(tracking_id, dataset_id, pool))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let group = match unified_group_id {
+        UnifiedId::TrieveUuid(group_id) => {
+            web::block(move || get_group_by_id_query(group_id, dataset_id, pool))
+                .await?
+                .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+        },
+        UnifiedId::TrackingId(tracking_id) => {
+            web::block(move || get_group_from_tracking_id_query(tracking_id, dataset_id, pool))
+                .await?
+                .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+        }
+    };
 
     if group.dataset_id != dataset_id {
         return Err(ServiceError::Forbidden.into());
@@ -250,8 +243,8 @@ pub async fn update_group_by_tracking_id(
     _user: AdminOnly,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let group = dataset_owns_group_by_tracking_id(
-        data.tracking_id.clone(),
+    let group = dataset_owns_group(
+        UnifiedId::TrackingId(data.tracking_id.clone()),
         dataset_org_plan_sub.dataset.id,
         pool.clone(),
     )
@@ -306,7 +299,7 @@ pub async fn delete_group_by_tracking_id(
     let tracking_id = tracking_id.into_inner();
 
     let group =
-        dataset_owns_group_by_tracking_id(tracking_id, dataset_org_plan_sub.dataset.id, pool)
+        dataset_owns_group(UnifiedId::TrackingId(tracking_id), dataset_org_plan_sub.dataset.id, pool)
             .await?;
 
     delete_group_by_id_query(
@@ -357,7 +350,7 @@ pub async fn delete_chunk_group(
     let delete_group_pool = pool.clone();
     let group_id = group_id.into_inner();
 
-    dataset_owns_group(group_id, dataset_org_plan_sub.dataset.id, pool).await?;
+    dataset_owns_group(UnifiedId::TrieveUuid(group_id), dataset_org_plan_sub.dataset.id, pool).await?;
 
     delete_group_by_id_query(
         group_id,
@@ -414,7 +407,7 @@ pub async fn update_chunk_group(
 
     let pool2 = pool.clone();
 
-    let group = dataset_owns_group(group_id, dataset_org_plan_sub.dataset.id, pool).await?;
+    let group = dataset_owns_group(UnifiedId::TrieveUuid(group_id), dataset_org_plan_sub.dataset.id, pool).await?;
 
     web::block(move || {
         update_chunk_group_query(
@@ -471,7 +464,7 @@ pub async fn add_bookmark(
     let group_id = group_id.into_inner();
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
-    dataset_owns_group(group_id, dataset_id, pool).await?;
+    dataset_owns_group(UnifiedId::TrieveUuid(group_id), dataset_id, pool).await?;
 
     let qdrant_point_id = web::block(move || {
         create_chunk_bookmark_query(
@@ -490,6 +483,67 @@ pub async fn add_bookmark(
 
     Ok(HttpResponse::NoContent().finish())
 }
+
+#[derive(Deserialize, Serialize, ToSchema)]
+pub struct AddChunkToGroupByTrackingIdData {
+    /// Id of the chunk to make a member of the group. Think of this as "bookmark"ing a chunk.
+    pub chunk_id: uuid::Uuid,
+}
+
+/// add_chunk_to_group_by_tracking_id
+///
+/// Route to add a chunk to a group. Think of a bookmark as a chunk which is a member of a group.
+#[utoipa::path(
+    post,
+    path = "/chunk_group/tracking_id/{tracking_id}",
+    context_path = "/api",
+    tag = "chunk_group",
+    request_body(content = AddChunkToGroupData, description = "JSON request payload to add a chunk to a group (bookmark it)", content_type = "application/json"),
+    responses(
+        (status = 204, description = "Confirmation that the chunk was added to the group (bookmark'ed)."),
+        (status = 400, description = "Service error relating to getting the groups that the chunk is in.", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("group_id" = uuid, description = "Id of the group to add the chunk to as a bookmark"),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+        ("Cookie" = ["admin"])
+    )
+)]
+pub async fn add_chunk_to_group_by_tracking_id(
+    body: web::Json<AddChunkToGroupByTrackingIdData>,
+    tracking_id: web::Path<String>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    pool: web::Data<Pool>,
+    _user: AdminOnly,
+) -> Result<HttpResponse, actix_web::Error> {
+    let pool2 = pool.clone();
+    let chunk_metadata_id = body.chunk_id;
+    let dataset_id = dataset_org_plan_sub.dataset.id;
+
+    let group = dataset_owns_group(UnifiedId::TrackingId(tracking_id.into_inner()), dataset_id, pool).await?;
+    let group_id = group.id;
+
+    let qdrant_point_id = web::block(move || {
+        create_chunk_bookmark_query(
+            pool2,
+            ChunkGroupBookmark::from_details(group_id, chunk_metadata_id),
+        )
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    if let Some(qdrant_point_id) = qdrant_point_id {
+        add_bookmark_to_qdrant_query(qdrant_point_id, group_id)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    }
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct BookmarkData {
     pub chunks: Vec<ChunkMetadataWithFileData>,
@@ -536,9 +590,75 @@ pub async fn get_all_bookmarks(
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let bookmarks = {
-        web::block(move || get_bookmarks_for_group_query(group_id, page, None, dataset_id, pool))
-            .await?
-            .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?
+        web::block(move || {
+            get_bookmarks_for_group_query(
+                UnifiedId::TrieveUuid(group_id),
+                page,
+                None,
+                dataset_id,
+                pool,
+            )
+        })
+        .await?
+        .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?
+    };
+
+    Ok(HttpResponse::Ok().json(BookmarkData {
+        chunks: bookmarks.metadata,
+        group: bookmarks.group,
+        total_pages: bookmarks.total_pages,
+    }))
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+pub struct GetAllBookmarksByTrackingIdData {
+    pub tracking_id: String,
+    pub page: Option<u64>,
+}
+
+/// get_all_bookmarks_by_tracking_id
+///
+/// Route to get all bookmarks for a group. Think of a bookmark as a chunk which is a member of a group. The response is paginated, with each page containing 10 chunks (bookmarks). Support for custom page size is coming soon.
+#[utoipa::path(
+    get,
+    path = "/chunk_group/tracking_id/{group_tracking_id}/{page}",
+    context_path = "/api",
+    tag = "chunk_group",
+    responses(
+        (status = 200, description = "Chunks present within the specified group", body = BookmarkData),
+        (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("group_tracking_id" = uuid::Uuid, description = "The id of the group to get the chunks from"),
+        ("page" = u64, description = "The page of chunks to get from the group"),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
+    )
+)]
+pub async fn get_all_bookmarks_by_tracking_id(
+    path_data: web::Path<GetAllBookmarksByTrackingIdData>,
+    pool: web::Data<Pool>,
+    _user: LoggedUser,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, actix_web::Error> {
+    let page = path_data.page.unwrap_or(1);
+    let dataset_id = dataset_org_plan_sub.dataset.id;
+
+    let bookmarks = {
+        web::block(move || {
+            get_bookmarks_for_group_query(
+                UnifiedId::TrackingId(path_data.tracking_id.clone()),
+                page,
+                None,
+                dataset_id,
+                pool,
+            )
+        })
+        .await?
+        .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?
     };
 
     Ok(HttpResponse::Ok().json(BookmarkData {
@@ -628,7 +748,7 @@ pub async fn delete_bookmark(
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let pool = pool.clone();
-    dataset_owns_group(group_id, dataset_id, pool1).await?;
+    dataset_owns_group(UnifiedId::TrieveUuid(group_id), dataset_id, pool1).await?;
 
     let qdrant_point_id = web::block(move || delete_bookmark_query(bookmark_id, group_id, pool))
         .await?
