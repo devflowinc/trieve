@@ -1,5 +1,5 @@
 use crate::{
-    data::models::{ChunkGroup, ChunkMetadata, Dataset, FileGroup, Pool},
+    data::models::{ChunkGroup, ChunkMetadata, Dataset, FileGroup, Pool, UnifiedId},
     errors::DefaultError,
     operators::chunk_operator::delete_chunk_metadata_query,
 };
@@ -345,7 +345,7 @@ pub struct GroupsBookmarkQueryResult {
     pub total_pages: i64,
 }
 pub fn get_bookmarks_for_group_query(
-    group: uuid::Uuid,
+    group_id: UnifiedId,
     page: u64,
     limit: Option<i64>,
     dataset_uuid: uuid::Uuid,
@@ -359,6 +359,15 @@ pub fn get_bookmarks_for_group_query(
 
     let mut conn = pool.get().unwrap();
 
+    let group_uuid = match group_id {
+        UnifiedId::TrackingId(id) => chunk_group_columns::chunk_group
+            .filter(chunk_group_columns::tracking_id.eq(id))
+            .select(chunk_group_columns::id)
+            .first::<uuid::Uuid>(&mut conn)
+            .map_err(|_| ServiceError::BadRequest("Failed to find matching tracking id".to_string()))?,
+        UnifiedId::TrieveUuid(id) => id,
+    };
+
     let bookmark_metadata: Vec<(ChunkMetadataWithCount, ChunkGroup)> =
         chunk_metadata_columns::chunk_metadata
             .inner_join(chunk_group_bookmarks_columns::chunk_group_bookmarks.on(
@@ -370,7 +379,7 @@ pub fn get_bookmarks_for_group_query(
             )
             .filter(
                 chunk_group_bookmarks_columns::group_id
-                    .eq(group)
+                    .eq(group_uuid)
                     .and(chunk_group_columns::dataset_id.eq(dataset_uuid))
                     .and(chunk_metadata_columns::dataset_id.eq(dataset_uuid)),
             )
@@ -409,8 +418,8 @@ pub fn get_bookmarks_for_group_query(
         bookmark.1.clone()
     } else {
         chunk_group_columns::chunk_group
-            .filter(chunk_group_columns::id.eq(group))
             .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
+            .filter(chunk_group_columns::id.eq(group_uuid))
             .first::<ChunkGroup>(&mut conn)
             .map_err(|_err| ServiceError::BadRequest("Error getting group".to_string()))?
     };

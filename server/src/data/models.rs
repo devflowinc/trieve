@@ -1403,3 +1403,8 @@ impl From<UserApiKey> for ApiKeyDTO {
         }
     }
 }
+
+pub enum UnifiedId {
+    TrackingId(String),
+    TrieveUuid(uuid::Uuid)
+}
