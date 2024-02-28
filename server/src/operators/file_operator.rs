@@ -194,8 +194,15 @@ pub async fn convert_doc_to_html_query(
             })?;
 
         if let Some(metadata) = metadata {
-            for (key, value) in metadata.as_object().unwrap() {
-                tika_metadata_response_json[key] = value.clone();
+            match metadata.as_object() {
+                Some(metadata) => {
+                    for (key, value) in metadata {
+                        tika_metadata_response_json[key] = value.clone();
+                    }
+                }
+                _ => {
+                    log::error!("Could not convert metadata to object {:?}", metadata);
+                }
             }
         }
 
