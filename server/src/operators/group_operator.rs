@@ -21,7 +21,55 @@ use diesel::{
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-pub fn create_group_query(
+pub fn get_group_from_tracking_id_query(
+    tracking_id: String,
+    dataset_uuid: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<ChunkGroup, DefaultError> {
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    let group = chunk_group_columns::chunk_group
+        .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
+        .filter(chunk_group_columns::tracking_id.eq(tracking_id))
+        .first::<ChunkGroup>(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Group not found",
+        })?;
+
+    Ok(group)
+}
+
+pub fn update_group_by_tracking_id_query(
+    tracking_id: String,
+    dataset_uuid: uuid::Uuid,
+    new_name: Option<String>,
+    new_description: Option<String>,
+    pool: web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::update(
+        chunk_group_columns::chunk_group
+            .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
+            .filter(chunk_group_columns::tracking_id.eq(tracking_id)),
+    )
+    .set((
+        chunk_group_columns::name.eq(new_name.unwrap_or("".to_string())),
+        chunk_group_columns::description.eq(new_description.unwrap_or("".to_string())),
+    ))
+    .execute(&mut conn)
+    .map_err(|_err| DefaultError {
+        message: "Error updating group",
+    })?;
+
+    Ok(())
+}
+
+pub async fn create_group_query(
     new_group: ChunkGroup,
     pool: web::Data<Pool>,
 ) -> Result<ChunkGroup, DefaultError> {
