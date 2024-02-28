@@ -88,6 +88,7 @@ dateparser = "0.2.1"
 cfg-if = "1.0.0"
 lettre = "0.11.3"
 simple-server-timing-header = "0.1.1"
+scraper = "0.18.1"
 
 
 [build-dependencies]

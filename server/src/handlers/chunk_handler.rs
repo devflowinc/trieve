@@ -3,12 +3,13 @@ use crate::data::models::{
     ChatMessageProxy, ChunkGroup, ChunkMetadata, ChunkMetadataWithFileData,
     DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration,
 };
-use crate::errors::{DefaultError, ServiceError};
+use crate::errors::ServiceError;
 use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
 use crate::operators::group_operator::get_group_by_id_query;
 use crate::operators::model_operator::create_embedding;
+use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::recommend_qdrant_query;
 use crate::operators::qdrant_operator::update_qdrant_point_query;
 use crate::operators::search_operator::{
@@ -29,7 +30,6 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use simple_server_timing_header::Timer;
-use std::process::Command;
 use tokio_stream::StreamExt;
 use utoipa::{IntoParams, ToSchema};
 
@@ -59,43 +59,6 @@ pub struct CreateChunkData {
     pub weight: Option<f64>,
 }
 
-pub fn convert_html(html: &str) -> Result<String, DefaultError> {
-    let html_parse_result = Command::new("./server-python/html-converter.py")
-        .arg(html)
-        .output();
-
-    let content = match html_parse_result {
-        Ok(result) => {
-            if result.status.success() {
-                Some(
-                    String::from_utf8(result.stdout)
-                        .unwrap()
-                        .lines()
-                        .collect::<Vec<&str>>()
-                        .join(" ")
-                        .trim_end()
-                        .to_string(),
-                )
-            } else {
-                return Err(DefaultError {
-                    message: "Could not parse html",
-                });
-            }
-        }
-        Err(_) => {
-            return Err(DefaultError {
-                message: "Could not parse html",
-            });
-        }
-    };
-
-    match content {
-        Some(content) => Ok(content),
-        None => Err(DefaultError {
-            message: "Could not parse html",
-        }),
-    }
-}
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct ReturnCreatedChunk {
     pub chunk_metadata: ChunkMetadata,
@@ -164,10 +127,7 @@ pub async fn create_chunk(
         .clone()
         .filter(|chunk_tracking| !chunk_tracking.is_empty());
 
-    let content =
-        convert_html(chunk.chunk_html.as_ref().unwrap_or(&"".to_string())).map_err(|err| {
-            ServiceError::BadRequest(format!("Could not parse html: {}", err.message))
-        })?;
+    let content = convert_html_to_text(chunk.chunk_html.as_ref().unwrap_or(&"".to_string()));
 
     let chunk_tag_set = chunk.tag_set.clone().map(|tag_set| tag_set.join(","));
 
@@ -412,10 +372,8 @@ pub async fn update_chunk(
         .clone()
         .filter(|chunk_tracking| !chunk_tracking.is_empty());
 
-    let new_content = convert_html(chunk.chunk_html.as_ref().unwrap_or(&chunk_metadata.content))
-        .map_err(|err| {
-            ServiceError::BadRequest(format!("Could not parse html: {}", err.message))
-        })?;
+    let new_content =
+        convert_html_to_text(chunk.chunk_html.as_ref().unwrap_or(&chunk_metadata.content));
 
     let embedding_vector = create_embedding(
         &new_content,
@@ -546,10 +504,8 @@ pub async fn update_chunk_by_tracking_id(
         .clone()
         .unwrap_or_else(|| chunk_metadata.link.clone().unwrap_or_default());
 
-    let new_content = convert_html(chunk.chunk_html.as_ref().unwrap_or(&chunk_metadata.content))
-        .map_err(|err| {
-            ServiceError::BadRequest(format!("Could not parse html: {}", err.message))
-        })?;
+    let new_content =
+        convert_html_to_text(chunk.chunk_html.as_ref().unwrap_or(&chunk_metadata.content));
 
     let embedding_vector = create_embedding(
         &new_content,

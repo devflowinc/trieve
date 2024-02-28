@@ -1,12 +1,11 @@
 use super::event_operator::create_event_query;
 use super::group_operator::{create_group_from_file_query, create_group_query};
+use super::parse_operator::convert_html_to_text;
 use crate::data::models::{ChunkMetadata, Dataset, DatasetAndOrgWithSubAndPlan, EventType};
 use crate::handlers::auth_handler::AdminOnly;
 use crate::operators::chunk_operator::delete_chunk_metadata_query;
 use crate::{data::models::ChunkGroup, handlers::chunk_handler::ReturnCreatedChunk};
-use crate::{
-    data::models::Event, diesel::Connection, get_env, handlers::chunk_handler::convert_html,
-};
+use crate::{data::models::Event, diesel::Connection, get_env};
 use crate::{
     data::models::FileDTO,
     diesel::{ExpressionMethods, QueryDsl},
@@ -346,7 +345,7 @@ pub async fn create_chunks_with_handler(
         tag_set.map(|tag_set| tag_set.split(',').map(|x| x.to_string()).collect());
 
     let name = format!("Group for file {}", file_name);
-    let converted_description = convert_html(&description.unwrap_or("".to_string()))?;
+    let converted_description = convert_html_to_text(&description.unwrap_or("".to_string()));
 
     let chunk_group = ChunkGroup::from_details(
         name.clone(),
