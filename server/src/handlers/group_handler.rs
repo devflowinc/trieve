@@ -30,6 +30,22 @@ pub async fn dataset_owns_group(
     Ok(group)
 }
 
+pub async fn dataset_owns_group_by_tracking_id(
+    tracking_id: String,
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<ChunkGroup, actix_web::Error> {
+    let group = web::block(move || get_group_from_tracking_id_query(tracking_id, dataset_id, pool))
+        .await?
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    if group.dataset_id != dataset_id {
+        return Err(ServiceError::Forbidden.into());
+    }
+
+    Ok(group)
+}
+
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct CreateChunkGroupData {
     /// Name to assign to the chunk_group. Does not need to be unique.
@@ -78,8 +94,8 @@ pub async fn create_chunk_group(
     );
     {
         let group = group.clone();
-        web::block(move || create_group_query(group, pool))
-            .await?
+        create_group_query(group, pool)
+            .await
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
     }
 
@@ -154,6 +170,155 @@ pub async fn get_specific_dataset_chunk_groups(
             .map(|group| (group.group_count.unwrap_or(10) as f64 / 10.0).ceil() as i64)
             .unwrap_or(1),
     }))
+}
+
+#[derive(Deserialize, Serialize, ToSchema)]
+pub struct GetGroupByTrackingIDData {
+    pub tracking_id: String,
+}
+
+#[utoipa::path(
+    get,
+    path = "/chunk_group/{tracking_id}",
+    context_path = "/api",
+    tag = "chunk_group",
+    responses(
+        (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroup),
+        (status = 400, description = "Service error relating to getting the group with the given tracking id", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("tracking_id" = String, description = "The tracking id of the group to fetch."),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
+    )
+)]
+/// get_group_by_tracking_id
+pub async fn get_group_by_tracking_id(
+    data: web::Path<GetGroupByTrackingIDData>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    _user: LoggedUser,
+    pool: web::Data<Pool>,
+) -> Result<ChunkGroup, actix_web::Error> {
+    let group = web::block(move || {
+        get_group_from_tracking_id_query(
+            data.tracking_id.clone(),
+            dataset_org_plan_sub.dataset.id,
+            pool,
+        )
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    Ok(group)
+}
+
+#[derive(Deserialize, Serialize, ToSchema)]
+pub struct UpdateChunkGroupByTrackingIDData {
+    /// Tracking Id of the chunk_group to update.
+    pub tracking_id: String,
+    /// Name to assign to the chunk_group. Does not need to be unique. If not provided, the name will not be updated.
+    pub name: Option<String>,
+    /// Description to assign to the chunk_group. Convenience field for you to avoid having to remember what the group is for. If not provided, the description will not be updated.
+    pub description: Option<String>,
+}
+
+#[utoipa::path(
+    put,
+    path = "/chunk_group/{tracking_id}",
+    context_path = "/api",
+    tag = "chunk_group",
+    request_body(content = UpdateChunkGroupByTrackingIDData, description = "JSON request payload to update a chunkGroup", content_type = "application/json"),
+    responses(
+        (status = 204, description = "Confirmation that the chunkGroup was updated"),
+        (status = 400, description = "Service error relating to updating the chunkGroup", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("tracking_id" = uuid, description = "Tracking id of the chunk_group to update"),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+        ("Cookie" = ["admin"])
+    )
+)]
+pub async fn update_group_by_tracking_id(
+    data: web::Json<UpdateChunkGroupByTrackingIDData>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    _user: AdminOnly,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let group = dataset_owns_group_by_tracking_id(
+        data.tracking_id.clone(),
+        dataset_org_plan_sub.dataset.id,
+        pool.clone(),
+    )
+    .await?;
+
+    web::block(move || {
+        update_chunk_group_query(
+            group,
+            data.name.clone(),
+            data.description.clone(),
+            dataset_org_plan_sub.dataset.id,
+            pool,
+        )
+    })
+    .await?
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct DeleteGroupByTrackingIDData {
+    pub delete_chunks: Option<bool>,
+}
+
+#[utoipa::path(
+    delete,
+    path = "/chunk_group/{tracking_id}",
+    context_path = "/api",
+    tag = "chunk_group",
+    responses(
+        (status = 204, description = "Confirmation that the chunkGroup was deleted"),
+        (status = 400, description = "Service error relating to deleting the chunkGroup", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("tracking_id" = uuid, description = "Tracking id of the chunk_group to delete"),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+        ("Cookie" = ["admin"])
+    )
+)]
+pub async fn delete_group_by_tracking_id(
+    tracking_id: web::Path<String>,
+    data: web::Query<DeleteGroupByTrackingIDData>,
+    pool: web::Data<Pool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    _user: AdminOnly,
+) -> Result<HttpResponse, actix_web::Error> {
+    let delete_group_pool = pool.clone();
+    let tracking_id = tracking_id.into_inner();
+
+    let group =
+        dataset_owns_group_by_tracking_id(tracking_id, dataset_org_plan_sub.dataset.id, pool)
+            .await?;
+
+    delete_group_by_id_query(
+        group.id,
+        dataset_org_plan_sub.dataset,
+        data.delete_chunks,
+        delete_group_pool,
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    Ok(HttpResponse::NoContent().finish())
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
