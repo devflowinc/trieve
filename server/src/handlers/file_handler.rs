@@ -15,10 +15,7 @@ use crate::{
 use actix_files::NamedFile;
 #[cfg(feature = "ocr")]
 use actix_web::http::header::ContentDisposition;
-use actix_web::{
-    web,
-    HttpResponse
-};
+use actix_web::{web, HttpResponse};
 use base64::{
     alphabet,
     engine::{self, general_purpose},
@@ -105,7 +102,7 @@ pub async fn upload_file_handler(
     )
     .DOCUMENT_UPLOAD_FEATURE;
 
-    if document_upload_feature {
+    if !document_upload_feature {
         return Err(
             ServiceError::BadRequest("Document upload feature is disabled".to_string()).into(),
         );
