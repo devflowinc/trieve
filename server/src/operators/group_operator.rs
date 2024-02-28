@@ -313,10 +313,10 @@ pub fn get_bookmarks_for_group_query(
 
     let bookmark_metadata: Vec<(ChunkMetadataWithCount, ChunkGroup)> =
         chunk_metadata_columns::chunk_metadata
-            .left_join(chunk_group_bookmarks_columns::chunk_group_bookmarks.on(
+            .inner_join(chunk_group_bookmarks_columns::chunk_group_bookmarks.on(
                 chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_metadata_columns::id),
             ))
-            .left_join(
+            .inner_join(
                 chunk_group_columns::chunk_group
                     .on(chunk_group_columns::id.eq(chunk_group_bookmarks_columns::group_id)),
             )
@@ -343,12 +343,13 @@ pub fn get_bookmarks_for_group_query(
                     sql::<Int8>("count(*) OVER() AS full_count"),
                 ),
                 (
-                    chunk_group_columns::id.assume_not_null(),
-                    chunk_group_columns::name.assume_not_null(),
-                    chunk_group_columns::description.assume_not_null(),
-                    chunk_group_columns::created_at.assume_not_null(),
-                    chunk_group_columns::updated_at.assume_not_null(),
-                    chunk_group_columns::dataset_id.assume_not_null(),
+                    chunk_group_columns::id,
+                    chunk_group_columns::name,
+                    chunk_group_columns::description,
+                    chunk_group_columns::created_at,
+                    chunk_group_columns::updated_at,
+                    chunk_group_columns::dataset_id,
+                    chunk_group_columns::tracking_id,
                 ),
             ))
             .limit(limit)
