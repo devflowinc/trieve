@@ -28,6 +28,7 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         dataset_id -> Uuid,
+        tracking_id -> Nullable<Text>,
     }
 }
 

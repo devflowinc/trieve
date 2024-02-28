@@ -21,7 +21,55 @@ use diesel::{
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-pub fn create_group_query(
+pub fn get_group_from_tracking_id_query(
+    tracking_id: String,
+    dataset_uuid: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<ChunkGroup, DefaultError> {
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    let group = chunk_group_columns::chunk_group
+        .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
+        .filter(chunk_group_columns::tracking_id.eq(tracking_id))
+        .first::<ChunkGroup>(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Group not found",
+        })?;
+
+    Ok(group)
+}
+
+pub fn update_group_by_tracking_id_query(
+    tracking_id: String,
+    dataset_uuid: uuid::Uuid,
+    new_name: Option<String>,
+    new_description: Option<String>,
+    pool: web::Data<Pool>,
+) -> Result<(), DefaultError> {
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    diesel::update(
+        chunk_group_columns::chunk_group
+            .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
+            .filter(chunk_group_columns::tracking_id.eq(tracking_id)),
+    )
+    .set((
+        chunk_group_columns::name.eq(new_name.unwrap_or("".to_string())),
+        chunk_group_columns::description.eq(new_description.unwrap_or("".to_string())),
+    ))
+    .execute(&mut conn)
+    .map_err(|_err| DefaultError {
+        message: "Error updating group",
+    })?;
+
+    Ok(())
+}
+
+pub async fn create_group_query(
     new_group: ChunkGroup,
     pool: web::Data<Pool>,
 ) -> Result<ChunkGroup, DefaultError> {
@@ -313,10 +361,10 @@ pub fn get_bookmarks_for_group_query(
 
     let bookmark_metadata: Vec<(ChunkMetadataWithCount, ChunkGroup)> =
         chunk_metadata_columns::chunk_metadata
-            .left_join(chunk_group_bookmarks_columns::chunk_group_bookmarks.on(
+            .inner_join(chunk_group_bookmarks_columns::chunk_group_bookmarks.on(
                 chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_metadata_columns::id),
             ))
-            .left_join(
+            .inner_join(
                 chunk_group_columns::chunk_group
                     .on(chunk_group_columns::id.eq(chunk_group_bookmarks_columns::group_id)),
             )
@@ -343,12 +391,13 @@ pub fn get_bookmarks_for_group_query(
                     sql::<Int8>("count(*) OVER() AS full_count"),
                 ),
                 (
-                    chunk_group_columns::id.assume_not_null(),
-                    chunk_group_columns::name.assume_not_null(),
-                    chunk_group_columns::description.assume_not_null(),
-                    chunk_group_columns::created_at.assume_not_null(),
-                    chunk_group_columns::updated_at.assume_not_null(),
-                    chunk_group_columns::dataset_id.assume_not_null(),
+                    chunk_group_columns::id,
+                    chunk_group_columns::name,
+                    chunk_group_columns::description,
+                    chunk_group_columns::created_at,
+                    chunk_group_columns::updated_at,
+                    chunk_group_columns::dataset_id,
+                    chunk_group_columns::tracking_id,
                 ),
             ))
             .limit(limit)

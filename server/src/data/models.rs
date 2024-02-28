@@ -188,7 +188,9 @@ pub struct ChunkMetadataWithCount {
     pub count: i64,
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema, AsChangeset)]
+#[derive(
+    Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema, AsChangeset,
+)]
 #[diesel(table_name = chunk_metadata)]
 pub struct ChunkMetadata {
     pub id: uuid::Uuid,
@@ -363,10 +365,16 @@ pub struct ChunkGroup {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub dataset_id: uuid::Uuid,
+    pub tracking_id: Option<String>,
 }
 
 impl ChunkGroup {
-    pub fn from_details(name: String, description: String, dataset_id: uuid::Uuid) -> Self {
+    pub fn from_details(
+        name: String,
+        description: String,
+        dataset_id: uuid::Uuid,
+        tracking_id: Option<String>,
+    ) -> Self {
         ChunkGroup {
             id: uuid::Uuid::new_v4(),
             name,
@@ -374,6 +382,7 @@ impl ChunkGroup {
             dataset_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
+            tracking_id,
         }
     }
 }

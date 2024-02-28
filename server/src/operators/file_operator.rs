@@ -358,14 +358,17 @@ pub async fn create_chunks_with_handler(
         name.clone(),
         converted_description,
         dataset_org_plan_sub.dataset.id,
+        None,
     );
 
-    let chunk_group = create_group_query(chunk_group, pool.clone()).map_err(|e| {
-        log::error!("Could not create group {:?}", e);
-        DefaultError {
-            message: "Could not create group",
-        }
-    })?;
+    let chunk_group = create_group_query(chunk_group, pool.clone())
+        .await
+        .map_err(|e| {
+            log::error!("Could not create group {:?}", e);
+            DefaultError {
+                message: "Could not create group",
+            }
+        })?;
 
     let group_id = chunk_group.id;
 
