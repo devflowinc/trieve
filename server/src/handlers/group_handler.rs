@@ -36,6 +36,8 @@ pub struct CreateChunkGroupData {
     pub name: String,
     /// Description to assign to the chunk_group. Convenience field for you to avoid having to remember what the group is for.
     pub description: String,
+    /// Optional tracking id to assign to the chunk_group. This is a unique identifier for the chunk_group.
+    pub tracking_id: Option<String>,
 }
 
 /// create_chunk_group
@@ -68,7 +70,12 @@ pub async fn create_chunk_group(
     let name = body.name.clone();
     let description = body.description.clone();
 
-    let group = ChunkGroup::from_details(name, description, dataset_org_plan_sub.dataset.id);
+    let group = ChunkGroup::from_details(
+        name,
+        description,
+        dataset_org_plan_sub.dataset.id,
+        body.tracking_id.clone(),
+    );
     {
         let group = group.clone();
         web::block(move || create_group_query(group, pool))
