@@ -36,7 +36,6 @@ use qdrant_client::qdrant::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use std::f32::consts::E;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SearchResult {
@@ -81,7 +80,7 @@ pub fn assemble_qdrant_filter(
     }
 
     if let Some(time_range) = time_range {
-        if time_range.0 != "" && time_range.1 != "" {
+        if !time_range.0.is_empty() && !time_range.1.is_empty() {
             filter.must.push(Condition::range(
                 "time_stamp",
                 Range {
@@ -115,7 +114,7 @@ pub fn assemble_qdrant_filter(
                     ),
                 },
             ));
-        } else if time_range.1 == "" {
+        } else if time_range.1.is_empty() {
             filter.must.push(Condition::range(
                 "time_stamp",
                 Range {
@@ -137,7 +136,7 @@ pub fn assemble_qdrant_filter(
                     lte: None,
                 },
             ));
-        } else if time_range.0 == "" {
+        } else if time_range.0.is_empty() {
             filter.must.push(Condition::range(
                 "time_stamp",
                 Range {
@@ -1042,14 +1041,13 @@ pub fn rerank_chunks(chunks: Vec<ScoreChunkDTO>, date_bias: Option<bool>) -> Vec
     });
 
     if date_bias.is_some() && date_bias.unwrap() {
-        reranked_chunks.iter_mut().for_each(|chunk| {
-            if let Some(time_stamp) = chunk.metadata[0].time_stamp {
-                let time_stamp = time_stamp.timestamp();
-                let now = chrono::Utc::now().timestamp();
-                let time_diff = now - time_stamp;
-                let time_diff = time_diff as f32 / 60.0 / 60.0 / 24.0;
-                chunk.score *= E.powf(-0.1 * time_diff) as f64;
+        reranked_chunks.sort_by(|a, b| {
+            if let (Some(time_stamp_a), Some(time_stamp_b)) =
+                (a.metadata[0].time_stamp, b.metadata[0].time_stamp)
+            {
+                return time_stamp_a.timestamp().cmp(&time_stamp_b.timestamp());
             }
+            a.score.total_cmp(&b.score)
         });
     }
 
