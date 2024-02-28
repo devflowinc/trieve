@@ -18,6 +18,11 @@ pub async fn create_embedding(
 
     let base_url = if base_url.is_empty() {
         "https://api.openai.com/v1".to_string()
+    } else if base_url.contains("https://embedding.trieve.ai") {
+        get_env!(
+            "GPU_SERVER_ORIGIN",
+            "GPU_SERVER_ORIGIN should be set if this is called"
+        ).to_string()
     } else {
         base_url
     };
