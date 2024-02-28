@@ -424,8 +424,8 @@ pub async fn add_user_to_organization(
 ) -> Result<(), ServiceError> {
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
 
-    let org_id_refresh = user_org.organization_id.clone();
-    let user_id_refresh = user_org.user_id.clone();
+    let org_id_refresh = user_org.organization_id;
+    let user_id_refresh = user_org.user_id;
     let user_id_refresh_pool = pool.clone();
 
     let mut conn = pool.get().unwrap();
