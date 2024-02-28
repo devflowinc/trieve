@@ -192,13 +192,13 @@ pub async fn create_chunk(
             })
             .transpose()?,
         dataset_org_plan_sub.dataset.id,
-        0.0,
+        chunk.weight.unwrap_or(0.0),
     );
 
     let ingestion_message = IngestionMessage {
         chunk_metadata: chunk_metadata.clone(),
         chunk: chunk.clone(),
-        dataset_id: count_dataset_id.clone(),
+        dataset_id: count_dataset_id,
         dataset_config: dataset_org_plan_sub.dataset.server_configuration,
         upsert_by_tracking_id: chunk.upsert_by_tracking_id.unwrap_or(false),
     };
