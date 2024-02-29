@@ -341,7 +341,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                   <Show when={fileName()}>
                     <a
                       class="h-fit"
-                      href={`${apiHost}/get_signed_url/${encodeURIComponent(fileName())}`}
+                      href={`${apiHost}/get_signed_url/${encodeURIComponent(fileName()!)}`}
                       target="_blank"
                       title="Open PDF"
                     >
