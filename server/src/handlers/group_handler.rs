@@ -24,7 +24,7 @@ pub async fn dataset_owns_group(
             web::block(move || get_group_by_id_query(group_id, dataset_id, pool))
                 .await?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?
-        },
+        }
         UnifiedId::TrackingId(tracking_id) => {
             web::block(move || get_group_from_tracking_id_query(tracking_id, dataset_id, pool))
                 .await?
@@ -298,9 +298,12 @@ pub async fn delete_group_by_tracking_id(
     let delete_group_pool = pool.clone();
     let tracking_id = tracking_id.into_inner();
 
-    let group =
-        dataset_owns_group(UnifiedId::TrackingId(tracking_id), dataset_org_plan_sub.dataset.id, pool)
-            .await?;
+    let group = dataset_owns_group(
+        UnifiedId::TrackingId(tracking_id),
+        dataset_org_plan_sub.dataset.id,
+        pool,
+    )
+    .await?;
 
     delete_group_by_id_query(
         group.id,
@@ -350,7 +353,12 @@ pub async fn delete_chunk_group(
     let delete_group_pool = pool.clone();
     let group_id = group_id.into_inner();
 
-    dataset_owns_group(UnifiedId::TrieveUuid(group_id), dataset_org_plan_sub.dataset.id, pool).await?;
+    dataset_owns_group(
+        UnifiedId::TrieveUuid(group_id),
+        dataset_org_plan_sub.dataset.id,
+        pool,
+    )
+    .await?;
 
     delete_group_by_id_query(
         group_id,
@@ -407,7 +415,12 @@ pub async fn update_chunk_group(
 
     let pool2 = pool.clone();
 
-    let group = dataset_owns_group(UnifiedId::TrieveUuid(group_id), dataset_org_plan_sub.dataset.id, pool).await?;
+    let group = dataset_owns_group(
+        UnifiedId::TrieveUuid(group_id),
+        dataset_org_plan_sub.dataset.id,
+        pool,
+    )
+    .await?;
 
     web::block(move || {
         update_chunk_group_query(
@@ -523,7 +536,12 @@ pub async fn add_chunk_to_group_by_tracking_id(
     let chunk_metadata_id = body.chunk_id;
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
-    let group = dataset_owns_group(UnifiedId::TrackingId(tracking_id.into_inner()), dataset_id, pool).await?;
+    let group = dataset_owns_group(
+        UnifiedId::TrackingId(tracking_id.into_inner()),
+        dataset_id,
+        pool,
+    )
+    .await?;
     let group_id = group.id;
 
     let qdrant_point_id = web::block(move || {
