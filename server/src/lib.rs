@@ -170,6 +170,7 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::chunk_handler::SearchChunkData,
                 handlers::chunk_handler::ScoreChunkDTO,
                 handlers::chunk_handler::SearchGroupsData,
+                handlers::chunk_handler::SearchOverGroupsData,
                 handlers::chunk_handler::SearchGroupsResult,
                 handlers::chunk_handler::SearchChunkQueryResponseBody,
                 handlers::user_handler::UpdateUserData,
