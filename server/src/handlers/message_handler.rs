@@ -682,11 +682,15 @@ pub async fn stream_response(
     };
     let embedding_vector = create_embedding(query.as_str(), dataset_config.clone()).await?;
 
+    let n_retrievals_to_include = dataset_config.N_RETRIEVALS_TO_INCLUDE;
+
     let search_chunk_query_results = retrieve_qdrant_points_query(
         VectorType::Dense(embedding_vector),
         1,
         None,
         None,
+        None,
+        n_retrievals_to_include.try_into().unwrap(),
         None,
         None,
         ParsedQuery {
@@ -699,12 +703,10 @@ pub async fn stream_response(
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    let n_retrievals_to_include = dataset_config.N_RETRIEVALS_TO_INCLUDE;
 
     let retrieval_chunk_ids = search_chunk_query_results
         .search_results
         .iter()
-        .take(n_retrievals_to_include)
         .map(|chunk| chunk.point_id)
         .collect::<Vec<uuid::Uuid>>();
 

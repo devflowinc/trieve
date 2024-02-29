@@ -573,6 +573,8 @@ pub struct SearchChunkData {
     pub query: String,
     /// Page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon.
     pub page: Option<u64>,
+    /// Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
+    pub page_size: Option<u64>,
     /// Link set is a list of links. This can be used to filter chunks by link. HNSW indices do not exist for links, so there is a performance hit for filtering on them.
     pub link: Option<Vec<String>>,
     /// Tag_set is a list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
@@ -589,6 +591,8 @@ pub struct SearchChunkData {
     pub highlight_results: Option<bool>,
     /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting.
     pub highlight_delimiters: Option<Vec<String>>,
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold.
+    pub score_threshold: Option<f32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
@@ -695,7 +699,7 @@ pub async fn search_chunk(
                 page,
                 pool,
                 dataset_org_plan_sub.dataset,
-                // transaction
+                //transaction
             )
             .await?
         }
@@ -706,7 +710,7 @@ pub async fn search_chunk(
                 page,
                 pool,
                 dataset_org_plan_sub.dataset,
-                // transaction
+                //transaction
             )
             .await?
         }
@@ -726,6 +730,8 @@ pub struct SearchGroupsData {
     pub query: String,
     /// The page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon.
     pub page: Option<u64>,
+    /// The page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
+    pub page_size: Option<u64>,
     /// The link set is a list of links. This can be used to filter chunks by link. HNSW indices do not exist for links, so there is a performance hit for filtering on them.
     pub link: Option<Vec<String>>,
     /// The tag set is a list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
@@ -743,6 +749,8 @@ pub struct SearchGroupsData {
     pub highlight_results: Option<bool>,
     /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting.
     pub highlight_delimiters: Option<Vec<String>>,
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold.
+    pub score_threshold: Option<f32>,
 }
 
 impl From<SearchGroupsData> for SearchChunkData {
@@ -750,6 +758,7 @@ impl From<SearchGroupsData> for SearchChunkData {
         Self {
             query: data.query,
             page: data.page,
+            page_size: data.page_size,
             link: data.link,
             tag_set: data.tag_set,
             time_range: None,
@@ -759,6 +768,7 @@ impl From<SearchGroupsData> for SearchChunkData {
             get_collisions: Some(false),
             highlight_results: data.highlight_results,
             highlight_delimiters: data.highlight_delimiters,
+            score_threshold: data.score_threshold,
         }
     }
 }
@@ -852,6 +862,38 @@ pub async fn search_groups(
     Ok(HttpResponse::Ok().json(result_chunks))
 }
 
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
+pub struct SearchOverGroupsData {
+    /// Can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
+    pub search_type: String,
+    /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
+    pub query: String,
+    /// Page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon.
+    pub page: Option<u64>,
+    /// Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
+    pub page_size: Option<u32>,
+    /// Link set is a list of links. This can be used to filter chunks by link. HNSW indices do not exist for links, so there is a performance hit for filtering on them.
+    pub link: Option<Vec<String>>,
+    /// Tag_set is a list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
+    pub tag_set: Option<Vec<String>>,
+    /// Time_range is a tuple of two ISO 8601 combined date and time without timezone. The first value is the start of the time range and the second value is the end of the time range. This can be used to filter chunks by time range. HNSW indices do not exist for time range, so there is a performance hit for filtering on them.
+    pub time_range: Option<(String, String)>,
+    /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
+    pub filters: Option<serde_json::Value>,
+    /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
+    pub date_bias: Option<bool>,
+    /// Set get_collisions to true to get the collisions for each chunk. This will only apply if environment variable COLLISIONS_ENABLED is set to true.
+    pub get_collisions: Option<bool>,
+    /// Set highlight_results to true to highlight the results.
+    pub highlight_results: Option<bool>,
+    /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting.
+    pub highlight_delimiters: Option<Vec<String>>,
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold.
+    pub score_threshold: Option<f32>,
+    // Group_size is the number of chunks to fetch for each group.
+    pub group_size: Option<u32>,
+}
+
 /// group_oriented_search
 ///
 /// This route allows you to get groups as results instead of chunks. Each group returned will have the matching chunks sorted by similarity within the group. This is useful for when you want to get groups of chunks which are similar to the search query. If choosing hybrid search, the results will be re-ranked using BAAI/bge-reranker-large. Compatible with semantic, fulltext, or hybrid search modes.
@@ -860,14 +902,14 @@ pub async fn search_groups(
     path = "/chunk_group/search_over_groups",
     context_path = "/api",
     tag = "chunk_group",
-    request_body(content = SearchChunkData, description = "JSON request payload to semantically search over groups", content_type = "application/json"),
+    request_body(content = SearchOverGroupsData, description = "JSON request payload to semantically search over groups", content_type = "application/json"),
     responses(
         (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchOverGroupsResponseBody),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
     ),
 )]
 pub async fn search_over_groups(
-    data: web::Json<SearchChunkData>,
+    data: web::Json<SearchOverGroupsData>,
     pool: web::Data<Pool>,
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,

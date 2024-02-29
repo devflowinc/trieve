@@ -565,6 +565,9 @@ pub enum VectorType {
 pub async fn search_over_groups_query(
     page: u64,
     filter: Filter,
+    limit: u32,
+    score_threshold: Option<f32>,
+    group_size: u32,
     vector: VectorType,
 ) -> Result<Vec<GroupSearchResults>, DefaultError> {
     let qdrant = get_qdrant_connection().await?;
@@ -597,11 +600,12 @@ pub async fn search_over_groups_query(
                     collection_name: qdrant_collection.to_string(),
                     vector: embedding_vector,
                     vector_name: Some(vector_name.to_string()),
-                    limit: (10 * page as u32),
+                    limit: (limit * page as u32),
+                    score_threshold,
                     with_payload: None,
                     filter: Some(filter),
                     group_by: "group_ids".to_string(),
-                    group_size: 3,
+                    group_size,
                     ..Default::default()
                 })
                 .await
@@ -615,11 +619,12 @@ pub async fn search_over_groups_query(
                     vector: sparse_vector.data,
                     sparse_indices: sparse_vector.indices,
                     vector_name: Some(vector_name.to_string()),
-                    limit: (10 * page as u32),
+                    limit: (limit * page as u32),
+                    score_threshold,
                     with_payload: None,
                     filter: Some(filter),
                     group_by: "group_ids".to_string(),
-                    group_size: 3,
+                    group_size,
                     ..Default::default()
                 })
                 .await
@@ -667,6 +672,8 @@ pub async fn search_over_groups_query(
 pub async fn search_qdrant_query(
     page: u64,
     filter: Filter,
+    limit: u64,
+    score_threshold: Option<f32>,
     vector: VectorType,
 ) -> Result<Vec<SearchResult>, DefaultError> {
     let qdrant = get_qdrant_connection().await?;
@@ -699,7 +706,8 @@ pub async fn search_qdrant_query(
                     collection_name: qdrant_collection.to_string(),
                     vector: embedding_vector,
                     vector_name: Some(vector_name.to_string()),
-                    limit: 10,
+                    limit,
+                    score_threshold,
                     offset: Some((page - 1) * 10),
                     with_payload: None,
                     filter: Some(filter),
@@ -716,7 +724,8 @@ pub async fn search_qdrant_query(
                     vector: sparse_vector.data,
                     sparse_indices: sparse_vector.indices,
                     vector_name: Some(vector_name.to_string()),
-                    limit: 10,
+                    limit,
+                    score_threshold,
                     offset: Some((page - 1) * 10),
                     with_payload: None,
                     filter: Some(filter),
