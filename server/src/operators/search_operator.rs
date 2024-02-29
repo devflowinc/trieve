@@ -14,7 +14,7 @@ use crate::errors::ServiceError;
 use crate::get_env;
 use crate::handlers::chunk_handler::{
     ParsedQuery, ScoreChunkDTO, SearchChunkData, SearchChunkQueryResponseBody, SearchGroupsData,
-    SearchGroupsResult,
+    SearchGroupsResult, SearchOverGroupsData,
 };
 use crate::operators::model_operator::get_splade_query_embedding;
 use crate::operators::qdrant_operator::{get_qdrant_connection, search_qdrant_query};
@@ -215,6 +215,8 @@ pub async fn retrieve_qdrant_points_query(
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
     time_range: Option<(String, String)>,
+    limit: u64,
+    score_threshold: Option<f32>,
     filters: Option<serde_json::Value>,
     parsed_query: ParsedQuery,
     dataset_id: uuid::Uuid,
@@ -247,7 +249,7 @@ pub async fn retrieve_qdrant_points_query(
         pool,
     )?;
 
-    let point_ids = search_qdrant_query(page, filter, vector).await?;
+    let point_ids = search_qdrant_query(page, filter, limit, score_threshold, vector).await?;
     transaction.finish();
 
     Ok(SearchChunkQueryResult {
@@ -271,6 +273,9 @@ pub async fn retrieve_group_qdrant_points_query(
     tag_set: Option<Vec<String>>,
     time_range: Option<(String, String)>,
     filters: Option<serde_json::Value>,
+    limit: u32,
+    score_threshold: Option<f32>,
+    group_size: u32,
     parsed_query: ParsedQuery,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -288,7 +293,8 @@ pub async fn retrieve_group_qdrant_points_query(
         pool,
     )?;
 
-    let point_ids = search_over_groups_query(page, filter, vector).await?;
+    let point_ids =
+        search_over_groups_query(page, filter, limit, score_threshold, group_size, vector).await?;
 
     Ok(SearchOverGroupsQueryResult {
         search_results: point_ids.clone(),
@@ -387,6 +393,8 @@ pub async fn search_semantic_chunk_groups_query(
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
     filters: Option<serde_json::Value>,
+    limit: u64,
+    score_threshold: Option<f32>,
     group_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     parsed_query: ParsedQuery,
@@ -505,8 +513,14 @@ pub async fn search_semantic_chunk_groups_query(
         })),
     });
 
-    let point_ids: Vec<SearchResult> =
-        search_qdrant_query(page, filter, VectorType::Dense(embedding_vector)).await?;
+    let point_ids: Vec<SearchResult> = search_qdrant_query(
+        page,
+        filter,
+        limit,
+        score_threshold,
+        VectorType::Dense(embedding_vector),
+    )
+    .await?;
 
     Ok(SearchChunkQueryResult {
         search_results: point_ids,
@@ -620,6 +634,8 @@ pub async fn search_full_text_group_query(
     page: u64,
     pool: web::Data<Pool>,
     filters: Option<serde_json::Value>,
+    limit: u64,
+    score_threshold: Option<f32>,
     link: Option<Vec<String>>,
     tag_set: Option<Vec<String>>,
     group_id: uuid::Uuid,
@@ -779,7 +795,14 @@ pub async fn search_full_text_group_query(
                 message: "Failed to get splade query embedding",
             })?;
 
-    let point_ids = search_qdrant_query(page, filter, VectorType::Sparse(embedding_vector)).await;
+    let point_ids = search_qdrant_query(
+        page,
+        filter,
+        limit,
+        score_threshold,
+        VectorType::Sparse(embedding_vector),
+    )
+    .await;
 
     Ok(SearchChunkQueryResult {
         search_results: point_ids?,
@@ -870,7 +893,7 @@ pub struct SearchOverGroupsResponseBody {
 
 pub async fn retrieve_chunks_for_groups(
     search_over_groups_query_result: SearchOverGroupsQueryResult,
-    data: &web::Json<SearchChunkData>,
+    data: &web::Json<SearchOverGroupsData>,
     pool: web::Data<Pool>,
 ) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
     let point_ids = search_over_groups_query_result
@@ -1123,6 +1146,8 @@ pub async fn search_semantic_chunks(
         data.link.clone(),
         data.tag_set.clone(),
         data.time_range.clone(),
+        data.page_size.unwrap_or(10),
+        data.score_threshold,
         data.filters.clone(),
         parsed_query,
         dataset.id,
@@ -1176,6 +1201,8 @@ pub async fn search_full_text_chunks(
         data.link.clone(),
         data.tag_set.clone(),
         data.time_range.clone(),
+        data.page_size.unwrap_or(10),
+        data.score_threshold,
         data.filters.clone(),
         parsed_query,
         dataset.id,
@@ -1226,6 +1253,8 @@ pub async fn search_hybrid_chunks(
         data.link.clone(),
         data.tag_set.clone(),
         data.time_range.clone(),
+        data.page_size.unwrap_or(10),
+        data.score_threshold,
         data.filters.clone(),
         parsed_query.clone(),
         dataset.id,
@@ -1356,6 +1385,8 @@ pub async fn search_semantic_groups(
         data.link.clone(),
         data.tag_set.clone(),
         data.filters.clone(),
+        data.page_size.unwrap_or(10),
+        data.score_threshold,
         data.group_id,
         dataset.id,
         parsed_query,
@@ -1395,6 +1426,8 @@ pub async fn search_full_text_groups(
         page,
         pool.clone(),
         data_inner.filters.clone(),
+        data.page_size.unwrap_or(10),
+        data.score_threshold,
         data_inner.link.clone(),
         data_inner.tag_set.clone(),
         data_inner.group_id,
@@ -1442,6 +1475,8 @@ pub async fn search_hybrid_groups(
         data.link.clone(),
         data.tag_set.clone(),
         data.filters.clone(),
+        data.page_size.unwrap_or(10),
+        data.score_threshold,
         data.group_id,
         dataset.id,
         parsed_query.clone(),
@@ -1452,6 +1487,8 @@ pub async fn search_hybrid_groups(
         page,
         pool.clone(),
         data_inner.filters.clone(),
+        data.page_size.unwrap_or(10),
+        data.score_threshold,
         data_inner.link.clone(),
         data_inner.tag_set.clone(),
         data_inner.group_id,
@@ -1548,7 +1585,7 @@ pub async fn search_hybrid_groups(
 }
 
 pub async fn semantic_search_over_groups(
-    data: web::Json<SearchChunkData>,
+    data: web::Json<SearchOverGroupsData>,
     parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
@@ -1565,6 +1602,9 @@ pub async fn semantic_search_over_groups(
         data.tag_set.clone(),
         data.time_range.clone(),
         data.filters.clone(),
+        data.page_size.unwrap_or(10),
+        data.score_threshold,
+        data.group_size.unwrap_or(3),
         parsed_query,
         dataset.id,
         pool.clone(),
@@ -1581,7 +1621,7 @@ pub async fn semantic_search_over_groups(
 }
 
 pub async fn full_text_search_over_groups(
-    data: web::Json<SearchChunkData>,
+    data: web::Json<SearchOverGroupsData>,
     parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
@@ -1598,6 +1638,9 @@ pub async fn full_text_search_over_groups(
         data.tag_set.clone(),
         data.time_range.clone(),
         data.filters.clone(),
+        data.page_size.unwrap_or(10),
+        data.score_threshold,
+        data.group_size.unwrap_or(3),
         parsed_query,
         dataset.id,
         pool.clone(),
@@ -1642,7 +1685,7 @@ async fn cross_encoder_for_groups(
 }
 
 pub async fn hybrid_search_over_groups(
-    data: web::Json<SearchChunkData>,
+    data: web::Json<SearchOverGroupsData>,
     parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
@@ -1662,6 +1705,9 @@ pub async fn hybrid_search_over_groups(
         data.tag_set.clone(),
         data.time_range.clone(),
         data.filters.clone(),
+        data.page_size.unwrap_or(10),
+        data.score_threshold,
+        data.group_size.unwrap_or(3),
         parsed_query.clone(),
         dataset.id,
         pool.clone(),
@@ -1674,6 +1720,9 @@ pub async fn hybrid_search_over_groups(
         data.tag_set.clone(),
         data.time_range.clone(),
         data.filters.clone(),
+        data.page_size.unwrap_or(10),
+        data.score_threshold,
+        data.group_size.unwrap_or(3),
         parsed_query.clone(),
         dataset.id,
         pool.clone(),
