@@ -18,11 +18,13 @@ pub async fn create_embedding(
             .start_child("create_embedding", "Create semantic dense embedding")
             .into(),
         None => {
-            let ctx = sentry::TransactionContext::new("create_embedding", "Create semantic dense embedding");
+            let ctx = sentry::TransactionContext::new(
+                "create_embedding",
+                "Create semantic dense embedding",
+            );
             sentry::start_transaction(ctx).into()
         }
     };
-
 
     let open_ai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let base_url = dataset_config.EMBEDDING_BASE_URL;
@@ -124,7 +126,10 @@ pub async fn get_splade_query_embedding(message: &str) -> Result<Vec<(u32, f32)>
             .start_child("get_splade_query_embedding", "get_splade_query_embedding")
             .into(),
         None => {
-            let ctx = sentry::TransactionContext::new("get_splade_query_embedding", "get_splade_query_embedding");
+            let ctx = sentry::TransactionContext::new(
+                "get_splade_query_embedding",
+                "get_splade_query_embedding",
+            );
             sentry::start_transaction(ctx).into()
         }
     };
@@ -181,14 +186,16 @@ pub async fn cross_encoder(
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
         Some(parent) => parent
-            .start_child( "Cross Encoder", "Cross Encode semantic and hybrid chunks")
+            .start_child("Cross Encoder", "Cross Encode semantic and hybrid chunks")
             .into(),
         None => {
-            let ctx = sentry::TransactionContext::new( "Cross Encoder", "Cross Encode semantic and hybrid chunks");
+            let ctx = sentry::TransactionContext::new(
+                "Cross Encoder",
+                "Cross Encode semantic and hybrid chunks",
+            );
             sentry::start_transaction(ctx).into()
         }
     };
-
 
     let server_origin: String = get_env!(
         "GPU_SERVER_ORIGIN",

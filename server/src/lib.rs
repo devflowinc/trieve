@@ -256,14 +256,16 @@ pub async fn main() -> std::io::Result<()> {
     struct ApiDoc;
 
     let sentry_url = std::env::var("SENTRY_URL");
-    let _guard = sentry::init((
-        sentry_url,
-        sentry::ClientOptions {
-            release: sentry::release_name!(),
-            traces_sample_rate: 1.0,
-            ..Default::default()
-      }
-    ));
+    if let Ok(sentry_url) = sentry_url {
+        let _guard = sentry::init((
+            sentry_url,
+            sentry::ClientOptions {
+                release: sentry::release_name!(),
+                traces_sample_rate: 1.0,
+                ..Default::default()
+            },
+        ));
+    }
 
     dotenvy::dotenv().ok();
 

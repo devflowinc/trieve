@@ -312,7 +312,11 @@ pub async fn update_qdrant_point_query(
 
     let payload = if let Some(metadata) = metadata.clone() {
         let group_ids = if let Some(current_point) = current_point {
-            current_point.payload.get("group_ids").unwrap_or(&Value::from(vec![] as Vec<String>)).to_owned()
+            current_point
+                .payload
+                .get("group_ids")
+                .unwrap_or(&Value::from(vec![] as Vec<String>))
+                .to_owned()
         } else {
             Value::from(vec![] as Vec<String>)
         };

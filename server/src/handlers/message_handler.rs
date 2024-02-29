@@ -515,8 +515,7 @@ pub async fn get_topic_string(
 
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
-    let base_url = dataset_config
-        .LLM_BASE_URL;
+    let base_url = dataset_config.LLM_BASE_URL;
 
     let base_url = if base_url.is_empty() {
         "https://openrouter.ai/api/v1".into()
@@ -582,9 +581,7 @@ pub async fn stream_response(
         .map(|message| ChatMessage::from(message.clone()))
         .collect();
 
-    let base_url = dataset_config
-        .LLM_BASE_URL
-        .clone();
+    let base_url = dataset_config.LLM_BASE_URL.clone();
 
     let llm_api_key = if base_url.contains("openai.com") {
         get_env!("OPENAI_API_KEY", "OPENAI_API_KEY for openai should be set").into()
@@ -931,8 +928,7 @@ pub async fn create_suggested_queries_handler(
 ) -> Result<HttpResponse, ServiceError> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
-    let base_url = dataset_config
-        .LLM_BASE_URL;
+    let base_url = dataset_config.LLM_BASE_URL;
     let default_model = dataset_config.LLM_DEFAULT_MODEL;
     let base_url = if base_url.is_empty() {
         "https://api.openai.com/api/v1".into()
