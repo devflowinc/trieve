@@ -71,6 +71,28 @@ pub fn get_metadata_and_collided_chunks_from_point_ids_query(
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child(
+                "Get metadata of points",
+                "Hitting Postgres to fetch metadata",
+            )
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new(
+                "Get metadata of points",
+                "Hitting Postgres to fetch metadata",
+            );
+            sentry::start_transaction(ctx).into()
+        }
+    };
+
+    let chunk_search_span = transaction.start_child(
+        "Fetching matching points from qdrant",
+        "Fetching matching points from qdrant",
+    );
+
     let chunk_search_result = {
         let mut conn = pool.get().unwrap();
         let chunk_metadata: Vec<ChunkMetadata> = chunk_metadata_columns::chunk_metadata
@@ -87,6 +109,13 @@ pub fn get_metadata_and_collided_chunks_from_point_ids_query(
             .map(|chunk| <ChunkMetadata as Into<FullTextSearchResult>>::into(chunk.clone()))
             .collect::<Vec<FullTextSearchResult>>()
     };
+
+    chunk_search_span.finish();
+
+    let collision_search_span = transaction.start_child(
+        "Fetching matching points from qdrant",
+        "Fetching matching points from qdrant",
+    );
 
     let (collided_search_result, collided_qdrant_ids) = {
         let mut conn = pool.get().unwrap();
@@ -146,6 +175,13 @@ pub fn get_metadata_and_collided_chunks_from_point_ids_query(
         }
     };
 
+    collision_search_span.finish();
+
+    let iter_mapping_extra_data_span = transaction.start_child(
+        "Iter mapping to add extra data",
+        "Iter mapping to add extra data",
+    );
+
     let (chunk_metadata_with_file_id, collided_chunk_metadata_with_file_id) = {
         let conn = pool.get().unwrap();
         // Assuming that get_metadata will maintain the order of the Vec<> returned
@@ -183,6 +219,9 @@ pub fn get_metadata_and_collided_chunks_from_point_ids_query(
             qdrant_id: *qdrant_id,
         })
         .collect::<Vec<ChunkMetadataWithQdrantId>>();
+
+    iter_mapping_extra_data_span.finish();
+    transaction.finish();
 
     Ok((
         chunk_metadata_with_file_id,

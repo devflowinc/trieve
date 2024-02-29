@@ -26,7 +26,6 @@ use diesel::{
     BoolExpressionMethods, JoinOnDsl, NullableExpressionMethods, PgTextExpressionMethods,
 };
 use itertools::Itertools;
-use simple_server_timing_header::Timer;
 use utoipa::ToSchema;
 
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
@@ -221,6 +220,20 @@ pub async fn retrieve_qdrant_points_query(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<SearchChunkQueryResult, DefaultError> {
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child("Qdrant Points Query", "retrieve_qdrant_points_query")
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new(
+                "Qdrant Points Query",
+                "retrieve_qdrant_points_query",
+            );
+            sentry::start_transaction(ctx).into()
+        }
+    };
+
     let page = if page == 0 { 1 } else { page };
 
     let filter = assemble_qdrant_filter(
@@ -235,6 +248,7 @@ pub async fn retrieve_qdrant_points_query(
     )?;
 
     let point_ids = search_qdrant_query(page, filter, vector).await?;
+    transaction.finish();
 
     Ok(SearchChunkQueryResult {
         search_results: point_ids.clone(),
@@ -953,6 +967,23 @@ pub async fn retrieve_chunks_from_point_ids(
     data: &web::Json<SearchChunkData>,
     pool: web::Data<Pool>,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child(
+                "Retrieve Chunks from point IDS",
+                "Retrieve Chunks from point IDS",
+            )
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new(
+                "Retrieve Chunks from point IDS",
+                "Retrieve Chunks from point IDS",
+            );
+            sentry::start_transaction(ctx).into()
+        }
+    };
+
     let point_ids = search_chunk_query_results
         .search_results
         .iter()
@@ -1024,6 +1055,8 @@ pub async fn retrieve_chunks_from_point_ids(
         })
         .collect();
 
+    transaction.finish();
+
     Ok(SearchChunkQueryResponseBody {
         score_chunks,
         total_chunk_pages: search_chunk_query_results.total_chunk_pages,
@@ -1066,12 +1099,23 @@ pub async fn search_semantic_chunks(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    log::error!("GOt parent {:?}", parent_span);
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child("semantic search", "Search Semantic Chunks")
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new("semantic search", "Search Semantic Chunks");
+            sentry::start_transaction(ctx).into()
+        }
+    };
+
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+
     let embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
-    timer.add("Got embedding vector");
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
         VectorType::Dense(embedding_vector),
@@ -1087,16 +1131,12 @@ pub async fn search_semantic_chunks(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    timer.add("Got qdrant points");
-
     let mut result_chunks =
         retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
 
-    timer.add("Got metadata chunks");
-
     result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
 
-    timer.add("Reranked chunks");
+    transaction.finish();
 
     Ok(result_chunks)
 }
@@ -1107,8 +1147,19 @@ pub async fn search_full_text_chunks(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child("full text search", "Search Full Text Chunks")
+            .into(),
+        None => {
+            let ctx =
+                sentry::TransactionContext::new("full text search", "Search Full Text Chunks");
+            sentry::start_transaction(ctx).into()
+        }
+    };
+
     parsed_query.query = parsed_query
         .query
         .split_whitespace()
@@ -1118,7 +1169,6 @@ pub async fn search_full_text_chunks(
     let embedding_vector = get_splade_query_embedding(&parsed_query.query)
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
-    timer.add("Got splade query embedding");
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
         VectorType::Sparse(embedding_vector),
@@ -1134,17 +1184,12 @@ pub async fn search_full_text_chunks(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    timer.add("Got qdrant points");
-
     let mut result_chunks =
         retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool).await?;
 
-    timer.add("Got metadata chunks");
-
     result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
 
-    timer.add("Reranked chunks");
-
+    transaction.finish();
     Ok(result_chunks)
 }
 
@@ -1155,13 +1200,25 @@ pub async fn search_hybrid_chunks(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    log::error!("GOt parent {:?}", parent_span);
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child("hybrid search", "Search Hybrid Chunks")
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new("hybrid search", "Search Hybrid Chunks");
+            sentry::start_transaction(ctx).into()
+        }
+    };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
+
+    let pool1 = pool.clone();
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+
     let embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
-    let pool1 = pool.clone();
-    timer.add("Got embedding vector");
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
         VectorType::Dense(embedding_vector),
@@ -1175,19 +1232,11 @@ pub async fn search_hybrid_chunks(
         pool.clone(),
     );
 
-    let full_text_handler_results = search_full_text_chunks(
-        web::Json(data.clone()),
-        parsed_query,
-        page,
-        pool,
-        dataset,
-        timer,
-    );
+    let full_text_handler_results =
+        search_full_text_chunks(web::Json(data.clone()), parsed_query, page, pool, dataset);
 
     let (search_chunk_query_results, full_text_handler_results) =
         futures::join!(search_chunk_query_results, full_text_handler_results);
-
-    timer.add("Got qdrant points and full text chunks");
 
     let search_chunk_query_results =
         search_chunk_query_results.map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -1207,8 +1256,6 @@ pub async fn search_hybrid_chunks(
         pool1,
     )
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    timer.add("Got metadata chunks and collided chunks");
 
     let semantic_score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
         .search_results
@@ -1268,8 +1315,6 @@ pub async fn search_hybrid_chunks(
         })
         .collect();
 
-    timer.add("Got semantic score chunks");
-
     let mut result_chunks = {
         let combined_results = semantic_score_chunks
             .into_iter()
@@ -1278,7 +1323,6 @@ pub async fn search_hybrid_chunks(
             .collect::<Vec<ScoreChunkDTO>>();
 
         let reranked_chunks = cross_encoder(data.query.clone(), combined_results).await?;
-        timer.add("Got reranked chunks");
 
         SearchChunkQueryResponseBody {
             score_chunks: reranked_chunks,
@@ -1288,6 +1332,7 @@ pub async fn search_hybrid_chunks(
 
     result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
 
+    transaction.finish();
     Ok(result_chunks)
 }
 

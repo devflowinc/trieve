@@ -29,7 +29,6 @@ use redis::Commands;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use simple_server_timing_header::Timer;
 use tokio_stream::StreamExt;
 use utoipa::{IntoParams, ToSchema};
 
@@ -320,11 +319,6 @@ pub struct UpdateChunkData {
     time_stamp: Option<String>,
     /// Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset. If no weight is provided, the existing weight will be used.
     weight: Option<f64>,
-}
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
-pub struct ChunkHtmlUpdateError {
-    pub message: String,
-    changed_content: String,
 }
 
 /// update_chunk
@@ -669,7 +663,6 @@ fn parse_query(query: String) -> ParsedQuery {
         ("Cookie" = ["readonly"])
     )
 )]
-#[allow(clippy::too_many_arguments)]
 pub async fn search_chunk(
     data: web::Json<SearchChunkData>,
     _user: LoggedUser,
@@ -679,7 +672,9 @@ pub async fn search_chunk(
     let page = data.page.unwrap_or(1);
     let parsed_query = parse_query(data.query.clone());
 
-    let mut timer = Timer::new();
+    let tx_ctx = sentry::TransactionContext::new("search", "search_chunks");
+    let transaction = sentry::start_transaction(tx_ctx);
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
 
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => {
@@ -689,7 +684,7 @@ pub async fn search_chunk(
                 page,
                 pool,
                 dataset_org_plan_sub.dataset,
-                &mut timer,
+                // transaction
             )
             .await?
         }
@@ -700,7 +695,7 @@ pub async fn search_chunk(
                 page,
                 pool,
                 dataset_org_plan_sub.dataset,
-                &mut timer,
+                // transaction
             )
             .await?
         }
@@ -711,14 +706,16 @@ pub async fn search_chunk(
                 page,
                 pool,
                 dataset_org_plan_sub.dataset,
-                &mut timer,
+                // transaction
             )
             .await?
         }
     };
 
+    transaction.finish();
+
     Ok(HttpResponse::Ok()
-        .insert_header((Timer::header_key(), timer.header_value()))
+        // .insert_header((Timer::header_key(), timer.header_value()))
         .json(result_chunks))
 }
 
