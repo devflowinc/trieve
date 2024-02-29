@@ -1124,7 +1124,6 @@ pub async fn search_semantic_chunks(
     dataset: Dataset,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
-    log::error!("GOt parent {:?}", parent_span);
     let transaction: sentry::TransactionOrSpan = match &parent_span {
         Some(parent) => parent
             .start_child("semantic search", "Search Semantic Chunks")
@@ -1229,7 +1228,6 @@ pub async fn search_hybrid_chunks(
     dataset: Dataset,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
-    log::error!("GOt parent {:?}", parent_span);
     let transaction: sentry::TransactionOrSpan = match &parent_span {
         Some(parent) => parent
             .start_child("hybrid search", "Search Hybrid Chunks")
