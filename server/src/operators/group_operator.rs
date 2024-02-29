@@ -364,7 +364,9 @@ pub fn get_bookmarks_for_group_query(
             .filter(chunk_group_columns::tracking_id.eq(id))
             .select(chunk_group_columns::id)
             .first::<uuid::Uuid>(&mut conn)
-            .map_err(|_| ServiceError::BadRequest("Failed to find matching tracking id".to_string()))?,
+            .map_err(|_| {
+                ServiceError::BadRequest("Failed to find matching tracking id".to_string())
+            })?,
         UnifiedId::TrieveUuid(id) => id,
     };
 
