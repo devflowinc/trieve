@@ -1,6 +1,6 @@
 use super::event_operator::create_event_query;
 use super::group_operator::{create_group_from_file_query, create_group_query};
-use super::parse_operator::convert_html_to_text;
+use super::parse_operator::{chunk_document, convert_html_to_text};
 use crate::data::models::{ChunkMetadata, Dataset, DatasetAndOrgWithSubAndPlan, EventType};
 use crate::handlers::auth_handler::AdminOnly;
 use crate::operators::chunk_operator::delete_chunk_metadata_query;
@@ -26,7 +26,6 @@ use diesel::dsl::sql;
 use diesel::sql_types::BigInt;
 use diesel::{JoinOnDsl, NullableExpressionMethods, RunQueryDsl, SelectableHelper};
 use s3::{creds::Credentials, Bucket, Region};
-use std::{path::PathBuf, process::Command};
 
 pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
     let aws_region_name = std::env::var("AWS_REGION").unwrap_or("".to_string());
@@ -123,17 +122,6 @@ pub async fn convert_doc_to_html_query(
     let dataset_org_plan_sub1 = dataset_org_plan_sub.clone();
 
     tokio::spawn(async move {
-        let new_id = uuid::Uuid::new_v4();
-        let uuid_file_name = format!("{}-{}", new_id, file_name.replace('/', ""));
-        let glob_string = format!("./tmp/{}*", new_id);
-
-        let temp_html_file_path_buf = std::path::PathBuf::from(&format!(
-            "./tmp/{}.html",
-            uuid_file_name
-                .rsplit_once('.')
-                .map(|x| x.0)
-                .unwrap_or(&new_id.to_string())
-        ));
         let tika_url = std::env::var("TIKA_URL")
             .expect("TIKA_URL must be set")
             .to_string();
@@ -152,7 +140,7 @@ pub async fn convert_doc_to_html_query(
                 }
             })?;
 
-        let tika_response_bytes = tika_response
+        let tike_html_converted_file_bytes = tika_response
             .bytes()
             .await
             .map_err(|err| {
@@ -162,14 +150,7 @@ pub async fn convert_doc_to_html_query(
                 }
             })?
             .to_vec();
-
-        std::fs::write(&temp_html_file_path_buf, tika_response_bytes.clone()).map_err(|err| {
-            log::error!("Could not write tika response to disk {:?}", err);
-            log::error!("Temp file directory {:?}", temp_html_file_path_buf);
-            DefaultError {
-                message: "Could not write tika response to disk",
-            }
-        })?;
+        let html_content = String::from_utf8_lossy(&tike_html_converted_file_bytes).to_string();
 
         // get file metadata from tika
         let tika_metadata_response = tika_client
@@ -251,8 +232,7 @@ pub async fn convert_doc_to_html_query(
             time_stamp,
             link.clone(),
             user,
-            temp_html_file_path_buf,
-            glob_string,
+            html_content,
             dataset_org_plan_sub1,
             pool,
             redis_client,
@@ -290,61 +270,13 @@ pub async fn create_chunks_with_handler(
     time_stamp: Option<String>,
     link: Option<String>,
     user: LoggedUser,
-    temp_html_file_path_buf: PathBuf,
-    glob_string: String,
+    html_content: String,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     redis_client: web::Data<redis::Client>,
 ) -> Result<(), DefaultError> {
-    let parser_command =
-        std::env::var("PARSER_COMMAND").unwrap_or("./server-python/chunker.py".to_string());
-    let delete_html_file = || -> Result<(), DefaultError> {
-        let files = glob::glob(glob_string.as_str()).expect("Failed to read glob pattern");
-
-        for file in files.flatten() {
-            std::fs::remove_file(file).map_err(|_| DefaultError {
-                message: "Could not delete temp file",
-            })?;
-        }
-
-        Ok(())
-    };
-
-    let file_path_str = match temp_html_file_path_buf.to_str() {
-        Some(file_path_str) => file_path_str,
-        None => {
-            delete_html_file()?;
-            log::error!("HANDLER Could not convert file path to string");
-            return Err(DefaultError {
-                message: "Could not convert file path to string",
-            });
-        }
-    };
-
-    let parsed_chunks_command_output = Command::new(parser_command).arg(file_path_str).output();
-
-    delete_html_file()?;
-
-    let raw_parsed_chunks = match parsed_chunks_command_output {
-        Ok(parsed_chunks_command_output) => parsed_chunks_command_output.stdout,
-        Err(_) => {
-            log::error!("HANDLER Could not parse chunks");
-            return Err(DefaultError {
-                message: "Could not parse chunks",
-            });
-        }
-    };
-
-    // raw_parsed_chunks can be serialized to a vector of Strings
-    let chunk_htmls: Vec<String> = match serde_json::from_slice(&raw_parsed_chunks) {
-        Ok(chunk_htmls) => chunk_htmls,
-        Err(err) => {
-            log::error!("HANDLER Could not deserialize chunk_htmls {:?}", err);
-            return Err(DefaultError {
-                message: "Could not deserialize chunk_htmls",
-            });
-        }
-    };
+    let file_text = convert_html_to_text(&html_content);
+    let chunk_htmls = chunk_document(file_text);
 
     let mut chunk_ids: Vec<uuid::Uuid> = [].to_vec();
 

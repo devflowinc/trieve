@@ -1,2 +1,0 @@
-bs4==0.0.1
-english_dictionary==1.0.24

@@ -3291,6 +3291,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "regex-split"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "544861d1810a3e429bb5e80266e537138b0e69e59bed9334326ae129a4c3e676"
+dependencies = [
+ "regex",
+]
+
+[[package]]
 name = "regex-syntax"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3598,9 +3607,9 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "scraper"
-version = "0.18.1"
+version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "585480e3719b311b78a573db1c9d9c4c1f8010c2dee4cc59c2efe58ea4dbc3e1"
+checksum = "5b80b33679ff7a0ea53d37f3b39de77ea0c75b12c5805ac43ec0c33b3051af1b"
 dependencies = [
  "ahash 0.8.6",
  "cssparser",
@@ -4583,6 +4592,7 @@ dependencies = [
  "rand 0.8.5",
  "redis 0.24.0",
  "regex",
+ "regex-split",
  "reqwest",
  "rust-argon2",
  "rust-s3",
