@@ -87,7 +87,7 @@ pub fn get_user_by_id_query(
                 .map_err(|_| DefaultError {
                     message: "Error loading user by itself for get_user_by_id_query",
                 })?;
-            
+
             Ok((user, vec![], vec![]))
         }
     }
