@@ -125,6 +125,8 @@ pub async fn main() -> std::io::Result<()> {
             handlers::group_handler::get_group_by_tracking_id,
             handlers::group_handler::delete_group_by_tracking_id,
             handlers::group_handler::update_group_by_tracking_id,
+            handlers::group_handler::add_chunk_to_group_by_tracking_id,
+            handlers::group_handler::get_all_bookmarks_by_tracking_id,
             handlers::chunk_handler::search_groups,
             handlers::file_handler::upload_file_handler,
             handlers::file_handler::get_file_handler,
@@ -192,6 +194,8 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::group_handler::GetGroupByTrackingIDData,
                 handlers::group_handler::DeleteGroupByTrackingIDData,
                 handlers::group_handler::UpdateGroupByTrackingIDData,
+                handlers::group_handler::GetAllBookmarksByTrackingIdData,
+                handlers::group_handler::AddChunkToGroupData,
                 operators::group_operator::BookmarkGroupResult,
                 handlers::file_handler::UploadFileData,
                 handlers::file_handler::UploadFileResult,
@@ -528,19 +532,32 @@ pub async fn main() -> std::io::Result<()> {
                                 ),
                             )
                             .service(
-                                web::resource("/tracking_id/{tracking_id}")
-                                    .route(
-                                        web::get()
-                                            .to(handlers::group_handler::get_group_by_tracking_id),
-                                    )
-                                    .route(
-                                        web::delete().to(
+                                web::scope("/tracking_id/{tracking_id}")
+                                    .service(
+                                    web::resource("")
+                                        .route(
+                                            web::get().to(
+                                                handlers::group_handler::get_group_by_tracking_id,
+                                            ),
+                                        )
+                                        .route(
+                                            web::post().to(
+                                                handlers::group_handler::add_chunk_to_group_by_tracking_id
+                                            )
+                                        )
+                                        .route(web::delete().to(
                                             handlers::group_handler::delete_group_by_tracking_id,
+                                        )),
+                                    ).service(
+                                        web::resource("/{page}").route(
+                                            web::get().to(
+                                                handlers::group_handler::get_all_bookmarks_by_tracking_id,
+                                            ),
                                         ),
                                     ),
                             )
                             .service(web::resource("/tracking_id").route(
-                                web::put().to(handlers::chunk_handler::update_chunk_by_tracking_id),
+                                web::put().to(handlers::group_handler::update_group_by_tracking_id),
                             ))
                             .service(
                                 web::resource("/{group_id}/{page}").route(
