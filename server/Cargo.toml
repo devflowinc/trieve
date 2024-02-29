@@ -87,8 +87,9 @@ oauth2 = "4.4.2"
 dateparser = "0.2.1"
 cfg-if = "1.0.0"
 lettre = "0.11.3"
-simple-server-timing-header = "0.1.1"
 scraper = "0.18.1"
+sentry = "0.32.2"
+sentry-actix = "0.32.2"
 
 
 [build-dependencies]

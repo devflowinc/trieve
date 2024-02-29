@@ -12,9 +12,20 @@ pub async fn create_embedding(
     message: &str,
     dataset_config: ServerDatasetConfiguration,
 ) -> Result<Vec<f32>, actix_web::Error> {
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child("create_embedding", "Create semantic dense embedding")
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new("create_embedding", "Create semantic dense embedding");
+            sentry::start_transaction(ctx).into()
+        }
+    };
+
+
     let open_ai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
-    let base_url = dataset_config
-        .EMBEDDING_BASE_URL;
+    let base_url = dataset_config.EMBEDDING_BASE_URL;
 
     let base_url = if base_url.is_empty() {
         "https://api.openai.com/v1".to_string()
@@ -22,7 +33,8 @@ pub async fn create_embedding(
         get_env!(
             "GPU_SERVER_ORIGIN",
             "GPU_SERVER_ORIGIN should be set if this is called"
-        ).to_string()
+        )
+        .to_string()
     } else {
         base_url
     };
@@ -50,6 +62,8 @@ pub async fn create_embedding(
         .map_err(actix_web::error::ErrorBadRequest)?;
 
     let vector = embeddings.data.first().unwrap().embedding.clone();
+
+    transaction.finish();
     Ok(vector.iter().map(|&x| x as f32).collect())
 }
 
@@ -84,10 +98,7 @@ pub async fn get_splade_doc_embedding(message: &str) -> Result<Vec<(u32, f32)>, 
             input: message.to_string(),
             encode_type: "doc".to_string(),
         })
-        .bearer_auth(get_env!(
-            "OPENAI_API_KEY",
-            "OPENAI_API_KEY should be set"
-        ))
+        .bearer_auth(get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set"))
         .send()
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
@@ -107,6 +118,17 @@ pub async fn get_splade_doc_embedding(message: &str) -> Result<Vec<(u32, f32)>, 
 }
 
 pub async fn get_splade_query_embedding(message: &str) -> Result<Vec<(u32, f32)>, ServiceError> {
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child("get_splade_query_embedding", "get_splade_query_embedding")
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new("get_splade_query_embedding", "get_splade_query_embedding");
+            sentry::start_transaction(ctx).into()
+        }
+    };
+
     let server_origin: String = get_env!(
         "GPU_SERVER_ORIGIN",
         "GPU_SERVER_ORIGIN should be set if this is called"
@@ -121,10 +143,7 @@ pub async fn get_splade_query_embedding(message: &str) -> Result<Vec<(u32, f32)>
             input: message.to_string(),
             encode_type: "query".to_string(),
         })
-        .bearer_auth(get_env!(
-            "OPENAI_API_KEY",
-            "OPENAI_API_KEY should be set"
-        ))
+        .bearer_auth(get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set"))
         .send()
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
@@ -140,6 +159,7 @@ pub async fn get_splade_query_embedding(message: &str) -> Result<Vec<(u32, f32)>
             )
         })?;
 
+    transaction.finish();
     Ok(resp.embeddings)
 }
 
@@ -158,7 +178,18 @@ pub async fn cross_encoder(
     query: String,
     results: Vec<ScoreChunkDTO>,
 ) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
-    
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child( "Cross Encoder", "Cross Encode semantic and hybrid chunks")
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new( "Cross Encoder", "Cross Encode semantic and hybrid chunks");
+            sentry::start_transaction(ctx).into()
+        }
+    };
+
+
     let server_origin: String = get_env!(
         "GPU_SERVER_ORIGIN",
         "GPU_SERVER_ORIGIN should be set if this is called"
@@ -183,10 +214,7 @@ pub async fn cross_encoder(
             query: query.to_string(),
             docs: request_docs,
         })
-        .bearer_auth(get_env!(
-            "OPENAI_API_KEY",
-            "OPENAI_API_KEY should be set"
-        ))
+        .bearer_auth(get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set"))
         .send()
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
@@ -219,5 +247,6 @@ pub async fn cross_encoder(
 
     results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
 
+    transaction.finish();
     Ok(results)
 }

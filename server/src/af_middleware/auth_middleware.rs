@@ -38,12 +38,17 @@ where
         // Clone the Rc pointers so we can move them into the async block.
         let srv = self.service.clone();
         Box::pin(async move {
+            let tx_ctx =
+                sentry::TransactionContext::new("middleware", "get dataset, org, and/or user");
+            let transaction = sentry::start_transaction(tx_ctx);
+            let org_id_span = transaction.start_child("orgid", "Getting organization id");
+
             let org_id = match req.headers().get("TR-Organization") {
                 Some(org_header) => {
                     let orgid_result = org_header
                         .to_str()
                         .map_err(|_| {
-                            Into::<Error>::into(ServiceError::InternalServerError(
+                            Into::<Error>::into(ServiceError::BadRequest(
                                 "Could not convert Organization to str".to_string(),
                             ))
                         })?
@@ -138,6 +143,10 @@ where
                             req.extensions_mut().insert(user.clone());
                         }
                         let res = srv.call(req).await?;
+
+                        org_id_span.finish();
+                        transaction.finish();
+
                         return Ok(res);
                     }
                 },
@@ -167,6 +176,9 @@ where
             }
 
             let res = srv.call(req).await?;
+
+            org_id_span.finish();
+            transaction.finish();
 
             Ok(res)
         })

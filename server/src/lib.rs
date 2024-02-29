@@ -255,6 +255,16 @@ pub async fn main() -> std::io::Result<()> {
     )]
     struct ApiDoc;
 
+    let sentry_url = std::env::var("SENTRY_URL");
+    let _guard = sentry::init((
+        sentry_url,
+        sentry::ClientOptions {
+            release: sentry::release_name!(),
+            traces_sample_rate: 1.0,
+            ..Default::default()
+      }
+    ));
+
     dotenvy::dotenv().ok();
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
@@ -305,6 +315,7 @@ pub async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(oidc_client.clone()))
             .app_data(web::Data::new(redis_client.clone()))
             .wrap(af_middleware::auth_middleware::AuthMiddlewareFactory)
+            .wrap(sentry_actix::Sentry::new())
             .wrap(
                 IdentityMiddleware::builder()
                     .login_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
