@@ -126,7 +126,7 @@ pub async fn main() -> std::io::Result<()> {
             handlers::group_handler::delete_group_by_tracking_id,
             handlers::group_handler::update_group_by_tracking_id,
             handlers::group_handler::add_chunk_to_group_by_tracking_id,
-            handlers::group_handler::get_all_bookmarks_by_tracking_id,
+            handlers::group_handler::get_chunks_in_group_by_tracking_id,
             handlers::chunk_handler::search_groups,
             handlers::file_handler::upload_file_handler,
             handlers::file_handler::get_file_handler,
@@ -557,7 +557,7 @@ pub async fn main() -> std::io::Result<()> {
                                     ).service(
                                         web::resource("/{page}").route(
                                             web::get().to(
-                                                handlers::group_handler::get_all_bookmarks_by_tracking_id,
+                                                handlers::group_handler::get_chunks_in_group_by_tracking_id,
                                             ),
                                         ),
                                     ),

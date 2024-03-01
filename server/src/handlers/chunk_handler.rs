@@ -782,7 +782,7 @@ pub struct SearchGroupsResult {
 
 /// group_search
 ///
-/// This route allows you to search only within a group. This is useful for when you only want search results to contain chunks which are members of a specific group. Think about this like searching within a playlist or bookmark folder. If choosing hybrid search, the results will be re-ranked using BAAI/bge-reranker-large.
+/// This route allows you to search only within a group. This is useful for when you only want search results to contain chunks which are members of a specific group. If choosing hybrid search, the results will be re-ranked using BAAI/bge-reranker-large.
 #[utoipa::path(
     post,
     path = "/chunk_group/search",
