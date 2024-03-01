@@ -260,9 +260,14 @@ pub async fn main() -> std::io::Result<()> {
     )]
     struct ApiDoc;
 
+    dotenvy::dotenv().ok();
+
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+
     let sentry_url = std::env::var("SENTRY_URL");
-    if let Ok(sentry_url) = sentry_url {
-        let _guard = sentry::init((
+    let guard = if let Ok(sentry_url) = sentry_url {
+        log::info!("Sentry monitoring enabled");
+        let guard = sentry::init((
             sentry_url,
             sentry::ClientOptions {
                 release: sentry::release_name!(),
@@ -270,11 +275,10 @@ pub async fn main() -> std::io::Result<()> {
                 ..Default::default()
             },
         ));
-    }
-
-    dotenvy::dotenv().ok();
-
-    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+        Some(guard)
+    } else {
+        None
+    };
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL should be set");
     let redis_url = get_env!("REDIS_URL", "REDIS_URL should be set");

@@ -682,37 +682,16 @@ pub async fn search_chunk(
 
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => {
-            search_full_text_chunks(
-                data,
-                parsed_query,
-                page,
-                pool,
-                dataset_org_plan_sub.dataset,
-                // transaction
-            )
-            .await?
+            search_full_text_chunks(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
+                .await?
         }
         "hybrid" => {
-            search_hybrid_chunks(
-                data,
-                parsed_query,
-                page,
-                pool,
-                dataset_org_plan_sub.dataset,
-                //transaction
-            )
-            .await?
+            search_hybrid_chunks(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
+                .await?
         }
         _ => {
-            search_semantic_chunks(
-                data,
-                parsed_query,
-                page,
-                pool,
-                dataset_org_plan_sub.dataset,
-                //transaction
-            )
-            .await?
+            search_semantic_chunks(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
+                .await?
         }
     };
 

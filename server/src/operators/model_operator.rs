@@ -25,6 +25,7 @@ pub async fn create_embedding(
             sentry::start_transaction(ctx).into()
         }
     };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
     let open_ai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let base_url = dataset_config.EMBEDDING_BASE_URL;
@@ -133,6 +134,7 @@ pub async fn get_splade_query_embedding(message: &str) -> Result<Vec<(u32, f32)>
             sentry::start_transaction(ctx).into()
         }
     };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
     let server_origin: String = get_env!(
         "GPU_SERVER_ORIGIN",
@@ -196,6 +198,7 @@ pub async fn cross_encoder(
             sentry::start_transaction(ctx).into()
         }
     };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
     let server_origin: String = get_env!(
         "GPU_SERVER_ORIGIN",
