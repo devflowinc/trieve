@@ -51,7 +51,7 @@ pub struct CreateChunkGroupData {
 
 /// create_chunk_group
 ///
-/// Create a new chunk_group. Think of this as analogous to a bookmark folder.
+/// Create a new chunk_group.
 #[utoipa::path(
     post,
     path = "/chunk_group",
@@ -385,7 +385,7 @@ pub struct UpdateChunkGroupData {
 
 /// update_chunk_group
 ///
-/// Update a chunk_group. Think of this as analogous to a bookmark folder.
+/// Update a chunk_group.
 #[utoipa::path(
     put,
     path = "/chunk_group",
@@ -446,7 +446,7 @@ pub struct AddChunkToGroupData {
 
 /// add_chunk_to_group
 ///
-/// Route to add a bookmark. Think of a bookmark as a chunk which is a member of a group.
+/// Route to add a chunk to a group
 #[utoipa::path(
     post,
     path = "/chunk_group/chunk/{group_id}",
@@ -506,7 +506,7 @@ pub struct AddChunkToGroupByTrackingIdData {
 
 /// add_chunk_to_group_by_tracking_id
 ///
-/// Route to add a chunk to a group. Think of a bookmark as a chunk which is a member of a group.
+/// Route to add a chunk to a group by tracking id. Think of a bookmark as a chunk which is a member of a group.
 #[utoipa::path(
     post,
     path = "/chunk_group/tracking_id/{tracking_id}",
@@ -578,7 +578,7 @@ pub struct GetAllBookmarksData {
 
 /// get_chunks_in_group
 ///
-/// Route to get all chunks for a group. The response is paginated, with each page containing 10 chunks (bookmarks). Support for custom page size is coming soon.
+/// Route to get all chunks for a group. The response is paginated, with each page containing 10 chunks. Support for custom page size is coming soon.
 #[utoipa::path(
     get,
     path = "/chunk_group/{group_id}/{page}",
@@ -635,9 +635,9 @@ pub struct GetAllBookmarksByTrackingIdData {
     pub page: Option<u64>,
 }
 
-/// get_all_bookmarks_by_tracking_id
+/// get_chunks_in_group_by_tracking_id
 ///
-/// Route to get all bookmarks for a group. Think of a bookmark as a chunk which is a member of a group. The response is paginated, with each page containing 10 chunks (bookmarks). Support for custom page size is coming soon.
+/// Route to get all chunks for a group. The response is paginated, with each page containing 10 chunks. Support for custom page size is coming soon.
 #[utoipa::path(
     get,
     path = "/chunk_group/tracking_id/{group_tracking_id}/{page}",
@@ -657,7 +657,7 @@ pub struct GetAllBookmarksByTrackingIdData {
         ("Cookie" = ["readonly"])
     )
 )]
-pub async fn get_all_bookmarks_by_tracking_id(
+pub async fn get_chunks_in_group_by_tracking_id(
     path_data: web::Path<GetAllBookmarksByTrackingIdData>,
     pool: web::Data<Pool>,
     _user: LoggedUser,
@@ -734,7 +734,7 @@ pub struct DeleteBookmarkPathData {
 
 /// remove_chunk_from_group
 ///
-/// Route to delete a bookmark. Think of a bookmark as a chunk which is a member of a group.
+/// Route to remove a chunk from a group.
 #[utoipa::path(
     delete,
     path = "/chunk_group/chunk/{group_id}",
