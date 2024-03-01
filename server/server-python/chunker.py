@@ -100,7 +100,7 @@ class Chunk:
         largest_content_word_count = len(inner_content.split(" "))
 
         split_factor = 1
-        new_p_bodies = [inner_content]
+        new_p_bodies = [inner_content]  
 
         word_limit = 340
 

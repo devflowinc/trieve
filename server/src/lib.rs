@@ -5,7 +5,8 @@ use crate::{
     errors::ServiceError,
     handlers::auth_handler::build_oidc_client,
     operators::{
-        qdrant_operator::create_new_qdrant_collection_query, user_operator::create_default_user,
+        parse_operator::create_english_dict, qdrant_operator::create_new_qdrant_collection_query,
+        user_operator::create_default_user,
     },
 };
 use actix_cors::Cors;
@@ -288,13 +289,17 @@ pub async fn main() -> std::io::Result<()> {
     let pool: data::models::Pool = r2d2::Pool::builder()
         .build(manager)
         .expect("Failed to create pool.");
+    run_migrations(&mut pool.get().expect("Failed to get connection to postgres"));
 
-    let redis_store = RedisSessionStore::new(redis_url).await.unwrap();
+    let redis_store = RedisSessionStore::new(redis_url)
+        .await
+        .expect("Failed to create redis store");
 
-    let redis_client = redis::Client::open(redis_url).unwrap();
+    let redis_client = redis::Client::open(redis_url).expect("Failed to create redis client");
 
     let oidc_client = build_oidc_client().await;
-    run_migrations(&mut pool.get().unwrap());
+
+    let english_dictionary = create_english_dict();
 
     let _ = create_new_qdrant_collection_query().await.map_err(|err| {
         log::error!("Failed to create qdrant group: {:?}", err);
@@ -325,6 +330,7 @@ pub async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(oidc_client.clone()))
             .app_data(web::Data::new(redis_client.clone()))
+            .app_data(web::Data::new(english_dictionary.clone()))
             .wrap(af_middleware::auth_middleware::AuthMiddlewareFactory)
             .wrap(sentry_actix::Sentry::new())
             .wrap(

@@ -1,6 +1,6 @@
 use super::event_operator::create_event_query;
 use super::group_operator::{create_group_from_file_query, create_group_query};
-use super::parse_operator::{chunk_document, convert_html_to_text};
+use super::parse_operator::{chunk_html, convert_html_to_text};
 use crate::data::models::{ChunkMetadata, Dataset, DatasetAndOrgWithSubAndPlan, EventType};
 use crate::handlers::auth_handler::AdminOnly;
 use crate::operators::chunk_operator::delete_chunk_metadata_query;
@@ -21,11 +21,11 @@ use crate::{
     },
 };
 use actix_web::{body::MessageBody, web};
-
 use diesel::dsl::sql;
 use diesel::sql_types::BigInt;
 use diesel::{JoinOnDsl, NullableExpressionMethods, RunQueryDsl, SelectableHelper};
 use s3::{creds::Credentials, Bucket, Region};
+use std::collections::HashMap;
 
 pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
     let aws_region_name = std::env::var("AWS_REGION").unwrap_or("".to_string());
@@ -113,6 +113,7 @@ pub async fn convert_doc_to_html_query(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     redis_client: web::Data<redis::Client>,
+    english_dict: web::Data<HashMap<String, bool>>,
 ) -> Result<UploadFileResult, DefaultError> {
     let file_id = uuid::Uuid::new_v4();
     let file_id_query_clone = file_id;
@@ -233,6 +234,7 @@ pub async fn convert_doc_to_html_query(
             link.clone(),
             user,
             html_content,
+            english_dict,
             dataset_org_plan_sub1,
             pool,
             redis_client,
@@ -271,12 +273,13 @@ pub async fn create_chunks_with_handler(
     link: Option<String>,
     user: LoggedUser,
     html_content: String,
+    english_dict: web::Data<HashMap<String, bool>>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     redis_client: web::Data<redis::Client>,
 ) -> Result<(), DefaultError> {
     let file_text = convert_html_to_text(&html_content);
-    let chunk_htmls = chunk_document(file_text);
+    let chunk_htmls = chunk_html(&file_text, english_dict.into_inner());
 
     let mut chunk_ids: Vec<uuid::Uuid> = [].to_vec();
 
