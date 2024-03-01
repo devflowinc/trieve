@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
     data::models::{
@@ -98,7 +96,6 @@ pub async fn upload_file_handler(
     user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     redis_client: web::Data<redis::Client>,
-    english_dict: web::Data<HashMap<String, bool>>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let document_upload_feature = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
@@ -169,7 +166,6 @@ pub async fn upload_file_handler(
         dataset_org_plan_sub.clone(),
         pool_inner,
         redis_client,
-        english_dict,
     )
     .await
     .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;

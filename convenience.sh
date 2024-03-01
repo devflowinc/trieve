@@ -18,14 +18,6 @@ reset_s3_service() {
     docker compose up -d s3
 }
 
-# Function to set up the Python environment
-setup_python_environment() {
-    echo "Setting up the Python environment..."
-    virtualenv venv
-    source venv/bin/activate
-    pip install -r ./server-python/requirements.txt
-}
-
 # Function to reset the script database
 reset_script_redis() {
     echo "Resetting the script Redis database..."
@@ -52,9 +44,6 @@ while getopts ":qps3l" opt; do
     case $opt in
         q)
             reset_qdrant_database
-            ;;
-        p)
-            setup_python_environment
             ;;
         3)
             reset_s3_service
