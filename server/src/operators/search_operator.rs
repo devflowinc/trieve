@@ -235,6 +235,7 @@ pub async fn retrieve_qdrant_points_query(
             sentry::start_transaction(ctx).into()
         }
     };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
     let page = if page == 0 { 1 } else { page };
 
@@ -1006,6 +1007,7 @@ pub async fn retrieve_chunks_from_point_ids(
             sentry::start_transaction(ctx).into()
         }
     };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
     let point_ids = search_chunk_query_results
         .search_results
@@ -1133,6 +1135,7 @@ pub async fn search_semantic_chunks(
             sentry::start_transaction(ctx).into()
         }
     };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
@@ -1183,6 +1186,7 @@ pub async fn search_full_text_chunks(
             sentry::start_transaction(ctx).into()
         }
     };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
     parsed_query.query = parsed_query
         .query

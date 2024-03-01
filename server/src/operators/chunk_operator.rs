@@ -87,6 +87,7 @@ pub fn get_metadata_and_collided_chunks_from_point_ids_query(
             sentry::start_transaction(ctx).into()
         }
     };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
     let chunk_search_span = transaction.start_child(
         "Fetching matching points from qdrant",
