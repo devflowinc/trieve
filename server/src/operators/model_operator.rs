@@ -181,6 +181,7 @@ pub struct CrossEncoderData {
 
 pub async fn cross_encoder(
     query: String,
+    page_size: u64,
     results: Vec<ScoreChunkDTO>,
 ) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -253,6 +254,8 @@ pub async fn cross_encoder(
         .collect();
 
     results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+
+    results.truncate(page_size.try_into().unwrap());
 
     transaction.finish();
     Ok(results)

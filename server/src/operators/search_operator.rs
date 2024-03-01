@@ -1349,7 +1349,12 @@ pub async fn search_hybrid_chunks(
             .unique_by(|score_chunk| score_chunk.metadata[0].id)
             .collect::<Vec<ScoreChunkDTO>>();
 
-        let reranked_chunks = cross_encoder(data.query.clone(), combined_results).await?;
+        let reranked_chunks = cross_encoder(
+            data.query.clone(),
+            data.page_size.unwrap_or(10),
+            combined_results,
+        )
+        .await?;
 
         SearchChunkQueryResponseBody {
             score_chunks: reranked_chunks,
@@ -1568,7 +1573,12 @@ pub async fn search_hybrid_groups(
             .unique_by(|score_chunk| score_chunk.metadata[0].id)
             .collect::<Vec<ScoreChunkDTO>>();
         SearchChunkQueryResponseBody {
-            score_chunks: cross_encoder(data.query.clone(), combined_results).await?,
+            score_chunks: cross_encoder(
+                data.query.clone(),
+                data.page_size.unwrap_or(10),
+                combined_results,
+            )
+            .await?,
             total_chunk_pages: semantic_results.total_chunk_pages,
         }
     };
@@ -1656,13 +1666,14 @@ pub async fn full_text_search_over_groups(
 
 async fn cross_encoder_for_groups(
     query: String,
+    page_size: u64,
     groups_chunks: Vec<GroupScoreChunkDTO>,
 ) -> Result<Vec<GroupScoreChunkDTO>, actix_web::Error> {
     let score_chunks = groups_chunks
         .iter()
         .flat_map(|group| group.metadata.clone().into_iter().collect_vec())
         .collect_vec();
-    let cross_encoder_results = cross_encoder(query, score_chunks).await?;
+    let cross_encoder_results = cross_encoder(query, page_size, score_chunks).await?;
     let mut group_results = cross_encoder_results
         .into_iter()
         .map(|score_chunk| {
@@ -1757,6 +1768,7 @@ pub async fn hybrid_search_over_groups(
     let result_chunks = SearchOverGroupsResponseBody {
         group_chunks: cross_encoder_for_groups(
             data.query.clone(),
+            data.page_size.unwrap_or(10).into(),
             combined_result_chunks.group_chunks,
         )
         .await?,
