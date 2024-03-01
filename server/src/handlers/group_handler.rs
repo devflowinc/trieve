@@ -337,6 +337,7 @@ pub struct DeleteGroupData {
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
         ("group_id" = uuid, description = "Id of the chunk_group to delete"),
+        ("delete_chunks" = bool, Query, description = "Delete the chunks within the group"),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -443,12 +444,12 @@ pub struct AddChunkToGroupData {
     pub chunk_id: uuid::Uuid,
 }
 
-/// add_bookmark
+/// add_chunk_to_group
 ///
 /// Route to add a bookmark. Think of a bookmark as a chunk which is a member of a group.
 #[utoipa::path(
     post,
-    path = "/chunk_group/{group_id}",
+    path = "/chunk_group/chunk/{group_id}",
     context_path = "/api",
     tag = "chunk_group",
     request_body(content = AddChunkToGroupData, description = "JSON request payload to add a chunk to a group (bookmark it)", content_type = "application/json"),
@@ -465,7 +466,7 @@ pub struct AddChunkToGroupData {
         ("Cookie" = ["admin"])
     )
 )]
-pub async fn add_bookmark(
+pub async fn add_chunk_to_group(
     body: web::Json<AddChunkToGroupData>,
     group_id: web::Path<uuid::Uuid>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -575,9 +576,9 @@ pub struct GetAllBookmarksData {
     pub page: Option<u64>,
 }
 
-/// get_all_bookmarks
+/// get_chunks_in_group
 ///
-/// Route to get all bookmarks for a group. Think of a bookmark as a chunk which is a member of a group. The response is paginated, with each page containing 10 chunks (bookmarks). Support for custom page size is coming soon.
+/// Route to get all chunks for a group. The response is paginated, with each page containing 10 chunks (bookmarks). Support for custom page size is coming soon.
 #[utoipa::path(
     get,
     path = "/chunk_group/{group_id}/{page}",
@@ -597,7 +598,7 @@ pub struct GetAllBookmarksData {
         ("Cookie" = ["readonly"])
     )
 )]
-pub async fn get_all_bookmarks(
+pub async fn get_chunks_in_group(
     path_data: web::Path<GetAllBookmarksData>,
     pool: web::Data<Pool>,
     _user: LoggedUser,
@@ -693,7 +694,7 @@ pub struct GetGroupsForChunksData {
 
 #[utoipa::path(
     post,
-    path = "/chunk_group/bookmark",
+    path = "/chunk_group/chunks",
     context_path = "/api",
     tag = "chunk_group",
     request_body(content = GetGroupsForChunksData, description = "JSON request payload to get the groups that a chunk is in", content_type = "application/json"),
@@ -728,49 +729,51 @@ pub async fn get_groups_chunk_is_in(
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct DeleteBookmarkPathData {
-    pub group_id: uuid::Uuid,
-    pub bookmark_id: uuid::Uuid,
+    pub chunk_id: uuid::Uuid,
 }
 
-/// delete_bookmark
+/// remove_chunk_from_group
 ///
 /// Route to delete a bookmark. Think of a bookmark as a chunk which is a member of a group.
 #[utoipa::path(
     delete,
-    path = "/bookmark/{group_id}/{bookmark_id}",
+    path = "/chunk_group/chunk/{group_id}",
     context_path = "/api",
     tag = "chunk_group",
     responses(
         (status = 204, description = "Confirmation that the chunk was removed to the group"),
         (status = 400, description = "Service error relating to removing the chunk from the group", body = ErrorResponseBody),
     ),
+    request_body(content = DeleteBookmarkPathData, description = "JSON request payload to send an invitation", content_type = "application/json"),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
         ("group_id" = uuid::Uuid, description = "Id of the group to remove the bookmark'ed chunk from"),
-        ("bookmark_id" = uuid::Uuid, description = "Id of the bookmark to remove"),
     ),
+    request_body(content = CreateChunkGroupData, description = "JSON request payload to cretea a chunkGroup", content_type = "application/json"),
     security(
         ("ApiKey" = ["admin"]),
         ("Cookie" = ["admin"])
     )
 )]
-pub async fn delete_bookmark(
-    path_data: web::Path<DeleteBookmarkPathData>,
+pub async fn remove_chunk_from_group(
+    group_id: web::Path<uuid::Uuid>,
+    body: web::Json<DeleteBookmarkPathData>,
     pool: web::Data<Pool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let pool1 = pool.clone();
-    let group_id = path_data.group_id;
-    let bookmark_id = path_data.bookmark_id;
+    let group_id = group_id.into_inner();
+    let chunk_id = body.chunk_id;
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let pool = pool.clone();
     dataset_owns_group(UnifiedId::TrieveUuid(group_id), dataset_id, pool1).await?;
 
-    let qdrant_point_id = web::block(move || delete_bookmark_query(bookmark_id, group_id, pool))
-        .await?
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let qdrant_point_id =
+        web::block(move || delete_chunk_from_group_query(chunk_id, group_id, pool))
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if let Some(qdrant_point_id) = qdrant_point_id {
         remove_bookmark_from_qdrant_query(qdrant_point_id, group_id)

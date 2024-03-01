@@ -90,7 +90,7 @@ const ResultsPage = (props: ResultsPageProps) => {
     const dataset = $dataset();
     if (!dataset) return;
 
-    void fetch(`${apiHost}/chunk_group/bookmark`, {
+    void fetch(`${apiHost}/chunk_group/chunks`, {
       method: "POST",
       credentials: "include",
       headers: {

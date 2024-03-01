@@ -118,9 +118,9 @@ pub async fn main() -> std::io::Result<()> {
             handlers::group_handler::create_chunk_group,
             handlers::group_handler::delete_chunk_group,
             handlers::group_handler::update_chunk_group,
-            handlers::group_handler::add_bookmark,
-            handlers::group_handler::delete_bookmark,
-            handlers::group_handler::get_all_bookmarks,
+            handlers::group_handler::add_chunk_to_group,
+            handlers::group_handler::remove_chunk_from_group,
+            handlers::group_handler::get_chunks_in_group,
             handlers::group_handler::get_groups_chunk_is_in,
             handlers::group_handler::get_group_by_tracking_id,
             handlers::group_handler::delete_group_by_tracking_id,
@@ -514,9 +514,20 @@ pub async fn main() -> std::io::Result<()> {
                                         web::put().to(handlers::group_handler::update_chunk_group),
                                     ),
                             )
-                            .service(web::resource("/bookmark").route(
+                            .route("/{group_id}", web::delete().to(handlers::group_handler::delete_chunk_group))
+                            .service(web::resource("/chunks").route(
                                 web::post().to(handlers::group_handler::get_groups_chunk_is_in),
                             ))
+                            .service(
+                                web::resource("/chunk/{chunk_group_id}")
+                                    .route(
+                                        web::post().to(handlers::group_handler::add_chunk_to_group),
+                                    )
+                                    .route(
+                                        web::delete()
+                                            .to(handlers::group_handler::remove_chunk_from_group),
+                                    ),
+                            )
                             .service(
                                 web::resource("/search")
                                     .route(web::post().to(handlers::chunk_handler::search_groups)),
@@ -524,11 +535,6 @@ pub async fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/search_over_groups").route(
                                     web::post().to(handlers::chunk_handler::search_over_groups),
-                                ),
-                            )
-                            .service(
-                                web::resource("/bookmark/{group_id}/{bookmark_id}").route(
-                                    web::delete().to(handlers::group_handler::delete_bookmark),
                                 ),
                             )
                             .service(
@@ -561,17 +567,9 @@ pub async fn main() -> std::io::Result<()> {
                             ))
                             .service(
                                 web::resource("/{group_id}/{page}").route(
-                                    web::get().to(handlers::group_handler::get_all_bookmarks),
+                                    web::get().to(handlers::group_handler::get_chunks_in_group),
                                 ),
                             )
-                            .service(
-                                web::resource("/{chunk_group_id}")
-                                    .route(web::post().to(handlers::group_handler::add_bookmark))
-                                    .route(
-                                        web::delete()
-                                            .to(handlers::group_handler::delete_chunk_group),
-                                    ),
-                            ),
                     )
                     .service(
                         web::scope("/file")
