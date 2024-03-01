@@ -179,7 +179,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
     const currentDataset = $dataset();
     if (!currentDataset) return;
 
-    void fetch(`${apiHost}/chunk_group/bookmark`, {
+    void fetch(`${apiHost}/chunk_group/chunks`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -301,7 +301,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                                 const currentDataset = $dataset();
                                 if (!currentDataset) return;
                                 void fetch(
-                                  `${apiHost}/chunk_group/${group.id}`,
+                                  `${apiHost}/chunk_group/chunk/${group.id}`,
                                   {
                                     method: e.currentTarget.checked
                                       ? "POST"

@@ -278,7 +278,7 @@ export const GroupPage = (props: GroupPageProps) => {
     const currentDataset = $dataset();
     if (!currentDataset) return;
 
-    void fetch(`${apiHost}/chunk_group/bookmark`, {
+    void fetch(`${apiHost}/chunk_group/chunks`, {
       method: "POST",
       credentials: "include",
       headers: {

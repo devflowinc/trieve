@@ -527,8 +527,8 @@ pub fn get_groups_for_bookmark_query(
     Ok(bookmark_groups)
 }
 
-pub fn delete_bookmark_query(
-    bookmark_id: uuid::Uuid,
+pub fn delete_chunk_from_group_query(
+    chunk_id: uuid::Uuid,
     group_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Option<uuid::Uuid>, DefaultError> {
@@ -539,7 +539,7 @@ pub fn delete_bookmark_query(
 
     diesel::delete(
         chunk_group_bookmarks_columns::chunk_group_bookmarks
-            .filter(chunk_group_bookmarks_columns::chunk_metadata_id.eq(bookmark_id))
+            .filter(chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_id))
             .filter(chunk_group_bookmarks_columns::group_id.eq(group_id)),
     )
     .execute(&mut conn)
@@ -551,7 +551,7 @@ pub fn delete_bookmark_query(
     })?;
 
     let qdrant_point_id = chunk_metadata_columns::chunk_metadata
-        .filter(chunk_metadata_columns::id.eq(bookmark_id))
+        .filter(chunk_metadata_columns::id.eq(chunk_id))
         .select(chunk_metadata_columns::qdrant_point_id)
         .first::<Option<uuid::Uuid>>(&mut conn)
         .map_err(|_err| {
