@@ -15,7 +15,6 @@ venv
 .DS_Store
 story_html.zip
 testing.ipynb
-server-python/testing.ipynb
 output.json
 temp.json
 server/target
@@ -23,7 +22,6 @@ server/images
 server/tantivy
 *.icloud
 chat/src/.root 2.css.icloud
-server/server-python/test.ipynb
 tmp
 temp
 .venv

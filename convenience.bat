@@ -50,14 +50,6 @@ docker "volume" "rm" "vault_s3-data"
 docker "compose" "up" "-d" "s3"
 EXIT /B 0
 
-rem Function to set up the Python environment
-:setup_python_environment
-echo "Setting up the Python environment..."
-virtualenv "venv"
-source "venv\bin\activate"
-pip "install" "-r" "%CD%\server-python\requirements.txt"
-EXIT /B 0
-
 rem Function to reset the script database
 :reset_script_redis
 echo "Resetting the script Redis database..."
