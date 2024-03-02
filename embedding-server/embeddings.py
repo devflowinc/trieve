@@ -1,4 +1,4 @@
-from math import trunc
+from infinity_emb import AsyncEmbeddingEngine, EngineArgs
 from typing import Optional, Annotated
 import uvicorn
 import torch
@@ -31,9 +31,7 @@ if SENTRY_URL != None:
     )
 
 huggingface_hub.login(token=hf_token)
-embedding_model = AutoModel.from_pretrained(
-    "jinaai/jina-embeddings-v2-base-en", token=hf_token, trust_remote_code=True
-)  # trust_remote_code is needed to use the encode method
+embedding_model = AsyncEmbeddingEngine.from_args(EngineArgs(model_name_or_path = "jinaai/jina-embeddings-v2-base-en", engine="torch"))
 
 # Create a Flask app
 app = FastAPI()
@@ -50,18 +48,19 @@ query_tokenizer = AutoTokenizer.from_pretrained(
 )
 query_model = AutoModelForMaskedLM.from_pretrained(query_model_id)
 
-cross_encoder_model_id = "BAAI/bge-reranker-large"
-cross_encoder_model = CrossEncoder(cross_encoder_model_id)
 
 if torch.cuda.is_available():
     device = torch.device("cuda")
 else:
     device = torch.device("cpu")
 
+cross_encoder_model_id = "BAAI/bge-reranker-large"
+cross_encoder_model = CrossEncoder(cross_encoder_model_id, device=device)
+
 # Tokenize sentences
 query_model.to(device)
 doc_model.to(device)
-embedding_model.to(device)
+# embedding_model.to(device)
 
 # Create a Flask app
 app = FastAPI()
@@ -116,7 +115,7 @@ async def encode(encodingRequest: EncodeRequest, Authorization: Annotated[str | 
                 status_code=401,
             )
 
-    sentence_embeddings = embedding_model.encode([encodingRequest.input])
+    sentence_embeddings, _ = embedding_model.embed([encodingRequest.input])
 
     return JSONResponse(
         content={
