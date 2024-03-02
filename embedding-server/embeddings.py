@@ -15,6 +15,21 @@ from dotenv import load_dotenv
 load_dotenv()
 hf_token = os.environ.get("HF_TOKEN")
 api_key = os.environ.get("API_KEY")
+SENTRY_URL = os.environ.get("SENTRY_URL")
+
+if SENTRY_URL != None:
+    import sentry_sdk
+    sentry_sdk.init(
+        dsn=SENTRY_URL,
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        traces_sample_rate=1.0,
+        # Set profiles_sample_rate to 1.0 to profile 100%
+        # of sampled transactions.
+        # We recommend adjusting this value in production.
+        profiles_sample_rate=1.0,
+    )
+
 huggingface_hub.login(token=hf_token)
 embedding_model = AutoModel.from_pretrained(
     "jinaai/jina-embeddings-v2-base-en", token=hf_token, trust_remote_code=True
@@ -205,4 +220,4 @@ async def rerank(rerankRequest: ReRankRequest, Authorization: Annotated[str | No
 
 
 if __name__ == "__main__":
-    uvicorn.run("embeddings:app", host="0.0.0.0", port=7070, reload=True)
+    uvicorn.run("embeddings:app", host="0.0.0.0", port=7070)
