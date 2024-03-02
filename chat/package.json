@@ -19,6 +19,8 @@
     "sanitize-html": "^2.11.0",
     "solid-icons": "^1.1.0",
     "solid-js": "^1.8.5",
+    "tailwind-gradient-mask-image": "^1.2.0",
+    "tailwind-scrollbar": "^3.1.0",
     "terracotta": "^1.0.3"
   },
   "devDependencies": {

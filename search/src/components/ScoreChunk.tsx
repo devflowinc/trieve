@@ -342,8 +342,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                     <a
                       class="h-fit"
                       href={`${apiHost}/get_signed_url/${encodeURIComponent(
-                        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                        fileName()!,
+                        fileName() ?? "",
                       )}`}
                       target="_blank"
                       title="Open PDF"
