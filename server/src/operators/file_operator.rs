@@ -316,6 +316,7 @@ pub async fn create_chunks_with_handler(
             file_id: Some(created_file_id),
             metadata: metadata.clone(),
             group_ids: Some(vec![group_id]),
+            group_tracking_ids: None,
             tracking_id: None,
             upsert_by_tracking_id: None,
             time_stamp: time_stamp.clone(),

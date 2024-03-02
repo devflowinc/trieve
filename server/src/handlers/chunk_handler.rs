@@ -7,7 +7,7 @@ use crate::errors::ServiceError;
 use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
-use crate::operators::group_operator::get_group_by_id_query;
+use crate::operators::group_operator::{get_group_by_id_query, get_groups_from_tracking_ids_query};
 use crate::operators::model_operator::create_embedding;
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::recommend_qdrant_query;
@@ -21,6 +21,7 @@ use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
 use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
+use itertools::Itertools;
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{
     ChatCompletionParameters, ChatMessage, ChatMessageContent, Role,
@@ -50,8 +51,10 @@ pub struct CreateChunkData {
     pub tracking_id: Option<String>,
     /// Upsert when a chunk with the same tracking_id exists. By default this is false, and the request will fail if a chunk with the same tracking_id exists. If this is true, the chunk will be updated if a chunk with the same tracking_id exists.
     pub upsert_by_tracking_id: Option<bool>,
-    /// Group ids are the ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. Necessary because this route queues the chunk for ingestion and the chunk may not exist yet immediatley after response.
+    /// Group ids are the ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. Necessary because this route queues the chunk for ingestion and the chunk may not exist yet immediately after response.
     pub group_ids: Option<Vec<uuid::Uuid>>,
+    /// Group tracking_ids are the tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. Necessary because this route queues the chunk for ingestion and the chunk may not exist yet immediately after response.
+    pub group_tracking_ids: Option<Vec<String>>,
     /// Time_stamp should be an ISO 8601 combined date and time without timezone. It is used for time window filtering and recency-biasing search results.
     pub time_stamp: Option<String>,
     /// Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset.
@@ -154,9 +157,35 @@ pub async fn create_chunk(
         chunk.weight.unwrap_or(0.0),
     );
 
+    let group_ids_from_group_tracking_ids =
+        if let Some(group_tracking_ids) = chunk.group_tracking_ids.clone() {
+            let group_ids = web::block(move || {
+                get_groups_from_tracking_ids_query(group_tracking_ids, count_dataset_id, pool)
+            })
+            .await?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+            .into_iter()
+            .map(|group| group.id)
+            .collect::<Vec<uuid::Uuid>>();
+
+            group_ids
+        } else {
+            vec![]
+        };
+
+    let initial_group_ids = chunk.group_ids.clone().unwrap_or(vec![]);
+    let mut chunk_only_group_ids = chunk.clone();
+    let deduped_group_ids = group_ids_from_group_tracking_ids
+        .into_iter()
+        .chain(initial_group_ids.into_iter())
+        .unique()
+        .collect::<Vec<uuid::Uuid>>();
+    chunk_only_group_ids.group_ids = Some(deduped_group_ids.clone());
+    chunk_only_group_ids.group_tracking_ids = None;
+
     let ingestion_message = IngestionMessage {
         chunk_metadata: chunk_metadata.clone(),
-        chunk: chunk.clone(),
+        chunk: chunk_only_group_ids.clone(),
         dataset_id: count_dataset_id,
         dataset_config: dataset_org_plan_sub.dataset.server_configuration,
         upsert_by_tracking_id: chunk.upsert_by_tracking_id.unwrap_or(false),

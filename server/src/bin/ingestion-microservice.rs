@@ -241,24 +241,28 @@ async fn upload_chunk(
             let chunk_group_bookmark =
                 ChunkGroupBookmark::from_details(group_id_to_bookmark, new_chunk_id);
 
-            let _ = create_chunk_bookmark_query(web_pool.clone(), chunk_group_bookmark).map_err(
-                |err| {
-                    log::error!("Failed to create chunk bookmark: {:?}", err);
-                    ServiceError::InternalServerError(format!(
-                        "Failed to create chunk bookmark: {:?}",
-                        err
-                    ))
-                },
-            );
+            let create_chunk_bookmark_res =
+                create_chunk_bookmark_query(web_pool.clone(), chunk_group_bookmark).map_err(
+                    |err| {
+                        log::error!("Failed to create chunk bookmark: {:?}", err);
+                        ServiceError::InternalServerError(format!(
+                            "Failed to create chunk bookmark: {:?}",
+                            err
+                        ))
+                    },
+                );
 
-            add_bookmark_to_qdrant_query(qdrant_point_id, group_id_to_bookmark)
-                .await
-                .map_err(|err| {
-                    ServiceError::InternalServerError(format!(
-                        "Failed to add bookmark to qdrant: {:?}",
-                        err
-                    ))
-                })?;
+            if create_chunk_bookmark_res.is_ok() {
+                add_bookmark_to_qdrant_query(qdrant_point_id, group_id_to_bookmark)
+                    .await
+                    .map_err(|err| {
+                        log::error!("Failed to add bookmark to qdrant: {:?}", err);
+                        ServiceError::InternalServerError(format!(
+                            "Failed to add bookmark to qdrant: {:?}",
+                            err
+                        ))
+                    })?;
+            }
         }
     }
 
