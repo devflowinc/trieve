@@ -265,7 +265,7 @@ pub async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     let sentry_url = std::env::var("SENTRY_URL");
-    let guard = if let Ok(sentry_url) = sentry_url {
+    let _guard = if let Ok(sentry_url) = sentry_url {
         log::info!("Sentry monitoring enabled");
         let guard = sentry::init((
             sentry_url,
