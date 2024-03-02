@@ -140,5 +140,8 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require("tailwind-scrollbar")({ nocompatible: true }),
+    require("tailwind-gradient-mask-image"),
+  ],
 };

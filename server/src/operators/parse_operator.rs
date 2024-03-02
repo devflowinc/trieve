@@ -52,12 +52,10 @@ pub fn coarse_doc_chunker(document: String) -> Vec<String> {
 
     // split the text into sentences
     let split_sentence_regex = Regex::new(r"[.!?\n]+").expect("Invalid regex");
-    let mut sentences: Vec<&str> = split_sentence_regex
-        .split_inclusive_left(&clean_text)
-        .collect();
+    let mut sentences: Vec<&str> = split_sentence_regex.split_inclusive(&clean_text).collect();
 
     let mut groups: Vec<String> = vec![];
-    let target_group_size = 30;
+    let target_group_size = 20;
 
     if sentences.len() < target_group_size {
         groups.push(sentences.join(""));

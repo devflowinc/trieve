@@ -203,7 +203,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
           </For>
         </div>
       </div>
-      <div class="mb-1 h-1 w-full border-b border-neutral-300 dark:border-neutral-600" />
+      <div class="gradient-mask-b-0 mb-1 h-1 w-full border-b border-neutral-300 dark:border-neutral-600" />
       <div
         classList={{
           "line-clamp-4 gradient-mask-b-0": useExpand() && !expanded(),
