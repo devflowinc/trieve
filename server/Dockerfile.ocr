@@ -86,8 +86,7 @@ RUN apt-get update; \
     ;
 
 COPY ./server-python/requirements.txt /app/requirements.txt
-RUN pip install --break-system-packages -r /app/requirements.txt; \
-    pip install --break-system-packages ocrmypdf; \
+RUN pip install --break-system-packages ocrmypdf; \
     mkdir /app/tmp
 
 
@@ -96,7 +95,6 @@ RUN apt-get install -y \
     libtesseract-dev
 
 WORKDIR /app
-COPY ./server-python/ /app/server-python
 COPY ./migrations/ /app/migrations
 COPY --from=builder /imgs/app/target/release/trieve-server /app/trieve-server
 
