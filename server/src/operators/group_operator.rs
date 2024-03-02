@@ -41,6 +41,26 @@ pub fn get_group_from_tracking_id_query(
     Ok(group)
 }
 
+pub fn get_groups_from_tracking_ids_query(
+    tracking_ids: Vec<String>,
+    dataset_uuid: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Vec<ChunkGroup>, DefaultError> {
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    let groups = chunk_group_columns::chunk_group
+        .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
+        .filter(chunk_group_columns::tracking_id.eq_any(tracking_ids))
+        .load::<ChunkGroup>(&mut conn)
+        .map_err(|_err| DefaultError {
+            message: "Groups not found",
+        })?;
+
+    Ok(groups)
+}
+
 pub fn update_group_by_tracking_id_query(
     tracking_id: String,
     dataset_uuid: uuid::Uuid,
