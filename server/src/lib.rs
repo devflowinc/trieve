@@ -163,7 +163,7 @@ pub async fn main() -> std::io::Result<()> {
                 handlers::message_handler::SuggestedQueriesRequest,
                 handlers::message_handler::SuggestedQueriesResponse,
                 handlers::chunk_handler::CreateChunkData,
-                handlers::chunk_handler::ReturnCreatedChunk,
+                handlers::chunk_handler::ReturnQueuedChunk,
                 handlers::chunk_handler::UpdateChunkData,
                 handlers::chunk_handler::RecommendChunksRequest,
                 handlers::chunk_handler::UpdateChunkByTrackingIdData,

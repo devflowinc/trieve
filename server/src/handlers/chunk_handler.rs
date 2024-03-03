@@ -60,10 +60,12 @@ pub struct CreateChunkData {
     pub time_stamp: Option<String>,
     /// Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset.
     pub weight: Option<f64>,
+    /// Split avg is a boolean which tells the server to split the text in the chunk_html into smaller chunks and average their resulting vectors. This is useful for when you want to create a chunk from a large piece of text and want to split it into smaller chunks to create a more fuzzy average dense vector. The sparse vector will be generated normally with no averaging. By default this is false.
+    pub split_avg: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
-pub struct ReturnCreatedChunk {
+pub struct ReturnQueuedChunk {
     pub chunk_metadata: ChunkMetadata,
     pub pos_in_queue: i32,
 }
@@ -204,7 +206,7 @@ pub async fn create_chunk(
         .llen("ingestion")
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    Ok(HttpResponse::Ok().json(ReturnCreatedChunk {
+    Ok(HttpResponse::Ok().json(ReturnQueuedChunk {
         chunk_metadata: chunk_metadata.clone(),
         pos_in_queue,
     }))
@@ -336,7 +338,7 @@ pub async fn delete_chunk_by_tracking_id(
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct UpdateChunkData {
     /// Id of the chunk you want to update.
-    chunk_uuid: uuid::Uuid,
+    chunk_id: uuid::Uuid,
     /// Link of the chunk you want to update. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation. If no link is provided, the existing link will be used.
     link: Option<String>,
     /// HTML content of the chunk you want to update. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content. If no chunk_html is provided, the existing chunk_html will be used.
@@ -381,7 +383,7 @@ pub async fn update_chunk(
     let pool1 = pool.clone();
     let pool2 = pool.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
-    let chunk_id = chunk.chunk_uuid;
+    let chunk_id = chunk.chunk_id;
 
     let chunk_metadata = web::block(move || get_metadata_from_id_query(chunk_id, dataset_id, pool))
         .await?
@@ -410,13 +412,13 @@ pub async fn update_chunk(
         None => chunk_metadata.chunk_html,
     };
 
-    let chunk_id1 = chunk.chunk_uuid;
+    let chunk_id1 = chunk.chunk_id;
     let qdrant_point_id = web::block(move || get_qdrant_id_from_chunk_id_query(chunk_id1, pool1))
         .await?
         .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
 
     let metadata = ChunkMetadata::from_details_with_id(
-        chunk.chunk_uuid,
+        chunk.chunk_id,
         &new_content,
         &chunk_html,
         &Some(link),
