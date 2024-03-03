@@ -857,6 +857,7 @@ pub struct ServerDatasetConfiguration {
     pub COLLISIONS_ENABLED: bool,
     pub EMBEDDING_SIZE: usize,
     pub LLM_DEFAULT_MODEL: String,
+    pub FULLTEXT_ENABLED: bool,
 }
 
 impl ServerDatasetConfiguration {
@@ -871,12 +872,12 @@ impl ServerDatasetConfiguration {
                 .get("DOCUMENT_UPLOAD_FEATURE")
                 .unwrap_or(&json!(true))
                 .as_bool()
-                .expect("DOCUMENT_UPLOAD_FEATURE should exist"),
+                .unwrap_or(true),
             DOCUMENT_DOWNLOAD_FEATURE: configuration
                 .get("DOCUMENT_DOWNLOAD_FEATURE")
                 .unwrap_or(&json!(true))
                 .as_bool()
-                .expect("DOCUMENT_DOWNLOAD_FEATURE should exist"),
+                .unwrap_or(true),
             LLM_BASE_URL: configuration
                 .get("LLM_BASE_URL")
                 .unwrap_or(&json!("https://api.openai.com/v1".to_string()))
@@ -888,7 +889,7 @@ impl ServerDatasetConfiguration {
                         s.to_string()
                     }
                 })
-                .expect("LLM_BASE_URL should exist"),
+                .unwrap_or("https://api.openai.com/v1".to_string()),
             EMBEDDING_BASE_URL: configuration
                 .get("EMBEDDING_BASE_URL")
                 .unwrap_or(&json!("https://api.openai.com/v1".to_string()))
@@ -910,7 +911,7 @@ impl ServerDatasetConfiguration {
                     } else {
                         s.to_string()
                     }
-                }).expect("RAG_PROMPT should exist"),
+                }).unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string()),
             N_RETRIEVALS_TO_INCLUDE: configuration
                 .get("N_RETRIEVALS_TO_INCLUDE")
                 .unwrap_or(&json!(5))
@@ -940,12 +941,17 @@ impl ServerDatasetConfiguration {
                         s.to_string()
                     }
                 })
-                .expect("LLM_DEFAULT_MODEL should exist"),
+                .unwrap_or("gpt-3.5-turbo-1106".to_string()),
             COLLISIONS_ENABLED: configuration
                 .get("COLLISIONS_ENABLED")
                 .unwrap_or(&json!(false))
                 .as_bool()
-                .expect("COLLISIONS_ENABLED should exist"),
+                .unwrap_or(false),
+            FULLTEXT_ENABLED: configuration
+                .get("FULLTEXT_ENABLED")
+                .unwrap_or(&json!(true))
+                .as_bool()
+                .unwrap_or(true),
         }
     }
 }
