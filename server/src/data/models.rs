@@ -404,6 +404,7 @@ pub struct ChunkGroupAndFile {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub file_id: Option<uuid::Uuid>,
+    pub tracking_id: Option<String>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Queryable)]
@@ -416,6 +417,7 @@ pub struct ChunkGroupAndFileWithCount {
     pub updated_at: chrono::NaiveDateTime,
     pub file_id: Option<uuid::Uuid>,
     pub group_count: Option<i32>,
+    pub tracking_id: Option<String>,
 }
 
 impl From<ChunkGroupAndFileWithCount> for ChunkGroupAndFile {
@@ -428,6 +430,7 @@ impl From<ChunkGroupAndFileWithCount> for ChunkGroupAndFile {
             created_at: group.created_at,
             updated_at: group.updated_at,
             file_id: group.file_id,
+            tracking_id: group.tracking_id,
         }
     }
 }

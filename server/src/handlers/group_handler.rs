@@ -87,9 +87,7 @@ pub async fn create_chunk_group(
     );
     {
         let group = group.clone();
-        create_group_query(group, pool)
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        create_group_query(group, pool).await?;
     }
 
     Ok(HttpResponse::Ok().json(group))
@@ -156,6 +154,7 @@ pub async fn get_specific_dataset_chunk_groups(
                 created_at: group.created_at,
                 updated_at: group.updated_at,
                 file_id: group.file_id,
+                tracking_id: group.tracking_id.clone(),
             })
             .collect(),
         total_pages: groups

@@ -92,7 +92,7 @@ pub fn update_group_by_tracking_id_query(
 pub async fn create_group_query(
     new_group: ChunkGroup,
     pool: web::Data<Pool>,
-) -> Result<ChunkGroup, DefaultError> {
+) -> Result<ChunkGroup, ServiceError> {
     use crate::data::schema::chunk_group::dsl::*;
 
     let mut conn = pool.get().unwrap();
@@ -102,9 +102,7 @@ pub async fn create_group_query(
         .execute(&mut conn)
         .map_err(|err| {
             log::error!("Error creating group {:}", err);
-            DefaultError {
-                message: "Error creating group",
-            }
+            ServiceError::BadRequest(format!("Error creating group {:?}", err))
         })?;
 
     Ok(new_group)
@@ -139,6 +137,7 @@ pub fn get_groups_for_specific_dataset_query(
             updated_at,
             groups_from_files_columns::file_id.nullable(),
             dataset_group_count_columns::group_count.nullable(),
+            tracking_id,
         ))
         .order_by(updated_at.desc())
         .filter(dataset_id.eq(dataset_uuid))
