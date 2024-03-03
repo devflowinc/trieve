@@ -35,14 +35,16 @@ pub async fn create_embedding(
     let base_url = if base_url.is_empty() {
         "https://api.openai.com/v1".to_string()
     } else if base_url.contains("https://embedding.trieve.ai") {
-        if let Ok(origin) = std::env::var("EMBEDDING_SERVER_ORIGIN") {
-            origin
-        } else {
-            get_env!(
+        match std::env::var("EMBEDDING_SERVER_ORIGIN")
+            .ok()
+            .filter(|s| !s.is_empty())
+        {
+            Some(origin) => origin,
+            None => get_env!(
                 "GPU_SERVER_ORIGIN",
                 "GPU_SERVER_ORIGIN should be set if this is called"
             )
-            .to_string()
+            .to_string(),
         }
     } else {
         base_url
@@ -94,14 +96,16 @@ pub async fn get_splade_doc_embedding(message: &str) -> Result<Vec<(u32, f32)>, 
         ));
     }
 
-    let server_origin: String = if let Ok(origin) = std::env::var("SPARSE_SERVER_ORIGIN") {
-        origin
-    } else {
-        get_env!(
+    let server_origin = match std::env::var("SPARSE_SERVER_ORIGIN")
+        .ok()
+        .filter(|s| !s.is_empty())
+    {
+        Some(origin) => origin,
+        None => get_env!(
             "GPU_SERVER_ORIGIN",
             "GPU_SERVER_ORIGIN should be set if this is called"
         )
-        .to_string()
+        .to_string(),
     };
 
     let embedding_server_call = format!("{}/sparse_encode", server_origin);
@@ -148,14 +152,16 @@ pub async fn get_splade_query_embedding(message: &str) -> Result<Vec<(u32, f32)>
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
-    let server_origin: String = if let Ok(origin) = std::env::var("SPARSE_SERVER_ORIGIN") {
-        origin
-    } else {
-        get_env!(
+    let server_origin: String = match std::env::var("SPARSE_SERVER_ORIGIN")
+        .ok()
+        .filter(|s| !s.is_empty())
+    {
+        Some(origin) => origin,
+        None => get_env!(
             "GPU_SERVER_ORIGIN",
             "GPU_SERVER_ORIGIN should be set if this is called"
         )
-        .to_string()
+        .to_string(),
     };
 
     let embedding_server_call = format!("{}/sparse_encode", server_origin);
@@ -190,7 +196,7 @@ pub async fn get_splade_query_embedding(message: &str) -> Result<Vec<(u32, f32)>
 #[derive(Debug, Serialize, Deserialize)]
 struct ScorePair {
     index: usize,
-    score: f32
+    score: f32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -225,14 +231,16 @@ pub async fn cross_encoder(
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
-    let server_origin: String = if let Ok(origin) = std::env::var("RERANKER_SERVER_ORIGIN") {
-        origin
-    } else {
-        get_env!(
+    let server_origin: String = match std::env::var("RERANKER_SERVER_ORIGIN")
+        .ok()
+        .filter(|s| !s.is_empty())
+    {
+        Some(origin) => origin,
+        None => get_env!(
             "GPU_SERVER_ORIGIN",
             "GPU_SERVER_ORIGIN should be set if this is called"
         )
-        .to_string()
+        .to_string(),
     };
 
     let embedding_server_call = format!("{}/rerank", server_origin);
