@@ -89,7 +89,7 @@ pub struct IngestionMessage {
     tag = "chunk",
     request_body(content = CreateChunkData, description = "JSON request payload to create a new chunk (chunk)", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON response payload containing the created chunk", body = ReturnCreatedChunk),
+        (status = 200, description = "JSON response payload containing the created chunk", body = ReturnQueuedChunk),
         (status = 400, description = "Service error relating to to creating a chunk, likely due to conflicting tracking_id", body = ErrorResponseBody),
     ),
     params(
@@ -222,7 +222,7 @@ pub async fn create_chunk(
     tag = "chunk",
     request_body(content = CreateChunkData, description = "JSON request payload to create a new chunk (chunk)", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON response payload containing the created chunk", body = ReturnCreatedChunk),
+        (status = 200, description = "JSON response payload containing the created chunk", body = ReturnQueuedChunk),
         (status = 400, description = "Service error relating to to creating a chunk, likely due to conflicting tracking_id", body = ErrorResponseBody),
     ),
     params(
@@ -418,9 +418,10 @@ pub async fn update_chunk(
     };
 
     let chunk_id1 = chunk.chunk_id;
-    let qdrant_point_id = web::block(move || get_qdrant_id_from_chunk_id_query(chunk_id1, pool1))
-        .await?
-        .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
+    let qdrant_point_id =
+        web::block(move || get_qdrant_id_from_chunk_id_query(chunk_id1, get_qdrant_id_pool))
+            .await?
+            .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
 
     let metadata = ChunkMetadata::from_details_with_id(
         chunk.chunk_id,
