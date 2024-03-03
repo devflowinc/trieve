@@ -30,6 +30,7 @@ use redis::Commands;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use simple_server_timing_header::Timer;
 use tokio_stream::StreamExt;
 use utoipa::{IntoParams, ToSchema};
 
@@ -708,6 +709,7 @@ pub async fn search_chunk(
     let tx_ctx = sentry::TransactionContext::new("search", "search_chunks");
     let transaction = sentry::start_transaction(tx_ctx);
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
+    let mut timer = Timer::new();
 
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => {
@@ -719,15 +721,22 @@ pub async fn search_chunk(
                 .await?
         }
         _ => {
-            search_semantic_chunks(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
-                .await?
+            search_semantic_chunks(
+                data,
+                parsed_query,
+                page,
+                pool,
+                dataset_org_plan_sub.dataset,
+                &mut timer,
+            )
+            .await?
         }
     };
 
     transaction.finish();
 
     Ok(HttpResponse::Ok()
-        // .insert_header((Timer::header_key(), timer.header_value()))
+        .insert_header((Timer::header_key(), timer.header_value()))
         .json(result_chunks))
 }
 

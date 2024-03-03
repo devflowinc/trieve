@@ -4007,6 +4007,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "simple-server-timing-header"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16e78919e05c9b8e123d435a4ad104b488ad1585631830e413830985c214086e"
+
+[[package]]
 name = "simsearch"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4601,6 +4607,7 @@ dependencies = [
  "sentry-actix",
  "serde",
  "serde_json",
+ "simple-server-timing-header",
  "simsearch",
  "time",
  "tokio",
