@@ -162,21 +162,19 @@ pub async fn create_chunk(
 
     let group_ids_from_group_tracking_ids =
         if let Some(group_tracking_ids) = chunk.group_tracking_ids.clone() {
-            let group_ids = web::block(move || {
+            web::block(move || {
                 get_groups_from_tracking_ids_query(group_tracking_ids, count_dataset_id, pool)
             })
             .await?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?
             .into_iter()
             .map(|group| group.id)
-            .collect::<Vec<uuid::Uuid>>();
-
-            group_ids
+            .collect::<Vec<uuid::Uuid>>()
         } else {
             vec![]
         };
 
-    let initial_group_ids = chunk.group_ids.clone().unwrap_or(vec![]);
+    let initial_group_ids = chunk.group_ids.clone().unwrap_or_default();
     let mut chunk_only_group_ids = chunk.clone();
     let deduped_group_ids = group_ids_from_group_tracking_ids
         .into_iter()
