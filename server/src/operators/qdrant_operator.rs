@@ -226,6 +226,7 @@ pub async fn create_new_qdrant_point_query(
     embedding_vector: Vec<f32>,
     chunk_metadata: ChunkMetadata,
     dataset_id: uuid::Uuid,
+    fulltext_enabled: Option<bool>,
 ) -> Result<(), actix_web::Error> {
     let qdrant_collection = get_env!(
         "QDRANT_COLLECTION",
@@ -237,14 +238,7 @@ pub async fn create_new_qdrant_point_query(
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let splade_vector = get_splade_doc_embedding(
-        chunk_metadata
-            .chunk_html
-            .as_ref()
-            .unwrap_or(&"".to_string()),
-    )
-    .await?;
-
+    let chunk_content = chunk_metadata.content.clone();
     let payload = json!({"tag_set": chunk_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": chunk_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "chunk_html": chunk_metadata.chunk_html.unwrap_or("".to_string()), "metadata": chunk_metadata.metadata.unwrap_or_default(), "time_stamp": chunk_metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string(), "group_ids": vec![] as Vec<String>})
                 .try_into()
                 .expect("A json! Value must always be a valid Payload");
@@ -257,14 +251,15 @@ pub async fn create_new_qdrant_point_query(
         _ => return Err(ServiceError::BadRequest("Invalid embedding vector size".into()).into()),
     };
 
-    let point = PointStruct::new(
-        point_id.clone().to_string(),
-        HashMap::from([
-            (vector_name.to_string(), Vector::from(embedding_vector)),
-            ("sparse_vectors".to_string(), Vector::from(splade_vector)),
-        ]),
-        payload,
-    );
+    let mut vector_payload =
+        HashMap::from([(vector_name.to_string(), Vector::from(embedding_vector))]);
+
+    if fulltext_enabled.unwrap_or(true) {
+        let splade_vector = get_splade_doc_embedding(&chunk_content).await?;
+        vector_payload.insert("sparse_vectors".to_string(), Vector::from(splade_vector));
+    }
+
+    let point = PointStruct::new(point_id.clone().to_string(), vector_payload, payload);
 
     qdrant
         .upsert_points_blocking(qdrant_collection, None, vec![point], None)
@@ -282,6 +277,7 @@ pub async fn update_qdrant_point_query(
     point_id: uuid::Uuid,
     updated_vector: Option<Vec<f32>>,
     dataset_id: uuid::Uuid,
+    fulltext_enabled: Option<bool>,
 ) -> Result<(), actix_web::Error> {
     let qdrant_point_id: Vec<PointId> = vec![point_id.to_string().into()];
 
@@ -330,7 +326,6 @@ pub async fn update_qdrant_point_query(
     let points_selector = qdrant_point_id.into();
 
     if let Some(updated_vector) = updated_vector {
-        let splade_vector = get_splade_doc_embedding(&metadata.unwrap().content).await?;
         let vector_name = match updated_vector.len() {
             384 => "384_vectors",
             768 => "768_vectors",
@@ -340,12 +335,17 @@ pub async fn update_qdrant_point_query(
                 return Err(ServiceError::BadRequest("Invalid embedding vector size".into()).into())
             }
         };
+        let mut vector_payload =
+            HashMap::from([(vector_name.to_string(), Vector::from(updated_vector))]);
+        if fulltext_enabled.unwrap_or(true) {
+            let chunk_content = metadata.unwrap().content;
+            let splade_vector = get_splade_doc_embedding(&chunk_content).await?;
+            vector_payload.insert("sparse_vectors".to_string(), Vector::from(splade_vector));
+        }
+
         let point = PointStruct::new(
             point_id.clone().to_string(),
-            HashMap::from([
-                (vector_name.to_string(), Vector::from(updated_vector)),
-                ("sparse_vectors".to_string(), Vector::from(splade_vector)),
-            ]),
+            vector_payload,
             payload
                 .try_into()
                 .expect("A json! value must always be a valid Payload"),

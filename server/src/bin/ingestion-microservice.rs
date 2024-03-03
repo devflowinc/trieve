@@ -1,6 +1,7 @@
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
 use redis::AsyncCommands;
+use serde_json::json;
 use trieve_server::data::models::{self, ChunkGroupBookmark, Event, ServerDatasetConfiguration};
 use trieve_server::errors::ServiceError;
 use trieve_server::get_env;
@@ -113,6 +114,13 @@ async fn upload_chunk(
     mut payload: IngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
 ) -> Result<(), ServiceError> {
+    let fulltext_enabled = payload
+        .dataset_config
+        .get("FULLTEXT_ENABLED")
+        .unwrap_or(&json!(true))
+        .as_bool()
+        .unwrap_or(true);
+
     let mut new_chunk_id = payload.chunk_metadata.id;
     let mut qdrant_point_id = payload
         .chunk_metadata
@@ -211,6 +219,7 @@ async fn upload_chunk(
             collision.expect("Collision must be some"),
             None,
             payload.chunk_metadata.dataset_id,
+            Some(fulltext_enabled),
         )
         .await
         .map_err(|err| {
@@ -254,6 +263,7 @@ async fn upload_chunk(
             embedding_vector,
             payload.chunk_metadata.clone(),
             payload.chunk_metadata.dataset_id,
+            Some(fulltext_enabled),
         )
         .await
         .map_err(|err| {

@@ -380,8 +380,16 @@ pub async fn update_chunk(
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool1 = pool.clone();
-    let pool2 = pool.clone();
+    let fulltext_enabled = dataset_org_plan_sub
+        .dataset
+        .server_configuration
+        .get("FULLTEXT_ENABLED")
+        .unwrap_or(&json!(true))
+        .as_bool()
+        .unwrap_or(true);
+
+    let get_qdrant_id_pool = pool.clone();
+    let update_chunk_metadata_pool = pool.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
     let chunk_id = chunk.chunk_id;
 
@@ -445,7 +453,7 @@ pub async fn update_chunk(
         chunk.weight.unwrap_or(1.0),
     );
     let metadata1 = metadata.clone();
-    update_chunk_metadata_query(metadata, None, dataset_id, pool2)
+    update_chunk_metadata_query(metadata, None, dataset_id, update_chunk_metadata_pool)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -459,6 +467,7 @@ pub async fn update_chunk(
         qdrant_point_id,
         Some(embedding_vector),
         dataset_id,
+        Some(fulltext_enabled),
     )
     .await?;
 
@@ -517,6 +526,14 @@ pub async fn update_chunk_by_tracking_id(
     let tracking_id = chunk.tracking_id.clone();
     let tracking_id1 = tracking_id.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
+
+    let fulltext_enabled = dataset_org_plan_sub
+        .dataset
+        .server_configuration
+        .get("FULLTEXT_ENABLED")
+        .unwrap_or(&json!(true))
+        .as_bool()
+        .unwrap_or(true);
 
     let pool1 = pool.clone();
     let pool2 = pool.clone();
@@ -591,6 +608,7 @@ pub async fn update_chunk_by_tracking_id(
         qdrant_point_id,
         Some(embedding_vector),
         dataset_org_plan_sub.dataset.id,
+        Some(fulltext_enabled),
     )
     .await?;
 
@@ -705,6 +723,14 @@ pub async fn search_chunk(
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let fulltext_enabled = dataset_org_plan_sub
+        .dataset
+        .server_configuration
+        .get("FULLTEXT_ENABLED")
+        .unwrap_or(&json!(true))
+        .as_bool()
+        .unwrap_or(true);
+
     let page = data.page.unwrap_or(1);
     let parsed_query = parse_query(data.query.clone());
 
@@ -715,6 +741,13 @@ pub async fn search_chunk(
 
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => {
+            if !fulltext_enabled {
+                return Err(ServiceError::BadRequest(
+                    "Fulltext search is not enabled for this dataset".into(),
+                )
+                .into());
+            }
+
             search_full_text_chunks(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
                 .await?
         }
@@ -827,6 +860,14 @@ pub async fn search_groups(
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let fulltext_enabled = dataset_org_plan_sub
+        .dataset
+        .server_configuration
+        .get("FULLTEXT_ENABLED")
+        .unwrap_or(&json!(true))
+        .as_bool()
+        .unwrap_or(true);
+
     //search over the links as well
     let page = data.page.unwrap_or(1);
     let group_id = data.group_id;
@@ -844,6 +885,13 @@ pub async fn search_groups(
 
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => {
+            if !fulltext_enabled {
+                return Err(ServiceError::BadRequest(
+                    "Fulltext search is not enabled for this dataset".into(),
+                )
+                .into());
+            }
+
             search_full_text_groups(
                 data,
                 parsed_query,
@@ -933,6 +981,14 @@ pub async fn search_over_groups(
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let fulltext_enabled = dataset_org_plan_sub
+        .dataset
+        .server_configuration
+        .get("FULLTEXT_ENABLED")
+        .unwrap_or(&json!(true))
+        .as_bool()
+        .unwrap_or(true);
+
     //search over the links as well
     let page = data.page.unwrap_or(1);
 
@@ -940,6 +996,13 @@ pub async fn search_over_groups(
 
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => {
+            if !fulltext_enabled {
+                return Err(ServiceError::BadRequest(
+                    "Fulltext search is not enabled for this dataset".into(),
+                )
+                .into());
+            }
+
             full_text_search_over_groups(
                 data,
                 parsed_query,
