@@ -380,13 +380,10 @@ pub async fn update_chunk(
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let fulltext_enabled = dataset_org_plan_sub
-        .dataset
-        .server_configuration
-        .get("FULLTEXT_ENABLED")
-        .unwrap_or(&json!(true))
-        .as_bool()
-        .unwrap_or(true);
+    let fulltext_enabled = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    )
+    .FULLTEXT_ENABLED;
 
     let get_qdrant_id_pool = pool.clone();
     let update_chunk_metadata_pool = pool.clone();
@@ -527,13 +524,10 @@ pub async fn update_chunk_by_tracking_id(
     let tracking_id1 = tracking_id.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
-    let fulltext_enabled = dataset_org_plan_sub
-        .dataset
-        .server_configuration
-        .get("FULLTEXT_ENABLED")
-        .unwrap_or(&json!(true))
-        .as_bool()
-        .unwrap_or(true);
+    let fulltext_enabled = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    )
+    .FULLTEXT_ENABLED;
 
     let pool1 = pool.clone();
     let pool2 = pool.clone();
@@ -723,13 +717,10 @@ pub async fn search_chunk(
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let fulltext_enabled = dataset_org_plan_sub
-        .dataset
-        .server_configuration
-        .get("FULLTEXT_ENABLED")
-        .unwrap_or(&json!(true))
-        .as_bool()
-        .unwrap_or(true);
+    let fulltext_enabled = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    )
+    .FULLTEXT_ENABLED;
 
     let page = data.page.unwrap_or(1);
     let parsed_query = parse_query(data.query.clone());
@@ -860,13 +851,10 @@ pub async fn search_groups(
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let fulltext_enabled = dataset_org_plan_sub
-        .dataset
-        .server_configuration
-        .get("FULLTEXT_ENABLED")
-        .unwrap_or(&json!(true))
-        .as_bool()
-        .unwrap_or(true);
+    let fulltext_enabled = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    )
+    .FULLTEXT_ENABLED;
 
     //search over the links as well
     let page = data.page.unwrap_or(1);
@@ -981,13 +969,10 @@ pub async fn search_over_groups(
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let fulltext_enabled = dataset_org_plan_sub
-        .dataset
-        .server_configuration
-        .get("FULLTEXT_ENABLED")
-        .unwrap_or(&json!(true))
-        .as_bool()
-        .unwrap_or(true);
+    let fulltext_enabled = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    )
+    .FULLTEXT_ENABLED;
 
     //search over the links as well
     let page = data.page.unwrap_or(1);
