@@ -4,7 +4,7 @@ use super::parse_operator::{coarse_doc_chunker, convert_html_to_text};
 use crate::data::models::{ChunkMetadata, Dataset, DatasetAndOrgWithSubAndPlan, EventType};
 use crate::handlers::auth_handler::AdminOnly;
 use crate::operators::chunk_operator::delete_chunk_metadata_query;
-use crate::{data::models::ChunkGroup, handlers::chunk_handler::ReturnCreatedChunk};
+use crate::{data::models::ChunkGroup, handlers::chunk_handler::ReturnQueuedChunk};
 use crate::{data::models::Event, diesel::Connection, get_env};
 use crate::{
     data::models::FileDTO,
@@ -322,6 +322,7 @@ pub async fn create_chunks_with_handler(
             time_stamp: time_stamp.clone(),
             chunk_vector: None,
             weight: None,
+            split_avg: None,
         };
         let web_json_create_chunk_data = web::Json(create_chunk_data);
 
@@ -336,7 +337,7 @@ pub async fn create_chunks_with_handler(
         {
             Ok(response) => {
                 if response.status().is_success() {
-                    let chunk_metadata: ReturnCreatedChunk = serde_json::from_slice(
+                    let chunk_metadata: ReturnQueuedChunk = serde_json::from_slice(
                         response.into_body().try_into_bytes().unwrap().as_ref(),
                     )
                     .map_err(|_err| DefaultError {

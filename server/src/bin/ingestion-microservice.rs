@@ -11,6 +11,7 @@ use trieve_server::operators::chunk_operator::{
 use trieve_server::operators::event_operator::create_event_query;
 use trieve_server::operators::group_operator::create_chunk_bookmark_query;
 use trieve_server::operators::model_operator::create_embedding;
+use trieve_server::operators::parse_operator::{average_embeddings, coarse_doc_chunker};
 use trieve_server::operators::qdrant_operator::{
     add_bookmark_to_qdrant_query, create_new_qdrant_point_query, delete_qdrant_point_id_query,
     update_qdrant_point_query,
@@ -122,11 +123,38 @@ async fn upload_chunk(
     let embedding_vector = if let Some(embedding_vector) = payload.chunk.chunk_vector.clone() {
         embedding_vector
     } else {
-        create_embedding(&payload.chunk_metadata.content, dataset_config.clone())
-            .await
-            .map_err(|err| {
-                ServiceError::InternalServerError(format!("Failed to create embedding: {:?}", err))
-            })?
+        match payload.chunk.split_avg.unwrap_or(false) {
+            true => {
+                let chunks = coarse_doc_chunker(payload.chunk_metadata.content.clone());
+                let mut embeddings: Vec<Vec<f32>> = vec![];
+                for chunk in chunks {
+                    let embedding = create_embedding(&chunk, dataset_config.clone())
+                        .await
+                        .map_err(|err| {
+                            ServiceError::InternalServerError(format!(
+                                "Failed to create embedding: {:?}",
+                                err
+                            ))
+                        })?;
+                    embeddings.push(embedding);
+                }
+
+                average_embeddings(embeddings).map_err(|err| {
+                    ServiceError::InternalServerError(format!(
+                        "Failed to average embeddings: {:?}",
+                        err.message
+                    ))
+                })?
+            }
+            false => create_embedding(&payload.chunk_metadata.content, dataset_config.clone())
+                .await
+                .map_err(|err| {
+                    ServiceError::InternalServerError(format!(
+                        "Failed to create embedding: {:?}",
+                        err
+                    ))
+                })?,
+        }
     };
 
     let mut collision: Option<uuid::Uuid> = None;

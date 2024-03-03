@@ -2,6 +2,9 @@ use regex::Regex;
 use regex_split::RegexSplit;
 use scraper::Html;
 use std::cmp;
+use ndarray::Array2;
+
+use crate::errors::DefaultError;
 
 pub fn convert_html_to_text(html: &str) -> String {
     let dom = Html::parse_fragment(html);
@@ -92,4 +95,35 @@ pub fn coarse_doc_chunker(document: String) -> Vec<String> {
     }
 
     coarse_remove_large_chunks(groups)
+}
+
+pub fn average_embeddings(embeddings: Vec<Vec<f32>>) -> Result<Vec<f32>, DefaultError> {
+    let shape = (embeddings.len(), embeddings[0].len());
+    let flat: Vec<f32> = embeddings.iter().flatten().cloned().collect();
+    let arr: Array2<f32> = Array2::from_shape_vec(shape, flat).map_err(|e| {
+        log::error!("Error creating ndarray from embeddings: {}", e);
+        DefaultError {
+            message: "Error creating ndarray from embeddings",
+        }
+    })?;
+
+    Ok((arr.sum_axis(ndarray::Axis(0)) / (embeddings.len() as f32)).to_vec())
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    pub fn test_average_embeddings() {
+        let embeddings = vec![
+            vec![3.0, 2.5, 1.0],
+            vec![1.0, 2.5, 1.0],
+            vec![2.0, 2.5, 1.0],
+            vec![2.0, 2.5, 1.0],
+        ];
+
+        let result = average_embeddings(embeddings).unwrap();
+        assert!(result == vec![2.0, 2.5, 1.0]);
+    }
 }
