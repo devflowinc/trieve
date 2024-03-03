@@ -1,3 +1,5 @@
+use std::ops::IndexMut;
+
 use crate::{
     data::models::ServerDatasetConfiguration, errors::ServiceError, get_env,
     handlers::chunk_handler::ScoreChunkDTO,
@@ -33,11 +35,15 @@ pub async fn create_embedding(
     let base_url = if base_url.is_empty() {
         "https://api.openai.com/v1".to_string()
     } else if base_url.contains("https://embedding.trieve.ai") {
-        get_env!(
-            "GPU_SERVER_ORIGIN",
-            "GPU_SERVER_ORIGIN should be set if this is called"
-        )
-        .to_string()
+        if let Ok(origin) = std::env::var("EMBEDDING_SERVER_ORIGIN") {
+            origin
+        } else {
+            get_env!(
+                "GPU_SERVER_ORIGIN",
+                "GPU_SERVER_ORIGIN should be set if this is called"
+            )
+            .to_string()
+        }
     } else {
         base_url
     };
@@ -87,11 +93,17 @@ pub async fn get_splade_doc_embedding(message: &str) -> Result<Vec<(u32, f32)>, 
             "Cannot encode empty query".to_string(),
         ));
     }
-    let server_origin: String = get_env!(
-        "GPU_SERVER_ORIGIN",
-        "GPU_SERVER_ORIGIN should be set if this is called"
-    )
-    .to_string();
+
+    let server_origin: String = if let Ok(origin) = std::env::var("SPARSE_SERVER_ORIGIN") {
+        origin
+    } else {
+        get_env!(
+            "GPU_SERVER_ORIGIN",
+            "GPU_SERVER_ORIGIN should be set if this is called"
+        )
+        .to_string()
+    };
+
     let embedding_server_call = format!("{}/sparse_encode", server_origin);
 
     let client = reqwest::Client::new();
@@ -136,11 +148,16 @@ pub async fn get_splade_query_embedding(message: &str) -> Result<Vec<(u32, f32)>
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
-    let server_origin: String = get_env!(
-        "GPU_SERVER_ORIGIN",
-        "GPU_SERVER_ORIGIN should be set if this is called"
-    )
-    .to_string();
+    let server_origin: String = if let Ok(origin) = std::env::var("SPARSE_SERVER_ORIGIN") {
+        origin
+    } else {
+        get_env!(
+            "GPU_SERVER_ORIGIN",
+            "GPU_SERVER_ORIGIN should be set if this is called"
+        )
+        .to_string()
+    };
+
     let embedding_server_call = format!("{}/sparse_encode", server_origin);
 
     let client = reqwest::Client::new();
@@ -171,6 +188,12 @@ pub async fn get_splade_query_embedding(message: &str) -> Result<Vec<(u32, f32)>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+struct ScorePair {
+    index: usize,
+    score: f32
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ReRankResponse {
     pub docs: Vec<(String, f32)>,
 }
@@ -178,7 +201,7 @@ pub struct ReRankResponse {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CrossEncoderData {
     pub query: String,
-    pub docs: Vec<String>,
+    pub texts: Vec<String>,
 }
 
 pub async fn cross_encoder(
@@ -186,6 +209,7 @@ pub async fn cross_encoder(
     page_size: u64,
     results: Vec<ScoreChunkDTO>,
 ) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
+    log::info!("Doing criss cross");
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
         Some(parent) => parent
@@ -201,12 +225,18 @@ pub async fn cross_encoder(
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
-    let server_origin: String = get_env!(
-        "GPU_SERVER_ORIGIN",
-        "GPU_SERVER_ORIGIN should be set if this is called"
-    )
-    .to_string();
+    let server_origin: String = if let Ok(origin) = std::env::var("RERANKER_SERVER_ORIGIN") {
+        origin
+    } else {
+        get_env!(
+            "GPU_SERVER_ORIGIN",
+            "GPU_SERVER_ORIGIN should be set if this is called"
+        )
+        .to_string()
+    };
+
     let embedding_server_call = format!("{}/rerank", server_origin);
+    log::info!("Server {:?}", embedding_server_call);
 
     if results.is_empty() {
         return Err(ServiceError::BadRequest("Cannot rerank empty results".to_string()).into());
@@ -223,13 +253,13 @@ pub async fn cross_encoder(
         .post(embedding_server_call)
         .json(&CrossEncoderData {
             query: query.to_string(),
-            docs: request_docs,
+            texts: request_docs,
         })
         .bearer_auth(get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set"))
         .send()
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
-        .json::<ReRankResponse>()
+        .json::<Vec<ScorePair>>()
         .await
         .map_err(|_e| {
             log::error!(
@@ -241,20 +271,11 @@ pub async fn cross_encoder(
             )
         })?;
 
-    let mut results: Vec<ScoreChunkDTO> = results
-        .clone()
-        .iter_mut()
-        .map(|x| {
-            x.score = resp
-                .docs
-                .iter()
-                .find(|s| s.0 == x.metadata[0].content)
-                .unwrap()
-                .1 as f64;
+    let mut results = results.clone();
 
-            x.clone()
-        })
-        .collect();
+    resp.into_iter().for_each(|pair| {
+        results.index_mut(pair.index).score = pair.score as f64;
+    });
 
     results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
 

@@ -1,4 +1,3 @@
-from infinity_emb import AsyncEmbeddingEngine, EngineArgs
 from typing import Optional, Annotated
 import uvicorn
 import torch
@@ -31,20 +30,22 @@ if SENTRY_URL != None:
     )
 
 huggingface_hub.login(token=hf_token)
-embedding_model = AsyncEmbeddingEngine.from_args(EngineArgs(model_name_or_path = "jinaai/jina-embeddings-v2-base-en", engine="torch"))
+embedding_model = AutoModel.from_pretrained(
+    "jinaai/jina-embeddings-v2-base-en", token=hf_token, trust_remote_code=True, cache_dir="models/"
+)  # trust_remote_code is needed to use the encode method
 
 # Create a Flask app
 app = FastAPI()
 
 doc_model_id = "naver/efficient-splade-VI-BT-large-doc"
 doc_tokenizer = AutoTokenizer.from_pretrained(
-    doc_model_id, use_fast=True, truncation=True, max_length=512
+    doc_model_id, use_fast=True, truncation=True, max_length=512, cache_dir="models/"
 )
 doc_model = AutoModelForMaskedLM.from_pretrained(doc_model_id)
 
 query_model_id = "naver/efficient-splade-VI-BT-large-query"
 query_tokenizer = AutoTokenizer.from_pretrained(
-    query_model_id, use_fast=True, truncation=True, max_length=512
+    query_model_id, use_fast=True, truncation=True, max_length=512, cache_dir="models/"
 )
 query_model = AutoModelForMaskedLM.from_pretrained(query_model_id)
 
@@ -60,7 +61,7 @@ cross_encoder_model = CrossEncoder(cross_encoder_model_id, device=device)
 # Tokenize sentences
 query_model.to(device)
 doc_model.to(device)
-# embedding_model.to(device)
+embedding_model.to(device)
 
 # Create a Flask app
 app = FastAPI()
@@ -115,7 +116,7 @@ async def encode(encodingRequest: EncodeRequest, Authorization: Annotated[str | 
                 status_code=401,
             )
 
-    sentence_embeddings, _ = embedding_model.embed([encodingRequest.input])
+    sentence_embeddings = embedding_model.encode([encodingRequest.input])
 
     return JSONResponse(
         content={
@@ -188,7 +189,7 @@ async def sparse_encode(encodingRequest: SparseEncodeRequest, Authorization: Ann
 
 class ReRankRequest(BaseModel):
     query: str
-    docs: list[str]
+    texts: list[str]
 
 
 @app.post("/rerank")
@@ -203,17 +204,16 @@ async def rerank(rerankRequest: ReRankRequest, Authorization: Annotated[str | No
                 status_code=401,
             )
 
-    combined_docs = [[rerankRequest.query, doc] for doc in rerankRequest.docs]
+    combined_docs = [[rerankRequest.query, doc] for doc in rerankRequest.texts]
     doc_scores = cross_encoder_model.predict(combined_docs)
+    print(doc_scores);
     sim_scores_argsort = np.argsort(doc_scores)
     reranked_docs = [
-        (rerankRequest.docs[i], doc_scores[i].astype(float)) for i in sim_scores_argsort
+        dict(index=int(i), score=doc_scores[i].astype(float)) for i in sim_scores_argsort
     ]
+
     return JSONResponse(
-        content={
-            "docs": reranked_docs,
-            "status": 200,
-        },
+        content=reranked_docs,
         status_code=200,
     )
 

@@ -26,6 +26,7 @@ use diesel::{
     BoolExpressionMethods, JoinOnDsl, NullableExpressionMethods, PgTextExpressionMethods,
 };
 use itertools::Itertools;
+use simple_server_timing_header::Timer;
 use utoipa::ToSchema;
 
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
@@ -1124,7 +1125,9 @@ pub async fn search_semantic_chunks(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
+    timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
+    timer.add("Reached semantic_chunks");
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
         Some(parent) => parent
@@ -1141,6 +1144,7 @@ pub async fn search_semantic_chunks(
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     let embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
+    timer.add("Created Embedding vector");
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
         VectorType::Dense(embedding_vector),
@@ -1157,12 +1161,15 @@ pub async fn search_semantic_chunks(
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    timer.add("Fetch from qdrant");
 
     let mut result_chunks =
         retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
+    
+    timer.add("Fetch from postgres");
 
     result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
-
+    timer.add("Rerank (algo)");
     transaction.finish();
 
     Ok(result_chunks)

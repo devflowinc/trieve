@@ -91,6 +91,7 @@ scraper = "0.19.0"
 sentry = "0.32.2"
 sentry-actix = "0.32.2"
 regex-split = "0.1.0"
+simple-server-timing-header = "0.1.1"
 
 
 [build-dependencies]
