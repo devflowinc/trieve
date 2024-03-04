@@ -1165,7 +1165,7 @@ pub async fn search_semantic_chunks(
 
     let mut result_chunks =
         retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
-    
+
     timer.add("Fetch from postgres");
 
     result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
@@ -1355,17 +1355,41 @@ pub async fn search_hybrid_chunks(
 
     let mut result_chunks = {
         let combined_results = semantic_score_chunks
-            .into_iter()
-            .chain(full_text_handler_results.score_chunks.into_iter())
+            .iter()
+            .zip(full_text_handler_results.score_chunks.iter())
+            .flat_map(|(x, y)| vec![x.clone(), y.clone()])
             .unique_by(|score_chunk| score_chunk.metadata[0].id)
             .collect::<Vec<ScoreChunkDTO>>();
 
-        let reranked_chunks = cross_encoder(
-            data.query.clone(),
-            data.page_size.unwrap_or(10),
-            combined_results,
-        )
-        .await?;
+        let reranked_chunks = if combined_results.len() > 20 {
+            let split_results = combined_results
+                .chunks(20)
+                .map(|chunk| chunk.to_vec())
+                .collect::<Vec<Vec<ScoreChunkDTO>>>();
+
+            let cross_encoder_results = cross_encoder(
+                data.query.clone(),
+                data.page_size.unwrap_or(10),
+                split_results
+                    .first()
+                    .expect("Split results must exist")
+                    .to_vec(),
+            )
+            .await?;
+
+            cross_encoder_results
+                .iter()
+                .chain(split_results.get(1).unwrap().iter())
+                .cloned()
+                .collect::<Vec<ScoreChunkDTO>>()
+        } else {
+            cross_encoder(
+                data.query.clone(),
+                data.page_size.unwrap_or(10),
+                combined_results,
+            )
+            .await?
+        };
 
         SearchChunkQueryResponseBody {
             score_chunks: reranked_chunks,
@@ -1521,8 +1545,9 @@ pub async fn search_hybrid_groups(
     let combined_results = semantic_results
         .clone()
         .search_results
-        .into_iter()
-        .chain(full_text_results.clone().search_results.into_iter())
+        .iter()
+        .zip(full_text_results.search_results.iter())
+        .flat_map(|(x, y)| vec![x.clone(), y.clone()])
         .unique_by(|chunk| chunk.point_id)
         .collect::<Vec<SearchResult>>();
 
@@ -1538,59 +1563,41 @@ pub async fn search_hybrid_groups(
     )
     .await?;
 
-    let semantic_chunk_dtos = semantic_results
-        .search_results
-        .iter()
-        .map(|search_result| {
-            combined_result_chunks
-                .score_chunks
-                .iter()
-                .find(|metadata_chunk| {
-                    metadata_chunk
-                        .metadata
-                        .first()
-                        .expect("Must be at least one metadata in result")
-                        .qdrant_point_id
-                        == search_result.point_id
-                })
-                .expect("Was not able to find semantic chunk in combined result chunks")
-                .clone()
-        })
-        .collect::<Vec<ScoreChunkDTO>>();
-    let full_text_chunk_dtos = full_text_results
-        .search_results
-        .iter()
-        .map(|search_result| {
-            combined_result_chunks
-                .score_chunks
-                .iter()
-                .find(|metadata_chunk| {
-                    metadata_chunk
-                        .metadata
-                        .first()
-                        .expect("Must be at least one metadata in result")
-                        .qdrant_point_id
-                        == search_result.point_id
-                })
-                .expect("Was not able to find full-text chunk in combined result chunks")
-                .clone()
-        })
-        .collect::<Vec<ScoreChunkDTO>>();
-
     let mut result_chunks = {
-        let combined_results = semantic_chunk_dtos
-            .into_iter()
-            .chain(full_text_chunk_dtos.into_iter())
-            .unique_by(|score_chunk| score_chunk.metadata[0].id)
-            .collect::<Vec<ScoreChunkDTO>>();
-        SearchChunkQueryResponseBody {
-            score_chunks: cross_encoder(
+        let reranked_chunks = if combined_result_chunks.score_chunks.len() > 20 {
+            let split_results = combined_result_chunks
+                .score_chunks
+                .chunks(20)
+                .map(|chunk| chunk.to_vec())
+                .collect::<Vec<Vec<ScoreChunkDTO>>>();
+
+            let cross_encoder_results = cross_encoder(
                 data.query.clone(),
                 data.page_size.unwrap_or(10),
-                combined_results,
+                split_results
+                    .first()
+                    .expect("Split results must exist")
+                    .to_vec(),
             )
-            .await?,
-            total_chunk_pages: semantic_results.total_chunk_pages,
+            .await?;
+
+            cross_encoder_results
+                .iter()
+                .chain(split_results.get(1).unwrap().iter())
+                .cloned()
+                .collect::<Vec<ScoreChunkDTO>>()
+        } else {
+            cross_encoder(
+                data.query.clone(),
+                data.page_size.unwrap_or(10),
+                combined_result_chunks.score_chunks.clone(),
+            )
+            .await?
+        };
+
+        SearchChunkQueryResponseBody {
+            score_chunks: reranked_chunks,
+            total_chunk_pages: combined_result_chunks.total_chunk_pages,
         }
     };
 
@@ -1759,8 +1766,9 @@ pub async fn hybrid_search_over_groups(
     let combined_results = semantic_results
         .clone()
         .search_results
-        .into_iter()
-        .chain(full_text_results.clone().search_results.into_iter())
+        .iter()
+        .zip(full_text_results.search_results.iter())
+        .flat_map(|(x, y)| vec![x.clone(), y.clone()])
         .unique_by(|chunk| chunk.group_id)
         .collect::<Vec<GroupSearchResults>>();
 
@@ -1776,13 +1784,39 @@ pub async fn hybrid_search_over_groups(
     )
     .await?;
 
-    let result_chunks = SearchOverGroupsResponseBody {
-        group_chunks: cross_encoder_for_groups(
+    let reranked_chunks = if combined_result_chunks.group_chunks.len() > 20 {
+        let split_results = combined_result_chunks
+            .group_chunks
+            .chunks(20)
+            .map(|chunk| chunk.to_vec())
+            .collect::<Vec<Vec<GroupScoreChunkDTO>>>();
+
+        let cross_encoder_results = cross_encoder_for_groups(
             data.query.clone(),
             data.page_size.unwrap_or(10).into(),
-            combined_result_chunks.group_chunks,
+            split_results
+                .first()
+                .expect("Split results must exist")
+                .to_vec(),
         )
-        .await?,
+        .await?;
+
+        cross_encoder_results
+            .iter()
+            .chain(split_results.get(1).unwrap().iter())
+            .cloned()
+            .collect::<Vec<GroupScoreChunkDTO>>()
+    } else {
+        cross_encoder_for_groups(
+            data.query.clone(),
+            data.page_size.unwrap_or(10).into(),
+            combined_result_chunks.group_chunks.clone(),
+        )
+        .await?
+    };
+
+    let result_chunks = SearchOverGroupsResponseBody {
+        group_chunks: reranked_chunks,
         total_chunk_pages: combined_search_chunk_query_results.total_chunk_pages,
     };
 

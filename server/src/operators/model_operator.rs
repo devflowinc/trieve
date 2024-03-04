@@ -247,7 +247,7 @@ pub async fn cross_encoder(
     log::info!("Server {:?}", embedding_server_call);
 
     if results.is_empty() {
-        return Err(ServiceError::BadRequest("Cannot rerank empty results".to_string()).into());
+        return Ok(vec![]);
     }
 
     let request_docs = results
