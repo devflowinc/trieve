@@ -79,7 +79,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
       },
       credentials: "include",
       body: JSON.stringify({
-        chunk_uuid: curChunkId,
+        chunk_id: curChunkId,
         link: evidenceLinkValue,
         tag_set: tagSet().split(","),
         tracking_id: trackingId(),
