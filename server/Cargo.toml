@@ -12,6 +12,9 @@ path = "src/main.rs"
 name = "ingestion-microservice"
 path = "src/bin/ingestion-microservice.rs"
 
+[[bin]]
+name = "redoc_ci"
+path = "src/bin/redoc_ci.rs"
 
 [dependencies]
 actix-identity = { version = "0.6.0" }
