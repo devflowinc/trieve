@@ -6,7 +6,7 @@ use crate::{
 };
 use openai_dive::v1::{
     api::Client,
-    resources::embedding::{EmbeddingInput, EmbeddingParameters},
+    resources::embedding::{EmbeddingInput, EmbeddingOutput, EmbeddingParameters},
 };
 use serde::{Deserialize, Serialize};
 
@@ -51,7 +51,7 @@ pub async fn create_embedding(
     };
 
     let client = Client {
-        http_client: reqwest::Client::new(),
+        http_client: None,
         api_key: open_ai_api_key,
         base_url,
         organization: None,
@@ -72,7 +72,10 @@ pub async fn create_embedding(
         .await
         .map_err(actix_web::error::ErrorBadRequest)?;
 
-    let vector = embeddings.data.first().unwrap().embedding.clone();
+    let vector = match embeddings.data.first().unwrap().embedding.clone() {
+        EmbeddingOutput::Float(vector) => vector,
+        _ => vec![],
+    };
 
     transaction.finish();
     Ok(vector.iter().map(|&x| x as f32).collect())
@@ -110,19 +113,21 @@ pub async fn get_splade_doc_embedding(message: &str) -> Result<Vec<(u32, f32)>, 
 
     let embedding_server_call = format!("{}/sparse_encode", server_origin);
 
-    let client = reqwest::Client::new();
-    let resp = client
-        .post(embedding_server_call)
-        .json(&CustomSparseEmbedData {
+    let resp = ureq::post(&embedding_server_call)
+        .set("Content-Type", "application/json")
+        .set(
+            "Authorization",
+            &format!(
+                "Bearer {}",
+                get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
+            ),
+        )
+        .send_json(CustomSparseEmbedData {
             input: message.to_string(),
             encode_type: "doc".to_string(),
         })
-        .bearer_auth(get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set"))
-        .send()
-        .await
         .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
-        .json::<SpladeEmbedding>()
-        .await
+        .into_json::<SpladeEmbedding>()
         .map_err(|_e| {
             log::error!(
                 "Failed parsing response from custom embedding server {:?}",
@@ -166,19 +171,21 @@ pub async fn get_splade_query_embedding(message: &str) -> Result<Vec<(u32, f32)>
 
     let embedding_server_call = format!("{}/sparse_encode", server_origin);
 
-    let client = reqwest::Client::new();
-    let resp = client
-        .post(embedding_server_call)
-        .json(&CustomSparseEmbedData {
+    let resp = ureq::post(&embedding_server_call)
+        .set("Content-Type", "application/json")
+        .set(
+            "Authorization",
+            &format!(
+                "Bearer {}",
+                get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
+            ),
+        )
+        .send_json(CustomSparseEmbedData {
             input: message.to_string(),
             encode_type: "query".to_string(),
         })
-        .bearer_auth(get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set"))
-        .send()
-        .await
         .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
-        .json::<SpladeEmbedding>()
-        .await
+        .into_json::<SpladeEmbedding>()
         .map_err(|_e| {
             log::error!(
                 "Failed parsing response from custom embedding server {:?}",
@@ -256,19 +263,21 @@ pub async fn cross_encoder(
         .map(|x| x.metadata[0].clone().content)
         .collect::<Vec<String>>();
 
-    let client = reqwest::Client::new();
-    let resp = client
-        .post(embedding_server_call)
-        .json(&CrossEncoderData {
-            query: query.to_string(),
+    let resp = ureq::post(&embedding_server_call)
+        .set("Content-Type", "application/json")
+        .set(
+            "Authorization",
+            &format!(
+                "Bearer {}",
+                get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
+            ),
+        )
+        .send_json(CrossEncoderData {
+            query,
             texts: request_docs,
         })
-        .bearer_auth(get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set"))
-        .send()
-        .await
         .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
-        .json::<Vec<ScorePair>>()
-        .await
+        .into_json::<Vec<ScorePair>>()
         .map_err(|_e| {
             log::error!(
                 "Failed parsing response from custom embedding server {:?}",
