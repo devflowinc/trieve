@@ -12,6 +12,10 @@ path = "src/main.rs"
 name = "ingestion-microservice"
 path = "src/bin/ingestion-microservice.rs"
 
+[[bin]]
+name = "create-new-qdrant"
+path = "src/bin/create-new-qdrant.rs"
+
 
 [dependencies]
 actix-identity = { version = "0.6.0" }

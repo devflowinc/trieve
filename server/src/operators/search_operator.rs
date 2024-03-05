@@ -176,10 +176,10 @@ pub fn assemble_qdrant_filter(
                         filter.must.push(Condition::range(
                             &format!("metadata.{}", key),
                             Range {
-                                gt: Some(arr[0].as_i64().unwrap() as f64),
-                                lt: Some(arr[1].as_i64().unwrap() as f64),
-                                gte: None,
-                                lte: None,
+                                gt: None,
+                                lt: None,
+                                gte: Some(arr[0].as_i64().unwrap() as f64),
+                                lte: Some(arr[1].as_i64().unwrap() as f64),
                             },
                         ));
                     } else if arr.iter().all(|item| item.is_i64()) {
