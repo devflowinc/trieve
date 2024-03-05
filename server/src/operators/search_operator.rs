@@ -1353,7 +1353,7 @@ pub async fn search_hybrid_chunks(
         })
         .collect();
 
-    let mut result_chunks = {
+    let result_chunks = {
         let combined_results = semantic_score_chunks
             .iter()
             .zip(full_text_handler_results.score_chunks.iter())
@@ -1377,18 +1377,22 @@ pub async fn search_hybrid_chunks(
             )
             .await?;
 
-            cross_encoder_results
+            let score_chunks = rerank_chunks(cross_encoder_results, data.date_bias);
+
+            score_chunks
                 .iter()
                 .chain(split_results.get(1).unwrap().iter())
                 .cloned()
                 .collect::<Vec<ScoreChunkDTO>>()
         } else {
-            cross_encoder(
+            let cross_encoder_results = cross_encoder(
                 data.query.clone(),
                 data.page_size.unwrap_or(10),
                 combined_results,
             )
-            .await?
+            .await?;
+
+            rerank_chunks(cross_encoder_results, data.date_bias)
         };
 
         SearchChunkQueryResponseBody {
@@ -1396,8 +1400,6 @@ pub async fn search_hybrid_chunks(
             total_chunk_pages: search_chunk_query_results.total_chunk_pages,
         }
     };
-
-    result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
 
     transaction.finish();
     Ok(result_chunks)
@@ -1563,7 +1565,7 @@ pub async fn search_hybrid_groups(
     )
     .await?;
 
-    let mut result_chunks = {
+    let result_chunks = {
         let reranked_chunks = if combined_result_chunks.score_chunks.len() > 20 {
             let split_results = combined_result_chunks
                 .score_chunks
@@ -1580,19 +1582,22 @@ pub async fn search_hybrid_groups(
                     .to_vec(),
             )
             .await?;
+            let score_chunks = rerank_chunks(cross_encoder_results, data.date_bias);
 
-            cross_encoder_results
+            score_chunks
                 .iter()
                 .chain(split_results.get(1).unwrap().iter())
                 .cloned()
                 .collect::<Vec<ScoreChunkDTO>>()
         } else {
-            cross_encoder(
+            let cross_encoder_results = cross_encoder(
                 data.query.clone(),
                 data.page_size.unwrap_or(10),
                 combined_result_chunks.score_chunks.clone(),
             )
-            .await?
+            .await?;
+
+            rerank_chunks(cross_encoder_results, data.date_bias)
         };
 
         SearchChunkQueryResponseBody {
@@ -1601,10 +1606,8 @@ pub async fn search_hybrid_groups(
         }
     };
 
-    result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
-
     Ok(SearchGroupsResult {
-        bookmarks: combined_result_chunks.score_chunks,
+        bookmarks: result_chunks.score_chunks,
         group,
         total_pages: combined_result_chunks.total_chunk_pages,
     })
