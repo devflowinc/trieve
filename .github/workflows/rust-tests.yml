@@ -15,8 +15,18 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: rustup component add clippy
-      - uses: actions-rs/clippy-check@v1
+      - uses: clechasseur/rs-clippy-check@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --features runtime-env --manifest-path server/Cargo.toml
+  redoc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Installing Vaccum
+        run: npm install -g @quobix/vacuum
+      - name: Generating OpenAPI spec
+        run: cargo run --features runtime-env --manifest-path server/Cargo.toml --bin redoc_ci > openapi.json
+      - name: Vaccum lint
+        run: vacuum lint openapi.json
 
