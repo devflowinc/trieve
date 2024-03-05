@@ -2,7 +2,7 @@ use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFile, ChunkGroupBookmark, ChunkMetadataWithFileData,
-        DatasetAndOrgWithSubAndPlan, Pool, UnifiedId,
+        DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration, UnifiedId,
     },
     errors::ServiceError,
     operators::{
@@ -295,6 +295,9 @@ pub async fn delete_group_by_tracking_id(
     _user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let delete_group_pool = pool.clone();
+    let server_dataset_config = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    );
     let tracking_id = tracking_id.into_inner();
 
     let group = dataset_owns_group(
@@ -309,6 +312,7 @@ pub async fn delete_group_by_tracking_id(
         dataset_org_plan_sub.dataset,
         data.delete_chunks,
         delete_group_pool,
+        server_dataset_config,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -351,6 +355,10 @@ pub async fn delete_chunk_group(
     _user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let delete_group_pool = pool.clone();
+    let server_dataset_config = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    );
+
     let group_id = group_id.into_inner();
 
     dataset_owns_group(
@@ -365,6 +373,7 @@ pub async fn delete_chunk_group(
         dataset_org_plan_sub.dataset,
         data.delete_chunks,
         delete_group_pool,
+        server_dataset_config,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -476,6 +485,9 @@ pub async fn add_chunk_to_group(
     let chunk_metadata_id = body.chunk_id;
     let group_id = group_id.into_inner();
     let dataset_id = dataset_org_plan_sub.dataset.id;
+    let server_dataset_config = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    );
 
     dataset_owns_group(UnifiedId::TrieveUuid(group_id), dataset_id, pool).await?;
 
@@ -489,7 +501,7 @@ pub async fn add_chunk_to_group(
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if let Some(qdrant_point_id) = qdrant_point_id {
-        add_bookmark_to_qdrant_query(qdrant_point_id, group_id)
+        add_bookmark_to_qdrant_query(qdrant_point_id, group_id, server_dataset_config)
             .await
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
     }
@@ -535,6 +547,9 @@ pub async fn add_chunk_to_group_by_tracking_id(
     let pool2 = pool.clone();
     let chunk_metadata_id = body.chunk_id;
     let dataset_id = dataset_org_plan_sub.dataset.id;
+    let server_dataset_config = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    );
 
     let group = dataset_owns_group(
         UnifiedId::TrackingId(tracking_id.into_inner()),
@@ -554,7 +569,7 @@ pub async fn add_chunk_to_group_by_tracking_id(
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if let Some(qdrant_point_id) = qdrant_point_id {
-        add_bookmark_to_qdrant_query(qdrant_point_id, group_id)
+        add_bookmark_to_qdrant_query(qdrant_point_id, group_id, server_dataset_config)
             .await
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
     }
@@ -765,6 +780,9 @@ pub async fn remove_chunk_from_group(
     let group_id = group_id.into_inner();
     let chunk_id = body.chunk_id;
     let dataset_id = dataset_org_plan_sub.dataset.id;
+    let server_dataset_config = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    );
 
     let pool = pool.clone();
     dataset_owns_group(UnifiedId::TrieveUuid(group_id), dataset_id, pool1).await?;
@@ -775,7 +793,7 @@ pub async fn remove_chunk_from_group(
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if let Some(qdrant_point_id) = qdrant_point_id {
-        remove_bookmark_from_qdrant_query(qdrant_point_id, group_id)
+        remove_bookmark_from_qdrant_query(qdrant_point_id, group_id, server_dataset_config)
             .await
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
     }

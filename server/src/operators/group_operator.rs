@@ -1,5 +1,7 @@
 use crate::{
-    data::models::{ChunkGroup, ChunkMetadata, Dataset, FileGroup, Pool, UnifiedId},
+    data::models::{
+        ChunkGroup, ChunkMetadata, Dataset, FileGroup, Pool, ServerDatasetConfiguration, UnifiedId,
+    },
     errors::DefaultError,
     operators::chunk_operator::delete_chunk_metadata_query,
 };
@@ -179,6 +181,7 @@ pub async fn delete_group_by_id_query(
     dataset: Dataset,
     delete_chunks: Option<bool>,
     pool: web::Data<Pool>,
+    config: ServerDatasetConfiguration,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
@@ -284,7 +287,8 @@ pub async fn delete_group_by_id_query(
 
     if delete_chunks {
         for chunk_id in chunk_ids {
-            delete_chunk_metadata_query(chunk_id, dataset.clone(), pool.clone()).await?;
+            delete_chunk_metadata_query(chunk_id, dataset.clone(), pool.clone(), config.clone())
+                .await?;
         }
     }
 

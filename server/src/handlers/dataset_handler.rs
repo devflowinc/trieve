@@ -204,9 +204,13 @@ pub struct DeleteDatasetRequest {
 pub async fn delete_dataset(
     data: web::Json<DeleteDatasetRequest>,
     pool: web::Data<Pool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    delete_dataset_by_id_query(data.dataset_id, pool).await?;
+    let server_dataset_config = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    );
+    delete_dataset_by_id_query(data.dataset_id, pool, server_dataset_config).await?;
     Ok(HttpResponse::NoContent().finish())
 }
 

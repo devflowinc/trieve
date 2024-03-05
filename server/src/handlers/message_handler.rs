@@ -81,6 +81,10 @@ pub async fn create_message_completion_handler(
 ) -> Result<HttpResponse, actix_web::Error> {
     let message_count_pool = pool.clone();
     let message_count_org_id = dataset_org_plan_sub.organization.id;
+    let server_dataset_configuration = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    );
+
     let org_message_count =
         web::block(move || get_message_org_count(message_count_org_id, message_count_pool))
             .await?
@@ -177,6 +181,7 @@ pub async fn create_message_completion_handler(
         create_message_data.highlight_delimiters,
         dataset_org_plan_sub.dataset,
         stream_response_pool,
+        server_dataset_configuration,
     )
     .await
 }
@@ -373,6 +378,9 @@ pub async fn regenerate_message_handler(
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
     let should_stream = data.stream_response;
+    let server_dataset_configuration = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    );
 
     let user_owns_topic_pool = pool.clone();
     let get_messages_pool = pool.clone();
@@ -412,6 +420,7 @@ pub async fn regenerate_message_handler(
             data.highlight_delimiters.clone(),
             dataset_org_plan_sub.dataset,
             create_message_pool,
+            server_dataset_configuration,
         )
         .await;
     }
@@ -472,6 +481,7 @@ pub async fn regenerate_message_handler(
         data.highlight_delimiters.clone(),
         dataset_org_plan_sub.dataset,
         create_message_pool,
+        server_dataset_configuration,
     )
     .await
 }
@@ -571,6 +581,7 @@ pub async fn stream_response(
     highlight_delimiters: Option<Vec<String>>,
     dataset: Dataset,
     pool: web::Data<Pool>,
+    config: ServerDatasetConfiguration,
 ) -> Result<HttpResponse, actix_web::Error> {
     let qdrant_search_pool = pool.clone();
     let pool2 = pool.clone();
@@ -702,6 +713,7 @@ pub async fn stream_response(
         },
         dataset.id,
         qdrant_search_pool,
+        config,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;

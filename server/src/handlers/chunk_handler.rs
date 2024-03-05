@@ -281,10 +281,18 @@ pub async fn delete_chunk(
 ) -> Result<HttpResponse, actix_web::Error> {
     let chunk_id_inner = chunk_id.into_inner();
     let pool1 = pool.clone();
+    let server_dataset_config = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    );
 
-    delete_chunk_metadata_query(chunk_id_inner, dataset_org_plan_sub.dataset, pool1)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    delete_chunk_metadata_query(
+        chunk_id_inner,
+        dataset_org_plan_sub.dataset,
+        pool1,
+        server_dataset_config,
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -319,6 +327,9 @@ pub async fn delete_chunk_by_tracking_id(
     let tracking_id_inner = tracking_id.into_inner();
     let pool1 = pool.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
+    let server_dataset_config = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    );
 
     let chunk_metadata = web::block(move || {
         get_metadata_from_tracking_id_query(tracking_id_inner, dataset_id, pool)
@@ -326,9 +337,14 @@ pub async fn delete_chunk_by_tracking_id(
     .await?
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    delete_chunk_metadata_query(chunk_metadata.id, dataset_org_plan_sub.dataset, pool1)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    delete_chunk_metadata_query(
+        chunk_metadata.id,
+        dataset_org_plan_sub.dataset,
+        pool1,
+        server_dataset_config,
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -378,10 +394,9 @@ pub async fn update_chunk(
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let fulltext_enabled = ServerDatasetConfiguration::from_json(
+    let server_dataset_config = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
-    )
-    .FULLTEXT_ENABLED;
+    );
 
     let get_qdrant_id_pool = pool.clone();
     let update_chunk_metadata_pool = pool.clone();
@@ -463,7 +478,7 @@ pub async fn update_chunk(
         qdrant_point_id,
         Some(embedding_vector),
         dataset_id,
-        Some(fulltext_enabled),
+        server_dataset_config,
     )
     .await?;
 
@@ -523,10 +538,9 @@ pub async fn update_chunk_by_tracking_id(
     let tracking_id1 = tracking_id.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
-    let fulltext_enabled = ServerDatasetConfiguration::from_json(
+    let server_dataset_config = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
-    )
-    .FULLTEXT_ENABLED;
+    );
 
     let pool1 = pool.clone();
     let pool2 = pool.clone();
@@ -601,7 +615,7 @@ pub async fn update_chunk_by_tracking_id(
         qdrant_point_id,
         Some(embedding_vector),
         dataset_org_plan_sub.dataset.id,
-        Some(fulltext_enabled),
+        server_dataset_config,
     )
     .await?;
 
@@ -716,10 +730,9 @@ pub async fn search_chunk(
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let fulltext_enabled = ServerDatasetConfiguration::from_json(
+    let server_dataset_config = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
-    )
-    .FULLTEXT_ENABLED;
+    );
 
     let page = data.page.unwrap_or(1);
     let parsed_query = parse_query(data.query.clone());
@@ -731,19 +744,33 @@ pub async fn search_chunk(
 
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => {
-            if !fulltext_enabled {
+            if !server_dataset_config.FULLTEXT_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Fulltext search is not enabled for this dataset".into(),
                 )
                 .into());
             }
 
-            search_full_text_chunks(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
-                .await?
+            search_full_text_chunks(
+                data,
+                parsed_query,
+                page,
+                pool,
+                dataset_org_plan_sub.dataset,
+                server_dataset_config,
+            )
+            .await?
         }
         "hybrid" => {
-            search_hybrid_chunks(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
-                .await?
+            search_hybrid_chunks(
+                data,
+                parsed_query,
+                page,
+                pool,
+                dataset_org_plan_sub.dataset,
+                server_dataset_config,
+            )
+            .await?
         }
         _ => {
             search_semantic_chunks(
@@ -753,6 +780,7 @@ pub async fn search_chunk(
                 pool,
                 dataset_org_plan_sub.dataset,
                 &mut timer,
+                server_dataset_config,
             )
             .await?
         }
@@ -850,10 +878,9 @@ pub async fn search_groups(
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let fulltext_enabled = ServerDatasetConfiguration::from_json(
+    let server_dataset_config = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
-    )
-    .FULLTEXT_ENABLED;
+    );
 
     //search over the links as well
     let page = data.page.unwrap_or(1);
@@ -872,7 +899,7 @@ pub async fn search_groups(
 
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => {
-            if !fulltext_enabled {
+            if !server_dataset_config.FULLTEXT_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Fulltext search is not enabled for this dataset".into(),
                 )
@@ -886,6 +913,7 @@ pub async fn search_groups(
                 page,
                 search_pool,
                 dataset_org_plan_sub.dataset,
+                server_dataset_config,
             )
             .await?
         }
@@ -897,6 +925,7 @@ pub async fn search_groups(
                 page,
                 search_pool,
                 dataset_org_plan_sub.dataset,
+                server_dataset_config,
             )
             .await?
         }
@@ -908,6 +937,7 @@ pub async fn search_groups(
                 page,
                 search_pool,
                 dataset_org_plan_sub.dataset,
+                server_dataset_config,
             )
             .await?
         }
@@ -968,10 +998,9 @@ pub async fn search_over_groups(
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let fulltext_enabled = ServerDatasetConfiguration::from_json(
+    let server_dataset_config = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
-    )
-    .FULLTEXT_ENABLED;
+    );
 
     //search over the links as well
     let page = data.page.unwrap_or(1);
@@ -980,7 +1009,7 @@ pub async fn search_over_groups(
 
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => {
-            if !fulltext_enabled {
+            if !server_dataset_config.FULLTEXT_ENABLED {
                 return Err(ServiceError::BadRequest(
                     "Fulltext search is not enabled for this dataset".into(),
                 )
@@ -993,12 +1022,20 @@ pub async fn search_over_groups(
                 page,
                 pool,
                 dataset_org_plan_sub.dataset,
+                server_dataset_config,
             )
             .await?
         }
         "hybrid" => {
-            hybrid_search_over_groups(data, parsed_query, page, pool, dataset_org_plan_sub.dataset)
-                .await?
+            hybrid_search_over_groups(
+                data,
+                parsed_query,
+                page,
+                pool,
+                dataset_org_plan_sub.dataset,
+                server_dataset_config,
+            )
+            .await?
         }
         _ => {
             semantic_search_over_groups(
@@ -1007,6 +1044,7 @@ pub async fn search_over_groups(
                 page,
                 pool,
                 dataset_org_plan_sub.dataset,
+                server_dataset_config,
             )
             .await?
         }
@@ -1128,15 +1166,14 @@ pub async fn get_recommended_chunks(
 ) -> Result<HttpResponse, actix_web::Error> {
     let positive_chunk_ids = data.positive_chunk_ids.clone();
     let limit = data.limit.unwrap_or(10);
-    let embed_size =
-        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration)
-            .EMBEDDING_SIZE;
+    let server_dataset_config =
+        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
     let recommended_qdrant_point_ids = recommend_qdrant_query(
         positive_chunk_ids,
         limit,
         dataset_org_plan_sub.dataset.id,
-        embed_size,
+        server_dataset_config,
     )
     .await
     .map_err(|err| {

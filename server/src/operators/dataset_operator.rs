@@ -1,4 +1,4 @@
-use crate::data::models::{DatasetAndUsage, DatasetUsageCount};
+use crate::data::models::{DatasetAndUsage, DatasetUsageCount, ServerDatasetConfiguration};
 use crate::diesel::RunQueryDsl;
 use crate::get_env;
 use crate::operators::qdrant_operator::get_qdrant_connection;
@@ -102,6 +102,7 @@ pub async fn get_dataset_by_id_query(
 pub async fn delete_dataset_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
+    config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
 
@@ -123,11 +124,11 @@ pub async fn delete_dataset_by_id_query(
             ServiceError::BadRequest(format!("Could not delete dataset in redis: {}", err))
         })?;
 
-    let qdrant = get_qdrant_connection()
+    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+
+    let qdrant = get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY))
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Could not connect to qdrant: {}", err)))?;
-
-    let qdrant_collection = get_env!("QDRANT_COLLECTION", "QDRANT_COLLECTION must be set");
 
     qdrant
         .delete_points(
