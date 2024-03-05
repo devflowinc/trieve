@@ -165,18 +165,58 @@ pub fn assemble_qdrant_filter(
             let value = obj.get(key).expect("Value should exist");
             match value {
                 serde_json::Value::Array(arr) => {
+                    if arr.iter().all(|item| item.is_string()) {
+                        filter.must.push(Condition::matches(
+                            &format!("metadata.{}", key),
+                            arr.iter()
+                                .map(|item| item.to_string())
+                                .collect::<Vec<String>>(),
+                        ));
+                    } else if arr.iter().all(|item| item.is_i64()) && arr.len() == 2 {
+                        filter.must.push(Condition::range(
+                            &format!("metadata.{}", key),
+                            Range {
+                                gt: Some(arr[0].as_i64().unwrap() as f64),
+                                lt: Some(arr[1].as_i64().unwrap() as f64),
+                                gte: None,
+                                lte: None,
+                            },
+                        ));
+                    } else if arr.iter().all(|item| item.is_i64()) {
+                        filter.must.push(Condition::matches(
+                            &format!("metadata.{}", key),
+                            arr.iter()
+                                .map(|item| item.as_i64().unwrap())
+                                .collect::<Vec<i64>>(),
+                        ));
+                    } else {
+                        return Err(DefaultError {
+                            message: "Invalid filter value",
+                        });
+                    }
+                }
+                serde_json::Value::String(str) => {
                     filter.must.push(Condition::matches(
                         &format!("metadata.{}", key),
-                        arr.iter()
-                            .map(|item| item.to_string())
-                            .collect::<Vec<String>>(),
+                        str.replace('\"', ""),
                     ));
                 }
+                serde_json::Value::Number(num) => {
+                    if num.is_i64() {
+                        filter.must.push(Condition::matches(
+                            &format!("metadata.{}", key),
+                            num.as_i64().unwrap(),
+                        ));
+                    } else {
+                        return Err(DefaultError {
+                            message: "Invalid filter value",
+                        });
+                    }
+                }
                 _ => {
-                    filter.must.push(Condition::matches(
-                        &format!("metadata.{}", key),
-                        value.to_string().replace('\"', ""),
-                    ));
+                    return Err(DefaultError {
+                        message: "Invalid filter value",
+                    })
                 }
             }
         }
