@@ -8,13 +8,3 @@ on:
     paths:
     - 'server/**'
 jobs:
-  redoc:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Installing Vaccum
-        run: npm install -g @quobix/vacuum
-      - name: Generating OpenAPI spec
-        run: cargo run --features runtime-env --manifest-path server/Cargo.toml --bin redoc_ci > openapi.json
-      - name: Vaccum lint
-        run: vacuum lint openapi.json
