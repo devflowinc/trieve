@@ -10,6 +10,16 @@ on:
     - 'search/**'
     - '.github/workflows/**'
 jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setting up 
+        run: sed -i 's/search\///' ./search/.eslintrc.json
+      - name: Install dependencies
+        run: yarn --cwd search
+      - name: Running lint
+        run: yarn --cwd search build
   eslint:
     runs-on: ubuntu-latest
     steps:
