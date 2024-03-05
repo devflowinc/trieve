@@ -11,7 +11,7 @@ on:
     - '.github/workflows/**'
 jobs:
   clippy_check:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v1
       - run: rustup component add clippy
@@ -20,7 +20,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --features runtime-env --manifest-path server/Cargo.toml
   redoc:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
       - name: Installing Vaccum
