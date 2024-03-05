@@ -1,5 +1,7 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
+use crate::get_env;
+
 use super::schema::*;
 use chrono::{DateTime, NaiveDateTime};
 use dateparser::DateTimeUtc;
@@ -854,6 +856,9 @@ pub struct ServerDatasetConfiguration {
     pub DOCUMENT_DOWNLOAD_FEATURE: bool,
     pub LLM_BASE_URL: String,
     pub EMBEDDING_BASE_URL: String,
+    pub QDRANT_URL: String,
+    pub QDRANT_API_KEY: String,
+    pub QDRANT_COLLECTION_NAME: String,
     pub RAG_PROMPT: String,
     pub N_RETRIEVALS_TO_INCLUDE: usize,
     pub DUPLICATE_DISTANCE_THRESHOLD: f32,
@@ -955,6 +960,43 @@ impl ServerDatasetConfiguration {
                 .unwrap_or(&json!(true))
                 .as_bool()
                 .unwrap_or(true),
+            QDRANT_URL: configuration
+                .get("QDRANT_URL")
+                .unwrap_or(&json!(get_env!("QDRANT_URL", "Must provide QDRANT_URL")))
+                .as_str()
+                .map(|s| {
+                    if s.is_empty() {
+                        get_env!("QDRANT_URL", "Must provide QDRANT_URL").to_string()
+                    } else {
+                        s.to_string()
+                    }
+                })
+                .unwrap_or(get_env!("QDRANT_URL", "Must provide QDRANT_URL").to_string()),
+            QDRANT_API_KEY: configuration
+                .get("QDRANT_API_KEY")
+                .unwrap_or(&json!(get_env!("QDRANT_API_KEY", "Must provide QDRANT_API_KEY")))
+                .as_str()
+                .map(|s| {
+                    if s.is_empty() {
+                        get_env!("QDRANT_API_KEY", "Must provide QDRANT_API_KEY").to_string()
+                    } else {
+                        s.to_string()
+                    }
+                })
+                .unwrap_or(get_env!("QDRANT_API_KEY", "Must provide QDRANT_API_KEY").to_string()),
+            QDRANT_COLLECTION_NAME: configuration
+                .get("QDRANT_COLLECTION_NAME")
+                .unwrap_or(&json!(get_env!("QDRANT_COLLECTION", "Must provide QDRANT_COLLECTION")))
+                .as_str()
+                .map(|s| {
+                    if s.is_empty() {
+                        get_env!("QDRANT_COLLECTION", "Must provide QDRANT_COLLECTION").to_string()
+                    } else {
+                        s.to_string()
+                    }
+                })
+                .unwrap_or(get_env!("QDRANT_COLLECTION", "Must provide QDRANT_COLLECTION").to_string()),
+            
         }
     }
 }

@@ -1,7 +1,8 @@
 use crate::{
     data::models::{
-        Dataset, Organization, OrganizationUsageCount, OrganizationWithSubAndPlan, Pool, SlimUser,
-        StripePlan, StripeSubscription, User, UserOrganization,
+        Dataset, Organization, OrganizationUsageCount, OrganizationWithSubAndPlan, Pool,
+        ServerDatasetConfiguration, SlimUser, StripePlan, StripeSubscription, User,
+        UserOrganization,
     },
     errors::DefaultError,
     operators::{
@@ -122,7 +123,9 @@ pub async fn delete_organization_query(
         })?;
 
     for dataset in datasets {
-        delete_dataset_by_id_query(dataset.id, pool.clone())
+        let config = ServerDatasetConfiguration::from_json(dataset.server_configuration);
+
+        delete_dataset_by_id_query(dataset.id, pool.clone(), config.clone())
             .await
             .map_err(|e| {
                 log::error!(

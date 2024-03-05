@@ -11,7 +11,6 @@ use crate::data::models::{
 use crate::data::schema::{self};
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::errors::ServiceError;
-use crate::get_env;
 use crate::handlers::chunk_handler::{
     ParsedQuery, ScoreChunkDTO, SearchChunkData, SearchChunkQueryResponseBody, SearchGroupsData,
     SearchGroupsResult, SearchOverGroupsData,
@@ -222,6 +221,7 @@ pub async fn retrieve_qdrant_points_query(
     parsed_query: ParsedQuery,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
+    config: ServerDatasetConfiguration,
 ) -> Result<SearchChunkQueryResult, DefaultError> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
@@ -251,7 +251,8 @@ pub async fn retrieve_qdrant_points_query(
         pool,
     )?;
 
-    let point_ids = search_qdrant_query(page, filter, limit, score_threshold, vector).await?;
+    let point_ids =
+        search_qdrant_query(page, filter, limit, score_threshold, vector, config).await?;
     transaction.finish();
 
     Ok(SearchChunkQueryResult {
@@ -281,6 +282,7 @@ pub async fn retrieve_group_qdrant_points_query(
     parsed_query: ParsedQuery,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
+    config: ServerDatasetConfiguration,
 ) -> Result<SearchOverGroupsQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
 
@@ -295,8 +297,16 @@ pub async fn retrieve_group_qdrant_points_query(
         pool,
     )?;
 
-    let point_ids =
-        search_over_groups_query(page, filter, limit, score_threshold, group_size, vector).await?;
+    let point_ids = search_over_groups_query(
+        page,
+        filter,
+        limit,
+        score_threshold,
+        group_size,
+        vector,
+        config,
+    )
+    .await?;
 
     Ok(SearchOverGroupsQueryResult {
         search_results: point_ids.clone(),
@@ -307,14 +317,12 @@ pub async fn retrieve_group_qdrant_points_query(
 pub async fn global_unfiltered_top_match_query(
     embedding_vector: Vec<f32>,
     dataset_id: uuid::Uuid,
+    config: ServerDatasetConfiguration,
 ) -> Result<SearchResult, DefaultError> {
-    let qdrant = get_qdrant_connection().await?;
+    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
-    let qdrant_group = get_env!(
-        "QDRANT_COLLECTION",
-        "QDRANT_COLLECTION should be set if this is called"
-    )
-    .to_string();
+    let qdrant =
+        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
 
     let mut dataset_filter = Filter::default();
     dataset_filter
@@ -335,7 +343,7 @@ pub async fn global_unfiltered_top_match_query(
 
     let data = qdrant
         .search_points(&SearchPoints {
-            collection_name: qdrant_group,
+            collection_name: qdrant_collection,
             vector: embedding_vector,
             vector_name: Some(vector_name.to_string()),
             limit: 1,
@@ -400,6 +408,7 @@ pub async fn search_semantic_chunk_groups_query(
     group_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     parsed_query: ParsedQuery,
+    config: ServerDatasetConfiguration,
 ) -> Result<SearchChunkQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
@@ -521,6 +530,7 @@ pub async fn search_semantic_chunk_groups_query(
         limit,
         score_threshold,
         VectorType::Dense(embedding_vector),
+        config,
     )
     .await?;
 
@@ -643,6 +653,7 @@ pub async fn search_full_text_group_query(
     group_id: uuid::Uuid,
     parsed_query: ParsedQuery,
     dataset_uuid: uuid::Uuid,
+    config: ServerDatasetConfiguration,
 ) -> Result<SearchChunkQueryResult, DefaultError> {
     let page = if page == 0 { 1 } else { page };
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
@@ -803,6 +814,7 @@ pub async fn search_full_text_group_query(
         limit,
         score_threshold,
         VectorType::Sparse(embedding_vector),
+        config,
     )
     .await;
 
@@ -1126,6 +1138,7 @@ pub async fn search_semantic_chunks(
     pool: web::Data<Pool>,
     dataset: Dataset,
     timer: &mut Timer,
+    config: ServerDatasetConfiguration,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     timer.add("Reached semantic_chunks");
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -1158,6 +1171,7 @@ pub async fn search_semantic_chunks(
         parsed_query,
         dataset.id,
         pool.clone(),
+        config,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -1181,6 +1195,7 @@ pub async fn search_full_text_chunks(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
+    config: ServerDatasetConfiguration,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
@@ -1217,6 +1232,7 @@ pub async fn search_full_text_chunks(
         parsed_query,
         dataset.id,
         pool.clone(),
+        config,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -1237,6 +1253,7 @@ pub async fn search_hybrid_chunks(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
+    config: ServerDatasetConfiguration,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
@@ -1268,10 +1285,17 @@ pub async fn search_hybrid_chunks(
         parsed_query.clone(),
         dataset.id,
         pool.clone(),
+        config.clone(),
     );
 
-    let full_text_handler_results =
-        search_full_text_chunks(web::Json(data.clone()), parsed_query, page, pool, dataset);
+    let full_text_handler_results = search_full_text_chunks(
+        web::Json(data.clone()),
+        parsed_query,
+        page,
+        pool,
+        dataset,
+        config,
+    );
 
     let (search_chunk_query_results, full_text_handler_results) =
         futures::join!(search_chunk_query_results, full_text_handler_results);
@@ -1411,6 +1435,7 @@ pub async fn search_semantic_groups(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
+    config: ServerDatasetConfiguration,
 ) -> Result<SearchGroupsResult, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
@@ -1428,6 +1453,7 @@ pub async fn search_semantic_groups(
         data.group_id,
         dataset.id,
         parsed_query,
+        config,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -1456,6 +1482,7 @@ pub async fn search_full_text_groups(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
+    config: ServerDatasetConfiguration,
 ) -> Result<SearchGroupsResult, actix_web::Error> {
     let data_inner = data.clone();
 
@@ -1471,6 +1498,7 @@ pub async fn search_full_text_groups(
         data_inner.group_id,
         parsed_query,
         dataset.id,
+        config,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -1499,6 +1527,7 @@ pub async fn search_hybrid_groups(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
+    config: ServerDatasetConfiguration,
 ) -> Result<SearchGroupsResult, actix_web::Error> {
     let data_inner = data.clone();
     let dataset_config =
@@ -1518,6 +1547,7 @@ pub async fn search_hybrid_groups(
         data.group_id,
         dataset.id,
         parsed_query.clone(),
+        config.clone(),
     );
 
     let full_text_future = search_full_text_group_query(
@@ -1532,6 +1562,7 @@ pub async fn search_hybrid_groups(
         data_inner.group_id,
         parsed_query.clone(),
         dataset.id,
+        config,
     );
 
     let (semantic_results, full_text_results) = futures::join!(semantic_future, full_text_future);
@@ -1616,6 +1647,7 @@ pub async fn semantic_search_over_groups(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
+    config: ServerDatasetConfiguration,
 ) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
@@ -1634,6 +1666,7 @@ pub async fn semantic_search_over_groups(
         parsed_query,
         dataset.id,
         pool.clone(),
+        config,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -1652,6 +1685,7 @@ pub async fn full_text_search_over_groups(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
+    config: ServerDatasetConfiguration,
 ) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
     let embedding_vector = get_splade_query_embedding(&data.query)
         .await
@@ -1670,6 +1704,7 @@ pub async fn full_text_search_over_groups(
         parsed_query,
         dataset.id,
         pool.clone(),
+        config,
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
@@ -1717,6 +1752,7 @@ pub async fn hybrid_search_over_groups(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
+    config: ServerDatasetConfiguration,
 ) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
@@ -1738,6 +1774,7 @@ pub async fn hybrid_search_over_groups(
         parsed_query.clone(),
         dataset.id,
         pool.clone(),
+        config.clone(),
     );
 
     let full_text_future = retrieve_group_qdrant_points_query(
@@ -1753,6 +1790,7 @@ pub async fn hybrid_search_over_groups(
         parsed_query.clone(),
         dataset.id,
         pool.clone(),
+        config,
     );
 
     let (semantic_results, full_text_results) = futures::join!(semantic_future, full_text_future);

@@ -480,6 +480,7 @@ pub async fn delete_chunk_metadata_query(
     chunk_uuid: uuid::Uuid,
     dataset: Dataset,
     pool: web::Data<Pool>,
+    config: ServerDatasetConfiguration,
 ) -> Result<(), DefaultError> {
     let chunk_metadata = get_metadata_from_id_query(chunk_uuid, dataset.id, pool.clone())?;
     if chunk_metadata.dataset_id != dataset.id {
@@ -626,12 +627,13 @@ pub async fn delete_chunk_metadata_query(
         }
     });
 
-    let qdrant_collection =
-        std::env::var("QDRANT_COLLECTION").unwrap_or("debate_chunks".to_owned());
+    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+
+    let qdrant =
+        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
     match transaction_result {
         Ok(result) => match result {
             TransactionResult::ChunkCollisionNotDetected => {
-                let qdrant = get_qdrant_connection().await?;
                 let _ = qdrant
                     .delete_points(
                         qdrant_collection,
@@ -653,7 +655,6 @@ pub async fn delete_chunk_metadata_query(
                     });
             }
             TransactionResult::ChunkCollisionDetected(latest_collision_metadata) => {
-                let qdrant = get_qdrant_connection().await?;
                 let collision_content = latest_collision_metadata
                     .chunk_html
                     .clone()

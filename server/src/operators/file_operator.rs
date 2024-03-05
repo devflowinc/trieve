@@ -1,7 +1,9 @@
 use super::event_operator::create_event_query;
 use super::group_operator::{create_group_from_file_query, create_group_query};
 use super::parse_operator::{coarse_doc_chunker, convert_html_to_text};
-use crate::data::models::{ChunkMetadata, Dataset, DatasetAndOrgWithSubAndPlan, EventType};
+use crate::data::models::{
+    ChunkMetadata, Dataset, DatasetAndOrgWithSubAndPlan, EventType, ServerDatasetConfiguration,
+};
 use crate::handlers::auth_handler::AdminOnly;
 use crate::operators::chunk_operator::delete_chunk_metadata_query;
 use crate::{data::models::ChunkGroup, handlers::chunk_handler::ReturnQueuedChunk};
@@ -434,6 +436,7 @@ pub async fn delete_file_query(
     dataset: Dataset,
     delete_chunks: Option<bool>,
     pool: web::Data<Pool>,
+    config: ServerDatasetConfiguration,
 ) -> Result<(), actix_web::Error> {
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
     use crate::data::schema::chunk_files::dsl as chunk_files_columns;
@@ -530,7 +533,7 @@ pub async fn delete_file_query(
 
     if delete_chunks {
         for chunk_id in chunk_ids {
-            delete_chunk_metadata_query(chunk_id, dataset.clone(), pool.clone())
+            delete_chunk_metadata_query(chunk_id, dataset.clone(), pool.clone(), config.clone())
                 .await
                 .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
         }

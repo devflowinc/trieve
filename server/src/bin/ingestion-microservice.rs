@@ -1,7 +1,6 @@
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
 use redis::AsyncCommands;
-use serde_json::json;
 use trieve_server::data::models::{self, ChunkGroupBookmark, Event, ServerDatasetConfiguration};
 use trieve_server::errors::ServiceError;
 use trieve_server::get_env;
@@ -14,8 +13,7 @@ use trieve_server::operators::group_operator::create_chunk_bookmark_query;
 use trieve_server::operators::model_operator::create_embedding;
 use trieve_server::operators::parse_operator::{average_embeddings, coarse_doc_chunker};
 use trieve_server::operators::qdrant_operator::{
-    add_bookmark_to_qdrant_query, create_new_qdrant_point_query, delete_qdrant_point_id_query,
-    update_qdrant_point_query,
+    add_bookmark_to_qdrant_query, create_new_qdrant_point_query, update_qdrant_point_query,
 };
 use trieve_server::operators::search_operator::global_unfiltered_top_match_query;
 
@@ -74,7 +72,15 @@ async fn ingestion_service(
         };
 
         let payload: IngestionMessage = serde_json::from_str(&payload[1]).unwrap();
-        match upload_chunk(payload.clone(), web_pool.clone()).await {
+        let server_dataset_configuration =
+            ServerDatasetConfiguration::from_json(payload.dataset_config.clone());
+        match upload_chunk(
+            payload.clone(),
+            web_pool.clone(),
+            server_dataset_configuration,
+        )
+        .await
+        {
             Ok(_) => {
                 log::info!("Uploaded chunk: {:?}", payload.chunk_metadata.id);
                 let _ = create_event_query(
@@ -113,14 +119,8 @@ async fn ingestion_service(
 async fn upload_chunk(
     mut payload: IngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
+    config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    let fulltext_enabled = payload
-        .dataset_config
-        .get("FULLTEXT_ENABLED")
-        .unwrap_or(&json!(true))
-        .as_bool()
-        .unwrap_or(true);
-
     let mut new_chunk_id = payload.chunk_metadata.id;
     let mut qdrant_point_id = payload
         .chunk_metadata
@@ -173,6 +173,7 @@ async fn upload_chunk(
         let first_semantic_result = global_unfiltered_top_match_query(
             embedding_vector.clone(),
             payload.chunk_metadata.dataset_id,
+            config.clone(),
         )
         .await
         .map_err(|err| {
@@ -187,21 +188,7 @@ async fn upload_chunk(
                 get_metadata_from_point_ids(vec![first_semantic_result.point_id], web_pool.clone());
 
             match score_chunk_result {
-                Ok(chunk_results) => {
-                    if chunk_results.is_empty() {
-                        delete_qdrant_point_id_query(
-                            first_semantic_result.point_id,
-                            payload.chunk_metadata.dataset_id,
-                        )
-                        .await
-                        .map_err(|_| {
-                            ServiceError::InternalServerError(
-                                "Failed to delete qdrant point".into(),
-                            )
-                        })?;
-                    }
-                    chunk_results.first().unwrap().clone()
-                }
+                Ok(chunk_results) => chunk_results.first().unwrap().clone(),
                 Err(err) => {
                     return Err(ServiceError::InternalServerError(format!(
                         "Failed to get chunk metadata: {:?}",
@@ -219,7 +206,7 @@ async fn upload_chunk(
             collision.expect("Collision must be some"),
             None,
             payload.chunk_metadata.dataset_id,
-            Some(fulltext_enabled),
+            config.clone(),
         )
         .await
         .map_err(|err| {
@@ -263,7 +250,7 @@ async fn upload_chunk(
             embedding_vector,
             payload.chunk_metadata.clone(),
             payload.chunk_metadata.dataset_id,
-            Some(fulltext_enabled),
+            config.clone(),
         )
         .await
         .map_err(|err| {
@@ -291,7 +278,7 @@ async fn upload_chunk(
                 );
 
             if create_chunk_bookmark_res.is_ok() {
-                add_bookmark_to_qdrant_query(qdrant_point_id, group_id_to_bookmark)
+                add_bookmark_to_qdrant_query(qdrant_point_id, group_id_to_bookmark, config.clone())
                     .await
                     .map_err(|err| {
                         log::error!("Failed to add bookmark to qdrant: {:?}", err);

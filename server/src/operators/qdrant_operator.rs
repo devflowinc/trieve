@@ -1,6 +1,6 @@
 use super::{model_operator::get_splade_doc_embedding, search_operator::SearchResult};
 use crate::{
-    data::models::ChunkMetadata,
+    data::models::{ChunkMetadata, ServerDatasetConfiguration},
     errors::{DefaultError, ServiceError},
     get_env,
 };
@@ -20,11 +20,20 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{collections::HashMap, str::FromStr};
 
-pub async fn get_qdrant_connection() -> Result<QdrantClient, DefaultError> {
-    let qdrant_url = get_env!("QDRANT_URL", "QDRANT_URL should be set");
-    let qdrant_api_key = get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set").into();
+pub async fn get_qdrant_connection(
+    qdrant_url: Option<&str>,
+    qdrant_api_key: Option<&str>,
+) -> Result<QdrantClient, DefaultError> {
+    let qdrant_url = qdrant_url.unwrap_or(get_env!(
+        "QDRANT_URL",
+        "QDRANT_URL should be set if this is called"
+    ));
+    let qdrant_api_key = qdrant_api_key.unwrap_or(get_env!(
+        "QDRANT_API_KEY",
+        "QDRANT_API_KEY should be set if this is called"
+    ));
     let mut config = QdrantClientConfig::from_url(qdrant_url);
-    config.api_key = Some(qdrant_api_key);
+    config.api_key = Some(qdrant_api_key.to_owned());
     QdrantClient::new(Some(config)).map_err(|_err| DefaultError {
         message: "Failed to connect to Qdrant",
     })
@@ -38,7 +47,7 @@ pub async fn create_new_qdrant_collection_query() -> Result<(), ServiceError> {
     )
     .to_string();
 
-    let qdrant_client = get_qdrant_connection()
+    let qdrant_client = get_qdrant_connection(None, None)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -226,15 +235,11 @@ pub async fn create_new_qdrant_point_query(
     embedding_vector: Vec<f32>,
     chunk_metadata: ChunkMetadata,
     dataset_id: uuid::Uuid,
-    fulltext_enabled: Option<bool>,
+    config: ServerDatasetConfiguration,
 ) -> Result<(), actix_web::Error> {
-    let qdrant_collection = get_env!(
-        "QDRANT_COLLECTION",
-        "QDRANT_COLLECTION should be set if this is called"
-    )
-    .to_string();
+    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
-    let qdrant = get_qdrant_connection()
+    let qdrant = get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY))
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -254,7 +259,7 @@ pub async fn create_new_qdrant_point_query(
     let mut vector_payload =
         HashMap::from([(vector_name.to_string(), Vector::from(embedding_vector))]);
 
-    if fulltext_enabled.unwrap_or(true) {
+    if config.FULLTEXT_ENABLED {
         let splade_vector = get_splade_doc_embedding(&chunk_content).await?;
         vector_payload.insert("sparse_vectors".to_string(), Vector::from(splade_vector));
     }
@@ -277,19 +282,15 @@ pub async fn update_qdrant_point_query(
     point_id: uuid::Uuid,
     updated_vector: Option<Vec<f32>>,
     dataset_id: uuid::Uuid,
-    fulltext_enabled: Option<bool>,
+    config: ServerDatasetConfiguration,
 ) -> Result<(), actix_web::Error> {
     let qdrant_point_id: Vec<PointId> = vec![point_id.to_string().into()];
 
-    let qdrant = get_qdrant_connection()
+    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+
+    let qdrant = get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY))
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    let qdrant_collection = get_env!(
-        "QDRANT_COLLECTION",
-        "QDRANT_COLLECTION should be set if this is called"
-    )
-    .to_string();
 
     let current_point_vec = qdrant
         .get_points(
@@ -337,7 +338,7 @@ pub async fn update_qdrant_point_query(
         };
         let mut vector_payload =
             HashMap::from([(vector_name.to_string(), Vector::from(updated_vector))]);
-        if fulltext_enabled.unwrap_or(true) {
+        if config.FULLTEXT_ENABLED {
             let chunk_content = metadata.unwrap().content;
             let splade_vector = get_splade_doc_embedding(&chunk_content).await?;
             vector_payload.insert("sparse_vectors".to_string(), Vector::from(splade_vector));
@@ -380,14 +381,12 @@ pub async fn update_qdrant_point_query(
 pub async fn add_bookmark_to_qdrant_query(
     point_id: uuid::Uuid,
     group_id: uuid::Uuid,
+    config: ServerDatasetConfiguration,
 ) -> Result<(), DefaultError> {
-    let qdrant = get_qdrant_connection().await?;
+    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
-    let qdrant_collection = get_env!(
-        "QDRANT_COLLECTION",
-        "QDRANT_COLLECTION should be set if this is called"
-    )
-    .to_string();
+    let qdrant =
+        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
 
     let qdrant_point_id: Vec<PointId> = vec![point_id.to_string().into()];
 
@@ -474,14 +473,12 @@ pub async fn add_bookmark_to_qdrant_query(
 pub async fn remove_bookmark_from_qdrant_query(
     point_id: uuid::Uuid,
     group_id: uuid::Uuid,
+    config: ServerDatasetConfiguration,
 ) -> Result<(), DefaultError> {
-    let qdrant = get_qdrant_connection().await?;
+    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
-    let qdrant_collection = get_env!(
-        "QDRANT_COLLECTION",
-        "QDRANT_COLLECTION should be set if this is called"
-    )
-    .to_string();
+    let qdrant =
+        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
 
     let qdrant_point_id: Vec<PointId> = vec![point_id.to_string().into()];
 
@@ -569,14 +566,12 @@ pub async fn search_over_groups_query(
     score_threshold: Option<f32>,
     group_size: u32,
     vector: VectorType,
+    config: ServerDatasetConfiguration,
 ) -> Result<Vec<GroupSearchResults>, DefaultError> {
-    let qdrant = get_qdrant_connection().await?;
+    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
-    let qdrant_collection = get_env!(
-        "QDRANT_COLLECTION",
-        "QDRANT_COLLECTION should be set if this is called"
-    )
-    .to_string();
+    let qdrant =
+        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
 
     let vector_name = match vector {
         VectorType::Sparse(_) => "sparse_vectors",
@@ -675,14 +670,12 @@ pub async fn search_qdrant_query(
     limit: u64,
     score_threshold: Option<f32>,
     vector: VectorType,
+    config: ServerDatasetConfiguration,
 ) -> Result<Vec<SearchResult>, DefaultError> {
-    let qdrant = get_qdrant_connection().await?;
+    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
-    let qdrant_collection = get_env!(
-        "QDRANT_COLLECTION",
-        "QDRANT_COLLECTION should be set if this is called"
-    )
-    .to_string();
+    let qdrant =
+        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
 
     let vector_name = match vector {
         VectorType::Sparse(_) => "sparse_vectors",
@@ -756,37 +749,16 @@ pub async fn search_qdrant_query(
     Ok(point_ids)
 }
 
-pub async fn delete_qdrant_point_id_query(
-    point_id: uuid::Uuid,
-    dataset_id: uuid::Uuid,
-) -> Result<(), DefaultError> {
-    let qdrant = get_qdrant_connection().await?;
-
-    let qdrant_point_id: Vec<PointId> = vec![point_id.to_string().into()];
-    let points_selector = qdrant_point_id.into();
-    let qdrant_collection = dataset_id.to_string();
-
-    qdrant
-        .delete_points(qdrant_collection, None, &points_selector, None)
-        .await
-        .map_err(|_err| DefaultError {
-            message: "Failed to delete point from qdrant",
-        })?;
-
-    Ok(())
-}
-
 pub async fn recommend_qdrant_query(
     positive_ids: Vec<uuid::Uuid>,
     limit: u64,
     dataset_id: uuid::Uuid,
-    embed_size: usize,
+    config: ServerDatasetConfiguration,
 ) -> Result<Vec<uuid::Uuid>, DefaultError> {
-    let collection_name = get_env!(
-        "QDRANT_COLLECTION",
-        "QDRANT_COLLECTION should be set if this is called"
-    )
-    .to_string();
+    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+
+    let qdrant =
+        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
 
     let point_ids: Vec<PointId> = positive_ids
         .iter()
@@ -797,7 +769,7 @@ pub async fn recommend_qdrant_query(
         dataset_id.to_string(),
     )]));
 
-    let vector_name = match embed_size {
+    let vector_name = match config.EMBEDDING_SIZE {
         384 => "384_vectors",
         768 => "768_vectors",
         1024 => "1024_vectors",
@@ -810,7 +782,7 @@ pub async fn recommend_qdrant_query(
     };
 
     let recommend_points = RecommendPoints {
-        collection_name,
+        collection_name: qdrant_collection,
         positive: point_ids,
         negative: vec![],
         filter: dataset_filter,
@@ -832,9 +804,7 @@ pub async fn recommend_qdrant_query(
         shard_key_selector: None,
     };
 
-    let qdrant_client = get_qdrant_connection().await?;
-
-    let recommended_point_ids = qdrant_client
+    let recommended_point_ids = qdrant
         .recommend(&recommend_points)
         .await
         .map_err(|err| {
