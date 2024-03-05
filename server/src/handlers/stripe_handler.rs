@@ -154,7 +154,7 @@ pub async fn webhook(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetDirectPaymentLinkData {
     pub plan_id: uuid::Uuid,
     pub organization_id: uuid::Uuid,
@@ -227,8 +227,8 @@ pub async fn direct_to_payment_link(
         ("subscription_id" = uuid, Path, description = "id of the subscription you want to cancel"),
     ),
     security(
-        ("api_key" = ["owner"]),
-        ("cookie" = ["owner"])
+        ("ApiKey" = ["owner"]),
+        ("Cookie" = ["owner"])
     )
 )]
 pub async fn cancel_subscription(
@@ -257,7 +257,7 @@ pub async fn cancel_subscription(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UpdateSubscriptionData {
     pub subscription_id: uuid::Uuid,
     pub plan_id: uuid::Uuid,
@@ -278,8 +278,8 @@ pub struct UpdateSubscriptionData {
         ("plan_id" = uuid::Uuid, Path, description = "id of the plan you want to subscribe to"),
     ),
     security(
-        ("api_key" = ["readonly"]),
-        ("cookie" = ["readonly"])
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
     )
 )]
 pub async fn update_subscription_plan(

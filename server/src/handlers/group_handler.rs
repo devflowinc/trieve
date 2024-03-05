@@ -99,7 +99,7 @@ pub struct GroupData {
     pub total_pages: i64,
 }
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Deserialize, Serialize)]
 pub struct DatasetGroupQuery {
     pub dataset_id: uuid::Uuid,
     pub page: u64,
@@ -164,7 +164,7 @@ pub async fn get_specific_dataset_chunk_groups(
     }))
 }
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Deserialize, Serialize)]
 pub struct GetGroupByTrackingIDData {
     pub tracking_id: String,
 }
@@ -219,7 +219,7 @@ pub struct UpdateGroupByTrackingIDData {
 
 #[utoipa::path(
     put,
-    path = "/chunk_group/tracking_id",
+    path = "/chunk_group/tracking_id/{tracking_id}",
     context_path = "/api",
     tag = "chunk_group",
     request_body(content = UpdateGroupByTrackingIDData, description = "JSON request payload to update a chunkGroup", content_type = "application/json"),
@@ -229,7 +229,7 @@ pub struct UpdateGroupByTrackingIDData {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("tracking_id" = uuid, description = "Tracking id of the chunk_group to update"),
+        ("tracking_id" = uuid::Uuid, description = "Tracking id of the chunk_group to update"),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -264,7 +264,7 @@ pub async fn update_group_by_tracking_id(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct DeleteGroupByTrackingIDData {
     pub delete_chunks: Option<bool>,
 }
@@ -280,7 +280,7 @@ pub struct DeleteGroupByTrackingIDData {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("tracking_id" = uuid, description = "Tracking id of the chunk_group to delete"),
+        ("tracking_id" = uuid::Uuid, description = "Tracking id of the chunk_group to delete"),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -316,7 +316,7 @@ pub async fn delete_group_by_tracking_id(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct DeleteGroupData {
     pub delete_chunks: Option<bool>,
 }
@@ -335,7 +335,7 @@ pub struct DeleteGroupData {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("group_id" = uuid, description = "Id of the chunk_group to delete"),
+        ("group_id" = uuid::Uuid, description = "Id of the chunk_group to delete"),
         ("delete_chunks" = bool, Query, description = "Delete the chunks within the group"),
     ),
     security(
@@ -518,7 +518,7 @@ pub struct AddChunkToGroupByTrackingIdData {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("group_id" = uuid, description = "Id of the group to add the chunk to as a bookmark"),
+        ("tracking_id" = uuid, description = "Id of the group to add the chunk to as a bookmark"),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -569,7 +569,7 @@ pub struct BookmarkData {
     pub total_pages: i64,
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct GetAllBookmarksData {
     pub group_id: uuid::Uuid,
     pub page: Option<u64>,
@@ -628,7 +628,7 @@ pub async fn get_chunks_in_group(
     }))
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct GetAllBookmarksByTrackingIdData {
     pub tracking_id: String,
     pub page: Option<u64>,
@@ -726,7 +726,7 @@ pub async fn get_groups_chunk_is_in(
     Ok(HttpResponse::Ok().json(groups))
 }
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Deserialize, Serialize)]
 pub struct DeleteBookmarkPathData {
     pub chunk_id: uuid::Uuid,
 }
@@ -795,7 +795,7 @@ pub async fn group_unique_search(
     Ok(group)
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct GenerateOffGroupData {
     pub group_id: uuid::Uuid,
     pub page: Option<u64>,
