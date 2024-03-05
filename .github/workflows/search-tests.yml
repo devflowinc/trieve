@@ -11,7 +11,7 @@ on:
     - '.github/workflows/**'
 jobs:
   build-test:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Setting up 
@@ -21,7 +21,7 @@ jobs:
       - name: Running lint
         run: yarn --cwd search build
   eslint:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Setting up 
