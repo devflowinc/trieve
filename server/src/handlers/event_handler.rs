@@ -44,7 +44,7 @@ pub async fn get_events(
     Ok(HttpResponse::Ok().json(events))
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, ToSchema)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct EventId {
     /// Id of the notification to target.
     pub notification_id: uuid::Uuid,

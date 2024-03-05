@@ -29,7 +29,7 @@ pub struct UpdateUserData {
     pub role: Option<i32>,
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct GetUserWithChunksData {
     /// The id of the user to fetch the chunks for.
     pub user_id: uuid::Uuid,

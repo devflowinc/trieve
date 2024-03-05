@@ -14,6 +14,11 @@ use utoipa::ToSchema;
 // type alias to use in multiple places
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AI {
+    pub a : String,
+}
+
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[diesel(table_name = users)]
 pub struct User {
@@ -346,7 +351,7 @@ impl SlimUser {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UserDTO {
     pub id: uuid::Uuid,
     pub email: Option<String>,
@@ -485,7 +490,7 @@ impl FileGroup {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UserDTOWithChunks {
     pub id: uuid::Uuid,
     pub email: Option<String>,
@@ -1083,7 +1088,7 @@ impl ClientDatasetConfiguration {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DatasetAndOrgWithSubAndPlan {
     pub dataset: Dataset,
     pub organization: OrganizationWithSubAndPlan,
@@ -1316,7 +1321,7 @@ impl OrganizationWithSubAndPlan {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, ToSchema, Ord, PartialOrd)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Ord, PartialOrd)]
 pub enum UserRole {
     Owner = 2,
     Admin = 1,

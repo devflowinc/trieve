@@ -29,12 +29,6 @@ use serde_json::json;
 use std::future::{ready, Ready};
 use utoipa::ToSchema;
 
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct AuthData {
-    pub email: String,
-    pub password: String,
-}
-
 #[derive(Deserialize, Debug)]
 pub struct OpCallback {
     pub state: String,
