@@ -511,6 +511,7 @@ pub async fn get_topic_string(
         logprobs: None,
         top_logprobs: None,
         seed: None,
+        instance_id: None,
     };
 
     let dataset_config =
@@ -535,7 +536,7 @@ pub async fn get_topic_string(
 
     let client = Client {
         api_key: llm_api_key,
-        http_client: reqwest::Client::new(),
+        http_client: Some(reqwest::Client::new()),
         base_url,
         organization: None,
     };
@@ -595,7 +596,7 @@ pub async fn stream_response(
 
     let client = Client {
         api_key: llm_api_key,
-        http_client: reqwest::Client::new(),
+        http_client: Some(reqwest::Client::new()),
         base_url,
         organization: None,
     };
@@ -663,6 +664,7 @@ pub async fn stream_response(
         logprobs: None,
         top_logprobs: None,
         seed: None,
+        instance_id: None,
     };
 
     let search_query_from_rag_prompt = client
@@ -800,6 +802,7 @@ pub async fn stream_response(
         logprobs: None,
         top_logprobs: None,
         seed: None,
+        instance_id: None,
     };
 
     if !should_stream.unwrap_or(true) {
@@ -950,7 +953,7 @@ pub async fn create_suggested_queries_handler(
 
     let client = Client {
         api_key: llm_api_key,
-        http_client: reqwest::Client::new(),
+        http_client: Some(reqwest::Client::new()),
         base_url,
         organization: None,
     };
@@ -981,6 +984,7 @@ pub async fn create_suggested_queries_handler(
         logprobs: None,
         top_logprobs: None,
         seed: None,
+        instance_id: None,
     };
 
     let mut query = client
