@@ -10,12 +10,13 @@ use crate::operators::chunk_operator::*;
 use crate::operators::group_operator::{get_group_by_id_query, get_groups_from_tracking_ids_query};
 use crate::operators::model_operator::create_embedding;
 use crate::operators::parse_operator::convert_html_to_text;
-use crate::operators::qdrant_operator::recommend_qdrant_query;
 use crate::operators::qdrant_operator::update_qdrant_point_query;
+use crate::operators::qdrant_operator::{recommend_qdrant_groups_query, recommend_qdrant_query};
 use crate::operators::search_operator::{
-    full_text_search_over_groups, hybrid_search_over_groups, search_full_text_chunks,
-    search_full_text_groups, search_hybrid_chunks, search_hybrid_groups, search_semantic_chunks,
-    search_semantic_groups, semantic_search_over_groups,
+    full_text_search_over_groups, get_metadata_from_groups, hybrid_search_over_groups,
+    search_full_text_chunks, search_full_text_groups, search_hybrid_chunks, search_hybrid_groups,
+    search_semantic_chunks, search_semantic_groups, semantic_search_over_groups,
+    SearchOverGroupsQueryResult,
 };
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
@@ -1135,6 +1136,8 @@ pub async fn get_chunk_by_tracking_id(
 pub struct RecommendChunksRequest {
     /// The ids of the chunks to be used as positive examples for the recommendation. The chunks in this array will be used to find similar chunks.
     pub positive_chunk_ids: Vec<uuid::Uuid>,
+    /// The ids of the chunks to be used as negative examples for the recommendation. The chunks in this array will be used to filter out similar chunks.
+    pub negative_chunk_ids: Option<Vec<uuid::Uuid>>,
     /// The number of chunks to return. This is the number of chunks which will be returned in the response. The default is 10.
     pub limit: Option<u64>,
 }
@@ -1167,12 +1170,14 @@ pub async fn get_recommended_chunks(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let positive_chunk_ids = data.positive_chunk_ids.clone();
+    let negative_chunk_ids = data.negative_chunk_ids.clone();
     let limit = data.limit.unwrap_or(10);
     let server_dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
     let recommended_qdrant_point_ids = recommend_qdrant_query(
         positive_chunk_ids,
+        negative_chunk_ids,
         limit,
         dataset_org_plan_sub.dataset.id,
         server_dataset_config,
@@ -1191,6 +1196,71 @@ pub async fn get_recommended_chunks(
                     err
                 ))
             })?;
+
+    Ok(HttpResponse::Ok().json(recommended_chunk_metadatas))
+}
+
+pub struct ReccomendGroupChunksRequest {
+    /// The ids of the chunks to be used as positive examples for the recommendation. The chunks in this array will be used to find similar chunks.
+    pub positive_chunk_ids: Vec<uuid::Uuid>,
+    /// The ids of the chunks to be used as negative examples for the recommendation. The chunks in this array will be used to filter out similar chunks.
+    pub negative_chunk_ids: Option<Vec<uuid::Uuid>>,
+    /// The number of chunks to return. This is the number of chunks which will be returned in the response. The default is 10.
+    pub limit: Option<u64>,
+    /// The number of groups to return. This is the number of chunks in each group which will be returned in the response. The default is 10.
+    pub group_size: Option<u32>,
+}
+
+#[utoipa::path(
+    post,
+    path = "/chunk/recommend_groups",
+    context_path = "/api",
+    tag = "chunk",
+    request_body(content = ReccomendGroupChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
+    responses(
+        (status = 200, description = "JSON response payload containing chunks with scores which are similar to those in the request body", body = Vec<GroupScoreChunkDTO>),
+        (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
+    )
+)]
+pub async fn get_recommended_groups(
+    data: web::Json<ReccomendGroupChunksRequest>,
+    pool: web::Data<Pool>,
+    _user: LoggedUser,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, actix_web::Error> {
+    let positive_chunk_ids = data.positive_chunk_ids.clone();
+    let negative_chunk_ids = data.negative_chunk_ids.clone();
+    let limit = data.limit.unwrap_or(10);
+    let server_dataset_config =
+        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+
+    let recommended_qdrant_point_ids = recommend_qdrant_groups_query(
+        positive_chunk_ids,
+        negative_chunk_ids,
+        limit,
+        data.group_size.unwrap_or(10),
+        dataset_org_plan_sub.dataset.id,
+        server_dataset_config,
+    )
+    .await
+    .map_err(|err| {
+        ServiceError::BadRequest(format!("Could not get recommended chunks: {}", err))
+    })?;
+
+    let group_query_result = SearchOverGroupsQueryResult {
+        search_results: recommended_qdrant_point_ids.clone(),
+        total_chunk_pages: (recommended_qdrant_point_ids.len() as f64 / 10.0).ceil() as i64,
+    };
+
+    let recommended_chunk_metadatas =
+        get_metadata_from_groups(group_query_result, Some(false), pool).await?;
 
     Ok(HttpResponse::Ok().json(recommended_chunk_metadatas))
 }

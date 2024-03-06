@@ -1037,6 +1037,80 @@ pub async fn retrieve_chunks_for_groups(
     })
 }
 
+pub async fn get_metadata_from_groups(
+    search_over_groups_query_result: SearchOverGroupsQueryResult,
+    get_collisions: Option<bool>,
+    pool: web::Data<Pool>,
+) -> Result<Vec<GroupScoreChunkDTO>, actix_web::Error> {
+    let point_ids = search_over_groups_query_result
+        .search_results
+        .iter()
+        .flat_map(|hit| hit.hits.iter().map(|point| point.point_id).collect_vec())
+        .collect_vec();
+
+    let (metadata_chunks, collided_chunks) = get_metadata_and_collided_chunks_from_point_ids_query(
+        point_ids,
+        get_collisions.unwrap_or(false),
+        pool,
+    )
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    let group_chunks: Vec<GroupScoreChunkDTO> = search_over_groups_query_result
+        .search_results
+        .iter()
+        .map(|group| {
+            let score_chunk: Vec<ScoreChunkDTO> = group
+                .hits
+                .iter()
+                .map(|search_result| {
+                    let chunk: ChunkMetadataWithFileData =
+                        match metadata_chunks.iter().find(|metadata_chunk| {
+                            metadata_chunk.qdrant_point_id == search_result.point_id
+                        }) {
+                            Some(metadata_chunk) => metadata_chunk.clone(),
+                            None => ChunkMetadataWithFileData {
+                                id: uuid::Uuid::default(),
+                                qdrant_point_id: uuid::Uuid::default(),
+                                created_at: chrono::Utc::now().naive_local(),
+                                updated_at: chrono::Utc::now().naive_local(),
+                                file_id: None,
+                                file_name: None,
+                                content: "".to_string(),
+                                chunk_html: Some("".to_string()),
+                                link: Some("".to_string()),
+                                tag_set: Some("".to_string()),
+                                metadata: None,
+                                tracking_id: None,
+                                time_stamp: None,
+                                weight: 1.0,
+                            },
+                        };
+
+                    let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
+                        .iter()
+                        .filter(|chunk| chunk.qdrant_id == search_result.point_id)
+                        .map(|chunk| chunk.metadata.clone())
+                        .collect();
+
+                    collided_chunks.insert(0, chunk);
+
+                    ScoreChunkDTO {
+                        metadata: collided_chunks,
+                        score: search_result.score.into(),
+                    }
+                })
+                .collect_vec();
+
+            GroupScoreChunkDTO {
+                group_id: group.group_id,
+                metadata: score_chunk,
+            }
+        })
+        .collect_vec();
+
+    Ok(group_chunks)
+}
+
 /// Retrieve chunks from point ids, DOES NOT GUARD AGAINST DATASET ACCESS PERMISSIONS
 pub async fn retrieve_chunks_from_point_ids(
     search_chunk_query_results: SearchChunkQueryResult,
