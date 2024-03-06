@@ -186,7 +186,8 @@ async fn upload_chunk(
             collision = Some(first_semantic_result.point_id);
 
             let score_chunk_result =
-                get_metadata_from_point_ids(vec![first_semantic_result.point_id], web_pool.clone());
+                get_metadata_from_point_ids(vec![first_semantic_result.point_id], web_pool.clone())
+                    .await;
 
             match score_chunk_result {
                 Ok(chunk_results) => chunk_results.first().unwrap().clone(),
