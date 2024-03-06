@@ -1,14 +1,24 @@
-use std::ops::IndexMut;
-
 use crate::{
     data::models::ServerDatasetConfiguration, errors::ServiceError, get_env,
     handlers::chunk_handler::ScoreChunkDTO,
 };
 use openai_dive::v1::{
     api::Client,
-    resources::embedding::{EmbeddingInput, EmbeddingOutput, EmbeddingParameters},
+    helpers::format_response,
+    resources::embedding::{EmbeddingInput, EmbeddingOutput, EmbeddingResponse},
 };
 use serde::{Deserialize, Serialize};
+use std::ops::IndexMut;
+
+pub struct EmbeddingParameters {
+    /// Input text to embed, encoded as a string or array of tokens.
+    /// To embed multiple inputs in a single request, pass an array of strings or array of token arrays.
+    pub input: EmbeddingInput,
+    /// ID of the model to use.
+    pub model: String,
+    /// Whether to truncate the input to the first 2048 tokens for the 'text-embedding-3' model and the first 4096 tokens for the 'text-embedding-4' model. If false, the entire input will be used.
+    pub truncate: bool,
+}
 
 pub async fn create_embedding(
     message: &str,
@@ -68,15 +78,29 @@ pub async fn create_embedding(
     let parameters = EmbeddingParameters {
         model: "text-embedding-3-small".to_string(),
         input,
-        user: None,
-        encoding_format: None,
-        dimensions: None,
         truncate: true,
     };
 
-    let embeddings =
-        client.embeddings().create(parameters).await.map_err(|e| {
-            ServiceError::BadRequest(format!("Failed making call to server {:?}", e))
+    let embeddings_resp = ureq::post(&format!("{}/embeddings", client.base_url))
+        .set(
+            "Authorization",
+            &("Bearer ".to_string() + client.api_key.as_str()),
+        )
+        .set("Content-Type", "application/json")
+        .send_json(serde_json::to_value(parameters).unwrap())
+        .map_err(|e| {
+            ServiceError::InternalServerError(format!(
+                "Could not get embeddings from server: {:?}",
+                e
+            ))
+        })?;
+
+    let embeddings: EmbeddingResponse = format_response(embeddings_resp.into_string().unwrap())
+        .map_err(|e| {
+            log::error!("Failed to format response from embeddings server {:?}", e);
+            ServiceError::InternalServerError(
+                "Failed to format response from embeddings server".to_owned(),
+            )
         })?;
 
     let vector = match embeddings.data.first().unwrap().embedding.clone() {
