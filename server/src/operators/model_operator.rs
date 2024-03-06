@@ -10,6 +10,7 @@ use openai_dive::v1::{
 use serde::{Deserialize, Serialize};
 use std::ops::IndexMut;
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct EmbeddingParameters {
     /// Input text to embed, encoded as a string or array of tokens.
     /// To embed multiple inputs in a single request, pass an array of strings or array of token arrays.
