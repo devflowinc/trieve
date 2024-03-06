@@ -1150,12 +1150,6 @@ pub fn rerank_chunks(chunks: Vec<ScoreChunkDTO>, date_bias: Option<bool>) -> Vec
         reranked_chunks.push(chunk);
     });
 
-    reranked_chunks.sort_by(|a, b| {
-        b.score
-            .partial_cmp(&a.score)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
-
     if date_bias.is_some() && date_bias.unwrap() {
         reranked_chunks.sort_by(|a, b| {
             if let (Some(time_stamp_a), Some(time_stamp_b)) =
@@ -1164,6 +1158,12 @@ pub fn rerank_chunks(chunks: Vec<ScoreChunkDTO>, date_bias: Option<bool>) -> Vec
                 return time_stamp_a.timestamp().cmp(&time_stamp_b.timestamp());
             }
             a.score.total_cmp(&b.score)
+        });
+    } else {
+        reranked_chunks.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
     }
 
