@@ -10,6 +10,7 @@ use diesel::{
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+#[tracing::instrument(skip(pool))]
 pub fn create_event_query(event: Event, pool: web::Data<Pool>) -> Result<(), DefaultError> {
     use crate::data::schema::events::dsl as events_columns;
 
@@ -32,6 +33,7 @@ pub struct EventReturn {
     pub events: Vec<Event>,
     pub page_count: i32,
 }
+#[tracing::instrument(skip(pool))]
 pub fn get_events_query(
     dataset_id: uuid::Uuid,
     page: i64,

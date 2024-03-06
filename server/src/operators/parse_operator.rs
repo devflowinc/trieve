@@ -6,12 +6,14 @@ use ndarray::Array2;
 
 use crate::errors::DefaultError;
 
+#[tracing::instrument]
 pub fn convert_html_to_text(html: &str) -> String {
     let dom = Html::parse_fragment(html);
     let text = dom.root_element().text().collect::<String>();
     text
 }
 
+#[tracing::instrument]
 pub fn coarse_remove_large_chunks(cur_chunks: Vec<String>) -> Vec<String> {
     let max_chunk_len = 10000;
     let mut chunks = cur_chunks;
@@ -46,6 +48,7 @@ pub fn coarse_remove_large_chunks(cur_chunks: Vec<String>) -> Vec<String> {
     new_chunks
 }
 
+#[tracing::instrument]
 pub fn coarse_doc_chunker(document: String) -> Vec<String> {
     let document_without_newlines = document.replace('\n', " ");
     let dom = Html::parse_fragment(&document_without_newlines);
@@ -97,6 +100,7 @@ pub fn coarse_doc_chunker(document: String) -> Vec<String> {
     coarse_remove_large_chunks(groups)
 }
 
+#[tracing::instrument(skip(embeddings))]
 pub fn average_embeddings(embeddings: Vec<Vec<f32>>) -> Result<Vec<f32>, DefaultError> {
     let shape = (embeddings.len(), embeddings[0].len());
     let flat: Vec<f32> = embeddings.iter().flatten().cloned().collect();

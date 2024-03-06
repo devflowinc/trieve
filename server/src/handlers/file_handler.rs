@@ -28,6 +28,7 @@ use pyo3::{types::PyDict, Python};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+#[tracing::instrument]
 pub fn validate_file_name(s: String) -> Result<String, actix_web::Error> {
     let split_s = s.split('/').last();
 
@@ -90,6 +91,7 @@ pub struct UploadFileResult {
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool, redis_client))]
 pub async fn upload_file_handler(
     data: web::Json<UploadFileData>,
     pool: web::Data<Pool>,
@@ -194,6 +196,7 @@ pub async fn upload_file_handler(
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_file_handler(
     file_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -214,7 +217,7 @@ pub async fn get_file_handler(
     Ok(HttpResponse::Ok().json(file))
 }
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Deserialize, Debug, Serialize, ToSchema)]
 pub struct DatasetFileQuery {
     pub dataset_id: uuid::Uuid,
     pub page: u64,
@@ -247,6 +250,7 @@ pub struct FileData {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_dataset_files_handler(
     data: web::Path<DatasetFileQuery>,
     pool: web::Data<Pool>,
@@ -299,6 +303,7 @@ pub struct DeleteFileQueryParams {
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn delete_file_handler(
     file_id: web::Path<uuid::Uuid>,
     query_params: web::Query<DeleteFileQueryParams>,
@@ -326,6 +331,7 @@ pub struct GetImageResponse {
     pub signed_url: String,
 }
 
+#[tracing::instrument]
 pub async fn get_signed_url(
     file_name: web::Path<String>,
     _user: LoggedUser,
@@ -351,6 +357,7 @@ pub struct GetPdfFromRangeData {
 }
 
 #[allow(unused_variables)]
+#[tracing::instrument]
 pub async fn get_pdf_from_range(
     path_data: web::Path<GetPdfFromRangeData>,
     _user: LoggedUser,

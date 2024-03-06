@@ -16,6 +16,7 @@ use once_cell::sync::Lazy;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 
+#[tracing::instrument(skip(pool))]
 pub fn get_user_by_username_query(
     user_name: &String,
     pool: web::Data<Pool>,
@@ -39,6 +40,7 @@ pub fn get_user_by_username_query(
     }
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_user_by_id_query(
     user_id: &uuid::Uuid,
     pool: web::Data<Pool>,
@@ -93,6 +95,7 @@ pub fn get_user_by_id_query(
     }
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn add_existing_user_to_org(
     email: String,
     organization_id: uuid::Uuid,
@@ -127,6 +130,7 @@ pub async fn add_existing_user_to_org(
     }
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn update_user_query(
     user: &LoggedUser,
     username: &Option<String>,
@@ -182,6 +186,7 @@ pub fn update_user_query(
     Ok(user)
 }
 
+#[tracing::instrument]
 pub fn generate_api_key() -> String {
     let rng = rand::thread_rng();
     let api_key: String = format!(
@@ -201,6 +206,7 @@ pub static SECRET_KEY: Lazy<String> =
 pub static SALT: Lazy<String> =
     Lazy::new(|| std::env::var("SALT").unwrap_or_else(|_| "supersecuresalt".to_string()));
 
+#[tracing::instrument]
 pub fn hash_password(password: &str) -> Result<String, DefaultError> {
     let config = Config {
         secret: SECRET_KEY.as_bytes(),
@@ -213,6 +219,7 @@ pub fn hash_password(password: &str) -> Result<String, DefaultError> {
     })
 }
 
+#[tracing::instrument]
 pub fn set_user_api_key_query(
     user_id: uuid::Uuid,
     name: String,
@@ -236,6 +243,7 @@ pub fn set_user_api_key_query(
     Ok(raw_api_key)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_user_from_api_key_query(
     api_key: &str,
     pool: &web::Data<Pool>,
@@ -302,6 +310,7 @@ pub fn get_user_from_api_key_query(
     }
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_user_api_keys_query(
     user_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -325,6 +334,7 @@ pub fn get_user_api_keys_query(
     Ok(api_keys)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn delete_user_api_keys_query(
     user_id: uuid::Uuid,
     api_key_id: uuid::Uuid,
@@ -347,6 +357,7 @@ pub fn delete_user_api_keys_query(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn create_user_query(
     user_id: uuid::Uuid,
     email: String,
@@ -416,6 +427,7 @@ pub fn create_user_query(
     Ok(user_org)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn add_user_to_organization(
     req: Option<&HttpRequest>,
     calling_user_id: Option<uuid::Uuid>,
@@ -466,6 +478,7 @@ pub async fn add_user_to_organization(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result<(), DefaultError> {
     use crate::data::schema::organizations::dsl as organization_columns;
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;

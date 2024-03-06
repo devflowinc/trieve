@@ -21,6 +21,7 @@ pub struct EmbeddingParameters {
     pub truncate: bool,
 }
 
+#[tracing::instrument]
 pub async fn create_embedding(
     message: &str,
     embed_type: &str,
@@ -124,6 +125,7 @@ pub struct CustomSparseEmbedData {
     pub encode_type: String,
 }
 
+#[tracing::instrument]
 pub async fn get_splade_embedding(
     message: &str,
     embed_type: &str,
@@ -194,6 +196,7 @@ pub struct CrossEncoderData {
     pub truncate: bool,
 }
 
+#[tracing::instrument]
 pub async fn cross_encoder(
     query: String,
     page_size: u64,

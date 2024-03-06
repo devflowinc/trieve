@@ -11,6 +11,7 @@ use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+#[tracing::instrument]
 pub fn email_regex() -> regex::Regex {
     regex::Regex::new(r"^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*")
         .unwrap()
@@ -56,6 +57,7 @@ pub struct InvitationData {
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn post_invitation(
     invitation_data: web::Json<InvitationData>,
     pool: web::Data<Pool>,
@@ -128,6 +130,7 @@ pub struct InvitationWithUrl {
     registration_url: String,
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn create_invitation(
     app_url: String,
     email: String,

@@ -11,12 +11,14 @@ use diesel::{
 };
 use serde_json::json;
 
+#[tracing::instrument]
 pub fn get_stripe_client() -> stripe::Client {
     let stripe_secret = get_env!("STRIPE_SECRET", "STRIPE_SECRET must be set");
 
     stripe::Client::new(stripe_secret)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn refresh_redis_org_plan_sub(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -86,6 +88,7 @@ pub async fn refresh_redis_org_plan_sub(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn create_stripe_subscription_query(
     stripe_id: String,
     plan_id: uuid::Uuid,
@@ -113,6 +116,7 @@ pub async fn create_stripe_subscription_query(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn create_stripe_plan_query(
     stripe_id: String,
     amount: i64,
@@ -146,6 +150,7 @@ pub fn create_stripe_plan_query(
     Ok(created_stripe_plan)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_plan_by_id_query(
     plan_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -166,6 +171,7 @@ pub fn get_plan_by_id_query(
     Ok(stripe_plan)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_all_plans_query(pool: web::Data<Pool>) -> Result<Vec<StripePlan>, DefaultError> {
     use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
 
@@ -182,6 +188,7 @@ pub fn get_all_plans_query(pool: web::Data<Pool>) -> Result<Vec<StripePlan>, Def
     Ok(stripe_plans)
 }
 
+#[tracing::instrument]
 pub async fn create_stripe_payment_link(
     plan: StripePlan,
     organization_id: uuid::Uuid,
@@ -234,6 +241,7 @@ pub async fn create_stripe_payment_link(
     Ok(payment_link.to_string())
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_subscription_by_id_query(
     subscription_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -255,6 +263,7 @@ pub fn get_subscription_by_id_query(
     Ok(stripe_subscription)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn delete_subscription_by_id_query(
     subscription_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -279,6 +288,7 @@ pub async fn delete_subscription_by_id_query(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_option_subscription_by_organization_id_query(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -300,6 +310,7 @@ pub fn get_option_subscription_by_organization_id_query(
     Ok(stripe_subscriptions.into_iter().next())
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn set_stripe_subscription_current_period_end(
     stripe_subscription_id: String,
     current_period_end: chrono::NaiveDateTime,
@@ -326,6 +337,7 @@ pub async fn set_stripe_subscription_current_period_end(
     Ok(())
 }
 
+#[tracing::instrument]
 pub async fn cancel_stripe_subscription(
     subscription_stripe_id: String,
 ) -> Result<(), DefaultError> {
@@ -350,6 +362,7 @@ pub async fn cancel_stripe_subscription(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn update_stripe_subscription_plan_query(
     subscription_id: uuid::Uuid,
     plan_id: uuid::Uuid,
@@ -376,6 +389,7 @@ pub async fn update_stripe_subscription_plan_query(
     Ok(())
 }
 
+#[tracing::instrument]
 pub async fn update_stripe_subscription(
     subscription_stripe_id: String,
     plan_stripe_id: String,

@@ -16,6 +16,7 @@ use itertools::Itertools;
 use qdrant_client::qdrant::{PointId, PointVectors};
 use simsearch::SimSearch;
 
+#[tracing::instrument(skip(pool))]
 pub async fn get_metadata_from_point_ids(
     point_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -98,6 +99,7 @@ pub struct ChunkMetadataWithQdrantId {
     pub qdrant_id: uuid::Uuid,
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_metadata_and_collided_chunks_from_point_ids_query(
     point_ids: Vec<uuid::Uuid>,
     get_collisions: bool,
@@ -271,6 +273,7 @@ pub fn get_metadata_and_collided_chunks_from_point_ids_query(
     ))
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_metadata_from_id_query(
     chunk_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
@@ -289,6 +292,7 @@ pub fn get_metadata_from_id_query(
         })
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_metadata_from_tracking_id_query(
     tracking_id: String,
     dataset_uuid: uuid::Uuid,
@@ -308,6 +312,7 @@ pub fn get_metadata_from_tracking_id_query(
         })
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_metadata_from_ids_query(
     chunk_ids: Vec<uuid::Uuid>,
     dataset_uuid: uuid::Uuid,
@@ -333,6 +338,7 @@ pub fn get_metadata_from_ids_query(
     Ok(get_metadata_query(full_text_metadatas, conn).unwrap_or_default())
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn insert_chunk_metadata_query(
     chunk_data: ChunkMetadata,
     file_uuid: Option<uuid::Uuid>,
@@ -409,6 +415,7 @@ pub async fn insert_chunk_metadata_query(
     Ok(chunk_data)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn insert_duplicate_chunk_metadata_query(
     chunk_data: ChunkMetadata,
     duplicate_chunk: uuid::Uuid,
@@ -457,6 +464,7 @@ pub fn insert_duplicate_chunk_metadata_query(
     Ok(chunk_data)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn update_chunk_metadata_query(
     chunk_data: ChunkMetadata,
     file_uuid: Option<uuid::Uuid>,
@@ -517,6 +525,7 @@ pub enum TransactionResult {
     ChunkCollisionNotDetected,
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn delete_chunk_metadata_query(
     chunk_uuid: uuid::Uuid,
     dataset: Dataset,
@@ -745,6 +754,7 @@ pub async fn delete_chunk_metadata_query(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_qdrant_id_from_chunk_id_query(
     chunk_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -786,6 +796,7 @@ pub fn get_qdrant_id_from_chunk_id_query(
     }
 }
 
+#[tracing::instrument]
 pub fn find_relevant_sentence(
     input: ChunkMetadataWithFileData,
     query: String,
@@ -828,6 +839,7 @@ pub fn find_relevant_sentence(
     Ok(new_output)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_row_count_for_dataset_id_query(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,

@@ -37,7 +37,7 @@ use simple_server_timing_header::Timer;
 use tokio_stream::StreamExt;
 use utoipa::{IntoParams, ToSchema};
 
-#[derive(Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct CreateChunkData {
     /// HTML content of the chunk. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content.
     pub chunk_html: Option<String>,
@@ -73,7 +73,7 @@ pub struct ReturnQueuedChunk {
     pub pos_in_queue: i32,
 }
 
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct IngestionMessage {
     pub chunk_metadata: ChunkMetadata,
     pub chunk: CreateChunkData,
@@ -103,6 +103,7 @@ pub struct IngestionMessage {
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn create_chunk(
     chunk: web::Json<CreateChunkData>,
     pool: web::Data<Pool>,
@@ -234,6 +235,7 @@ pub async fn create_chunk(
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn bulk_create_chunk(
     chunks: web::Json<Vec<CreateChunkData>>,
     pool: web::Data<Pool>,
@@ -276,6 +278,7 @@ pub async fn bulk_create_chunk(
         ("Cookie" = ["admin"]),
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn delete_chunk(
     chunk_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -321,6 +324,7 @@ pub async fn delete_chunk(
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn delete_chunk_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
@@ -352,7 +356,7 @@ pub async fn delete_chunk_by_tracking_id(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct UpdateChunkData {
     /// Id of the chunk you want to update.
     chunk_id: uuid::Uuid,
@@ -391,6 +395,7 @@ pub struct UpdateChunkData {
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn update_chunk(
     chunk: web::Json<UpdateChunkData>,
     pool: web::Data<Pool>,
@@ -489,7 +494,7 @@ pub async fn update_chunk(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct UpdateChunkByTrackingIdData {
     /// Tracking_id of the chunk you want to update. This is required to match an existing chunk.
     tracking_id: String,
@@ -526,6 +531,7 @@ pub struct UpdateChunkByTrackingIdData {
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn update_chunk_by_tracking_id(
     chunk: web::Json<UpdateChunkByTrackingIdData>,
     pool: web::Data<Pool>,
@@ -627,7 +633,7 @@ pub async fn update_chunk_by_tracking_id(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct SearchChunkData {
     /// Can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: String,
@@ -669,7 +675,7 @@ pub struct SearchChunkQueryResponseBody {
     pub total_chunk_pages: i64,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ParsedQuery {
     pub query: String,
     pub quote_words: Option<Vec<String>>,
@@ -729,6 +735,7 @@ fn parse_query(query: String) -> ParsedQuery {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn search_chunk(
     data: web::Json<SearchChunkData>,
     _user: LoggedUser,
@@ -798,7 +805,7 @@ pub async fn search_chunk(
         .json(result_chunks))
 }
 
-#[derive(Serialize, Deserialize, Clone, ToSchema, IntoParams)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, IntoParams)]
 #[into_params(style = Form, parameter_in = Query)]
 pub struct SearchGroupsData {
     /// The query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
@@ -877,6 +884,7 @@ pub struct SearchGroupsResult {
     )
 )]
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip(pool))]
 pub async fn search_groups(
     data: web::Json<SearchGroupsData>,
     pool: web::Data<Pool>,
@@ -951,7 +959,7 @@ pub async fn search_groups(
     Ok(HttpResponse::Ok().json(result_chunks))
 }
 
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct SearchOverGroupsData {
     /// Can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: String,
@@ -997,6 +1005,7 @@ pub struct SearchOverGroupsData {
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
     ),
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn search_over_groups(
     data: web::Json<SearchOverGroupsData>,
     pool: web::Data<Pool>,
@@ -1079,6 +1088,7 @@ pub async fn search_over_groups(
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_chunk_by_id(
     chunk_id: web::Path<uuid::Uuid>,
     _user: LoggedUser,
@@ -1115,6 +1125,7 @@ pub async fn get_chunk_by_id(
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_chunk_by_tracking_id(
     tracking_id: web::Path<String>,
     _user: LoggedUser,
@@ -1134,7 +1145,7 @@ pub async fn get_chunk_by_tracking_id(
     Ok(HttpResponse::Ok().json(chunk))
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct RecommendChunksRequest {
     /// The ids of the chunks to be used as positive examples for the recommendation. The chunks in this array will be used to find similar chunks.
     pub positive_chunk_ids: Option<Vec<uuid::Uuid>>,
@@ -1169,6 +1180,7 @@ pub struct RecommendChunksRequest {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_recommended_chunks(
     data: web::Json<RecommendChunksRequest>,
     pool: web::Data<Pool>,
@@ -1281,7 +1293,7 @@ pub async fn get_recommended_chunks(
     Ok(HttpResponse::Ok().json(recommended_chunk_metadatas))
 }
 
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct ReccomendGroupChunksRequest {
     /// The  ids of the groups to be used as positive examples for the recommendation. The groups in this array will be used to find similar groups.
     pub positive_group_ids: Option<Vec<uuid::Uuid>>,
@@ -1315,6 +1327,7 @@ pub struct ReccomendGroupChunksRequest {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_recommended_groups(
     data: web::Json<ReccomendGroupChunksRequest>,
     pool: web::Data<Pool>,
@@ -1427,7 +1440,7 @@ pub async fn get_recommended_groups(
     Ok(HttpResponse::Ok().json(recommended_chunk_metadatas))
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct GenerateChunksRequest {
     /// The model to use for the chat. This can be any model from the openrouter model list. If no model is provided, gpt-3.5-turbo will be used.
     pub model: Option<String>,
@@ -1463,6 +1476,7 @@ pub struct GenerateChunksRequest {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn generate_off_chunks(
     data: web::Json<GenerateChunksRequest>,
     pool: web::Data<Pool>,

@@ -1390,6 +1390,7 @@ pub struct OrganizationUsageCount {
     pub message_count: i32,
 }
 
+#[derive(Debug)]
 pub enum ApiKeyRole {
     Read = 0,
     ReadAndWrite = 1,

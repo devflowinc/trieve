@@ -55,6 +55,7 @@ pub struct GetUserWithChunksData {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn update_user(
     data: web::Json<UpdateUserData>,
     mut user: LoggedUser,
@@ -136,7 +137,7 @@ pub async fn update_user(
     }
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct SetUserApiKeyRequest {
     /// The name which will be assigned to the new api key.
     name: String,
@@ -168,6 +169,7 @@ pub struct SetUserApiKeyResponse {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn set_user_api_key(
     user: LoggedUser,
     data: web::Json<SetUserApiKeyRequest>,
@@ -204,6 +206,7 @@ pub async fn set_user_api_key(
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_user_api_keys(
     user: LoggedUser,
     pool: web::Data<Pool>,
@@ -215,7 +218,7 @@ pub async fn get_user_api_keys(
     Ok(HttpResponse::Ok().json(api_keys))
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct DeleteUserApiKeyRequest {
     /// The id of the api key to delete.
     pub api_key_id: uuid::Uuid,
@@ -239,6 +242,7 @@ pub struct DeleteUserApiKeyRequest {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn delete_user_api_key(
     user: LoggedUser,
     data: web::Json<DeleteUserApiKeyRequest>,
