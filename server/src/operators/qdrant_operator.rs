@@ -377,6 +377,7 @@ pub async fn update_qdrant_point_query(
                 .try_into()
                 .expect("A json! value must always be a valid Payload"),
             None,
+            None,
         )
         .await
         .map_err(|_err| {
@@ -470,6 +471,7 @@ pub async fn add_bookmark_to_qdrant_query(
                 .try_into()
                 .expect("A json! value must always be a valid Payload"),
             None,
+            None,
         )
         .await
         .map_err(|_err| DefaultError {
@@ -548,6 +550,7 @@ pub async fn remove_bookmark_from_qdrant_query(
             payload
                 .try_into()
                 .expect("A json! value must always be a valid Payload"),
+            None,
             None,
         )
         .await
