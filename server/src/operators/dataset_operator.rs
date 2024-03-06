@@ -10,6 +10,7 @@ use actix_web::web;
 use diesel::{ExpressionMethods, QueryDsl, SelectableHelper};
 use qdrant_client::qdrant::{Condition, Filter};
 
+#[tracing::instrument(skip(pool))]
 pub async fn create_dataset_query(
     new_dataset: Dataset,
     pool: web::Data<Pool>,
@@ -47,6 +48,7 @@ pub async fn create_dataset_query(
     Ok(new_dataset)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn get_dataset_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -99,6 +101,7 @@ pub async fn get_dataset_by_id_query(
     }
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn delete_dataset_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -154,6 +157,7 @@ pub async fn delete_dataset_by_id_query(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn update_dataset_query(
     id: uuid::Uuid,
     name: String,
@@ -204,6 +208,7 @@ pub async fn update_dataset_query(
     Ok(new_dataset)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_datasets_by_organization_id(
     org_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,

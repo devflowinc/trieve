@@ -14,6 +14,7 @@ use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+#[tracing::instrument(skip(pool))]
 pub async fn dataset_owns_group(
     unified_group_id: UnifiedId,
     dataset_id: uuid::Uuid,
@@ -39,7 +40,7 @@ pub async fn dataset_owns_group(
     Ok(group)
 }
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct CreateChunkGroupData {
     /// Name to assign to the chunk_group. Does not need to be unique.
     pub name: String,
@@ -70,6 +71,7 @@ pub struct CreateChunkGroupData {
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn create_chunk_group(
     body: web::Json<CreateChunkGroupData>,
     _user: AdminOnly,
@@ -99,7 +101,7 @@ pub struct GroupData {
     pub total_pages: i64,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct DatasetGroupQuery {
     pub dataset_id: uuid::Uuid,
     pub page: u64,
@@ -127,6 +129,7 @@ pub struct DatasetGroupQuery {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_specific_dataset_chunk_groups(
     dataset_and_page: web::Path<DatasetGroupQuery>,
     _dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -164,7 +167,7 @@ pub async fn get_specific_dataset_chunk_groups(
     }))
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct GetGroupByTrackingIDData {
     pub tracking_id: String,
 }
@@ -188,6 +191,7 @@ pub struct GetGroupByTrackingIDData {
     )
 )]
 /// get_group_by_tracking_id
+#[tracing::instrument(skip(pool))]
 pub async fn get_group_by_tracking_id(
     data: web::Path<GetGroupByTrackingIDData>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -207,7 +211,7 @@ pub async fn get_group_by_tracking_id(
     Ok(HttpResponse::Ok().json(group))
 }
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct UpdateGroupByTrackingIDData {
     /// Tracking Id of the chunk_group to update.
     pub tracking_id: String,
@@ -236,6 +240,7 @@ pub struct UpdateGroupByTrackingIDData {
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn update_group_by_tracking_id(
     data: web::Json<UpdateGroupByTrackingIDData>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -287,6 +292,7 @@ pub struct DeleteGroupByTrackingIDData {
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn delete_group_by_tracking_id(
     tracking_id: web::Path<String>,
     data: web::Query<DeleteGroupByTrackingIDData>,
@@ -347,6 +353,7 @@ pub struct DeleteGroupData {
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn delete_chunk_group(
     group_id: web::Path<uuid::Uuid>,
     data: web::Query<DeleteGroupData>,
@@ -381,7 +388,7 @@ pub async fn delete_chunk_group(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct UpdateChunkGroupData {
     /// Id of the chunk_group to update.
     pub group_id: uuid::Uuid,
@@ -412,6 +419,7 @@ pub struct UpdateChunkGroupData {
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn update_chunk_group(
     body: web::Json<UpdateChunkGroupData>,
     pool: web::Data<Pool>,
@@ -446,7 +454,7 @@ pub async fn update_chunk_group(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct AddChunkToGroupData {
     /// Id of the chunk to make a member of the group. Think of this as "bookmark"ing a chunk.
     pub chunk_id: uuid::Uuid,
@@ -474,6 +482,7 @@ pub struct AddChunkToGroupData {
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn add_chunk_to_group(
     body: web::Json<AddChunkToGroupData>,
     group_id: web::Path<uuid::Uuid>,
@@ -509,7 +518,7 @@ pub async fn add_chunk_to_group(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct AddChunkToGroupByTrackingIdData {
     /// Id of the chunk to make a member of the group. Think of this as "bookmark"ing a chunk.
     pub chunk_id: uuid::Uuid,
@@ -537,6 +546,7 @@ pub struct AddChunkToGroupByTrackingIdData {
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn add_chunk_to_group_by_tracking_id(
     body: web::Json<AddChunkToGroupByTrackingIdData>,
     tracking_id: web::Path<String>,
@@ -577,7 +587,7 @@ pub async fn add_chunk_to_group_by_tracking_id(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct BookmarkData {
     pub chunks: Vec<ChunkMetadataWithFileData>,
     pub group: ChunkGroup,
@@ -612,6 +622,7 @@ pub struct GetAllBookmarksData {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_chunks_in_group(
     path_data: web::Path<GetAllBookmarksData>,
     pool: web::Data<Pool>,
@@ -671,6 +682,7 @@ pub struct GetAllBookmarksByTrackingIdData {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_chunks_in_group_by_tracking_id(
     path_data: web::Path<GetAllBookmarksByTrackingIdData>,
     pool: web::Data<Pool>,
@@ -701,7 +713,7 @@ pub async fn get_chunks_in_group_by_tracking_id(
     }))
 }
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct GetGroupsForChunksData {
     pub chunk_ids: Vec<uuid::Uuid>,
 }
@@ -724,6 +736,7 @@ pub struct GetGroupsForChunksData {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_groups_chunk_is_in(
     data: web::Json<GetGroupsForChunksData>,
     pool: web::Data<Pool>,
@@ -741,7 +754,7 @@ pub async fn get_groups_chunk_is_in(
     Ok(HttpResponse::Ok().json(groups))
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct DeleteBookmarkPathData {
     pub chunk_id: uuid::Uuid,
 }
@@ -769,6 +782,7 @@ pub struct DeleteBookmarkPathData {
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn remove_chunk_from_group(
     group_id: web::Path<uuid::Uuid>,
     body: web::Json<DeleteBookmarkPathData>,
@@ -801,6 +815,7 @@ pub async fn remove_chunk_from_group(
     Ok(HttpResponse::NoContent().finish())
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn group_unique_search(
     group_id: uuid::Uuid,
     dataset_id: uuid::Uuid,

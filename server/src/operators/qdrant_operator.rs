@@ -20,6 +20,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{collections::HashMap, str::FromStr};
 
+#[tracing::instrument]
 pub async fn get_qdrant_connection(
     qdrant_url: Option<&str>,
     qdrant_api_key: Option<&str>,
@@ -40,6 +41,7 @@ pub async fn get_qdrant_connection(
 }
 
 /// Create Qdrant collection and indexes needed
+#[tracing::instrument]
 pub async fn create_new_qdrant_collection_query() -> Result<(), ServiceError> {
     let qdrant_collection = get_env!(
         "QDRANT_COLLECTION",
@@ -230,6 +232,7 @@ pub async fn create_new_qdrant_collection_query() -> Result<(), ServiceError> {
     Ok(())
 }
 
+#[tracing::instrument(skip(embedding_vector))]
 pub async fn create_new_qdrant_point_query(
     point_id: uuid::Uuid,
     embedding_vector: Vec<f32>,
@@ -279,6 +282,7 @@ pub async fn create_new_qdrant_point_query(
     Ok(())
 }
 
+#[tracing::instrument(skip(updated_vector))]
 pub async fn update_qdrant_point_query(
     metadata: Option<ChunkMetadata>,
     point_id: uuid::Uuid,
@@ -382,6 +386,7 @@ pub async fn update_qdrant_point_query(
     Ok(())
 }
 
+#[tracing::instrument]
 pub async fn add_bookmark_to_qdrant_query(
     point_id: uuid::Uuid,
     group_id: uuid::Uuid,
@@ -474,6 +479,7 @@ pub async fn add_bookmark_to_qdrant_query(
     Ok(())
 }
 
+#[tracing::instrument]
 pub async fn remove_bookmark_from_qdrant_query(
     point_id: uuid::Uuid,
     group_id: uuid::Uuid,
@@ -558,11 +564,13 @@ pub struct GroupSearchResults {
     pub hits: Vec<SearchResult>,
 }
 
+#[derive(Debug)]
 pub enum VectorType {
     Sparse(Vec<(u32, f32)>),
     Dense(Vec<f32>),
 }
 
+#[tracing::instrument]
 pub async fn search_over_groups_query(
     page: u64,
     filter: Filter,
@@ -668,6 +676,7 @@ pub async fn search_over_groups_query(
     Ok(point_ids)
 }
 
+#[tracing::instrument]
 pub async fn search_qdrant_query(
     page: u64,
     filter: Filter,
@@ -753,6 +762,7 @@ pub async fn search_qdrant_query(
     Ok(point_ids)
 }
 
+#[tracing::instrument]
 pub async fn recommend_qdrant_query(
     positive_ids: Vec<uuid::Uuid>,
     negative_ids: Vec<uuid::Uuid>,

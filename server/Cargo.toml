@@ -104,6 +104,7 @@ regex-split = "0.1.0"
 simple-server-timing-header = "0.1.1"
 ndarray = "0.15.6"
 ureq = { version = "2.9.6", features = ["json"] }
+tracing = "0.1.40"
 
 
 [build-dependencies]

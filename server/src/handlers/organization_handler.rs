@@ -35,6 +35,7 @@ use utoipa::ToSchema;
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_organization_by_id(
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -70,6 +71,7 @@ pub async fn get_organization_by_id(
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn delete_organization_by_id(
     req: HttpRequest,
     organization_id: web::Path<uuid::Uuid>,
@@ -85,7 +87,7 @@ pub async fn delete_organization_by_id(
     Ok(HttpResponse::Ok().json(org))
 }
 
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct UpdateOrganizationData {
     /// The id of the organization to update.
     organization_id: uuid::Uuid,
@@ -114,6 +116,7 @@ pub struct UpdateOrganizationData {
         ("Cookie" = ["owner"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn update_organization(
     organization: web::Json<UpdateOrganizationData>,
     pool: web::Data<Pool>,
@@ -141,7 +144,7 @@ pub async fn update_organization(
     Ok(HttpResponse::Ok().json(updated_organization))
 }
 
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct CreateOrganizationData {
     /// The arbitrary name which will be used to identify the organization. This name must be unique.
     name: String,
@@ -165,6 +168,7 @@ pub struct CreateOrganizationData {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn create_organization(
     req: HttpRequest,
     organization: web::Json<CreateOrganizationData>,
@@ -212,6 +216,7 @@ pub async fn create_organization(
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_organization_usage(
     organization: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -247,6 +252,7 @@ pub async fn get_organization_usage(
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_organization_users(
     organization: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,

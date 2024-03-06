@@ -14,6 +14,7 @@ pub struct ChatCompletionDTO {
     pub completion_tokens: i32,
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_topic_messages(
     messages_topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
@@ -36,6 +37,7 @@ pub fn get_topic_messages(
     Ok(topic_messages)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn user_owns_topic_query(
     user_given_id: uuid::Uuid,
     topic_id: uuid::Uuid,
@@ -58,6 +60,7 @@ pub fn user_owns_topic_query(
     Ok(topic)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn create_message_query(
     new_message: Message,
     given_user_id: uuid::Uuid,
@@ -87,6 +90,7 @@ pub fn create_message_query(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn create_generic_system_message(
     messages_topic_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
@@ -110,6 +114,7 @@ pub fn create_generic_system_message(
     Ok(system_message)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn create_topic_message_query(
     previous_messages: Vec<Message>,
     new_message: Message,
@@ -136,6 +141,7 @@ pub fn create_topic_message_query(
     Ok(ret_messages)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_message_by_sort_for_topic_query(
     message_topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
@@ -157,6 +163,7 @@ pub fn get_message_by_sort_for_topic_query(
         })
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_messages_for_topic_query(
     message_topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
@@ -177,6 +184,7 @@ pub fn get_messages_for_topic_query(
         })
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn delete_message_query(
     given_user_id: &uuid::Uuid,
     given_message_id: uuid::Uuid,

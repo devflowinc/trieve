@@ -43,6 +43,7 @@ pub struct CreateTopicData {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn create_topic(
     data: web::Json<CreateTopicData>,
     user: LoggedUser,
@@ -117,6 +118,7 @@ pub struct DeleteTopicData {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn delete_topic(
     data: web::Json<DeleteTopicData>,
     user: LoggedUser,
@@ -182,6 +184,7 @@ pub struct UpdateTopicData {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn update_topic(
     data: web::Json<UpdateTopicData>,
     user: LoggedUser,
@@ -246,6 +249,7 @@ pub async fn update_topic(
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_all_topics_for_user(
     user: LoggedUser,
     req_user_id: web::Path<uuid::Uuid>,

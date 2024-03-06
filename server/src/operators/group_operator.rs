@@ -23,6 +23,7 @@ use diesel::{
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+#[tracing::instrument(skip(pool))]
 pub fn get_group_from_tracking_id_query(
     tracking_id: String,
     dataset_uuid: uuid::Uuid,
@@ -43,6 +44,7 @@ pub fn get_group_from_tracking_id_query(
     Ok(group)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_groups_from_tracking_ids_query(
     tracking_ids: Vec<String>,
     dataset_uuid: uuid::Uuid,
@@ -63,6 +65,7 @@ pub fn get_groups_from_tracking_ids_query(
     Ok(groups)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn update_group_by_tracking_id_query(
     tracking_id: String,
     dataset_uuid: uuid::Uuid,
@@ -91,6 +94,7 @@ pub fn update_group_by_tracking_id_query(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn create_group_query(
     new_group: ChunkGroup,
     pool: web::Data<Pool>,
@@ -110,6 +114,7 @@ pub async fn create_group_query(
     Ok(new_group)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_groups_for_specific_dataset_query(
     page: u64,
     dataset_uuid: uuid::Uuid,
@@ -156,6 +161,7 @@ pub fn get_groups_for_specific_dataset_query(
     Ok(groups)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_group_by_id_query(
     group_id: uuid::Uuid,
     dataset_uuid: uuid::Uuid,
@@ -176,6 +182,7 @@ pub fn get_group_by_id_query(
     Ok(group)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn delete_group_by_id_query(
     group_id: uuid::Uuid,
     dataset: Dataset,
@@ -300,6 +307,7 @@ pub async fn delete_group_by_id_query(
     }
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn update_chunk_group_query(
     group: ChunkGroup,
     new_name: Option<String>,
@@ -328,6 +336,7 @@ pub fn update_chunk_group_query(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn create_chunk_bookmark_query(
     pool: web::Data<Pool>,
     bookmark: ChunkGroupBookmark,
@@ -367,6 +376,7 @@ pub struct GroupsBookmarkQueryResult {
     pub group: ChunkGroup,
     pub total_pages: i64,
 }
+#[tracing::instrument(skip(pool))]
 pub fn get_bookmarks_for_group_query(
     group_id: UnifiedId,
     page: u64,
@@ -476,6 +486,7 @@ pub struct BookmarkGroupResult {
     pub slim_groups: Vec<SlimGroup>,
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_groups_for_bookmark_query(
     chunk_ids: Vec<uuid::Uuid>,
     dataset_uuid: uuid::Uuid,
@@ -550,6 +561,7 @@ pub fn get_groups_for_bookmark_query(
     Ok(bookmark_groups)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn delete_chunk_from_group_query(
     chunk_id: uuid::Uuid,
     group_id: uuid::Uuid,
@@ -587,6 +599,7 @@ pub fn delete_chunk_from_group_query(
     Ok(qdrant_point_id)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn create_group_from_file_query(
     group_id: uuid::Uuid,
     file_id: uuid::Uuid,

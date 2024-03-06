@@ -8,6 +8,7 @@ use actix_web::web;
 use diesel::prelude::*;
 
 /// Diesel query
+#[tracing::instrument(skip(pool))]
 pub async fn create_invitation_query(
     email: String,
     organization_id: uuid::Uuid,
@@ -30,6 +31,7 @@ pub async fn create_invitation_query(
     Ok(inserted_invitation)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn get_invitation_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -48,6 +50,7 @@ pub async fn get_invitation_by_id_query(
     Ok(invitation)
 }
 
+#[tracing::instrument]
 pub async fn send_invitation(inv_url: String, invitation: Invitation) -> Result<(), DefaultError> {
     let sg_email_content = format!(
         "You have been invited to join an Trieve AI dataset. <br/>
@@ -61,6 +64,7 @@ pub async fn send_invitation(inv_url: String, invitation: Invitation) -> Result<
     send_email(sg_email_content, invitation.email).await
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn set_invitation_used(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -80,6 +84,7 @@ pub async fn set_invitation_used(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn check_inv_valid(
     inv_code: uuid::Uuid,
     email: String,

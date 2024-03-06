@@ -3,6 +3,7 @@ use lettre::message::header::ContentType;
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{Message, SmtpTransport, Transport};
 
+#[tracing::instrument]
 pub fn get_smtp_creds() -> Credentials {
     let smtp_username = get_env!("SMTP_USERNAME", "SMTP_USERNAME should be set");
     let smtp_password = get_env!("SMTP_PASSWORD", "SMTP_PASSWORD should be set");
@@ -10,6 +11,7 @@ pub fn get_smtp_creds() -> Credentials {
     Credentials::new(smtp_username.to_owned(), smtp_password.to_owned())
 }
 
+#[tracing::instrument]
 pub async fn send_email(html_email_body: String, to_address: String) -> Result<(), DefaultError> {
     let smtp_relay = get_env!("SMTP_RELAY", "SMTP_RELAY should be set");
     let smtp_email_address = get_env!("SMTP_EMAIL_ADDRESS", "SMTP_EMAIL_ADDRESS should be set");

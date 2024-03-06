@@ -2,6 +2,7 @@ use crate::data::models::{Pool, Topic};
 use crate::{diesel::prelude::*, errors::DefaultError};
 use actix_web::web;
 
+#[tracing::instrument(skip(pool))]
 pub fn create_topic_query(topic: Topic, pool: &web::Data<Pool>) -> Result<(), DefaultError> {
     use crate::data::schema::topics::dsl::*;
 
@@ -17,6 +18,7 @@ pub fn create_topic_query(topic: Topic, pool: &web::Data<Pool>) -> Result<(), De
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn delete_topic_query(
     topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
@@ -40,6 +42,7 @@ pub fn delete_topic_query(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn update_topic_query(
     topic_id: uuid::Uuid,
     topic_name: String,
@@ -64,6 +67,7 @@ pub fn update_topic_query(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_topic_query(
     topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
@@ -83,6 +87,7 @@ pub fn get_topic_query(
         })
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_topic_for_user_query(
     topic_user_id: uuid::Uuid,
     topic_id: uuid::Uuid,
@@ -104,6 +109,7 @@ pub fn get_topic_for_user_query(
         })
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_all_topics_for_user_query(
     topic_user_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,

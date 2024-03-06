@@ -72,6 +72,7 @@ pub struct CreateDatasetRequest {
         ("Cookie" = ["owner"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn create_dataset(
     data: web::Json<CreateDatasetRequest>,
     pool: web::Data<Pool>,
@@ -145,6 +146,7 @@ pub struct UpdateDatasetRequest {
         ("Cookie" = ["owner"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn update_dataset(
     data: web::Json<UpdateDatasetRequest>,
     pool: web::Data<Pool>,
@@ -201,6 +203,7 @@ pub struct DeleteDatasetRequest {
         ("Cookie" = ["owner"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn delete_dataset(
     data: web::Json<DeleteDatasetRequest>,
     pool: web::Data<Pool>,
@@ -236,6 +239,7 @@ pub async fn delete_dataset(
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_dataset(
     pool: web::Data<Pool>,
     dataset_id: web::Path<uuid::Uuid>,
@@ -272,6 +276,7 @@ pub async fn get_dataset(
         ("Cookie" = ["admin"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_datasets_from_organization(
     organization_id: web::Path<uuid::Uuid>,
     user: AdminOnly,
@@ -312,6 +317,7 @@ pub async fn get_datasets_from_organization(
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument]
 pub async fn get_client_dataset_config(
     dataset: DatasetAndOrgWithSubAndPlan,
     _logged_user: LoggedUser,

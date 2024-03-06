@@ -73,6 +73,7 @@ pub struct CreateMessageData {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn create_message_completion_handler(
     data: web::Json<CreateMessageData>,
     user: LoggedUser,
@@ -207,6 +208,7 @@ pub async fn create_message_completion_handler(
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_all_topic_messages(
     user: LoggedUser,
     messages_topic_id: web::Path<uuid::Uuid>,
@@ -291,6 +293,7 @@ pub struct EditMessageData {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn edit_message_handler(
     data: web::Json<EditMessageData>,
     user: LoggedUser,
@@ -370,6 +373,7 @@ pub async fn edit_message_handler(
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn regenerate_message_handler(
     data: web::Json<RegenerateMessageData>,
     user: LoggedUser,
@@ -486,6 +490,7 @@ pub async fn regenerate_message_handler(
     .await
 }
 
+#[tracing::instrument]
 pub async fn get_topic_string(
     model: String,
     first_message: String,
@@ -571,6 +576,7 @@ pub async fn get_topic_string(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip(pool))]
 pub async fn stream_response(
     messages: Vec<models::Message>,
     user_id: uuid::Uuid,
@@ -939,6 +945,7 @@ pub struct SuggestedQueriesResponse {
     )
 
 )]
+#[tracing::instrument]
 pub async fn create_suggested_queries_handler(
     data: web::Json<SuggestedQueriesRequest>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,

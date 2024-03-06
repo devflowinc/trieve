@@ -20,6 +20,7 @@ use stripe::{EventObject, EventType, Webhook};
 
 use super::auth_handler::OwnerOnly;
 
+#[tracing::instrument(skip(pool))]
 pub async fn webhook(
     req: HttpRequest,
     payload: web::Bytes,
@@ -173,6 +174,7 @@ pub struct GetDirectPaymentLinkData {
         ("organization_id" = uuid::Uuid, Path, description = "id of the organization you want to subscribe to the plan"),
     ),
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn direct_to_payment_link(
     path_data: web::Path<GetDirectPaymentLinkData>,
     pool: web::Data<Pool>,
@@ -230,6 +232,7 @@ pub async fn direct_to_payment_link(
         ("Cookie" = ["owner"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn cancel_subscription(
     subscription_id: web::Path<uuid::Uuid>,
     _user: OwnerOnly,
@@ -281,6 +284,7 @@ pub struct UpdateSubscriptionData {
         ("Cookie" = ["readonly"])
     )
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn update_subscription_plan(
     path_data: web::Path<UpdateSubscriptionData>,
     _user: OwnerOnly,
@@ -327,6 +331,7 @@ pub async fn update_subscription_plan(
         (status = 400, description = "Service error relating to getting all plans", body = ErrorResponseBody),
     ),
 )]
+#[tracing::instrument(skip(pool))]
 pub async fn get_all_plans(pool: web::Data<Pool>) -> Result<HttpResponse, actix_web::Error> {
     let stripe_plans = web::block(move || get_all_plans_query(pool))
         .await?

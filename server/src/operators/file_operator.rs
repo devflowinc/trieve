@@ -28,6 +28,7 @@ use diesel::sql_types::BigInt;
 use diesel::{JoinOnDsl, NullableExpressionMethods, RunQueryDsl, SelectableHelper};
 use s3::{creds::Credentials, Bucket, Region};
 
+#[tracing::instrument]
 pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
     let aws_region_name = std::env::var("AWS_REGION").unwrap_or("".to_string());
     let s3_endpoint = get_env!("S3_ENDPOINT", "S3_ENDPOINT should be set").into();
@@ -62,6 +63,7 @@ pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
 }
 
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip(pool))]
 pub fn create_file_query(
     file_id: uuid::Uuid,
     file_name: &str,
@@ -101,6 +103,7 @@ pub fn create_file_query(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip(pool, redis_client))]
 pub async fn convert_doc_to_html_query(
     file_name: String,
     file_data: Vec<u8>,
@@ -262,6 +265,7 @@ pub async fn convert_doc_to_html_query(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip(pool, redis_client))]
 pub async fn create_chunks_with_handler(
     tag_set: Option<String>,
     file_name: String,
@@ -371,6 +375,7 @@ pub async fn create_chunks_with_handler(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn get_file_query(
     file_uuid: uuid::Uuid,
     dataset_id: uuid::Uuid,
@@ -399,6 +404,7 @@ pub async fn get_file_query(
     Ok(file_dto)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn get_dataset_file_query(
     dataset_id: uuid::Uuid,
     page: u64,
@@ -431,6 +437,7 @@ pub async fn get_dataset_file_query(
     Ok(file_metadata)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn delete_file_query(
     file_uuid: uuid::Uuid,
     dataset: Dataset,

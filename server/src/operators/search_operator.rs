@@ -49,6 +49,7 @@ pub struct SearchChunkQueryResult {
 }
 
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip(pool))]
 pub fn assemble_qdrant_filter(
     tag_set: Option<Vec<String>>,
     link: Option<Vec<String>>,
@@ -249,6 +250,7 @@ pub fn assemble_qdrant_filter(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip(pool))]
 pub async fn retrieve_qdrant_points_query(
     vector: VectorType,
     page: u64,
@@ -309,6 +311,7 @@ pub struct SearchOverGroupsQueryResult {
 }
 
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip(pool))]
 pub async fn retrieve_group_qdrant_points_query(
     vector: VectorType,
     page: u64,
@@ -354,6 +357,7 @@ pub async fn retrieve_group_qdrant_points_query(
     })
 }
 
+#[tracing::instrument(skip(embedding_vector))]
 pub async fn global_unfiltered_top_match_query(
     embedding_vector: Vec<f32>,
     dataset_id: uuid::Uuid,
@@ -436,6 +440,7 @@ pub async fn global_unfiltered_top_match_query(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip(pool))]
 pub async fn search_semantic_chunk_groups_query(
     embedding_vector: Vec<f32>,
     page: u64,
@@ -580,6 +585,7 @@ pub async fn search_semantic_chunk_groups_query(
     })
 }
 
+#[tracing::instrument(skip(conn))]
 pub fn get_metadata_query(
     chunk_metadata: Vec<FullTextSearchResult>,
     mut conn: r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::PgConnection>>,
@@ -681,6 +687,7 @@ pub struct FullTextDocIds {
 }
 
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip(pool))]
 pub async fn search_full_text_group_query(
     user_query: String,
     page: u64,
@@ -863,6 +870,7 @@ pub async fn search_full_text_group_query(
     })
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn retrieve_chunks_from_point_ids_without_collsions(
     search_chunk_query_results: SearchChunkQueryResult,
     data: &web::Json<SearchChunkData>,
@@ -945,6 +953,7 @@ pub struct SearchOverGroupsResponseBody {
     pub total_chunk_pages: i64,
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn retrieve_chunks_for_groups(
     search_over_groups_query_result: SearchOverGroupsQueryResult,
     data: &web::Json<SearchOverGroupsData>,
@@ -1113,6 +1122,7 @@ pub async fn get_metadata_from_groups(
 }
 
 /// Retrieve chunks from point ids, DOES NOT GUARD AGAINST DATASET ACCESS PERMISSIONS
+#[tracing::instrument(skip(pool))]
 pub async fn retrieve_chunks_from_point_ids(
     search_chunk_query_results: SearchChunkQueryResult,
     data: &web::Json<SearchChunkData>,
@@ -1215,6 +1225,7 @@ pub async fn retrieve_chunks_from_point_ids(
     })
 }
 
+#[tracing::instrument]
 pub fn rerank_chunks(chunks: Vec<ScoreChunkDTO>, date_bias: Option<bool>) -> Vec<ScoreChunkDTO> {
     let mut reranked_chunks = Vec::new();
     chunks.into_iter().for_each(|mut chunk| {
@@ -1245,6 +1256,7 @@ pub fn rerank_chunks(chunks: Vec<ScoreChunkDTO>, date_bias: Option<bool>) -> Vec
     reranked_chunks
 }
 
+#[tracing::instrument(skip(timer))]
 pub async fn search_semantic_chunks(
     data: web::Json<SearchChunkData>,
     parsed_query: ParsedQuery,
@@ -1303,6 +1315,7 @@ pub async fn search_semantic_chunks(
     Ok(result_chunks)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn search_full_text_chunks(
     data: web::Json<SearchChunkData>,
     mut parsed_query: ParsedQuery,
@@ -1361,6 +1374,7 @@ pub async fn search_full_text_chunks(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip(pool))]
 pub async fn search_hybrid_chunks(
     data: web::Json<SearchChunkData>,
     parsed_query: ParsedQuery,
@@ -1544,6 +1558,7 @@ pub async fn search_hybrid_chunks(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip(pool))]
 pub async fn search_semantic_groups(
     data: web::Json<SearchGroupsData>,
     parsed_query: ParsedQuery,
@@ -1592,6 +1607,7 @@ pub async fn search_semantic_groups(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip(pool))]
 pub async fn search_full_text_groups(
     data: web::Json<SearchGroupsData>,
     parsed_query: ParsedQuery,
@@ -1637,6 +1653,7 @@ pub async fn search_full_text_groups(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip(pool))]
 pub async fn search_hybrid_groups(
     data: web::Json<SearchGroupsData>,
     parsed_query: ParsedQuery,
@@ -1759,6 +1776,7 @@ pub async fn search_hybrid_groups(
     })
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn semantic_search_over_groups(
     data: web::Json<SearchOverGroupsData>,
     parsed_query: ParsedQuery,
@@ -1797,6 +1815,7 @@ pub async fn semantic_search_over_groups(
     Ok(result_chunks)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn full_text_search_over_groups(
     data: web::Json<SearchOverGroupsData>,
     parsed_query: ParsedQuery,
@@ -1864,6 +1883,7 @@ async fn cross_encoder_for_groups(
     Ok(group_results)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn hybrid_search_over_groups(
     data: web::Json<SearchOverGroupsData>,
     parsed_query: ParsedQuery,
@@ -1982,6 +2002,7 @@ pub async fn hybrid_search_over_groups(
     Ok(result_chunks)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_qdrant_point_ids_from_pg_for_quote_negated_words(
     quote_words: Option<Vec<String>>,
     negated_words: Option<Vec<String>>,

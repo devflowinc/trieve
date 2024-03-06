@@ -21,6 +21,7 @@ use itertools::Itertools;
 
 /// Creates a dataset from Name if it doesn't conflict. If it does, then it creates a random name
 /// for the user
+#[tracing::instrument(skip(pool))]
 pub async fn create_organization_query(
     name: &str,
     pool: web::Data<Pool>,
@@ -61,6 +62,7 @@ pub async fn create_organization_query(
     Ok(new_organization)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn update_organization_query(
     id: uuid::Uuid,
     name: &str,
@@ -95,6 +97,7 @@ pub async fn update_organization_query(
     Ok(updated_organization)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn delete_organization_query(
     req: Option<&HttpRequest>,
     calling_user_id: Option<uuid::Uuid>,
@@ -180,6 +183,7 @@ pub async fn delete_organization_query(
     Ok(deleted_organization)
 }
 
+#[derive(Debug)]
 pub enum OrganizationKey {
     Id(uuid::Uuid),
     Name(String),
@@ -207,6 +211,7 @@ impl From<String> for OrganizationKey {
 }
 
 /// Gets organization by id or name
+#[tracing::instrument(skip(pool))]
 pub async fn get_organization_by_key_query(
     key: OrganizationKey,
     pool: web::Data<Pool>,
@@ -328,6 +333,7 @@ pub async fn get_organization_by_key_query(
     Ok(org_plan_sub)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn get_org_from_id_query(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -349,6 +355,7 @@ pub async fn get_org_from_id_query(
     Ok(organization)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_org_dataset_count(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -370,6 +377,7 @@ pub fn get_org_dataset_count(
     Ok(dataset_count)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_user_org_count(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -391,6 +399,7 @@ pub fn get_user_org_count(
     Ok(user_count)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_message_org_count(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -412,6 +421,7 @@ pub fn get_message_org_count(
     Ok(messages_count)
 }
 
+#[tracing::instrument(skip(pool))]
 pub fn get_file_size_sum_org(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -433,6 +443,7 @@ pub fn get_file_size_sum_org(
     Ok(file_size_sums)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn get_org_usage_by_id_query(
     org_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -452,6 +463,7 @@ pub async fn get_org_usage_by_id_query(
     Ok(org_usage_count)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn get_org_users_by_id_query(
     org_id: uuid::Uuid,
     pool: web::Data<Pool>,
