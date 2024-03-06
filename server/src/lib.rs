@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate diesel;
+use tracing_subscriber::{prelude::*, Layer, EnvFilter};
 
 use crate::{
     errors::ServiceError,
@@ -244,11 +245,10 @@ pub struct ApiDoc;
 pub async fn main() -> std::io::Result<()> {
     dotenvy::dotenv().ok();
 
-    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
-
     let sentry_url = std::env::var("SENTRY_URL");
     let _guard = if let Ok(sentry_url) = sentry_url {
         log::info!("Sentry monitoring enabled");
+
         let guard = sentry::init((
             sentry_url,
             sentry::ClientOptions {
@@ -257,8 +257,28 @@ pub async fn main() -> std::io::Result<()> {
                 ..Default::default()
             },
         ));
+
+        tracing_subscriber::Registry::default()
+            .with(sentry::integrations::tracing::layer())
+            .with(
+                tracing_subscriber::fmt::layer().with_filter(
+                    EnvFilter::from_default_env()
+                        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
+                ),
+            )
+            .init();
+
         Some(guard)
     } else {
+        tracing_subscriber::Registry::default()
+            .with(
+                tracing_subscriber::fmt::layer().with_filter(
+                    EnvFilter::from_default_env()
+                        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
+                ),
+            )
+            .init();
+
         None
     };
 
