@@ -7,7 +7,9 @@ use crate::errors::ServiceError;
 use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
-use crate::operators::group_operator::{get_group_by_id_query, get_groups_from_tracking_ids_query};
+use crate::operators::group_operator::{
+    get_group_by_id_query, get_groups_from_tracking_ids_query, get_point_ids_from_group_ids,
+};
 use crate::operators::model_operator::create_embedding;
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::update_qdrant_point_query;
@@ -986,7 +988,7 @@ pub struct SearchOverGroupsData {
 /// This route allows you to get groups as results instead of chunks. Each group returned will have the matching chunks sorted by similarity within the group. This is useful for when you want to get groups of chunks which are similar to the search query. If choosing hybrid search, the results will be re-ranked using BAAI/bge-reranker-large. Compatible with semantic, fulltext, or hybrid search modes.
 #[utoipa::path(
     post,
-    path = "/chunk_group/search_over_groups",
+    path = "/chunk_group/group_oriented_search",
     context_path = "/api",
     tag = "chunk_group",
     request_body(content = SearchOverGroupsData, description = "JSON request payload to semantically search over groups", content_type = "application/json"),
@@ -1135,9 +1137,13 @@ pub async fn get_chunk_by_tracking_id(
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct RecommendChunksRequest {
     /// The ids of the chunks to be used as positive examples for the recommendation. The chunks in this array will be used to find similar chunks.
-    pub positive_chunk_ids: Vec<uuid::Uuid>,
+    pub positive_chunk_ids: Option<Vec<uuid::Uuid>>,
     /// The ids of the chunks to be used as negative examples for the recommendation. The chunks in this array will be used to filter out similar chunks.
     pub negative_chunk_ids: Option<Vec<uuid::Uuid>>,
+    /// The tracking_ids of the chunks to be used as positive examples for the recommendation. The chunks in this array will be used to find similar chunks.
+    pub positive_tracking_ids: Option<Vec<String>>,
+    /// The tracking_ids of the chunks to be used as negative examples for the recommendation. The chunks in this array will be used to filter out similar chunks.
+    pub negative_tracking_ids: Option<Vec<String>>,
     /// The number of chunks to return. This is the number of chunks which will be returned in the response. The default is 10.
     pub limit: Option<u64>,
 }
@@ -1171,13 +1177,88 @@ pub async fn get_recommended_chunks(
 ) -> Result<HttpResponse, actix_web::Error> {
     let positive_chunk_ids = data.positive_chunk_ids.clone();
     let negative_chunk_ids = data.negative_chunk_ids.clone();
+    let positive_tracking_ids = data.positive_tracking_ids.clone();
+    let negative_tracking_ids = data.negative_tracking_ids.clone();
     let limit = data.limit.unwrap_or(10);
     let server_dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
+    let positive_qdrant_ids = if positive_chunk_ids.is_some() {
+        get_point_ids_from_chunk_ids(
+            positive_chunk_ids
+                .clone()
+                .unwrap()
+                .into_iter()
+                .map(|chunk_ids| chunk_ids.into())
+                .collect(),
+            pool.clone(),
+        )
+        .await
+        .map_err(|err| {
+            ServiceError::BadRequest(format!("Could not get positive qdrant_point_ids: {}", err))
+        })?
+    } else if positive_chunk_ids.is_none() && positive_tracking_ids.is_some() {
+        get_point_ids_from_chunk_ids(
+            positive_tracking_ids
+                .clone()
+                .unwrap()
+                .into_iter()
+                .map(|chunk_ids| chunk_ids.into())
+                .collect(),
+            pool.clone(),
+        )
+        .await
+        .map_err(|err| {
+            ServiceError::BadRequest(format!(
+                "Could not get positive qdrant_point_ids from tracking_ids: {}",
+                err
+            ))
+        })?
+    } else {
+        return Err(ServiceError::BadRequest(
+            "You must provide either positive_chunk_ids or positive_tracking_ids".into(),
+        )
+        .into());
+    };
+
+    let negative_qdrant_ids = if negative_chunk_ids.is_some() {
+        get_point_ids_from_chunk_ids(
+            negative_chunk_ids
+                .clone()
+                .unwrap()
+                .into_iter()
+                .map(|chunk_ids| chunk_ids.into())
+                .collect(),
+            pool.clone(),
+        )
+        .await
+        .map_err(|err| {
+            ServiceError::BadRequest(format!("Could not get negative qdrant_point_ids: {}", err))
+        })?
+    } else if negative_chunk_ids.is_none() && negative_tracking_ids.is_some() {
+        get_point_ids_from_chunk_ids(
+            negative_tracking_ids
+                .clone()
+                .unwrap()
+                .into_iter()
+                .map(|chunk_ids| chunk_ids.into())
+                .collect(),
+            pool.clone(),
+        )
+        .await
+        .map_err(|err| {
+            ServiceError::BadRequest(format!(
+                "Could not get negative qdrant_point_ids from tracking_ids: {}",
+                err
+            ))
+        })?
+    } else {
+        vec![]
+    };
+
     let recommended_qdrant_point_ids = recommend_qdrant_query(
-        positive_chunk_ids,
-        negative_chunk_ids,
+        positive_qdrant_ids,
+        negative_qdrant_ids,
         limit,
         dataset_org_plan_sub.dataset.id,
         server_dataset_config,
@@ -1188,8 +1269,8 @@ pub async fn get_recommended_chunks(
     })?;
 
     let recommended_chunk_metadatas =
-        web::block(move || get_metadata_from_point_ids(recommended_qdrant_point_ids, pool))
-            .await?
+        get_metadata_from_point_ids(recommended_qdrant_point_ids, pool)
+            .await
             .map_err(|err| {
                 ServiceError::BadRequest(format!(
                     "Could not get recommended chunk_metadas from qdrant_point_ids: {}",
@@ -1201,13 +1282,17 @@ pub async fn get_recommended_chunks(
 }
 
 pub struct ReccomendGroupChunksRequest {
-    /// The ids of the chunks to be used as positive examples for the recommendation. The chunks in this array will be used to find similar chunks.
-    pub positive_chunk_ids: Vec<uuid::Uuid>,
-    /// The ids of the chunks to be used as negative examples for the recommendation. The chunks in this array will be used to filter out similar chunks.
-    pub negative_chunk_ids: Option<Vec<uuid::Uuid>>,
-    /// The number of chunks to return. This is the number of chunks which will be returned in the response. The default is 10.
+    /// The  ids of the groups to be used as positive examples for the recommendation. The groups in this array will be used to find similar groups.
+    pub positive_group_ids: Option<Vec<uuid::Uuid>>,
+    /// The  ids of the groups to be used as negative examples for the recommendation. The groups in this array will be used to filter out similar groups.
+    pub negative_group_ids: Option<Vec<uuid::Uuid>>,
+    /// The  ids of the groups to be used as positive examples for the recommendation. The groups in this array will be used to find similar groups.
+    pub positive_group_tracking_ids: Option<Vec<String>>,
+    /// The  ids of the groups to be used as negative examples for the recommendation. The groups in this array will be used to filter out similar groups.
+    pub negative_group_tracking_ids: Option<Vec<String>>,
+    /// The number of groups to return. This is the number of groups which will be returned in the response. The default is 10.
     pub limit: Option<u64>,
-    /// The number of groups to return. This is the number of chunks in each group which will be returned in the response. The default is 10.
+    /// The number of groups to return. This is the number of groups in each group which will be returned in the response. The default is 10.
     pub group_size: Option<u32>,
 }
 
@@ -1235,15 +1320,91 @@ pub async fn get_recommended_groups(
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let positive_chunk_ids = data.positive_chunk_ids.clone();
-    let negative_chunk_ids = data.negative_chunk_ids.clone();
+    let positive_group_ids = data.positive_group_ids.clone();
+    let negative_group_ids = data.negative_group_ids.clone();
+    let positive_tracking_ids = data.positive_group_tracking_ids.clone();
+    let negative_tracking_ids = data.negative_group_tracking_ids.clone();
+
     let limit = data.limit.unwrap_or(10);
     let server_dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
+    let positive_qdrant_ids = if positive_group_ids.is_some() {
+        get_point_ids_from_group_ids(
+            positive_group_ids
+                .clone()
+                .unwrap()
+                .into_iter()
+                .map(|group_ids| group_ids.into())
+                .collect(),
+            pool.clone(),
+        )
+        .await
+        .map_err(|err| {
+            ServiceError::BadRequest(format!("Could not get positive qdrant_point_ids: {}", err))
+        })?
+    } else if positive_group_ids.is_none() && positive_tracking_ids.is_some() {
+        get_point_ids_from_group_ids(
+            positive_tracking_ids
+                .clone()
+                .unwrap()
+                .into_iter()
+                .map(|group_ids| group_ids.into())
+                .collect(),
+            pool.clone(),
+        )
+        .await
+        .map_err(|err| {
+            ServiceError::BadRequest(format!(
+                "Could not get positive qdrant_point_ids from tracking_ids: {}",
+                err
+            ))
+        })?
+    } else {
+        return Err(ServiceError::BadRequest(
+            "You must provide either positive_group_ids or positive_tracking_ids".into(),
+        )
+        .into());
+    };
+
+    let negative_qdrant_ids = if negative_group_ids.is_some() {
+        get_point_ids_from_group_ids(
+            negative_group_ids
+                .clone()
+                .unwrap()
+                .into_iter()
+                .map(|group_ids| group_ids.into())
+                .collect(),
+            pool.clone(),
+        )
+        .await
+        .map_err(|err| {
+            ServiceError::BadRequest(format!("Could not get negative qdrant_point_ids: {}", err))
+        })?
+    } else if negative_group_ids.is_none() && negative_tracking_ids.is_some() {
+        get_point_ids_from_group_ids(
+            negative_tracking_ids
+                .clone()
+                .unwrap()
+                .into_iter()
+                .map(|group_ids| group_ids.into())
+                .collect(),
+            pool.clone(),
+        )
+        .await
+        .map_err(|err| {
+            ServiceError::BadRequest(format!(
+                "Could not get negative qdrant_point_ids from tracking_ids: {}",
+                err
+            ))
+        })?
+    } else {
+        vec![]
+    };
+
     let recommended_qdrant_point_ids = recommend_qdrant_groups_query(
-        positive_chunk_ids,
-        negative_chunk_ids,
+        positive_qdrant_ids,
+        negative_qdrant_ids,
         limit,
         data.group_size.unwrap_or(10),
         dataset_org_plan_sub.dataset.id,
@@ -1251,7 +1412,7 @@ pub async fn get_recommended_groups(
     )
     .await
     .map_err(|err| {
-        ServiceError::BadRequest(format!("Could not get recommended chunks: {}", err))
+        ServiceError::BadRequest(format!("Could not get recommended groups: {}", err))
     })?;
 
     let group_query_result = SearchOverGroupsQueryResult {

@@ -875,6 +875,7 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
         .collect::<Vec<_>>();
 
     let metadata_chunks = get_metadata_from_point_ids(point_ids, pool)
+        .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results

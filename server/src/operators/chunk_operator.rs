@@ -1,6 +1,6 @@
 use crate::data::models::{
     ChunkCollision, ChunkFile, ChunkMetadataWithFileData, Dataset, FullTextSearchResult,
-    ServerDatasetConfiguration,
+    ServerDatasetConfiguration, UnifiedId,
 };
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::operators::model_operator::create_embedding;
@@ -16,7 +16,7 @@ use itertools::Itertools;
 use qdrant_client::qdrant::{PointId, PointVectors};
 use simsearch::SimSearch;
 
-pub fn get_metadata_from_point_ids(
+pub async fn get_metadata_from_point_ids(
     point_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<Vec<ChunkMetadataWithFileData>, DefaultError> {
@@ -43,6 +43,54 @@ pub fn get_metadata_from_point_ids(
         })?;
 
     Ok(chunk_metadata_with_file_id)
+}
+
+pub async fn get_point_ids_from_chunk_ids(
+    chunk_ids: Vec<UnifiedId>,
+    pool: web::Data<Pool>,
+) -> Result<Vec<uuid::Uuid>, DefaultError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    let qdrant_point_ids: Vec<uuid::Uuid> = match chunk_ids[0] {
+        UnifiedId::TrieveUuid(_) => chunk_metadata_columns::chunk_metadata
+            .filter(
+                chunk_metadata_columns::id.eq_any(
+                    &chunk_ids
+                        .iter()
+                        .map(|x| x.as_uuid().expect("Failed to convert to uuid"))
+                        .collect::<Vec<uuid::Uuid>>(),
+                ),
+            )
+            .select(chunk_metadata_columns::qdrant_point_id)
+            .load::<Option<uuid::Uuid>>(&mut conn)
+            .map_err(|_| DefaultError {
+                message: "Failed to load metadata",
+            })?
+            .into_iter()
+            .filter_map(|x| x)
+            .collect(),
+        UnifiedId::TrackingId(_) => chunk_metadata_columns::chunk_metadata
+            .filter(
+                chunk_metadata_columns::tracking_id.eq_any(
+                    &chunk_ids
+                        .iter()
+                        .map(|x| x.as_tracking_id().expect("Failed to convert to String"))
+                        .collect::<Vec<String>>(),
+                ),
+            )
+            .select(chunk_metadata_columns::qdrant_point_id)
+            .load::<Option<uuid::Uuid>>(&mut conn)
+            .map_err(|_| DefaultError {
+                message: "Failed to load metadata",
+            })?
+            .into_iter()
+            .filter_map(|x| x)
+            .collect(),
+    };
+
+    Ok(qdrant_point_ids)
 }
 
 pub struct ChunkMetadataWithQdrantId {
