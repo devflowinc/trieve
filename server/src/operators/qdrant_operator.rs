@@ -262,6 +262,8 @@ pub async fn create_new_qdrant_point_query(
     if config.FULLTEXT_ENABLED {
         let splade_vector = get_splade_embedding(&chunk_content, "doc").await?;
         vector_payload.insert("sparse_vectors".to_string(), Vector::from(splade_vector));
+    } else {
+        vector_payload.insert("sparse_vectors".to_string(), Vector::from(vec![(0, 0.0)]));
     }
 
     let point = PointStruct::new(point_id.clone().to_string(), vector_payload, payload);
@@ -342,6 +344,8 @@ pub async fn update_qdrant_point_query(
             let chunk_content = metadata.unwrap().content;
             let splade_vector = get_splade_embedding(&chunk_content, "doc").await?;
             vector_payload.insert("sparse_vectors".to_string(), Vector::from(splade_vector));
+        } else {
+            vector_payload.insert("sparse_vectors".to_string(), Vector::from(vec![(0, 0.0)]));
         }
 
         let point = PointStruct::new(
