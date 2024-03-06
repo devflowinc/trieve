@@ -71,6 +71,7 @@ pub async fn create_embedding(
         user: None,
         encoding_format: None,
         dimensions: None,
+        truncate: true,
     };
 
     let embeddings =
