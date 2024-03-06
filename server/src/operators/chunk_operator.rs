@@ -45,7 +45,7 @@ pub async fn get_metadata_from_point_ids(
     Ok(chunk_metadata_with_file_id)
 }
 
-pub async fn get_point_ids_from_chunk_ids(
+pub async fn get_point_ids_from_unified_chunk_ids(
     chunk_ids: Vec<UnifiedId>,
     pool: web::Data<Pool>,
 ) -> Result<Vec<uuid::Uuid>, DefaultError> {
@@ -69,7 +69,7 @@ pub async fn get_point_ids_from_chunk_ids(
                 message: "Failed to load metadata",
             })?
             .into_iter()
-            .filter_map(|x| x)
+            .flatten()
             .collect(),
         UnifiedId::TrackingId(_) => chunk_metadata_columns::chunk_metadata
             .filter(
@@ -86,7 +86,7 @@ pub async fn get_point_ids_from_chunk_ids(
                 message: "Failed to load metadata",
             })?
             .into_iter()
-            .filter_map(|x| x)
+            .flatten()
             .collect(),
     };
 
