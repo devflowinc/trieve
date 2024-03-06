@@ -33,8 +33,6 @@ pub async fn create_embedding(
     let open_ai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let base_url = dataset_config.EMBEDDING_BASE_URL;
 
-    log::error!("Base url {:?}", base_url);
-
     let base_url = if base_url.is_empty() {
         "https://api.openai.com/v1".to_string()
     } else if base_url.contains("https://embedding.trieve.ai") {
@@ -52,8 +50,6 @@ pub async fn create_embedding(
     } else {
         base_url
     };
-
-    log::info!("Base url {:?}", base_url);
 
     let client = Client {
         http_client: None,
