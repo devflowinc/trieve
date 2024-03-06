@@ -15,7 +15,7 @@ use crate::handlers::chunk_handler::{
     ParsedQuery, ScoreChunkDTO, SearchChunkData, SearchChunkQueryResponseBody, SearchGroupsData,
     SearchGroupsResult, SearchOverGroupsData,
 };
-use crate::operators::model_operator::get_splade_query_embedding;
+use crate::operators::model_operator::get_splade_embedding;
 use crate::operators::qdrant_operator::{get_qdrant_connection, search_qdrant_query};
 use crate::{data::models::Pool, errors::DefaultError};
 use actix_web::web;
@@ -841,12 +841,11 @@ pub async fn search_full_text_group_query(
         })),
     });
 
-    let embedding_vector =
-        get_splade_query_embedding(&user_query)
-            .await
-            .map_err(|_| DefaultError {
-                message: "Failed to get splade query embedding",
-            })?;
+    let embedding_vector = get_splade_embedding(&user_query, "query")
+        .await
+        .map_err(|_| DefaultError {
+            message: "Failed to get splade query embedding",
+        })?;
 
     let point_ids = search_qdrant_query(
         page,
@@ -921,7 +920,7 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
             }
 
             ScoreChunkDTO {
-                metadata: vec![chunk],
+                chunks: vec![chunk],
                 score: search_result.score.into(),
             }
         })
@@ -936,7 +935,7 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct GroupScoreChunkDTO {
     pub group_id: uuid::Uuid,
-    pub metadata: Vec<ScoreChunkDTO>,
+    pub chunks: Vec<ScoreChunkDTO>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -1013,13 +1012,13 @@ pub async fn retrieve_chunks_for_groups(
                     let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
                         .iter()
                         .filter(|chunk| chunk.qdrant_id == search_result.point_id)
-                        .map(|chunk| chunk.metadata.clone())
+                        .map(|chunk| chunk.chunk.clone())
                         .collect();
 
                     collided_chunks.insert(0, chunk);
 
                     ScoreChunkDTO {
-                        metadata: collided_chunks,
+                        chunks: collided_chunks,
                         score: search_result.score.into(),
                     }
                 })
@@ -1027,7 +1026,7 @@ pub async fn retrieve_chunks_for_groups(
 
             GroupScoreChunkDTO {
                 group_id: group.group_id,
-                metadata: score_chunk,
+                chunks: score_chunk,
             }
         })
         .collect_vec();
@@ -1121,13 +1120,13 @@ pub async fn retrieve_chunks_from_point_ids(
             let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
                 .iter()
                 .filter(|chunk| chunk.qdrant_id == search_result.point_id)
-                .map(|chunk| chunk.metadata.clone())
+                .map(|chunk| chunk.chunk.clone())
                 .collect();
 
             collided_chunks.insert(0, chunk);
 
             ScoreChunkDTO {
-                metadata: collided_chunks,
+                chunks: collided_chunks,
                 score: search_result.score.into(),
             }
         })
@@ -1144,17 +1143,17 @@ pub async fn retrieve_chunks_from_point_ids(
 pub fn rerank_chunks(chunks: Vec<ScoreChunkDTO>, date_bias: Option<bool>) -> Vec<ScoreChunkDTO> {
     let mut reranked_chunks = Vec::new();
     chunks.into_iter().for_each(|mut chunk| {
-        if chunk.metadata[0].weight == 0.0 {
-            chunk.metadata[0].weight = 1.0;
+        if chunk.chunks[0].weight == 0.0 {
+            chunk.chunks[0].weight = 1.0;
         }
-        chunk.score *= chunk.metadata[0].weight;
+        chunk.score *= chunk.chunks[0].weight;
         reranked_chunks.push(chunk);
     });
 
     if date_bias.is_some() && date_bias.unwrap() {
         reranked_chunks.sort_by(|a, b| {
             if let (Some(time_stamp_a), Some(time_stamp_b)) =
-                (a.metadata[0].time_stamp, b.metadata[0].time_stamp)
+                (a.chunks[0].time_stamp, b.chunks[0].time_stamp)
             {
                 return time_stamp_a.timestamp().cmp(&time_stamp_b.timestamp());
             }
@@ -1196,7 +1195,7 @@ pub async fn search_semantic_chunks(
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
-    let embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
+    let embedding_vector = create_embedding(&data.query, "query", dataset_config.clone()).await?;
     timer.add("Created Embedding vector");
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
@@ -1256,7 +1255,7 @@ pub async fn search_full_text_chunks(
         .join(" AND ")
         .replace('\"', "");
 
-    let embedding_vector = get_splade_query_embedding(&parsed_query.query)
+    let embedding_vector = get_splade_embedding(&parsed_query.query, "query")
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
 
@@ -1311,7 +1310,7 @@ pub async fn search_hybrid_chunks(
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
-    let embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
+    let embedding_vector = create_embedding(&data.query, "query", dataset_config.clone()).await?;
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
         VectorType::Dense(embedding_vector),
@@ -1405,13 +1404,13 @@ pub async fn search_hybrid_chunks(
             let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
                 .iter()
                 .filter(|chunk| chunk.qdrant_id == search_result.point_id)
-                .map(|chunk| chunk.metadata.clone())
+                .map(|chunk| chunk.chunk.clone())
                 .collect();
 
             collided_chunks.insert(0, chunk);
 
             ScoreChunkDTO {
-                metadata: collided_chunks,
+                chunks: collided_chunks,
                 score: search_result.score as f64 * 0.5,
             }
         })
@@ -1422,7 +1421,7 @@ pub async fn search_hybrid_chunks(
             .iter()
             .zip(full_text_handler_results.score_chunks.iter())
             .flat_map(|(x, y)| vec![x.clone(), y.clone()])
-            .unique_by(|score_chunk| score_chunk.metadata[0].id)
+            .unique_by(|score_chunk| score_chunk.chunks[0].id)
             .collect::<Vec<ScoreChunkDTO>>();
 
         let reranked_chunks = if combined_results.len() > 20 {
@@ -1481,7 +1480,8 @@ pub async fn search_semantic_groups(
 ) -> Result<SearchGroupsResult, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
-    let embedding_vector: Vec<f32> = create_embedding(&data.query, dataset_config.clone()).await?;
+    let embedding_vector: Vec<f32> =
+        create_embedding(&data.query, "query", dataset_config.clone()).await?;
 
     let search_semantic_chunk_query_results = search_semantic_chunk_groups_query(
         embedding_vector,
@@ -1575,7 +1575,7 @@ pub async fn search_hybrid_groups(
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
-    let embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
+    let embedding_vector = create_embedding(&data.query, "query", dataset_config.clone()).await?;
 
     let semantic_future = search_semantic_chunk_groups_query(
         embedding_vector,
@@ -1694,7 +1694,7 @@ pub async fn semantic_search_over_groups(
 ) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
-    let embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
+    let embedding_vector = create_embedding(&data.query, "query", dataset_config.clone()).await?;
 
     let search_chunk_query_results = retrieve_group_qdrant_points_query(
         VectorType::Dense(embedding_vector),
@@ -1730,7 +1730,7 @@ pub async fn full_text_search_over_groups(
     dataset: Dataset,
     config: ServerDatasetConfiguration,
 ) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
-    let embedding_vector = get_splade_query_embedding(&data.query)
+    let embedding_vector = get_splade_embedding(&data.query, "query")
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
 
@@ -1767,7 +1767,7 @@ async fn cross_encoder_for_groups(
 ) -> Result<Vec<GroupScoreChunkDTO>, actix_web::Error> {
     let score_chunks = groups_chunks
         .iter()
-        .flat_map(|group| group.metadata.clone().into_iter().collect_vec())
+        .flat_map(|group| group.chunks.clone().into_iter().collect_vec())
         .collect_vec();
     let cross_encoder_results = cross_encoder(query, page_size, score_chunks).await?;
     let mut group_results = cross_encoder_results
@@ -1777,9 +1777,9 @@ async fn cross_encoder_for_groups(
                 .iter()
                 .find(|group| {
                     group
-                        .metadata
+                        .chunks
                         .iter()
-                        .any(|chunk| chunk.metadata[0].id == score_chunk.metadata[0].id)
+                        .any(|chunk| chunk.chunks[0].id == score_chunk.chunks[0].id)
                 })
                 .expect("Group not found");
             group.clone()
@@ -1799,8 +1799,9 @@ pub async fn hybrid_search_over_groups(
 ) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
-    let dense_embedding_vector = create_embedding(&data.query, dataset_config.clone()).await?;
-    let sparse_embedding_vector = get_splade_query_embedding(&data.query)
+    let dense_embedding_vector =
+        create_embedding(&data.query, "query", dataset_config.clone()).await?;
+    let sparse_embedding_vector = get_splade_embedding(&data.query, "query")
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
 

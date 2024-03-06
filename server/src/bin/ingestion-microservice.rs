@@ -136,7 +136,7 @@ async fn upload_chunk(
                 let chunks = coarse_doc_chunker(payload.chunk_metadata.content.clone());
                 let mut embeddings: Vec<Vec<f32>> = vec![];
                 for chunk in chunks {
-                    let embedding = create_embedding(&chunk, dataset_config.clone())
+                    let embedding = create_embedding(&chunk, "doc", dataset_config.clone())
                         .await
                         .map_err(|err| {
                             ServiceError::InternalServerError(format!(
@@ -154,14 +154,15 @@ async fn upload_chunk(
                     ))
                 })?
             }
-            false => create_embedding(&payload.chunk_metadata.content, dataset_config.clone())
-                .await
-                .map_err(|err| {
-                    ServiceError::InternalServerError(format!(
-                        "Failed to create embedding: {:?}",
-                        err
-                    ))
-                })?,
+            false => create_embedding(
+                &payload.chunk_metadata.content,
+                "doc",
+                dataset_config.clone(),
+            )
+            .await
+            .map_err(|err| {
+                ServiceError::InternalServerError(format!("Failed to create embedding: {:?}", err))
+            })?,
         }
     };
 

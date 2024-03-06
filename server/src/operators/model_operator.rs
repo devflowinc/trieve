@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 
 pub async fn create_embedding(
     message: &str,
+    embed_type: &str,
     dataset_config: ServerDatasetConfiguration,
 ) -> Result<Vec<f32>, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -32,6 +33,8 @@ pub async fn create_embedding(
     let open_ai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
     let base_url = dataset_config.EMBEDDING_BASE_URL;
 
+    log::error!("Base url {:?}", base_url);
+
     let base_url = if base_url.is_empty() {
         "https://api.openai.com/v1".to_string()
     } else if base_url.contains("https://embedding.trieve.ai") {
@@ -50,6 +53,8 @@ pub async fn create_embedding(
         base_url
     };
 
+    log::info!("Base url {:?}", base_url);
+
     let client = Client {
         http_client: None,
         api_key: open_ai_api_key,
@@ -57,20 +62,27 @@ pub async fn create_embedding(
         organization: None,
     };
 
+    let input = match embed_type {
+        "doc" => EmbeddingInput::String(message.to_string()),
+        "query" => EmbeddingInput::String(
+            get_env!("QUERY_PREFIX", "Must have QUERY_PREFIX set").to_owned() + message,
+        ),
+        _ => EmbeddingInput::String(message.to_string()),
+    };
+
     // Vectorize
     let parameters = EmbeddingParameters {
         model: "text-embedding-3-small".to_string(),
-        input: EmbeddingInput::String(message.to_string()),
+        input,
         user: None,
         encoding_format: None,
         dimensions: None,
     };
 
-    let embeddings = client
-        .embeddings()
-        .create(parameters)
-        .await
-        .map_err(actix_web::error::ErrorBadRequest)?;
+    let embeddings =
+        client.embeddings().create(parameters).await.map_err(|e| {
+            ServiceError::BadRequest(format!("Failed making call to server {:?}", e))
+        })?;
 
     let vector = match embeddings.data.first().unwrap().embedding.clone() {
         EmbeddingOutput::Float(vector) => vector,
@@ -92,7 +104,10 @@ pub struct CustomSparseEmbedData {
     pub encode_type: String,
 }
 
-pub async fn get_splade_doc_embedding(message: &str) -> Result<Vec<(u32, f32)>, ServiceError> {
+pub async fn get_splade_embedding(
+    message: &str,
+    embed_type: &str,
+) -> Result<Vec<(u32, f32)>, ServiceError> {
     if message.is_empty() {
         return Err(ServiceError::BadRequest(
             "Cannot encode empty query".to_string(),
@@ -124,7 +139,7 @@ pub async fn get_splade_doc_embedding(message: &str) -> Result<Vec<(u32, f32)>, 
         )
         .send_json(CustomSparseEmbedData {
             input: message.to_string(),
-            encode_type: "doc".to_string(),
+            encode_type: embed_type.to_string(),
         })
         .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
         .into_json::<SpladeEmbedding>()
@@ -138,65 +153,6 @@ pub async fn get_splade_doc_embedding(message: &str) -> Result<Vec<(u32, f32)>, 
             )
         })?;
 
-    Ok(resp.embeddings)
-}
-
-pub async fn get_splade_query_embedding(message: &str) -> Result<Vec<(u32, f32)>, ServiceError> {
-    let parent_span = sentry::configure_scope(|scope| scope.get_span());
-    let transaction: sentry::TransactionOrSpan = match &parent_span {
-        Some(parent) => parent
-            .start_child("get_splade_query_embedding", "get_splade_query_embedding")
-            .into(),
-        None => {
-            let ctx = sentry::TransactionContext::new(
-                "get_splade_query_embedding",
-                "get_splade_query_embedding",
-            );
-            sentry::start_transaction(ctx).into()
-        }
-    };
-    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
-
-    let server_origin: String = match std::env::var("SPARSE_SERVER_ORIGIN")
-        .ok()
-        .filter(|s| !s.is_empty())
-    {
-        Some(origin) => origin,
-        None => get_env!(
-            "GPU_SERVER_ORIGIN",
-            "GPU_SERVER_ORIGIN should be set if this is called"
-        )
-        .to_string(),
-    };
-
-    let embedding_server_call = format!("{}/sparse_encode", server_origin);
-
-    let resp = ureq::post(&embedding_server_call)
-        .set("Content-Type", "application/json")
-        .set(
-            "Authorization",
-            &format!(
-                "Bearer {}",
-                get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
-            ),
-        )
-        .send_json(CustomSparseEmbedData {
-            input: message.to_string(),
-            encode_type: "query".to_string(),
-        })
-        .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
-        .into_json::<SpladeEmbedding>()
-        .map_err(|_e| {
-            log::error!(
-                "Failed parsing response from custom embedding server {:?}",
-                _e
-            );
-            ServiceError::BadRequest(
-                "Failed parsing response from custom embedding server".to_string(),
-            )
-        })?;
-
-    transaction.finish();
     Ok(resp.embeddings)
 }
 
@@ -260,7 +216,7 @@ pub async fn cross_encoder(
     let request_docs = results
         .clone()
         .into_iter()
-        .map(|x| x.metadata[0].clone().content)
+        .map(|x| x.chunks[0].clone().content)
         .collect::<Vec<String>>();
 
     let resp = ureq::post(&embedding_server_call)

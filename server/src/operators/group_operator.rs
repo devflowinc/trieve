@@ -363,7 +363,7 @@ pub fn create_chunk_bookmark_query(
     Ok(qdrant_point_id)
 }
 pub struct GroupsBookmarkQueryResult {
-    pub metadata: Vec<ChunkMetadataWithFileData>,
+    pub chunks: Vec<ChunkMetadataWithFileData>,
     pub group: ChunkGroup,
     pub total_pages: i64,
 }
@@ -465,7 +465,7 @@ pub fn get_bookmarks_for_group_query(
     };
 
     Ok(GroupsBookmarkQueryResult {
-        metadata: chunk_metadata_with_file_id,
+        chunks: chunk_metadata_with_file_id,
         group: chunk_group,
         total_pages,
     })

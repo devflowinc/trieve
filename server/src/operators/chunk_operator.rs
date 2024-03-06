@@ -14,14 +14,7 @@ use actix_web::web;
 use diesel::{Connection, JoinOnDsl, NullableExpressionMethods, SelectableHelper};
 use itertools::Itertools;
 use qdrant_client::qdrant::{PointId, PointVectors};
-use serde::{Deserialize, Serialize};
 use simsearch::SimSearch;
-
-#[derive(Serialize, Deserialize)]
-pub struct ScoredchunkDTO {
-    pub metadata: ChunkMetadata,
-    pub score: f32,
-}
 
 pub fn get_metadata_from_point_ids(
     point_ids: Vec<uuid::Uuid>,
@@ -53,7 +46,7 @@ pub fn get_metadata_from_point_ids(
 }
 
 pub struct ChunkMetadataWithQdrantId {
-    pub metadata: ChunkMetadataWithFileData,
+    pub chunk: ChunkMetadataWithFileData,
     pub qdrant_id: uuid::Uuid,
 }
 
@@ -216,7 +209,7 @@ pub fn get_metadata_and_collided_chunks_from_point_ids_query(
         .iter()
         .zip(collided_qdrant_ids.iter())
         .map(|(chunk, qdrant_id)| ChunkMetadataWithQdrantId {
-            metadata: chunk.clone(),
+            chunk: chunk.clone(),
             qdrant_id: *qdrant_id,
         })
         .collect::<Vec<ChunkMetadataWithQdrantId>>();
@@ -662,6 +655,7 @@ pub async fn delete_chunk_metadata_query(
 
                 let new_embedding_vector = create_embedding(
                     collision_content.as_str(),
+                    "doc",
                     ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
                 )
                 .await

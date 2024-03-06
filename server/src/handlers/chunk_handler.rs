@@ -66,7 +66,7 @@ pub struct CreateChunkData {
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct ReturnQueuedChunk {
-    pub chunk_metadata: ChunkMetadata,
+    pub chunk: ChunkMetadata,
     pub pos_in_queue: i32,
 }
 
@@ -205,7 +205,7 @@ pub async fn create_chunk(
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     Ok(HttpResponse::Ok().json(ReturnQueuedChunk {
-        chunk_metadata: chunk_metadata.clone(),
+        chunk: chunk_metadata.clone(),
         pos_in_queue,
     }))
 }
@@ -421,6 +421,7 @@ pub async fn update_chunk(
 
     let embedding_vector = create_embedding(
         &new_content,
+        "doc",
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration),
     )
     .await?;
@@ -559,6 +560,7 @@ pub async fn update_chunk_by_tracking_id(
 
     let embedding_vector = create_embedding(
         &new_content,
+        "doc",
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration),
     )
     .await?;
@@ -654,7 +656,7 @@ pub struct SearchChunkData {
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct ScoreChunkDTO {
-    pub metadata: Vec<ChunkMetadataWithFileData>,
+    pub chunks: Vec<ChunkMetadataWithFileData>,
     pub score: f64,
 }
 
