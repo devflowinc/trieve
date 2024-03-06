@@ -79,7 +79,7 @@ pub fn assemble_qdrant_filter(
                     if let MatchCondition::Integer(_) = r#match.first().unwrap() {
                         filter.should.push(Condition::matches(
                             should_filter.field.as_str(),
-                            r#match.iter().map(|x| x.to_f64()).collect_vec(),
+                            r#match.iter().map(|x| x.to_i64()).collect_vec(),
                         ));
                     }
                 }
@@ -116,7 +116,7 @@ pub fn assemble_qdrant_filter(
                     if let MatchCondition::Integer(_) = r#match.first().unwrap() {
                         filter.must.push(Condition::matches(
                             must_filter.field.as_str(),
-                            r#match.iter().map(|x| x.to_f64()).collect_vec(),
+                            r#match.iter().map(|x| x.to_i64()).collect_vec(),
                         ));
                     }
                 }
@@ -151,7 +151,7 @@ pub fn assemble_qdrant_filter(
                     if let MatchCondition::Integer(_) = r#match.first().unwrap() {
                         filter.must_not.push(Condition::matches(
                             must_not_filter.field.as_str(),
-                            r#match.iter().map(|x| x.to_f64()).collect_vec(),
+                            r#match.iter().map(|x| x.to_i64()).collect_vec(),
                         ));
                     }
                 }

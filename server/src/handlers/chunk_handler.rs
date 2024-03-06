@@ -661,7 +661,7 @@ impl MatchCondition {
         }
     }
 
-    pub fn to_f64(&self) -> i64 {
+    pub fn to_i64(&self) -> i64 {
         match self {
             MatchCondition::Text(text) => text.parse().unwrap(),
             MatchCondition::Integer(int) => *int,
