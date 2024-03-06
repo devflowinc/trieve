@@ -649,7 +649,7 @@ pub struct Range {
 #[serde(untagged)]
 pub enum MatchCondition {
     Text(String),
-    Integer(f64),
+    Integer(i64),
 }
 
 impl MatchCondition {
@@ -661,7 +661,7 @@ impl MatchCondition {
         }
     }
 
-    pub fn to_f64(&self) -> f64 {
+    pub fn to_f64(&self) -> i64 {
         match self {
             MatchCondition::Text(text) => text.parse().unwrap(),
             MatchCondition::Integer(int) => *int,
