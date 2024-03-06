@@ -699,7 +699,7 @@ pub struct SearchChunkData {
     pub page: Option<u64>,
     /// Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
     pub page_size: Option<u64>,
-    /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
+    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
     /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
     pub date_bias: Option<bool>,

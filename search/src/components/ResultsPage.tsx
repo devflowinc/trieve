@@ -14,6 +14,8 @@ import {
   type ScoreChunkDTO,
   ChunkBookmarksDTO,
   GroupScoreChunkDTO,
+  ChunkFilter,
+  MatchCondition,
 } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { PaginationController } from "./Atoms/PaginationController";
@@ -116,21 +118,50 @@ const ResultsPage = (props: ResultsPageProps) => {
     const dataset = $dataset();
     if (!dataset) return;
 
+    let filters: ChunkFilter = {
+      must: []
+    };
+
+    if (props.filters.tagSet.length > 0) {
+      filters.must = filters.must || [];
+      filters.must.push({
+        "field": "tags",
+        "match": props.filters.tagSet
+      })
+    }
+    if (props.filters.link.length > 0) {
+      filters.must = filters.must || [];
+      filters.must.push({
+        "field": "link",
+        "match": props.filters.link
+      })
+    }
+    if (props.filters.start || props.filters.end) {
+      filters.must = filters.must || [];
+      filters.must.push({
+        "field": "timestamp",
+        "range": {
+          "gte": Date.parse(props.filters.start ? props.filters.start + " 00:00:00" : "null"),
+          "lte": Date.parse(props.filters.end ? props.filters.end + " 00:00:00" : "null")
+        }
+      })
+    }
+    if (props.filters.metadataFilters) {
+      filters.must = filters.must || [];
+      for (const [key, value] of Object.entries(props.filters.metadataFilters)) {
+        filters.must.push({
+          "field": "metadata." + key,
+          "match": value as MatchCondition[]
+        })
+      }
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const requestBody: any = {
       query: props.query,
-      tag_set: props.filters.tagSet,
       page: props.page,
-      link: props.filters.link,
-      time_range:
-        props.filters.start || props.filters.end
-          ? [
-              props.filters.start ? props.filters.start + " 00:00:00" : "null",
-              props.filters.end ? props.filters.end + " 00:00:00" : "null",
-            ]
-          : null,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      filters: props.filters.metadataFilters,
+      filters: filters,
       search_type: props.searchType,
     };
 

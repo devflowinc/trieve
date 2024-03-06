@@ -602,3 +602,47 @@ export interface BookmarkData {
   group: ChunkGroupDTO;
   total_pages: number;
 }
+
+export interface Range {
+  // gte is the lower bound of the range. This is inclusive.
+  gte?: number;
+  // lte is the upper bound of the range. This is inclusive.
+  lte?: number;
+  // gt is the lower bound of the range. This is exclusive.
+  gt?: number;
+  // lt is the upper bound of the range. This is exclusive.
+  lt?: number;
+}
+
+// MatchCondition is represented as a union type in TypeScript to handle both cases.
+export type MatchCondition = string | number;
+
+export interface FieldCondition {
+  /**
+   * Field is the name of the field to filter on. The field value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`.
+   */
+  field: string;
+  /**
+   * Match is the value to match on the field. The match value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata.
+   */
+  match?: MatchCondition[];
+  /**
+   * Range is a JSON object which can be used to filter chunks by a range of values. This only works for numerical fields. You can specify this if you want values in a certain range.
+   */
+  range?: Range;
+}
+
+export interface ChunkFilter {
+  /**
+   * Only one of these field conditions has to match for the chunk to be included in the result set.
+   */
+  should?: FieldCondition[];
+  /**
+   * All of these field conditions have to match for the chunk to be included in the result set.
+   */
+  must?: FieldCondition[];
+  /**
+   * None of these field conditions can match for the chunk to be included in the result set.
+   */
+  must_not?: FieldCondition[];
+}
