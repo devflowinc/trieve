@@ -935,7 +935,7 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct GroupScoreChunkDTO {
     pub group_id: uuid::Uuid,
-    pub chunks: Vec<ScoreChunkDTO>,
+    pub metadata: Vec<ScoreChunkDTO>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -1026,7 +1026,7 @@ pub async fn retrieve_chunks_for_groups(
 
             GroupScoreChunkDTO {
                 group_id: group.group_id,
-                chunks: score_chunk,
+                metadata: score_chunk,
             }
         })
         .collect_vec();
@@ -1767,7 +1767,7 @@ async fn cross_encoder_for_groups(
 ) -> Result<Vec<GroupScoreChunkDTO>, actix_web::Error> {
     let score_chunks = groups_chunks
         .iter()
-        .flat_map(|group| group.chunks.clone().into_iter().collect_vec())
+        .flat_map(|group| group.metadata.clone().into_iter().collect_vec())
         .collect_vec();
     let cross_encoder_results = cross_encoder(query, page_size, score_chunks).await?;
     let mut group_results = cross_encoder_results
@@ -1777,7 +1777,7 @@ async fn cross_encoder_for_groups(
                 .iter()
                 .find(|group| {
                     group
-                        .chunks
+                        .metadata
                         .iter()
                         .any(|chunk| chunk.metadata[0].id == score_chunk.metadata[0].id)
                 })
