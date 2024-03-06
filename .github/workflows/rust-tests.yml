@@ -11,7 +11,7 @@ on:
     - '.github/workflows/**'
 jobs:
   clippy_check:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-8vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v1
       - run: rustup component add clippy
