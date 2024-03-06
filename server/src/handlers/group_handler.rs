@@ -637,7 +637,7 @@ pub async fn get_chunks_in_group(
     };
 
     Ok(HttpResponse::Ok().json(BookmarkData {
-        chunks: bookmarks.metadata,
+        chunks: bookmarks.chunks,
         group: bookmarks.group,
         total_pages: bookmarks.total_pages,
     }))
@@ -695,7 +695,7 @@ pub async fn get_chunks_in_group_by_tracking_id(
     };
 
     Ok(HttpResponse::Ok().json(BookmarkData {
-        chunks: bookmarks.metadata,
+        chunks: bookmarks.chunks,
         group: bookmarks.group,
         total_pages: bookmarks.total_pages,
     }))

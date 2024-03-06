@@ -1,4 +1,4 @@
-use super::{model_operator::get_splade_doc_embedding, search_operator::SearchResult};
+use super::{model_operator::get_splade_embedding, search_operator::SearchResult};
 use crate::{
     data::models::{ChunkMetadata, ServerDatasetConfiguration},
     errors::{DefaultError, ServiceError},
@@ -9,11 +9,12 @@ use qdrant_client::{
     client::{QdrantClient, QdrantClientConfig},
     qdrant::{
         group_id::Kind, payload_index_params::IndexParams, point_id::PointIdOptions,
-        with_payload_selector::SelectorOptions, Condition, CreateCollection, Distance, FieldType,
-        Filter, HnswConfigDiff, PayloadIndexParams, PointId, PointStruct, RecommendPoints,
-        SearchPointGroups, SearchPoints, SparseIndexConfig, SparseVectorConfig, SparseVectorParams,
-        TextIndexParams, TokenizerType, Value, Vector, VectorParams, VectorParamsMap,
-        VectorsConfig, WithPayloadSelector,
+        quantization_config::Quantization, with_payload_selector::SelectorOptions,
+        BinaryQuantization, Condition, CreateCollection, Distance, FieldType, Filter,
+        HnswConfigDiff, PayloadIndexParams, PointId, PointStruct, QuantizationConfig,
+        RecommendPoints, SearchPointGroups, SearchPoints, SparseIndexConfig, SparseVectorConfig,
+        SparseVectorParams, TextIndexParams, TokenizerType, Value, Vector, VectorParams,
+        VectorParamsMap, VectorsConfig, WithPayloadSelector,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -107,8 +108,14 @@ pub async fn create_new_qdrant_collection_query() -> Result<(), ServiceError> {
                                     size: 1024,
                                     distance: Distance::Cosine.into(),
                                     hnsw_config: None,
-                                    quantization_config: None,
-                                    on_disk: None,
+                                    quantization_config: Some(QuantizationConfig {
+                                        quantization: Some(Quantization::Binary(
+                                            BinaryQuantization {
+                                                always_ram: Some(true),
+                                            },
+                                        )),
+                                    }),
+                                    on_disk: Some(true),
                                 },
                             ),
                             (
@@ -260,7 +267,7 @@ pub async fn create_new_qdrant_point_query(
         HashMap::from([(vector_name.to_string(), Vector::from(embedding_vector))]);
 
     if config.FULLTEXT_ENABLED {
-        let splade_vector = get_splade_doc_embedding(&chunk_content).await?;
+        let splade_vector = get_splade_embedding(&chunk_content, "doc").await?;
         vector_payload.insert("sparse_vectors".to_string(), Vector::from(splade_vector));
     }
 
@@ -340,7 +347,7 @@ pub async fn update_qdrant_point_query(
             HashMap::from([(vector_name.to_string(), Vector::from(updated_vector))]);
         if config.FULLTEXT_ENABLED {
             let chunk_content = metadata.unwrap().content;
-            let splade_vector = get_splade_doc_embedding(&chunk_content).await?;
+            let splade_vector = get_splade_embedding(&chunk_content, "doc").await?;
             vector_payload.insert("sparse_vectors".to_string(), Vector::from(splade_vector));
         }
 

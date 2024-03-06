@@ -345,7 +345,7 @@ pub async fn create_chunks_with_handler(
                     .map_err(|_err| DefaultError {
                         message: "Error creating chunk metadata's for file",
                     })?;
-                    chunk_ids.push(chunk_metadata.chunk_metadata.id);
+                    chunk_ids.push(chunk_metadata.chunk.id);
                 }
             }
             Err(error) => {

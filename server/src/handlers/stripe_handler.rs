@@ -17,7 +17,6 @@ use crate::{
 use actix_web::{web, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
 use stripe::{EventObject, EventType, Webhook};
-use utoipa::ToSchema;
 
 use super::auth_handler::OwnerOnly;
 

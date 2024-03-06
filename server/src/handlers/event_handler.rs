@@ -6,7 +6,6 @@ use crate::{
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
 /// get_events
 ///

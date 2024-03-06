@@ -242,7 +242,6 @@ pub struct ApiDoc;
 
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
-
     dotenvy::dotenv().ok();
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));

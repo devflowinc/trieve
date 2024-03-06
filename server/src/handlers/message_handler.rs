@@ -693,7 +693,8 @@ pub async fn stream_response(
         ChatMessageContent::Text(query) => query.clone(),
         _ => "".to_string(),
     };
-    let embedding_vector = create_embedding(query.as_str(), dataset_config.clone()).await?;
+    let embedding_vector =
+        create_embedding(query.as_str(), "query", dataset_config.clone()).await?;
 
     let n_retrievals_to_include = dataset_config.N_RETRIEVALS_TO_INCLUDE;
 
