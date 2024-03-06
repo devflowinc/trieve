@@ -8,7 +8,7 @@ use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
 use crate::operators::group_operator::{
-    get_group_by_id_query, get_groups_from_tracking_ids_query, get_point_ids_from_group_ids,
+    get_group_by_id_query, get_groups_from_tracking_ids_query, get_point_ids_from_unified_group_ids,
 };
 use crate::operators::model_operator::create_embedding;
 use crate::operators::parse_operator::convert_html_to_text;
@@ -1184,7 +1184,7 @@ pub async fn get_recommended_chunks(
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
     let positive_qdrant_ids = if positive_chunk_ids.is_some() {
-        get_point_ids_from_chunk_ids(
+        get_point_ids_from_unified_chunk_ids(
             positive_chunk_ids
                 .clone()
                 .unwrap()
@@ -1198,7 +1198,7 @@ pub async fn get_recommended_chunks(
             ServiceError::BadRequest(format!("Could not get positive qdrant_point_ids: {}", err))
         })?
     } else if positive_chunk_ids.is_none() && positive_tracking_ids.is_some() {
-        get_point_ids_from_chunk_ids(
+        get_point_ids_from_unified_chunk_ids(
             positive_tracking_ids
                 .clone()
                 .unwrap()
@@ -1222,7 +1222,7 @@ pub async fn get_recommended_chunks(
     };
 
     let negative_qdrant_ids = if negative_chunk_ids.is_some() {
-        get_point_ids_from_chunk_ids(
+        get_point_ids_from_unified_chunk_ids(
             negative_chunk_ids
                 .clone()
                 .unwrap()
@@ -1236,7 +1236,7 @@ pub async fn get_recommended_chunks(
             ServiceError::BadRequest(format!("Could not get negative qdrant_point_ids: {}", err))
         })?
     } else if negative_chunk_ids.is_none() && negative_tracking_ids.is_some() {
-        get_point_ids_from_chunk_ids(
+        get_point_ids_from_unified_chunk_ids(
             negative_tracking_ids
                 .clone()
                 .unwrap()
@@ -1281,6 +1281,7 @@ pub async fn get_recommended_chunks(
     Ok(HttpResponse::Ok().json(recommended_chunk_metadatas))
 }
 
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct ReccomendGroupChunksRequest {
     /// The  ids of the groups to be used as positive examples for the recommendation. The groups in this array will be used to find similar groups.
     pub positive_group_ids: Option<Vec<uuid::Uuid>>,
@@ -1292,7 +1293,7 @@ pub struct ReccomendGroupChunksRequest {
     pub negative_group_tracking_ids: Option<Vec<String>>,
     /// The number of groups to return. This is the number of groups which will be returned in the response. The default is 10.
     pub limit: Option<u64>,
-    /// The number of groups to return. This is the number of groups in each group which will be returned in the response. The default is 10.
+    /// The number of chunks to fetch for each group. This is the number of chunks which will be returned in the response for each group. The default is 10.
     pub group_size: Option<u32>,
 }
 
@@ -1330,7 +1331,7 @@ pub async fn get_recommended_groups(
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
     let positive_qdrant_ids = if positive_group_ids.is_some() {
-        get_point_ids_from_group_ids(
+        get_point_ids_from_unified_group_ids(
             positive_group_ids
                 .clone()
                 .unwrap()
@@ -1344,7 +1345,7 @@ pub async fn get_recommended_groups(
             ServiceError::BadRequest(format!("Could not get positive qdrant_point_ids: {}", err))
         })?
     } else if positive_group_ids.is_none() && positive_tracking_ids.is_some() {
-        get_point_ids_from_group_ids(
+        get_point_ids_from_unified_group_ids(
             positive_tracking_ids
                 .clone()
                 .unwrap()
@@ -1368,7 +1369,7 @@ pub async fn get_recommended_groups(
     };
 
     let negative_qdrant_ids = if negative_group_ids.is_some() {
-        get_point_ids_from_group_ids(
+        get_point_ids_from_unified_group_ids(
             negative_group_ids
                 .clone()
                 .unwrap()
@@ -1382,7 +1383,7 @@ pub async fn get_recommended_groups(
             ServiceError::BadRequest(format!("Could not get negative qdrant_point_ids: {}", err))
         })?
     } else if negative_group_ids.is_none() && negative_tracking_ids.is_some() {
-        get_point_ids_from_group_ids(
+        get_point_ids_from_unified_group_ids(
             negative_tracking_ids
                 .clone()
                 .unwrap()

@@ -611,7 +611,7 @@ pub fn create_group_from_file_query(
     Ok(())
 }
 
-pub async fn get_point_ids_from_group_ids(
+pub async fn get_point_ids_from_unified_group_ids(
     group_ids: Vec<UnifiedId>,
     pool: web::Data<Pool>,
 ) -> Result<Vec<uuid::Uuid>, DefaultError> {
@@ -641,7 +641,7 @@ pub async fn get_point_ids_from_group_ids(
                 message: "Failed to load metadata",
             })?
             .into_iter()
-            .filter_map(|x| x)
+            .flatten()
             .collect(),
         UnifiedId::TrackingId(_) => chunk_group_columns::chunk_group
             .inner_join(chunk_group_bookmarks_columns::chunk_group_bookmarks)
@@ -662,7 +662,7 @@ pub async fn get_point_ids_from_group_ids(
                 message: "Failed to load metadata",
             })?
             .into_iter()
-            .filter_map(|x| x)
+            .flatten()
             .collect(),
     };
 
