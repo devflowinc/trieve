@@ -1,27 +1,49 @@
 name: rust test suite
 
 on: 
-  push:
-    paths:
-    - 'server/**'
-    - '.github/workflows/**'
   pull_request:
     paths:
     - 'server/**'
     - '.github/workflows/**'
+
 jobs:
   clippy_check:
     runs-on: blacksmith-8vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v1
+      - name: Caching Rust Dep
+        uses: useblacksmith/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: rustup component add clippy
       - uses: clechasseur/rs-clippy-check@v3
         with:
           args: --features runtime-env --manifest-path server/Cargo.toml
+      - uses: useblacksmith/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.labels }}-rust-${{ matrix.rust }}-
   redoc:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-8vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v2
+      - name: Caching Rust Dep
+        uses: useblacksmith/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Installing Vaccum
         run: npm install -g @quobix/vacuum
       - name: Generating OpenAPI spec

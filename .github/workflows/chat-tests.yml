@@ -1,10 +1,6 @@
 name: chat test suite
 
 on: 
-  push:
-    paths:
-    - 'chat/**'
-    - '.github/workflows/**'
   pull_request:
     paths:
     - 'chat/**'
