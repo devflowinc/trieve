@@ -66,7 +66,7 @@ pub struct CreateChunkData {
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct ReturnQueuedChunk {
-    pub chunk: ChunkMetadata,
+    pub chunk_metadata: ChunkMetadata,
     pub pos_in_queue: i32,
 }
 
@@ -205,7 +205,7 @@ pub async fn create_chunk(
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     Ok(HttpResponse::Ok().json(ReturnQueuedChunk {
-        chunk: chunk_metadata.clone(),
+        chunk_metadata: chunk_metadata.clone(),
         pos_in_queue,
     }))
 }
@@ -656,7 +656,7 @@ pub struct SearchChunkData {
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct ScoreChunkDTO {
-    pub chunks: Vec<ChunkMetadataWithFileData>,
+    pub metadata: Vec<ChunkMetadataWithFileData>,
     pub score: f64,
 }
 

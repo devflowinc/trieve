@@ -216,7 +216,7 @@ pub async fn cross_encoder(
     let request_docs = results
         .clone()
         .into_iter()
-        .map(|x| x.chunks[0].clone().content)
+        .map(|x| x.metadata[0].clone().content)
         .collect::<Vec<String>>();
 
     let resp = ureq::post(&embedding_server_call)
