@@ -165,6 +165,7 @@ pub struct ReRankResponse {
 pub struct CrossEncoderData {
     pub query: String,
     pub texts: Vec<String>,
+    pub truncate: bool,
 }
 
 pub async fn cross_encoder(
@@ -225,6 +226,7 @@ pub async fn cross_encoder(
         .send_json(CrossEncoderData {
             query,
             texts: request_docs,
+            truncate: true,
         })
         .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
         .into_json::<Vec<ScorePair>>()
