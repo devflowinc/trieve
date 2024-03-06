@@ -1,4 +1,5 @@
 use diesel::r2d2::ConnectionManager;
+use tracing_subscriber::{prelude::*, Layer, EnvFilter};
 use diesel::PgConnection;
 use redis::AsyncCommands;
 use trieve_server::data::models::{self, ChunkGroupBookmark, Event, ServerDatasetConfiguration};
@@ -21,7 +22,44 @@ static THREAD_NUM: i32 = 4;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+
+    let sentry_url = std::env::var("SENTRY_URL");
+    let _guard = if let Ok(sentry_url) = sentry_url {
+        log::info!("Sentry monitoring enabled");
+
+        let guard = sentry::init((
+            sentry_url,
+            sentry::ClientOptions {
+                release: sentry::release_name!(),
+                traces_sample_rate: 1.0,
+                ..Default::default()
+            },
+        ));
+
+        tracing_subscriber::Registry::default()
+            .with(sentry::integrations::tracing::layer())
+            .with(
+                tracing_subscriber::fmt::layer().with_filter(
+                    EnvFilter::from_default_env()
+                        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
+                ),
+            )
+            .init();
+
+        Some(guard)
+    } else {
+        tracing_subscriber::Registry::default()
+            .with(
+                tracing_subscriber::fmt::layer().with_filter(
+                    EnvFilter::from_default_env()
+                        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
+                ),
+            )
+            .init();
+
+        None
+    };
+
 
     let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
     let redis_client = redis::Client::open(redis_url).unwrap();
@@ -51,6 +89,7 @@ async fn main() -> std::io::Result<()> {
     Ok(())
 }
 
+#[tracing::instrument(skip(web_pool, redis_connection))]
 async fn ingestion_service(
     mut redis_connection: redis::aio::MultiplexedConnection,
     web_pool: actix_web::web::Data<models::Pool>,
@@ -116,6 +155,7 @@ async fn ingestion_service(
     }
 }
 
+#[tracing::instrument(skip(web_pool))]
 async fn upload_chunk(
     mut payload: IngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
