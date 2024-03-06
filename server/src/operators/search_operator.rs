@@ -79,7 +79,7 @@ pub fn assemble_qdrant_filter(
                     if let MatchCondition::Integer(_) = r#match.first().unwrap() {
                         filter.should.push(Condition::matches(
                             should_filter.field.as_str(),
-                            r#match.iter().map(|x| x.to_string()).collect_vec(),
+                            r#match.iter().map(|x| x.to_f64()).collect_vec(),
                         ));
                     }
                 }
@@ -116,7 +116,7 @@ pub fn assemble_qdrant_filter(
                     if let MatchCondition::Integer(_) = r#match.first().unwrap() {
                         filter.must.push(Condition::matches(
                             must_filter.field.as_str(),
-                            r#match.iter().map(|x| x.to_string()).collect_vec(),
+                            r#match.iter().map(|x| x.to_f64()).collect_vec(),
                         ));
                     }
                 }
@@ -136,11 +136,10 @@ pub fn assemble_qdrant_filter(
         if let Some(must_not_filters) = filters.must_not {
             for must_not_filter in must_not_filters {
                 if let Some(r#match) = must_not_filter.r#match {
-                    if r#match.first().is_none() {
-                        return Err(DefaultError {
-                            message: "Must pass a match value for should filter",
-                        });
-                    }
+                    filter.must_not.push(Condition::matches(
+                        must_not_filter.field.as_str(),
+                        r#match.iter().map(|x| x.to_string()).collect_vec(),
+                    ));
 
                     if let MatchCondition::Text(_) = r#match.first().unwrap() {
                         filter.must_not.push(Condition::matches(
@@ -152,7 +151,7 @@ pub fn assemble_qdrant_filter(
                     if let MatchCondition::Integer(_) = r#match.first().unwrap() {
                         filter.must_not.push(Condition::matches(
                             must_not_filter.field.as_str(),
-                            r#match.iter().map(|x| x.to_string()).collect_vec(),
+                            r#match.iter().map(|x| x.to_f64()).collect_vec(),
                         ));
                     }
                 }
