@@ -46,7 +46,7 @@ pub fn get_metadata_from_point_ids(
 }
 
 pub struct ChunkMetadataWithQdrantId {
-    pub chunk: ChunkMetadataWithFileData,
+    pub metadata: ChunkMetadataWithFileData,
     pub qdrant_id: uuid::Uuid,
 }
 
@@ -209,7 +209,7 @@ pub fn get_metadata_and_collided_chunks_from_point_ids_query(
         .iter()
         .zip(collided_qdrant_ids.iter())
         .map(|(chunk, qdrant_id)| ChunkMetadataWithQdrantId {
-            chunk: chunk.clone(),
+            metadata: chunk.clone(),
             qdrant_id: *qdrant_id,
         })
         .collect::<Vec<ChunkMetadataWithQdrantId>>();

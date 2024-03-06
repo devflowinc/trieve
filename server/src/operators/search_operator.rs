@@ -920,7 +920,7 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
             }
 
             ScoreChunkDTO {
-                chunks: vec![chunk],
+                metadata: vec![chunk],
                 score: search_result.score.into(),
             }
         })
@@ -1012,13 +1012,13 @@ pub async fn retrieve_chunks_for_groups(
                     let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
                         .iter()
                         .filter(|chunk| chunk.qdrant_id == search_result.point_id)
-                        .map(|chunk| chunk.chunk.clone())
+                        .map(|chunk| chunk.metadata.clone())
                         .collect();
 
                     collided_chunks.insert(0, chunk);
 
                     ScoreChunkDTO {
-                        chunks: collided_chunks,
+                        metadata: collided_chunks,
                         score: search_result.score.into(),
                     }
                 })
@@ -1120,13 +1120,13 @@ pub async fn retrieve_chunks_from_point_ids(
             let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
                 .iter()
                 .filter(|chunk| chunk.qdrant_id == search_result.point_id)
-                .map(|chunk| chunk.chunk.clone())
+                .map(|chunk| chunk.metadata.clone())
                 .collect();
 
             collided_chunks.insert(0, chunk);
 
             ScoreChunkDTO {
-                chunks: collided_chunks,
+                metadata: collided_chunks,
                 score: search_result.score.into(),
             }
         })
@@ -1143,17 +1143,17 @@ pub async fn retrieve_chunks_from_point_ids(
 pub fn rerank_chunks(chunks: Vec<ScoreChunkDTO>, date_bias: Option<bool>) -> Vec<ScoreChunkDTO> {
     let mut reranked_chunks = Vec::new();
     chunks.into_iter().for_each(|mut chunk| {
-        if chunk.chunks[0].weight == 0.0 {
-            chunk.chunks[0].weight = 1.0;
+        if chunk.metadata[0].weight == 0.0 {
+            chunk.metadata[0].weight = 1.0;
         }
-        chunk.score *= chunk.chunks[0].weight;
+        chunk.score *= chunk.metadata[0].weight;
         reranked_chunks.push(chunk);
     });
 
     if date_bias.is_some() && date_bias.unwrap() {
         reranked_chunks.sort_by(|a, b| {
             if let (Some(time_stamp_a), Some(time_stamp_b)) =
-                (a.chunks[0].time_stamp, b.chunks[0].time_stamp)
+                (a.metadata[0].time_stamp, b.metadata[0].time_stamp)
             {
                 return time_stamp_a.timestamp().cmp(&time_stamp_b.timestamp());
             }
@@ -1404,13 +1404,13 @@ pub async fn search_hybrid_chunks(
             let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
                 .iter()
                 .filter(|chunk| chunk.qdrant_id == search_result.point_id)
-                .map(|chunk| chunk.chunk.clone())
+                .map(|chunk| chunk.metadata.clone())
                 .collect();
 
             collided_chunks.insert(0, chunk);
 
             ScoreChunkDTO {
-                chunks: collided_chunks,
+                metadata: collided_chunks,
                 score: search_result.score as f64 * 0.5,
             }
         })
@@ -1421,7 +1421,7 @@ pub async fn search_hybrid_chunks(
             .iter()
             .zip(full_text_handler_results.score_chunks.iter())
             .flat_map(|(x, y)| vec![x.clone(), y.clone()])
-            .unique_by(|score_chunk| score_chunk.chunks[0].id)
+            .unique_by(|score_chunk| score_chunk.metadata[0].id)
             .collect::<Vec<ScoreChunkDTO>>();
 
         let reranked_chunks = if combined_results.len() > 20 {
@@ -1779,7 +1779,7 @@ async fn cross_encoder_for_groups(
                     group
                         .chunks
                         .iter()
-                        .any(|chunk| chunk.chunks[0].id == score_chunk.chunks[0].id)
+                        .any(|chunk| chunk.metadata[0].id == score_chunk.metadata[0].id)
                 })
                 .expect("Group not found");
             group.clone()
