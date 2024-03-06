@@ -871,6 +871,7 @@ pub struct ServerDatasetConfiguration {
     pub EMBEDDING_SIZE: usize,
     pub LLM_DEFAULT_MODEL: String,
     pub FULLTEXT_ENABLED: bool,
+    pub EMBEDDING_QUERY_PREFIX: String,
 }
 
 impl ServerDatasetConfiguration {
@@ -1001,6 +1002,12 @@ impl ServerDatasetConfiguration {
                     }
                 })
                 .unwrap_or(get_env!("QDRANT_COLLECTION", "Must provide QDRANT_COLLECTION").to_string()),
+            EMBEDDING_QUERY_PREFIX: configuration
+                .get("EMBEDDING_QUERY_PREFIX")
+                .unwrap_or(&json!(""))
+                .as_str()
+                .map(|s| s.to_string())
+                .unwrap_or("".to_string()),
             
         }
     }

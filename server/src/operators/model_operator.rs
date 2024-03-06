@@ -60,9 +60,7 @@ pub async fn create_embedding(
 
     let input = match embed_type {
         "doc" => EmbeddingInput::String(message.to_string()),
-        "query" => EmbeddingInput::String(
-            get_env!("QUERY_PREFIX", "Must have QUERY_PREFIX set").to_owned() + message,
-        ),
+        "query" => EmbeddingInput::String(dataset_config.EMBEDDING_QUERY_PREFIX + message),
         _ => EmbeddingInput::String(message.to_string()),
     };
 
