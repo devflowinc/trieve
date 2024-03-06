@@ -176,6 +176,7 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::ChunkFilter,
             handlers::chunk_handler::FieldCondition,
             handlers::chunk_handler::Range,
+            handlers::chunk_handler::MatchCondition,
             handlers::user_handler::UpdateUserData,
             handlers::user_handler::SetUserApiKeyRequest,
             handlers::user_handler::SetUserApiKeyResponse,
