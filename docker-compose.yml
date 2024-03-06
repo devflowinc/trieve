@@ -41,7 +41,7 @@ services:
     profiles: [dev]
 
   qdrant-database:
-    image: qdrant/qdrant:v1.7.0
+    image: qdrant/qdrant:v1.8.0
     container_name: qdrant-database
     environment:
       - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}

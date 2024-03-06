@@ -634,6 +634,62 @@ pub async fn update_chunk_by_tracking_id(
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct Range {
+    // gte is the lower bound of the range. This is inclusive.
+    pub gte: Option<f64>,
+    // lte is the upper bound of the range. This is inclusive.
+    pub lte: Option<f64>,
+    // gt is the lower bound of the range. This is exclusive.
+    pub gt: Option<f64>,
+    // lt is the upper bound of the range. This is exclusive.
+    pub lt: Option<f64>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(untagged)]
+pub enum MatchCondition {
+    Text(String),
+    Integer(f64),
+}
+
+impl MatchCondition {
+    #[allow(clippy::inherent_to_string)]
+    pub fn to_string(&self) -> String {
+        match self {
+            MatchCondition::Text(text) => text.clone(),
+            MatchCondition::Integer(int) => int.to_string(),
+        }
+    }
+
+    pub fn to_f64(&self) -> f64 {
+        match self {
+            MatchCondition::Text(text) => text.parse().unwrap(),
+            MatchCondition::Integer(int) => *int,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct FieldCondition {
+    /// Field is the name of the field to filter on. The field value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`.
+    pub field: String,
+    /// Match is the value to match on the field. The match value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata.
+    pub r#match: Option<Vec<MatchCondition>>,
+    /// Range is a JSON object which can be used to filter chunks by a range of values. This only works for numerical fields. You can specify this if you want values in a certain range.
+    pub range: Option<Range>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct ChunkFilter {
+    /// Only one of these field conditions has to match for the chunk to be included in the result set.
+    pub should: Option<Vec<FieldCondition>>,
+    /// All of these field conditions have to match for the chunk to be included in the result set.
+    pub must: Option<Vec<FieldCondition>>,
+    /// None of these field conditions can match for the chunk to be included in the result set.
+    pub must_not: Option<Vec<FieldCondition>>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct SearchChunkData {
     /// Can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: String,
@@ -643,14 +699,8 @@ pub struct SearchChunkData {
     pub page: Option<u64>,
     /// Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
     pub page_size: Option<u64>,
-    /// Link set is a list of links. This can be used to filter chunks by link. HNSW indices do not exist for links, so there is a performance hit for filtering on them.
-    pub link: Option<Vec<String>>,
-    /// Tag_set is a list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
-    pub tag_set: Option<Vec<String>>,
-    /// Time_range is a tuple of two ISO 8601 combined date and time without timezone. The first value is the start of the time range and the second value is the end of the time range. This can be used to filter chunks by time range. HNSW indices do not exist for time range, so there is a performance hit for filtering on them.
-    pub time_range: Option<(String, String)>,
     /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
-    pub filters: Option<serde_json::Value>,
+    pub filters: Option<ChunkFilter>,
     /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
     pub date_bias: Option<bool>,
     /// Set get_collisions to true to get the collisions for each chunk. This will only apply if environment variable COLLISIONS_ENABLED is set to true.
@@ -814,12 +864,8 @@ pub struct SearchGroupsData {
     pub page: Option<u64>,
     /// The page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
     pub page_size: Option<u64>,
-    /// The link set is a list of links. This can be used to filter chunks by link. HNSW indices do not exist for links, so there is a performance hit for filtering on them.
-    pub link: Option<Vec<String>>,
-    /// The tag set is a list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
-    pub tag_set: Option<Vec<String>>,
     /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
-    pub filters: Option<serde_json::Value>,
+    pub filters: Option<ChunkFilter>,
     /// Group specifies the group to search within. Results will only consist of chunks which are bookmarks within the specified group.
     pub group_id: uuid::Uuid,
     #[param(inline)]
@@ -841,9 +887,6 @@ impl From<SearchGroupsData> for SearchChunkData {
             query: data.query,
             page: data.page,
             page_size: data.page_size,
-            link: data.link,
-            tag_set: data.tag_set,
-            time_range: None,
             filters: data.filters,
             search_type: data.search_type,
             date_bias: data.date_bias,
@@ -969,14 +1012,8 @@ pub struct SearchOverGroupsData {
     pub page: Option<u64>,
     /// Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
     pub page_size: Option<u32>,
-    /// Link set is a list of links. This can be used to filter chunks by link. HNSW indices do not exist for links, so there is a performance hit for filtering on them.
-    pub link: Option<Vec<String>>,
-    /// Tag_set is a list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
-    pub tag_set: Option<Vec<String>>,
-    /// Time_range is a tuple of two ISO 8601 combined date and time without timezone. The first value is the start of the time range and the second value is the end of the time range. This can be used to filter chunks by time range. HNSW indices do not exist for time range, so there is a performance hit for filtering on them.
-    pub time_range: Option<(String, String)>,
     /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
-    pub filters: Option<serde_json::Value>,
+    pub filters: Option<ChunkFilter>,
     /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
     pub date_bias: Option<bool>,
     /// Set get_collisions to true to get the collisions for each chunk. This will only apply if environment variable COLLISIONS_ENABLED is set to true.

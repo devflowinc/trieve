@@ -707,9 +707,6 @@ pub async fn stream_response(
     let search_chunk_query_results = retrieve_qdrant_points_query(
         VectorType::Dense(embedding_vector),
         1,
-        None,
-        None,
-        None,
         n_retrievals_to_include.try_into().unwrap(),
         None,
         None,
