@@ -1467,7 +1467,38 @@ impl From<UserApiKey> for ApiKeyDTO {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub enum UnifiedId {
     TrackingId(String),
     TrieveUuid(uuid::Uuid),
 }
+
+impl UnifiedId {
+    pub fn as_uuid(&self) -> Option<uuid::Uuid> {
+        match self {
+            UnifiedId::TrackingId(_) => None,
+            UnifiedId::TrieveUuid(uuid) => Some(*uuid),
+        }
+    }
+
+    pub fn as_tracking_id(&self) -> Option<String> {
+        match self {
+            UnifiedId::TrackingId(tracking_id) => Some(tracking_id.clone()),
+            UnifiedId::TrieveUuid(_) => None,
+        }
+    }
+}
+
+impl From<uuid::Uuid> for UnifiedId {
+    fn from(uuid: uuid::Uuid) -> Self {
+        UnifiedId::TrieveUuid(uuid)
+    }
+}
+
+impl From<String> for UnifiedId {
+    fn from(tracking_id: String) -> Self {
+        UnifiedId::TrackingId(tracking_id)
+    }
+}
+
+

@@ -610,3 +610,61 @@ pub fn create_group_from_file_query(
 
     Ok(())
 }
+
+pub async fn get_point_ids_from_group_ids(
+    group_ids: Vec<UnifiedId>,
+    pool: web::Data<Pool>,
+) -> Result<Vec<uuid::Uuid>, DefaultError> {
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
+    use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    let qdrant_point_ids: Vec<uuid::Uuid> = match group_ids[0] {
+        UnifiedId::TrieveUuid(_) => chunk_group_columns::chunk_group
+            .inner_join(chunk_group_bookmarks_columns::chunk_group_bookmarks)
+            .inner_join(chunk_metadata_columns::chunk_metadata.on(
+                chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_metadata_columns::id),
+            ))
+            .filter(
+                chunk_group_columns::id.eq_any(
+                    &group_ids
+                        .iter()
+                        .map(|x| x.as_uuid().expect("Failed to convert to Uuid"))
+                        .collect::<Vec<uuid::Uuid>>(),
+                ),
+            )
+            .select(chunk_metadata_columns::qdrant_point_id)
+            .load::<Option<uuid::Uuid>>(&mut conn)
+            .map_err(|_| DefaultError {
+                message: "Failed to load metadata",
+            })?
+            .into_iter()
+            .filter_map(|x| x)
+            .collect(),
+        UnifiedId::TrackingId(_) => chunk_group_columns::chunk_group
+            .inner_join(chunk_group_bookmarks_columns::chunk_group_bookmarks)
+            .inner_join(chunk_metadata_columns::chunk_metadata.on(
+                chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_metadata_columns::id),
+            ))
+            .filter(
+                chunk_group_columns::tracking_id.eq_any(
+                    &group_ids
+                        .iter()
+                        .map(|x| x.as_tracking_id().expect("Failed to convert to String"))
+                        .collect::<Vec<String>>(),
+                ),
+            )
+            .select(chunk_metadata_columns::qdrant_point_id)
+            .load::<Option<uuid::Uuid>>(&mut conn)
+            .map_err(|_| DefaultError {
+                message: "Failed to load metadata",
+            })?
+            .into_iter()
+            .filter_map(|x| x)
+            .collect(),
+    };
+
+    Ok(qdrant_point_ids)
+}

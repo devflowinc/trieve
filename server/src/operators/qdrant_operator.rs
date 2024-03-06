@@ -751,7 +751,7 @@ pub async fn search_qdrant_query(
 
 pub async fn recommend_qdrant_query(
     positive_ids: Vec<uuid::Uuid>,
-    negative_ids: Option<Vec<uuid::Uuid>>,
+    negative_ids: Vec<uuid::Uuid>,
     limit: u64,
     dataset_id: uuid::Uuid,
     config: ServerDatasetConfiguration,
@@ -765,8 +765,10 @@ pub async fn recommend_qdrant_query(
         .iter()
         .map(|id| id.to_string().into())
         .collect();
-    let negative_point_ids: Option<Vec<PointId>> =
-        negative_ids.map(|ids| ids.iter().map(|id| id.to_string().into()).collect());
+    let negative_point_ids: Vec<PointId> = negative_ids
+        .iter()
+        .map(|id| id.to_string().into())
+        .collect();
     let dataset_filter = Some(Filter::must([Condition::matches(
         "dataset_id",
         dataset_id.to_string(),
@@ -787,7 +789,7 @@ pub async fn recommend_qdrant_query(
     let recommend_points = RecommendPoints {
         collection_name: qdrant_collection,
         positive: positive_point_ids,
-        negative: negative_point_ids.unwrap_or_default(),
+        negative: negative_point_ids,
         filter: dataset_filter,
         limit,
         with_payload: Some(WithPayloadSelector {
@@ -829,7 +831,7 @@ pub async fn recommend_qdrant_query(
 
 pub async fn recommend_qdrant_groups_query(
     positive_ids: Vec<uuid::Uuid>,
-    negative_ids: Option<Vec<uuid::Uuid>>,
+    negative_ids: Vec<uuid::Uuid>,
     limit: u64,
     group_size: u32,
     dataset_id: uuid::Uuid,
@@ -844,8 +846,10 @@ pub async fn recommend_qdrant_groups_query(
         .iter()
         .map(|id| id.to_string().into())
         .collect();
-    let negative_point_ids: Option<Vec<PointId>> =
-        negative_ids.map(|ids| ids.iter().map(|id| id.to_string().into()).collect());
+    let negative_point_ids: Vec<PointId> = negative_ids
+        .iter()
+        .map(|id| id.to_string().into())
+        .collect();
     let dataset_filter = Some(Filter::must([Condition::matches(
         "dataset_id",
         dataset_id.to_string(),
@@ -854,7 +858,7 @@ pub async fn recommend_qdrant_groups_query(
     let recommend_points = RecommendPointGroups {
         collection_name: qdrant_collection,
         positive: positive_point_ids,
-        negative: negative_point_ids.unwrap_or_default(),
+        negative: negative_point_ids,
         filter: dataset_filter,
         limit: limit.try_into().unwrap(),
         with_payload: None,

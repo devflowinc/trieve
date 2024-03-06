@@ -521,8 +521,13 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(web::post().to(handlers::chunk_handler::search_groups)),
                             )
                             .service(
-                                web::resource("/search_over_groups").route(
+                                web::resource("/group_oriented_search").route(
                                     web::post().to(handlers::chunk_handler::search_over_groups),
+                                ),
+                            )
+                            .service(
+                                web::resource("/group_oriented_recommend").route(
+                                    web::post().to(handlers::chunk_handler::get_recommended_groups),
                                 ),
                             )
                             .service(
