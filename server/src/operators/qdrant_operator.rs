@@ -10,10 +10,10 @@ use qdrant_client::{
     qdrant::{
         group_id::Kind, payload_index_params::IndexParams, point_id::PointIdOptions,
         with_payload_selector::SelectorOptions, Condition, CreateCollection, Distance, FieldType,
-        Filter, HnswConfigDiff, PayloadIndexParams, PointId, PointStruct, RecommendPoints,
-        SearchPointGroups, SearchPoints, SparseIndexConfig, SparseVectorConfig, SparseVectorParams,
-        TextIndexParams, TokenizerType, Value, Vector, VectorParams, VectorParamsMap,
-        VectorsConfig, WithPayloadSelector,
+        Filter, HnswConfigDiff, PayloadIndexParams, PointId, PointStruct, RecommendPointGroups,
+        RecommendPoints, SearchPointGroups, SearchPoints, SparseIndexConfig, SparseVectorConfig,
+        SparseVectorParams, TextIndexParams, TokenizerType, Value, Vector, VectorParams,
+        VectorParamsMap, VectorsConfig, WithPayloadSelector,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -751,6 +751,7 @@ pub async fn search_qdrant_query(
 
 pub async fn recommend_qdrant_query(
     positive_ids: Vec<uuid::Uuid>,
+    negative_ids: Option<Vec<uuid::Uuid>>,
     limit: u64,
     dataset_id: uuid::Uuid,
     config: ServerDatasetConfiguration,
@@ -760,10 +761,12 @@ pub async fn recommend_qdrant_query(
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
 
-    let point_ids: Vec<PointId> = positive_ids
+    let positive_point_ids: Vec<PointId> = positive_ids
         .iter()
         .map(|id| id.to_string().into())
         .collect();
+    let negative_point_ids: Option<Vec<PointId>> =
+        negative_ids.map(|ids| ids.iter().map(|id| id.to_string().into()).collect());
     let dataset_filter = Some(Filter::must([Condition::matches(
         "dataset_id",
         dataset_id.to_string(),
@@ -783,8 +786,8 @@ pub async fn recommend_qdrant_query(
 
     let recommend_points = RecommendPoints {
         collection_name: qdrant_collection,
-        positive: point_ids,
-        negative: vec![],
+        positive: positive_point_ids,
+        negative: negative_point_ids.unwrap_or_default(),
         filter: dataset_filter,
         limit,
         with_payload: Some(WithPayloadSelector {
@@ -821,5 +824,92 @@ pub async fn recommend_qdrant_query(
         })
         .collect::<Vec<uuid::Uuid>>();
 
+    Ok(recommended_point_ids)
+}
+
+pub async fn recommend_qdrant_groups_query(
+    positive_ids: Vec<uuid::Uuid>,
+    negative_ids: Option<Vec<uuid::Uuid>>,
+    limit: u64,
+    group_size: u32,
+    dataset_id: uuid::Uuid,
+    config: ServerDatasetConfiguration,
+) -> Result<Vec<GroupSearchResults>, DefaultError> {
+    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+
+    let qdrant =
+        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+
+    let positive_point_ids: Vec<PointId> = positive_ids
+        .iter()
+        .map(|id| id.to_string().into())
+        .collect();
+    let negative_point_ids: Option<Vec<PointId>> =
+        negative_ids.map(|ids| ids.iter().map(|id| id.to_string().into()).collect());
+    let dataset_filter = Some(Filter::must([Condition::matches(
+        "dataset_id",
+        dataset_id.to_string(),
+    )]));
+
+    let recommend_points = RecommendPointGroups {
+        collection_name: qdrant_collection,
+        positive: positive_point_ids,
+        negative: negative_point_ids.unwrap_or_default(),
+        filter: dataset_filter,
+        limit: limit.try_into().unwrap(),
+        with_payload: None,
+        params: None,
+        score_threshold: None,
+        using: None,
+        with_vectors: None,
+        lookup_from: None,
+        read_consistency: None,
+        positive_vectors: vec![],
+        negative_vectors: vec![],
+        strategy: None,
+        timeout: None,
+        shard_key_selector: None,
+        group_by: "group_ids".to_string(),
+        group_size,
+        with_lookup: None,
+    };
+
+    let data = qdrant
+        .recommend_groups(&recommend_points)
+        .await
+        .map_err(|err| {
+            log::info!("Failed to recommend points from qdrant: {:?}", err);
+            DefaultError {
+                message: "Failed to recommend points from qdrant. Your are likely providing an invalid point id.",
+            }
+        })?;
+    let recommended_point_ids = data
+        .result
+        .unwrap()
+        .groups
+        .iter()
+        .filter_map(|point| {
+            let group_id = match &point.id.clone()?.kind? {
+                Kind::StringValue(id) => uuid::Uuid::from_str(id).unwrap_or_default(),
+                _ => {
+                    return None;
+                }
+            };
+
+            let hits: Vec<SearchResult> = point
+                .hits
+                .iter()
+                .filter_map(|hit| match hit.id.clone()?.point_id_options? {
+                    PointIdOptions::Uuid(id) => Some(SearchResult {
+                        score: hit.score,
+                        point_id: uuid::Uuid::parse_str(&id).ok()?,
+                    }),
+                    PointIdOptions::Num(_) => None,
+                })
+                .collect();
+
+            Some(GroupSearchResults { group_id, hits })
+        })
+        .collect();
     Ok(recommended_point_ids)
 }
