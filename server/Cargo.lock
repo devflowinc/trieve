@@ -2550,7 +2550,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 [[package]]
 name = "openai_dive"
 version = "0.4.5"
-source = "git+https://github.com/devflowinc/openai-client?rev=ed64680b#ed64680b26dcd81de79f0a40d7d7ab2544c8affb"
+source = "git+https://github.com/devflowinc/openai-client?rev=57fa1d2#57fa1d2d7c1144db3dbfede71937788950cbcb2f"
 dependencies = [
  "bytes",
  "futures",
