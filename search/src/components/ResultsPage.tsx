@@ -118,41 +118,47 @@ const ResultsPage = (props: ResultsPageProps) => {
     const dataset = $dataset();
     if (!dataset) return;
 
-    let filters: ChunkFilter = {
-      must: []
+    const filters: ChunkFilter = {
+      must: [],
     };
 
     if (props.filters.tagSet.length > 0) {
       filters.must = filters.must || [];
       filters.must.push({
-        "field": "tags",
-        "match": props.filters.tagSet
-      })
+        field: "tags",
+        match: props.filters.tagSet,
+      });
     }
     if (props.filters.link.length > 0) {
       filters.must = filters.must || [];
       filters.must.push({
-        "field": "link",
-        "match": props.filters.link
-      })
+        field: "link",
+        match: props.filters.link,
+      });
     }
     if (props.filters.start || props.filters.end) {
       filters.must = filters.must || [];
       filters.must.push({
-        "field": "timestamp",
-        "range": {
-          "gte": Date.parse(props.filters.start ? props.filters.start + " 00:00:00" : "null"),
-          "lte": Date.parse(props.filters.end ? props.filters.end + " 00:00:00" : "null")
-        }
-      })
+        field: "timestamp",
+        range: {
+          gte: Date.parse(
+            props.filters.start ? props.filters.start + " 00:00:00" : "null",
+          ),
+          lte: Date.parse(
+            props.filters.end ? props.filters.end + " 00:00:00" : "null",
+          ),
+        },
+      });
     }
     if (props.filters.metadataFilters) {
       filters.must = filters.must || [];
-      for (const [key, value] of Object.entries(props.filters.metadataFilters)) {
+      for (const [key, value] of Object.entries(
+        props.filters.metadataFilters as Record<string, unknown>,
+      )) {
         filters.must.push({
-          "field": "metadata." + key,
-          "match": value as MatchCondition[]
-        })
+          field: "metadata." + key,
+          match: value as MatchCondition[],
+        });
       }
     }
 
