@@ -16,6 +16,11 @@ path = "src/bin/ingestion-microservice.rs"
 name = "redoc_ci"
 path = "src/bin/redoc_ci.rs"
 
+[[bin]]
+name = "create-new-qdrant"
+path = "src/bin/create-new-qdrant.rs"
+
+
 [dependencies]
 actix-identity = { version = "0.6.0" }
 actix-session = { version = "0.8.0", features = [
@@ -51,7 +56,7 @@ time = { version = "0.3" }
 uuid = { version = "1", features = ["v4", "serde"] }
 diesel_migrations = { version = "2.0" }
 regex = "1.7.3"
-openai_dive = { git = "https://github.com/devflowinc/openai-client#ed64680b", features = [
+openai_dive = { git = "https://github.com/devflowinc/openai-client", rev = "ed64680b", features = [
     "stream",
 ] }
 tokio = "1.27.0"
