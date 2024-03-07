@@ -1048,7 +1048,7 @@ pub struct SearchGroupsResult {
     pub total_pages: i64,
 }
 
-/// group_search
+/// search_within_group
 ///
 /// This route allows you to search only within a group. This is useful for when you only want search results to contain chunks which are members of a specific group. If choosing hybrid search, the results will be re-ranked using BAAI/bge-reranker-large.
 #[utoipa::path(
@@ -1056,7 +1056,7 @@ pub struct SearchGroupsResult {
     path = "/chunk_group/search",
     context_path = "/api",
     tag = "chunk_group",
-    request_body(content = SearchGroupsData, description = "JSON request payload to semantically search a group", content_type = "application/json"),
+    request_body(content = SearchWithinGroupData, description = "JSON request payload to semantically search a group", content_type = "application/json"),
     responses(
         (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchGroupsResult),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
