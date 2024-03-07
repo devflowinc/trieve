@@ -247,7 +247,7 @@ pub async fn create_new_qdrant_point_query(
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let chunk_content = chunk_metadata.content.clone();
-    let payload = json!({"tag_set": chunk_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": chunk_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "chunk_html": chunk_metadata.chunk_html.unwrap_or("".to_string()), "metadata": chunk_metadata.metadata.unwrap_or_default(), "time_stamp": chunk_metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string(), "group_ids": vec![] as Vec<String>})
+    let payload = json!({"tag_set": chunk_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": chunk_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "chunk_html": chunk_metadata.chunk_html.unwrap_or("".to_string()).split_whitespace().take(500).collect::<Vec<_>>().join(" "), "metadata": chunk_metadata.metadata.unwrap_or_default(), "time_stamp": chunk_metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string(), "group_ids": vec![] as Vec<String>})
                 .try_into()
                 .expect("A json! Value must always be a valid Payload");
 
