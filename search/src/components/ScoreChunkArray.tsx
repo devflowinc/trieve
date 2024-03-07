@@ -1,8 +1,9 @@
 import type { Setter } from "solid-js";
 import { Show, createSignal, onMount } from "solid-js";
-import type {
-  ChunkGroupDTO,
-  ChunkMetadataWithFileData,
+import {
+  indirectHasOwnProperty,
+  type ChunkGroupDTO,
+  type ChunkMetadataWithFileData,
 } from "../../utils/apiTypes";
 import type { ScoreChunkProps } from "./ScoreChunk";
 import { FiChevronLeft, FiChevronRight } from "solid-icons/fi";
@@ -31,7 +32,8 @@ export const ScoreChunkArray = (props: ScoreChunkAraryProps) => {
       if (
         chunk.metadata &&
         dateValue != undefined &&
-        dateValue in chunk.metadata
+        dateValue != "" &&
+        indirectHasOwnProperty(chunk.metadata, dateValue)
       ) {
         // regex to select only valid dates
         // (\d{1,4}([.\-/])\d{1,2}([.\-/])\d{1,4})
