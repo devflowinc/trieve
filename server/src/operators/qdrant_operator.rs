@@ -236,8 +236,6 @@ pub async fn create_new_qdrant_point_query(
                 .try_into()
                 .expect("A json! Value must always be a valid Payload");
 
-    log::info!("Creating point with payload: {:?}", payload);
-
     let vector_name = match embedding_vector.len() {
         384 => "384_vectors",
         768 => "768_vectors",

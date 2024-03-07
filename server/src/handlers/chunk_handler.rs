@@ -1,7 +1,7 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan, Pool,
-    ServerDatasetConfiguration,
+    ServerDatasetConfiguration, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -986,7 +986,7 @@ pub async fn get_recommended_chunks(
                 .clone()
                 .unwrap()
                 .into_iter()
-                .map(|chunk_ids| chunk_ids.into())
+                .map(UnifiedId::TrieveUuid)
                 .collect(),
             pool.clone(),
         )
@@ -1000,7 +1000,7 @@ pub async fn get_recommended_chunks(
                 .clone()
                 .unwrap()
                 .into_iter()
-                .map(|chunk_ids| chunk_ids.into())
+                .map(UnifiedId::TrackingId)
                 .collect(),
             pool.clone(),
         )
@@ -1024,7 +1024,7 @@ pub async fn get_recommended_chunks(
                 .clone()
                 .unwrap()
                 .into_iter()
-                .map(|chunk_ids| chunk_ids.into())
+                .map(UnifiedId::TrieveUuid)
                 .collect(),
             pool.clone(),
         )
@@ -1038,7 +1038,7 @@ pub async fn get_recommended_chunks(
                 .clone()
                 .unwrap()
                 .into_iter()
-                .map(|chunk_ids| chunk_ids.into())
+                .map(UnifiedId::TrackingId)
                 .collect(),
             pool.clone(),
         )
@@ -1052,6 +1052,12 @@ pub async fn get_recommended_chunks(
     } else {
         vec![]
     };
+
+    log::info!(
+        "positive_qdrant_ids: {:?}, negative_qdrant_ids: {:?}",
+        positive_qdrant_ids,
+        negative_qdrant_ids
+    );
 
     let recommended_qdrant_point_ids = recommend_qdrant_query(
         positive_qdrant_ids,

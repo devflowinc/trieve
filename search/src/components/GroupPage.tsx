@@ -624,7 +624,7 @@ export const GroupPage = (props: GroupPageProps) => {
                 }}
                 onClick={() =>
                   fetchRecommendations(
-                    chunkMetadatas().map((m) => m.qdrant_point_id),
+                    chunkMetadatas().map((m) => m.id),
                     recommendedChunks(),
                   )
                 }
