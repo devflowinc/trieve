@@ -1,6 +1,6 @@
 #[macro_use]
 extern crate diesel;
-use tracing_subscriber::{prelude::*, Layer, EnvFilter};
+use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 
 use crate::{
     errors::ServiceError,
@@ -108,7 +108,9 @@ impl Modify for SecurityAddon {
         handlers::chunk_handler::get_chunk_by_tracking_id,
         handlers::chunk_handler::delete_chunk_by_tracking_id,
         handlers::chunk_handler::get_chunk_by_id,
-        handlers::chunk_handler::search_over_groups,
+        handlers::group_handler::search_over_groups,
+        handlers::group_handler::get_recommended_groups,
+        handlers::chunk_handler::bulk_create_chunk,
         handlers::user_handler::update_user,
         handlers::user_handler::set_user_api_key,
         handlers::user_handler::delete_user_api_key,
@@ -126,7 +128,6 @@ impl Modify for SecurityAddon {
         handlers::group_handler::update_group_by_tracking_id,
         handlers::group_handler::add_chunk_to_group_by_tracking_id,
         handlers::group_handler::get_chunks_in_group_by_tracking_id,
-        handlers::chunk_handler::search_groups,
         handlers::file_handler::upload_file_handler,
         handlers::file_handler::get_file_handler,
         handlers::file_handler::delete_file_handler,
@@ -164,14 +165,15 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::ReturnQueuedChunk,
             handlers::chunk_handler::UpdateChunkData,
             handlers::chunk_handler::RecommendChunksRequest,
+            handlers::group_handler::ReccomendGroupChunksRequest,
             handlers::chunk_handler::UpdateChunkByTrackingIdData,
             handlers::chunk_handler::SearchChunkQueryResponseBody,
             handlers::chunk_handler::GenerateChunksRequest,
             handlers::chunk_handler::SearchChunkData,
             handlers::chunk_handler::ScoreChunkDTO,
-            handlers::chunk_handler::SearchGroupsData,
-            handlers::chunk_handler::SearchOverGroupsData,
-            handlers::chunk_handler::SearchGroupsResult,
+            handlers::group_handler::SearchGroupsData,
+            handlers::group_handler::SearchOverGroupsData,
+            handlers::group_handler::SearchGroupsResult,
             handlers::chunk_handler::SearchChunkQueryResponseBody,
             handlers::chunk_handler::ChunkFilter,
             handlers::chunk_handler::FieldCondition,
@@ -455,6 +457,12 @@ pub async fn main() -> std::io::Result<()> {
                                 web::resource("")
                                     .route(web::post().to(handlers::chunk_handler::create_chunk)),
                             )
+                            .service(
+                                web::resource("/bulk")
+                                    .route(
+                                        web::post().to(handlers::chunk_handler::bulk_create_chunk),
+                                    ),
+                            )
                             .service(web::resource("/recommend").route(
                                 web::post().to(handlers::chunk_handler::get_recommended_chunks),
                             ))
@@ -542,16 +550,16 @@ pub async fn main() -> std::io::Result<()> {
                             )
                             .service(
                                 web::resource("/search")
-                                    .route(web::post().to(handlers::chunk_handler::search_groups)),
+                                    .route(web::post().to(handlers::group_handler::search_groups)),
                             )
                             .service(
                                 web::resource("/group_oriented_search").route(
-                                    web::post().to(handlers::chunk_handler::search_over_groups),
+                                    web::post().to(handlers::group_handler::search_over_groups),
                                 ),
                             )
                             .service(
-                                web::resource("/group_oriented_recommend").route(
-                                    web::post().to(handlers::chunk_handler::get_recommended_groups),
+                                web::resource("/recommend").route(
+                                    web::post().to(handlers::group_handler::get_recommended_groups),
                                 ),
                             )
                             .service(

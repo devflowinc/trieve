@@ -1,24 +1,19 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    ChatMessageProxy, ChunkGroup, ChunkMetadata, ChunkMetadataWithFileData,
-    DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration,
+    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan, Pool,
+    ServerDatasetConfiguration,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
-use crate::operators::group_operator::{
-    get_group_by_id_query, get_groups_from_tracking_ids_query, get_point_ids_from_unified_group_ids,
-};
+use crate::operators::group_operator::get_groups_from_tracking_ids_query;
 use crate::operators::model_operator::create_embedding;
 use crate::operators::parse_operator::convert_html_to_text;
+use crate::operators::qdrant_operator::recommend_qdrant_query;
 use crate::operators::qdrant_operator::update_qdrant_point_query;
-use crate::operators::qdrant_operator::{recommend_qdrant_groups_query, recommend_qdrant_query};
 use crate::operators::search_operator::{
-    full_text_search_over_groups, get_metadata_from_groups, hybrid_search_over_groups,
-    search_full_text_chunks, search_full_text_groups, search_hybrid_chunks, search_hybrid_groups,
-    search_semantic_chunks, search_semantic_groups, semantic_search_over_groups,
-    SearchOverGroupsQueryResult,
+    search_full_text_chunks, search_hybrid_chunks, search_semantic_chunks,
 };
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
@@ -35,7 +30,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use simple_server_timing_header::Timer;
 use tokio_stream::StreamExt;
-use utoipa::{IntoParams, ToSchema};
+use utoipa::ToSchema;
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct CreateChunkData {
@@ -219,7 +214,7 @@ pub async fn create_chunk(
 /// Create a new chunk from an array of chunks. If the chunk has the same tracking_id as an existing chunk, the request will fail. Once a chunk is created, it can be searched for using the search endpoint.
 #[utoipa::path(
     post,
-    path = "/chunk",
+    path = "/chunk/bulk",
     context_path = "/api",
     tag = "chunk",
     request_body(content = CreateChunkData, description = "JSON request payload to create a new chunk (chunk)", content_type = "application/json"),
@@ -731,7 +726,7 @@ pub struct ParsedQuery {
     pub quote_words: Option<Vec<String>>,
     pub negated_words: Option<Vec<String>>,
 }
-fn parse_query(query: String) -> ParsedQuery {
+pub fn parse_query(query: String) -> ParsedQuery {
     let re = Regex::new(r#""(?:[^"\\]|\\.)*""#).expect("Regex pattern is always valid");
     let quote_words: Vec<String> = re
         .captures_iter(&query)
@@ -853,255 +848,6 @@ pub async fn search_chunk(
     Ok(HttpResponse::Ok()
         .insert_header((Timer::header_key(), timer.header_value()))
         .json(result_chunks))
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, IntoParams)]
-#[into_params(style = Form, parameter_in = Query)]
-pub struct SearchGroupsData {
-    /// The query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
-    pub query: String,
-    /// The page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon.
-    pub page: Option<u64>,
-    /// The page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
-    pub page_size: Option<u64>,
-    /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
-    pub filters: Option<ChunkFilter>,
-    /// Group specifies the group to search within. Results will only consist of chunks which are bookmarks within the specified group.
-    pub group_id: uuid::Uuid,
-    #[param(inline)]
-    /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
-    pub search_type: String,
-    /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
-    pub date_bias: Option<bool>,
-    /// Set highlight_results to true to highlight the results. If not specified, this defaults to true.
-    pub highlight_results: Option<bool>,
-    /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"].
-    pub highlight_delimiters: Option<Vec<String>>,
-    /// Set score_threshold to a float to filter out chunks with a score below the threshold.
-    pub score_threshold: Option<f32>,
-}
-
-impl From<SearchGroupsData> for SearchChunkData {
-    fn from(data: SearchGroupsData) -> Self {
-        Self {
-            query: data.query,
-            page: data.page,
-            page_size: data.page_size,
-            filters: data.filters,
-            search_type: data.search_type,
-            date_bias: data.date_bias,
-            get_collisions: Some(false),
-            highlight_results: data.highlight_results,
-            highlight_delimiters: data.highlight_delimiters,
-            score_threshold: data.score_threshold,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct SearchGroupsResult {
-    pub bookmarks: Vec<ScoreChunkDTO>,
-    pub group: ChunkGroup,
-    pub total_pages: i64,
-}
-
-/// group_search
-///
-/// This route allows you to search only within a group. This is useful for when you only want search results to contain chunks which are members of a specific group. If choosing hybrid search, the results will be re-ranked using BAAI/bge-reranker-large.
-#[utoipa::path(
-    post,
-    path = "/chunk_group/search",
-    context_path = "/api",
-    tag = "chunk_group",
-    request_body(content = SearchGroupsData, description = "JSON request payload to semantically search a group", content_type = "application/json"),
-    responses(
-        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchGroupsResult),
-        (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
-    ),
-    params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-    ),
-    security(
-        ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
-    )
-)]
-#[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(pool))]
-pub async fn search_groups(
-    data: web::Json<SearchGroupsData>,
-    pool: web::Data<Pool>,
-    _required_user: LoggedUser,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-) -> Result<HttpResponse, actix_web::Error> {
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
-
-    //search over the links as well
-    let page = data.page.unwrap_or(1);
-    let group_id = data.group_id;
-    let dataset_id = dataset_org_plan_sub.dataset.id;
-    let search_pool = pool.clone();
-
-    let group = {
-        web::block(move || get_group_by_id_query(group_id, dataset_id, pool))
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.to_string()))?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
-    };
-
-    let parsed_query = parse_query(data.query.clone());
-
-    let result_chunks = match data.search_type.as_str() {
-        "fulltext" => {
-            if !server_dataset_config.FULLTEXT_ENABLED {
-                return Err(ServiceError::BadRequest(
-                    "Fulltext search is not enabled for this dataset".into(),
-                )
-                .into());
-            }
-
-            search_full_text_groups(
-                data,
-                parsed_query,
-                group,
-                page,
-                search_pool,
-                dataset_org_plan_sub.dataset,
-                server_dataset_config,
-            )
-            .await?
-        }
-        "hybrid" => {
-            search_hybrid_groups(
-                data,
-                parsed_query,
-                group,
-                page,
-                search_pool,
-                dataset_org_plan_sub.dataset,
-                server_dataset_config,
-            )
-            .await?
-        }
-        _ => {
-            search_semantic_groups(
-                data,
-                parsed_query,
-                group,
-                page,
-                search_pool,
-                dataset_org_plan_sub.dataset,
-                server_dataset_config,
-            )
-            .await?
-        }
-    };
-
-    Ok(HttpResponse::Ok().json(result_chunks))
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-pub struct SearchOverGroupsData {
-    /// Can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
-    pub search_type: String,
-    /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
-    pub query: String,
-    /// Page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon.
-    pub page: Option<u64>,
-    /// Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
-    pub page_size: Option<u32>,
-    /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
-    pub filters: Option<ChunkFilter>,
-    /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
-    pub date_bias: Option<bool>,
-    /// Set get_collisions to true to get the collisions for each chunk. This will only apply if environment variable COLLISIONS_ENABLED is set to true.
-    pub get_collisions: Option<bool>,
-    /// Set highlight_results to true to highlight the results. If not specified, this defaults to true.
-    pub highlight_results: Option<bool>,
-    /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"].
-    pub highlight_delimiters: Option<Vec<String>>,
-    /// Set score_threshold to a float to filter out chunks with a score below the threshold.
-    pub score_threshold: Option<f32>,
-    // Group_size is the number of chunks to fetch for each group.
-    pub group_size: Option<u32>,
-}
-
-/// group_oriented_search
-///
-/// This route allows you to get groups as results instead of chunks. Each group returned will have the matching chunks sorted by similarity within the group. This is useful for when you want to get groups of chunks which are similar to the search query. If choosing hybrid search, the results will be re-ranked using BAAI/bge-reranker-large. Compatible with semantic, fulltext, or hybrid search modes.
-#[utoipa::path(
-    post,
-    path = "/chunk_group/group_oriented_search",
-    context_path = "/api",
-    tag = "chunk_group",
-    request_body(content = SearchOverGroupsData, description = "JSON request payload to semantically search over groups", content_type = "application/json"),
-    responses(
-        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchOverGroupsResponseBody),
-        (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
-    ),
-)]
-#[tracing::instrument(skip(pool))]
-pub async fn search_over_groups(
-    data: web::Json<SearchOverGroupsData>,
-    pool: web::Data<Pool>,
-    _required_user: LoggedUser,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-) -> Result<HttpResponse, actix_web::Error> {
-    let server_dataset_config = ServerDatasetConfiguration::from_json(
-        dataset_org_plan_sub.dataset.server_configuration.clone(),
-    );
-
-    //search over the links as well
-    let page = data.page.unwrap_or(1);
-
-    let parsed_query = parse_query(data.query.clone());
-
-    let result_chunks = match data.search_type.as_str() {
-        "fulltext" => {
-            if !server_dataset_config.FULLTEXT_ENABLED {
-                return Err(ServiceError::BadRequest(
-                    "Fulltext search is not enabled for this dataset".into(),
-                )
-                .into());
-            }
-
-            full_text_search_over_groups(
-                data,
-                parsed_query,
-                page,
-                pool,
-                dataset_org_plan_sub.dataset,
-                server_dataset_config,
-            )
-            .await?
-        }
-        "hybrid" => {
-            hybrid_search_over_groups(
-                data,
-                parsed_query,
-                page,
-                pool,
-                dataset_org_plan_sub.dataset,
-                server_dataset_config,
-            )
-            .await?
-        }
-        _ => {
-            semantic_search_over_groups(
-                data,
-                parsed_query,
-                page,
-                pool,
-                dataset_org_plan_sub.dataset,
-                server_dataset_config,
-            )
-            .await?
-        }
-    };
-
-    Ok(HttpResponse::Ok().json(result_chunks))
 }
 
 /// get_chunk
@@ -1326,153 +1072,6 @@ pub async fn get_recommended_chunks(
                     err
                 ))
             })?;
-
-    Ok(HttpResponse::Ok().json(recommended_chunk_metadatas))
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct ReccomendGroupChunksRequest {
-    /// The  ids of the groups to be used as positive examples for the recommendation. The groups in this array will be used to find similar groups.
-    pub positive_group_ids: Option<Vec<uuid::Uuid>>,
-    /// The  ids of the groups to be used as negative examples for the recommendation. The groups in this array will be used to filter out similar groups.
-    pub negative_group_ids: Option<Vec<uuid::Uuid>>,
-    /// The  ids of the groups to be used as positive examples for the recommendation. The groups in this array will be used to find similar groups.
-    pub positive_group_tracking_ids: Option<Vec<String>>,
-    /// The  ids of the groups to be used as negative examples for the recommendation. The groups in this array will be used to filter out similar groups.
-    pub negative_group_tracking_ids: Option<Vec<String>>,
-    /// The number of groups to return. This is the number of groups which will be returned in the response. The default is 10.
-    pub limit: Option<u64>,
-    /// The number of chunks to fetch for each group. This is the number of chunks which will be returned in the response for each group. The default is 10.
-    pub group_size: Option<u32>,
-}
-
-#[utoipa::path(
-    post,
-    path = "/chunk/recommend_groups",
-    context_path = "/api",
-    tag = "chunk",
-    request_body(content = ReccomendGroupChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
-    responses(
-        (status = 200, description = "JSON response payload containing chunks with scores which are similar to those in the request body", body = Vec<GroupScoreChunkDTO>),
-        (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
-    ),
-    params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-    ),
-    security(
-        ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
-    )
-)]
-#[tracing::instrument(skip(pool))]
-pub async fn get_recommended_groups(
-    data: web::Json<ReccomendGroupChunksRequest>,
-    pool: web::Data<Pool>,
-    _user: LoggedUser,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-) -> Result<HttpResponse, actix_web::Error> {
-    let positive_group_ids = data.positive_group_ids.clone();
-    let negative_group_ids = data.negative_group_ids.clone();
-    let positive_tracking_ids = data.positive_group_tracking_ids.clone();
-    let negative_tracking_ids = data.negative_group_tracking_ids.clone();
-
-    let limit = data.limit.unwrap_or(10);
-    let server_dataset_config =
-        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
-
-    let positive_qdrant_ids = if positive_group_ids.is_some() {
-        get_point_ids_from_unified_group_ids(
-            positive_group_ids
-                .clone()
-                .unwrap()
-                .into_iter()
-                .map(|group_ids| group_ids.into())
-                .collect(),
-            pool.clone(),
-        )
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!("Could not get positive qdrant_point_ids: {}", err))
-        })?
-    } else if positive_group_ids.is_none() && positive_tracking_ids.is_some() {
-        get_point_ids_from_unified_group_ids(
-            positive_tracking_ids
-                .clone()
-                .unwrap()
-                .into_iter()
-                .map(|group_ids| group_ids.into())
-                .collect(),
-            pool.clone(),
-        )
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!(
-                "Could not get positive qdrant_point_ids from tracking_ids: {}",
-                err
-            ))
-        })?
-    } else {
-        return Err(ServiceError::BadRequest(
-            "You must provide either positive_group_ids or positive_tracking_ids".into(),
-        )
-        .into());
-    };
-
-    let negative_qdrant_ids = if negative_group_ids.is_some() {
-        get_point_ids_from_unified_group_ids(
-            negative_group_ids
-                .clone()
-                .unwrap()
-                .into_iter()
-                .map(|group_ids| group_ids.into())
-                .collect(),
-            pool.clone(),
-        )
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!("Could not get negative qdrant_point_ids: {}", err))
-        })?
-    } else if negative_group_ids.is_none() && negative_tracking_ids.is_some() {
-        get_point_ids_from_unified_group_ids(
-            negative_tracking_ids
-                .clone()
-                .unwrap()
-                .into_iter()
-                .map(|group_ids| group_ids.into())
-                .collect(),
-            pool.clone(),
-        )
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!(
-                "Could not get negative qdrant_point_ids from tracking_ids: {}",
-                err
-            ))
-        })?
-    } else {
-        vec![]
-    };
-
-    let recommended_qdrant_point_ids = recommend_qdrant_groups_query(
-        positive_qdrant_ids,
-        negative_qdrant_ids,
-        limit,
-        data.group_size.unwrap_or(10),
-        dataset_org_plan_sub.dataset.id,
-        server_dataset_config,
-    )
-    .await
-    .map_err(|err| {
-        ServiceError::BadRequest(format!("Could not get recommended groups: {}", err))
-    })?;
-
-    let group_query_result = SearchOverGroupsQueryResult {
-        search_results: recommended_qdrant_point_ids.clone(),
-        total_chunk_pages: (recommended_qdrant_point_ids.len() as f64 / 10.0).ceil() as i64,
-    };
-
-    let recommended_chunk_metadatas =
-        get_metadata_from_groups(group_query_result, Some(false), pool).await?;
 
     Ok(HttpResponse::Ok().json(recommended_chunk_metadatas))
 }
