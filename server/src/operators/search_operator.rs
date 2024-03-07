@@ -53,7 +53,7 @@ pub fn assemble_qdrant_filter(
     quote_words: Option<Vec<String>>,
     negated_words: Option<Vec<String>>,
     dataset_id: uuid::Uuid,
-    pool: web::Data<Pool>,
+    pool: Option<web::Data<Pool>>,
 ) -> Result<Filter, DefaultError> {
     let mut filter = Filter::default();
 
@@ -173,12 +173,12 @@ pub fn assemble_qdrant_filter(
         }
     };
 
-    if quote_words.is_some() || negated_words.is_some() {
+    if (quote_words.is_some() || negated_words.is_some()) && pool.is_some() {
         let available_qdrant_ids = get_qdrant_point_ids_from_pg_for_quote_negated_words(
             quote_words,
             negated_words,
             dataset_id,
-            pool,
+            pool.unwrap(),
         )?;
 
         let available_point_ids = available_qdrant_ids
@@ -234,7 +234,7 @@ pub async fn retrieve_qdrant_points_query(
         parsed_query.quote_words,
         parsed_query.negated_words,
         dataset_id,
-        pool,
+        Some(pool),
     )?;
 
     let point_ids =
@@ -275,7 +275,7 @@ pub async fn retrieve_group_qdrant_points_query(
         parsed_query.quote_words,
         parsed_query.negated_words,
         dataset_id,
-        pool,
+        Some(pool),
     )?;
 
     let point_ids = search_over_groups_query(
@@ -397,7 +397,7 @@ pub async fn search_within_chunk_group_query(
         parsed_query.quote_words,
         parsed_query.negated_words,
         dataset_id,
-        pool,
+        Some(pool),
     )?;
 
     filter

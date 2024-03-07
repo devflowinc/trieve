@@ -856,6 +856,8 @@ pub struct ReccomendGroupChunksRequest {
     pub positive_group_tracking_ids: Option<Vec<String>>,
     /// The  ids of the groups to be used as negative examples for the recommendation. The groups in this array will be used to filter out similar groups.
     pub negative_group_tracking_ids: Option<Vec<String>>,
+    /// Filters to apply to the chunks to be recommended. This is a JSON object which contains the filters to apply to the chunks to be recommended. The default is None.
+    pub filters: Option<ChunkFilter>,
     /// The number of groups to return. This is the number of groups which will be returned in the response. The default is 10.
     pub limit: Option<u64>,
     /// The number of chunks to fetch for each group. This is the number of chunks which will be returned in the response for each group. The default is 10.
@@ -976,6 +978,7 @@ pub async fn get_recommended_groups(
     let recommended_qdrant_point_ids = recommend_qdrant_groups_query(
         positive_qdrant_ids,
         negative_qdrant_ids,
+        data.filters.clone(),
         limit,
         data.group_size.unwrap_or(10),
         dataset_org_plan_sub.dataset.id,
@@ -1090,11 +1093,13 @@ pub async fn search_within_group(
     let group = {
         if let Some(group_id) = group_id {
             web::block(move || get_group_by_id_query(group_id, dataset_id, pool))
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.to_string()))?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?
+                .map_err(|err| ServiceError::BadRequest(err.message.into()))?
         } else if let Some(group_tracking_id) = data.group_tracking_id.clone() {
-            web::block(move || get_group_from_tracking_id_query(group_tracking_id, dataset_id, pool))
+            web::block(move || {
+                get_group_from_tracking_id_query(group_tracking_id, dataset_id, pool)
+            })
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?
