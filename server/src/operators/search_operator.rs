@@ -14,7 +14,9 @@ use crate::handlers::chunk_handler::{
     ChunkFilter, MatchCondition, ParsedQuery, ScoreChunkDTO, SearchChunkData,
     SearchChunkQueryResponseBody,
 };
-use crate::handlers::group_handler::{SearchGroupsData, SearchGroupsResult, SearchOverGroupsData};
+use crate::handlers::group_handler::{
+    SearchGroupsResult, SearchOverGroupsData, SearchWithinGroupData,
+};
 use crate::operators::model_operator::get_splade_embedding;
 use crate::operators::qdrant_operator::{get_qdrant_connection, search_qdrant_query};
 use crate::{data::models::Pool, errors::DefaultError};
@@ -377,7 +379,7 @@ pub async fn global_unfiltered_top_match_query(
 
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
-pub async fn search_chunk_groups_query(
+pub async fn search_within_chunk_group_query(
     embedding_vector: VectorType,
     page: u64,
     pool: web::Data<Pool>,
@@ -400,7 +402,7 @@ pub async fn search_chunk_groups_query(
 
     filter
         .must
-        .push(Condition::matches("group_id", group_id.to_string()));
+        .push(Condition::matches("group_ids", group_id.to_string()));
 
     let point_ids: Vec<SearchResult> = search_qdrant_query(
         page,
@@ -1200,7 +1202,7 @@ pub async fn search_hybrid_chunks(
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
 pub async fn search_semantic_groups(
-    data: web::Json<SearchGroupsData>,
+    data: web::Json<SearchWithinGroupData>,
     parsed_query: ParsedQuery,
     group: ChunkGroup,
     page: u64,
@@ -1213,14 +1215,14 @@ pub async fn search_semantic_groups(
     let embedding_vector: Vec<f32> =
         create_embedding(&data.query, "query", dataset_config.clone()).await?;
 
-    let search_semantic_chunk_query_results = search_chunk_groups_query(
+    let search_semantic_chunk_query_results = search_within_chunk_group_query(
         VectorType::Dense(embedding_vector),
         page,
         pool.clone(),
         data.filters.clone(),
         data.page_size.unwrap_or(10),
         data.score_threshold,
-        data.group_id,
+        group.id,
         dataset.id,
         parsed_query,
         config,
@@ -1247,7 +1249,7 @@ pub async fn search_semantic_groups(
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
 pub async fn search_full_text_groups(
-    data: web::Json<SearchGroupsData>,
+    data: web::Json<SearchWithinGroupData>,
     parsed_query: ParsedQuery,
     group: ChunkGroup,
     page: u64,
@@ -1258,14 +1260,14 @@ pub async fn search_full_text_groups(
     let data_inner = data.clone();
     let embedding_vector = get_splade_embedding(&data.query, "query").await?;
 
-    let search_chunk_query_results = search_chunk_groups_query(
+    let search_chunk_query_results = search_within_chunk_group_query(
         VectorType::Sparse(embedding_vector),
         page,
         pool.clone(),
         data_inner.filters.clone(),
         data.page_size.unwrap_or(10),
         data.score_threshold,
-        data_inner.group_id,
+        group.id,
         dataset.id,
         parsed_query,
         config,
@@ -1292,7 +1294,7 @@ pub async fn search_full_text_groups(
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
 pub async fn search_hybrid_groups(
-    data: web::Json<SearchGroupsData>,
+    data: web::Json<SearchWithinGroupData>,
     parsed_query: ParsedQuery,
     group: ChunkGroup,
     page: u64,
@@ -1308,27 +1310,27 @@ pub async fn search_hybrid_groups(
         create_embedding(&data.query, "query", dataset_config.clone()).await?;
     let sparse_embedding_vector = get_splade_embedding(&data.query, "query").await?;
 
-    let semantic_future = search_chunk_groups_query(
+    let semantic_future = search_within_chunk_group_query(
         VectorType::Dense(dense_embedding_vector),
         page,
         pool.clone(),
         data.filters.clone(),
         data.page_size.unwrap_or(10),
         data.score_threshold,
-        data.group_id,
+        group.id,
         dataset.id,
         parsed_query.clone(),
         config.clone(),
     );
 
-    let full_text_future = search_chunk_groups_query(
+    let full_text_future = search_within_chunk_group_query(
         VectorType::Sparse(sparse_embedding_vector),
         page,
         pool.clone(),
         data_inner.filters.clone(),
         data.page_size.unwrap_or(10),
         data.score_threshold,
-        data_inner.group_id,
+        group.id,
         dataset.id,
         parsed_query.clone(),
         config,
