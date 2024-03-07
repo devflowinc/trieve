@@ -13,10 +13,10 @@ use qdrant_client::{
     client::{QdrantClient, QdrantClientConfig},
     qdrant::{
         group_id::Kind, point_id::PointIdOptions, with_payload_selector::SelectorOptions,
-        CreateCollection, Distance, FieldType, Filter, HnswConfigDiff, PointId, PointStruct,
-        RecommendPointGroups, RecommendPoints, SearchPointGroups, SearchPoints, SparseIndexConfig,
-        SparseVectorConfig, SparseVectorParams, Value, Vector, VectorParams, VectorParamsMap,
-        VectorsConfig, WithPayloadSelector,
+        CountPoints, CreateCollection, Distance, FieldType, Filter, HnswConfigDiff, PointId,
+        PointStruct, RecommendPointGroups, RecommendPoints, SearchPointGroups, SearchPoints,
+        SparseIndexConfig, SparseVectorConfig, SparseVectorParams, Value, Vector, VectorParams,
+        VectorParamsMap, VectorsConfig, WithPayloadSelector,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -928,4 +928,32 @@ pub async fn recommend_qdrant_groups_query(
         })
         .collect();
     Ok(recommended_point_ids)
+}
+
+pub async fn get_point_count_qdrant_query(
+    filters: Filter,
+    config: ServerDatasetConfiguration,
+) -> Result<u64, DefaultError> {
+    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+
+    let qdrant =
+        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+
+    let data = qdrant
+        .count(&CountPoints {
+            collection_name: qdrant_collection,
+            filter: Some(filters),
+            exact: Some(false),
+            read_consistency: None,
+            shard_key_selector: None,
+        })
+        .await
+        .map_err(|err| {
+            log::info!("Failed to count points from qdrant: {:?}", err);
+            DefaultError {
+                message: "Failed to count points from qdrant",
+            }
+        })?;
+
+    Ok(data.result.expect("Failed to get result from qdrant").count)
 }
