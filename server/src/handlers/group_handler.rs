@@ -999,7 +999,7 @@ pub async fn get_recommended_groups(
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema, IntoParams)]
 #[into_params(style = Form, parameter_in = Query)]
-pub struct SearchGroupsData {
+pub struct SearchWithinGroupData {
     /// The query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
     pub query: String,
     /// The page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon.
@@ -1009,8 +1009,9 @@ pub struct SearchGroupsData {
     /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
     /// Group specifies the group to search within. Results will only consist of chunks which are bookmarks within the specified group.
-    pub group_id: uuid::Uuid,
-    #[param(inline)]
+    pub group_id: Option<uuid::Uuid>,
+    /// Group_tracking_id specifies the group to search within by tracking id. Results will only consist of chunks which are bookmarks within the specified group. If both group_id and group_tracking_id are provided, group_id will be used.
+    pub group_tracking_id: Option<String>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: String,
     /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
@@ -1023,8 +1024,8 @@ pub struct SearchGroupsData {
     pub score_threshold: Option<f32>,
 }
 
-impl From<SearchGroupsData> for SearchChunkData {
-    fn from(data: SearchGroupsData) -> Self {
+impl From<SearchWithinGroupData> for SearchChunkData {
+    fn from(data: SearchWithinGroupData) -> Self {
         Self {
             query: data.query,
             page: data.page,
@@ -1070,8 +1071,8 @@ pub struct SearchGroupsResult {
 )]
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
-pub async fn search_groups(
-    data: web::Json<SearchGroupsData>,
+pub async fn search_within_group(
+    data: web::Json<SearchWithinGroupData>,
     pool: web::Data<Pool>,
     _required_user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -1087,10 +1088,22 @@ pub async fn search_groups(
     let search_pool = pool.clone();
 
     let group = {
-        web::block(move || get_group_by_id_query(group_id, dataset_id, pool))
+        if let Some(group_id) = group_id {
+            web::block(move || get_group_by_id_query(group_id, dataset_id, pool))
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+        } else if let Some(group_tracking_id) = data.group_tracking_id.clone() {
+            web::block(move || get_group_from_tracking_id_query(group_tracking_id, dataset_id, pool))
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+        } else {
+            return Err(ServiceError::BadRequest(
+                "You must provide either group_id or group_tracking_id".into(),
+            )
+            .into());
+        }
     };
 
     let parsed_query = parse_query(data.query.clone());

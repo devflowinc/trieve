@@ -128,6 +128,7 @@ impl Modify for SecurityAddon {
         handlers::group_handler::update_group_by_tracking_id,
         handlers::group_handler::add_chunk_to_group_by_tracking_id,
         handlers::group_handler::get_chunks_in_group_by_tracking_id,
+        handlers::group_handler::search_within_group,
         handlers::file_handler::upload_file_handler,
         handlers::file_handler::get_file_handler,
         handlers::file_handler::delete_file_handler,
@@ -171,7 +172,7 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::GenerateChunksRequest,
             handlers::chunk_handler::SearchChunkData,
             handlers::chunk_handler::ScoreChunkDTO,
-            handlers::group_handler::SearchGroupsData,
+            handlers::group_handler::SearchWithinGroupData,
             handlers::group_handler::SearchOverGroupsData,
             handlers::group_handler::SearchGroupsResult,
             handlers::chunk_handler::SearchChunkQueryResponseBody,
@@ -550,7 +551,7 @@ pub async fn main() -> std::io::Result<()> {
                             )
                             .service(
                                 web::resource("/search")
-                                    .route(web::post().to(handlers::group_handler::search_groups)),
+                                    .route(web::post().to(handlers::group_handler::search_within_group)),
                             )
                             .service(
                                 web::resource("/group_oriented_search").route(
