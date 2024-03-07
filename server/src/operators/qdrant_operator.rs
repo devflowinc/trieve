@@ -872,6 +872,18 @@ pub async fn recommend_qdrant_groups_query(
         dataset_id.to_string(),
     )]));
 
+    let vector_name = match config.EMBEDDING_SIZE {
+        384 => "384_vectors",
+        768 => "768_vectors",
+        1024 => "1024_vectors",
+        1536 => "1536_vectors",
+        _ => {
+            return Err(DefaultError {
+                message: "Invalid embedding vector size",
+            })
+        }
+    };
+
     let recommend_points = RecommendPointGroups {
         collection_name: qdrant_collection,
         positive: positive_point_ids,
@@ -881,7 +893,7 @@ pub async fn recommend_qdrant_groups_query(
         with_payload: None,
         params: None,
         score_threshold: None,
-        using: None,
+        using: Some(vector_name.to_string()),
         with_vectors: None,
         lookup_from: None,
         read_consistency: None,

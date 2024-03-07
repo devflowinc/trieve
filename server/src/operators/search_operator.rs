@@ -12,8 +12,9 @@ use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::errors::ServiceError;
 use crate::handlers::chunk_handler::{
     ChunkFilter, MatchCondition, ParsedQuery, ScoreChunkDTO, SearchChunkData,
-    SearchChunkQueryResponseBody, SearchGroupsData, SearchGroupsResult, SearchOverGroupsData,
+    SearchChunkQueryResponseBody,
 };
+use crate::handlers::group_handler::{SearchGroupsData, SearchGroupsResult, SearchOverGroupsData};
 use crate::operators::model_operator::get_splade_embedding;
 use crate::operators::qdrant_operator::{get_qdrant_connection, search_qdrant_query};
 use crate::{data::models::Pool, errors::DefaultError};
