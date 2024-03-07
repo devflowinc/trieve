@@ -3,7 +3,9 @@ use super::chunk_operator::{
     get_metadata_from_point_ids,
 };
 use super::model_operator::{create_embedding, cross_encoder};
-use super::qdrant_operator::{search_over_groups_query, GroupSearchResults, VectorType};
+use super::qdrant_operator::{
+    get_point_count_qdrant_query, search_over_groups_query, GroupSearchResults, VectorType,
+};
 use crate::data::models::{
     ChunkFileWithName, ChunkGroup, ChunkMetadataWithFileData, Dataset, FullTextSearchResult,
     ServerDatasetConfiguration,
@@ -237,14 +239,37 @@ pub async fn retrieve_qdrant_points_query(
         Some(pool),
     )?;
 
-    let point_ids =
-        search_qdrant_query(page, filter, limit, score_threshold, vector, config).await?;
+    let point_ids_future = search_qdrant_query(
+        page,
+        filter.clone(),
+        limit,
+        score_threshold,
+        vector,
+        config.clone(),
+    );
+
+    let count_future = get_point_count_qdrant_query(filter, config);
+
+    let (point_ids, count) = futures::join!(point_ids_future, count_future);
     transaction.finish();
 
     Ok(SearchChunkQueryResult {
-        search_results: point_ids.clone(),
+        search_results: point_ids.map_err(|e| {
+            log::error!("Failed to get point count from Qdrant {:?}", e);
+            DefaultError {
+                message: "Failed to get point count from Qdrant",
+            }
+        })?,
         //FIXME: dont have total results now
-        total_chunk_pages: (point_ids.len() as f64 / 10.0).ceil() as i64,
+        total_chunk_pages: count
+            .map_err(|e| {
+                log::error!("Failed to get point count from Qdrant {:?}", e);
+                DefaultError {
+                    message: "Failed to get point count from Qdrant",
+                }
+            })?
+            .try_into()
+            .unwrap(),
     })
 }
 
@@ -278,20 +303,36 @@ pub async fn retrieve_group_qdrant_points_query(
         Some(pool),
     )?;
 
-    let point_ids = search_over_groups_query(
+    let point_id_future = search_over_groups_query(
         page,
-        filter,
+        filter.clone(),
         limit,
         score_threshold,
         group_size,
         vector,
-        config,
-    )
-    .await?;
+        config.clone(),
+    );
+
+    let count_future = get_point_count_qdrant_query(filter, config);
+
+    let (point_ids, count) = futures::join!(point_id_future, count_future);
 
     Ok(SearchOverGroupsQueryResult {
-        search_results: point_ids.clone(),
-        total_chunk_pages: (point_ids.len() as f64 / 10.0).ceil() as i64,
+        search_results: point_ids.map_err(|e| {
+            log::error!("Failed to get point count from Qdrant {:?}", e);
+            DefaultError {
+                message: "Failed to get point count from Qdrant",
+            }
+        })?,
+        total_chunk_pages: count
+            .map_err(|e| {
+                log::error!("Failed to get point count from Qdrant {:?}", e);
+                DefaultError {
+                    message: "Failed to get point count from Qdrant",
+                }
+            })?
+            .try_into()
+            .unwrap(),
     })
 }
 
@@ -404,19 +445,35 @@ pub async fn search_within_chunk_group_query(
         .must
         .push(Condition::matches("group_ids", group_id.to_string()));
 
-    let point_ids: Vec<SearchResult> = search_qdrant_query(
+    let point_ids_future = search_qdrant_query(
         page,
-        filter,
+        filter.clone(),
         limit,
         score_threshold,
         embedding_vector,
-        config,
-    )
-    .await?;
+        config.clone(),
+    );
+
+    let count_future = get_point_count_qdrant_query(filter, config);
+
+    let (point_ids, count) = futures::join!(point_ids_future, count_future);
 
     Ok(SearchChunkQueryResult {
-        search_results: point_ids.clone(),
-        total_chunk_pages: (point_ids.len() as f64 / 10.0).ceil() as i64,
+        search_results: point_ids.map_err(|e| {
+            log::error!("Failed to get point count from Qdrant {:?}", e);
+            DefaultError {
+                message: "Failed to get point count from Qdrant",
+            }
+        })?,
+        total_chunk_pages: count
+            .map_err(|e| {
+                log::error!("Failed to get point count from Qdrant {:?}", e);
+                DefaultError {
+                    message: "Failed to get point count from Qdrant",
+                }
+            })?
+            .try_into()
+            .unwrap(),
     })
 }
 
