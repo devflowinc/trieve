@@ -169,6 +169,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       filters: filters,
       search_type: props.searchType,
+      get_collisions: true,
     };
 
     let searchRoute = "chunk/search";
