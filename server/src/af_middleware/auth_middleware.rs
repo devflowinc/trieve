@@ -34,6 +34,7 @@ where
     type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
 
     forward_ready!(service);
+    #[tracing::instrument(skip(self, req))]
     fn call(&self, mut req: ServiceRequest) -> Self::Future {
         // Clone the Rc pointers so we can move them into the async block.
         let srv = self.service.clone();
@@ -138,7 +139,7 @@ where
                     }
                     None => {
                         let (http_req, pl) = req.parts_mut();
-                        let user = get_user(http_req, pl);
+                        let user = get_user(http_req, pl).await;
                         if let Some(user) = user {
                             req.extensions_mut().insert(user.clone());
                         }
@@ -153,7 +154,7 @@ where
             };
 
             let (http_req, pl) = req.parts_mut();
-            let user = get_user(http_req, pl);
+            let user = get_user(http_req, pl).await;
 
             if let Some(user) = user {
                 req.extensions_mut().insert(user.clone());
@@ -185,7 +186,8 @@ where
     }
 }
 
-fn get_user(req: &HttpRequest, pl: &mut Payload) -> Option<LoggedUser> {
+#[tracing::instrument(skip(req, pl))]
+async fn get_user(req: &HttpRequest, pl: &mut Payload) -> Option<LoggedUser> {
     if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
         if let Ok(user_json) = identity.id() {
             if let Ok(user) = serde_json::from_str::<LoggedUser>(&user_json) {
@@ -197,7 +199,7 @@ fn get_user(req: &HttpRequest, pl: &mut Payload) -> Option<LoggedUser> {
     if let Some(authen_header) = req.headers().get("Authorization") {
         if let Ok(authen_header) = authen_header.to_str() {
             if let Some(pool) = req.app_data::<web::Data<Pool>>() {
-                if let Ok(user) = get_user_from_api_key_query(authen_header, pool) {
+                if let Ok(user) = get_user_from_api_key_query(authen_header, pool).await {
                     return Some(user);
                 }
             }

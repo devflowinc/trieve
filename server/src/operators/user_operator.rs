@@ -243,8 +243,45 @@ pub fn set_user_api_key_query(
     Ok(raw_api_key)
 }
 
+#[derive(Debug)]
+pub enum ApiKeyType {
+    ApiKeyHash(String),
+    ApiKeyId(uuid::Uuid),
+}
+
+impl ApiKeyType {
+    pub fn get_hash(&self) -> String {
+        match self {
+            ApiKeyType::ApiKeyHash(hash) => hash,
+            ApiKeyType::ApiKeyId(id) => unimplemented!(),
+        }
+    }
+}
+
+#[tracing::instrument]
+pub async fn invalidate_api_key_hash(api_key: ApiKeyType) {
+    let hash = api_key.get_hash();
+
+    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
+    let redis_client = redis::Client::open(redis_url).map_err(|_| DefaultError {
+        message: "Could not create redis client",
+    })?;
+    let mut redis_conn = redis_client
+        .get_async_connection()
+        .await
+        .map_err(|_| DefaultError {
+            message: "Could not get redis connection",
+        })?;
+
+    let redis_user_org_orgs: Option<String> = redis::cmd("GET")
+        .arg(format!("keyhash:{}", api_key_hash))
+        .query_async(&mut redis_conn)
+        .await
+        .ok();
+}
+
 #[tracing::instrument(skip(pool))]
-pub fn get_user_from_api_key_query(
+pub async fn get_user_from_api_key_query(
     api_key: &str,
     pool: &web::Data<Pool>,
 ) -> Result<SlimUser, DefaultError> {
@@ -254,60 +291,100 @@ pub fn get_user_from_api_key_query(
 
     let api_key_hash = hash_password(api_key)?;
 
-    let mut conn = pool.get().unwrap();
+    let redis_user_orgs_orgs = {
+        let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
+        let redis_client = redis::Client::open(redis_url).map_err(|_| DefaultError {
+            message: "Could not create redis client",
+        })?;
+        let mut redis_conn =
+            redis_client
+                .get_async_connection()
+                .await
+                .map_err(|_| DefaultError {
+                    message: "Could not get redis connection",
+                })?;
+
+        let redis_user_org_orgs: Option<String> = redis::cmd("GET")
+            .arg(format!("keyhash:{}", api_key_hash))
+            .query_async(&mut redis_conn)
+            .await
+            .ok();
+
+        let some_user: Option<Vec<(User, UserOrganization, Organization, UserApiKey)>> =
+            redis_user_org_orgs
+                .map(|r| {
+                    serde_json::from_str::<Vec<(User, UserOrganization, Organization, UserApiKey)>>(
+                        &r,
+                    )
+                    .ok()
+                })
+                .flatten();
+
+        some_user
+    };
 
     let user_orgs_orgs: Vec<(User, UserOrganization, Organization, UserApiKey)> =
-        users_columns::users
-            .inner_join(user_organizations_columns::user_organizations)
-            .inner_join(
-                organization_columns::organizations
-                    .on(organization_columns::id.eq(user_organizations_columns::organization_id)),
-            )
-            .inner_join(crate::data::schema::user_api_key::dsl::user_api_key)
-            .filter(crate::data::schema::user_api_key::dsl::api_key_hash.eq(api_key_hash))
-            .select((
-                User::as_select(),
-                UserOrganization::as_select(),
-                Organization::as_select(),
-                UserApiKey::as_select(),
-            ))
-            .load::<(User, UserOrganization, Organization, UserApiKey)>(&mut conn)
-            .map_err(|_| DefaultError {
-                message: "Error loading user",
-            })?;
+        match redis_user_orgs_orgs {
+            Some(user_orgs_orgs) => user_orgs_orgs,
+            None => {
+                let mut conn = pool.get().unwrap();
 
-    match user_orgs_orgs.first() {
+                users_columns::users
+                    .inner_join(user_organizations_columns::user_organizations)
+                    .inner_join(organization_columns::organizations.on(
+                        organization_columns::id.eq(user_organizations_columns::organization_id),
+                    ))
+                    .inner_join(crate::data::schema::user_api_key::dsl::user_api_key)
+                    .filter(crate::data::schema::user_api_key::dsl::api_key_hash.eq(api_key_hash))
+                    .select((
+                        User::as_select(),
+                        UserOrganization::as_select(),
+                        Organization::as_select(),
+                        UserApiKey::as_select(),
+                    ))
+                    .load::<(User, UserOrganization, Organization, UserApiKey)>(&mut conn)
+                    .map_err(|_| DefaultError {
+                        message: "Error loading user",
+                    })?
+            }
+        };
+
+    let user = match user_orgs_orgs.first() {
         Some(first_user_org) => {
             let user = first_user_org.0.clone();
-            let mut user_orgs = user_orgs_orgs
-                .iter()
-                .map(|user_org| user_org.1.clone())
-                .collect::<Vec<UserOrganization>>();
-
-            //TODO: change this so that it is not above user current role
-            user_orgs.iter_mut().for_each(|user_org| {
-                if user_orgs_orgs
-                    .iter()
-                    .find(|user_org_org| user_org_org.1.id == user_org.id)
-                    .unwrap()
-                    .3
-                    .role
-                    == 0
-                {
-                    user_org.role = 0;
-                }
-            });
-
-            let orgs = user_orgs_orgs
-                .iter()
-                .map(|user_org_org| user_org_org.2.clone())
-                .collect::<Vec<Organization>>();
-            Ok(SlimUser::from_details(user, user_orgs, orgs))
+            user
         }
-        None => Err(DefaultError {
-            message: "User not found",
-        }),
-    }
+        None => {
+            return Err(DefaultError {
+                message: "User not found",
+            })
+        }
+    };
+
+    let mut user_orgs = user_orgs_orgs
+        .iter()
+        .map(|user_org| user_org.1.clone())
+        .collect::<Vec<UserOrganization>>();
+
+    user_orgs.iter_mut().for_each(|user_org| {
+        if user_orgs_orgs
+            .iter()
+            .find(|user_org_org| user_org_org.1.id == user_org.id)
+            .unwrap()
+            .3
+            .role
+            == 0
+        {
+            user_org.role = 0;
+        }
+    });
+
+    let orgs = user_orgs_orgs
+        .iter()
+        .map(|user_org_org| user_org_org.2.clone())
+        .collect::<Vec<Organization>>();
+
+    Ok(SlimUser::from_details(user, user_orgs, orgs))
 }
 
 #[tracing::instrument(skip(pool))]
@@ -335,12 +412,24 @@ pub fn get_user_api_keys_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn delete_user_api_keys_query(
+pub async fn delete_user_api_keys_query(
     user_id: uuid::Uuid,
     api_key_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     use crate::data::schema::user_api_key::dsl as user_api_key_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    let api_key_hash = user_api_key_columns::user_api_key
+        .filter(user_api_key_columns::id.eq(api_key_id))
+        .select(user_api_key_columns::api_key_hash)
+        .first::<String>(&mut conn)
+        .map_err(|_| ServiceError::BadRequest("Error Loading user api key".to_string()))?;
+
+    invalidate_api_key_hash(api_key_hash).await;
+
+    let pool = pool.clone();
 
     let mut conn = pool.get().unwrap();
 
@@ -350,9 +439,7 @@ pub fn delete_user_api_keys_query(
             .filter(user_api_key_columns::id.eq(api_key_id)),
     )
     .execute(&mut conn)
-    .map_err(|_| DefaultError {
-        message: "Error deleting user api key",
-    })?;
+    .map_err(|_| ServiceError::BadRequest("Error deleting user api key".to_string()))?;
 
     Ok(())
 }

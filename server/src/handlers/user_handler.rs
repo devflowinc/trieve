@@ -131,6 +131,8 @@ pub async fn update_user(
     })
     .await?;
 
+    invalidate_api_key_hash().await;
+
     match user_result {
         Ok(slim_user) => Ok(HttpResponse::Ok().json(slim_user)),
         Err(e) => Ok(HttpResponse::BadRequest().json(e)),
@@ -248,9 +250,7 @@ pub async fn delete_user_api_key(
     data: web::Json<DeleteUserApiKeyRequest>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    web::block(move || delete_user_api_keys_query(user.id, data.api_key_id, pool))
-        .await?
-        .map_err(|_err| ServiceError::BadRequest("Failed to get API keys for user".into()))?;
+    delete_user_api_keys_query(user.id, data.api_key_id, pool).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
