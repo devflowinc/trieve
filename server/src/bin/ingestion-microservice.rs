@@ -1,7 +1,7 @@
 use diesel::r2d2::ConnectionManager;
-use tracing_subscriber::{prelude::*, Layer, EnvFilter};
 use diesel::PgConnection;
 use redis::AsyncCommands;
+use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{self, ChunkGroupBookmark, Event, ServerDatasetConfiguration};
 use trieve_server::errors::ServiceError;
 use trieve_server::get_env;
@@ -18,11 +18,9 @@ use trieve_server::operators::qdrant_operator::{
 };
 use trieve_server::operators::search_operator::global_unfiltered_top_match_query;
 
-static THREAD_NUM: i32 = 4;
-
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-
+    let thread_num = std::thread::available_parallelism().unwrap().get();
     let sentry_url = std::env::var("SENTRY_URL");
     let _guard = if let Ok(sentry_url) = sentry_url {
         log::info!("Sentry monitoring enabled");
@@ -60,7 +58,6 @@ async fn main() -> std::io::Result<()> {
         None
     };
 
-
     let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
     let redis_client = redis::Client::open(redis_url).unwrap();
     let redis_connection = redis_client
@@ -76,7 +73,7 @@ async fn main() -> std::io::Result<()> {
 
     let web_pool = actix_web::web::Data::new(pool.clone());
 
-    let threads: Vec<_> = (0..THREAD_NUM)
+    let threads: Vec<_> = (0..thread_num)
         .map(|_i| {
             let redis_connection = redis_connection.clone();
             let web_pool = web_pool.clone();
