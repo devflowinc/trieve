@@ -1053,12 +1053,6 @@ pub async fn get_recommended_chunks(
         vec![]
     };
 
-    log::info!(
-        "positive_qdrant_ids: {:?}, negative_qdrant_ids: {:?}",
-        positive_qdrant_ids,
-        negative_qdrant_ids
-    );
-
     let recommended_qdrant_point_ids = recommend_qdrant_query(
         positive_qdrant_ids,
         negative_qdrant_ids,
