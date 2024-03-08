@@ -20,12 +20,6 @@ use trieve_server::operators::search_operator::global_unfiltered_top_match_query
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let thread_num = if let Some(thread_num) = option_env!("THREAD_NUM") {
-        thread_num.parse::<usize>().unwrap()
-    } else {
-        std::thread::available_parallelism().unwrap().get()
-    };
-
     let sentry_url = std::env::var("SENTRY_URL");
     let _guard = if let Ok(sentry_url) = sentry_url {
         log::info!("Sentry monitoring enabled");
@@ -62,6 +56,13 @@ async fn main() -> std::io::Result<()> {
 
         None
     };
+
+    let thread_num = if let Some(thread_num) = std::env::var("THREAD_NUM").ok() {
+        thread_num.parse::<usize>().unwrap()
+    } else {
+        std::thread::available_parallelism().unwrap().get() * 2
+    };
+
 
     let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
     let redis_client = redis::Client::open(redis_url).unwrap();
