@@ -930,6 +930,7 @@ pub async fn recommend_qdrant_groups_query(
     Ok(recommended_point_ids)
 }
 
+#[tracing::instrument]
 pub async fn get_point_count_qdrant_query(
     filters: Filter,
     config: ServerDatasetConfiguration,

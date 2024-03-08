@@ -251,7 +251,6 @@ pub async fn retrieve_qdrant_points_query(
     let count_future = get_point_count_qdrant_query(filter, config);
 
     let (point_ids, count) = futures::join!(point_ids_future, count_future);
-    transaction.finish();
 
     let pages = (count.map_err(|e| {
         log::error!("Failed to get point count from Qdrant {:?}", e);
@@ -259,7 +258,7 @@ pub async fn retrieve_qdrant_points_query(
             message: "Failed to get point count from Qdrant",
         }
     })? as f64
-        / 10.0)
+        / limit as f64)
         .ceil() as i64;
 
     Ok(SearchChunkQueryResult {
@@ -269,7 +268,6 @@ pub async fn retrieve_qdrant_points_query(
                 message: "Failed to get point count from Qdrant",
             }
         })?,
-        //FIXME: dont have total results now
         total_chunk_pages: pages,
     })
 }
@@ -324,7 +322,7 @@ pub async fn retrieve_group_qdrant_points_query(
             message: "Failed to get point count from Qdrant",
         }
     })? as f64
-        / 10.0)
+        / limit as f64)
         .ceil() as i64;
 
     Ok(SearchOverGroupsQueryResult {
@@ -466,7 +464,7 @@ pub async fn search_within_chunk_group_query(
             message: "Failed to get point count from Qdrant",
         }
     })? as f64
-        / 10.0)
+        / limit as f64)
         .ceil() as i64;
 
     Ok(SearchChunkQueryResult {
