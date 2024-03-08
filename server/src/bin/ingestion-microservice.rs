@@ -100,7 +100,7 @@ async fn ingestion_service(
     log::info!("Starting ingestion service thread");
     loop {
         let payload_result = redis_connection
-            .blpop::<&str, Vec<String>>("ingestion", 0.0)
+            .brpop::<&str, Vec<String>>("ingestion", 0.0)
             .await
             .map_err(|err| {
                 log::error!("Failed to get payload from redis: {:?}", err);
