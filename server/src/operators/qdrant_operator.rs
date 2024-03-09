@@ -45,12 +45,17 @@ pub async fn get_qdrant_connection(
 
 /// Create Qdrant collection and indexes needed
 #[tracing::instrument]
-pub async fn create_new_qdrant_collection_query() -> Result<(), ServiceError> {
-    let qdrant_collection = get_env!(
-        "QDRANT_COLLECTION",
-        "QDRANT_COLLECTION should be set if this is called"
-    )
-    .to_string();
+pub async fn create_new_qdrant_collection_query(
+    qdrant_url: Option<&str>,
+    qdrant_api_key: Option<&str>,
+    qdrant_collection: Option<&str>,
+) -> Result<(), ServiceError> {
+    let qdrant_collection = qdrant_collection
+        .unwrap_or(get_env!(
+            "QDRANT_COLLECTION",
+            "QDRANT_COLLECTION should be set if this is called"
+        ))
+        .to_string();
 
     let qdrant_client = get_qdrant_connection(None, None)
         .await
