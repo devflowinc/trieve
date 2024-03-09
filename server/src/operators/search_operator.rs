@@ -3,7 +3,9 @@ use super::chunk_operator::{
     get_metadata_from_point_ids,
 };
 use super::model_operator::{create_embedding, cross_encoder};
-use super::qdrant_operator::{search_over_groups_query, GroupSearchResults, VectorType};
+use super::qdrant_operator::{
+    get_point_count_qdrant_query, search_over_groups_query, GroupSearchResults, VectorType,
+};
 use crate::data::models::{
     ChunkFileWithName, ChunkGroup, ChunkMetadataWithFileData, Dataset, FullTextSearchResult,
     ServerDatasetConfiguration,
@@ -53,7 +55,7 @@ pub fn assemble_qdrant_filter(
     quote_words: Option<Vec<String>>,
     negated_words: Option<Vec<String>>,
     dataset_id: uuid::Uuid,
-    pool: web::Data<Pool>,
+    pool: Option<web::Data<Pool>>,
 ) -> Result<Filter, DefaultError> {
     let mut filter = Filter::default();
 
@@ -173,12 +175,12 @@ pub fn assemble_qdrant_filter(
         }
     };
 
-    if quote_words.is_some() || negated_words.is_some() {
+    if (quote_words.is_some() || negated_words.is_some()) && pool.is_some() {
         let available_qdrant_ids = get_qdrant_point_ids_from_pg_for_quote_negated_words(
             quote_words,
             negated_words,
             dataset_id,
-            pool,
+            pool.unwrap(),
         )?;
 
         let available_point_ids = available_qdrant_ids
@@ -234,17 +236,39 @@ pub async fn retrieve_qdrant_points_query(
         parsed_query.quote_words,
         parsed_query.negated_words,
         dataset_id,
-        pool,
+        Some(pool),
     )?;
 
-    let point_ids =
-        search_qdrant_query(page, filter, limit, score_threshold, vector, config).await?;
-    transaction.finish();
+    let point_ids_future = search_qdrant_query(
+        page,
+        filter.clone(),
+        limit,
+        score_threshold,
+        vector,
+        config.clone(),
+    );
+
+    let count_future = get_point_count_qdrant_query(filter, config);
+
+    let (point_ids, count) = futures::join!(point_ids_future, count_future);
+
+    let pages = (count.map_err(|e| {
+        log::error!("Failed to get point count from Qdrant {:?}", e);
+        DefaultError {
+            message: "Failed to get point count from Qdrant",
+        }
+    })? as f64
+        / limit as f64)
+        .ceil() as i64;
 
     Ok(SearchChunkQueryResult {
-        search_results: point_ids.clone(),
-        //FIXME: dont have total results now
-        total_chunk_pages: (point_ids.len() as f64 / 10.0).ceil() as i64,
+        search_results: point_ids.map_err(|e| {
+            log::error!("Failed to get point count from Qdrant {:?}", e);
+            DefaultError {
+                message: "Failed to get point count from Qdrant",
+            }
+        })?,
+        total_chunk_pages: pages,
     })
 }
 
@@ -275,23 +299,40 @@ pub async fn retrieve_group_qdrant_points_query(
         parsed_query.quote_words,
         parsed_query.negated_words,
         dataset_id,
-        pool,
+        Some(pool),
     )?;
 
-    let point_ids = search_over_groups_query(
+    let point_id_future = search_over_groups_query(
         page,
-        filter,
+        filter.clone(),
         limit,
         score_threshold,
         group_size,
         vector,
-        config,
-    )
-    .await?;
+        config.clone(),
+    );
+
+    let count_future = get_point_count_qdrant_query(filter, config);
+
+    let (point_ids, count) = futures::join!(point_id_future, count_future);
+
+    let pages = (count.map_err(|e| {
+        log::error!("Failed to get point count from Qdrant {:?}", e);
+        DefaultError {
+            message: "Failed to get point count from Qdrant",
+        }
+    })? as f64
+        / limit as f64)
+        .ceil() as i64;
 
     Ok(SearchOverGroupsQueryResult {
-        search_results: point_ids.clone(),
-        total_chunk_pages: (point_ids.len() as f64 / 10.0).ceil() as i64,
+        search_results: point_ids.map_err(|e| {
+            log::error!("Failed to get point count from Qdrant {:?}", e);
+            DefaultError {
+                message: "Failed to get point count from Qdrant",
+            }
+        })?,
+        total_chunk_pages: pages,
     })
 }
 
@@ -397,26 +438,43 @@ pub async fn search_within_chunk_group_query(
         parsed_query.quote_words,
         parsed_query.negated_words,
         dataset_id,
-        pool,
+        Some(pool),
     )?;
 
     filter
         .must
         .push(Condition::matches("group_ids", group_id.to_string()));
 
-    let point_ids: Vec<SearchResult> = search_qdrant_query(
+    let point_ids_future = search_qdrant_query(
         page,
-        filter,
+        filter.clone(),
         limit,
         score_threshold,
         embedding_vector,
-        config,
-    )
-    .await?;
+        config.clone(),
+    );
+
+    let count_future = get_point_count_qdrant_query(filter, config);
+
+    let (point_ids, count) = futures::join!(point_ids_future, count_future);
+
+    let pages = (count.map_err(|e| {
+        log::error!("Failed to get point count from Qdrant {:?}", e);
+        DefaultError {
+            message: "Failed to get point count from Qdrant",
+        }
+    })? as f64
+        / limit as f64)
+        .ceil() as i64;
 
     Ok(SearchChunkQueryResult {
-        search_results: point_ids.clone(),
-        total_chunk_pages: (point_ids.len() as f64 / 10.0).ceil() as i64,
+        search_results: point_ids.map_err(|e| {
+            log::error!("Failed to get point count from Qdrant {:?}", e);
+            DefaultError {
+                message: "Failed to get point count from Qdrant",
+            }
+        })?,
+        total_chunk_pages: pages,
     })
 }
 

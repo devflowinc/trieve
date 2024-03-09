@@ -1,7 +1,7 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan, Pool,
-    ServerDatasetConfiguration,
+    ServerDatasetConfiguration, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -938,6 +938,8 @@ pub struct RecommendChunksRequest {
     pub positive_tracking_ids: Option<Vec<String>>,
     /// The tracking_ids of the chunks to be used as negative examples for the recommendation. The chunks in this array will be used to filter out similar chunks.
     pub negative_tracking_ids: Option<Vec<String>>,
+    /// Filters to apply to the chunks to be recommended. This is a JSON object which contains the filters to apply to the chunks to be recommended. The default is None.
+    pub filters: Option<ChunkFilter>,
     /// The number of chunks to return. This is the number of chunks which will be returned in the response. The default is 10.
     pub limit: Option<u64>,
 }
@@ -984,7 +986,7 @@ pub async fn get_recommended_chunks(
                 .clone()
                 .unwrap()
                 .into_iter()
-                .map(|chunk_ids| chunk_ids.into())
+                .map(UnifiedId::TrieveUuid)
                 .collect(),
             pool.clone(),
         )
@@ -998,7 +1000,7 @@ pub async fn get_recommended_chunks(
                 .clone()
                 .unwrap()
                 .into_iter()
-                .map(|chunk_ids| chunk_ids.into())
+                .map(UnifiedId::TrackingId)
                 .collect(),
             pool.clone(),
         )
@@ -1022,7 +1024,7 @@ pub async fn get_recommended_chunks(
                 .clone()
                 .unwrap()
                 .into_iter()
-                .map(|chunk_ids| chunk_ids.into())
+                .map(UnifiedId::TrieveUuid)
                 .collect(),
             pool.clone(),
         )
@@ -1036,7 +1038,7 @@ pub async fn get_recommended_chunks(
                 .clone()
                 .unwrap()
                 .into_iter()
-                .map(|chunk_ids| chunk_ids.into())
+                .map(UnifiedId::TrackingId)
                 .collect(),
             pool.clone(),
         )
@@ -1054,6 +1056,7 @@ pub async fn get_recommended_chunks(
     let recommended_qdrant_point_ids = recommend_qdrant_query(
         positive_qdrant_ids,
         negative_qdrant_ids,
+        data.filters.clone(),
         limit,
         dataset_org_plan_sub.dataset.id,
         server_dataset_config,

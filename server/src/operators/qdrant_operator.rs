@@ -1,18 +1,21 @@
-use super::{model_operator::get_splade_embedding, search_operator::SearchResult};
+use super::{
+    model_operator::get_splade_embedding,
+    search_operator::{assemble_qdrant_filter, SearchResult},
+};
 use crate::{
     data::models::{ChunkMetadata, ServerDatasetConfiguration},
     errors::{DefaultError, ServiceError},
     get_env,
+    handlers::chunk_handler::ChunkFilter,
 };
 use itertools::Itertools;
 use qdrant_client::{
     client::{QdrantClient, QdrantClientConfig},
     qdrant::{
-        group_id::Kind, payload_index_params::IndexParams, point_id::PointIdOptions,
-        with_payload_selector::SelectorOptions, Condition, CreateCollection, Distance, FieldType,
-        Filter, HnswConfigDiff, PayloadIndexParams, PointId, PointStruct, RecommendPointGroups,
-        RecommendPoints, SearchPointGroups, SearchPoints, SparseIndexConfig, SparseVectorConfig,
-        SparseVectorParams, TextIndexParams, TokenizerType, Value, Vector, VectorParams,
+        group_id::Kind, point_id::PointIdOptions, with_payload_selector::SelectorOptions,
+        CountPoints, CreateCollection, Distance, FieldType, Filter, HnswConfigDiff, PointId,
+        PointStruct, RecommendPointGroups, RecommendPoints, SearchPointGroups, SearchPoints,
+        SparseIndexConfig, SparseVectorConfig, SparseVectorParams, Value, Vector, VectorParams,
         VectorParamsMap, VectorsConfig, WithPayloadSelector,
     },
 };
@@ -181,24 +184,6 @@ pub async fn create_new_qdrant_collection_query() -> Result<(), ServiceError> {
     qdrant_client
         .create_field_index(
             qdrant_collection.clone(),
-            "chunk_html",
-            FieldType::Text,
-            Some(&PayloadIndexParams {
-                index_params: Some(IndexParams::TextIndexParams(TextIndexParams {
-                    tokenizer: TokenizerType::Whitespace as i32,
-                    min_token_len: Some(2),
-                    max_token_len: Some(10),
-                    lowercase: Some(true),
-                })),
-            }),
-            None,
-        )
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
-
-    qdrant_client
-        .create_field_index(
-            qdrant_collection.clone(),
             "metadata",
             FieldType::Keyword,
             None,
@@ -247,7 +232,7 @@ pub async fn create_new_qdrant_point_query(
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let chunk_content = chunk_metadata.content.clone();
-    let payload = json!({"tag_set": chunk_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": chunk_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "chunk_html": chunk_metadata.chunk_html.unwrap_or("".to_string()).split_whitespace().take(500).collect::<Vec<_>>().join(" "), "metadata": chunk_metadata.metadata.unwrap_or_default(), "time_stamp": chunk_metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string(), "group_ids": vec![] as Vec<String>})
+    let payload = json!({"tag_set": chunk_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": chunk_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "metadata": chunk_metadata.metadata.unwrap_or_default(), "time_stamp": chunk_metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string(), "group_ids": vec![] as Vec<String>})
                 .try_into()
                 .expect("A json! Value must always be a valid Payload");
 
@@ -323,9 +308,9 @@ pub async fn update_qdrant_point_query(
         } else {
             Value::from(vec![] as Vec<String>)
         };
-        json!({"tag_set": metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "chunk_html": metadata.chunk_html.unwrap_or("".to_string()), "metadata": metadata.metadata.unwrap_or_default(), "time_stamp": metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string(), "group_ids": group_ids})
+        json!({"tag_set": metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "metadata": metadata.metadata.unwrap_or_default(), "time_stamp": metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string(), "group_ids": group_ids})
     } else if let Some(current_point) = current_point {
-        json!({"tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "chunk_html": current_point.payload.get("chunk_html").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")), "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from("")), "group_ids": current_point.payload.get("group_ids").unwrap_or(&Value::from(vec![] as Vec<String>))})
+        json!({"tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")), "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from("")), "group_ids": current_point.payload.get("group_ids").unwrap_or(&Value::from(vec![] as Vec<String>))})
     } else {
         return Err(ServiceError::BadRequest("No metadata points found".into()).into());
     };
@@ -458,7 +443,7 @@ pub async fn add_bookmark_to_qdrant_query(
         vec![group_id]
     };
 
-    let payload = json!({"tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "chunk_html": current_point.payload.get("chunk_html").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")), "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from("")), "group_ids": group_ids});
+    let payload = json!({"tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")), "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from("")), "group_ids": group_ids});
 
     let points_selector = qdrant_point_id.into();
 
@@ -538,7 +523,7 @@ pub async fn remove_bookmark_from_qdrant_query(
         vec![]
     };
 
-    let payload = json!({"tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "chunk_html": current_point.payload.get("chunk_html").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")), "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from("")), "group_ids": group_ids});
+    let payload = json!({"tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")), "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from("")), "group_ids": group_ids});
 
     let points_selector = qdrant_point_id.into();
 
@@ -769,11 +754,14 @@ pub async fn search_qdrant_query(
 pub async fn recommend_qdrant_query(
     positive_ids: Vec<uuid::Uuid>,
     negative_ids: Vec<uuid::Uuid>,
+    filters: Option<ChunkFilter>,
     limit: u64,
     dataset_id: uuid::Uuid,
     config: ServerDatasetConfiguration,
 ) -> Result<Vec<uuid::Uuid>, DefaultError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+
+    let filter = assemble_qdrant_filter(filters, None, None, dataset_id, None)?;
 
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
@@ -786,10 +774,6 @@ pub async fn recommend_qdrant_query(
         .iter()
         .map(|id| id.to_string().into())
         .collect();
-    let dataset_filter = Some(Filter::must([Condition::matches(
-        "dataset_id",
-        dataset_id.to_string(),
-    )]));
 
     let vector_name = match config.EMBEDDING_SIZE {
         384 => "384_vectors",
@@ -807,7 +791,7 @@ pub async fn recommend_qdrant_query(
         collection_name: qdrant_collection,
         positive: positive_point_ids,
         negative: negative_point_ids,
-        filter: dataset_filter,
+        filter: Some(filter),
         limit,
         with_payload: Some(WithPayloadSelector {
             selector_options: Some(SelectorOptions::Enable(true)),
@@ -849,6 +833,7 @@ pub async fn recommend_qdrant_query(
 pub async fn recommend_qdrant_groups_query(
     positive_ids: Vec<uuid::Uuid>,
     negative_ids: Vec<uuid::Uuid>,
+    filter: Option<ChunkFilter>,
     limit: u64,
     group_size: u32,
     dataset_id: uuid::Uuid,
@@ -859,6 +844,8 @@ pub async fn recommend_qdrant_groups_query(
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
 
+    let filters = assemble_qdrant_filter(filter, None, None, dataset_id, None)?;
+
     let positive_point_ids: Vec<PointId> = positive_ids
         .iter()
         .map(|id| id.to_string().into())
@@ -867,10 +854,6 @@ pub async fn recommend_qdrant_groups_query(
         .iter()
         .map(|id| id.to_string().into())
         .collect();
-    let dataset_filter = Some(Filter::must([Condition::matches(
-        "dataset_id",
-        dataset_id.to_string(),
-    )]));
 
     let vector_name = match config.EMBEDDING_SIZE {
         384 => "384_vectors",
@@ -888,7 +871,7 @@ pub async fn recommend_qdrant_groups_query(
         collection_name: qdrant_collection,
         positive: positive_point_ids,
         negative: negative_point_ids,
-        filter: dataset_filter,
+        filter: Some(filters),
         limit: limit.try_into().unwrap(),
         with_payload: None,
         params: None,
@@ -945,4 +928,33 @@ pub async fn recommend_qdrant_groups_query(
         })
         .collect();
     Ok(recommended_point_ids)
+}
+
+#[tracing::instrument]
+pub async fn get_point_count_qdrant_query(
+    filters: Filter,
+    config: ServerDatasetConfiguration,
+) -> Result<u64, DefaultError> {
+    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+
+    let qdrant =
+        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+
+    let data = qdrant
+        .count(&CountPoints {
+            collection_name: qdrant_collection,
+            filter: Some(filters),
+            exact: Some(false),
+            read_consistency: None,
+            shard_key_selector: None,
+        })
+        .await
+        .map_err(|err| {
+            log::info!("Failed to count points from qdrant: {:?}", err);
+            DefaultError {
+                message: "Failed to count points from qdrant",
+            }
+        })?;
+
+    Ok(data.result.expect("Failed to get result from qdrant").count)
 }
