@@ -7,6 +7,7 @@ async fn main() -> Result<(), ServiceError> {
         Some("http://localhost:6333"),
         Some("qdrant_api_key"),
         Some("qdrant_collection"),
+        false
     )
     .await?;
     Ok(())
