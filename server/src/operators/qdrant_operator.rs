@@ -12,11 +12,7 @@ use itertools::Itertools;
 use qdrant_client::{
     client::{QdrantClient, QdrantClientConfig},
     qdrant::{
-        group_id::Kind, point_id::PointIdOptions, with_payload_selector::SelectorOptions,
-        CountPoints, CreateCollection, Distance, FieldType, Filter, HnswConfigDiff, PointId,
-        PointStruct, RecommendPointGroups, RecommendPoints, SearchPointGroups, SearchPoints,
-        SparseIndexConfig, SparseVectorConfig, SparseVectorParams, Value, Vector, VectorParams,
-        VectorParamsMap, VectorsConfig, WithPayloadSelector,
+        group_id::Kind, point_id::PointIdOptions, quantization_config::Quantization, with_payload_selector::SelectorOptions, BinaryQuantization, CountPoints, CreateCollection, Distance, FieldType, Filter, HnswConfigDiff, PointId, PointStruct, QuantizationConfig, RecommendPointGroups, RecommendPoints, SearchPointGroups, SearchPoints, SparseIndexConfig, SparseVectorConfig, SparseVectorParams, Value, Vector, VectorParams, VectorParamsMap, VectorsConfig, WithPayloadSelector
     },
 };
 use serde::{Deserialize, Serialize};
@@ -49,6 +45,7 @@ pub async fn create_new_qdrant_collection_query(
     qdrant_url: Option<&str>,
     qdrant_api_key: Option<&str>,
     qdrant_collection: Option<&str>,
+    quantize: bool,
 ) -> Result<(), ServiceError> {
     let qdrant_collection = qdrant_collection
         .unwrap_or(get_env!(
@@ -57,7 +54,7 @@ pub async fn create_new_qdrant_collection_query(
         ))
         .to_string();
 
-    let qdrant_client = get_qdrant_connection(None, None)
+    let qdrant_client = get_qdrant_connection(qdrant_url, qdrant_api_key)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -84,6 +81,16 @@ pub async fn create_new_qdrant_collection_query(
         },
     );
 
+    let quantization_config = if quantize {
+        Some(QuantizationConfig {
+            quantization: Some(Quantization::Binary(BinaryQuantization {
+                always_ram: Some(true),
+            })),
+        })
+    } else {
+        None
+    };
+
     qdrant_client
         .create_collection(&CreateCollection {
             collection_name: qdrant_collection.clone(),
@@ -97,7 +104,7 @@ pub async fn create_new_qdrant_collection_query(
                                     size: 384,
                                     distance: Distance::Cosine.into(),
                                     hnsw_config: None,
-                                    quantization_config: None,
+                                    quantization_config: quantization_config.clone(),
                                     on_disk: None,
                                 },
                             ),
@@ -117,7 +124,7 @@ pub async fn create_new_qdrant_collection_query(
                                     size: 768,
                                     distance: Distance::Cosine.into(),
                                     hnsw_config: None,
-                                    quantization_config: None,
+                                    quantization_config: quantization_config.clone(),
                                     on_disk: None,
                                 },
                             ),
@@ -127,7 +134,7 @@ pub async fn create_new_qdrant_collection_query(
                                     size: 1024,
                                     distance: Distance::Cosine.into(),
                                     hnsw_config: None,
-                                    quantization_config: None,
+                                    quantization_config: quantization_config.clone(),
                                     on_disk: None,
                                 },
                             ),
@@ -137,7 +144,7 @@ pub async fn create_new_qdrant_collection_query(
                                     size: 1536,
                                     distance: Distance::Cosine.into(),
                                     hnsw_config: None,
-                                    quantization_config: None,
+                                    quantization_config,
                                     on_disk: None,
                                 },
                             ),

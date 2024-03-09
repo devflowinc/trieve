@@ -307,7 +307,7 @@ pub async fn main() -> std::io::Result<()> {
 
     let oidc_client = build_oidc_client().await;
 
-    let _ = create_new_qdrant_collection_query(None, None, None).await.map_err(|err| {
+    let _ = create_new_qdrant_collection_query(None, None, None, false).await.map_err(|err| {
         log::error!("Failed to create qdrant group: {:?}", err);
     });
 
