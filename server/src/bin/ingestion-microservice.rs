@@ -64,13 +64,6 @@ async fn main() -> std::io::Result<()> {
     };
 
 
-    let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
-    let redis_client = redis::Client::open(redis_url).unwrap();
-    let redis_connection = redis_client
-        .get_multiplexed_tokio_connection()
-        .await
-        .unwrap();
-
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     let pool: models::Pool = r2d2::Pool::builder()
@@ -81,9 +74,8 @@ async fn main() -> std::io::Result<()> {
 
     let threads: Vec<_> = (0..thread_num)
         .map(|_i| {
-            let redis_connection = redis_connection.clone();
             let web_pool = web_pool.clone();
-            ingestion_service(redis_connection, web_pool)
+            ingestion_service(web_pool)
         })
         .collect();
 
@@ -92,11 +84,18 @@ async fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-#[tracing::instrument(skip(web_pool, redis_connection))]
+#[tracing::instrument(skip(web_pool))]
 async fn ingestion_service(
-    mut redis_connection: redis::aio::MultiplexedConnection,
     web_pool: actix_web::web::Data<models::Pool>,
 ) {
+
+    let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
+    let redis_client = redis::Client::open(redis_url).unwrap();
+    let mut redis_connection = redis_client
+        .get_multiplexed_tokio_connection()
+        .await
+        .unwrap();
+
     log::info!("Starting ingestion service thread");
     loop {
         let payload_result = redis_connection
