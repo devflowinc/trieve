@@ -354,6 +354,7 @@ pub async fn global_unfiltered_top_match_query(
 
     let vector_name = match embedding_vector.len() {
         384 => "384_vectors",
+        512 => "512_vectors",
         768 => "768_vectors",
         1024 => "1024_vectors",
         1536 => "1536_vectors",

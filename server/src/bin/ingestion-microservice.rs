@@ -57,7 +57,7 @@ async fn main() -> std::io::Result<()> {
         None
     };
 
-    let thread_num = if let Some(thread_num) = std::env::var("THREAD_NUM").ok() {
+    let thread_num = if let Ok(thread_num) = std::env::var("THREAD_NUM") {
         thread_num.parse::<usize>().unwrap()
     } else {
         std::thread::available_parallelism().unwrap().get() * 2

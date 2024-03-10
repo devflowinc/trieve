@@ -70,6 +70,16 @@ pub async fn create_new_qdrant_collection_query(
                                 },
                             ),
                             (
+                                "512_vectors".to_string(),
+                                VectorParams {
+                                    size: 512,
+                                    distance: Distance::Cosine.into(),
+                                    hnsw_config: None,
+                                    quantization_config: None,
+                                    on_disk: None,
+                                },
+                            ),
+                            (
                                 "768_vectors".to_string(),
                                 VectorParams {
                                     size: 768,

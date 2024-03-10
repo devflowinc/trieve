@@ -221,7 +221,7 @@ pub async fn get_organization_by_key_query(
         message: "Could not create redis client",
     })?;
     let mut redis_conn = redis_client
-        .get_async_connection()
+        .get_multiplexed_async_connection()
         .await
         .map_err(|_| DefaultError {
             message: "Could not connect to redis",
@@ -294,7 +294,7 @@ pub async fn get_organization_by_key_query(
                 message: "Could not create redis client",
             })?;
             let mut redis_conn = client
-                .get_async_connection()
+                .get_multiplexed_async_connection()
                 .await
                 .map_err(|_| DefaultError {
                     message: "Could not create redis client",
