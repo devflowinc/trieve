@@ -1223,7 +1223,7 @@ pub async fn search_hybrid_chunks(
             .unique_by(|score_chunk| score_chunk.metadata[0].id)
             .collect::<Vec<ScoreChunkDTO>>();
 
-        let reranked_chunks = if combined_results.len() > 20 {
+        let mut reranked_chunks = if combined_results.len() > 20 {
             let split_results = combined_results
                 .chunks(20)
                 .map(|chunk| chunk.to_vec())
@@ -1257,6 +1257,8 @@ pub async fn search_hybrid_chunks(
 
             rerank_chunks(cross_encoder_results, data.date_bias, data.use_weights)
         };
+
+        reranked_chunks.truncate(data.page_size.unwrap_or(10) as usize);
 
         SearchChunkQueryResponseBody {
             score_chunks: reranked_chunks,

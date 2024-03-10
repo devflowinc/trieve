@@ -698,7 +698,7 @@ pub struct SearchChunkData {
     pub filters: Option<ChunkFilter>,
     /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
     pub date_bias: Option<bool>,
-    /// Set use_weights to true to use the weights of the chunks in the result set in order to sort them.
+    /// Set use_weights to true to use the weights of the chunks in the result set in order to sort them. If not specified, this defaults to false.
     pub use_weights: Option<bool>,
     /// Set get_collisions to true to get the collisions for each chunk. This will only apply if environment variable COLLISIONS_ENABLED is set to true.
     pub get_collisions: Option<bool>,
