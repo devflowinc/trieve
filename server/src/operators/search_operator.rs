@@ -935,15 +935,21 @@ pub async fn retrieve_chunks_from_point_ids(
 }
 
 #[tracing::instrument]
-pub fn rerank_chunks(chunks: Vec<ScoreChunkDTO>, date_bias: Option<bool>) -> Vec<ScoreChunkDTO> {
+pub fn rerank_chunks(
+    chunks: Vec<ScoreChunkDTO>,
+    date_bias: Option<bool>,
+    use_weights: Option<bool>,
+) -> Vec<ScoreChunkDTO> {
     let mut reranked_chunks = Vec::new();
-    chunks.into_iter().for_each(|mut chunk| {
-        if chunk.metadata[0].weight == 0.0 {
-            chunk.metadata[0].weight = 1.0;
-        }
-        chunk.score *= chunk.metadata[0].weight;
-        reranked_chunks.push(chunk);
-    });
+    if use_weights.is_some() && use_weights.unwrap() {
+        chunks.into_iter().for_each(|mut chunk| {
+            if chunk.metadata[0].weight == 0.0 {
+                chunk.metadata[0].weight = 1.0;
+            }
+            chunk.score *= chunk.metadata[0].weight;
+            reranked_chunks.push(chunk);
+        });
+    }
 
     if date_bias.is_some() && date_bias.unwrap() {
         reranked_chunks.sort_by(|a, b| {
@@ -1014,7 +1020,8 @@ pub async fn search_semantic_chunks(
 
     timer.add("Fetch from postgres");
 
-    result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
+    result_chunks.score_chunks =
+        rerank_chunks(result_chunks.score_chunks, data.date_bias, data.use_weights);
     timer.add("Rerank (algo)");
     transaction.finish();
 
@@ -1070,7 +1077,8 @@ pub async fn search_full_text_chunks(
     let mut result_chunks =
         retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool).await?;
 
-    result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
+    result_chunks.score_chunks =
+        rerank_chunks(result_chunks.score_chunks, data.date_bias, data.use_weights);
 
     transaction.finish();
     Ok(result_chunks)
@@ -1229,7 +1237,8 @@ pub async fn search_hybrid_chunks(
             )
             .await?;
 
-            let score_chunks = rerank_chunks(cross_encoder_results, data.date_bias);
+            let score_chunks =
+                rerank_chunks(cross_encoder_results, data.date_bias, data.use_weights);
 
             score_chunks
                 .iter()
@@ -1244,7 +1253,7 @@ pub async fn search_hybrid_chunks(
             )
             .await?;
 
-            rerank_chunks(cross_encoder_results, data.date_bias)
+            rerank_chunks(cross_encoder_results, data.date_bias, data.use_weights)
         };
 
         SearchChunkQueryResponseBody {
@@ -1295,7 +1304,8 @@ pub async fn search_semantic_groups(
     )
     .await?;
 
-    result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
+    result_chunks.score_chunks =
+        rerank_chunks(result_chunks.score_chunks, data.date_bias, data.use_weights);
 
     Ok(SearchGroupsResult {
         bookmarks: result_chunks.score_chunks,
@@ -1340,7 +1350,8 @@ pub async fn search_full_text_groups(
     )
     .await?;
 
-    result_chunks.score_chunks = rerank_chunks(result_chunks.score_chunks, data.date_bias);
+    result_chunks.score_chunks =
+        rerank_chunks(result_chunks.score_chunks, data.date_bias, data.use_weights);
 
     Ok(SearchGroupsResult {
         bookmarks: result_chunks.score_chunks,
@@ -1440,7 +1451,8 @@ pub async fn search_hybrid_groups(
                     .to_vec(),
             )
             .await?;
-            let score_chunks = rerank_chunks(cross_encoder_results, data.date_bias);
+            let score_chunks =
+                rerank_chunks(cross_encoder_results, data.date_bias, data.use_weights);
 
             score_chunks
                 .iter()
@@ -1455,7 +1467,7 @@ pub async fn search_hybrid_groups(
             )
             .await?;
 
-            rerank_chunks(cross_encoder_results, data.date_bias)
+            rerank_chunks(cross_encoder_results, data.date_bias, data.use_weights)
         };
 
         SearchChunkQueryResponseBody {
