@@ -31,7 +31,7 @@ pub async fn create_dataset_query(
         ServiceError::BadRequest(format!("Could not create redis client: {}", err))
     })?;
     let mut redis_conn = client
-        .get_async_connection()
+        .get_multiplexed_async_connection()
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
     redis::cmd("SET")
@@ -58,7 +58,7 @@ pub async fn get_dataset_by_id_query(
     let redis_client = redis::Client::open(redis_url)
         .map_err(|_| ServiceError::BadRequest("Could not create redis client".to_string()))?;
     let mut redis_conn = redis_client
-        .get_async_connection()
+        .get_multiplexed_async_connection()
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get redis connection".to_string()))?;
 
@@ -116,7 +116,7 @@ pub async fn delete_dataset_by_id_query(
         ServiceError::BadRequest(format!("Could not create redis client: {}", err))
     })?;
     let mut redis_conn = client
-        .get_async_connection()
+        .get_multiplexed_async_connection()
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
     redis::cmd("DEL")
@@ -190,7 +190,7 @@ pub async fn update_dataset_query(
     })?;
 
     let mut redis_conn = client
-        .get_async_connection()
+        .get_multiplexed_async_connection()
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
 

@@ -97,6 +97,16 @@ pub async fn create_new_qdrant_collection_query() -> Result<(), ServiceError> {
                                 },
                             ),
                             (
+                                "512_vectors".to_string(),
+                                VectorParams {
+                                    size: 512,
+                                    distance: Distance::Cosine.into(),
+                                    hnsw_config: None,
+                                    quantization_config: None,
+                                    on_disk: None,
+                                },
+                            ),
+                            (
                                 "768_vectors".to_string(),
                                 VectorParams {
                                     size: 768,
@@ -238,6 +248,7 @@ pub async fn create_new_qdrant_point_query(
 
     let vector_name = match embedding_vector.len() {
         384 => "384_vectors",
+        512 => "512_vectors",
         768 => "768_vectors",
         1024 => "1024_vectors",
         1536 => "1536_vectors",
@@ -320,6 +331,7 @@ pub async fn update_qdrant_point_query(
     if let Some(updated_vector) = updated_vector {
         let vector_name = match updated_vector.len() {
             384 => "384_vectors",
+            512 => "512_vectors",
             768 => "768_vectors",
             1024 => "1024_vectors",
             1536 => "1536_vectors",
@@ -577,6 +589,7 @@ pub async fn search_over_groups_query(
         VectorType::Sparse(_) => "sparse_vectors",
         VectorType::Dense(ref embedding_vector) => match embedding_vector.len() {
             384 => "384_vectors",
+            512 => "512_vectors",
             768 => "768_vectors",
             1024 => "1024_vectors",
             1536 => "1536_vectors",
@@ -682,6 +695,7 @@ pub async fn search_qdrant_query(
         VectorType::Sparse(_) => "sparse_vectors",
         VectorType::Dense(ref embedding_vector) => match embedding_vector.len() {
             384 => "384_vectors",
+            512 => "512_vectors",
             768 => "768_vectors",
             1024 => "1024_vectors",
             1536 => "1536_vectors",
@@ -777,6 +791,7 @@ pub async fn recommend_qdrant_query(
 
     let vector_name = match config.EMBEDDING_SIZE {
         384 => "384_vectors",
+        512 => "512_vectors",
         768 => "768_vectors",
         1024 => "1024_vectors",
         1536 => "1536_vectors",
@@ -857,6 +872,7 @@ pub async fn recommend_qdrant_groups_query(
 
     let vector_name = match config.EMBEDDING_SIZE {
         384 => "384_vectors",
+        512 => "512_vectors",
         768 => "768_vectors",
         1024 => "1024_vectors",
         1536 => "1536_vectors",

@@ -53,7 +53,7 @@ pub async fn refresh_redis_org_plan_sub(
         message: "Could not create redis client",
     })?;
     let mut redis_conn = client
-        .get_async_connection()
+        .get_multiplexed_async_connection()
         .await
         .map_err(|_| DefaultError {
             message: "Could not create redis client",
