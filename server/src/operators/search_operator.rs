@@ -942,7 +942,7 @@ pub fn rerank_chunks(
     use_weights: Option<bool>,
 ) -> Vec<ScoreChunkDTO> {
     let mut reranked_chunks = Vec::new();
-    if use_weights.is_some() && use_weights.unwrap() {
+    if use_weights.unwrap_or(true) {
         chunks.into_iter().for_each(|mut chunk| {
             if chunk.metadata[0].weight == 0.0 {
                 chunk.metadata[0].weight = 1.0;
