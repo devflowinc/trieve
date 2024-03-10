@@ -958,7 +958,7 @@ pub fn rerank_chunks(
             if let (Some(time_stamp_a), Some(time_stamp_b)) =
                 (a.metadata[0].time_stamp, b.metadata[0].time_stamp)
             {
-                return time_stamp_a.timestamp().cmp(&time_stamp_b.timestamp());
+                return time_stamp_b.timestamp().cmp(&time_stamp_a.timestamp());
             }
             a.score.total_cmp(&b.score)
         });
