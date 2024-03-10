@@ -78,7 +78,7 @@ pub async fn create_embedding(
 
     // Vectorize
     let parameters = EmbeddingParameters {
-        model: "text-embedding-3-small".to_string(),
+        model: dataset_config.EMBEDDING_MODEL_NAME.to_string(),
         input,
         truncate: true,
     };

@@ -861,6 +861,7 @@ pub struct ServerDatasetConfiguration {
     pub DOCUMENT_DOWNLOAD_FEATURE: bool,
     pub LLM_BASE_URL: String,
     pub EMBEDDING_BASE_URL: String,
+    pub EMBEDDING_MODEL_NAME: String,
     pub QDRANT_URL: String,
     pub QDRANT_API_KEY: String,
     pub QDRANT_COLLECTION_NAME: String,
@@ -944,6 +945,18 @@ impl ServerDatasetConfiguration {
                 .as_u64()
                 .map(|u| u as usize)
                 .unwrap_or(1536),
+            EMBEDDING_MODEL_NAME: configuration
+                .get("EMBEDDING_MODEL_NAME")
+                .unwrap_or(&json!("text-embedding-3-small"))
+                .as_str()
+                .map(|s| {
+                    if s.is_empty() {
+                        "text-embedding-3-small".to_string()
+                    } else {
+                        s.to_string()
+                    }
+                })
+                .unwrap_or("text-embedding-3-small".to_string()),
             LLM_DEFAULT_MODEL: configuration
                 .get("LLM_DEFAULT_MODEL")
                 .unwrap_or(&json!("gpt-3.5-turbo-1106"))
