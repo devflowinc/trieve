@@ -949,6 +949,8 @@ pub fn rerank_chunks(
             chunk.score *= chunk.metadata[0].weight;
             reranked_chunks.push(chunk);
         });
+    } else {
+        reranked_chunks = chunks;
     }
 
     if date_bias.is_some() && date_bias.unwrap() {
