@@ -1019,6 +1019,8 @@ pub struct SearchWithinGroupData {
     pub search_type: String,
     /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
     pub date_bias: Option<bool>,
+    /// Set use_weights to true to use the weights of the chunks in the result set in order to sort them.
+    pub use_weights: Option<bool>,
     /// Set highlight_results to true to highlight the results. If not specified, this defaults to true.
     pub highlight_results: Option<bool>,
     /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"].
@@ -1036,6 +1038,7 @@ impl From<SearchWithinGroupData> for SearchChunkData {
             filters: data.filters,
             search_type: data.search_type,
             date_bias: data.date_bias,
+            use_weights: data.use_weights,
             get_collisions: Some(false),
             highlight_results: data.highlight_results,
             highlight_delimiters: data.highlight_delimiters,
@@ -1174,8 +1177,6 @@ pub struct SearchOverGroupsData {
     pub page_size: Option<u32>,
     /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
-    /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
-    pub date_bias: Option<bool>,
     /// Set get_collisions to true to get the collisions for each chunk. This will only apply if environment variable COLLISIONS_ENABLED is set to true.
     pub get_collisions: Option<bool>,
     /// Set highlight_results to true to highlight the results. If not specified, this defaults to true.
