@@ -1,6 +1,7 @@
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
 use redis::AsyncCommands;
+use sentry::{Hub, SentryFutureExt};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{self, ChunkGroupBookmark, Event, ServerDatasetConfiguration};
 use trieve_server::errors::ServiceError;
@@ -18,12 +19,11 @@ use trieve_server::operators::qdrant_operator::{
 };
 use trieve_server::operators::search_operator::global_unfiltered_top_match_query;
 
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
+fn main() {
+    dotenvy::dotenv().ok();
+
     let sentry_url = std::env::var("SENTRY_URL");
     let _guard = if let Ok(sentry_url) = sentry_url {
-        log::info!("Sentry monitoring enabled");
-
         let guard = sentry::init((
             sentry_url,
             sentry::ClientOptions {
@@ -43,6 +43,7 @@ async fn main() -> std::io::Result<()> {
             )
             .init();
 
+        log::info!("Sentry monitoring enabled");
         Some(guard)
     } else {
         tracing_subscriber::Registry::default()
@@ -63,7 +64,6 @@ async fn main() -> std::io::Result<()> {
         std::thread::available_parallelism().unwrap().get() * 2
     };
 
-
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     let pool: models::Pool = r2d2::Pool::builder()
@@ -72,39 +72,40 @@ async fn main() -> std::io::Result<()> {
 
     let web_pool = actix_web::web::Data::new(pool.clone());
 
-    let threads: Vec<_> = (0..thread_num)
-        .map(|_i| {
-            let web_pool = web_pool.clone();
-            ingestion_service(web_pool)
-        })
-        .collect();
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(
+            async move {
+                let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
+                let redis_client = redis::Client::open(redis_url).unwrap();
+                let redis_connection = redis_client
+                    .get_multiplexed_tokio_connection()
+                    .await
+                    .unwrap();
 
-    futures::future::join_all(threads).await;
+                let threads: Vec<_> = (0..thread_num)
+                    .map(|i| {
+                        let web_pool = web_pool.clone();
+                        let redis_connection = redis_connection.clone();
+                        ingestion_service(i, redis_connection, web_pool)
+                    })
+                    .collect();
 
-    Ok(())
+                futures::future::join_all(threads).await;
+            }
+            .bind_hub(Hub::new_from_top(Hub::current())),
+        );
 }
 
-#[tracing::instrument(skip(web_pool))]
-async fn ingestion_service(
-    web_pool: actix_web::web::Data<models::Pool>,
-) {
-
-    let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
-    let redis_client = redis::Client::open(redis_url).unwrap();
-    let mut redis_connection = redis_client
-        .get_multiplexed_tokio_connection()
-        .await
-        .unwrap();
-
+#[tracing::instrument(skip(web_pool, redis_connection))]
+async fn ingestion_service(thread: usize, mut redis_connection: redis::aio::MultiplexedConnection, web_pool: actix_web::web::Data<models::Pool>) {
     log::info!("Starting ingestion service thread");
     loop {
         let payload_result = redis_connection
             .brpop::<&str, Vec<String>>("ingestion", 0.0)
-            .await
-            .map_err(|err| {
-                log::error!("Failed to get payload from redis: {:?}", err);
-                ServiceError::InternalServerError("Failed to get payload from redis".into())
-            });
+            .await;
 
         let payload = if let Ok(payload) = payload_result {
             payload
@@ -112,9 +113,13 @@ async fn ingestion_service(
             continue;
         };
 
+        let ctx = sentry::TransactionContext::new("Processing chunk", "Processing chunk");
+        let transaction = sentry::start_transaction(ctx);
+
         let payload: IngestionMessage = serde_json::from_str(&payload[1]).unwrap();
         let server_dataset_configuration =
             ServerDatasetConfiguration::from_json(payload.dataset_config.clone());
+
         match upload_chunk(
             payload.clone(),
             web_pool.clone(),
@@ -154,15 +159,21 @@ async fn ingestion_service(
                 });
             }
         }
+        transaction.finish();
     }
 }
 
-#[tracing::instrument(skip(web_pool))]
+#[tracing::instrument(skip(payload, web_pool, config))]
 async fn upload_chunk(
     mut payload: IngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
     config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
+
+    let tx_ctx = sentry::TransactionContext::new("upload_chunk", "Uploading Chunk");
+    let transaction = sentry::start_transaction(tx_ctx);
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
+
     let mut new_chunk_id = payload.chunk_metadata.id;
     let mut qdrant_point_id = payload
         .chunk_metadata
@@ -213,6 +224,8 @@ async fn upload_chunk(
     let duplicate_distance_threshold = dataset_config.DUPLICATE_DISTANCE_THRESHOLD;
 
     if duplicate_distance_threshold < 1.0 || dataset_config.COLLISIONS_ENABLED {
+        let collision_detection_span = transaction.start_child("collision_check", "global_unfiltered_top_match_query and get_metadata_from_point_ids");
+
         let first_semantic_result = global_unfiltered_top_match_query(
             embedding_vector.clone(),
             payload.chunk_metadata.dataset_id,
@@ -241,10 +254,13 @@ async fn upload_chunk(
                 }
             };
         }
+        collision_detection_span.finish();
     }
 
     //if collision is not nil, insert chunk with collision
     if collision.is_some() {
+        let update_collision_span = transaction.start_child("update_collision", "update_qdrant_point_query and insert_duplicate_chunk_metadata_query");
+
         update_qdrant_point_query(
             None,
             collision.expect("Collision must be some"),
@@ -269,6 +285,8 @@ async fn upload_chunk(
                 err
             ))
         })?;
+
+        update_collision_span.finish();
     }
     //if collision is nil and embedding vector is some, insert chunk with no collision
     else {
@@ -306,6 +324,8 @@ async fn upload_chunk(
     }
 
     if let Some(group_ids_to_bookmark) = payload.chunk.group_ids {
+        let create_bookmarks_span = transaction.start_child("creating_bookmarks", "Inserting all Bookmarks");
+
         for group_id_to_bookmark in group_ids_to_bookmark {
             let chunk_group_bookmark =
                 ChunkGroupBookmark::from_details(group_id_to_bookmark, new_chunk_id);
@@ -333,7 +353,10 @@ async fn upload_chunk(
                     })?;
             }
         }
+
+        create_bookmarks_span.finish();
     }
 
+    transaction.finish();
     Ok(())
 }
