@@ -28,6 +28,10 @@ pub enum IngestionMessage {
 
 fn main() {
     dotenvy::dotenv().ok();
+<<<<<<< HEAD
+=======
+
+>>>>>>> fe40fa42 (feature: sentry working for ingestion server)
     let sentry_url = std::env::var("SENTRY_URL");
     let _guard = if let Ok(sentry_url) = sentry_url {
         let guard = sentry::init((
@@ -226,7 +230,7 @@ async fn ingestion_service(
     }
 }
 
-#[tracing::instrument(skip(payload, web_pool, config))]
+#[tracing::instrument(skip(payload, web_pool, dataset_config))]
 async fn upload_chunk(
     mut payload: UploadIngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
