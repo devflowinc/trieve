@@ -1059,7 +1059,7 @@ pub async fn search_full_text_chunks(
         .join(" AND ")
         .replace('\"', "");
 
-    let embedding_vector = get_splade_embedding(&parsed_query.query, "query")
+    let embedding_vector = get_splade_embedding(parsed_query.clone().query, "query".to_string())
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
 
@@ -1069,7 +1069,7 @@ pub async fn search_full_text_chunks(
         data.page_size.unwrap_or(10),
         data.score_threshold,
         data.filters.clone(),
-        parsed_query,
+        parsed_query.clone(),
         dataset.id,
         pool.clone(),
         config,
@@ -1331,7 +1331,7 @@ pub async fn search_full_text_groups(
     config: ServerDatasetConfiguration,
 ) -> Result<SearchGroupsResult, actix_web::Error> {
     let data_inner = data.clone();
-    let embedding_vector = get_splade_embedding(&data.query, "query").await?;
+    let embedding_vector = get_splade_embedding(data.query.clone(), "query".to_string()).await?;
 
     let search_chunk_query_results = search_within_chunk_group_query(
         VectorType::Sparse(embedding_vector),
@@ -1382,7 +1382,8 @@ pub async fn search_hybrid_groups(
 
     let dense_embedding_vector =
         create_embedding(&data.query, "query", dataset_config.clone()).await?;
-    let sparse_embedding_vector = get_splade_embedding(&data.query, "query").await?;
+    let sparse_embedding_vector =
+        get_splade_embedding(data.query.clone(), "query".to_string()).await?;
 
     let semantic_future = search_within_chunk_group_query(
         VectorType::Dense(dense_embedding_vector),
@@ -1533,7 +1534,7 @@ pub async fn full_text_search_over_groups(
     dataset: Dataset,
     config: ServerDatasetConfiguration,
 ) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
-    let embedding_vector = get_splade_embedding(&data.query, "query")
+    let embedding_vector = get_splade_embedding(data.query.clone(), "query".to_string())
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
 
@@ -1620,7 +1621,7 @@ pub async fn hybrid_search_over_groups(
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
     let dense_embedding_vector =
         create_embedding(&data.query, "query", dataset_config.clone()).await?;
-    let sparse_embedding_vector = get_splade_embedding(&data.query, "query")
+    let sparse_embedding_vector = get_splade_embedding(data.query.clone(), "query".to_string())
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
 

@@ -34,8 +34,11 @@ pub async fn get_qdrant_connection(
     ));
     let mut config = QdrantClientConfig::from_url(qdrant_url);
     config.api_key = Some(qdrant_api_key.to_owned());
-    QdrantClient::new(Some(config)).map_err(|_err| DefaultError {
-        message: "Failed to connect to Qdrant",
+    QdrantClient::new(Some(config)).map_err(|err| {
+        log::error!("Failed to connect to Qdrant {:?}", err);
+        DefaultError {
+            message: "Failed to connect to Qdrant",
+        }
     })
 }
 
@@ -247,13 +250,6 @@ pub async fn create_new_qdrant_point_query(
     dataset_id: uuid::Uuid,
     config: ServerDatasetConfiguration,
 ) -> Result<(), actix_web::Error> {
-    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
-
-    let qdrant = get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY))
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    let chunk_content = chunk_metadata.content.clone();
     let payload = json!({"tag_set": chunk_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": chunk_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "metadata": chunk_metadata.metadata.unwrap_or_default(), "time_stamp": chunk_metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string(), "group_ids": vec![] as Vec<String>})
                 .try_into()
                 .expect("A json! Value must always be a valid Payload");
@@ -270,8 +266,9 @@ pub async fn create_new_qdrant_point_query(
     let mut vector_payload =
         HashMap::from([(vector_name.to_string(), Vector::from(embedding_vector))]);
 
+    let chunk_content = chunk_metadata.content.clone();
     if config.FULLTEXT_ENABLED {
-        let splade_vector = get_splade_embedding(&chunk_content, "doc").await?;
+        let splade_vector = get_splade_embedding(chunk_content, "doc".to_string()).await?;
         vector_payload.insert("sparse_vectors".to_string(), Vector::from(splade_vector));
     } else {
         vector_payload.insert("sparse_vectors".to_string(), Vector::from(vec![(0, 0.0)]));
@@ -279,13 +276,114 @@ pub async fn create_new_qdrant_point_query(
 
     let point = PointStruct::new(point_id.clone().to_string(), vector_payload, payload);
 
+    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+
+    let qdrant = get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY))
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
     qdrant
         .upsert_points_blocking(qdrant_collection, None, vec![point], None)
         .await
         .map_err(|err| {
-            log::info!("Failed inserting chunk to qdrant {:?}", err);
+            log::error!("Failed inserting single chunk to qdrant {:?}", err);
             ServiceError::BadRequest("Failed inserting chunk to qdrant".into())
         })?;
+
+    Ok(())
+}
+
+#[tracing::instrument(skip(data_to_inserts))]
+pub async fn bulk_create_qdrant_points_query(
+    data_to_inserts: Vec<(
+        uuid::Uuid,
+        Vec<f32>,
+        ChunkMetadata,
+        uuid::Uuid,
+        ServerDatasetConfiguration,
+    )>,
+) -> Result<(), actix_web::Error> {
+    let get_splade_vector_futures = data_to_inserts
+        .iter()
+        .map(|data| {
+            let chunk_content = data.2.content.clone();
+            get_splade_embedding(chunk_content, "doc".to_string())
+        })
+        .collect::<Vec<_>>();
+    let splade_vectors = futures::future::join_all(get_splade_vector_futures).await;
+
+    let mut points = vec![];
+
+    for i in 0..data_to_inserts.len() {
+        let data = &data_to_inserts[i];
+        let splade_vector = match &splade_vectors[i] {
+            Ok(splade_vector) => splade_vector.clone(),
+            Err(_) => vec![(0, 0.0)],
+        };
+
+        let chunk_metadata = data.2.clone();
+        let payload = json!({"tag_set": chunk_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": chunk_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "metadata": chunk_metadata.metadata.unwrap_or_default(), "time_stamp": data.2.time_stamp.unwrap_or_default().timestamp(), "dataset_id": data.3.to_string(), "group_ids": vec![] as Vec<String>})
+                .try_into()
+                .expect("A json! Value must always be a valid Payload");
+
+        let vector_name = match data.1.len() {
+            384 => "384_vectors",
+            512 => "512_vectors",
+            768 => "768_vectors",
+            1024 => "1024_vectors",
+            1536 => "1536_vectors",
+            _ => {
+                return Err(ServiceError::BadRequest("Invalid embedding vector size".into()).into())
+            }
+        };
+
+        let mut vector_payload =
+            HashMap::from([(vector_name.to_string(), Vector::from(data.1.clone()))]);
+
+        if data.4.FULLTEXT_ENABLED {
+            vector_payload.insert("sparse_vectors".to_string(), Vector::from(splade_vector));
+        } else {
+            vector_payload.insert("sparse_vectors".to_string(), Vector::from(vec![(0, 0.0)]));
+        }
+
+        let point = PointStruct::new(data.0.clone().to_string(), vector_payload, payload);
+        let qdrant_collection = data.4.QDRANT_COLLECTION_NAME.clone();
+        let qdrant_url = data.4.QDRANT_URL.clone();
+        let qdrant_api_key = data.4.QDRANT_API_KEY.clone();
+
+        points.push((point, qdrant_collection, qdrant_url, qdrant_api_key));
+    }
+
+    // make groups of points based on collection, url, and api_key
+    let mut points_grouped = HashMap::new();
+    for point in points {
+        let qdrant_collection = point.1.clone();
+        let qdrant_url = point.2.clone();
+        let qdrant_api_key = point.3.clone();
+        let points = points_grouped
+            .entry((qdrant_collection, qdrant_url, qdrant_api_key))
+            .or_insert(vec![]);
+        points.push(point.0);
+    }
+
+    for qdrant_connection_info in points_grouped.keys() {
+        let qdrant_collection = qdrant_connection_info.0.clone();
+        let qdrant_url = qdrant_connection_info.1.clone();
+        let qdrant_api_key = qdrant_connection_info.2.clone();
+
+        let qdrant = get_qdrant_connection(Some(&qdrant_url), Some(&qdrant_api_key))
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+        let points = points_grouped.get(qdrant_connection_info).unwrap();
+        qdrant
+            .upsert_points_blocking(qdrant_collection, None, points.clone(), None)
+            .await
+            .map_err(|err| {
+                log::error!("Failed inserting bulk chunks to qdrant {:?}", err);
+                ServiceError::BadRequest("Failed inserting bulk chunks to qdrant".into())
+            })?;
+    }
 
     Ok(())
 }
@@ -355,7 +453,7 @@ pub async fn update_qdrant_point_query(
             HashMap::from([(vector_name.to_string(), Vector::from(updated_vector))]);
         if config.FULLTEXT_ENABLED {
             let chunk_content = metadata.unwrap().content;
-            let splade_vector = get_splade_embedding(&chunk_content, "doc").await?;
+            let splade_vector = get_splade_embedding(chunk_content, "doc".to_string()).await?;
             vector_payload.insert("sparse_vectors".to_string(), Vector::from(splade_vector));
         } else {
             vector_payload.insert("sparse_vectors".to_string(), Vector::from(vec![(0, 0.0)]));

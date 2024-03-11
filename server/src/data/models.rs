@@ -1,7 +1,6 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
 use crate::get_env;
-
 use super::schema::*;
 use chrono::{DateTime, NaiveDateTime};
 use dateparser::DateTimeUtc;

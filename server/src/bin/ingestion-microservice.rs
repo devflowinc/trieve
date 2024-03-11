@@ -1,3 +1,5 @@
+use std::num::NonZeroUsize;
+
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
 use redis::AsyncCommands;
@@ -7,14 +9,16 @@ use trieve_server::errors::ServiceError;
 use trieve_server::get_env;
 use trieve_server::handlers::chunk_handler::IngestionMessage;
 use trieve_server::operators::chunk_operator::{
-    get_metadata_from_point_ids, insert_chunk_metadata_query, insert_duplicate_chunk_metadata_query,
+    get_metadata_from_point_ids, insert_bulk_chunk_metadatas_query, insert_chunk_metadata_query,
+    insert_duplicate_chunk_metadata_query,
 };
 use trieve_server::operators::event_operator::create_event_query;
 use trieve_server::operators::group_operator::create_chunk_bookmark_query;
 use trieve_server::operators::model_operator::create_embedding;
 use trieve_server::operators::parse_operator::{average_embeddings, coarse_doc_chunker};
 use trieve_server::operators::qdrant_operator::{
-    add_bookmark_to_qdrant_query, create_new_qdrant_point_query, update_qdrant_point_query,
+    add_bookmark_to_qdrant_query, bulk_create_qdrant_points_query, create_new_qdrant_point_query,
+    update_qdrant_point_query,
 };
 use trieve_server::operators::search_operator::global_unfiltered_top_match_query;
 
@@ -58,11 +62,14 @@ async fn main() -> std::io::Result<()> {
     };
 
     let thread_num = if let Ok(thread_num) = std::env::var("THREAD_NUM") {
-        thread_num.parse::<usize>().unwrap()
+        thread_num
+            .parse::<usize>()
+            .expect("THREAD_NUM must be a number")
     } else {
-        std::thread::available_parallelism().unwrap().get() * 2
+        std::thread::available_parallelism().expect(
+            "Failed to get number of available threads. Please set THREAD_NUM environment variable",
+        ).get() * 2
     };
-
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
     let manager = ConnectionManager::<PgConnection>::new(database_url);
@@ -73,9 +80,9 @@ async fn main() -> std::io::Result<()> {
     let web_pool = actix_web::web::Data::new(pool.clone());
 
     let threads: Vec<_> = (0..thread_num)
-        .map(|_i| {
+        .map(|i| {
             let web_pool = web_pool.clone();
-            ingestion_service(web_pool)
+            ingestion_service(i, web_pool)
         })
         .collect();
 
@@ -85,10 +92,7 @@ async fn main() -> std::io::Result<()> {
 }
 
 #[tracing::instrument(skip(web_pool))]
-async fn ingestion_service(
-    web_pool: actix_web::web::Data<models::Pool>,
-) {
-
+async fn ingestion_service(thread: usize, web_pool: actix_web::web::Data<models::Pool>) {
     let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
     let redis_client = redis::Client::open(redis_url).unwrap();
     let mut redis_connection = redis_client
@@ -96,9 +100,14 @@ async fn ingestion_service(
         .await
         .unwrap();
 
-    log::info!("Starting ingestion service thread");
+    log::info!("Starting ingestion service thread {:?}", thread);
+    let num_to_process: NonZeroUsize = std::env::var("NUM_TO_PROCESS")
+        .unwrap_or("10".to_string())
+        .parse::<NonZeroUsize>()
+        .unwrap_or(NonZeroUsize::new(10).expect("10 is not zero"));
+
     loop {
-        let payload_result = redis_connection
+        let single_kv = redis_connection
             .brpop::<&str, Vec<String>>("ingestion", 0.0)
             .await
             .map_err(|err| {
@@ -106,52 +115,121 @@ async fn ingestion_service(
                 ServiceError::InternalServerError("Failed to get payload from redis".into())
             });
 
-        let payload = if let Ok(payload) = payload_result {
-            payload
-        } else {
-            continue;
+        let num_to_process_kvs = redis_connection
+            .rpop::<&str, Vec<String>>("ingestion", Some(num_to_process))
+            .await
+            .map_err(|err| {
+                log::error!("Failed to get payload from redis: {:?}", err);
+                ServiceError::InternalServerError("Failed to get payload from redis".into())
+            });
+
+        let payloads = match (single_kv, num_to_process_kvs) {
+            (Ok(single), Ok(mut multiple)) => {
+                multiple.push(single[1].clone());
+                multiple
+            }
+            _ => continue,
         };
 
-        let payload: IngestionMessage = serde_json::from_str(&payload[1]).unwrap();
-        let server_dataset_configuration =
-            ServerDatasetConfiguration::from_json(payload.dataset_config.clone());
-        match upload_chunk(
-            payload.clone(),
-            web_pool.clone(),
-            server_dataset_configuration,
-        )
-        .await
-        {
-            Ok(_) => {
-                log::info!("Uploaded chunk: {:?}", payload.chunk_metadata.id);
-                let _ = create_event_query(
-                    Event::from_details(
-                        payload.chunk_metadata.dataset_id,
-                        models::EventType::CardUploaded {
-                            chunk_id: payload.chunk_metadata.id,
-                        },
-                    ),
-                    web_pool.clone(),
-                )
-                .map_err(|err| {
-                    log::error!("Failed to create event: {:?}", err);
-                });
-            }
-            Err(err) => {
-                log::error!("Failed to upload chunk: {:?}", err);
-                let _ = create_event_query(
-                    Event::from_details(
-                        payload.chunk_metadata.dataset_id,
-                        models::EventType::CardUploadFailed {
-                            chunk_id: payload.chunk_metadata.id,
-                            error: format!("Failed to upload chunk: {:?}", err),
-                        },
-                    ),
-                    web_pool.clone(),
-                )
-                .map_err(|err| {
-                    log::error!("Failed to create event: {:?}", err);
-                });
+        let ingestion_messages = payloads
+            .iter()
+            .map(
+                |payload| match serde_json::from_str::<IngestionMessage>(payload) {
+                    Ok(ingestion_message) => Some(ingestion_message),
+                    Err(err) => {
+                        log::error!(
+                            "Failed to parse ingestion message: {:?} | {:?}",
+                            err,
+                            payload
+                        );
+                        None
+                    }
+                },
+            )
+            .filter(|ingestion_message| ingestion_message.is_some())
+            .map(|ingestion_message| ingestion_message.expect("Ingestion message must be some"))
+            .collect::<Vec<IngestionMessage>>();
+
+        let single_upload_messages = ingestion_messages
+            .iter()
+            .filter(|ingestion_message| {
+                let server_config =
+                    ServerDatasetConfiguration::from_json(ingestion_message.dataset_config.clone());
+                (server_config.COLLISIONS_ENABLED
+                    && server_config.DUPLICATE_DISTANCE_THRESHOLD < 1.0)
+                    || ingestion_message
+                        .chunk
+                        .clone()
+                        .split_avg
+                        .is_some_and(|split_avg| split_avg == true)
+                    || ingestion_message
+                        .chunk
+                        .clone()
+                        .group_ids
+                        .is_some_and(|group_ids| !group_ids.is_empty())
+                    || ingestion_message
+                        .chunk
+                        .upsert_by_tracking_id
+                        .is_some_and(|upsert| upsert == true)
+            })
+            .cloned()
+            .collect::<Vec<IngestionMessage>>();
+
+        let multiple_upload_messages = ingestion_messages
+            .iter()
+            .filter(|ingestion_message| {
+                !single_upload_messages.iter().any(|single_upload_message| {
+                    single_upload_message.chunk_metadata.id == ingestion_message.chunk_metadata.id
+                })
+            })
+            .cloned()
+            .collect::<Vec<IngestionMessage>>();
+
+        if !multiple_upload_messages.is_empty() {
+            let _ = bulk_upload_chunks(thread, multiple_upload_messages, web_pool.clone()).await;
+        }
+
+        for payload in single_upload_messages {
+            let server_dataset_configuration =
+                ServerDatasetConfiguration::from_json(payload.dataset_config.clone());
+            match upload_chunk(
+                payload.clone(),
+                web_pool.clone(),
+                server_dataset_configuration,
+            )
+            .await
+            {
+                Ok(_) => {
+                    log::info!("Uploaded chunk: {:?}", payload.chunk_metadata.id);
+                    let _ = create_event_query(
+                        Event::from_details(
+                            payload.chunk_metadata.dataset_id,
+                            models::EventType::CardUploaded {
+                                chunk_id: payload.chunk_metadata.id,
+                            },
+                        ),
+                        web_pool.clone(),
+                    )
+                    .map_err(|err| {
+                        log::error!("Failed to create event: {:?}", err);
+                    });
+                }
+                Err(err) => {
+                    log::error!("Failed to upload chunk: {:?}", err);
+                    let _ = create_event_query(
+                        Event::from_details(
+                            payload.chunk_metadata.dataset_id,
+                            models::EventType::CardUploadFailed {
+                                chunk_id: payload.chunk_metadata.id,
+                                error: format!("Failed to upload chunk: {:?}", err),
+                            },
+                        ),
+                        web_pool.clone(),
+                    )
+                    .map_err(|err| {
+                        log::error!("Failed to create event: {:?}", err);
+                    });
+                }
             }
         }
     }
@@ -334,6 +412,69 @@ async fn upload_chunk(
             }
         }
     }
+
+    Ok(())
+}
+
+#[tracing::instrument(skip(ingestion_messages, web_pool))]
+async fn bulk_upload_chunks(
+    _thread: usize,
+    ingestion_messages: Vec<IngestionMessage>,
+    web_pool: actix_web::web::Data<models::Pool>,
+) -> Result<(), ServiceError> {
+    let create_embedding_futures = ingestion_messages
+        .iter()
+        .map(|ingestion_message| {
+            create_embedding(
+                &ingestion_message.chunk_metadata.content,
+                "doc",
+                ServerDatasetConfiguration::from_json(ingestion_message.dataset_config.clone()),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let chunk_metadatas = ingestion_messages
+        .iter()
+        .map(|ingestion_message| ingestion_message.chunk_metadata.clone())
+        .collect::<Vec<_>>();
+
+    let embeddings = futures::future::join_all(create_embedding_futures).await;
+
+    let mut insert_qdrant_datas = vec![];
+    for i in 0..ingestion_messages.len() {
+        let embedding = match &embeddings[i] {
+            Ok(embedding) => embedding.clone(),
+            Err(err) => {
+                log::error!("Failed to create embedding: {:?}", err);
+                continue;
+            }
+        };
+        let ingestion_message = &ingestion_messages[i];
+        let qdrant_point_id = ingestion_message
+            .chunk_metadata
+            .qdrant_point_id
+            .unwrap_or(uuid::Uuid::new_v4());
+        let chunk_metadata = ingestion_message.chunk_metadata.clone();
+        let dataset_id = ingestion_message.dataset_id;
+        let config =
+            ServerDatasetConfiguration::from_json(ingestion_message.dataset_config.clone());
+
+        insert_qdrant_datas.push((
+            qdrant_point_id,
+            embedding,
+            chunk_metadata,
+            dataset_id,
+            config,
+        ));
+    }
+
+    let bulk_pg_insert_future =
+        insert_bulk_chunk_metadatas_query(chunk_metadatas, web_pool.clone());
+    let bulk_create_qrant_future = bulk_create_qdrant_points_query(insert_qdrant_datas);
+
+    let _ = futures::future::join(bulk_pg_insert_future, bulk_create_qrant_future).await;
+
+    log::info!("Bulk uploaded {} chunks", ingestion_messages.len(),);
 
     Ok(())
 }

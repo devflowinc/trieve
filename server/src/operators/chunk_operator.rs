@@ -1,6 +1,6 @@
 use crate::data::models::{
-    ChunkCollision, ChunkFile, ChunkMetadataWithFileData, Dataset, FullTextSearchResult,
-    ServerDatasetConfiguration, UnifiedId,
+    self, ChunkCollision, ChunkFile, ChunkMetadataWithFileData, Dataset, Event,
+    FullTextSearchResult, ServerDatasetConfiguration, UnifiedId,
 };
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::operators::model_operator::create_embedding;
@@ -464,6 +464,55 @@ pub fn insert_duplicate_chunk_metadata_query(
     Ok(chunk_data)
 }
 
+pub async fn insert_bulk_chunk_metadatas_query(
+    chunk_metadatas: Vec<ChunkMetadata>,
+    pool: web::Data<Pool>,
+) -> Result<Vec<ChunkMetadata>, DefaultError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+    use crate::data::schema::events::dsl as events_columns;
+
+    let events = chunk_metadatas
+        .iter()
+        .map(|chunk_metadata| {
+            Event::from_details(
+                chunk_metadata.dataset_id,
+                models::EventType::CardUploaded {
+                    chunk_id: chunk_metadata.id,
+                },
+            )
+        })
+        .collect::<Vec<Event>>();
+
+    let mut conn = pool.get().unwrap();
+
+    let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
+        diesel::insert_into(chunk_metadata_columns::chunk_metadata)
+            .values(&chunk_metadatas)
+            .on_conflict((
+                chunk_metadata_columns::tracking_id,
+                chunk_metadata_columns::dataset_id,
+            ))
+            .do_nothing()
+            .execute(conn)?;
+
+        diesel::insert_into(events_columns::events)
+            .values(&events)
+            .execute(conn)?;
+
+        Ok(chunk_metadatas)
+    });
+
+    match transaction_result {
+        Ok(chunk_metadatas) => Ok(chunk_metadatas),
+        Err(e) => {
+            log::error!("Failed to bulk insert chunk metadatas: {:?}", e);
+            Err(DefaultError {
+                message: "Failed to bulk insert chunk metadatas",
+            })
+        }
+    }
+}
+
 #[tracing::instrument(skip(pool))]
 pub async fn update_chunk_metadata_query(
     chunk_data: ChunkMetadata,
@@ -514,9 +563,12 @@ pub async fn update_chunk_metadata_query(
                 })
             }
         }
-        Err(_) => Err(DefaultError {
-            message: "Failed to update chunk metadata",
-        }),
+        Err(e) => {
+            log::error!("Failed to update chunk metadata: {:?}", e);
+            Err(DefaultError {
+                message: "Failed to update chunk metadata",
+            })
+        }
     }
 }
 

@@ -131,8 +131,8 @@ pub struct CustomSparseEmbedData {
 
 #[tracing::instrument]
 pub async fn get_splade_embedding(
-    message: &str,
-    embed_type: &str,
+    message: String,
+    embed_type: String,
 ) -> Result<Vec<(u32, f32)>, ServiceError> {
     if message.is_empty() {
         return Err(ServiceError::BadRequest(
