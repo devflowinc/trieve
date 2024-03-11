@@ -202,7 +202,6 @@ pub async fn cross_encoder(
     page_size: u64,
     results: Vec<ScoreChunkDTO>,
 ) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
-    log::info!("Doing criss cross");
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
         Some(parent) => parent
@@ -231,7 +230,6 @@ pub async fn cross_encoder(
     };
 
     let embedding_server_call = format!("{}/rerank", server_origin);
-    log::info!("Server {:?}", embedding_server_call);
 
     if results.is_empty() {
         return Ok(vec![]);

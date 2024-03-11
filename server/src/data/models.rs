@@ -14,11 +14,6 @@ use utoipa::ToSchema;
 // type alias to use in multiple places
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct AI {
-    pub a : String,
-}
-
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[diesel(table_name = users)]
 pub struct User {
@@ -1020,8 +1015,7 @@ impl ServerDatasetConfiguration {
                 .unwrap_or(&json!(""))
                 .as_str()
                 .map(|s| s.to_string())
-                .unwrap_or("".to_string()),
-            
+                .unwrap_or("".to_string())
         }
     }
 }
@@ -1514,5 +1508,3 @@ impl From<String> for UnifiedId {
         UnifiedId::TrackingId(tracking_id)
     }
 }
-
-
