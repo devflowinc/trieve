@@ -513,6 +513,30 @@ pub async fn insert_bulk_chunk_metadatas_query(
     }
 }
 
+pub async fn get_chunks_by_tracking_id_query(
+    tracking_ids: Vec<String>,
+    dataset_uuid: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Vec<ChunkMetadata>, DefaultError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
+    let mut conn = pool.get().unwrap();
+
+    let chunk_metadatas: Vec<ChunkMetadata> = chunk_metadata_columns::chunk_metadata
+        .filter(chunk_metadata_columns::tracking_id.eq_any(&tracking_ids))
+        .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid))
+        .select(ChunkMetadata::as_select())
+        .load::<ChunkMetadata>(&mut conn)
+        .map_err(|e| {
+            log::error!("Failed to get chunk metadata: {:?}", e);
+            DefaultError {
+                message: "Failed to load metadata",
+            }
+        })?;
+
+    Ok(chunk_metadatas)
+}
+
 #[tracing::instrument(skip(pool))]
 pub async fn update_chunk_metadata_query(
     chunk_data: ChunkMetadata,

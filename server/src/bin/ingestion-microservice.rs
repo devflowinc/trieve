@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::num::NonZeroUsize;
 
 use diesel::r2d2::ConnectionManager;
@@ -9,7 +10,8 @@ use trieve_server::errors::ServiceError;
 use trieve_server::get_env;
 use trieve_server::handlers::chunk_handler::IngestionMessage;
 use trieve_server::operators::chunk_operator::{
-    get_metadata_from_point_ids, insert_bulk_chunk_metadatas_query, insert_chunk_metadata_query,
+    get_chunks_by_tracking_id_query, get_metadata_from_point_ids,
+    insert_bulk_chunk_metadatas_query, insert_chunk_metadata_query,
     insert_duplicate_chunk_metadata_query,
 };
 use trieve_server::operators::event_operator::create_event_query;
@@ -422,6 +424,67 @@ async fn bulk_upload_chunks(
     ingestion_messages: Vec<IngestionMessage>,
     web_pool: actix_web::web::Data<models::Pool>,
 ) -> Result<(), ServiceError> {
+    let mut ingestion_messages = ingestion_messages.clone();
+
+    let tracking_dataset_ids = ingestion_messages
+        .iter()
+        .filter(|ingestion_message| ingestion_message.chunk_metadata.tracking_id.is_some())
+        .map(|ingestion_message| {
+            (
+                <Option<std::string::String> as Clone>::clone(
+                    &ingestion_message.chunk_metadata.tracking_id,
+                )
+                .expect("Tracking id must be some"),
+                ingestion_message.dataset_id,
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let mut tracking_dataset_ids_map = HashMap::new();
+    for (tracking_id, dataset_id) in tracking_dataset_ids {
+        tracking_dataset_ids_map
+            .entry(dataset_id)
+            .or_insert(vec![])
+            .push(tracking_id);
+    }
+
+    let get_chunks_by_tracking_ids_futures = tracking_dataset_ids_map
+        .iter()
+        .map(|(dataset_id, tracking_ids)| {
+            get_chunks_by_tracking_id_query(
+                tracking_ids.clone(),
+                dataset_id.clone(),
+                web_pool.clone(),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let tracking_chunk_results =
+        futures::future::join_all(get_chunks_by_tracking_ids_futures).await;
+
+    for tracking_chunk_result in tracking_chunk_results {
+        match tracking_chunk_result {
+            Ok(tracking_results) => {
+                for tracking_result in tracking_results {
+                    let tracking_result_tracking_id = tracking_result.tracking_id;
+                    if let Some(tracking_result_tracking_id) = tracking_result_tracking_id {
+                        ingestion_messages.retain(|ingestion_message| {
+                            let message_tracking_id =
+                                ingestion_message.chunk_metadata.tracking_id.clone();
+                            match message_tracking_id {
+                                Some(message_tracking_id) => {
+                                    message_tracking_id != tracking_result_tracking_id
+                                }
+                                None => true,
+                            }
+                        });
+                    }
+                }
+            }
+            _ => continue,
+        }
+    }
+
     let create_embedding_futures = ingestion_messages
         .iter()
         .map(|ingestion_message| {
