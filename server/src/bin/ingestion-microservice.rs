@@ -20,6 +20,7 @@ use trieve_server::operators::search_operator::global_unfiltered_top_match_query
 use trieve_server::{establish_connection, get_env};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
 pub enum IngestionMessage {
     Upload(UploadIngestionMessage),
     Update(UpdateIngestionMessage),
@@ -139,14 +140,7 @@ async fn ingestion_service(
         let payload: IngestionMessage = serde_json::from_str(&payload[1]).unwrap();
         match payload {
             IngestionMessage::Upload(payload) => {
-                let server_dataset_configuration =
-                    ServerDatasetConfiguration::from_json(payload.dataset_config.clone());
-                match upload_chunk(
-                    payload.clone(),
-                    web_pool.clone(),
-                    server_dataset_configuration,
-                )
-                .await
+                match upload_chunk(payload.clone(), web_pool.clone(), payload.dataset_config).await
                 {
                     Ok(_) => {
                         log::info!("Uploaded chunk: {:?}", payload.chunk_metadata.id);
@@ -169,7 +163,7 @@ async fn ingestion_service(
                         let _ = create_event_query(
                             Event::from_details(
                                 payload.chunk_metadata.dataset_id,
-                                models::EventType::CardUploadFailed {
+                                models::EventType::CardActionFailed {
                                     chunk_id: payload.chunk_metadata.id,
                                     error: format!("Failed to upload chunk: {:?}", err),
                                 },
@@ -193,11 +187,11 @@ async fn ingestion_service(
                 .await
                 {
                     Ok(_) => {
-                        log::info!("Uploaded chunk: {:?}", payload.chunk_metadata.id);
+                        log::info!("Updated chunk: {:?}", payload.chunk_metadata.id);
                         let _ = create_event_query(
                             Event::from_details(
                                 payload.dataset_id,
-                                models::EventType::CardUploaded {
+                                models::EventType::CardUpdated {
                                     chunk_id: payload.chunk_metadata.id,
                                 },
                             ),
@@ -213,7 +207,7 @@ async fn ingestion_service(
                         let _ = create_event_query(
                             Event::from_details(
                                 payload.dataset_id,
-                                models::EventType::CardUploadFailed {
+                                models::EventType::CardActionFailed {
                                     chunk_id: payload.chunk_metadata.id,
                                     error: format!("Failed to upload chunk: {:?}", err),
                                 },
@@ -236,7 +230,7 @@ async fn ingestion_service(
 async fn upload_chunk(
     mut payload: UploadIngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
-    config: ServerDatasetConfiguration,
+    dataset_config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
     let tx_ctx = sentry::TransactionContext::new("upload_chunk", "Uploading Chunk");
     let transaction = sentry::start_transaction(tx_ctx);
@@ -248,7 +242,6 @@ async fn upload_chunk(
         .qdrant_point_id
         .unwrap_or(uuid::Uuid::new_v4());
 
-    let dataset_config = ServerDatasetConfiguration::from_json(payload.dataset_config);
     let embedding_vector = if let Some(embedding_vector) = payload.chunk.chunk_vector.clone() {
         embedding_vector
     } else {
@@ -300,7 +293,7 @@ async fn upload_chunk(
         let first_semantic_result = global_unfiltered_top_match_query(
             embedding_vector.clone(),
             payload.chunk_metadata.dataset_id,
-            config.clone(),
+            dataset_config.clone(),
         )
         .await
         .map_err(|err| {
@@ -340,7 +333,7 @@ async fn upload_chunk(
             collision.expect("Collision must be some"),
             None,
             payload.chunk_metadata.dataset_id,
-            config.clone(),
+            dataset_config.clone(),
         )
         .await
         .map_err(|err| {
@@ -387,7 +380,7 @@ async fn upload_chunk(
             embedding_vector,
             payload.chunk_metadata.clone(),
             payload.chunk_metadata.dataset_id,
-            config.clone(),
+            dataset_config.clone(),
         )
         .await
         .map_err(|err| {
@@ -418,15 +411,19 @@ async fn upload_chunk(
                     });
 
             if create_chunk_bookmark_res.is_ok() {
-                add_bookmark_to_qdrant_query(qdrant_point_id, group_id_to_bookmark, config.clone())
-                    .await
-                    .map_err(|err| {
-                        log::error!("Failed to add bookmark to qdrant: {:?}", err);
-                        ServiceError::InternalServerError(format!(
-                            "Failed to add bookmark to qdrant: {:?}",
-                            err
-                        ))
-                    })?;
+                add_bookmark_to_qdrant_query(
+                    qdrant_point_id,
+                    group_id_to_bookmark,
+                    dataset_config.clone(),
+                )
+                .await
+                .map_err(|err| {
+                    log::error!("Failed to add bookmark to qdrant: {:?}", err);
+                    ServiceError::InternalServerError(format!(
+                        "Failed to add bookmark to qdrant: {:?}",
+                        err
+                    ))
+                })?;
             }
         }
 

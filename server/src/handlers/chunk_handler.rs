@@ -71,7 +71,7 @@ pub struct UploadIngestionMessage {
     pub chunk_metadata: ChunkMetadata,
     pub chunk: CreateChunkData,
     pub dataset_id: uuid::Uuid,
-    pub dataset_config: serde_json::Value,
+    pub dataset_config: ServerDatasetConfiguration,
     pub upsert_by_tracking_id: bool,
 }
 
@@ -176,11 +176,15 @@ pub async fn create_chunk(
     chunk_only_group_ids.group_ids = Some(deduped_group_ids.clone());
     chunk_only_group_ids.group_tracking_ids = None;
 
+    let server_dataset_configuration = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    );
+
     let ingestion_message = UploadIngestionMessage {
         chunk_metadata: chunk_metadata.clone(),
         chunk: chunk_only_group_ids.clone(),
         dataset_id: count_dataset_id,
-        dataset_config: dataset_org_plan_sub.dataset.server_configuration,
+        dataset_config: server_dataset_configuration.clone(),
         upsert_by_tracking_id: chunk.upsert_by_tracking_id.unwrap_or(false),
     };
 
