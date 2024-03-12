@@ -8,10 +8,8 @@ use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
 use crate::operators::group_operator::get_groups_from_tracking_ids_query;
-use crate::operators::model_operator::create_embedding;
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::recommend_qdrant_query;
-use crate::operators::qdrant_operator::update_qdrant_point_query;
 use crate::operators::search_operator::{
     search_full_text_chunks, search_hybrid_chunks, search_semantic_chunks,
 };
@@ -69,7 +67,7 @@ pub struct ReturnQueuedChunk {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-pub struct IngestionMessage {
+pub struct UploadIngestionMessage {
     pub chunk_metadata: ChunkMetadata,
     pub chunk: CreateChunkData,
     pub dataset_id: uuid::Uuid,
@@ -178,7 +176,7 @@ pub async fn create_chunk(
     chunk_only_group_ids.group_ids = Some(deduped_group_ids.clone());
     chunk_only_group_ids.group_tracking_ids = None;
 
-    let ingestion_message = IngestionMessage {
+    let ingestion_message = UploadIngestionMessage {
         chunk_metadata: chunk_metadata.clone(),
         chunk: chunk_only_group_ids.clone(),
         dataset_id: count_dataset_id,
@@ -346,19 +344,26 @@ pub async fn delete_chunk_by_tracking_id(
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct UpdateChunkData {
     /// Id of the chunk you want to update.
-    chunk_id: uuid::Uuid,
+    chunk_id: Option<uuid::Uuid>,
+    /// Tracking_id of the chunk you want to update. This is required to match an existing chunk.
+    tracking_id: Option<String>,
     /// Link of the chunk you want to update. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation. If no link is provided, the existing link will be used.
     link: Option<String>,
     /// HTML content of the chunk you want to update. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content. If no chunk_html is provided, the existing chunk_html will be used.
     chunk_html: Option<String>,
     /// The metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata. If no metadata is provided, the existing metadata will be used.
     metadata: Option<serde_json::Value>,
-    /// Tracking_id is a string which can be used to identify a chunk. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk. If no tracking_id is provided, the existing tracking_id will be used.
-    tracking_id: Option<String>,
     /// Time_stamp should be an ISO 8601 combined date and time without timezone. It is used for time window filtering and recency-biasing search results. If no time_stamp is provided, the existing time_stamp will be used.
     time_stamp: Option<String>,
     /// Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset. If no weight is provided, the existing weight will be used.
     weight: Option<f64>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct UpdateIngestionMessage {
+    pub chunk_metadata: ChunkMetadata,
+    pub server_dataset_config: ServerDatasetConfiguration,
+    pub dataset_id: uuid::Uuid,
 }
 
 /// update_chunk
@@ -386,6 +391,7 @@ pub struct UpdateChunkData {
 pub async fn update_chunk(
     chunk: web::Json<UpdateChunkData>,
     pool: web::Data<Pool>,
+    redis_client: web::Data<redis::Client>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -393,14 +399,23 @@ pub async fn update_chunk(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    let get_qdrant_id_pool = pool.clone();
-    let update_chunk_metadata_pool = pool.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
     let chunk_id = chunk.chunk_id;
 
-    let chunk_metadata = get_metadata_from_id_query(chunk_id, dataset_id, pool)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let chunk_metadata = if let Some(chunk_id) = chunk_id {
+        get_metadata_from_id_query(chunk_id, dataset_id, pool)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+    } else if let Some(tracking_id) = chunk.tracking_id.clone() {
+        get_metadata_from_tracking_id_query(tracking_id.clone(), dataset_id, pool)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+    } else {
+        return Err(ServiceError::BadRequest(
+            "Either chunk_id or tracking_id must be provided to update a chunk".into(),
+        )
+        .into());
+    };
 
     let link = chunk
         .link
@@ -414,26 +429,14 @@ pub async fn update_chunk(
     let new_content =
         convert_html_to_text(chunk.chunk_html.as_ref().unwrap_or(&chunk_metadata.content));
 
-    let embedding_vector = create_embedding(
-        &new_content,
-        "doc",
-        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration),
-    )
-    .await?;
-
     let chunk_html = match chunk.chunk_html.clone() {
         Some(chunk_html) => Some(chunk_html),
         None => chunk_metadata.chunk_html,
     };
 
-    let chunk_id1 = chunk.chunk_id;
-    let qdrant_point_id = get_qdrant_id_from_chunk_id_query(chunk_id1, get_qdrant_id_pool)
-        .await
-        .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
-
     let metadata = ChunkMetadata::from_details_with_id(
-        chunk.chunk_id,
-        &new_content,
+        chunk_metadata.id,
+        new_content,
         &chunk_html,
         &Some(link),
         &chunk_metadata.tag_set,
@@ -458,24 +461,20 @@ pub async fn update_chunk(
         dataset_id,
         chunk.weight.unwrap_or(1.0),
     );
-    let metadata1 = metadata.clone();
-    update_chunk_metadata_query(metadata, None, dataset_id, update_chunk_metadata_pool)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    update_qdrant_point_query(
-        // If the chunk is a collision, we don't want to update the qdrant point
-        if chunk_metadata.qdrant_point_id.is_none() {
-            None
-        } else {
-            Some(metadata1)
-        },
-        qdrant_point_id,
-        Some(embedding_vector),
-        dataset_id,
+    let message = UpdateIngestionMessage {
+        chunk_metadata: metadata.clone(),
         server_dataset_config,
-    )
-    .await?;
+        dataset_id,
+    };
+
+    let mut pub_client = redis_client
+        .get_connection()
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    pub_client
+        .lpush("ingestion", serde_json::to_string(&message)?)
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -499,6 +498,7 @@ pub struct UpdateChunkByTrackingIdData {
 /// update_chunk_by_tracking_id
 ///
 /// Update a chunk by tracking_id. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk.
+#[deprecated]
 #[utoipa::path(
     put,
     path = "/chunk/tracking_id/update",
@@ -521,6 +521,7 @@ pub struct UpdateChunkByTrackingIdData {
 pub async fn update_chunk_by_tracking_id(
     chunk: web::Json<UpdateChunkByTrackingIdData>,
     pool: web::Data<Pool>,
+    redis_client: web::Data<redis::Client>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -531,7 +532,7 @@ pub async fn update_chunk_by_tracking_id(
         .into());
     }
     let tracking_id = chunk.tracking_id.clone();
-    let tracking_id1 = tracking_id.clone();
+
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let server_dataset_config = ServerDatasetConfiguration::from_json(
@@ -550,33 +551,21 @@ pub async fn update_chunk_by_tracking_id(
     let new_content =
         convert_html_to_text(chunk.chunk_html.as_ref().unwrap_or(&chunk_metadata.content));
 
-    let embedding_vector = create_embedding(
-        &new_content,
-        "doc",
-        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration),
-    )
-    .await?;
-
     let chunk_html = match chunk.chunk_html.clone() {
         Some(chunk_html) => Some(chunk_html),
         None => chunk_metadata.chunk_html,
     };
 
-    let chunk_id1 = chunk_metadata.id;
-    let qdrant_point_id = get_qdrant_id_from_chunk_id_query(chunk_id1, pool.clone())
-        .await
-        .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
-
     let metadata = ChunkMetadata::from_details_with_id(
         chunk_metadata.id,
-        &new_content,
+        new_content,
         &chunk_html,
         &Some(link),
         &chunk_metadata.tag_set,
         chunk_metadata.qdrant_point_id,
         <std::option::Option<serde_json::Value> as Clone>::clone(&chunk.metadata)
             .or(chunk_metadata.metadata),
-        Some(tracking_id1),
+        Some(chunk.tracking_id.clone()),
         chunk
             .time_stamp
             .clone()
@@ -594,24 +583,20 @@ pub async fn update_chunk_by_tracking_id(
         dataset_org_plan_sub.dataset.id,
         chunk.weight.unwrap_or(1.0),
     );
-    let metadata1 = metadata.clone();
-    update_chunk_metadata_query(metadata, None, dataset_org_plan_sub.dataset.id, pool)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    update_qdrant_point_query(
-        // If the chunk is a collision, we don't want to update the qdrant point
-        if chunk_metadata.qdrant_point_id.is_none() {
-            None
-        } else {
-            Some(metadata1)
-        },
-        qdrant_point_id,
-        Some(embedding_vector),
-        dataset_org_plan_sub.dataset.id,
+    let message = UpdateIngestionMessage {
+        chunk_metadata: metadata.clone(),
         server_dataset_config,
-    )
-    .await?;
+        dataset_id,
+    };
+
+    let mut pub_client = redis_client
+        .get_connection()
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    pub_client
+        .lpush("ingestion", serde_json::to_string(&message)?)
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }

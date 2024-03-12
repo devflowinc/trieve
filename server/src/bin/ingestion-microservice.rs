@@ -4,9 +4,10 @@ use sentry::{Hub, SentryFutureExt};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{self, ChunkGroupBookmark, Event, ServerDatasetConfiguration};
 use trieve_server::errors::ServiceError;
-use trieve_server::handlers::chunk_handler::IngestionMessage;
+use trieve_server::handlers::chunk_handler::{UpdateIngestionMessage, UploadIngestionMessage};
 use trieve_server::operators::chunk_operator::{
-    get_metadata_from_point_ids, insert_chunk_metadata_query, insert_duplicate_chunk_metadata_query,
+    get_metadata_from_point_ids, get_qdrant_id_from_chunk_id_query, insert_chunk_metadata_query,
+    insert_duplicate_chunk_metadata_query, update_chunk_metadata_query,
 };
 use trieve_server::operators::event_operator::create_event_query;
 use trieve_server::operators::group_operator::create_chunk_bookmark_query;
@@ -18,9 +19,14 @@ use trieve_server::operators::qdrant_operator::{
 use trieve_server::operators::search_operator::global_unfiltered_top_match_query;
 use trieve_server::{establish_connection, get_env};
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub enum IngestionMessage {
+    Upload(UploadIngestionMessage),
+    Update(UpdateIngestionMessage),
+}
+
 fn main() {
     dotenvy::dotenv().ok();
-
     let sentry_url = std::env::var("SENTRY_URL");
     let _guard = if let Ok(sentry_url) = sentry_url {
         let guard = sentry::init((
@@ -131,43 +137,95 @@ async fn ingestion_service(
         let transaction = sentry::start_transaction(ctx);
 
         let payload: IngestionMessage = serde_json::from_str(&payload[1]).unwrap();
-        let server_dataset_configuration =
-            ServerDatasetConfiguration::from_json(payload.dataset_config.clone());
-
-        let upload_chunk_result = upload_chunk(
-            payload.clone(),
-            web_pool.clone(),
-            server_dataset_configuration,
-        )
-        .await;
-
-        match upload_chunk_result {
-            Ok(_) => {
-                log::info!("Uploaded chunk: {:?}", payload.chunk_metadata.id);
-                let _ = create_event_query(
-                    Event::from_details(
-                        payload.chunk_metadata.dataset_id,
-                        models::EventType::CardUploaded {
-                            chunk_id: payload.chunk_metadata.id,
-                        },
-                    ),
+        match payload {
+            IngestionMessage::Upload(payload) => {
+                let server_dataset_configuration =
+                    ServerDatasetConfiguration::from_json(payload.dataset_config.clone());
+                match upload_chunk(
+                    payload.clone(),
                     web_pool.clone(),
+                    server_dataset_configuration,
                 )
-                .await;
+                .await
+                {
+                    Ok(_) => {
+                        log::info!("Uploaded chunk: {:?}", payload.chunk_metadata.id);
+                        let _ = create_event_query(
+                            Event::from_details(
+                                payload.chunk_metadata.dataset_id,
+                                models::EventType::CardUploaded {
+                                    chunk_id: payload.chunk_metadata.id,
+                                },
+                            ),
+                            web_pool.clone(),
+                        )
+                        .await
+                        .map_err(|err| {
+                            log::error!("Failed to create event: {:?}", err);
+                        });
+                    }
+                    Err(err) => {
+                        log::error!("Failed to upload chunk: {:?}", err);
+                        let _ = create_event_query(
+                            Event::from_details(
+                                payload.chunk_metadata.dataset_id,
+                                models::EventType::CardUploadFailed {
+                                    chunk_id: payload.chunk_metadata.id,
+                                    error: format!("Failed to upload chunk: {:?}", err),
+                                },
+                            ),
+                            web_pool.clone(),
+                        )
+                        .await
+                        .map_err(|err| {
+                            log::error!("Failed to create event: {:?}", err);
+                        });
+                    }
+                }
             }
-            Err(err) => {
-                log::error!("Failed to upload chunk: {:?}", err);
-                let _ = create_event_query(
-                    Event::from_details(
-                        payload.chunk_metadata.dataset_id,
-                        models::EventType::CardUploadFailed {
-                            chunk_id: payload.chunk_metadata.id,
-                            error: format!("Failed to upload chunk: {:?}", err),
-                        },
-                    ),
+
+            IngestionMessage::Update(payload) => {
+                match update_chunk(
+                    payload.clone(),
                     web_pool.clone(),
+                    payload.server_dataset_config.clone(),
                 )
-                .await;
+                .await
+                {
+                    Ok(_) => {
+                        log::info!("Uploaded chunk: {:?}", payload.chunk_metadata.id);
+                        let _ = create_event_query(
+                            Event::from_details(
+                                payload.dataset_id,
+                                models::EventType::CardUploaded {
+                                    chunk_id: payload.chunk_metadata.id,
+                                },
+                            ),
+                            web_pool.clone(),
+                        )
+                        .await
+                        .map_err(|err| {
+                            log::error!("Failed to create event: {:?}", err);
+                        });
+                    }
+                    Err(err) => {
+                        log::error!("Failed to upload chunk: {:?}", err);
+                        let _ = create_event_query(
+                            Event::from_details(
+                                payload.dataset_id,
+                                models::EventType::CardUploadFailed {
+                                    chunk_id: payload.chunk_metadata.id,
+                                    error: format!("Failed to upload chunk: {:?}", err),
+                                },
+                            ),
+                            web_pool.clone(),
+                        )
+                        .await
+                        .map_err(|err| {
+                            log::error!("Failed to create event: {:?}", err);
+                        });
+                    }
+                }
             }
         }
         transaction.finish();
@@ -176,7 +234,7 @@ async fn ingestion_service(
 
 #[tracing::instrument(skip(payload, web_pool, config))]
 async fn upload_chunk(
-    mut payload: IngestionMessage,
+    mut payload: UploadIngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
     config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
@@ -376,5 +434,50 @@ async fn upload_chunk(
     }
 
     transaction.finish();
+    Ok(())
+}
+
+async fn update_chunk(
+    payload: UpdateIngestionMessage,
+    web_pool: actix_web::web::Data<models::Pool>,
+    server_dataset_config: ServerDatasetConfiguration,
+) -> Result<(), ServiceError> {
+    let embedding_vector = create_embedding(
+        &payload.chunk_metadata.content,
+        "doc",
+        server_dataset_config.clone(),
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    let qdrant_point_id =
+        get_qdrant_id_from_chunk_id_query(payload.chunk_metadata.id, web_pool.clone())
+            .await
+            .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
+
+    update_chunk_metadata_query(
+        payload.chunk_metadata.clone(),
+        None,
+        payload.dataset_id,
+        web_pool.clone(),
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    update_qdrant_point_query(
+        // If the chunk is a collision, we don't want to update the qdrant point
+        if payload.chunk_metadata.qdrant_point_id.is_none() {
+            None
+        } else {
+            Some(payload.chunk_metadata)
+        },
+        qdrant_point_id,
+        Some(embedding_vector),
+        payload.dataset_id,
+        server_dataset_config,
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
     Ok(())
 }
