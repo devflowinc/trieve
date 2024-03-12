@@ -1,7 +1,7 @@
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
-use redis::AsyncCommands;
-use sentry::{Hub, SentryFutureExt};
+use crossbeam_channel as crossbeam;
+use redis::Commands;
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{self, ChunkGroupBookmark, Event, ServerDatasetConfiguration};
 use trieve_server::errors::ServiceError;
@@ -72,61 +72,94 @@ fn main() {
 
     let web_pool = actix_web::web::Data::new(pool.clone());
 
+
+    let (s, r):
+    (crossbeam::Sender<IngestionMessage>, crossbeam::Receiver<IngestionMessage>) =
+        crossbeam_channel::bounded(10);
+
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .unwrap()
         .block_on(
             async move {
-                let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
-                let redis_client = redis::Client::open(redis_url).unwrap();
-                let redis_connection = redis_client
-                    .get_multiplexed_tokio_connection()
-                    .await
-                    .unwrap();
-
                 let threads: Vec<_> = (0..thread_num)
                     .map(|i| {
                         let web_pool = web_pool.clone();
-                        let redis_connection = redis_connection.clone();
-                        ingestion_service(i, redis_connection, web_pool)
+                        let r = r.clone();
+                        ingestion_service(i, r, web_pool)
                     })
                     .collect();
 
                 futures::future::join_all(threads).await;
             }
-            .bind_hub(Hub::new_from_top(Hub::current())),
         );
 }
 
-#[tracing::instrument(skip(web_pool, redis_connection))]
-async fn ingestion_service(thread: usize, mut redis_connection: redis::aio::MultiplexedConnection, web_pool: actix_web::web::Data<models::Pool>) {
-    log::info!("Starting ingestion service thread");
+#[tracing::instrument]
+fn redis_populator(sender: crossbeam::Sender<IngestionMessage>) {
+
+    let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
+    let redis_client = redis::Client::open(redis_url).unwrap();
+    let mut redis_connection = redis_client
+        .get_connection()
+        .expect("Failed getting Redis Connection");
+
     loop {
         let payload_result = redis_connection
-            .brpop::<&str, Vec<String>>("ingestion", 0.0)
-            .await;
+            .brpop::<&str, Vec<String>>("ingestion", 0.0);
 
         let payload = if let Ok(payload) = payload_result {
             payload
         } else {
             continue;
         };
+        
+        let payload: IngestionMessage = serde_json::from_str(&payload[1]).expect("Error unwraping string");
+        let result = sender.send(payload);
+        if let Err(_) = result {
+            log::error!("Channel is disconnected, dropping");
+            break;
+        }
+    }
+}
+
+#[tracing::instrument(skip(web_pool, receiver))]
+async fn ingestion_service(
+    thread: usize,
+    receiver: crossbeam_channel::Receiver<IngestionMessage>,
+    web_pool: actix_web::web::Data<models::Pool>,
+) {
+    log::info!("Starting ingestion service thread");
+    loop {
+
 
         let ctx = sentry::TransactionContext::new("Processing chunk", "Processing chunk");
         let transaction = sentry::start_transaction(ctx);
 
-        let payload: IngestionMessage = serde_json::from_str(&payload[1]).unwrap();
+        let payload = match receiver.recv() {
+            Ok(payload) => payload,
+            Err(e) => {
+                log::error!("{e}");
+                break;
+            }
+        };
+
         let server_dataset_configuration =
             ServerDatasetConfiguration::from_json(payload.dataset_config.clone());
 
-        match upload_chunk(
+        let upload_span = transaction.start_child("upload_chunk", "Calling upload_chunk.await");
+
+        let upload_chunk_result = upload_chunk(
             payload.clone(),
             web_pool.clone(),
             server_dataset_configuration,
         )
-        .await
-        {
+        .await;
+
+        upload_span.finish();
+
+        match upload_chunk_result {
             Ok(_) => {
                 log::info!("Uploaded chunk: {:?}", payload.chunk_metadata.id);
                 let _ = create_event_query(
@@ -169,7 +202,6 @@ async fn upload_chunk(
     web_pool: actix_web::web::Data<models::Pool>,
     config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
-
     let tx_ctx = sentry::TransactionContext::new("upload_chunk", "Uploading Chunk");
     let transaction = sentry::start_transaction(tx_ctx);
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
@@ -224,7 +256,10 @@ async fn upload_chunk(
     let duplicate_distance_threshold = dataset_config.DUPLICATE_DISTANCE_THRESHOLD;
 
     if duplicate_distance_threshold < 1.0 || dataset_config.COLLISIONS_ENABLED {
-        let collision_detection_span = transaction.start_child("collision_check", "global_unfiltered_top_match_query and get_metadata_from_point_ids");
+        let collision_detection_span = transaction.start_child(
+            "collision_check",
+            "global_unfiltered_top_match_query and get_metadata_from_point_ids",
+        );
 
         let first_semantic_result = global_unfiltered_top_match_query(
             embedding_vector.clone(),
@@ -259,7 +294,10 @@ async fn upload_chunk(
 
     //if collision is not nil, insert chunk with collision
     if collision.is_some() {
-        let update_collision_span = transaction.start_child("update_collision", "update_qdrant_point_query and insert_duplicate_chunk_metadata_query");
+        let update_collision_span = transaction.start_child(
+            "update_collision",
+            "update_qdrant_point_query and insert_duplicate_chunk_metadata_query",
+        );
 
         update_qdrant_point_query(
             None,
@@ -324,7 +362,8 @@ async fn upload_chunk(
     }
 
     if let Some(group_ids_to_bookmark) = payload.chunk.group_ids {
-        let create_bookmarks_span = transaction.start_child("creating_bookmarks", "Inserting all Bookmarks");
+        let create_bookmarks_span =
+            transaction.start_child("creating_bookmarks", "Inserting all Bookmarks");
 
         for group_id_to_bookmark in group_ids_to_bookmark {
             let chunk_group_bookmark =
