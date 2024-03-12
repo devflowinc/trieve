@@ -385,6 +385,7 @@ impl ChunkGroup {
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             tracking_id,
+            
         }
     }
 }
