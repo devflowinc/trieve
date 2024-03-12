@@ -333,6 +333,8 @@ pub fn update_chunk_group_query(
         message: "Error updating group",
     })?;
 
+    //TODO: update bookmarks within the group
+
     Ok(())
 }
 
@@ -434,15 +436,7 @@ pub fn get_bookmarks_for_group_query(
                     chunk_metadata_columns::weight,
                     sql::<Int8>("count(*) OVER() AS full_count"),
                 ),
-                (
-                    chunk_group_columns::id,
-                    chunk_group_columns::name,
-                    chunk_group_columns::description,
-                    chunk_group_columns::created_at,
-                    chunk_group_columns::updated_at,
-                    chunk_group_columns::dataset_id,
-                    chunk_group_columns::tracking_id,
-                ),
+                ChunkGroup::as_select(),
             ))
             .limit(limit)
             .offset(((page - 1) * limit as u64).try_into().unwrap_or(0))

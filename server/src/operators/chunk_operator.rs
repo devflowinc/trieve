@@ -755,7 +755,7 @@ pub async fn delete_chunk_metadata_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn get_qdrant_id_from_chunk_id_query(
+pub async fn get_qdrant_id_from_chunk_id_query(
     chunk_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<uuid::Uuid, DefaultError> {
