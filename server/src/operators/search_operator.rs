@@ -1581,7 +1581,7 @@ async fn cross_encoder_for_groups(
     let mut group_results = cross_encoder_results
         .into_iter()
         .map(|score_chunk| {
-            let group = groups_chunks
+            let mut group = groups_chunks
                 .iter()
                 .find(|group| {
                     group
@@ -1589,8 +1589,10 @@ async fn cross_encoder_for_groups(
                         .iter()
                         .any(|chunk| chunk.metadata[0].id == score_chunk.metadata[0].id)
                 })
-                .expect("Group not found");
-            group.clone()
+                .expect("Group not found")
+                .clone();
+            group.metadata[0].score = score_chunk.score;
+            group
         })
         .collect_vec();
     group_results.dedup_by(|a, b| a.group_id == b.group_id);
