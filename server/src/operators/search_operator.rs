@@ -942,7 +942,7 @@ pub fn rerank_chunks(
     use_weights: Option<bool>,
 ) -> Vec<ScoreChunkDTO> {
     let mut reranked_chunks = Vec::new();
-    if use_weights.unwrap_or(true) {
+    if use_weights.is_some() && use_weights.unwrap() {
         chunks.into_iter().for_each(|mut chunk| {
             if chunk.metadata[0].weight == 0.0 {
                 chunk.metadata[0].weight = 1.0;
@@ -1567,8 +1567,16 @@ async fn cross_encoder_for_groups(
 ) -> Result<Vec<GroupScoreChunkDTO>, actix_web::Error> {
     let score_chunks = groups_chunks
         .iter()
-        .flat_map(|group| group.metadata.clone().into_iter().collect_vec())
+        .map(|group| {
+            group
+                .metadata
+                .clone()
+                .first()
+                .expect("Metadata should have one element")
+                .clone()
+        })
         .collect_vec();
+
     let cross_encoder_results = cross_encoder(query, page_size, score_chunks).await?;
     let mut group_results = cross_encoder_results
         .into_iter()
