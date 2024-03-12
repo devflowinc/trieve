@@ -711,10 +711,14 @@ pub enum EventType {
     CardUploaded {
         chunk_id: uuid::Uuid,
     },
-    CardUploadFailed {
+    CardActionFailed {
         chunk_id: uuid::Uuid,
         error: String,
     },
+    CardUpdated {
+        chunk_id: uuid::Uuid,
+    },
+
 }
 
 impl EventType {
@@ -722,7 +726,8 @@ impl EventType {
         match self {
             EventType::FileUploaded { .. } => "file_uploaded".to_string(),
             EventType::CardUploaded { .. } => "card_uploaded".to_string(),
-            EventType::CardUploadFailed { .. } => "card_upload_failed".to_string(),
+            EventType::CardActionFailed { .. } => "card_action_failed".to_string(),
+            EventType::CardUpdated { .. } => "card_updated".to_string(),
         }
     }
 }
@@ -737,9 +742,10 @@ impl From<EventType> for serde_json::Value {
                 json!({"group_id": group_id, "file_name": file_name})
             }
             EventType::CardUploaded { chunk_id } => json!({"chunk_id": chunk_id}),
-            EventType::CardUploadFailed { chunk_id, error } => {
+            EventType::CardActionFailed { chunk_id, error } => {
                 json!({"chunk_id": chunk_id, "error": error})
-            }
+            },
+            EventType::CardUpdated { chunk_id } => json!({"chunk_id": chunk_id}),
         }
     }
 }
