@@ -1594,6 +1594,14 @@ async fn cross_encoder_for_groups(
         })
         .collect_vec();
     group_results.dedup_by(|a, b| a.group_id == b.group_id);
+
+    group_results.sort_by(|a, b| {
+        b.metadata[0]
+            .score
+            .partial_cmp(&a.metadata[0].score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
     Ok(group_results)
 }
 
