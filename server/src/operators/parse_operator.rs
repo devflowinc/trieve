@@ -1,8 +1,8 @@
+use ndarray::Array2;
 use regex::Regex;
 use regex_split::RegexSplit;
 use scraper::Html;
 use std::cmp;
-use ndarray::Array2;
 
 use crate::errors::DefaultError;
 

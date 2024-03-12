@@ -4,6 +4,7 @@ use std::num::NonZeroUsize;
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
 use redis::AsyncCommands;
+use sentry::{Hub, SentryFutureExt};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{self, ChunkGroupBookmark, Event, ServerDatasetConfiguration};
 use trieve_server::errors::ServiceError;
@@ -24,12 +25,9 @@ use trieve_server::operators::qdrant_operator::{
 };
 use trieve_server::operators::search_operator::global_unfiltered_top_match_query;
 
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
+fn main() {
     let sentry_url = std::env::var("SENTRY_URL");
     let _guard = if let Ok(sentry_url) = sentry_url {
-        log::info!("Sentry monitoring enabled");
-
         let guard = sentry::init((
             sentry_url,
             sentry::ClientOptions {
@@ -48,6 +46,8 @@ async fn main() -> std::io::Result<()> {
                 ),
             )
             .init();
+
+        log::info!("Sentry monitoring enabled");
 
         Some(guard)
     } else {
@@ -81,28 +81,41 @@ async fn main() -> std::io::Result<()> {
 
     let web_pool = actix_web::web::Data::new(pool.clone());
 
-    let threads: Vec<_> = (0..thread_num)
-        .map(|i| {
-            let web_pool = web_pool.clone();
-            ingestion_service(i, web_pool)
-        })
-        .collect();
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(
+            async move {
+                let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
+                let redis_client = redis::Client::open(redis_url).unwrap();
+                let redis_connection = redis_client
+                    .get_multiplexed_tokio_connection()
+                    .await
+                    .unwrap();
 
-    futures::future::join_all(threads).await;
+                let threads: Vec<_> = (0..thread_num)
+                    .map(|i| {
+                        let web_pool = web_pool.clone();
+                        let redis_connection = redis_connection.clone();
 
-    Ok(())
+                        ingestion_service(i, redis_connection, web_pool)
+                    })
+                    .collect();
+
+                futures::future::join_all(threads).await;
+            }
+            .bind_hub(Hub::new_from_top(Hub::current())),
+        );
 }
 
-#[tracing::instrument(skip(web_pool))]
-async fn ingestion_service(thread: usize, web_pool: actix_web::web::Data<models::Pool>) {
-    let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
-    let redis_client = redis::Client::open(redis_url).unwrap();
-    let mut redis_connection = redis_client
-        .get_multiplexed_tokio_connection()
-        .await
-        .unwrap();
-
-    log::info!("Starting ingestion service thread {:?}", thread);
+#[tracing::instrument(skip(web_pool, redis_connection))]
+async fn ingestion_service(
+    thread: usize,
+    mut redis_connection: redis::aio::MultiplexedConnection,
+    web_pool: actix_web::web::Data<models::Pool>,
+) {
+    log::info!("Starting ingestion service");
     let num_to_process: NonZeroUsize = std::env::var("NUM_TO_PROCESS")
         .unwrap_or("10".to_string())
         .parse::<NonZeroUsize>()
@@ -169,10 +182,11 @@ async fn ingestion_service(thread: usize, web_pool: actix_web::web::Data<models:
                         .clone()
                         .group_ids
                         .is_some_and(|group_ids| !group_ids.is_empty())
-                    || ingestion_message
+                    || (ingestion_message
                         .chunk
                         .upsert_by_tracking_id
                         .is_some_and(|upsert| upsert == true)
+                        && ingestion_message.chunk_metadata.tracking_id.is_some())
             })
             .cloned()
             .collect::<Vec<IngestionMessage>>();
@@ -188,7 +202,7 @@ async fn ingestion_service(thread: usize, web_pool: actix_web::web::Data<models:
             .collect::<Vec<IngestionMessage>>();
 
         if !multiple_upload_messages.is_empty() {
-            let _ = bulk_upload_chunks(thread, multiple_upload_messages, web_pool.clone()).await;
+            let _ = bulk_upload_chunks(multiple_upload_messages, web_pool.clone()).await;
         }
 
         for payload in single_upload_messages {
@@ -237,12 +251,16 @@ async fn ingestion_service(thread: usize, web_pool: actix_web::web::Data<models:
     }
 }
 
-#[tracing::instrument(skip(web_pool))]
+#[tracing::instrument(skip(web_pool, payload, config))]
 async fn upload_chunk(
     mut payload: IngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
     config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
+    let tx_ctx = sentry::TransactionContext::new("upload_chunk", "Uploading Chunk");
+    let transaction = sentry::start_transaction(tx_ctx);
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
+
     let mut new_chunk_id = payload.chunk_metadata.id;
     let mut qdrant_point_id = payload
         .chunk_metadata
@@ -415,15 +433,20 @@ async fn upload_chunk(
         }
     }
 
+    transaction.finish();
+
     Ok(())
 }
 
 #[tracing::instrument(skip(ingestion_messages, web_pool))]
 async fn bulk_upload_chunks(
-    _thread: usize,
     ingestion_messages: Vec<IngestionMessage>,
     web_pool: actix_web::web::Data<models::Pool>,
 ) -> Result<(), ServiceError> {
+    let tx_ctx = sentry::TransactionContext::new("bulk_upload_chunk", "Bulk Uploading Chunks");
+    let transaction = sentry::start_transaction(tx_ctx);
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
+
     let mut ingestion_messages = ingestion_messages.clone();
 
     let tracking_dataset_ids = ingestion_messages
@@ -537,7 +560,9 @@ async fn bulk_upload_chunks(
 
     let _ = futures::future::join(bulk_pg_insert_future, bulk_create_qrant_future).await;
 
-    log::info!("Bulk uploaded {} chunks", ingestion_messages.len(),);
+    log::info!("Bulk uploaded {} chunks", ingestion_messages.len());
+
+    transaction.finish();
 
     Ok(())
 }

@@ -1,7 +1,7 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
-use crate::get_env;
 use super::schema::*;
+use crate::get_env;
 use chrono::{DateTime, NaiveDateTime};
 use dateparser::DateTimeUtc;
 use diesel::{expression::ValidGrouping, r2d2::ConnectionManager, PgConnection};
@@ -15,7 +15,7 @@ pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AI {
-    pub a : String,
+    pub a: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
@@ -1513,5 +1513,3 @@ impl From<String> for UnifiedId {
         UnifiedId::TrackingId(tracking_id)
     }
 }
-
-
