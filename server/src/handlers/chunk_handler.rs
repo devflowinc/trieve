@@ -347,7 +347,7 @@ pub async fn delete_chunk_by_tracking_id(
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct UpdateChunkData {
-    /// Id of the chunk you want to update.
+    /// Id of the chunk you want to update. You can provide either the chunk_id or the tracking_id. If both are provided, the chunk_id will be used.
     chunk_id: Option<uuid::Uuid>,
     /// Tracking_id of the chunk you want to update. This is required to match an existing chunk.
     tracking_id: Option<String>,
