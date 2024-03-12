@@ -46,7 +46,9 @@ pub async fn create_embedding(
     let base_url = dataset_config.EMBEDDING_BASE_URL;
 
     let base_url = if base_url.is_empty() {
-        "https://api.openai.com/v1".to_string()
+        get_env!("OPENAI_BASE_URL", "OPENAI_BASE_URL must be set").to_string()
+    } else if base_url == "https://api.openai.com/v1" {
+        get_env!("OPENAI_BASE_URL", "OPENAI_BASE_URL must be set").to_string()
     } else if base_url.contains("https://embedding.trieve.ai") {
         match std::env::var("EMBEDDING_SERVER_ORIGIN")
             .ok()
