@@ -83,10 +83,14 @@ pub async fn create_embedding(
         truncate: true,
     };
 
-    let embeddings_resp = ureq::post(&format!("{}/embeddings", client.base_url))
+    let embeddings_resp = ureq::post(&format!("{}/embeddings?api-version=2023-05-15", client.base_url))
         .set(
             "Authorization",
-            &("Bearer ".to_string() + client.api_key.as_str()),
+            &format!("Bearer {}", client.api_key),
+        )
+        .set(
+            "api-key",
+            &client.api_key
         )
         .set("Content-Type", "application/json")
         .send_json(serde_json::to_value(parameters).unwrap())

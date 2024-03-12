@@ -907,11 +907,11 @@ impl ServerDatasetConfiguration {
                 .unwrap_or("https://api.openai.com/v1".to_string()),
             EMBEDDING_BASE_URL: configuration
                 .get("EMBEDDING_BASE_URL")
-                .unwrap_or(&json!("https://api.openai.com/v1".to_string()))
+                .unwrap_or(&json!(get_env!("OPENAI_BASE_URL", "OPENAI_BASE_URL must be set").to_string()))
                 .as_str()
                 .map(|s| {
                     if s.is_empty() {
-                        "https://api.openai.com/v1".to_string()
+                        get_env!("OPENAI_BASE_URL", "OPENAI_BASE_URL must be set").to_string()
                     } else {
                         s.to_string()
                     }
