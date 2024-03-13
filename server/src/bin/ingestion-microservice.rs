@@ -434,6 +434,7 @@ async fn upload_chunk(
     Ok(())
 }
 
+#[tracing::instrument(skip(web_pool))]
 async fn update_chunk(
     payload: UpdateIngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
