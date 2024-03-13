@@ -89,7 +89,9 @@ fn main() {
                     .map(|i| {
                         let web_pool = web_pool.clone();
                         let redis_connection = redis_connection.clone();
-                        ingestion_service(i, redis_connection, web_pool)
+                        tokio::spawn(
+                            async move { ingestion_service(i, redis_connection, web_pool).await },
+                        )
                     })
                     .collect();
 
