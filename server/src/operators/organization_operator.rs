@@ -15,8 +15,10 @@ use actix_identity::Identity;
 use actix_web::{web, HttpMessage, HttpRequest};
 use diesel::{
     result::DatabaseErrorKind, upsert::on_constraint, ExpressionMethods, JoinOnDsl,
-    NullableExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper, Table,
+    NullableExpressionMethods, SelectableHelper, Table,
 };
+use diesel::prelude::*;
+use diesel_async::RunQueryDsl;
 use itertools::Itertools;
 
 /// Creates a dataset from Name if it doesn't conflict. If it does, then it creates a random name
@@ -30,7 +32,7 @@ pub async fn create_organization_query(
 
     let mut new_organization = Organization::from_details(name.to_string());
 
-    let mut conn = pool.get().map_err(|_| DefaultError {
+    let mut conn = pool.get().await.map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
@@ -39,6 +41,7 @@ pub async fn create_organization_query(
         .on_conflict(on_constraint("organizations_name_key"))
         .do_nothing()
         .execute(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Could not create organization, try again",
         })?;
@@ -52,6 +55,7 @@ pub async fn create_organization_query(
             .on_conflict(on_constraint("organizations_name_key"))
             .do_nothing()
             .execute(&mut conn)
+            .await
             .map_err(|_| DefaultError {
                 message: "Could not create organization, try again",
             })?;
@@ -70,7 +74,7 @@ pub async fn update_organization_query(
 ) -> Result<Organization, DefaultError> {
     use crate::data::schema::organizations::dsl as organizations_columns;
 
-    let mut conn = pool.get().map_err(|_| DefaultError {
+    let mut conn = pool.get().await.map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
@@ -81,6 +85,7 @@ pub async fn update_organization_query(
             organizations_columns::updated_at.eq(chrono::Utc::now().naive_local()),
         ))
         .get_result(&mut conn)
+        .await
         .map_err(|err| match err {
             diesel::result::Error::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
                 DefaultError {
@@ -107,7 +112,7 @@ pub async fn delete_organization_query(
     use crate::data::schema::datasets::dsl as datasets_columns;
     use crate::data::schema::organizations::dsl as organizations_columns;
 
-    let mut conn = pool.get().map_err(|_| DefaultError {
+    let mut conn = pool.get().await.map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
@@ -115,6 +120,7 @@ pub async fn delete_organization_query(
         .filter(datasets_columns::organization_id.eq(org_id))
         .select(Dataset::as_select())
         .load::<Dataset>(&mut conn)
+        .await
         .map_err(|e| {
             log::error!(
                 "Error loading datasets in delete_organization_query: {:?}",
@@ -145,6 +151,7 @@ pub async fn delete_organization_query(
         organizations_columns::organizations.filter(organizations_columns::id.eq(org_id)),
     )
     .get_result(&mut conn)
+        .await
     .map_err(|e| {
         log::error!(
             "Error deleting organization in delete_organization_query: {:?}",
@@ -159,7 +166,7 @@ pub async fn delete_organization_query(
         let user = get_user_by_id_query(
             &calling_user_id.expect("calling_user_id cannot be null here"),
             pool,
-        )?;
+        ).await?;
 
         let slim_user: SlimUser = SlimUser::from_details(user.0, user.1, user.2);
 
@@ -245,7 +252,7 @@ pub async fn get_organization_by_key_query(
             use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
             use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
-            let mut conn = pool.get().map_err(|_| DefaultError {
+            let mut conn = pool.get().await.map_err(|_| DefaultError {
                 message: "Could not get database connection",
             })?;
 
@@ -269,6 +276,7 @@ pub async fn get_organization_by_key_query(
                         .first::<(Organization, Option<StripePlan>, Option<StripeSubscription>)>(
                             &mut conn,
                         )
+                        .await
                         .map_err(|_| DefaultError {
                             message: "Could not find organizations",
                         })?,
@@ -277,6 +285,7 @@ pub async fn get_organization_by_key_query(
                         .first::<(Organization, Option<StripePlan>, Option<StripeSubscription>)>(
                             &mut conn,
                         )
+                        .await
                         .map_err(|_| DefaultError {
                             message: "Could not find organizations",
                         })?,
@@ -340,7 +349,7 @@ pub async fn get_org_from_id_query(
 ) -> Result<Organization, DefaultError> {
     use crate::data::schema::organizations::dsl as organizations_columns;
 
-    let mut conn = pool.get().map_err(|_| DefaultError {
+    let mut conn = pool.get().await.map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
@@ -348,6 +357,7 @@ pub async fn get_org_from_id_query(
         .filter(organizations_columns::id.eq(organization_id))
         .select(Organization::as_select())
         .first(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Could not find organization, try again with a different id",
         })?;
@@ -356,13 +366,13 @@ pub async fn get_org_from_id_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn get_org_dataset_count(
+pub async fn get_org_dataset_count(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<i32, DefaultError> {
     use crate::data::schema::organization_usage_counts::dsl as organization_usage_counts_columns;
 
-    let mut conn = pool.get().map_err(|_| DefaultError {
+    let mut conn = pool.get().await.map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
@@ -370,6 +380,7 @@ pub fn get_org_dataset_count(
         .filter(organization_usage_counts_columns::org_id.eq(organization_id))
         .select(organization_usage_counts_columns::dataset_count)
         .first(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Error loading org dataset count",
         })?;
@@ -378,13 +389,13 @@ pub fn get_org_dataset_count(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn get_user_org_count(
+pub async fn get_user_org_count(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<i32, DefaultError> {
     use crate::data::schema::organization_usage_counts::dsl as organization_usage_counts_columns;
 
-    let mut conn = pool.get().map_err(|_| DefaultError {
+    let mut conn = pool.get().await.map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
@@ -392,6 +403,7 @@ pub fn get_user_org_count(
         .filter(organization_usage_counts_columns::org_id.eq(organization_id))
         .select(organization_usage_counts_columns::user_count)
         .get_result(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Error loading org user count",
         })?;
@@ -400,13 +412,13 @@ pub fn get_user_org_count(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn get_message_org_count(
+pub async fn get_message_org_count(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<i32, DefaultError> {
     use crate::data::schema::organization_usage_counts::dsl as organization_usage_counts_columns;
 
-    let mut conn = pool.get().map_err(|_| DefaultError {
+    let mut conn = pool.get().await.map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
@@ -414,6 +426,7 @@ pub fn get_message_org_count(
         .filter(organization_usage_counts_columns::org_id.eq(organization_id))
         .select(organization_usage_counts_columns::message_count)
         .get_result(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Error loading message organization count",
         })?;
@@ -422,13 +435,13 @@ pub fn get_message_org_count(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn get_file_size_sum_org(
+pub async fn get_file_size_sum_org(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<i64, DefaultError> {
     use crate::data::schema::organization_usage_counts::dsl as organization_usage_counts_columns;
 
-    let mut conn = pool.get().map_err(|_| DefaultError {
+    let mut conn = pool.get().await.map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
@@ -436,6 +449,7 @@ pub fn get_file_size_sum_org(
         .filter(organization_usage_counts_columns::org_id.eq(organization_id))
         .select(organization_usage_counts_columns::file_storage)
         .get_result(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Error loading file size sum organization count",
         })?;
@@ -448,7 +462,7 @@ pub async fn get_org_usage_by_id_query(
     org_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<OrganizationUsageCount, DefaultError> {
-    let mut conn = pool.get().map_err(|_| DefaultError {
+    let mut conn = pool.get().await.map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
@@ -456,6 +470,7 @@ pub async fn get_org_usage_by_id_query(
         crate::data::schema::organization_usage_counts::dsl::organization_usage_counts
             .filter(crate::data::schema::organization_usage_counts::dsl::org_id.eq(org_id))
             .first(&mut conn)
+        .await
             .map_err(|_| DefaultError {
                 message: "Could not find organization usage count",
             })?;
@@ -472,7 +487,7 @@ pub async fn get_org_users_by_id_query(
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     let user_orgs_orgs: Vec<(User, UserOrganization, Organization)> = users_columns::users
         .inner_join(user_organizations_columns::user_organizations)
@@ -487,6 +502,7 @@ pub async fn get_org_users_by_id_query(
             Organization::as_select(),
         ))
         .load::<(User, UserOrganization, Organization)>(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Error loading user",
         })?;

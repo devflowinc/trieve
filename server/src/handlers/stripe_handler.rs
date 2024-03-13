@@ -84,14 +84,13 @@ pub async fn webhook(
 
                     let fetch_subscription_organization_id = organization_id;
 
-                    let optional_existing_subscription = web::block(move || {
+                    let optional_existing_subscription =
                         get_option_subscription_by_organization_id_query(
                             fetch_subscription_organization_id,
                             optional_subscription_pool,
                         )
-                    })
-                    .await?
-                    .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+                        .await
+                        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
                     if let Some(existing_subscription) = optional_existing_subscription {
                         let delete_subscription_pool = pool.clone();
@@ -121,8 +120,8 @@ pub async fn webhook(
                         "Plan must have an amount".to_string(),
                     ))?;
 
-                    web::block(move || create_stripe_plan_query(plan_id, plan_amount, pool))
-                        .await?
+                    create_stripe_plan_query(plan_id, plan_amount, pool)
+                        .await
                         .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
                 }
             }
@@ -183,11 +182,10 @@ pub async fn direct_to_payment_link(
     let subscription_pool = pool.clone();
     let subscription_org_id = path_data.organization_id;
 
-    let current_subscription = web::block(move || {
+    let current_subscription =
         get_option_subscription_by_organization_id_query(subscription_org_id, subscription_pool)
-    })
-    .await?
-    .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+            .await
+            .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
     if current_subscription.is_some_and(|s| s.current_period_end.is_none()) {
         return Ok(HttpResponse::Conflict().finish());
@@ -201,8 +199,8 @@ pub async fn direct_to_payment_link(
             .await
             .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
-    let plan = web::block(move || get_plan_by_id_query(plan_id, pool))
-        .await?
+    let plan = get_plan_by_id_query(plan_id, pool)
+        .await
         .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
     let payment_link = create_stripe_payment_link(plan, organization_id)
@@ -239,11 +237,9 @@ pub async fn cancel_subscription(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let get_sub_pool = pool.clone();
-    let subscription = web::block(move || {
-        get_subscription_by_id_query(subscription_id.into_inner(), get_sub_pool)
-    })
-    .await?
-    .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    let subscription = get_subscription_by_id_query(subscription_id.into_inner(), get_sub_pool)
+        .await
+        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
     cancel_stripe_subscription(subscription.stripe_id)
         .await
@@ -295,14 +291,13 @@ pub async fn update_subscription_plan(
     let update_subscription_plan_pool = pool.clone();
 
     let subscription_id = path_data.subscription_id;
-    let subscription =
-        web::block(move || get_subscription_by_id_query(subscription_id, get_subscription_pool))
-            .await?
-            .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    let subscription = get_subscription_by_id_query(subscription_id, get_subscription_pool)
+        .await
+        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
     let plan_id = path_data.plan_id;
-    let plan = web::block(move || get_plan_by_id_query(plan_id, get_plan_pool))
-        .await?
+    let plan = get_plan_by_id_query(plan_id, get_plan_pool)
+        .await
         .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
     update_stripe_subscription(subscription.stripe_id, plan.stripe_id)
@@ -333,8 +328,8 @@ pub async fn update_subscription_plan(
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn get_all_plans(pool: web::Data<Pool>) -> Result<HttpResponse, actix_web::Error> {
-    let stripe_plans = web::block(move || get_all_plans_query(pool))
-        .await?
+    let stripe_plans = get_all_plans_query(pool)
+        .await
         .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
 
     Ok(HttpResponse::Ok().json(stripe_plans))

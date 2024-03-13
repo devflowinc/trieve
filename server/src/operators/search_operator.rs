@@ -10,7 +10,6 @@ use crate::data::models::{
     ChunkFileWithName, ChunkGroup, ChunkMetadataWithFileData, Dataset, FullTextSearchResult,
     ServerDatasetConfiguration,
 };
-use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::errors::ServiceError;
 use crate::handlers::chunk_handler::{
     ChunkFilter, MatchCondition, ParsedQuery, ScoreChunkDTO, SearchChunkData,
@@ -23,7 +22,6 @@ use crate::operators::model_operator::get_splade_embedding;
 use crate::operators::qdrant_operator::{get_qdrant_connection, search_qdrant_query};
 use crate::{data::models::Pool, errors::DefaultError};
 use actix_web::web;
-use diesel::{JoinOnDsl, NullableExpressionMethods, PgTextExpressionMethods};
 use itertools::Itertools;
 use simple_server_timing_header::Timer;
 use utoipa::ToSchema;
@@ -50,7 +48,7 @@ pub struct SearchChunkQueryResult {
 
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
-pub fn assemble_qdrant_filter(
+pub async fn assemble_qdrant_filter(
     filters: Option<ChunkFilter>,
     quote_words: Option<Vec<String>>,
     negated_words: Option<Vec<String>>,
@@ -181,7 +179,7 @@ pub fn assemble_qdrant_filter(
             negated_words,
             dataset_id,
             pool.unwrap(),
-        )?;
+        ).await?;
 
         let available_point_ids = available_qdrant_ids
             .iter()
@@ -237,7 +235,7 @@ pub async fn retrieve_qdrant_points_query(
         parsed_query.negated_words,
         dataset_id,
         Some(pool),
-    )?;
+    ).await?;
 
     let point_ids_future = search_qdrant_query(
         page,
@@ -300,7 +298,7 @@ pub async fn retrieve_group_qdrant_points_query(
         parsed_query.negated_words,
         dataset_id,
         Some(pool),
-    )?;
+    ).await?;
 
     let point_id_future = search_over_groups_query(
         page,
@@ -440,7 +438,7 @@ pub async fn search_within_chunk_group_query(
         parsed_query.negated_words,
         dataset_id,
         Some(pool),
-    )?;
+    ).await?;
 
     filter
         .must
@@ -479,15 +477,19 @@ pub async fn search_within_chunk_group_query(
     })
 }
 
-#[tracing::instrument(skip(conn))]
-pub fn get_metadata_query(
+#[tracing::instrument(skip(pool))]
+pub async fn get_metadata_query(
     chunk_metadata: Vec<FullTextSearchResult>,
-    mut conn: r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::PgConnection>>,
+    pool: web::Data<Pool>,
 ) -> Result<Vec<ChunkMetadataWithFileData>, DefaultError> {
+    use diesel::prelude::*;
+    use diesel_async::RunQueryDsl;
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
     use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::files::dsl as files_columns;
+
+    let mut conn = pool.get().await.expect("DB connection");
 
     let all_datas = chunk_metadata_columns::chunk_metadata
         .filter(
@@ -523,6 +525,7 @@ pub fn get_metadata_query(
             ),
         ))
         .load::<(Option<ChunkFileWithName>, (uuid::Uuid, Option<uuid::Uuid>))>(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Failed to load metadata",
         })?;
@@ -679,7 +682,7 @@ pub async fn retrieve_chunks_for_groups(
         point_ids,
         data.get_collisions.unwrap_or(false),
         pool,
-    )
+    ).await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let group_chunks: Vec<GroupScoreChunkDTO> = search_over_groups_query_result
@@ -772,7 +775,7 @@ pub async fn get_metadata_from_groups(
         point_ids,
         get_collisions.unwrap_or(false),
         pool,
-    )
+    ).await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let group_chunks: Vec<GroupScoreChunkDTO> = search_over_groups_query_result
@@ -867,6 +870,7 @@ pub async fn retrieve_chunks_from_point_ids(
         data.get_collisions.unwrap_or(false),
         pool,
     )
+    .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
@@ -974,7 +978,7 @@ pub fn rerank_chunks(
     reranked_chunks
 }
 
-#[tracing::instrument(skip(timer))]
+#[tracing::instrument(skip(timer, pool))]
 pub async fn search_semantic_chunks(
     data: web::Json<SearchChunkData>,
     parsed_query: ParsedQuery,
@@ -1109,7 +1113,6 @@ pub async fn search_hybrid_chunks(
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
-    let pool1 = pool.clone();
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
@@ -1131,7 +1134,7 @@ pub async fn search_hybrid_chunks(
         web::Json(data.clone()),
         parsed_query,
         page,
-        pool,
+        pool.clone(),
         dataset,
         config,
     );
@@ -1154,8 +1157,9 @@ pub async fn search_hybrid_chunks(
     let (metadata_chunks, collided_chunks) = get_metadata_and_collided_chunks_from_point_ids_query(
         point_ids,
         data.get_collisions.unwrap_or(false),
-        pool1,
+        pool,
     )
+    .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let semantic_score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
@@ -1721,14 +1725,17 @@ pub async fn hybrid_search_over_groups(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn get_qdrant_point_ids_from_pg_for_quote_negated_words(
+pub async fn get_qdrant_point_ids_from_pg_for_quote_negated_words(
     quote_words: Option<Vec<String>>,
     negated_words: Option<Vec<String>>,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Vec<uuid::Uuid>, DefaultError> {
+    use diesel::prelude::*;
+    use diesel_async::RunQueryDsl;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
-    let mut conn = pool.get().unwrap();
+
+    let mut conn = pool.get().await.unwrap();
     let mut query = chunk_metadata_columns::chunk_metadata
         .select(chunk_metadata_columns::qdrant_point_id)
         .filter(chunk_metadata_columns::qdrant_point_id.is_not_null())
@@ -1755,7 +1762,7 @@ pub fn get_qdrant_point_ids_from_pg_for_quote_negated_words(
     }
 
     let matching_qdrant_point_ids: Vec<Option<uuid::Uuid>> =
-        query.load(&mut conn).map_err(|_| DefaultError {
+        query.load(&mut conn).await.map_err(|_| DefaultError {
             message: "Failed to load full-text searched chunks",
         })?;
 

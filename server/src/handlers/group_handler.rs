@@ -32,14 +32,12 @@ pub async fn dataset_owns_group(
     pool: web::Data<Pool>,
 ) -> Result<ChunkGroup, actix_web::Error> {
     let group = match unified_group_id {
-        UnifiedId::TrieveUuid(group_id) => {
-            web::block(move || get_group_by_id_query(group_id, dataset_id, pool))
-                .await?
-                .map_err(|err| ServiceError::BadRequest(err.message.into()))?
-        }
+        UnifiedId::TrieveUuid(group_id) => get_group_by_id_query(group_id, dataset_id, pool)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?,
         UnifiedId::TrackingId(tracking_id) => {
-            web::block(move || get_group_from_tracking_id_query(tracking_id, dataset_id, pool))
-                .await?
+            get_group_from_tracking_id_query(tracking_id, dataset_id, pool)
+                .await
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?
         }
     };
@@ -147,14 +145,12 @@ pub async fn get_specific_dataset_chunk_groups(
     pool: web::Data<Pool>,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let groups = web::block(move || {
-        get_groups_for_specific_dataset_query(
-            dataset_and_page.page,
-            dataset_and_page.dataset_id,
-            pool,
-        )
-    })
-    .await?
+    let groups = get_groups_for_specific_dataset_query(
+        dataset_and_page.page,
+        dataset_and_page.dataset_id,
+        pool,
+    )
+    .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(GroupData {
@@ -209,14 +205,12 @@ pub async fn get_group_by_tracking_id(
     _user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let group = web::block(move || {
-        get_group_from_tracking_id_query(
-            data.tracking_id.clone(),
-            dataset_org_plan_sub.dataset.id,
-            pool,
-        )
-    })
-    .await?
+    let group = get_group_from_tracking_id_query(
+        data.tracking_id.clone(),
+        dataset_org_plan_sub.dataset.id,
+        pool,
+    )
+    .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(group))
@@ -265,16 +259,14 @@ pub async fn update_group_by_tracking_id(
     )
     .await?;
 
-    web::block(move || {
-        update_chunk_group_query(
-            group,
-            data.name.clone(),
-            data.description.clone(),
-            dataset_org_plan_sub.dataset.id,
-            pool,
-        )
-    })
-    .await?
+    update_chunk_group_query(
+        group,
+        data.name.clone(),
+        data.description.clone(),
+        dataset_org_plan_sub.dataset.id,
+        pool,
+    )
+    .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
@@ -441,25 +433,22 @@ pub async fn update_chunk_group(
     let description = body.description.clone();
     let group_id = body.group_id;
 
-    let pool2 = pool.clone();
 
     let group = dataset_owns_group(
         UnifiedId::TrieveUuid(group_id),
         dataset_org_plan_sub.dataset.id,
-        pool,
+        pool.clone(),
     )
     .await?;
 
-    web::block(move || {
-        update_chunk_group_query(
-            group,
-            name,
-            description,
-            dataset_org_plan_sub.dataset.id,
-            pool2,
-        )
-    })
-    .await?
+    update_chunk_group_query(
+        group,
+        name,
+        description,
+        dataset_org_plan_sub.dataset.id,
+        pool,
+    )
+    .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
@@ -501,7 +490,6 @@ pub async fn add_chunk_to_group(
     pool: web::Data<Pool>,
     _user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool2 = pool.clone();
     let chunk_metadata_id = body.chunk_id;
     let group_id = group_id.into_inner();
     let dataset_id = dataset_org_plan_sub.dataset.id;
@@ -509,15 +497,13 @@ pub async fn add_chunk_to_group(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    dataset_owns_group(UnifiedId::TrieveUuid(group_id), dataset_id, pool).await?;
+    dataset_owns_group(UnifiedId::TrieveUuid(group_id), dataset_id, pool.clone()).await?;
 
-    let qdrant_point_id = web::block(move || {
-        create_chunk_bookmark_query(
-            pool2,
-            ChunkGroupBookmark::from_details(group_id, chunk_metadata_id),
-        )
-    })
-    .await?
+    let qdrant_point_id = create_chunk_bookmark_query(
+        pool,
+        ChunkGroupBookmark::from_details(group_id, chunk_metadata_id),
+    )
+    .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if let Some(qdrant_point_id) = qdrant_point_id {
@@ -565,7 +551,6 @@ pub async fn add_chunk_to_group_by_tracking_id(
     pool: web::Data<Pool>,
     _user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool2 = pool.clone();
     let chunk_metadata_id = body.chunk_id;
     let dataset_id = dataset_org_plan_sub.dataset.id;
     let server_dataset_config = ServerDatasetConfiguration::from_json(
@@ -575,18 +560,16 @@ pub async fn add_chunk_to_group_by_tracking_id(
     let group = dataset_owns_group(
         UnifiedId::TrackingId(tracking_id.into_inner()),
         dataset_id,
-        pool,
+        pool.clone(),
     )
     .await?;
     let group_id = group.id;
 
-    let qdrant_point_id = web::block(move || {
-        create_chunk_bookmark_query(
-            pool2,
-            ChunkGroupBookmark::from_details(group_id, chunk_metadata_id),
-        )
-    })
-    .await?
+    let qdrant_point_id = create_chunk_bookmark_query(
+        pool,
+        ChunkGroupBookmark::from_details(group_id, chunk_metadata_id),
+    )
+    .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if let Some(qdrant_point_id) = qdrant_point_id {
@@ -645,16 +628,14 @@ pub async fn get_chunks_in_group(
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let bookmarks = {
-        web::block(move || {
-            get_bookmarks_for_group_query(
-                UnifiedId::TrieveUuid(group_id),
-                page,
-                None,
-                dataset_id,
-                pool,
-            )
-        })
-        .await?
+        get_bookmarks_for_group_query(
+            UnifiedId::TrieveUuid(group_id),
+            page,
+            None,
+            dataset_id,
+            pool,
+        )
+        .await
         .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?
     };
 
@@ -704,16 +685,14 @@ pub async fn get_chunks_in_group_by_tracking_id(
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let bookmarks = {
-        web::block(move || {
-            get_bookmarks_for_group_query(
-                UnifiedId::TrackingId(path_data.tracking_id.clone()),
-                page,
-                None,
-                dataset_id,
-                pool,
-            )
-        })
-        .await?
+        get_bookmarks_for_group_query(
+            UnifiedId::TrackingId(path_data.tracking_id.clone()),
+            page,
+            None,
+            dataset_id,
+            pool,
+        )
+        .await
         .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?
     };
 
@@ -758,8 +737,8 @@ pub async fn get_groups_chunk_is_in(
 
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
-    let groups = web::block(move || get_groups_for_bookmark_query(chunk_ids, dataset_id, pool))
-        .await?
+    let groups = get_groups_for_bookmark_query(chunk_ids, dataset_id, pool)
+        .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(groups))
@@ -801,7 +780,6 @@ pub async fn remove_chunk_from_group(
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let pool1 = pool.clone();
     let group_id = group_id.into_inner();
     let chunk_id = body.chunk_id;
     let dataset_id = dataset_org_plan_sub.dataset.id;
@@ -809,13 +787,11 @@ pub async fn remove_chunk_from_group(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    let pool = pool.clone();
-    dataset_owns_group(UnifiedId::TrieveUuid(group_id), dataset_id, pool1).await?;
+    dataset_owns_group(UnifiedId::TrieveUuid(group_id), dataset_id, pool.clone()).await?;
 
-    let qdrant_point_id =
-        web::block(move || delete_chunk_from_group_query(chunk_id, group_id, pool))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let qdrant_point_id = delete_chunk_from_group_query(chunk_id, group_id, pool)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if let Some(qdrant_point_id) = qdrant_point_id {
         remove_bookmark_from_qdrant_query(qdrant_point_id, group_id, server_dataset_config)
@@ -832,8 +808,8 @@ pub async fn group_unique_search(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<ChunkGroup, actix_web::Error> {
-    let group = web::block(move || get_group_by_id_query(group_id, dataset_id, pool))
-        .await?
+    let group = get_group_by_id_query(group_id, dataset_id, pool)
+        .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(group)
@@ -1095,17 +1071,13 @@ pub async fn search_within_group(
 
     let group = {
         if let Some(group_id) = group_id {
-            web::block(move || get_group_by_id_query(group_id, dataset_id, pool))
+            get_group_by_id_query(group_id, dataset_id, pool)
                 .await
-                .map_err(|err| ServiceError::BadRequest(err.to_string()))?
                 .map_err(|err| ServiceError::BadRequest(err.message.into()))?
         } else if let Some(group_tracking_id) = data.group_tracking_id.clone() {
-            web::block(move || {
-                get_group_from_tracking_id_query(group_tracking_id, dataset_id, pool)
-            })
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.to_string()))?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+            get_group_from_tracking_id_query(group_tracking_id, dataset_id, pool)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.message.into()))?
         } else {
             return Err(ServiceError::BadRequest(
                 "You must provide either group_id or group_tracking_id".into(),

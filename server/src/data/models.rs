@@ -5,14 +5,14 @@ use crate::get_env;
 use super::schema::*;
 use chrono::{DateTime, NaiveDateTime};
 use dateparser::DateTimeUtc;
-use diesel::{expression::ValidGrouping, r2d2::ConnectionManager, PgConnection};
+use diesel::expression::ValidGrouping;
 use openai_dive::v1::resources::chat::{ChatMessage, ChatMessageContent, Role};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use utoipa::ToSchema;
 
 // type alias to use in multiple places
-pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
+pub type Pool = diesel_async::pooled_connection::deadpool::Pool<diesel_async::AsyncPgConnection>;
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[diesel(table_name = users)]

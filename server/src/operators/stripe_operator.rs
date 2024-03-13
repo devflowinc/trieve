@@ -6,9 +6,8 @@ use crate::{
     get_env,
 };
 use actix_web::web;
-use diesel::{
-    ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl, RunQueryDsl, Table,
-};
+use diesel::prelude::*;
+use diesel_async::RunQueryDsl;
 use serde_json::json;
 
 #[tracing::instrument]
@@ -27,7 +26,10 @@ pub async fn refresh_redis_org_plan_sub(
     use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
-    let mut conn = pool.get().expect("Failed to get connection from pool");
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
     let org_plan_sub: (Organization, Option<StripePlan>, Option<StripeSubscription>) =
         organizations_columns::organizations
             .left_outer_join(stripe_subscriptions_columns::stripe_subscriptions)
@@ -42,6 +44,7 @@ pub async fn refresh_redis_org_plan_sub(
             ))
             .filter(organizations_columns::id.eq(organization_id))
             .first::<(Organization, Option<StripePlan>, Option<StripeSubscription>)>(&mut conn)
+            .await
             .map_err(|_| DefaultError {
                 message: "Could not find organizations",
             })?;
@@ -100,10 +103,14 @@ pub async fn create_stripe_subscription_query(
     let stripe_subscription =
         StripeSubscription::from_details(stripe_id, plan_id, organization_id, None);
 
-    let mut conn = pool.get().expect("Failed to get connection from pool");
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
     diesel::insert_into(stripe_subscriptions_columns::stripe_subscriptions)
         .values(&stripe_subscription)
         .execute(&mut conn)
+        .await
         .map_err(|e| {
             log::error!("Failed to insert stripe subscription: {}", e);
             DefaultError {
@@ -117,7 +124,7 @@ pub async fn create_stripe_subscription_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn create_stripe_plan_query(
+pub async fn create_stripe_plan_query(
     stripe_id: String,
     amount: i64,
     pool: web::Data<Pool>,
@@ -136,10 +143,14 @@ pub fn create_stripe_plan_query(
         "Project".to_string(),
     );
 
-    let mut conn = pool.get().expect("Failed to get connection from pool");
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
     let created_stripe_plan: StripePlan = diesel::insert_into(stripe_plans_columns::stripe_plans)
         .values(&stripe_plan)
         .get_result(&mut conn)
+        .await
         .map_err(|e| {
             log::error!("Failed to insert stripe plan: {}", e);
             DefaultError {
@@ -151,16 +162,20 @@ pub fn create_stripe_plan_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn get_plan_by_id_query(
+pub async fn get_plan_by_id_query(
     plan_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<StripePlan, DefaultError> {
     use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
 
-    let mut conn = pool.get().expect("Failed to get connection from pool");
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
     let stripe_plan: StripePlan = stripe_plans_columns::stripe_plans
         .filter(stripe_plans_columns::id.eq(plan_id))
         .first(&mut conn)
+        .await
         .map_err(|e| {
             log::error!("Failed to get stripe plan: {}", e);
             DefaultError {
@@ -172,12 +187,16 @@ pub fn get_plan_by_id_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn get_all_plans_query(pool: web::Data<Pool>) -> Result<Vec<StripePlan>, DefaultError> {
+pub async fn get_all_plans_query(pool: web::Data<Pool>) -> Result<Vec<StripePlan>, DefaultError> {
     use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
 
-    let mut conn = pool.get().expect("Failed to get connection from pool");
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
     let stripe_plans: Vec<StripePlan> = stripe_plans_columns::stripe_plans
         .load(&mut conn)
+        .await
         .map_err(|e| {
             log::error!("Failed to get stripe plans: {}", e);
             DefaultError {
@@ -242,17 +261,21 @@ pub async fn create_stripe_payment_link(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn get_subscription_by_id_query(
+pub async fn get_subscription_by_id_query(
     subscription_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<StripeSubscription, DefaultError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
-    let mut conn = pool.get().expect("Failed to get connection from pool");
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
     let stripe_subscription: StripeSubscription =
         stripe_subscriptions_columns::stripe_subscriptions
             .filter(stripe_subscriptions_columns::id.eq(subscription_id))
             .first(&mut conn)
+        .await
             .map_err(|e| {
                 log::error!("Failed to get stripe subscription: {}", e);
                 DefaultError {
@@ -270,12 +293,16 @@ pub async fn delete_subscription_by_id_query(
 ) -> Result<(), DefaultError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
-    let mut conn = pool.get().expect("Failed to get connection from pool");
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
     let deleted_subscription: StripeSubscription = diesel::delete(
         stripe_subscriptions_columns::stripe_subscriptions
             .filter(stripe_subscriptions_columns::id.eq(subscription_id)),
     )
     .get_result::<StripeSubscription>(&mut conn)
+        .await
     .map_err(|e| {
         log::error!("Failed to delete stripe subscription: {}", e);
         DefaultError {
@@ -289,17 +316,21 @@ pub async fn delete_subscription_by_id_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn get_option_subscription_by_organization_id_query(
+pub async fn get_option_subscription_by_organization_id_query(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Option<StripeSubscription>, DefaultError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
-    let mut conn = pool.get().expect("Failed to get connection from pool");
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
     let stripe_subscriptions: Vec<StripeSubscription> =
         stripe_subscriptions_columns::stripe_subscriptions
             .filter(stripe_subscriptions_columns::organization_id.eq(organization_id))
             .load(&mut conn)
+            .await
             .map_err(|e| {
                 log::error!("Failed to get stripe subscription: {}", e);
                 DefaultError {
@@ -318,13 +349,17 @@ pub async fn set_stripe_subscription_current_period_end(
 ) -> Result<(), DefaultError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
-    let mut conn = pool.get().expect("Failed to get connection from pool");
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
     let updated_subscription: StripeSubscription = diesel::update(
         stripe_subscriptions_columns::stripe_subscriptions
             .filter(stripe_subscriptions_columns::stripe_id.eq(stripe_subscription_id)),
     )
     .set(stripe_subscriptions_columns::current_period_end.eq(current_period_end))
     .get_result(&mut conn)
+        .await
     .map_err(|e| {
         log::error!("Failed to update stripe subscription: {}", e);
         DefaultError {
@@ -370,13 +405,17 @@ pub async fn update_stripe_subscription_plan_query(
 ) -> Result<(), DefaultError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
-    let mut conn = pool.get().expect("Failed to get connection from pool");
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
     let updated_subscription: StripeSubscription = diesel::update(
         stripe_subscriptions_columns::stripe_subscriptions
             .filter(stripe_subscriptions_columns::id.eq(subscription_id)),
     )
     .set(stripe_subscriptions_columns::plan_id.eq(plan_id))
     .get_result::<StripeSubscription>(&mut conn)
+        .await
     .map_err(|e| {
         log::error!("Failed to update stripe subscription: {}", e);
         DefaultError {

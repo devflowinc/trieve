@@ -85,11 +85,8 @@ pub async fn create_dataset(
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let dataset_count = web::block(move || get_org_dataset_count(org_id, org_pool))
+    let dataset_count = get_org_dataset_count(org_id, org_pool)
         .await
-        .map_err(|_| {
-            ServiceError::BadRequest("Blocking error getting org dataset count".to_string())
-        })?
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if dataset_count
@@ -289,10 +286,9 @@ pub async fn get_datasets_from_organization(
         .find(|org| org.organization_id == organization_id)
         .ok_or(ServiceError::Forbidden)?;
 
-    let dataset_and_usages =
-        web::block(move || get_datasets_by_organization_id(organization_id.into(), pool))
-            .await
-            .map_err(|e| ServiceError::InternalServerError(e.to_string()))??;
+    let dataset_and_usages = get_datasets_by_organization_id(organization_id.into(), pool)
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
     Ok(HttpResponse::Ok().json(dataset_and_usages))
 }

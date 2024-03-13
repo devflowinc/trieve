@@ -78,7 +78,7 @@ pub async fn update_user(
                 message: "You must be an admin to update other users",
             }));
         }
-        let user_info = get_user_by_id_query(&user_id, pool.clone())
+        let user_info = get_user_by_id_query(&user_id, pool.clone()).await
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
         let authorized = user_info
@@ -118,18 +118,16 @@ pub async fn update_user(
 
     let new_role = update_user_data.role.map(|role| role.into());
 
-    let user_result = web::block(move || {
-        update_user_query(
-            &user.clone(),
-            &update_user_data.username.clone().or(user.username),
-            &update_user_data.name.clone().or(user.name),
-            &update_user_data.website.or(user.website),
-            new_role,
-            update_user_data.visible_email.unwrap_or(user.visible_email),
-            pool,
-        )
-    })
-    .await?;
+    let user_result = update_user_query(
+        &user.clone(),
+        &update_user_data.username.clone().or(user.username),
+        &update_user_data.name.clone().or(user.name),
+        &update_user_data.website.or(user.website),
+        new_role,
+        update_user_data.visible_email.unwrap_or(user.visible_email),
+        pool,
+    )
+    .await;
 
     match user_result {
         Ok(slim_user) => Ok(HttpResponse::Ok().json(slim_user)),
@@ -177,12 +175,9 @@ pub async fn set_user_api_key(
 ) -> Result<HttpResponse, actix_web::Error> {
     let role = data.role;
 
-    let new_api_key =
-        web::block(move || set_user_api_key_query(user.id, data.name.clone(), role.into(), pool))
-            .await?
-            .map_err(|_err| {
-                ServiceError::BadRequest("Failed to set new API key for user".into())
-            })?;
+    let new_api_key = set_user_api_key_query(user.id, data.name.clone(), role.into(), pool)
+        .await
+        .map_err(|_err| ServiceError::BadRequest("Failed to set new API key for user".into()))?;
 
     Ok(HttpResponse::Ok().json(SetUserApiKeyResponse {
         api_key: new_api_key,
@@ -211,8 +206,8 @@ pub async fn get_user_api_keys(
     user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let api_keys = web::block(move || get_user_api_keys_query(user.id, pool))
-        .await?
+    let api_keys = get_user_api_keys_query(user.id, pool)
+        .await
         .map_err(|_err| ServiceError::BadRequest("Failed to get API keys for user".into()))?;
 
     Ok(HttpResponse::Ok().json(api_keys))
@@ -248,8 +243,8 @@ pub async fn delete_user_api_key(
     data: web::Json<DeleteUserApiKeyRequest>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    web::block(move || delete_user_api_keys_query(user.id, data.api_key_id, pool))
-        .await?
+    delete_user_api_keys_query(user.id, data.api_key_id, pool)
+        .await
         .map_err(|_err| ServiceError::BadRequest("Failed to get API keys for user".into()))?;
 
     Ok(HttpResponse::NoContent().finish())

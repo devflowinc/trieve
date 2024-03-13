@@ -7,12 +7,8 @@ use crate::data::models::{
 use crate::handlers::auth_handler::AdminOnly;
 use crate::operators::chunk_operator::delete_chunk_metadata_query;
 use crate::{data::models::ChunkGroup, handlers::chunk_handler::ReturnQueuedChunk};
-use crate::{data::models::Event, diesel::Connection, get_env};
-use crate::{
-    data::models::FileDTO,
-    diesel::{ExpressionMethods, QueryDsl},
-    errors::ServiceError,
-};
+use crate::{data::models::Event, get_env};
+use crate::{data::models::FileDTO, errors::ServiceError};
 use crate::{
     data::models::{File, Pool},
     errors::DefaultError,
@@ -24,8 +20,10 @@ use crate::{
 };
 use actix_web::{body::MessageBody, web};
 use diesel::dsl::sql;
+use diesel::prelude::*;
 use diesel::sql_types::BigInt;
-use diesel::{JoinOnDsl, NullableExpressionMethods, RunQueryDsl, SelectableHelper};
+use diesel_async::scoped_futures::ScopedFutureExt;
+use diesel_async::{AsyncConnection, RunQueryDsl};
 use s3::{creds::Credentials, Bucket, Region};
 
 #[tracing::instrument]
@@ -64,7 +62,7 @@ pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
 
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
-pub fn create_file_query(
+pub async fn create_file_query(
     file_id: uuid::Uuid,
     file_name: &str,
     file_size: i64,
@@ -77,7 +75,7 @@ pub fn create_file_query(
 ) -> Result<File, DefaultError> {
     use crate::data::schema::files::dsl as files_columns;
 
-    let mut conn = pool.get().map_err(|_| DefaultError {
+    let mut conn = pool.get().await.map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
 
@@ -95,6 +93,7 @@ pub fn create_file_query(
     let created_file: File = diesel::insert_into(files_columns::files)
         .values(&new_file)
         .get_result(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Could not create file, try again",
         })?;
@@ -210,7 +209,8 @@ pub async fn convert_doc_to_html_query(
             time_stamp.clone(),
             dataset_org_plan_sub1.dataset.id,
             pool.clone(),
-        )?;
+        )
+        .await?;
 
         let bucket = get_aws_bucket()?;
         bucket
@@ -309,10 +309,12 @@ pub async fn create_chunks_with_handler(
 
     let group_id = chunk_group.id;
 
-    create_group_from_file_query(group_id, created_file_id, pool.clone()).map_err(|e| {
-        log::error!("Could not create group from file {:?}", e);
-        e
-    })?;
+    create_group_from_file_query(group_id, created_file_id, pool.clone())
+        .await
+        .map_err(|e| {
+            log::error!("Could not create group from file {:?}", e);
+            e
+        })?;
 
     for chunk_html in chunk_htmls {
         let create_chunk_data = CreateChunkData {
@@ -368,6 +370,7 @@ pub async fn create_chunks_with_handler(
         ),
         pool,
     )
+    .await
     .map_err(|_| DefaultError {
         message: "Thread error creating notification",
     })?;
@@ -385,12 +388,14 @@ pub async fn get_file_query(
 
     let mut conn = pool
         .get()
+        .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     let file_metadata: File = files_columns::files
         .filter(files_columns::id.eq(file_uuid))
         .filter(files_columns::dataset_id.eq(dataset_id))
         .get_result(&mut conn)
+        .await
         .map_err(|_| ServiceError::NotFound)?;
 
     let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
@@ -414,8 +419,8 @@ pub async fn get_dataset_file_query(
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
     let mut conn = pool
-        .clone()
         .get()
+        .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     let file_metadata: Vec<(File, i64, Option<uuid::Uuid>)> = files_columns::files
@@ -432,6 +437,7 @@ pub async fn get_dataset_file_query(
         .limit(10)
         .offset(((page - 1) * 10).try_into().unwrap_or(0))
         .load(&mut conn)
+        .await
         .map_err(|_| ServiceError::NotFound)?;
 
     Ok(file_metadata)
@@ -452,6 +458,7 @@ pub async fn delete_file_query(
 
     let mut conn = pool
         .get()
+        .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     let mut chunk_ids = vec![];
@@ -464,6 +471,7 @@ pub async fn delete_file_query(
             .filter(chunk_files_columns::file_id.eq(file_uuid))
             .select(ChunkMetadata::as_select())
             .load::<ChunkMetadata>(&mut conn)
+            .await
             .map_err(|_| ServiceError::NotFound)?;
 
         chunk_ids = chunks
@@ -493,6 +501,7 @@ pub async fn delete_file_query(
         .filter(files_columns::id.eq(file_uuid))
         .filter(files_columns::dataset_id.eq(dataset.id))
         .get_result(&mut conn)
+        .await
         .map_err(|_| ServiceError::NotFound)?;
 
     let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
@@ -501,42 +510,53 @@ pub async fn delete_file_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not delete file from S3".to_string()))?;
 
-    let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
-        diesel::delete(
-            chunk_files_columns::chunk_files.filter(chunk_files_columns::file_id.eq(file_uuid)),
-        )
-        .execute(conn)?;
+    let transaction_result = conn
+        .transaction::<_, diesel::result::Error, _>(|conn| {
+            async {
+                diesel::delete(
+                    chunk_files_columns::chunk_files
+                        .filter(chunk_files_columns::file_id.eq(file_uuid)),
+                )
+                .execute(conn)
+                .await?;
 
-        diesel::delete(
-            files_columns::files
-                .filter(files_columns::id.eq(file_uuid))
-                .filter(files_columns::dataset_id.eq(dataset.clone().id)),
-        )
-        .execute(conn)?;
+                diesel::delete(
+                    files_columns::files
+                        .filter(files_columns::id.eq(file_uuid))
+                        .filter(files_columns::dataset_id.eq(dataset.clone().id)),
+                )
+                .execute(conn)
+                .await?;
 
-        if delete_chunks {
-            diesel::delete(
-                chunk_files_columns::chunk_files
-                    .filter(chunk_files_columns::chunk_id.eq_any(collisions.clone())),
-            )
-            .execute(conn)?;
+                if delete_chunks {
+                    diesel::delete(
+                        chunk_files_columns::chunk_files
+                            .filter(chunk_files_columns::chunk_id.eq_any(collisions.clone())),
+                    )
+                    .execute(conn)
+                    .await?;
 
-            diesel::delete(
-                chunk_collisions_columns::chunk_collisions
-                    .filter(chunk_collisions_columns::chunk_id.eq_any(collisions.clone())),
-            )
-            .execute(conn)?;
-            // there cannot be collisions for a collision, just delete the chunk_metadata without issue
-            diesel::delete(
-                chunk_metadata_columns::chunk_metadata
-                    .filter(chunk_metadata_columns::id.eq_any(collisions.clone()))
-                    .filter(chunk_metadata_columns::dataset_id.eq(dataset.id)),
-            )
-            .execute(conn)?;
-        }
+                    diesel::delete(
+                        chunk_collisions_columns::chunk_collisions
+                            .filter(chunk_collisions_columns::chunk_id.eq_any(collisions.clone())),
+                    )
+                    .execute(conn)
+                    .await?;
+                    // there cannot be collisions for a collision, just delete the chunk_metadata without issue
+                    diesel::delete(
+                        chunk_metadata_columns::chunk_metadata
+                            .filter(chunk_metadata_columns::id.eq_any(collisions.clone()))
+                            .filter(chunk_metadata_columns::dataset_id.eq(dataset.id)),
+                    )
+                    .execute(conn)
+                    .await?;
+                }
 
-        Ok(())
-    });
+                Ok(())
+            }
+            .scope_boxed()
+        })
+        .await;
 
     if delete_chunks {
         for chunk_id in chunk_ids {

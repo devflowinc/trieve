@@ -10,33 +10,35 @@ use crate::{
         ChunkGroupAndFileWithCount, ChunkGroupBookmark, ChunkMetadataWithCount,
         ChunkMetadataWithFileData, FullTextSearchResult, SlimGroup,
     },
-    diesel::{Connection, ExpressionMethods, QueryDsl, RunQueryDsl},
     errors::ServiceError,
     operators::search_operator::get_metadata_query,
 };
 use actix_web::web;
+use diesel::prelude::*;
 use diesel::{
     dsl::sql,
     sql_types::{Int8, Text},
-    BoolExpressionMethods, JoinOnDsl, NullableExpressionMethods, SelectableHelper,
 };
+use diesel_async::scoped_futures::ScopedFutureExt;
+use diesel_async::{AsyncConnection, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 #[tracing::instrument(skip(pool))]
-pub fn get_group_from_tracking_id_query(
+pub async fn get_group_from_tracking_id_query(
     tracking_id: String,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<ChunkGroup, DefaultError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     let group = chunk_group_columns::chunk_group
         .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
         .filter(chunk_group_columns::tracking_id.eq(tracking_id))
         .first::<ChunkGroup>(&mut conn)
+        .await
         .map_err(|_err| DefaultError {
             message: "Group not found",
         })?;
@@ -45,19 +47,20 @@ pub fn get_group_from_tracking_id_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn get_groups_from_tracking_ids_query(
+pub async fn get_groups_from_tracking_ids_query(
     tracking_ids: Vec<String>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Vec<ChunkGroup>, DefaultError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     let groups = chunk_group_columns::chunk_group
         .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
         .filter(chunk_group_columns::tracking_id.eq_any(tracking_ids))
         .load::<ChunkGroup>(&mut conn)
+        .await
         .map_err(|_err| DefaultError {
             message: "Groups not found",
         })?;
@@ -66,7 +69,7 @@ pub fn get_groups_from_tracking_ids_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn update_group_by_tracking_id_query(
+pub async fn update_group_by_tracking_id_query(
     tracking_id: String,
     dataset_uuid: uuid::Uuid,
     new_name: Option<String>,
@@ -75,7 +78,7 @@ pub fn update_group_by_tracking_id_query(
 ) -> Result<(), DefaultError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     diesel::update(
         chunk_group_columns::chunk_group
@@ -87,6 +90,7 @@ pub fn update_group_by_tracking_id_query(
         chunk_group_columns::description.eq(new_description.unwrap_or("".to_string())),
     ))
     .execute(&mut conn)
+    .await
     .map_err(|_err| DefaultError {
         message: "Error updating group",
     })?;
@@ -101,11 +105,12 @@ pub async fn create_group_query(
 ) -> Result<ChunkGroup, ServiceError> {
     use crate::data::schema::chunk_group::dsl::*;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     diesel::insert_into(chunk_group)
         .values(&new_group)
         .execute(&mut conn)
+        .await
         .map_err(|err| {
             log::error!("Error creating group {:}", err);
             ServiceError::BadRequest(format!("Error creating group {:?}", err))
@@ -115,7 +120,7 @@ pub async fn create_group_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn get_groups_for_specific_dataset_query(
+pub async fn get_groups_for_specific_dataset_query(
     page: u64,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -125,7 +130,7 @@ pub fn get_groups_for_specific_dataset_query(
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
     let page = if page == 0 { 1 } else { page };
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
     let groups = chunk_group
         .left_outer_join(
             groups_from_files_columns::groups_from_files
@@ -154,6 +159,7 @@ pub fn get_groups_for_specific_dataset_query(
         .limit(10)
         .offset(((page - 1) * 10).try_into().unwrap_or(0))
         .load::<ChunkGroupAndFileWithCount>(&mut conn)
+        .await
         .map_err(|_err| DefaultError {
             message: "Error getting groups",
         })?;
@@ -162,19 +168,20 @@ pub fn get_groups_for_specific_dataset_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn get_group_by_id_query(
+pub async fn get_group_by_id_query(
     group_id: uuid::Uuid,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<ChunkGroup, DefaultError> {
     use crate::data::schema::chunk_group::dsl::*;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     let group = chunk_group
         .filter(dataset_id.eq(dataset_uuid))
         .filter(id.eq(group_id))
         .first::<ChunkGroup>(&mut conn)
+        .await
         .map_err(|_err| DefaultError {
             message: "Group not found",
         })?;
@@ -199,7 +206,7 @@ pub async fn delete_group_by_id_query(
         chunk_metadata::dsl as chunk_metadata_columns,
     };
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     let mut chunk_ids = vec![];
     let mut collisions = vec![];
@@ -211,6 +218,7 @@ pub async fn delete_group_by_id_query(
             .filter(chunk_group_bookmarks_columns::group_id.eq(group_id))
             .select(ChunkMetadata::as_select())
             .load::<ChunkMetadata>(&mut conn)
+            .await
             .map_err(|_err| DefaultError {
                 message: "Error getting chunks",
             })?;
@@ -238,59 +246,71 @@ pub async fn delete_group_by_id_query(
             .collect();
     }
 
-    let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
-        diesel::delete(
-            events_columns::events
-                .filter(events_columns::event_type.eq("file_uploaded"))
-                .filter(
-                    sql::<Text>(&format!("events.event_data->>'{}'", "group_id"))
-                        .eq(group_id.to_string()),
-                ),
-        )
-        .execute(conn)?;
+    let transaction_result = conn
+        .transaction::<_, diesel::result::Error, _>(|conn| {
+            async move {
+                diesel::delete(
+                    events_columns::events
+                        .filter(events_columns::event_type.eq("file_uploaded"))
+                        .filter(
+                            sql::<Text>(&format!("events.event_data->>'{}'", "group_id"))
+                                .eq(group_id.to_string()),
+                        ),
+                )
+                .execute(conn)
+                .await?;
 
-        if delete_chunks {
-            diesel::delete(
-                chunk_files_columns::chunk_files
-                    .filter(chunk_files_columns::chunk_id.eq_any(collisions.clone())),
-            )
-            .execute(conn)?;
+                if delete_chunks {
+                    diesel::delete(
+                        chunk_files_columns::chunk_files
+                            .filter(chunk_files_columns::chunk_id.eq_any(collisions.clone())),
+                    )
+                    .execute(conn)
+                    .await?;
 
-            diesel::delete(
-                chunk_collisions_columns::chunk_collisions
-                    .filter(chunk_collisions_columns::chunk_id.eq_any(collisions.clone())),
-            )
-            .execute(conn)?;
-            // there cannot be collisions for a collision, just delete the chunk_metadata without issue
-            diesel::delete(
-                chunk_metadata_columns::chunk_metadata
-                    .filter(chunk_metadata_columns::id.eq_any(collisions.clone()))
-                    .filter(chunk_metadata_columns::dataset_id.eq(dataset.id)),
-            )
-            .execute(conn)?;
-        }
+                    diesel::delete(
+                        chunk_collisions_columns::chunk_collisions
+                            .filter(chunk_collisions_columns::chunk_id.eq_any(collisions.clone())),
+                    )
+                    .execute(conn)
+                    .await?;
+                    // there cannot be collisions for a collision, just delete the chunk_metadata without issue
+                    diesel::delete(
+                        chunk_metadata_columns::chunk_metadata
+                            .filter(chunk_metadata_columns::id.eq_any(collisions.clone()))
+                            .filter(chunk_metadata_columns::dataset_id.eq(dataset.id)),
+                    )
+                    .execute(conn)
+                    .await?;
+                }
 
-        diesel::delete(
-            groups_from_files_columns::groups_from_files
-                .filter(groups_from_files_columns::group_id.eq(group_id)),
-        )
-        .execute(conn)?;
+                diesel::delete(
+                    groups_from_files_columns::groups_from_files
+                        .filter(groups_from_files_columns::group_id.eq(group_id)),
+                )
+                .execute(conn)
+                .await?;
 
-        diesel::delete(
-            chunk_group_bookmarks_columns::chunk_group_bookmarks
-                .filter(chunk_group_bookmarks_columns::group_id.eq(group_id)),
-        )
-        .execute(conn)?;
+                diesel::delete(
+                    chunk_group_bookmarks_columns::chunk_group_bookmarks
+                        .filter(chunk_group_bookmarks_columns::group_id.eq(group_id)),
+                )
+                .execute(conn)
+                .await?;
 
-        diesel::delete(
-            chunk_group_columns::chunk_group
-                .filter(chunk_group_columns::id.eq(group_id))
-                .filter(chunk_group_columns::dataset_id.eq(dataset.id)),
-        )
-        .execute(conn)?;
+                diesel::delete(
+                    chunk_group_columns::chunk_group
+                        .filter(chunk_group_columns::id.eq(group_id))
+                        .filter(chunk_group_columns::dataset_id.eq(dataset.id)),
+                )
+                .execute(conn)
+                .await?;
 
-        Ok(())
-    });
+                Ok(())
+            }
+            .scope_boxed()
+        })
+        .await;
 
     if delete_chunks {
         for chunk_id in chunk_ids {
@@ -308,7 +328,7 @@ pub async fn delete_group_by_id_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn update_chunk_group_query(
+pub async fn update_chunk_group_query(
     group: ChunkGroup,
     new_name: Option<String>,
     new_description: Option<String>,
@@ -317,7 +337,7 @@ pub fn update_chunk_group_query(
 ) -> Result<(), DefaultError> {
     use crate::data::schema::chunk_group::dsl::*;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     diesel::update(
         chunk_group
@@ -329,6 +349,7 @@ pub fn update_chunk_group_query(
         description.eq(new_description.unwrap_or(group.description)),
     ))
     .execute(&mut conn)
+    .await
     .map_err(|_err| DefaultError {
         message: "Error updating group",
     })?;
@@ -337,20 +358,21 @@ pub fn update_chunk_group_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn create_chunk_bookmark_query(
+pub async fn create_chunk_bookmark_query(
     pool: web::Data<Pool>,
     bookmark: ChunkGroupBookmark,
 ) -> Result<Option<uuid::Uuid>, DefaultError> {
     use crate::data::schema::chunk_group_bookmarks::dsl::*;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     diesel::insert_into(chunk_group_bookmarks)
         .values(&bookmark)
         .on_conflict((group_id, chunk_metadata_id))
         .do_nothing()
         .execute(&mut conn)
+        .await
         .map_err(|_err| {
             log::error!("Error creating bookmark {:}", _err);
             DefaultError {
@@ -362,6 +384,7 @@ pub fn create_chunk_bookmark_query(
         .filter(chunk_metadata_columns::id.eq(bookmark.chunk_metadata_id))
         .select(chunk_metadata_columns::qdrant_point_id)
         .first::<Option<uuid::Uuid>>(&mut conn)
+        .await
         .map_err(|_err| {
             log::error!("Error getting qdrant_point_id {:}", _err);
             DefaultError {
@@ -377,7 +400,7 @@ pub struct GroupsBookmarkQueryResult {
     pub total_pages: i64,
 }
 #[tracing::instrument(skip(pool))]
-pub fn get_bookmarks_for_group_query(
+pub async fn get_bookmarks_for_group_query(
     group_id: UnifiedId,
     page: u64,
     limit: Option<i64>,
@@ -390,13 +413,14 @@ pub fn get_bookmarks_for_group_query(
     let page = if page == 0 { 1 } else { page };
     let limit = limit.unwrap_or(10);
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     let group_uuid = match group_id {
         UnifiedId::TrackingId(id) => chunk_group_columns::chunk_group
             .filter(chunk_group_columns::tracking_id.eq(id))
             .select(chunk_group_columns::id)
             .first::<uuid::Uuid>(&mut conn)
+            .await
             .map_err(|_| {
                 ServiceError::BadRequest("Failed to find matching tracking id".to_string())
             })?,
@@ -447,15 +471,17 @@ pub fn get_bookmarks_for_group_query(
             .limit(limit)
             .offset(((page - 1) * limit as u64).try_into().unwrap_or(0))
             .load::<(ChunkMetadataWithCount, ChunkGroup)>(&mut conn)
+            .await
             .map_err(|_err| ServiceError::BadRequest("Error getting bookmarks".to_string()))?;
 
-    let chunk_group = if let Some(bookmark) = bookmark_metadata.first() {
+    let chunk_group = if let Some(bookmark) = bookmark_metadata.get(0) {
         bookmark.1.clone()
     } else {
         chunk_group_columns::chunk_group
             .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
             .filter(chunk_group_columns::id.eq(group_uuid))
             .first::<ChunkGroup>(&mut conn)
+            .await
             .map_err(|_err| ServiceError::BadRequest("Error getting group".to_string()))?
     };
 
@@ -466,10 +492,11 @@ pub fn get_bookmarks_for_group_query(
         })
         .collect::<Vec<FullTextSearchResult>>();
 
-    let chunk_metadata_with_file_id = get_metadata_query(converted_chunks, conn)
+    let chunk_metadata_with_file_id = get_metadata_query(converted_chunks, pool)
+        .await
         .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
-    let total_pages = match bookmark_metadata.first() {
+    let total_pages = match bookmark_metadata.get(0) {
         Some(metadata) => (metadata.0.count as f64 / 10.0).ceil() as i64,
         None => 0,
     };
@@ -487,7 +514,7 @@ pub struct BookmarkGroupResult {
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn get_groups_for_bookmark_query(
+pub async fn get_groups_for_bookmark_query(
     chunk_ids: Vec<uuid::Uuid>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -495,7 +522,7 @@ pub fn get_groups_for_bookmark_query(
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     let groups: Vec<(SlimGroup, uuid::Uuid)> = chunk_group_columns::chunk_group
         .left_join(
@@ -512,6 +539,7 @@ pub fn get_groups_for_bookmark_query(
         ))
         .limit(1000)
         .load::<(uuid::Uuid, String, uuid::Uuid, Option<uuid::Uuid>)>(&mut conn)
+        .await
         .map_err(|_err| DefaultError {
             message: "Error getting bookmarks",
         })?
@@ -562,7 +590,7 @@ pub fn get_groups_for_bookmark_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn delete_chunk_from_group_query(
+pub async fn delete_chunk_from_group_query(
     chunk_id: uuid::Uuid,
     group_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -570,7 +598,7 @@ pub fn delete_chunk_from_group_query(
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     diesel::delete(
         chunk_group_bookmarks_columns::chunk_group_bookmarks
@@ -578,6 +606,7 @@ pub fn delete_chunk_from_group_query(
             .filter(chunk_group_bookmarks_columns::group_id.eq(group_id)),
     )
     .execute(&mut conn)
+    .await
     .map_err(|_err| {
         log::error!("Error deleting bookmark {:}", _err);
         DefaultError {
@@ -589,6 +618,7 @@ pub fn delete_chunk_from_group_query(
         .filter(chunk_metadata_columns::id.eq(chunk_id))
         .select(chunk_metadata_columns::qdrant_point_id)
         .first::<Option<uuid::Uuid>>(&mut conn)
+        .await
         .map_err(|_err| {
             log::error!("Error getting qdrant_point_id {:}", _err);
             DefaultError {
@@ -600,7 +630,7 @@ pub fn delete_chunk_from_group_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn create_group_from_file_query(
+pub async fn create_group_from_file_query(
     group_id: uuid::Uuid,
     file_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -609,11 +639,12 @@ pub fn create_group_from_file_query(
 
     let file_group = FileGroup::from_details(file_id, group_id);
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     diesel::insert_into(groups_from_files_columns::groups_from_files)
         .values(&file_group)
         .execute(&mut conn)
+        .await
         .map_err(|_err| {
             log::error!("Error creating group from file {:}", _err);
             DefaultError {
@@ -632,7 +663,7 @@ pub async fn get_point_ids_from_unified_group_ids(
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     let qdrant_point_ids: Vec<uuid::Uuid> = match group_ids[0] {
         UnifiedId::TrieveUuid(_) => chunk_group_columns::chunk_group
@@ -650,6 +681,7 @@ pub async fn get_point_ids_from_unified_group_ids(
             )
             .select(chunk_metadata_columns::qdrant_point_id)
             .load::<Option<uuid::Uuid>>(&mut conn)
+            .await
             .map_err(|_| DefaultError {
                 message: "Failed to load metadata",
             })?
@@ -671,6 +703,7 @@ pub async fn get_point_ids_from_unified_group_ids(
             )
             .select(chunk_metadata_columns::qdrant_point_id)
             .load::<Option<uuid::Uuid>>(&mut conn)
+            .await
             .map_err(|_| DefaultError {
                 message: "Failed to load metadata",
             })?
