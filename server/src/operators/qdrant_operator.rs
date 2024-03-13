@@ -787,7 +787,7 @@ pub async fn recommend_qdrant_query(
 ) -> Result<Vec<uuid::Uuid>, DefaultError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
-    let filter = assemble_qdrant_filter(filters, None, None, dataset_id, None)?;
+    let filter = assemble_qdrant_filter(filters, None, None, dataset_id, None).await?;
 
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
@@ -871,7 +871,7 @@ pub async fn recommend_qdrant_groups_query(
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
 
-    let filters = assemble_qdrant_filter(filter, None, None, dataset_id, None)?;
+    let filters = assemble_qdrant_filter(filter, None, None, dataset_id, None).await?;
 
     let positive_point_ids: Vec<PointId> = positive_ids
         .iter()

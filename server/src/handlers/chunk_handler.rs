@@ -108,12 +108,9 @@ pub async fn create_chunk(
 ) -> Result<HttpResponse, actix_web::Error> {
     let count_dataset_id = dataset_org_plan_sub.dataset.id;
 
-    let chunk_count = {
-        let pool = pool.clone();
-        web::block(move || get_row_count_for_dataset_id_query(count_dataset_id, pool))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
-    };
+    let chunk_count = get_row_count_for_dataset_id_query(count_dataset_id, pool.clone())
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if chunk_count
         >= dataset_org_plan_sub
@@ -161,14 +158,12 @@ pub async fn create_chunk(
 
     let group_ids_from_group_tracking_ids =
         if let Some(group_tracking_ids) = chunk.group_tracking_ids.clone() {
-            web::block(move || {
-                get_groups_from_tracking_ids_query(group_tracking_ids, count_dataset_id, pool)
-            })
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
-            .into_iter()
-            .map(|group| group.id)
-            .collect::<Vec<uuid::Uuid>>()
+            get_groups_from_tracking_ids_query(group_tracking_ids, count_dataset_id, pool)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+                .into_iter()
+                .map(|group| group.id)
+                .collect::<Vec<uuid::Uuid>>()
         } else {
             vec![]
         };
@@ -281,7 +276,6 @@ pub async fn delete_chunk(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let chunk_id_inner = chunk_id.into_inner();
-    let pool1 = pool.clone();
     let server_dataset_config = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
@@ -289,7 +283,7 @@ pub async fn delete_chunk(
     delete_chunk_metadata_query(
         chunk_id_inner,
         dataset_org_plan_sub.dataset,
-        pool1,
+        pool,
         server_dataset_config,
     )
     .await
@@ -327,22 +321,19 @@ pub async fn delete_chunk_by_tracking_id(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let tracking_id_inner = tracking_id.into_inner();
-    let pool1 = pool.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
     let server_dataset_config = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    let chunk_metadata = web::block(move || {
-        get_metadata_from_tracking_id_query(tracking_id_inner, dataset_id, pool)
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let chunk_metadata = get_metadata_from_tracking_id_query(tracking_id_inner, dataset_id, pool.clone())
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     delete_chunk_metadata_query(
         chunk_metadata.id,
         dataset_org_plan_sub.dataset,
-        pool1,
+        pool,
         server_dataset_config,
     )
     .await
@@ -406,8 +397,8 @@ pub async fn update_chunk(
     let dataset_id = dataset_org_plan_sub.dataset.id;
     let chunk_id = chunk.chunk_id;
 
-    let chunk_metadata = web::block(move || get_metadata_from_id_query(chunk_id, dataset_id, pool))
-        .await?
+    let chunk_metadata = get_metadata_from_id_query(chunk_id, dataset_id, pool)
+        .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let link = chunk
@@ -435,10 +426,9 @@ pub async fn update_chunk(
     };
 
     let chunk_id1 = chunk.chunk_id;
-    let qdrant_point_id =
-        web::block(move || get_qdrant_id_from_chunk_id_query(chunk_id1, get_qdrant_id_pool))
-            .await?
-            .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
+    let qdrant_point_id = get_qdrant_id_from_chunk_id_query(chunk_id1, get_qdrant_id_pool)
+        .await
+        .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
 
     let metadata = ChunkMetadata::from_details_with_id(
         chunk.chunk_id,
@@ -547,12 +537,9 @@ pub async fn update_chunk_by_tracking_id(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    let pool1 = pool.clone();
-    let pool2 = pool.clone();
-    let chunk_metadata =
-        web::block(move || get_metadata_from_tracking_id_query(tracking_id, dataset_id, pool))
-            .await?
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let chunk_metadata = get_metadata_from_tracking_id_query(tracking_id, dataset_id, pool.clone())
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let link = chunk
         .link
@@ -575,8 +562,8 @@ pub async fn update_chunk_by_tracking_id(
     };
 
     let chunk_id1 = chunk_metadata.id;
-    let qdrant_point_id = web::block(move || get_qdrant_id_from_chunk_id_query(chunk_id1, pool1))
-        .await?
+    let qdrant_point_id = get_qdrant_id_from_chunk_id_query(chunk_id1, pool.clone())
+        .await
         .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
 
     let metadata = ChunkMetadata::from_details_with_id(
@@ -607,7 +594,7 @@ pub async fn update_chunk_by_tracking_id(
         chunk.weight.unwrap_or(1.0),
     );
     let metadata1 = metadata.clone();
-    update_chunk_metadata_query(metadata, None, dataset_org_plan_sub.dataset.id, pool2)
+    update_chunk_metadata_query(metadata, None, dataset_org_plan_sub.dataset.id, pool)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -880,11 +867,10 @@ pub async fn get_chunk_by_id(
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let chunk = web::block(move || {
+    let chunk =
         get_metadata_from_id_query(chunk_id.into_inner(), dataset_org_plan_sub.dataset.id, pool)
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(chunk))
 }
@@ -917,14 +903,12 @@ pub async fn get_chunk_by_tracking_id(
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let chunk = web::block(move || {
-        get_metadata_from_tracking_id_query(
-            tracking_id.into_inner(),
-            dataset_org_plan_sub.dataset.id,
-            pool,
-        )
-    })
-    .await?
+    let chunk = get_metadata_from_tracking_id_query(
+        tracking_id.into_inner(),
+        dataset_org_plan_sub.dataset.id,
+        pool,
+    )
+    .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(chunk))
@@ -1136,11 +1120,9 @@ pub async fn generate_off_chunks(
     let prompt = data.prompt.clone();
     let stream_response = data.stream_response;
 
-    let mut chunks = web::block(move || {
-        get_metadata_from_ids_query(chunk_ids, dataset_org_plan_sub.dataset.id, pool)
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let mut chunks = get_metadata_from_ids_query(chunk_ids, dataset_org_plan_sub.dataset.id, pool)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);

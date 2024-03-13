@@ -198,11 +198,8 @@ pub async fn create_account(
         .await
         .map_err(|error| ServiceError::InternalServerError(error.message.to_string()))?;
     let user_org_count_pool = pool.clone();
-    let user_org_count = web::block(move || get_user_org_count(org_id, user_org_count_pool))
+    let user_org_count = get_user_org_count(org_id, user_org_count_pool)
         .await
-        .map_err(|_| {
-            ServiceError::InternalServerError("Blocking error getting org user count".to_string())
-        })?
         .map_err(|err| ServiceError::InternalServerError(err.message.to_string()))?;
     if user_org_count
         >= org_plan_sub
@@ -221,13 +218,9 @@ pub async fn create_account(
         role = invitation.role.into();
     }
 
-    let user_org =
-        web::block(move || create_user_query(user_id, email, Some(name), role, org_id, pool))
-            .await
-            .map_err(|_| {
-                ServiceError::InternalServerError("Blocking error creating user".to_string())
-            })?
-            .map_err(|err| ServiceError::InternalServerError(err.message.to_string()))?;
+    let user_org = create_user_query(user_id, email, Some(name), role, org_id, pool)
+        .await
+        .map_err(|err| ServiceError::InternalServerError(err.message.to_string()))?;
 
     Ok(user_org)
 }
@@ -394,7 +387,7 @@ pub async fn login(
         (status = 400, description = "Email or password empty or incorrect", body = ErrorResponseBody),
     )
 )]
-#[tracing::instrument(skip(session, oidc_client))]
+#[tracing::instrument(skip(session, oidc_client, pool))]
 pub async fn callback(
     req: HttpRequest,
     session: Session,
@@ -477,7 +470,7 @@ pub async fn callback(
         .map_err(|_| ServiceError::InternalServerError("Could not get redirect url".into()))?
         .ok_or(ServiceError::Unauthorized)?;
 
-    let user = match get_user_by_id_query(&user_id, pool.clone()) {
+    let user = match get_user_by_id_query(&user_id, pool.clone()).await {
         Ok(user) => user,
         Err(_) => {
             create_account(
@@ -546,14 +539,14 @@ pub async fn callback(
         ("Cookie" = [])
     )
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(pool))]
 pub async fn get_me(
     logged_user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_query_id: uuid::Uuid = logged_user.id;
 
-    let user_result = web::block(move || get_user_by_id_query(&user_query_id, pool)).await?;
+    let user_result = get_user_by_id_query(&user_query_id, pool).await;
 
     match user_result {
         Ok(user) => Ok(HttpResponse::Ok().json(SlimUser::from_details(user.0, user.1, user.2))),

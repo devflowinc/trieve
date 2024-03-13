@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate diesel;
+use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 
 use crate::{
@@ -18,7 +19,6 @@ use actix_web::{
     web::{self, PayloadConfig},
     App, HttpServer,
 };
-use diesel::{prelude::*, r2d2};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use utoipa::{
     openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
@@ -38,8 +38,13 @@ pub const SECONDS_IN_MINUTE: u64 = 60;
 pub const SECONDS_IN_HOUR: u64 = 60 * SECONDS_IN_MINUTE;
 pub const SECONDS_IN_DAY: u64 = 24 * SECONDS_IN_HOUR;
 
-fn run_migrations(conn: &mut impl MigrationHarness<diesel::pg::Pg>) {
-    conn.run_pending_migrations(MIGRATIONS).unwrap();
+fn run_migrations(url: &str) {
+    use diesel::prelude::*;
+
+    // Run migrations in sync just because the async_diesel_migrations crate isn't very popular
+    let mut conn = diesel::pg::PgConnection::establish(url).expect("Failed to connect to database");
+// &mut impl MigrationHarness<diesel::pg::Pg>
+    conn.run_pending_migrations(MIGRATIONS).expect("Failed to run migrations");
 }
 
 #[macro_export]
@@ -292,12 +297,15 @@ pub async fn main() -> std::io::Result<()> {
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL should be set");
     let redis_url = get_env!("REDIS_URL", "REDIS_URL should be set");
 
+    run_migrations(database_url);
+
     // create db connection pool
-    let manager = r2d2::ConnectionManager::<PgConnection>::new(database_url);
-    let pool: data::models::Pool = r2d2::Pool::builder()
-        .build(manager)
-        .expect("Failed to create pool.");
-    run_migrations(&mut pool.get().expect("Failed to get connection to postgres"));
+    let config = AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(database_url);
+    let pool = diesel_async::pooled_connection::deadpool::Pool::builder(config)
+        .max_size(10)
+        .build()
+        .unwrap();
+
 
     let redis_store = RedisSessionStore::new(redis_url)
         .await
@@ -315,7 +323,7 @@ pub async fn main() -> std::io::Result<()> {
         let _ = create_default_user(
             &std::env::var("ADMIN_API_KEY").expect("ADMIN_API_KEY should be set"),
             web::Data::new(pool.clone()),
-        )
+        ).await
         .map_err(|err| {
             log::error!("Failed to create default user: {:?}", err);
         });

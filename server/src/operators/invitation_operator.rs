@@ -6,6 +6,7 @@ use crate::{
 };
 use actix_web::web;
 use diesel::prelude::*;
+use diesel_async::RunQueryDsl;
 
 /// Diesel query
 #[tracing::instrument(skip(pool))]
@@ -17,13 +18,14 @@ pub async fn create_invitation_query(
 ) -> Result<Invitation, DefaultError> {
     use crate::data::schema::invitations::dsl::invitations;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     let new_invitation = Invitation::from_details(email, organization_id, user_role);
 
     let inserted_invitation = diesel::insert_into(invitations)
         .values(&new_invitation)
         .get_result(&mut conn)
+        .await
         .map_err(|_db_error| DefaultError {
             message: "Error inserting invitation.",
         })?;
@@ -38,11 +40,12 @@ pub async fn get_invitation_by_id_query(
 ) -> Result<Invitation, DefaultError> {
     use crate::data::schema::invitations::dsl as invitations_columns;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     let invitation = invitations_columns::invitations
         .filter(invitations_columns::id.eq(id))
         .first::<Invitation>(&mut conn)
+        .await
         .map_err(|_db_error| DefaultError {
             message: "Error getting invitation.",
         })?;
@@ -61,7 +64,7 @@ pub async fn send_invitation(inv_url: String, invitation: Invitation) -> Result<
         inv_url.split('?').collect::<Vec<&str>>()[0]
     );
 
-    send_email(sg_email_content, invitation.email).await
+    send_email(sg_email_content, invitation.email)
 }
 
 #[tracing::instrument(skip(pool))]
@@ -71,12 +74,13 @@ pub async fn set_invitation_used(
 ) -> Result<(), DefaultError> {
     use crate::data::schema::invitations::dsl as invitations_columns;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     diesel::update(invitations_columns::invitations)
         .filter(invitations_columns::id.eq(id))
         .set(invitations_columns::used.eq(true))
         .execute(&mut conn)
+        .await
         .map_err(|_db_error| DefaultError {
             message: "Error setting invitation as used.",
         })?;

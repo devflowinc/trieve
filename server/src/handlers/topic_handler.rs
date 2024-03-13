@@ -83,7 +83,7 @@ pub async fn create_topic(
     let new_topic = Topic::from_details(topic_name, user.id, dataset_org_plan_sub.dataset.id);
     let new_topic1 = new_topic.clone();
 
-    let create_topic_result = web::block(move || create_topic_query(new_topic, &pool)).await?;
+    let create_topic_result = create_topic_query(new_topic, &pool).await;
 
     match create_topic_result {
         Ok(()) => Ok(HttpResponse::Ok().json(new_topic1)),
@@ -129,22 +129,18 @@ pub async fn delete_topic(
     let topic_id = data_inner.topic_id;
     let pool_inner = pool.clone();
 
-    let user_topic = web::block(move || {
-        get_topic_for_user_query(
-            user.id,
-            topic_id,
-            dataset_org_plan_sub.dataset.id,
-            &pool_inner,
-        )
-    })
-    .await?;
+    let user_topic = get_topic_for_user_query(
+        user.id,
+        topic_id,
+        dataset_org_plan_sub.dataset.id,
+        &pool_inner,
+    )
+    .await;
 
     match user_topic {
         Ok(topic) => {
-            let delete_topic_result = web::block(move || {
-                delete_topic_query(topic.id, dataset_org_plan_sub.dataset.id, &pool)
-            })
-            .await?;
+            let delete_topic_result =
+                delete_topic_query(topic.id, dataset_org_plan_sub.dataset.id, &pool).await;
 
             match delete_topic_result {
                 Ok(()) => Ok(HttpResponse::NoContent().finish()),
@@ -202,22 +198,18 @@ pub async fn update_topic(
         }));
     }
 
-    let user_topic = web::block(move || {
-        get_topic_for_user_query(
-            user.id,
-            topic_id,
-            dataset_org_plan_sub.dataset.id,
-            &pool_inner,
-        )
-    })
-    .await?;
+    let user_topic = get_topic_for_user_query(
+        user.id,
+        topic_id,
+        dataset_org_plan_sub.dataset.id,
+        &pool_inner,
+    )
+    .await;
 
     match user_topic {
         Ok(topic) => {
-            let update_topic_result = web::block(move || {
-                update_topic_query(topic.id, name, dataset_org_plan_sub.dataset.id, &pool)
-            })
-            .await?;
+            let update_topic_result =
+                update_topic_query(topic.id, name, dataset_org_plan_sub.dataset.id, &pool).await;
 
             match update_topic_result {
                 Ok(()) => Ok(HttpResponse::NoContent().finish()),
@@ -274,10 +266,8 @@ pub async fn get_all_topics_for_user(
         }));
     }
 
-    let topics = web::block(move || {
-        get_all_topics_for_user_query(*req_user_id, dataset_org_plan_sub.dataset.id, &pool)
-    })
-    .await?;
+    let topics =
+        get_all_topics_for_user_query(*req_user_id, dataset_org_plan_sub.dataset.id, &pool).await;
 
     match topics {
         Ok(topics) => Ok(HttpResponse::Ok().json(topics)),

@@ -12,7 +12,7 @@ pub fn get_smtp_creds() -> Credentials {
 }
 
 #[tracing::instrument]
-pub async fn send_email(html_email_body: String, to_address: String) -> Result<(), DefaultError> {
+pub fn send_email(html_email_body: String, to_address: String) -> Result<(), DefaultError> {
     let smtp_relay = get_env!("SMTP_RELAY", "SMTP_RELAY should be set");
     let smtp_email_address = get_env!("SMTP_EMAIL_ADDRESS", "SMTP_EMAIL_ADDRESS should be set");
 

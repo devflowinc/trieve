@@ -35,11 +35,9 @@ pub async fn get_events(
     page: web::Path<i64>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let events = web::block(move || {
-        get_events_query(dataset_org_plan_sub.dataset.id, page.into_inner(), pool)
-    })
-    .await?
-    .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+    let events = get_events_query(dataset_org_plan_sub.dataset.id, page.into_inner(), pool)
+        .await
+        .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
 
     Ok(HttpResponse::Ok().json(events))
 }

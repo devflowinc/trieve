@@ -3,22 +3,21 @@ use crate::{
     errors::DefaultError,
 };
 use actix_web::web;
-use diesel::{
-    ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl, RunQueryDsl,
-    SelectableHelper,
-};
+use diesel::prelude::*;
+use diesel_async::RunQueryDsl;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 #[tracing::instrument(skip(pool))]
-pub fn create_event_query(event: Event, pool: web::Data<Pool>) -> Result<(), DefaultError> {
+pub async fn create_event_query(event: Event, pool: web::Data<Pool>) -> Result<(), DefaultError> {
     use crate::data::schema::events::dsl as events_columns;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     diesel::insert_into(events_columns::events)
         .values(&event)
         .execute(&mut conn)
+        .await
         .map_err(|err| {
             log::error!("Failed to create event: {:?}", err);
             DefaultError {
@@ -34,14 +33,14 @@ pub struct EventReturn {
     pub page_count: i32,
 }
 #[tracing::instrument(skip(pool))]
-pub fn get_events_query(
+pub async fn get_events_query(
     dataset_id: uuid::Uuid,
     page: i64,
     pool: web::Data<Pool>,
 ) -> Result<EventReturn, DefaultError> {
     use crate::data::schema::dataset_event_counts::dsl as dataset_event_counts_columns;
     use crate::data::schema::events::dsl as events_columns;
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     let events_and_count = events_columns::events
         .left_join(
@@ -57,6 +56,7 @@ pub fn get_events_query(
         .limit(10)
         .offset((page - 1) * 10)
         .load::<(Event, Option<i32>)>(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Failed to get events",
         })?;
@@ -66,7 +66,7 @@ pub fn get_events_query(
         .map(|(event, _)| event.clone())
         .collect();
     let event_count: i32 = events_and_count
-        .first()
+        .get(0)
         .map(|(_, count)| count.unwrap_or(0))
         .unwrap_or(0);
     Ok(EventReturn {

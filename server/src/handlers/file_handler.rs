@@ -111,11 +111,10 @@ pub async fn upload_file_handler(
     }
 
     let file_size_sum_pool = pool.clone();
-    let file_size_sum = web::block(move || {
+    let file_size_sum =
         get_file_size_sum_org(dataset_org_plan_sub.organization.id, file_size_sum_pool)
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
     if file_size_sum
         >= dataset_org_plan_sub
             .clone()

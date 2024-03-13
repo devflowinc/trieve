@@ -86,10 +86,9 @@ pub async fn create_message_completion_handler(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    let org_message_count =
-        web::block(move || get_message_org_count(message_count_org_id, message_count_pool))
-            .await?
-            .map_err(|err| ServiceError::InternalServerError(err.message.to_string()))?;
+    let org_message_count = get_message_org_count(message_count_org_id, message_count_pool)
+        .await
+        .map_err(|err| ServiceError::InternalServerError(err.message.to_string()))?;
 
     if org_message_count
         >= dataset_org_plan_sub
@@ -120,26 +119,22 @@ pub async fn create_message_completion_handler(
         dataset_org_plan_sub.dataset.id,
     );
 
-    let _ = web::block(move || {
-        user_owns_topic_query(
-            user.id,
-            topic_id,
-            dataset_org_plan_sub.dataset.id,
-            &user_owns_topic_pool,
-        )
-    })
-    .await?
+    let _topic = user_owns_topic_query(
+        user.id,
+        topic_id,
+        dataset_org_plan_sub.dataset.id,
+        &user_owns_topic_pool,
+    )
+    .await
     .map_err(|_e| ServiceError::Unauthorized)?;
 
     // get the previous messages
-    let mut previous_messages = web::block(move || {
-        get_topic_messages(
-            topic_id,
-            dataset_org_plan_sub.dataset.id,
-            &get_messages_pool,
-        )
-    })
-    .await?
+    let mut previous_messages = get_topic_messages(
+        topic_id,
+        dataset_org_plan_sub.dataset.id,
+        &get_messages_pool,
+    )
+    .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     // remove citations from the previous messages
@@ -160,16 +155,14 @@ pub async fn create_message_completion_handler(
         .collect::<Vec<models::Message>>();
 
     // call create_topic_message_query with the new_message and previous_messages
-    let previous_messages = web::block(move || {
-        create_topic_message_query(
-            previous_messages,
-            new_message,
-            user.id,
-            dataset_org_plan_sub.dataset.id,
-            &create_message_pool,
-        )
-    })
-    .await?
+    let previous_messages = create_topic_message_query(
+        previous_messages,
+        new_message,
+        user.id,
+        dataset_org_plan_sub.dataset.id,
+        &create_message_pool,
+    )
+    .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     stream_response(
@@ -218,21 +211,17 @@ pub async fn get_all_topic_messages(
     let second_pool = pool.clone();
     let topic_id: uuid::Uuid = messages_topic_id.into_inner();
     // check if the user owns the topic
-    let _user_topic = web::block(move || {
-        user_owns_topic_query(
-            user.id,
-            topic_id,
-            dataset_org_plan_sub.dataset.id,
-            &second_pool,
-        )
-    })
-    .await?
+    let _user_topic = user_owns_topic_query(
+        user.id,
+        topic_id,
+        dataset_org_plan_sub.dataset.id,
+        &second_pool,
+    )
+    .await
     .map_err(|_e| ServiceError::Unauthorized)?;
 
-    let messages = web::block(move || {
-        get_messages_for_topic_query(topic_id, dataset_org_plan_sub.dataset.id, &pool)
-    })
-    .await?;
+    let messages =
+        get_messages_for_topic_query(topic_id, dataset_org_plan_sub.dataset.id, &pool).await;
 
     match messages {
         Ok(messages) => Ok(HttpResponse::Ok().json(messages)),
@@ -307,15 +296,13 @@ pub async fn edit_message_handler(
     let second_pool = pool.clone();
     let third_pool = pool.clone();
 
-    let message_from_sort_order_result = web::block(move || {
-        get_message_by_sort_for_topic_query(
-            topic_id,
-            dataset_org_plan_sub.dataset.id,
-            message_sort_order,
-            &pool,
-        )
-    })
-    .await?;
+    let message_from_sort_order_result = get_message_by_sort_for_topic_query(
+        topic_id,
+        dataset_org_plan_sub.dataset.id,
+        message_sort_order,
+        &pool,
+    )
+    .await;
 
     let message_id = match message_from_sort_order_result {
         Ok(message) => message.id,
@@ -324,16 +311,14 @@ pub async fn edit_message_handler(
         }
     };
 
-    let _ = web::block(move || {
-        delete_message_query(
-            &user.id,
-            message_id,
-            topic_id,
-            dataset_org_plan_sub.dataset.id,
-            &second_pool,
-        )
-    })
-    .await?;
+    let _ = delete_message_query(
+        &user.id,
+        message_id,
+        topic_id,
+        dataset_org_plan_sub.dataset.id,
+        &second_pool,
+    )
+    .await;
 
     create_message_completion_handler(
         actix_web::web::Json(CreateMessageData {
@@ -391,14 +376,12 @@ pub async fn regenerate_message_handler(
     let create_message_pool = pool.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
-    let _ = web::block(move || {
-        user_owns_topic_query(user.id, topic_id, dataset_id, &user_owns_topic_pool)
-    })
-    .await?
-    .map_err(|_e| ServiceError::Unauthorized)?;
+    user_owns_topic_query(user.id, topic_id, dataset_id, &user_owns_topic_pool)
+        .await
+        .map_err(|_e| ServiceError::Unauthorized)?;
 
     let previous_messages_result =
-        web::block(move || get_topic_messages(topic_id, dataset_id, &get_messages_pool)).await?;
+        get_topic_messages(topic_id, dataset_id, &get_messages_pool).await;
 
     let mut previous_messages = match previous_messages_result {
         Ok(messages) => messages,
@@ -471,9 +454,7 @@ pub async fn regenerate_message_handler(
         previous_messages_to_regenerate.push(message.clone());
     }
 
-    let _ =
-        web::block(move || delete_message_query(&user.id, message_id, topic_id, dataset_id, &pool))
-            .await?;
+    let _ = delete_message_query(&user.id, message_id, topic_id, dataset_id, &pool).await;
 
     stream_response(
         previous_messages_to_regenerate,
@@ -589,8 +570,6 @@ pub async fn stream_response(
     pool: web::Data<Pool>,
     config: ServerDatasetConfiguration,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let qdrant_search_pool = pool.clone();
-    let pool2 = pool.clone();
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
@@ -716,7 +695,7 @@ pub async fn stream_response(
             negated_words: None,
         },
         dataset.id,
-        qdrant_search_pool,
+        pool.clone(),
         config,
     )
     .await
@@ -728,11 +707,10 @@ pub async fn stream_response(
         .map(|chunk| chunk.point_id)
         .collect::<Vec<uuid::Uuid>>();
 
-    let (metadata_chunks, _) = web::block(move || {
-        get_metadata_and_collided_chunks_from_point_ids_query(retrieval_chunk_ids, false, pool2)
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let (metadata_chunks, _) =
+        get_metadata_and_collided_chunks_from_point_ids_query(retrieval_chunk_ids, false, pool.clone())
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let citation_chunks: Vec<ChunkMetadataWithFileData> = metadata_chunks.to_vec();
 

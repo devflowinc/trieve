@@ -1,7 +1,6 @@
 use crate::data::models::{
     ApiKeyDTO, ApiKeyRole, Organization, SlimUser, UserApiKey, UserOrganization, UserRole,
 };
-use crate::diesel::prelude::*;
 use crate::errors::ServiceError;
 use crate::handlers::auth_handler::LoggedUser;
 use crate::operators::stripe_operator::refresh_redis_org_plan_sub;
@@ -12,22 +11,25 @@ use crate::{
 use actix_identity::Identity;
 use actix_web::{web, HttpMessage, HttpRequest};
 use argon2::Config;
+use diesel::prelude::*;
+use diesel_async::{scoped_futures::ScopedFutureExt, AsyncConnection, RunQueryDsl};
 use once_cell::sync::Lazy;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 
 #[tracing::instrument(skip(pool))]
-pub fn get_user_by_username_query(
+pub async fn get_user_by_username_query(
     user_name: &String,
     pool: web::Data<Pool>,
 ) -> Result<User, DefaultError> {
     use crate::data::schema::users::dsl::*;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     let user: Option<User> = users
         .filter(username.eq(user_name))
         .first::<User>(&mut conn)
+        .await
         .optional()
         .map_err(|_| DefaultError {
             message: "Error loading user",
@@ -41,7 +43,7 @@ pub fn get_user_by_username_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn get_user_by_id_query(
+pub async fn get_user_by_id_query(
     user_id: &uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(User, Vec<UserOrganization>, Vec<Organization>), DefaultError> {
@@ -49,7 +51,7 @@ pub fn get_user_by_id_query(
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     let user_orgs_orgs: Vec<(User, UserOrganization, Organization)> = users_columns::users
         .inner_join(user_organizations_columns::user_organizations)
@@ -64,11 +66,12 @@ pub fn get_user_by_id_query(
             Organization::as_select(),
         ))
         .load::<(User, UserOrganization, Organization)>(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Error loading user with organizations and roles for get_user_by_id_query",
         })?;
 
-    match user_orgs_orgs.first() {
+    match user_orgs_orgs.get(0) {
         Some(first_user_org) => {
             let user = first_user_org.0.clone();
             let user_orgs = user_orgs_orgs
@@ -86,6 +89,7 @@ pub fn get_user_by_id_query(
                 .filter(users_columns::id.eq(user_id))
                 .select(User::as_select())
                 .first::<User>(&mut conn)
+                .await
                 .map_err(|_| DefaultError {
                     message: "Error loading user by itself for get_user_by_id_query",
                 })?;
@@ -104,12 +108,13 @@ pub async fn add_existing_user_to_org(
 ) -> Result<bool, DefaultError> {
     use crate::data::schema::users::dsl as users_columns;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     let user: Vec<User> = users_columns::users
         .filter(users_columns::email.eq(email))
         .select(User::as_select())
         .load::<User>(&mut conn)
+        .await
         .map_err(|e| {
             log::error!("Error loading users: {:?}", e);
             DefaultError {
@@ -117,7 +122,7 @@ pub async fn add_existing_user_to_org(
             }
         })?;
 
-    match user.first() {
+    match user.get(0) {
         Some(user) => Ok(add_user_to_organization(
             None,
             None,
@@ -131,7 +136,7 @@ pub async fn add_existing_user_to_org(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn update_user_query(
+pub async fn update_user_query(
     user: &LoggedUser,
     username: &Option<String>,
     name: &Option<String>,
@@ -142,12 +147,12 @@ pub fn update_user_query(
 ) -> Result<User, DefaultError> {
     use crate::data::schema::users::dsl as user_columns;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     if username.clone().is_some()
         && username.clone().unwrap() != user.username.clone().unwrap_or("".to_string())
     {
-        let user_by_username = get_user_by_username_query(&username.clone().unwrap(), pool);
+        let user_by_username = get_user_by_username_query(&username.clone().unwrap(), pool).await;
 
         if let Ok(old_user) = user_by_username {
             if !(old_user.username.is_some()
@@ -168,9 +173,11 @@ pub fn update_user_query(
             user_columns::name.eq(name),
         ))
         .get_result(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Error updating user",
         })?;
+
     if let Some(role) = role {
         diesel::update(
             crate::data::schema::user_organizations::dsl::user_organizations
@@ -178,6 +185,7 @@ pub fn update_user_query(
         )
         .set(crate::data::schema::user_organizations::dsl::role.eq(Into::<i32>::into(role)))
         .execute(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Error updating user",
         })?;
@@ -219,8 +227,8 @@ pub fn hash_password(password: &str) -> Result<String, DefaultError> {
     })
 }
 
-#[tracing::instrument]
-pub fn set_user_api_key_query(
+#[tracing::instrument(skip(pool))]
+pub async fn set_user_api_key_query(
     user_id: uuid::Uuid,
     name: String,
     role: ApiKeyRole,
@@ -229,13 +237,14 @@ pub fn set_user_api_key_query(
     let raw_api_key = generate_api_key();
     let hashed_api_key = hash_password(&raw_api_key)?;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     let api_key_struct = UserApiKey::from_details(user_id, hashed_api_key.clone(), name, role);
 
     diesel::insert_into(crate::data::schema::user_api_key::dsl::user_api_key)
         .values(&api_key_struct)
         .execute(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Error setting api key",
         })?;
@@ -244,17 +253,18 @@ pub fn set_user_api_key_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn get_user_from_api_key_query(
+pub async fn get_user_from_api_key_query(
     api_key: &str,
     pool: &web::Data<Pool>,
 ) -> Result<SlimUser, DefaultError> {
     use crate::data::schema::organizations::dsl as organization_columns;
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
+    use crate::data::schema::user_api_key::dsl as user_api_key_columns;
 
     let api_key_hash = hash_password(api_key)?;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     let user_orgs_orgs: Vec<(User, UserOrganization, Organization, UserApiKey)> =
         users_columns::users
@@ -263,8 +273,8 @@ pub fn get_user_from_api_key_query(
                 organization_columns::organizations
                     .on(organization_columns::id.eq(user_organizations_columns::organization_id)),
             )
-            .inner_join(crate::data::schema::user_api_key::dsl::user_api_key)
-            .filter(crate::data::schema::user_api_key::dsl::api_key_hash.eq(api_key_hash))
+            .inner_join(user_api_key_columns::user_api_key)
+            .filter(user_api_key_columns::api_key_hash.eq(api_key_hash))
             .select((
                 User::as_select(),
                 UserOrganization::as_select(),
@@ -272,11 +282,12 @@ pub fn get_user_from_api_key_query(
                 UserApiKey::as_select(),
             ))
             .load::<(User, UserOrganization, Organization, UserApiKey)>(&mut conn)
+            .await
             .map_err(|_| DefaultError {
                 message: "Error loading user",
             })?;
 
-    match user_orgs_orgs.first() {
+    match user_orgs_orgs.get(0) {
         Some(first_user_org) => {
             let user = first_user_org.0.clone();
             let mut user_orgs = user_orgs_orgs
@@ -311,18 +322,19 @@ pub fn get_user_from_api_key_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn get_user_api_keys_query(
+pub async fn get_user_api_keys_query(
     user_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Vec<ApiKeyDTO>, DefaultError> {
     use crate::data::schema::user_api_key::dsl as user_api_key_columns;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     let api_keys = user_api_key_columns::user_api_key
         .filter(user_api_key_columns::user_id.eq(user_id))
         .select(UserApiKey::as_select())
         .load::<UserApiKey>(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Error loading user api keys",
         })?;
@@ -335,14 +347,14 @@ pub fn get_user_api_keys_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn delete_user_api_keys_query(
+pub async fn delete_user_api_keys_query(
     user_id: uuid::Uuid,
     api_key_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::user_api_key::dsl as user_api_key_columns;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     diesel::delete(
         user_api_key_columns::user_api_key
@@ -350,6 +362,7 @@ pub fn delete_user_api_keys_query(
             .filter(user_api_key_columns::id.eq(api_key_id)),
     )
     .execute(&mut conn)
+    .await
     .map_err(|_| DefaultError {
         message: "Error deleting user api key",
     })?;
@@ -358,7 +371,7 @@ pub fn delete_user_api_keys_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn create_user_query(
+pub async fn create_user_query(
     user_id: uuid::Uuid,
     email: String,
     name: Option<String>,
@@ -369,36 +382,34 @@ pub fn create_user_query(
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     let old_user: Option<User> = users_columns::users
         .select(User::as_select())
         .filter(users_columns::email.eq(&email))
         .first::<User>(&mut conn)
+        .await
         .optional()
         .map_err(|_| DefaultError {
             message: "Error loading user",
         })?;
 
     if let Some(old_user) = old_user {
-        let mut conn = pool.get().unwrap();
-        conn.transaction::<_, diesel::result::Error, _>(|conn| {
-            //users
-            diesel::update(users_columns::users.filter(users_columns::id.eq(old_user.id)))
-                .set(users_columns::id.eq(user_id))
-                .execute(conn)?;
+        let mut conn = pool.get().await.unwrap();
 
-            Ok(())
-        })
-        .map_err(|e| {
-            log::error!("Error updating ids: {:?}", e);
+        diesel::update(users_columns::users.filter(users_columns::id.eq(old_user.id)))
+            .set(users_columns::id.eq(user_id))
+            .execute(&mut conn)
+            .await
+            .map_err(|e| {
+                log::error!("Error updating ids: {:?}", e);
 
-            DefaultError {
-                message: "Error creating user",
-            }
-        })?;
+                DefaultError {
+                    message: "Error creating user",
+                }
+            })?;
 
-        let user = get_user_by_id_query(&user_id, pool)?;
+        let user = get_user_by_id_query(&user_id, pool).await?;
 
         return Ok(user);
     }
@@ -408,21 +419,27 @@ pub fn create_user_query(
 
     let user_org = conn
         .transaction::<_, diesel::result::Error, _>(|conn| {
-            let user = diesel::insert_into(users_columns::users)
-                .values(&user)
-                .get_result::<User>(conn)?;
+            async move {
+                let user = diesel::insert_into(users_columns::users)
+                    .values(&user)
+                    .get_result::<User>(conn)
+                    .await?;
 
-            let user_org = diesel::insert_into(user_organizations_columns::user_organizations)
-                .values(&user_org)
-                .get_result::<UserOrganization>(conn)?;
+                let user_org = diesel::insert_into(user_organizations_columns::user_organizations)
+                    .values(&user_org)
+                    .get_result::<UserOrganization>(conn)
+                    .await?;
 
-            Ok((user, vec![user_org]))
+                Ok((user, vec![user_org]))
+            }
+            .scope_boxed()
         })
+        .await
         .map_err(|_| DefaultError {
             message: "Failed to create user, likely that organization_id is invalid",
         })?;
 
-    let user_org = get_user_by_id_query(&user_org.0.id, pool)?;
+    let user_org = get_user_by_id_query(&user_org.0.id, pool).await?;
 
     Ok(user_org)
 }
@@ -440,11 +457,12 @@ pub async fn add_user_to_organization(
     let user_id_refresh = user_org.user_id;
     let user_id_refresh_pool = pool.clone();
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     diesel::insert_into(user_organizations_columns::user_organizations)
         .values(user_org)
         .execute(&mut conn)
+        .await
         .map_err(|_| {
             ServiceError::InternalServerError("Failed to add user to organization".to_string())
         })?;
@@ -457,7 +475,7 @@ pub async fn add_user_to_organization(
         })?;
 
     if req.is_some() && calling_user_id.is_some_and(|id| id == user_id_refresh) {
-        let user = get_user_by_id_query(&user_id_refresh, user_id_refresh_pool).map_err(|e| {
+        let user = get_user_by_id_query(&user_id_refresh, user_id_refresh_pool).await.map_err(|e| {
             log::error!("Error getting user by id: {:?}", e);
             ServiceError::InternalServerError("Failed to get user by id".to_string())
         })?;
@@ -479,14 +497,14 @@ pub async fn add_user_to_organization(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result<(), DefaultError> {
+pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result<(), DefaultError> {
     use crate::data::schema::organizations::dsl as organization_columns;
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
 
     let api_key_hash = hash_password(api_key)?;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get_ref().get().await.unwrap();
 
     let user = User::from_details_with_id(
         uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
@@ -497,6 +515,7 @@ pub fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result<(), D
     let user = diesel::insert_into(users_columns::users)
         .values(&user)
         .get_result::<User>(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Failed to create default user",
         })?;
@@ -506,6 +525,7 @@ pub fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result<(), D
     let org = diesel::insert_into(organization_columns::organizations)
         .values(&org)
         .get_result::<Organization>(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Failed to create default organization",
         })?;
@@ -515,6 +535,7 @@ pub fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result<(), D
     diesel::insert_into(user_organizations_columns::user_organizations)
         .values(&user_org)
         .execute(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Failed to create default user organization",
         })?;
@@ -529,6 +550,7 @@ pub fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result<(), D
     diesel::insert_into(crate::data::schema::user_api_key::dsl::user_api_key)
         .values(&api_key_struct)
         .execute(&mut conn)
+        .await
         .map_err(|_| DefaultError {
             message: "Error setting api key",
         })?;

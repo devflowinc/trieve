@@ -1,5 +1,4 @@
-use diesel::r2d2::ConnectionManager;
-use diesel::PgConnection;
+use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use redis::AsyncCommands;
 use sentry::{Hub, SentryFutureExt};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
@@ -65,10 +64,11 @@ fn main() {
     };
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
-    let manager = ConnectionManager::<PgConnection>::new(database_url);
-    let pool: models::Pool = r2d2::Pool::builder()
-        .build(manager)
-        .expect("Failed to create pool.");
+    let config = AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(database_url);
+    let pool = diesel_async::pooled_connection::deadpool::Pool::builder(config)
+        .max_size(10)
+        .build()
+        .unwrap();
 
     let web_pool = actix_web::web::Data::new(pool.clone());
 
@@ -100,7 +100,11 @@ fn main() {
 }
 
 #[tracing::instrument(skip(web_pool, redis_connection))]
-async fn ingestion_service(thread: usize, mut redis_connection: redis::aio::MultiplexedConnection, web_pool: actix_web::web::Data<models::Pool>) {
+async fn ingestion_service(
+    thread: usize,
+    mut redis_connection: redis::aio::MultiplexedConnection,
+    web_pool: actix_web::web::Data<models::Pool>,
+) {
     log::info!("Starting ingestion service thread");
     loop {
         let payload_result = redis_connection
@@ -120,13 +124,14 @@ async fn ingestion_service(thread: usize, mut redis_connection: redis::aio::Mult
         let server_dataset_configuration =
             ServerDatasetConfiguration::from_json(payload.dataset_config.clone());
 
-        match upload_chunk(
+        let upload_chunk_result = upload_chunk(
             payload.clone(),
             web_pool.clone(),
             server_dataset_configuration,
         )
-        .await
-        {
+        .await;
+
+        match upload_chunk_result {
             Ok(_) => {
                 log::info!("Uploaded chunk: {:?}", payload.chunk_metadata.id);
                 let _ = create_event_query(
@@ -138,9 +143,7 @@ async fn ingestion_service(thread: usize, mut redis_connection: redis::aio::Mult
                     ),
                     web_pool.clone(),
                 )
-                .map_err(|err| {
-                    log::error!("Failed to create event: {:?}", err);
-                });
+                .await;
             }
             Err(err) => {
                 log::error!("Failed to upload chunk: {:?}", err);
@@ -154,9 +157,7 @@ async fn ingestion_service(thread: usize, mut redis_connection: redis::aio::Mult
                     ),
                     web_pool.clone(),
                 )
-                .map_err(|err| {
-                    log::error!("Failed to create event: {:?}", err);
-                });
+                .await;
             }
         }
         transaction.finish();
@@ -169,7 +170,6 @@ async fn upload_chunk(
     web_pool: actix_web::web::Data<models::Pool>,
     config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
-
     let tx_ctx = sentry::TransactionContext::new("upload_chunk", "Uploading Chunk");
     let transaction = sentry::start_transaction(tx_ctx);
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
@@ -224,7 +224,10 @@ async fn upload_chunk(
     let duplicate_distance_threshold = dataset_config.DUPLICATE_DISTANCE_THRESHOLD;
 
     if duplicate_distance_threshold < 1.0 || dataset_config.COLLISIONS_ENABLED {
-        let collision_detection_span = transaction.start_child("collision_check", "global_unfiltered_top_match_query and get_metadata_from_point_ids");
+        let collision_detection_span = transaction.start_child(
+            "collision_check",
+            "global_unfiltered_top_match_query and get_metadata_from_point_ids",
+        );
 
         let first_semantic_result = global_unfiltered_top_match_query(
             embedding_vector.clone(),
@@ -259,7 +262,10 @@ async fn upload_chunk(
 
     //if collision is not nil, insert chunk with collision
     if collision.is_some() {
-        let update_collision_span = transaction.start_child("update_collision", "update_qdrant_point_query and insert_duplicate_chunk_metadata_query");
+        let update_collision_span = transaction.start_child(
+            "update_collision",
+            "update_qdrant_point_query and insert_duplicate_chunk_metadata_query",
+        );
 
         update_qdrant_point_query(
             None,
@@ -279,6 +285,7 @@ async fn upload_chunk(
             payload.chunk.file_id,
             web_pool.clone(),
         )
+        .await
         .map_err(|err| {
             ServiceError::InternalServerError(format!(
                 "Failed to insert duplicate chunk metadata: {:?}",
@@ -324,22 +331,23 @@ async fn upload_chunk(
     }
 
     if let Some(group_ids_to_bookmark) = payload.chunk.group_ids {
-        let create_bookmarks_span = transaction.start_child("creating_bookmarks", "Inserting all Bookmarks");
+        let create_bookmarks_span =
+            transaction.start_child("creating_bookmarks", "Inserting all Bookmarks");
 
         for group_id_to_bookmark in group_ids_to_bookmark {
             let chunk_group_bookmark =
                 ChunkGroupBookmark::from_details(group_id_to_bookmark, new_chunk_id);
 
             let create_chunk_bookmark_res =
-                create_chunk_bookmark_query(web_pool.clone(), chunk_group_bookmark).map_err(
-                    |err| {
+                create_chunk_bookmark_query(web_pool.clone(), chunk_group_bookmark)
+                    .await
+                    .map_err(|err| {
                         log::error!("Failed to create chunk bookmark: {:?}", err);
                         ServiceError::InternalServerError(format!(
                             "Failed to create chunk bookmark: {:?}",
                             err
                         ))
-                    },
-                );
+                    });
 
             if create_chunk_bookmark_res.is_ok() {
                 add_bookmark_to_qdrant_query(qdrant_point_id, group_id_to_bookmark, config.clone())

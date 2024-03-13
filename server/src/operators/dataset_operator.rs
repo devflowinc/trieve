@@ -1,5 +1,4 @@
 use crate::data::models::{DatasetAndUsage, DatasetUsageCount, ServerDatasetConfiguration};
-use crate::diesel::RunQueryDsl;
 use crate::get_env;
 use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::{
@@ -7,7 +6,8 @@ use crate::{
     errors::ServiceError,
 };
 use actix_web::web;
-use diesel::{ExpressionMethods, QueryDsl, SelectableHelper};
+use diesel::prelude::*;
+use diesel_async::RunQueryDsl;
 use qdrant_client::qdrant::{Condition, Filter};
 
 #[tracing::instrument(skip(pool))]
@@ -19,11 +19,13 @@ pub async fn create_dataset_query(
 
     let mut conn = pool
         .get()
+        .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     diesel::insert_into(datasets)
         .values(&new_dataset)
         .execute(&mut conn)
+        .await
         .map_err(|_| ServiceError::BadRequest("Failed to create dataset".to_string()))?;
 
     let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
@@ -74,7 +76,7 @@ pub async fn get_dataset_by_id_query(
         })?),
         Err(_) => {
             use crate::data::schema::datasets::dsl as datasets_columns;
-            let mut conn = pool.get().map_err(|_| {
+            let mut conn = pool.get().await.map_err(|_| {
                 ServiceError::BadRequest("Could not get database connection".to_string())
             })?;
 
@@ -82,6 +84,7 @@ pub async fn get_dataset_by_id_query(
                 .filter(datasets_columns::id.eq(id))
                 .select(Dataset::as_select())
                 .first(&mut conn)
+                .await
                 .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?;
 
             let dataset_stringified = serde_json::to_string(&dataset)
@@ -145,10 +148,11 @@ pub async fn delete_dataset_by_id_query(
             ServiceError::BadRequest(format!("Could not delete points from qdrant: {}", err))
         })?;
 
-    let mut conn = pool.get().unwrap();
+    let mut conn = pool.get().await.unwrap();
 
     diesel::delete(datasets_columns::datasets.filter(datasets_columns::id.eq(id)))
         .execute(&mut conn)
+        .await
         .map_err(|err| {
             log::error!("Could not delete dataset: {}", err);
             ServiceError::BadRequest("Could not delete dataset".to_string())
@@ -169,6 +173,7 @@ pub async fn update_dataset_query(
 
     let mut conn = pool
         .get()
+        .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     // TODO update columns that are not listed
@@ -181,6 +186,7 @@ pub async fn update_dataset_query(
                 datasets_columns::client_configuration.eq(client_configuration),
             ))
             .get_result(&mut conn)
+            .await
             .map_err(|_| ServiceError::BadRequest("Failed to update dataset".to_string()))?;
 
     let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
@@ -209,7 +215,7 @@ pub async fn update_dataset_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub fn get_datasets_by_organization_id(
+pub async fn get_datasets_by_organization_id(
     org_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<Vec<DatasetAndUsage>, ServiceError> {
@@ -218,6 +224,7 @@ pub fn get_datasets_by_organization_id(
 
     let mut conn = pool
         .get()
+        .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     let dataset_and_usages: Vec<(Dataset, DatasetUsageCount)> = datasets_columns::datasets
@@ -225,6 +232,7 @@ pub fn get_datasets_by_organization_id(
         .filter(datasets_columns::organization_id.eq(org_id.into_inner()))
         .select((Dataset::as_select(), DatasetUsageCount::as_select()))
         .load::<(Dataset, DatasetUsageCount)>(&mut conn)
+        .await
         .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?;
 
     let dataset_and_usages = dataset_and_usages

@@ -177,12 +177,10 @@ pub async fn create_organization(
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_create_data = organization.into_inner();
 
-    let created_organization = {
-        let pool = pool.clone();
-        create_organization_query(organization_create_data.name.as_str(), pool)
+    let created_organization =
+        create_organization_query(organization_create_data.name.as_str(), pool.clone())
             .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
-    };
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     add_user_to_organization(
         Some(&req),
