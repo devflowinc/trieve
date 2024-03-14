@@ -11,7 +11,7 @@ use trieve_server::operators::chunk_operator::{
 };
 use trieve_server::operators::event_operator::create_event_query;
 use trieve_server::operators::group_operator::create_chunk_bookmark_query;
-use trieve_server::operators::model_operator::create_embedding;
+use trieve_server::operators::model_operator::{create_embedding, get_splade_embedding};
 use trieve_server::operators::parse_operator::{average_embeddings, coarse_doc_chunker};
 use trieve_server::operators::qdrant_operator::{
     add_bookmark_to_qdrant_query, create_new_qdrant_point_query, update_qdrant_point_query,
@@ -328,11 +328,21 @@ async fn upload_chunk(
             "update_qdrant_point_query and insert_duplicate_chunk_metadata_query",
         );
 
+        let splade_vector = if dataset_config.FULLTEXT_ENABLED {
+            match get_splade_embedding(&payload.chunk_metadata.content, "doc").await {
+                Ok(v) => v,
+                Err(_) => vec![(0, 0.0)],
+            }
+        } else {
+            vec![(0, 0.0)]
+        };
+
         update_qdrant_point_query(
             None,
             collision.expect("Collision must be some"),
             None,
             payload.chunk_metadata.dataset_id,
+            splade_vector,
             dataset_config.clone(),
         )
         .await
@@ -382,16 +392,23 @@ async fn upload_chunk(
         qdrant_point_id = inserted_chunk.qdrant_point_id.unwrap_or(qdrant_point_id);
         new_chunk_id = inserted_chunk.id;
 
-        let insert_tx = transaction.start_child(
-            "calling_create_qdrant_point",
-            "calling_create_qdrant_point",
-        );
+        let insert_tx =
+            transaction.start_child("calling_create_qdrant_point", "calling_create_qdrant_point");
+
+        let splade_vector = if dataset_config.FULLTEXT_ENABLED {
+            match get_splade_embedding(&payload.chunk_metadata.content, "doc").await {
+                Ok(v) => v,
+                Err(_) => vec![(0, 0.0)],
+            }
+        } else {
+            vec![(0, 0.0)]
+        };
 
         create_new_qdrant_point_query(
             qdrant_point_id,
             embedding_vector,
             payload.chunk_metadata.clone(),
-            payload.chunk_metadata.dataset_id,
+            splade_vector,
             dataset_config.clone(),
         )
         .await
@@ -476,6 +493,15 @@ async fn update_chunk(
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
+    let splade_vector = if server_dataset_config.FULLTEXT_ENABLED {
+        match get_splade_embedding(&payload.chunk_metadata.content, "doc").await {
+            Ok(v) => v,
+            Err(_) => vec![(0, 0.0)],
+        }
+    } else {
+        vec![(0, 0.0)]
+    };
+
     update_qdrant_point_query(
         // If the chunk is a collision, we don't want to update the qdrant point
         if payload.chunk_metadata.qdrant_point_id.is_none() {
@@ -486,6 +512,7 @@ async fn update_chunk(
         qdrant_point_id,
         Some(embedding_vector),
         payload.dataset_id,
+        splade_vector,
         server_dataset_config,
     )
     .await
