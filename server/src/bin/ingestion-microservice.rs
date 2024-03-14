@@ -1,10 +1,9 @@
-use diesel_async::pooled_connection::AsyncDieselConnectionManager;
+use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
 use redis::AsyncCommands;
 use sentry::{Hub, SentryFutureExt};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{self, ChunkGroupBookmark, Event, ServerDatasetConfiguration};
 use trieve_server::errors::ServiceError;
-use trieve_server::get_env;
 use trieve_server::handlers::chunk_handler::IngestionMessage;
 use trieve_server::operators::chunk_operator::{
     get_metadata_from_point_ids, insert_chunk_metadata_query, insert_duplicate_chunk_metadata_query,
@@ -17,6 +16,7 @@ use trieve_server::operators::qdrant_operator::{
     add_bookmark_to_qdrant_query, create_new_qdrant_point_query, update_qdrant_point_query,
 };
 use trieve_server::operators::search_operator::global_unfiltered_top_match_query;
+use trieve_server::{establish_connection, get_env};
 
 fn main() {
     dotenvy::dotenv().ok();
@@ -64,8 +64,16 @@ fn main() {
     };
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
-    let config = AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(database_url);
-    let pool = diesel_async::pooled_connection::deadpool::Pool::builder(config)
+
+    let mut config = ManagerConfig::default();
+    config.custom_setup = Box::new(establish_connection);
+
+    let mgr = AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new_with_config(
+        database_url,
+        config,
+    );
+
+    let pool = diesel_async::pooled_connection::deadpool::Pool::builder(mgr)
         .max_size(10)
         .build()
         .unwrap();
@@ -89,9 +97,9 @@ fn main() {
                     .map(|i| {
                         let web_pool = web_pool.clone();
                         let redis_connection = redis_connection.clone();
-                        tokio::spawn(
-                            async move { ingestion_service(i, redis_connection, web_pool).await },
-                        )
+                        tokio::spawn(async move {
+                            ingestion_service(i, redis_connection, web_pool).await
+                        })
                     })
                     .collect();
 
