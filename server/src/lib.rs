@@ -1,6 +1,10 @@
 #[macro_use]
 extern crate diesel;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
+use diesel_async::pooled_connection::ManagerConfig;
+use openssl::ssl::SslVerifyMode;
+use openssl::ssl::{SslConnector, SslMethod};
+use postgres_openssl::MakeTlsConnector;
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 
 use crate::{
@@ -20,10 +24,8 @@ use actix_web::{
     App, HttpServer,
 };
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use utoipa::{
-    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
-    Modify, OpenApi,
-};
+use futures_util::future::BoxFuture;
+use futures_util::FutureExt;
 use utoipa_redoc::{Redoc, Servable};
 
 pub mod af_middleware;
@@ -42,10 +44,42 @@ fn run_migrations(url: &str) {
     use diesel::prelude::*;
 
     // Run migrations in sync just because the async_diesel_migrations crate isn't very popular
+    // This is an option but I exceeded my timebox
+    // https://github.com/weiznich/diesel_async/blob/main/examples/postgres/run-pending-migrations-with-rustls/src/main.rs
+
     let mut conn = diesel::pg::PgConnection::establish(url).expect("Failed to connect to database");
-// &mut impl MigrationHarness<diesel::pg::Pg>
-    conn.run_pending_migrations(MIGRATIONS).expect("Failed to run migrations");
+    // &mut impl MigrationHarness<diesel::pg::Pg>
+    conn.run_pending_migrations(MIGRATIONS)
+        .expect("Failed to run migrations");
 }
+
+pub fn establish_connection(
+    config: &str,
+) -> BoxFuture<diesel::ConnectionResult<diesel_async::AsyncPgConnection>> {
+    let fut = async {
+        let mut tls = SslConnector::builder(SslMethod::tls()).unwrap();
+
+        tls.set_verify(SslVerifyMode::NONE);
+        let tls_connector = MakeTlsConnector::new(tls.build());
+
+        let (client, conn) = tokio_postgres::connect(config, tls_connector)
+            .await
+            .map_err(|e| diesel::ConnectionError::BadConnection(e.to_string()))?;
+
+        tokio::spawn(async move {
+            if let Err(e) = conn.await {
+                eprintln!("Database connection: {e}");
+            }
+        });
+        diesel_async::AsyncPgConnection::try_from(client).await
+    };
+    fut.boxed()
+}
+
+use utoipa::{
+    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
+    Modify, OpenApi,
+};
 
 #[macro_export]
 #[cfg(not(feature = "runtime-env"))]
@@ -300,12 +334,18 @@ pub async fn main() -> std::io::Result<()> {
     run_migrations(database_url);
 
     // create db connection pool
-    let config = AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(database_url);
-    let pool = diesel_async::pooled_connection::deadpool::Pool::builder(config)
+    let mut config = ManagerConfig::default();
+    config.custom_setup = Box::new(establish_connection);
+
+    let mgr = AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new_with_config(
+        database_url,
+        config,
+    );
+
+    let pool = diesel_async::pooled_connection::deadpool::Pool::builder(mgr)
         .max_size(10)
         .build()
         .unwrap();
-
 
     let redis_store = RedisSessionStore::new(redis_url)
         .await
@@ -315,15 +355,18 @@ pub async fn main() -> std::io::Result<()> {
 
     let oidc_client = build_oidc_client().await;
 
-    let _ = create_new_qdrant_collection_query(None, None, None, false).await.map_err(|err| {
-        log::error!("Failed to create qdrant group: {:?}", err);
-    });
+    let _ = create_new_qdrant_collection_query(None, None, None, false)
+        .await
+        .map_err(|err| {
+            log::error!("Failed to create qdrant group: {:?}", err);
+        });
 
     if std::env::var("ADMIN_API_KEY").is_ok() {
         let _ = create_default_user(
             &std::env::var("ADMIN_API_KEY").expect("ADMIN_API_KEY should be set"),
             web::Data::new(pool.clone()),
-        ).await
+        )
+        .await
         .map_err(|err| {
             log::error!("Failed to create default user: {:?}", err);
         });

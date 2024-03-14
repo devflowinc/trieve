@@ -1176,9 +1176,9 @@ dependencies = [
 
 [[package]]
 name = "diesel-async"
-version = "0.3.2"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7e7974099f0d9bde0e010dd3a673555276a474f3362a7a52ab535a57b7c5056"
+checksum = "acada1517534c92d3f382217b485db8a8638f111b0e3f2a2a8e26165050f77be"
 dependencies = [
  "async-trait",
  "deadpool",
@@ -2653,9 +2653,9 @@ dependencies = [
 
 [[package]]
 name = "openssl"
-version = "0.10.61"
+version = "0.10.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b8419dc8cc6d866deb801274bba2e6f8f6108c1bb7fcc10ee5ab864931dbb45"
+checksum = "95a0481286a310808298130d22dd1fef0fa571e05a8f44ec801801e84b216b1f"
 dependencies = [
  "bitflags 2.4.1",
  "cfg-if",
@@ -2685,9 +2685,9 @@ checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.97"
+version = "0.9.101"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3eaad34cdd97d81de97964fc7f29e2d104f483840d906ef56daa1912338460b"
+checksum = "dda2b0f344e78efc2facf7d195d098df0dd72151b26ab98da807afc26c198dff"
 dependencies = [
  "cc",
  "libc",
@@ -2976,6 +2976,19 @@ dependencies = [
  "cpufeatures",
  "opaque-debug",
  "universal-hash",
+]
+
+[[package]]
+name = "postgres-openssl"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1de0ea6504e07ca78355a6fb88ad0f36cafe9e696cbc6717f16a207f3a60be72"
+dependencies = [
+ "futures",
+ "openssl",
+ "tokio",
+ "tokio-openssl",
+ "tokio-postgres",
 ]
 
 [[package]]
@@ -4613,6 +4626,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio-openssl"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ffab79df67727f6acf57f1ff743091873c24c579b1e2ce4d8f53e47ded4d63d"
+dependencies = [
+ "futures-util",
+ "openssl",
+ "openssl-sys",
+ "tokio",
+]
+
+[[package]]
 name = "tokio-postgres"
 version = "0.7.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4890,6 +4915,8 @@ dependencies = [
  "once_cell",
  "openai_dive",
  "openidconnect",
+ "openssl",
+ "postgres-openssl",
  "pyo3",
  "qdrant-client",
  "rand 0.8.5",
@@ -4909,6 +4936,7 @@ dependencies = [
  "simsearch",
  "time",
  "tokio",
+ "tokio-postgres",
  "tokio-stream",
  "tracing",
  "tracing-subscriber",
