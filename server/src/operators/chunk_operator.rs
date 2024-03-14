@@ -394,51 +394,44 @@ pub async fn insert_chunk_metadata_query(
 
     let mut conn = pool.get().await.unwrap();
 
-    let transaction_result = conn
-        .transaction::<_, diesel::result::Error, _>(|conn| {
-            async {
-                diesel::insert_into(chunk_metadata)
-                    .values(&chunk_data)
-                    .execute(conn)
-                    .await?;
-
-                if file_uuid.is_some() {
-                    diesel::insert_into(chunk_files_columns::chunk_files)
-                        .values(&ChunkFile::from_details(
-                            chunk_data.id,
-                            file_uuid.expect("file_uuid should be Some"),
-                        ))
-                        .execute(conn)
-                        .await?;
-                }
-
-                Ok(())
-            }
-            .scope_boxed()
-        })
-        .await;
-
-    match transaction_result {
-        Ok(_) => (),
-        Err(e) => {
-            log::info!("Failed to insert chunk metadata: {:?}", e);
+    let inserted_chunk = diesel::insert_into(chunk_metadata)
+        .values(&chunk_data)
+        .get_result::<ChunkMetadata>(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to insert chunk metadata: {:?}", e);
             match e {
                 diesel::result::Error::DatabaseError(
                     diesel::result::DatabaseErrorKind::UniqueViolation,
                     _,
                 ) => {
-                    return Err(DefaultError {
+                    return DefaultError {
                         message: "Duplicate tracking_id",
-                    });
+                    };
                 }
                 _ => {
-                    return Err(DefaultError {
+                    return DefaultError {
                         message: "Failed to insert card metadata",
-                    });
+                    };
                 }
             }
-        }
-    };
+        })?;
+
+    if file_uuid.is_some() {
+        diesel::insert_into(chunk_files_columns::chunk_files)
+            .values(&ChunkFile::from_details(
+                inserted_chunk.id,
+                file_uuid.expect("file_uuid should be Some"),
+            ))
+            .execute(&mut conn)
+            .await
+            .map_err(|e| {
+                log::error!("Failed to insert chunk file: {:?}", e);
+                DefaultError {
+                    message: "Failed to insert chunk file",
+                }
+            })?;
+    }
 
     Ok(chunk_data)
 }
