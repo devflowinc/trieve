@@ -258,9 +258,9 @@ pub async fn get_user_from_api_key_query(
     pool: &web::Data<Pool>,
 ) -> Result<SlimUser, DefaultError> {
     use crate::data::schema::organizations::dsl as organization_columns;
+    use crate::data::schema::user_api_key::dsl as user_api_key_columns;
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
-    use crate::data::schema::user_api_key::dsl as user_api_key_columns;
 
     let api_key_hash = hash_password(api_key)?;
 
@@ -475,10 +475,12 @@ pub async fn add_user_to_organization(
         })?;
 
     if req.is_some() && calling_user_id.is_some_and(|id| id == user_id_refresh) {
-        let user = get_user_by_id_query(&user_id_refresh, user_id_refresh_pool).await.map_err(|e| {
-            log::error!("Error getting user by id: {:?}", e);
-            ServiceError::InternalServerError("Failed to get user by id".to_string())
-        })?;
+        let user = get_user_by_id_query(&user_id_refresh, user_id_refresh_pool)
+            .await
+            .map_err(|e| {
+                log::error!("Error getting user by id: {:?}", e);
+                ServiceError::InternalServerError("Failed to get user by id".to_string())
+            })?;
 
         let slim_user: SlimUser = SlimUser::from_details(user.0, user.1, user.2);
 

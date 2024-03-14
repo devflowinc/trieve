@@ -101,7 +101,8 @@ pub async fn create_generic_system_message(
     pool: &web::Data<Pool>,
 ) -> Result<Message, DefaultError> {
     let topic =
-        crate::operators::topic_operator::get_topic_query(messages_topic_id, dataset_id, pool).await?;
+        crate::operators::topic_operator::get_topic_query(messages_topic_id, dataset_id, pool)
+            .await?;
     let system_message_content =
         "You are Trieve retrieval augmented chatbot, a large language model trained by Trieve to respond in the same tone as and with the context of retrieved information.";
 
@@ -131,7 +132,8 @@ pub async fn create_topic_message_query(
     let mut previous_messages_len = previous_messages.len();
 
     if previous_messages.is_empty() {
-        let system_message = create_generic_system_message(new_message.topic_id, dataset_id, pool).await?;
+        let system_message =
+            create_generic_system_message(new_message.topic_id, dataset_id, pool).await?;
         ret_messages.extend(vec![system_message.clone()]);
         create_message_query(system_message, given_user_id, pool).await?;
         previous_messages_len = 1;

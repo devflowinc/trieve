@@ -109,8 +109,8 @@ pub async fn create_chunk(
     let count_dataset_id = dataset_org_plan_sub.dataset.id;
 
     let chunk_count = get_row_count_for_dataset_id_query(count_dataset_id, pool.clone())
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     if chunk_count
         >= dataset_org_plan_sub
@@ -326,9 +326,10 @@ pub async fn delete_chunk_by_tracking_id(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    let chunk_metadata = get_metadata_from_tracking_id_query(tracking_id_inner, dataset_id, pool.clone())
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let chunk_metadata =
+        get_metadata_from_tracking_id_query(tracking_id_inner, dataset_id, pool.clone())
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     delete_chunk_metadata_query(
         chunk_metadata.id,

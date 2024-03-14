@@ -707,10 +707,13 @@ pub async fn stream_response(
         .map(|chunk| chunk.point_id)
         .collect::<Vec<uuid::Uuid>>();
 
-    let (metadata_chunks, _) =
-        get_metadata_and_collided_chunks_from_point_ids_query(retrieval_chunk_ids, false, pool.clone())
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let (metadata_chunks, _) = get_metadata_and_collided_chunks_from_point_ids_query(
+        retrieval_chunk_ids,
+        false,
+        pool.clone(),
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let citation_chunks: Vec<ChunkMetadataWithFileData> = metadata_chunks.to_vec();
 
@@ -838,7 +841,7 @@ pub async fn stream_response(
             dataset.id,
         );
 
-        let _ = create_message_query(new_message, user_id, &pool);
+        let _ = create_message_query(new_message, user_id, &pool).await;
 
         return Ok(HttpResponse::Ok().json(completion_content));
     }
@@ -865,7 +868,7 @@ pub async fn stream_response(
             dataset.id,
         );
 
-        let _ = create_message_query(new_message, user_id, &pool);
+        let _ = create_message_query(new_message, user_id, &pool).await;
     });
 
     let new_stream = stream::iter(vec![Ok(Bytes::from(citation_chunks_stringified1))]);

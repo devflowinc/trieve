@@ -1,4 +1,3 @@
-use diesel_async::scoped_futures::ScopedFutureExt;
 use crate::data::models::{
     ChunkCollision, ChunkFile, ChunkMetadataWithFileData, Dataset, FullTextSearchResult,
     ServerDatasetConfiguration, UnifiedId,
@@ -12,6 +11,7 @@ use crate::{
 };
 use actix_web::web;
 use diesel::prelude::*;
+use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use itertools::Itertools;
 use qdrant_client::qdrant::{PointId, PointVectors};
@@ -247,9 +247,12 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
             .cloned()
             .collect::<Vec<FullTextSearchResult>>();
 
-        let all_metadata = get_metadata_query(all_chunks, pool).await.map_err(|_| DefaultError {
-            message: "Failed to load metadata",
-        })?;
+        let all_metadata =
+            get_metadata_query(all_chunks, pool)
+                .await
+                .map_err(|_| DefaultError {
+                    message: "Failed to load metadata",
+                })?;
 
         let meta_chunks = all_metadata
             .iter()
@@ -349,7 +352,9 @@ pub async fn get_metadata_from_ids_query(
         .map_into::<FullTextSearchResult>()
         .collect_vec();
 
-    Ok(get_metadata_query(full_text_metadatas, pool).await.unwrap_or_default())
+    Ok(get_metadata_query(full_text_metadatas, pool)
+        .await
+        .unwrap_or_default())
 }
 
 #[tracing::instrument(skip(pool))]
@@ -371,7 +376,9 @@ pub async fn insert_chunk_metadata_query(
                 .expect("tracking_id must be Some at this point"),
             chunk_data.dataset_id,
             pool.clone(),
-        ).await {
+        )
+        .await
+        {
             let mut update_chunk = chunk_data.clone();
             update_chunk.id = existing_chunk.id;
             update_chunk.created_at = existing_chunk.created_at;
@@ -392,7 +399,8 @@ pub async fn insert_chunk_metadata_query(
             async {
                 diesel::insert_into(chunk_metadata)
                     .values(&chunk_data)
-                    .execute(conn).await?;
+                    .execute(conn)
+                    .await?;
 
                 if file_uuid.is_some() {
                     diesel::insert_into(chunk_files_columns::chunk_files)
