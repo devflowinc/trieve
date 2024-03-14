@@ -392,7 +392,23 @@ pub async fn insert_chunk_metadata_query(
         }
     }
 
-    let mut conn = pool.get().await.unwrap();
+    let mut conn = pool.get().await.expect("Failed to get connection to db");
+
+    if let Some(other_tracking_id) = chunk_data.tracking_id.clone() {
+        let existing_chunk = get_metadata_from_tracking_id_query(
+            other_tracking_id,
+            chunk_data.dataset_id,
+            pool.clone(),
+        )
+        .await;
+
+        if existing_chunk.is_ok() {
+            log::info!("Avoided potential write conflict by pre-checking tracking_id");
+            return Err(DefaultError {
+                message: "Duplicate tracking_id",
+            });
+        }
+    }
 
     let inserted_chunk = diesel::insert_into(chunk_metadata)
         .values(&chunk_data)
