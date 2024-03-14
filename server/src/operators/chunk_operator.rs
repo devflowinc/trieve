@@ -373,25 +373,28 @@ pub async fn insert_chunk_metadata_query(
 
     let mut conn = pool.get().unwrap();
 
-    let transaction_result = conn.transaction::<_, diesel::result::Error, _>(|conn| {
-        diesel::insert_into(chunk_metadata)
-            .values(&chunk_data)
-            .execute(conn)?;
+    let inserted_chunk = diesel::insert_into(chunk_metadata)
+        .values(&chunk_data)
+        .get_result::<ChunkMetadata>(&mut conn);
 
-        if file_uuid.is_some() {
-            diesel::insert_into(chunk_files_columns::chunk_files)
-                .values(&ChunkFile::from_details(
-                    chunk_data.id,
-                    file_uuid.expect("file_uuid should be Some"),
-                ))
-                .execute(conn)?;
+    match inserted_chunk {
+        Ok(inserted_chunk) => {
+            if file_uuid.is_some() {
+                diesel::insert_into(chunk_files_columns::chunk_files)
+                    .values(&ChunkFile::from_details(
+                        inserted_chunk.id,
+                        file_uuid.expect("file_uuid should be Some"),
+                    ))
+                    .execute(&mut conn)
+                    .map_err(|e| {
+                        log::error!("Failed to insert chunk file: {:?}", e);
+                        DefaultError {
+                            message: "Failed to insert chunk file",
+                        }
+                    })?;
+            }
+            Ok(inserted_chunk)
         }
-
-        Ok(())
-    });
-
-    match transaction_result {
-        Ok(_) => (),
         Err(e) => {
             log::info!("Failed to insert chunk metadata: {:?}", e);
             match e {
@@ -410,9 +413,7 @@ pub async fn insert_chunk_metadata_query(
                 }
             }
         }
-    };
-
-    Ok(chunk_data)
+    }
 }
 
 #[tracing::instrument(skip(pool))]
