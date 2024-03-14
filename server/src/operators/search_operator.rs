@@ -179,7 +179,8 @@ pub async fn assemble_qdrant_filter(
             negated_words,
             dataset_id,
             pool.unwrap(),
-        ).await?;
+        )
+        .await?;
 
         let available_point_ids = available_qdrant_ids
             .iter()
@@ -235,7 +236,8 @@ pub async fn retrieve_qdrant_points_query(
         parsed_query.negated_words,
         dataset_id,
         Some(pool),
-    ).await?;
+    )
+    .await?;
 
     let point_ids_future = search_qdrant_query(
         page,
@@ -298,7 +300,8 @@ pub async fn retrieve_group_qdrant_points_query(
         parsed_query.negated_words,
         dataset_id,
         Some(pool),
-    ).await?;
+    )
+    .await?;
 
     let point_id_future = search_over_groups_query(
         page,
@@ -438,7 +441,8 @@ pub async fn search_within_chunk_group_query(
         parsed_query.negated_words,
         dataset_id,
         Some(pool),
-    ).await?;
+    )
+    .await?;
 
     filter
         .must
@@ -482,12 +486,12 @@ pub async fn get_metadata_query(
     chunk_metadata: Vec<FullTextSearchResult>,
     pool: web::Data<Pool>,
 ) -> Result<Vec<ChunkMetadataWithFileData>, DefaultError> {
-    use diesel::prelude::*;
-    use diesel_async::RunQueryDsl;
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
     use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::files::dsl as files_columns;
+    use diesel::prelude::*;
+    use diesel_async::RunQueryDsl;
 
     let mut conn = pool.get().await.expect("DB connection");
 
@@ -682,7 +686,8 @@ pub async fn retrieve_chunks_for_groups(
         point_ids,
         data.get_collisions.unwrap_or(false),
         pool,
-    ).await
+    )
+    .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let group_chunks: Vec<GroupScoreChunkDTO> = search_over_groups_query_result
@@ -775,7 +780,8 @@ pub async fn get_metadata_from_groups(
         point_ids,
         get_collisions.unwrap_or(false),
         pool,
-    ).await
+    )
+    .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     let group_chunks: Vec<GroupScoreChunkDTO> = search_over_groups_query_result
@@ -1731,9 +1737,9 @@ pub async fn get_qdrant_point_ids_from_pg_for_quote_negated_words(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Vec<uuid::Uuid>, DefaultError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use diesel::prelude::*;
     use diesel_async::RunQueryDsl;
-    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let mut conn = pool.get().await.unwrap();
     let mut query = chunk_metadata_columns::chunk_metadata

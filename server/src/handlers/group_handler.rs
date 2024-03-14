@@ -433,7 +433,6 @@ pub async fn update_chunk_group(
     let description = body.description.clone();
     let group_id = body.group_id;
 
-
     let group = dataset_owns_group(
         UnifiedId::TrieveUuid(group_id),
         dataset_org_plan_sub.dataset.id,

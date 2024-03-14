@@ -13,11 +13,11 @@ use crate::{
 };
 use actix_identity::Identity;
 use actix_web::{web, HttpMessage, HttpRequest};
+use diesel::prelude::*;
 use diesel::{
     result::DatabaseErrorKind, upsert::on_constraint, ExpressionMethods, JoinOnDsl,
     NullableExpressionMethods, SelectableHelper, Table,
 };
-use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use itertools::Itertools;
 
@@ -151,7 +151,7 @@ pub async fn delete_organization_query(
         organizations_columns::organizations.filter(organizations_columns::id.eq(org_id)),
     )
     .get_result(&mut conn)
-        .await
+    .await
     .map_err(|e| {
         log::error!(
             "Error deleting organization in delete_organization_query: {:?}",
@@ -166,7 +166,8 @@ pub async fn delete_organization_query(
         let user = get_user_by_id_query(
             &calling_user_id.expect("calling_user_id cannot be null here"),
             pool,
-        ).await?;
+        )
+        .await?;
 
         let slim_user: SlimUser = SlimUser::from_details(user.0, user.1, user.2);
 
@@ -470,7 +471,7 @@ pub async fn get_org_usage_by_id_query(
         crate::data::schema::organization_usage_counts::dsl::organization_usage_counts
             .filter(crate::data::schema::organization_usage_counts::dsl::org_id.eq(org_id))
             .first(&mut conn)
-        .await
+            .await
             .map_err(|_| DefaultError {
                 message: "Could not find organization usage count",
             })?;

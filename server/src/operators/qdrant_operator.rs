@@ -12,7 +12,12 @@ use itertools::Itertools;
 use qdrant_client::{
     client::{QdrantClient, QdrantClientConfig},
     qdrant::{
-        group_id::Kind, point_id::PointIdOptions, quantization_config::Quantization, with_payload_selector::SelectorOptions, BinaryQuantization, CountPoints, CreateCollection, Distance, FieldType, Filter, HnswConfigDiff, PointId, PointStruct, QuantizationConfig, RecommendPointGroups, RecommendPoints, SearchPointGroups, SearchPoints, SparseIndexConfig, SparseVectorConfig, SparseVectorParams, Value, Vector, VectorParams, VectorParamsMap, VectorsConfig, WithPayloadSelector
+        group_id::Kind, point_id::PointIdOptions, quantization_config::Quantization,
+        with_payload_selector::SelectorOptions, BinaryQuantization, CountPoints, CreateCollection,
+        Distance, FieldType, Filter, HnswConfigDiff, PointId, PointStruct, QuantizationConfig,
+        RecommendPointGroups, RecommendPoints, SearchPointGroups, SearchPoints, SparseIndexConfig,
+        SparseVectorConfig, SparseVectorParams, Value, Vector, VectorParams, VectorParamsMap,
+        VectorsConfig, WithPayloadSelector,
     },
 };
 use serde::{Deserialize, Serialize};

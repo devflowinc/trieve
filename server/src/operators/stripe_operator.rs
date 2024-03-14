@@ -275,7 +275,7 @@ pub async fn get_subscription_by_id_query(
         stripe_subscriptions_columns::stripe_subscriptions
             .filter(stripe_subscriptions_columns::id.eq(subscription_id))
             .first(&mut conn)
-        .await
+            .await
             .map_err(|e| {
                 log::error!("Failed to get stripe subscription: {}", e);
                 DefaultError {
@@ -302,7 +302,7 @@ pub async fn delete_subscription_by_id_query(
             .filter(stripe_subscriptions_columns::id.eq(subscription_id)),
     )
     .get_result::<StripeSubscription>(&mut conn)
-        .await
+    .await
     .map_err(|e| {
         log::error!("Failed to delete stripe subscription: {}", e);
         DefaultError {
@@ -359,7 +359,7 @@ pub async fn set_stripe_subscription_current_period_end(
     )
     .set(stripe_subscriptions_columns::current_period_end.eq(current_period_end))
     .get_result(&mut conn)
-        .await
+    .await
     .map_err(|e| {
         log::error!("Failed to update stripe subscription: {}", e);
         DefaultError {
@@ -415,7 +415,7 @@ pub async fn update_stripe_subscription_plan_query(
     )
     .set(stripe_subscriptions_columns::plan_id.eq(plan_id))
     .get_result::<StripeSubscription>(&mut conn)
-        .await
+    .await
     .map_err(|e| {
         log::error!("Failed to update stripe subscription: {}", e);
         DefaultError {

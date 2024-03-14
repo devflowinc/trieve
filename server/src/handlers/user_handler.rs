@@ -78,7 +78,8 @@ pub async fn update_user(
                 message: "You must be an admin to update other users",
             }));
         }
-        let user_info = get_user_by_id_query(&user_id, pool.clone()).await
+        let user_info = get_user_by_id_query(&user_id, pool.clone())
+            .await
             .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
         let authorized = user_info
