@@ -360,6 +360,11 @@ async fn upload_chunk(
     else {
         payload.chunk_metadata.qdrant_point_id = Some(qdrant_point_id);
 
+        let insert_tx = transaction.start_child(
+            "calling_insert_chunk_metadata_query",
+            "calling_insert_chunk_metadata_query",
+        );
+
         let inserted_chunk = insert_chunk_metadata_query(
             payload.chunk_metadata.clone(),
             payload.chunk.file_id,
@@ -372,8 +377,15 @@ async fn upload_chunk(
             ServiceError::InternalServerError(format!("Failed to insert chunk metadata: {:?}", err))
         })?;
 
+        insert_tx.finish();
+
         qdrant_point_id = inserted_chunk.qdrant_point_id.unwrap_or(qdrant_point_id);
         new_chunk_id = inserted_chunk.id;
+
+        let insert_tx = transaction.start_child(
+            "calling_create_qdrant_point",
+            "calling_create_qdrant_point",
+        );
 
         create_new_qdrant_point_query(
             qdrant_point_id,
@@ -389,6 +401,8 @@ async fn upload_chunk(
                 err
             ))
         })?;
+
+        insert_tx.finish();
     }
 
     if let Some(group_ids_to_bookmark) = payload.chunk.group_ids {
