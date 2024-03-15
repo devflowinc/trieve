@@ -241,50 +241,54 @@ pub async fn create_new_qdrant_collection_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(embedding_vector))]
-pub async fn create_new_qdrant_point_query(
-    point_id: uuid::Uuid,
-    embedding_vector: Vec<f32>,
-    chunk_metadata: ChunkMetadata,
-    splade_vector: Vec<(u32, f32)>,
-    group_ids: Option<Vec<uuid::Uuid>>,
-    config: ServerDatasetConfiguration,
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct InsertToQdrantMessage {
+    pub qdrant_point_id: uuid::Uuid,
+    pub embedding_vector: Vec<f32>,
+    pub chunk_metadata: ChunkMetadata,
+    pub splade_vector: Vec<(u32, f32)>,
+    pub group_ids: Option<Vec<uuid::Uuid>>,
+}
+
+#[tracing::instrument(skip(qdrant, messages))]
+pub async fn create_qdrant_points_query(
+    messages: Vec<InsertToQdrantMessage>,
+    qdrant: &QdrantClient,
+    qdrant_collection: String,
 ) -> Result<(), actix_web::Error> {
-    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+    let points: Vec<PointStruct> = messages.iter().map(|message| {
+        let payload = json!({
+            "tag_set": message.chunk_metadata.clone().tag_set.unwrap_or("".to_string()).split(',').collect_vec(),
+            "link": message.chunk_metadata.clone().link.unwrap_or("".to_string()).split(',').collect_vec(),
+            "metadata": message.chunk_metadata.clone().metadata.unwrap_or_default(),
+            "time_stamp": message.chunk_metadata.time_stamp.unwrap_or_default().timestamp(),
+            "dataset_id": message.chunk_metadata.dataset_id.to_string(),
+            "group_ids": message.group_ids.clone().unwrap_or(vec![])
+        })
+        .try_into()
+        .expect("A json! Value must always be a valid Payload");
 
-    let qdrant = get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY))
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        let vector_name = match message.embedding_vector.len() {
+            384 => "384_vectors",
+            512 => "512_vectors",
+            768 => "768_vectors",
+            1024 => "1024_vectors",
+            1536 => "1536_vectors",
+            _ => unreachable!("The upload_chunk() function should guard against this, This function should only fail if QDRANT is dead")
+        };
 
-    let payload = json!({
-        "tag_set": chunk_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(),
-        "link": chunk_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(),
-        "metadata": chunk_metadata.metadata.unwrap_or_default(),
-        "time_stamp": chunk_metadata.time_stamp.unwrap_or_default().timestamp(),
-        "dataset_id": chunk_metadata.dataset_id.to_string(),
-        "group_ids": group_ids.unwrap_or(vec![])
-    })
-    .try_into()
-    .expect("A json! Value must always be a valid Payload");
+        let vector_payload = HashMap::from([
+            (vector_name.to_string(), Vector::from(message.clone().embedding_vector)),
+            ("sparse_vectors".to_string(), Vector::from(message.clone().splade_vector)),
+        ]);
 
-    let vector_name = match embedding_vector.len() {
-        384 => "384_vectors",
-        512 => "512_vectors",
-        768 => "768_vectors",
-        1024 => "1024_vectors",
-        1536 => "1536_vectors",
-        _ => return Err(ServiceError::BadRequest("Invalid embedding vector size".into()).into()),
-    };
+        let point = PointStruct::new(message.qdrant_point_id.clone().to_string(), vector_payload, payload);
 
-    let vector_payload = HashMap::from([
-        (vector_name.to_string(), Vector::from(embedding_vector)),
-        ("sparse_vectors".to_string(), Vector::from(splade_vector)),
-    ]);
-
-    let point = PointStruct::new(point_id.clone().to_string(), vector_payload, payload);
+        point
+    }).collect();
 
     qdrant
-        .upsert_points_blocking(qdrant_collection, None, vec![point], None)
+        .upsert_points_blocking(qdrant_collection, None, points, None)
         .await
         .map_err(|err| {
             log::info!("Failed inserting chunk to qdrant {:?}", err);

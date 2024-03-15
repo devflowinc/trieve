@@ -10,6 +10,17 @@ use openai_dive::v1::{
 use serde::{Deserialize, Serialize};
 use std::ops::IndexMut;
 
+pub fn get_vector_name(length: usize) -> Result<String, String> {
+    match length {
+        384 => Ok("384_vectors".to_string()),
+        512 => Ok("512_vectors".to_string()),
+        768 => Ok("768_vectors".to_string()),
+        1024 => Ok("1024_vectors".to_string()),
+        1536 => Ok("1536_vectors".to_string()),
+        _ => Err("Invalid embedding vector size".to_string()),
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EmbeddingParameters {
     /// Input text to embed, encoded as a string or array of tokens.

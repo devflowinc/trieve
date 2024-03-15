@@ -1,3 +1,5 @@
+use std::num::NonZeroUsize;
+
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
 use redis::AsyncCommands;
 use sentry::{Hub, SentryFutureExt};
@@ -13,7 +15,8 @@ use trieve_server::operators::event_operator::create_event_query;
 use trieve_server::operators::model_operator::{create_embedding, get_splade_embedding};
 use trieve_server::operators::parse_operator::{average_embeddings, coarse_doc_chunker};
 use trieve_server::operators::qdrant_operator::{
-    create_new_qdrant_point_query, update_qdrant_point_query,
+    create_qdrant_points_query, get_qdrant_connection, update_qdrant_point_query,
+    InsertToQdrantMessage,
 };
 use trieve_server::operators::search_operator::global_unfiltered_top_match_query;
 use trieve_server::{establish_connection, get_env};
@@ -66,7 +69,7 @@ fn main() {
     let thread_num = if let Ok(thread_num) = std::env::var("THREAD_NUM") {
         thread_num.parse::<usize>().unwrap()
     } else {
-        std::thread::available_parallelism().unwrap().get() * 2
+        std::thread::available_parallelism().unwrap().get()
     };
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
@@ -86,33 +89,136 @@ fn main() {
 
     let web_pool = actix_web::web::Data::new(pool.clone());
 
-    tokio::runtime::Builder::new_multi_thread()
+    let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
-        .unwrap()
-        .block_on(
-            async move {
-                let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
-                let redis_client = redis::Client::open(redis_url).unwrap();
-                let redis_connection = redis_client
-                    .get_multiplexed_tokio_connection()
-                    .await
-                    .unwrap();
+        .unwrap();
 
-                let threads: Vec<_> = (0..thread_num)
-                    .map(|i| {
-                        let web_pool = web_pool.clone();
-                        let redis_connection = redis_connection.clone();
-                        tokio::spawn(async move {
-                            ingestion_service(i, redis_connection, web_pool).await
-                        })
+    let pg_threads = std::env::var("PG_THREADS")
+        .unwrap_or("-1".to_string())
+        .parse::<usize>()
+        .unwrap_or(thread_num);
+    let qd_threads = std::env::var("QD_THREADS")
+        .unwrap_or("-1".to_string())
+        .parse::<usize>()
+        .unwrap_or(1);
+
+    rt.block_on(
+        async move {
+            let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
+            let url = get_env!("QDRANT_URL", "QDRANT_URL is not set").to_string();
+            let collection =
+                get_env!("QDRANT_COLLECTION", "QDRANT_COLLECTION is not set").to_string();
+            let api_key = get_env!("QDRANT_API_KEY", "QDRANT_API_KEY is not set").to_string();
+            let qdrant_batch_size = std::env::var("QDRANT_BATCH_SIZE")
+                .unwrap_or("10".to_string())
+                .parse::<NonZeroUsize>()
+                .unwrap_or(NonZeroUsize::new(10).expect("This exists"));
+
+            let redis_client = redis::Client::open(redis_url).unwrap();
+            let redis_connection = redis_client
+                .get_multiplexed_tokio_connection()
+                .await
+                .unwrap();
+
+            let mut pg_threads: Vec<_> = (0..pg_threads)
+                .map(|i| {
+                    let web_pool = web_pool.clone();
+                    let redis_connection = redis_connection.clone();
+                    tokio::spawn(
+                        async move { ingestion_service(i, redis_connection, web_pool).await },
+                    )
+                })
+                .collect();
+
+            let mut qd_threads: Vec<_> = (0..qd_threads)
+                .map(|thread| {
+                    let redis_connection = redis_connection.clone();
+                    let url = url.clone();
+                    let collection = collection.clone();
+                    let api_key = api_key.clone();
+
+                    tokio::spawn(async move {
+                        backfill_qdrant(
+                            thread,
+                            url,
+                            collection,
+                            api_key,
+                            qdrant_batch_size,
+                            redis_connection,
+                        )
+                        .await
                     })
-                    .collect();
+                })
+                .collect();
 
-                futures::future::join_all(threads).await;
+            qd_threads.append(&mut pg_threads);
+
+            futures::future::join_all(qd_threads).await
+        }
+        .bind_hub(Hub::new_from_top(Hub::current())),
+    );
+}
+
+#[tracing::instrument(skip(redis_connection))]
+async fn backfill_qdrant(
+    thread: usize,
+    url: String,
+    collection: String,
+    api_key: String,
+    batch_size: NonZeroUsize,
+    mut redis_connection: redis::aio::MultiplexedConnection,
+) {
+    let qdrant_client = get_qdrant_connection(Some(&url), Some(&api_key))
+        .await
+        .expect("Could not connect to qdrant");
+    log::info!("Starting qdrant backfill thread");
+
+    let key = format!("{};{}", url, collection);
+    loop {
+        let single_kv = redis_connection
+            .brpop::<&str, Vec<String>>(&key, 0.0)
+            .await
+            .map_err(|err| {
+                log::error!("Failed to get payload from redis: {:?}", err);
+                ServiceError::InternalServerError("Failed to get payload from redis".into())
+            });
+
+        let num_to_process_kvs = redis_connection
+            .rpop::<&str, Vec<String>>(&key, Some(batch_size))
+            .await
+            .map_err(|err| {
+                log::error!("Failed to get payload from redis: {:?}", err);
+                ServiceError::InternalServerError("Failed to get payload from redis".into())
+            });
+
+        let payloads = match (single_kv, num_to_process_kvs) {
+            (Ok(single), Ok(mut multiple)) => {
+                multiple.push(single[1].clone());
+                multiple
             }
-            .bind_hub(Hub::new_from_top(Hub::current())),
-        );
+            (Ok(single), Err(_)) => {
+                vec![single[1].clone()]
+            }
+            (Err(_), Ok(multiple)) => {
+                multiple
+            }
+            _ => {
+                continue;
+            }
+        };
+
+        let messages: Vec<InsertToQdrantMessage> = payloads
+            .iter()
+            .filter_map(|e| serde_json::from_str::<InsertToQdrantMessage>(e).ok())
+            .collect();
+
+        let size = messages.len();
+        match create_qdrant_points_query(messages, &qdrant_client, collection.clone()).await {
+            Ok(_) => log::info!("Bulk Inserted {:?} items", size),
+            Err(e) => log::error!("Failed to insert to qdrant {:}", e),
+        };
+    }
 }
 
 #[tracing::instrument(skip(web_pool, redis_connection))]
@@ -139,7 +245,13 @@ async fn ingestion_service(
         let payload: IngestionMessage = serde_json::from_str(&payload[1]).unwrap();
         match payload {
             IngestionMessage::Upload(payload) => {
-                match upload_chunk(payload.clone(), web_pool.clone(), payload.dataset_config).await
+                match upload_chunk(
+                    payload.clone(),
+                    web_pool.clone(),
+                    redis_connection.clone(),
+                    payload.dataset_config,
+                )
+                .await
                 {
                     Ok(_) => {
                         log::info!("Uploaded chunk: {:?}", payload.chunk_metadata.id);
@@ -225,10 +337,11 @@ async fn ingestion_service(
     }
 }
 
-#[tracing::instrument(skip(payload, web_pool, dataset_config))]
+#[tracing::instrument(skip(payload, web_pool, redis_connection, dataset_config))]
 async fn upload_chunk(
     mut payload: UploadIngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
+    mut redis_connection: redis::aio::MultiplexedConnection,
     dataset_config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
     let tx_ctx = sentry::TransactionContext::new("upload_chunk", "Uploading Chunk");
@@ -391,10 +504,7 @@ async fn upload_chunk(
 
         qdrant_point_id = inserted_chunk.qdrant_point_id.unwrap_or(qdrant_point_id);
 
-        let insert_tx =
-            transaction.start_child("calling_create_qdrant_point", "calling_create_qdrant_point");
-
-        let splade_vector = if dataset_config.FULLTEXT_ENABLED {
+        let splade_vector = if false {
             match get_splade_embedding(&payload.chunk_metadata.content, "doc").await {
                 Ok(v) => v,
                 Err(_) => vec![(0, 0.0)],
@@ -403,23 +513,40 @@ async fn upload_chunk(
             vec![(0, 0.0)]
         };
 
-        create_new_qdrant_point_query(
+        // This is needed to know if it is an error or not before going into the qdrant queue
+        match embedding_vector.len() {
+            384 => "384_vectors",
+            512 => "512_vectors",
+            768 => "768_vectors",
+            1024 => "1024_vectors",
+            1536 => "1536_vectors",
+            _ => {
+                return Err(ServiceError::BadRequest("Invalid embedding vector size".into()).into())
+            }
+        };
+
+        let message = InsertToQdrantMessage {
             qdrant_point_id,
             embedding_vector,
-            payload.chunk_metadata.clone(),
+            chunk_metadata: payload.chunk_metadata,
             splade_vector,
-            payload.chunk.group_ids,
-            dataset_config.clone(),
-        )
-        .await
-        .map_err(|err| {
-            ServiceError::InternalServerError(format!(
-                "Failed to create new qdrant point: {:?}",
-                err
-            ))
+            group_ids: payload.chunk.group_ids.clone(),
+        };
+
+        let message_serialized = serde_json::to_string(&message).map_err(|e| {
+            ServiceError::BadRequest(format!("Could not Serialize payload {:?}", e))
         })?;
 
-        insert_tx.finish();
+        redis_connection
+            .lpush(
+                format!(
+                    "{};{}",
+                    dataset_config.QDRANT_URL, dataset_config.QDRANT_COLLECTION_NAME
+                ),
+                message_serialized,
+            )
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
     }
 
     transaction.finish();
