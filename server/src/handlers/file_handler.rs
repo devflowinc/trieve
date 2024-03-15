@@ -334,11 +334,19 @@ pub struct GetImageResponse {
 pub async fn get_signed_url(
     file_name: web::Path<String>,
     _user: LoggedUser,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
+    let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
+    let s3_path = match unlimited.as_str() {
+        "true" => "files".to_string(),
+        "false" => dataset_org_plan_sub.organization.id.to_string(),
+        _ => dataset_org_plan_sub.organization.id.to_string(),
+    };
+
     let signed_url = bucket
-        .presign_get(format!("/files/{}", file_name.into_inner()), 300, None)
+        .presign_get(format!("{}/{}", s3_path, file_name.into_inner()), 300, None)
         .map_err(|e| ServiceError::BadRequest(format!("Error getting signed url: {}", e)))?;
 
     Ok(HttpResponse::SeeOther()
@@ -360,6 +368,7 @@ pub struct GetPdfFromRangeData {
 pub async fn get_pdf_from_range(
     path_data: web::Path<GetPdfFromRangeData>,
     _user: LoggedUser,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<NamedFile, actix_web::Error> {
     cfg_if::cfg_if! {
         if #[cfg(feature = "ocr")] {
@@ -369,9 +378,16 @@ pub async fn get_pdf_from_range(
     let mut wand = MagickWand::new();
     let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
+    let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
+    let s3_path = match unlimited.as_str() {
+        "true" => "images".to_string(),
+        "false" => dataset_org_plan_sub.organization.id.to_string(),
+        _ => dataset_org_plan_sub.organization.id.to_string(),
+    };
+
     for i in path_data.file_start..=path_data.file_end {
         let file = bucket
-            .get_object(format!("images/{}{}.png", validated_prefix, i).as_str())
+            .get_object(format!("{}/{}{}.png", s3_path, validated_prefix, i).as_str())
             .await
             .map_err(|e| {
                 log::error!("Error getting image file: {}", e);
