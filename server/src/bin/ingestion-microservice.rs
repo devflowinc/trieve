@@ -2,7 +2,7 @@ use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfi
 use redis::AsyncCommands;
 use sentry::{Hub, SentryFutureExt};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
-use trieve_server::data::models::{self, ChunkGroupBookmark, Event, ServerDatasetConfiguration};
+use trieve_server::data::models::{self, Event, ServerDatasetConfiguration};
 use trieve_server::errors::ServiceError;
 use trieve_server::handlers::chunk_handler::{UpdateIngestionMessage, UploadIngestionMessage};
 use trieve_server::operators::chunk_operator::{
@@ -10,11 +10,10 @@ use trieve_server::operators::chunk_operator::{
     insert_duplicate_chunk_metadata_query, update_chunk_metadata_query,
 };
 use trieve_server::operators::event_operator::create_event_query;
-use trieve_server::operators::group_operator::create_chunk_bookmark_query;
 use trieve_server::operators::model_operator::{create_embedding, get_splade_embedding};
 use trieve_server::operators::parse_operator::{average_embeddings, coarse_doc_chunker};
 use trieve_server::operators::qdrant_operator::{
-    add_bookmark_to_qdrant_query, create_new_qdrant_point_query, update_qdrant_point_query,
+    create_new_qdrant_point_query, update_qdrant_point_query,
 };
 use trieve_server::operators::search_operator::global_unfiltered_top_match_query;
 use trieve_server::{establish_connection, get_env};
@@ -236,7 +235,6 @@ async fn upload_chunk(
     let transaction = sentry::start_transaction(tx_ctx);
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
 
-    let mut new_chunk_id = payload.chunk_metadata.id;
     let mut qdrant_point_id = payload
         .chunk_metadata
         .qdrant_point_id
@@ -354,6 +352,7 @@ async fn upload_chunk(
             payload.chunk_metadata.clone(),
             collision.expect("Collision should must be some"),
             payload.chunk.file_id,
+            payload.chunk.group_ids,
             web_pool.clone(),
         )
         .await
@@ -378,6 +377,7 @@ async fn upload_chunk(
         let inserted_chunk = insert_chunk_metadata_query(
             payload.chunk_metadata.clone(),
             payload.chunk.file_id,
+            payload.chunk.group_ids.clone(),
             payload.dataset_id,
             payload.upsert_by_tracking_id,
             web_pool.clone(),
@@ -390,7 +390,6 @@ async fn upload_chunk(
         insert_tx.finish();
 
         qdrant_point_id = inserted_chunk.qdrant_point_id.unwrap_or(qdrant_point_id);
-        new_chunk_id = inserted_chunk.id;
 
         let insert_tx =
             transaction.start_child("calling_create_qdrant_point", "calling_create_qdrant_point");
@@ -409,6 +408,7 @@ async fn upload_chunk(
             embedding_vector,
             payload.chunk_metadata.clone(),
             splade_vector,
+            payload.chunk.group_ids,
             dataset_config.clone(),
         )
         .await
@@ -420,45 +420,6 @@ async fn upload_chunk(
         })?;
 
         insert_tx.finish();
-    }
-
-    if let Some(group_ids_to_bookmark) = payload.chunk.group_ids {
-        let create_bookmarks_span =
-            transaction.start_child("creating_bookmarks", "Inserting all Bookmarks");
-
-        for group_id_to_bookmark in group_ids_to_bookmark {
-            let chunk_group_bookmark =
-                ChunkGroupBookmark::from_details(group_id_to_bookmark, new_chunk_id);
-
-            let create_chunk_bookmark_res =
-                create_chunk_bookmark_query(web_pool.clone(), chunk_group_bookmark)
-                    .await
-                    .map_err(|err| {
-                        log::error!("Failed to create chunk bookmark: {:?}", err);
-                        ServiceError::InternalServerError(format!(
-                            "Failed to create chunk bookmark: {:?}",
-                            err
-                        ))
-                    });
-
-            if create_chunk_bookmark_res.is_ok() {
-                add_bookmark_to_qdrant_query(
-                    qdrant_point_id,
-                    group_id_to_bookmark,
-                    dataset_config.clone(),
-                )
-                .await
-                .map_err(|err| {
-                    log::error!("Failed to add bookmark to qdrant: {:?}", err);
-                    ServiceError::InternalServerError(format!(
-                        "Failed to add bookmark to qdrant: {:?}",
-                        err
-                    ))
-                })?;
-            }
-        }
-
-        create_bookmarks_span.finish();
     }
 
     transaction.finish();
@@ -486,6 +447,7 @@ async fn update_chunk(
 
     update_chunk_metadata_query(
         payload.chunk_metadata.clone(),
+        None,
         None,
         payload.dataset_id,
         web_pool.clone(),

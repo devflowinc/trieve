@@ -1,7 +1,4 @@
-use super::{
-    model_operator::get_splade_embedding,
-    search_operator::{assemble_qdrant_filter, SearchResult},
-};
+use super::search_operator::{assemble_qdrant_filter, SearchResult};
 use crate::{
     data::models::{ChunkMetadata, ServerDatasetConfiguration},
     errors::{DefaultError, ServiceError},
@@ -250,6 +247,7 @@ pub async fn create_new_qdrant_point_query(
     embedding_vector: Vec<f32>,
     chunk_metadata: ChunkMetadata,
     splade_vector: Vec<(u32, f32)>,
+    group_ids: Option<Vec<uuid::Uuid>>,
     config: ServerDatasetConfiguration,
 ) -> Result<(), actix_web::Error> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
@@ -258,10 +256,16 @@ pub async fn create_new_qdrant_point_query(
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let chunk_content = chunk_metadata.content.clone();
-    let payload = json!({"tag_set": chunk_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": chunk_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "metadata": chunk_metadata.metadata.unwrap_or_default(), "time_stamp": chunk_metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": chunk_metadata.dataset_id.to_string(), "group_ids": vec![] as Vec<String>})
-                .try_into()
-                .expect("A json! Value must always be a valid Payload");
+    let payload = json!({
+        "tag_set": chunk_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(),
+        "link": chunk_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(),
+        "metadata": chunk_metadata.metadata.unwrap_or_default(),
+        "time_stamp": chunk_metadata.time_stamp.unwrap_or_default().timestamp(),
+        "dataset_id": chunk_metadata.dataset_id.to_string(),
+        "group_ids": group_ids.unwrap_or(vec![])
+    })
+    .try_into()
+    .expect("A json! Value must always be a valid Payload");
 
     let vector_name = match embedding_vector.len() {
         384 => "384_vectors",
@@ -332,9 +336,23 @@ pub async fn update_qdrant_point_query(
         } else {
             Value::from(vec![] as Vec<String>)
         };
-        json!({"tag_set": metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(), "link": metadata.link.unwrap_or("".to_string()).split(',').collect_vec(), "metadata": metadata.metadata.unwrap_or_default(), "time_stamp": metadata.time_stamp.unwrap_or_default().timestamp(), "dataset_id": dataset_id.to_string(), "group_ids": group_ids})
+        json!({
+            "tag_set": metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(),
+            "link": metadata.link.unwrap_or("".to_string()).split(',').collect_vec(),
+            "metadata": metadata.metadata.unwrap_or_default(),
+            "time_stamp": metadata.time_stamp.unwrap_or_default().timestamp(),
+            "dataset_id": dataset_id.to_string(),
+            "group_ids": group_ids
+        })
     } else if let Some(current_point) = current_point {
-        json!({"tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")), "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from("")), "group_ids": current_point.payload.get("group_ids").unwrap_or(&Value::from(vec![] as Vec<String>))})
+        json!({
+            "tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")),
+            "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")),
+            "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")),
+            "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")),
+            "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from("")),
+            "group_ids": current_point.payload.get("group_ids").unwrap_or(&Value::from(vec![] as Vec<String>))
+        })
     } else {
         return Err(ServiceError::BadRequest("No metadata points found".into()).into());
     };
@@ -445,25 +463,18 @@ pub async fn add_bookmark_to_qdrant_query(
             .collect::<Vec<uuid::Uuid>>();
         group_ids_qdrant.append(&mut vec![group_id]);
         group_ids_qdrant
-    } else if current_point.payload.get("group_ids").is_some() {
-        current_point
-            .payload
-            .get("group_ids")
-            .unwrap_or(&Value::from(vec![] as Vec<&str>))
-            .iter_list()
-            .unwrap()
-            .map(|id| {
-                id.as_str()
-                    .unwrap_or(&"".to_owned())
-                    .parse::<uuid::Uuid>()
-                    .unwrap_or_default()
-            })
-            .collect::<Vec<uuid::Uuid>>()
     } else {
         vec![group_id]
     };
 
-    let payload = json!({"tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")), "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from("")), "group_ids": group_ids});
+    let payload = json!({
+        "tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")),
+        "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")),
+        "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")),
+        "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")),
+        "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from("")),
+        "group_ids": group_ids
+    });
 
     let points_selector = qdrant_point_id.into();
 
@@ -543,7 +554,14 @@ pub async fn remove_bookmark_from_qdrant_query(
         vec![]
     };
 
-    let payload = json!({"tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")), "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")), "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")), "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")), "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from("")), "group_ids": group_ids});
+    let payload = json!({
+        "tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")),
+        "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")),
+        "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")),
+        "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")),
+        "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from("")),
+        "group_ids": group_ids
+    });
 
     let points_selector = qdrant_point_id.into();
 

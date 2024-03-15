@@ -385,7 +385,6 @@ impl ChunkGroup {
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             tracking_id,
-            
         }
     }
 }
@@ -718,7 +717,6 @@ pub enum EventType {
     CardUpdated {
         chunk_id: uuid::Uuid,
     },
-
 }
 
 impl EventType {
@@ -744,7 +742,7 @@ impl From<EventType> for serde_json::Value {
             EventType::CardUploaded { chunk_id } => json!({"chunk_id": chunk_id}),
             EventType::CardActionFailed { chunk_id, error } => {
                 json!({"chunk_id": chunk_id, "error": error})
-            },
+            }
             EventType::CardUpdated { chunk_id } => json!({"chunk_id": chunk_id}),
         }
     }
