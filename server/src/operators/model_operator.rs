@@ -70,10 +70,21 @@ pub async fn create_embedding(
         organization: None,
     };
 
+    let mut first_7k_words = message.to_string();
+    if message.len() > 7000 {
+        first_7k_words = message
+            .split_whitespace()
+            .take(7000)
+            .collect::<Vec<&str>>()
+            .join(" ");
+    }
+
     let input = match embed_type {
-        "doc" => EmbeddingInput::String(message.to_string()),
-        "query" => EmbeddingInput::String(dataset_config.EMBEDDING_QUERY_PREFIX + message),
-        _ => EmbeddingInput::String(message.to_string()),
+        "doc" => EmbeddingInput::String(first_7k_words),
+        "query" => {
+            EmbeddingInput::String(dataset_config.EMBEDDING_QUERY_PREFIX + first_7k_words.as_str())
+        }
+        _ => EmbeddingInput::String(first_7k_words),
     };
 
     // Vectorize
