@@ -507,7 +507,8 @@ pub async fn main() -> std::io::Result<()> {
                         web::scope("/chunk")
                             .service(
                                 web::resource("")
-                                    .route(web::post().to(handlers::chunk_handler::create_chunk)),
+                                    .route(web::post().to(handlers::chunk_handler::create_chunk))
+                                    .route(web::put().to(handlers::chunk_handler::update_chunk)),
                             )
                             .service(
                                 web::resource("/bulk")
@@ -518,10 +519,6 @@ pub async fn main() -> std::io::Result<()> {
                             .service(web::resource("/recommend").route(
                                 web::post().to(handlers::chunk_handler::get_recommended_chunks),
                             ))
-                            .service(
-                                web::resource("/update")
-                                    .route(web::put().to(handlers::chunk_handler::update_chunk)),
-                            )
                             .service(
                                 web::resource("/search")
                                     .route(web::post().to(handlers::chunk_handler::search_chunk)),

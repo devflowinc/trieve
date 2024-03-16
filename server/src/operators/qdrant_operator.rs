@@ -299,6 +299,7 @@ pub async fn update_qdrant_point_query(
     metadata: Option<ChunkMetadata>,
     point_id: uuid::Uuid,
     updated_vector: Option<Vec<f32>>,
+    group_ids: Option<Vec<uuid::Uuid>>,
     dataset_id: uuid::Uuid,
     splade_vector: Vec<(u32, f32)>,
     config: ServerDatasetConfiguration,
@@ -327,7 +328,14 @@ pub async fn update_qdrant_point_query(
     let current_point = current_point_vec.first();
 
     let payload = if let Some(metadata) = metadata.clone() {
-        let group_ids = if let Some(current_point) = current_point {
+        let group_ids = if let Some(group_ids) = group_ids {
+            Value::from(
+                group_ids
+                    .iter()
+                    .map(|id| id.to_string())
+                    .collect::<Vec<String>>(),
+            )
+        } else if let Some(current_point) = current_point {
             current_point
                 .payload
                 .get("group_ids")
@@ -336,6 +344,7 @@ pub async fn update_qdrant_point_query(
         } else {
             Value::from(vec![] as Vec<String>)
         };
+
         json!({
             "tag_set": metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(),
             "link": metadata.link.unwrap_or("".to_string()).split(',').collect_vec(),

@@ -481,6 +481,7 @@ pub struct AddChunkToGroupData {
         ("Cookie" = ["admin"])
     )
 )]
+#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn add_chunk_to_group(
     body: web::Json<AddChunkToGroupData>,
@@ -542,6 +543,7 @@ pub struct AddChunkToGroupByTrackingIdData {
         ("Cookie" = ["admin"])
     )
 )]
+#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn add_chunk_to_group_by_tracking_id(
     body: web::Json<AddChunkToGroupByTrackingIdData>,
@@ -771,6 +773,7 @@ pub struct DeleteBookmarkPathData {
         ("Cookie" = ["admin"])
     )
 )]
+#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn remove_chunk_from_group(
     group_id: web::Path<uuid::Uuid>,

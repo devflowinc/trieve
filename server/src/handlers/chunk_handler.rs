@@ -361,6 +361,10 @@ pub struct UpdateChunkData {
     time_stamp: Option<String>,
     /// Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset. If no weight is provided, the existing weight will be used.
     weight: Option<f64>,
+    /// Group ids are the ids of the groups that the chunk should be placed into. This is useful for when you want to update a chunk and add it to a group or multiple groups in one request.
+    group_ids: Option<Vec<uuid::Uuid>>,
+    /// Group tracking_ids are the tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to update a chunk and add it to a group or multiple groups in one request.
+    group_tracking_ids: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
@@ -368,6 +372,7 @@ pub struct UpdateIngestionMessage {
     pub chunk_metadata: ChunkMetadata,
     pub server_dataset_config: ServerDatasetConfiguration,
     pub dataset_id: uuid::Uuid,
+    pub group_ids: Option<Vec<UnifiedId>>,
 }
 
 /// update_chunk
@@ -466,10 +471,27 @@ pub async fn update_chunk(
         chunk.weight.unwrap_or(1.0),
     );
 
+    let group_ids = if let Some(group_ids) = chunk.group_ids.clone() {
+        Some(
+            group_ids
+                .into_iter()
+                .map(UnifiedId::from)
+                .collect::<Vec<UnifiedId>>(),
+        )
+    } else {
+        chunk.group_tracking_ids.clone().map(|group_tracking_ids| {
+            group_tracking_ids
+                .into_iter()
+                .map(UnifiedId::from)
+                .collect::<Vec<UnifiedId>>()
+        })
+    };
+
     let message = UpdateIngestionMessage {
         chunk_metadata: metadata.clone(),
         server_dataset_config,
         dataset_id,
+        group_ids,
     };
 
     let mut pub_client = redis_client
@@ -497,6 +519,10 @@ pub struct UpdateChunkByTrackingIdData {
     time_stamp: Option<String>,
     /// Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset. If no weight is provided, the existing weight will be used.
     weight: Option<f64>,
+    /// Group ids are the ids of the groups that the chunk should be placed into. This is useful for when you want to update a chunk and add it to a group or multiple groups in one request.
+    group_ids: Option<Vec<uuid::Uuid>>,
+    /// Group tracking_ids are the tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to update a chunk and add it to a group or multiple groups in one request.
+    group_tracking_ids: Option<Vec<String>>,
 }
 
 /// update_chunk_by_tracking_id
@@ -587,11 +613,27 @@ pub async fn update_chunk_by_tracking_id(
         dataset_org_plan_sub.dataset.id,
         chunk.weight.unwrap_or(1.0),
     );
+    let group_ids = if let Some(group_ids) = chunk.group_ids.clone() {
+        Some(
+            group_ids
+                .into_iter()
+                .map(UnifiedId::from)
+                .collect::<Vec<UnifiedId>>(),
+        )
+    } else {
+        chunk.group_tracking_ids.clone().map(|group_tracking_ids| {
+            group_tracking_ids
+                .into_iter()
+                .map(UnifiedId::from)
+                .collect::<Vec<UnifiedId>>()
+        })
+    };
 
     let message = UpdateIngestionMessage {
         chunk_metadata: metadata.clone(),
         server_dataset_config,
         dataset_id,
+        group_ids,
     };
 
     let mut pub_client = redis_client
