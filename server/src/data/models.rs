@@ -1537,7 +1537,7 @@ impl FromRequest for GetReqParams {
             GetReqParams {
                 id: UnifiedId::TrackingId(id),
             }
-        } else {
+        } else if tracking_or_chunk.starts_with("chunk") {
             let id = id.parse::<uuid::Uuid>();
             match id {
                 Ok(id) => GetReqParams {
@@ -1545,6 +1545,10 @@ impl FromRequest for GetReqParams {
                 },
                 Err(e) => return ready(Err(actix_web::error::ErrorBadRequest(e.to_string()))),
             }
+        } else {
+            return ready(Err(actix_web::error::ErrorBadRequest(
+                "Invalid request".to_string(),
+            )));
         };
         ready(Ok(req_params))
     }

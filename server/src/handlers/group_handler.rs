@@ -225,7 +225,7 @@ pub struct GetGroupData {
 
 #[utoipa::path(
     get,
-    path = "/chunk_group/{id}",
+    path = "/{tracking_or_chunk}/{group_id}",
     context_path = "/api",
     tag = "chunk_group",
     responses(
@@ -234,7 +234,8 @@ pub struct GetGroupData {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("tracking_id" = String, description = "The tracking id of the group to fetch."),
+        ("group_id" = Option<uuid>, Path, description = "Id of the group you want to fetch. This can be either the group_id or the tracking_id."),
+        ("tracking_or_chunk" = String, Path, description = "The type of id you are using to search for the group. This can be either 'chunk' or 'tracking_id'"),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -390,7 +391,7 @@ pub struct DeleteGroupData {
 /// This will delete a chunk_group. This will not delete the chunks that are in the group. We will soon support deleting a chunk_group along with its member chunks.
 #[utoipa::path(
     delete,
-    path = "/chunk_group/{group_id}",
+    path = "/{tracking_or_chunk}/{group_id}",
     context_path = "/api",
     tag = "chunk_group",
     responses(
@@ -399,7 +400,8 @@ pub struct DeleteGroupData {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("group_id" = uuid::Uuid, description = "Id of the chunk_group to delete"),
+        ("group_id" = Option<uuid>, Path, description = "Id of the group you want to fetch. This can be either the group_id or the tracking_id. If both are provided, the group_id will be used."),
+        ("tracking_or_chunk" = String, Path, description = "The type of id you are using to search for the group. This can be either 'chunk' or 'tracking_id'"),
         ("delete_chunks" = bool, Query, description = "Delete the chunks within the group"),
     ),
     security(
@@ -681,7 +683,7 @@ pub struct GetAllBookmarksData {
 /// Route to get all chunks for a group. The response is paginated, with each page containing 10 chunks. Support for custom page size is coming soon.
 #[utoipa::path(
     get,
-    path = "/chunk_group/{group_id}/{page}",
+    path = "/chunk_group/{tracking_or_chunk}/{group_id}/{page}",
     context_path = "/api",
     tag = "chunk_group",
     responses(
@@ -690,7 +692,8 @@ pub struct GetAllBookmarksData {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("group_id" = uuid::Uuid, description = "The id of the group to get the chunks from"),
+        ("group_id" = Option<uuid>, Path, description = "Id of the group you want to fetch. This can be either the group_id or the tracking_id. If both are provided, the group_id will be used."),
+        ("tracking_or_chunk" = String, Path, description = "The type of id you are using to search for the group. This can be either 'chunk' or 'tracking_id'"),
         ("page" = u64, description = "The page of chunks to get from the group"),
     ),
     security(
