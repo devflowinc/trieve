@@ -5,7 +5,7 @@ use super::{
 use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFile, ChunkGroupBookmark, ChunkMetadataWithFileData,
-        DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration, UnifiedId,
+        DatasetAndOrgWithSubAndPlan, GetReqParams, Pool, ServerDatasetConfiguration, UnifiedId,
     },
     errors::ServiceError,
     operators::{
@@ -243,22 +243,23 @@ pub struct GetGroupData {
 )]
 /// get_group
 #[tracing::instrument(skip(pool))]
-pub async fn get_group(
-    data: web::Path<GetGroupData>,
+pub async fn get_chunk_group(
+    chunk_id: GetReqParams,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let group = if let Some(group_id) = data.group_id {
-        get_group_by_id_query(group_id, dataset_org_plan_sub.dataset.id, pool)
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
-    } else if let Some(tracking_id) = data.tracking_id.clone() {
-        get_group_from_tracking_id_query(tracking_id, dataset_org_plan_sub.dataset.id, pool)
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
-    } else {
-        return Err(ServiceError::BadRequest("No group id or tracking id provided".into()).into());
+    let group = match chunk_id.id {
+        UnifiedId::TrieveUuid(group_id) => {
+            get_group_by_id_query(group_id, dataset_org_plan_sub.dataset.id, pool)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+        }
+        UnifiedId::TrackingId(tracking_id) => {
+            get_group_from_tracking_id_query(tracking_id, dataset_org_plan_sub.dataset.id, pool)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+        }
     };
 
     Ok(HttpResponse::Ok().json(group))
@@ -293,6 +294,7 @@ pub struct UpdateGroupByTrackingIDData {
         ("Cookie" = ["admin"])
     )
 )]
+#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn update_group_by_tracking_id(
     data: web::Json<UpdateGroupByTrackingIDData>,
@@ -343,6 +345,7 @@ pub struct DeleteGroupByTrackingIDData {
         ("Cookie" = ["admin"])
     )
 )]
+#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn delete_group_by_tracking_id(
     tracking_id: web::Path<String>,
@@ -406,7 +409,7 @@ pub struct DeleteGroupData {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn delete_chunk_group(
-    group_id: web::Path<uuid::Uuid>,
+    group_id: GetReqParams,
     data: web::Query<DeleteGroupData>,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -417,24 +420,42 @@ pub async fn delete_chunk_group(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    let group_id = group_id.into_inner();
-
-    dataset_owns_group(
-        UnifiedId::TrieveUuid(group_id),
-        dataset_org_plan_sub.dataset.id,
-        pool,
-    )
-    .await?;
-
-    delete_group_by_id_query(
-        group_id,
-        dataset_org_plan_sub.dataset,
-        data.delete_chunks,
-        delete_group_pool,
-        server_dataset_config,
-    )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    match group_id.id {
+        UnifiedId::TrieveUuid(group_id) => {
+            dataset_owns_group(
+                UnifiedId::TrieveUuid(group_id),
+                dataset_org_plan_sub.dataset.id,
+                pool.clone(),
+            )
+            .await?;
+            delete_group_by_id_query(
+                group_id,
+                dataset_org_plan_sub.dataset,
+                data.delete_chunks,
+                delete_group_pool,
+                server_dataset_config,
+            )
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        }
+        UnifiedId::TrackingId(tracking_id) => {
+            let group = dataset_owns_group(
+                UnifiedId::TrackingId(tracking_id),
+                dataset_org_plan_sub.dataset.id,
+                pool.clone(),
+            )
+            .await?;
+            delete_group_by_id_query(
+                group.id,
+                dataset_org_plan_sub.dataset,
+                data.delete_chunks,
+                delete_group_pool,
+                server_dataset_config,
+            )
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        }
+    }
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -442,7 +463,9 @@ pub async fn delete_chunk_group(
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct UpdateChunkGroupData {
     /// Id of the chunk_group to update.
-    pub group_id: uuid::Uuid,
+    pub group_id: Option<uuid::Uuid>,
+    /// Tracking Id of the chunk_group to update.
+    pub tracking_id: Option<String>,
     /// Name to assign to the chunk_group. Does not need to be unique. If not provided, the name will not be updated.
     pub name: Option<String>,
     /// Description to assign to the chunk_group. Convenience field for you to avoid having to remember what the group is for. If not provided, the description will not be updated.
@@ -481,12 +504,23 @@ pub async fn update_chunk_group(
     let description = body.description.clone();
     let group_id = body.group_id;
 
-    let group = dataset_owns_group(
-        UnifiedId::TrieveUuid(group_id),
-        dataset_org_plan_sub.dataset.id,
-        pool.clone(),
-    )
-    .await?;
+    let group = if let Some(group_id) = group_id {
+        dataset_owns_group(
+            UnifiedId::TrieveUuid(group_id),
+            dataset_org_plan_sub.dataset.id,
+            pool.clone(),
+        )
+        .await?
+    } else if let Some(tracking_id) = body.tracking_id.clone() {
+        dataset_owns_group(
+            UnifiedId::TrackingId(tracking_id),
+            dataset_org_plan_sub.dataset.id,
+            pool.clone(),
+        )
+        .await?
+    } else {
+        return Err(ServiceError::BadRequest("No group id or tracking id provided".into()).into());
+    };
 
     update_chunk_group_query(
         group,

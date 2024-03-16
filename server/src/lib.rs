@@ -553,7 +553,16 @@ pub async fn main() -> std::io::Result<()> {
                                 web::resource("/{chunk_id}")
                                     .route(web::get().to(handlers::chunk_handler::get_chunk_by_id))
                                     .route(web::delete().to(handlers::chunk_handler::delete_chunk)),
-                            ),
+                            )
+                            .service(
+                                web::resource("/{tracking_or_chunk}/{id}")
+                                    .route(web::get().to(
+                                        handlers::chunk_handler::get_chunk_by_id
+                                    ))
+                                    .route(web::delete().to(
+                                        handlers::chunk_handler::delete_chunk
+                                    )),
+                            )
                     )
                     .service(
                         web::scope("/user")
@@ -590,7 +599,7 @@ pub async fn main() -> std::io::Result<()> {
                                 web::scope("/{group_id}")
                                     .service(
                                         web::resource("")
-                                            .route(web::put().to(handlers::group_handler::update_chunk_group))
+                                            .route(web::get().to(handlers::group_handler::get_chunk_group))
                                             .route(web::delete().to(handlers::group_handler::delete_chunk_group)),
                                     )
                                     .service(
