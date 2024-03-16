@@ -596,7 +596,7 @@ pub async fn main() -> std::io::Result<()> {
                                     ),
                             )
                             .service(
-                                web::scope("/{group_id}")
+                                web::scope("/{tracking_or_chunk}/{group_id}")
                                     .service(
                                         web::resource("")
                                             .route(web::get().to(handlers::group_handler::get_chunk_group))
