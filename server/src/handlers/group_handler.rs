@@ -197,6 +197,7 @@ pub struct GetGroupByTrackingIDData {
         ("Cookie" = ["readonly"])
     )
 )]
+#[deprecated]
 /// get_group_by_tracking_id
 #[tracing::instrument(skip(pool))]
 pub async fn get_group_by_tracking_id(
@@ -212,6 +213,53 @@ pub async fn get_group_by_tracking_id(
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    Ok(HttpResponse::Ok().json(group))
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GetGroupData {
+    pub group_id: Option<uuid::Uuid>,
+    pub tracking_id: Option<String>,
+}
+
+#[utoipa::path(
+    get,
+    path = "/chunk_group/{id}",
+    context_path = "/api",
+    tag = "chunk_group",
+    responses(
+        (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroup),
+        (status = 400, description = "Service error relating to getting the group with the given tracking id", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("tracking_id" = String, description = "The tracking id of the group to fetch."),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
+    )
+)]
+/// get_group
+#[tracing::instrument(skip(pool))]
+pub async fn get_group(
+    data: web::Path<GetGroupData>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    _user: LoggedUser,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let group = if let Some(group_id) = data.group_id {
+        get_group_by_id_query(group_id, dataset_org_plan_sub.dataset.id, pool)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+    } else if let Some(tracking_id) = data.tracking_id.clone() {
+        get_group_from_tracking_id_query(tracking_id, dataset_org_plan_sub.dataset.id, pool)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+    } else {
+        return Err(ServiceError::BadRequest("No group id or tracking id provided".into()).into());
+    };
 
     Ok(HttpResponse::Ok().json(group))
 }
@@ -589,7 +637,8 @@ pub struct BookmarkData {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GetAllBookmarksData {
-    pub group_id: uuid::Uuid,
+    pub group_id: Option<uuid::Uuid>,
+    pub tracking_id: Option<String>,
     pub page: Option<u64>,
 }
 
@@ -626,7 +675,7 @@ pub async fn get_chunks_in_group(
     let page = path_data.page.unwrap_or(1);
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
-    let bookmarks = {
+    let bookmarks = if let Some(group_id) = group_id {
         get_bookmarks_for_group_query(
             UnifiedId::TrieveUuid(group_id),
             page,
@@ -636,6 +685,18 @@ pub async fn get_chunks_in_group(
         )
         .await
         .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?
+    } else if let Some(tracking_id) = path_data.tracking_id.clone() {
+        get_bookmarks_for_group_query(
+            UnifiedId::TrackingId(tracking_id),
+            page,
+            None,
+            dataset_id,
+            pool,
+        )
+        .await
+        .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?
+    } else {
+        return Err(ServiceError::BadRequest("No group id or tracking id provided".into()).into());
     };
 
     Ok(HttpResponse::Ok().json(BookmarkData {
@@ -673,6 +734,7 @@ pub struct GetAllBookmarksByTrackingIdData {
         ("Cookie" = ["readonly"])
     )
 )]
+#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn get_chunks_in_group_by_tracking_id(
     path_data: web::Path<GetAllBookmarksByTrackingIdData>,
