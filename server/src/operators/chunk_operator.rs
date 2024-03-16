@@ -10,6 +10,7 @@ use crate::{
     errors::DefaultError,
 };
 use actix_web::web;
+use diesel::dsl::not;
 use diesel::prelude::*;
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
@@ -427,16 +428,12 @@ pub async fn insert_chunk_metadata_query(
                 diesel::result::Error::DatabaseError(
                     diesel::result::DatabaseErrorKind::UniqueViolation,
                     _,
-                ) => {
-                    return DefaultError {
-                        message: "Duplicate tracking_id",
-                    };
-                }
-                _ => {
-                    return DefaultError {
-                        message: "Failed to insert card metadata",
-                    };
-                }
+                ) => DefaultError {
+                    message: "Duplicate tracking_id",
+                },
+                _ => DefaultError {
+                    message: "Failed to insert card metadata",
+                },
             }
         })?;
 
@@ -599,6 +596,7 @@ pub async fn update_chunk_metadata_query(
         })?;
 
     if let Some(group_ids) = group_ids {
+        let group_id1 = group_ids.clone();
         diesel::insert_into(chunk_group_bookmarks_columns::chunk_group_bookmarks)
             .values(
                 &group_ids
@@ -612,6 +610,19 @@ pub async fn update_chunk_metadata_query(
             .map_err(|_| DefaultError {
                 message: "Failed to create bookmark",
             })?;
+
+        diesel::delete(
+            chunk_group_bookmarks_columns::chunk_group_bookmarks
+                .filter(chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_data.id))
+                .filter(not(
+                    chunk_group_bookmarks_columns::group_id.eq_any(group_id1)
+                )),
+        )
+        .execute(&mut conn)
+        .await
+        .map_err(|_| DefaultError {
+            message: "Failed to delete chunk bookmarks",
+        })?;
     }
 
     Ok(updated_chunk)

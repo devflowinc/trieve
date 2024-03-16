@@ -5,6 +5,7 @@ use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{self, Event, ServerDatasetConfiguration};
 use trieve_server::errors::ServiceError;
 use trieve_server::handlers::chunk_handler::{UpdateIngestionMessage, UploadIngestionMessage};
+use trieve_server::handlers::group_handler::dataset_owns_group;
 use trieve_server::operators::chunk_operator::{
     get_metadata_from_point_ids, get_qdrant_id_from_chunk_id_query, insert_chunk_metadata_query,
     insert_duplicate_chunk_metadata_query, update_chunk_metadata_query,
@@ -339,6 +340,7 @@ async fn upload_chunk(
             None,
             collision.expect("Collision must be some"),
             None,
+            None,
             payload.chunk_metadata.dataset_id,
             splade_vector,
             dataset_config.clone(),
@@ -445,16 +447,6 @@ async fn update_chunk(
             .await
             .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
 
-    update_chunk_metadata_query(
-        payload.chunk_metadata.clone(),
-        None,
-        None,
-        payload.dataset_id,
-        web_pool.clone(),
-    )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
     let splade_vector = if server_dataset_config.FULLTEXT_ENABLED {
         match get_splade_embedding(&payload.chunk_metadata.content, "doc").await {
             Ok(v) => v,
@@ -464,21 +456,71 @@ async fn update_chunk(
         vec![(0, 0.0)]
     };
 
-    update_qdrant_point_query(
-        // If the chunk is a collision, we don't want to update the qdrant point
-        if payload.chunk_metadata.qdrant_point_id.is_none() {
-            None
-        } else {
-            Some(payload.chunk_metadata)
-        },
-        qdrant_point_id,
-        Some(embedding_vector),
-        payload.dataset_id,
-        splade_vector,
-        server_dataset_config,
-    )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    if let Some(group_ids) = payload.group_ids {
+        let mut chunk_group_ids: Vec<uuid::Uuid> = vec![];
+        for group_id in group_ids {
+            let group = dataset_owns_group(group_id, payload.dataset_id, web_pool.clone())
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+            chunk_group_ids.push(group.id);
+        }
+
+        let chunk = update_chunk_metadata_query(
+            payload.chunk_metadata.clone(),
+            None,
+            Some(chunk_group_ids.clone()),
+            payload.dataset_id,
+            web_pool.clone(),
+        )
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+        if let Some(qdrant_point_id) = chunk.qdrant_point_id {
+            update_qdrant_point_query(
+                // If the chunk is a collision, we don't want to update the qdrant point
+                if payload.chunk_metadata.qdrant_point_id.is_none() {
+                    None
+                } else {
+                    Some(payload.chunk_metadata)
+                },
+                qdrant_point_id,
+                Some(embedding_vector),
+                Some(chunk_group_ids),
+                payload.dataset_id,
+                splade_vector,
+                server_dataset_config,
+            )
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        }
+    } else {
+        update_chunk_metadata_query(
+            payload.chunk_metadata.clone(),
+            None,
+            None,
+            payload.dataset_id,
+            web_pool.clone(),
+        )
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+        update_qdrant_point_query(
+            // If the chunk is a collision, we don't want to update the qdrant point
+            if payload.chunk_metadata.qdrant_point_id.is_none() {
+                None
+            } else {
+                Some(payload.chunk_metadata)
+            },
+            qdrant_point_id,
+            Some(embedding_vector),
+            None,
+            payload.dataset_id,
+            splade_vector,
+            server_dataset_config,
+        )
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    }
 
     Ok(())
 }
