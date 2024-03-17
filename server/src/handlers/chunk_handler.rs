@@ -1,7 +1,7 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan,
-    GetReqParams, Pool, ServerDatasetConfiguration, UnifiedId,
+    IdParams, Pool, ServerDatasetConfiguration, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -273,7 +273,7 @@ pub async fn bulk_create_chunk(
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn delete_chunk(
-    chunk_id: GetReqParams,
+    chunk_id: IdParams,
     pool: web::Data<Pool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -876,7 +876,7 @@ pub async fn search_chunk(
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn get_chunk_by_id(
-    chunk_id: GetReqParams,
+    chunk_id: IdParams,
     _user: LoggedUser,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,

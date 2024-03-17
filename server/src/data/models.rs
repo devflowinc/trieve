@@ -1518,13 +1518,13 @@ impl From<String> for UnifiedId {
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct GetReqParams {
+pub struct IdParams {
     pub id: UnifiedId,
 }
 
-impl FromRequest for GetReqParams {
+impl FromRequest for IdParams {
     type Error = Error;
-    type Future = Ready<Result<GetReqParams, Error>>;
+    type Future = Ready<Result<IdParams, Error>>;
 
     fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
         let tracking_or_chunk = req
@@ -1534,13 +1534,13 @@ impl FromRequest for GetReqParams {
             .to_string();
         let id = req.match_info().get("id").unwrap().to_string();
         let req_params = if tracking_or_chunk.starts_with("tracking") {
-            GetReqParams {
+            IdParams {
                 id: UnifiedId::TrackingId(id),
             }
         } else if tracking_or_chunk.starts_with("chunk") {
             let id = id.parse::<uuid::Uuid>();
             match id {
-                Ok(id) => GetReqParams {
+                Ok(id) => IdParams {
                     id: UnifiedId::TrieveUuid(id),
                 },
                 Err(e) => return ready(Err(actix_web::error::ErrorBadRequest(e.to_string()))),
