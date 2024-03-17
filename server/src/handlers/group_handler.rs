@@ -5,7 +5,7 @@ use super::{
 use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFile, ChunkGroupBookmark, ChunkMetadataWithFileData,
-        DatasetAndOrgWithSubAndPlan, GetReqParams, Pool, ServerDatasetConfiguration, UnifiedId,
+        DatasetAndOrgWithSubAndPlan, IdParams, Pool, ServerDatasetConfiguration, UnifiedId,
     },
     errors::ServiceError,
     operators::{
@@ -245,7 +245,7 @@ pub struct GetGroupData {
 /// get_group
 #[tracing::instrument(skip(pool))]
 pub async fn get_chunk_group(
-    chunk_id: GetReqParams,
+    chunk_id: IdParams,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _user: LoggedUser,
     pool: web::Data<Pool>,
@@ -411,7 +411,7 @@ pub struct DeleteGroupData {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn delete_chunk_group(
-    group_id: GetReqParams,
+    group_id: IdParams,
     data: web::Query<DeleteGroupData>,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
