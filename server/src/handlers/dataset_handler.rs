@@ -69,7 +69,7 @@ pub struct CreateDatasetRequest {
     ),
     security(
         ("ApiKey" = ["owner"]),
-        ("Cookie" = ["owner"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -140,7 +140,7 @@ pub struct UpdateDatasetRequest {
     ),
     security(
         ("ApiKey" = ["owner"]),
-        ("Cookie" = ["owner"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -197,7 +197,7 @@ pub struct DeleteDatasetRequest {
     ),
     security(
         ("ApiKey" = ["owner"]),
-        ("Cookie" = ["owner"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -233,7 +233,7 @@ pub async fn delete_dataset(
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -270,7 +270,7 @@ pub async fn get_dataset(
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -310,7 +310,7 @@ pub async fn get_datasets_from_organization(
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[tracing::instrument]

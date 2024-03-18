@@ -52,7 +52,7 @@ pub struct GetUserWithChunksData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -165,7 +165,7 @@ pub struct SetUserApiKeyResponse {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -199,7 +199,7 @@ pub async fn set_user_api_key(
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -235,7 +235,7 @@ pub struct DeleteUserApiKeyRequest {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]

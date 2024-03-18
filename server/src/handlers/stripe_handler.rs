@@ -227,7 +227,7 @@ pub async fn direct_to_payment_link(
     ),
     security(
         ("ApiKey" = ["owner"]),
-        ("Cookie" = ["owner"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -277,7 +277,7 @@ pub struct UpdateSubscriptionData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]

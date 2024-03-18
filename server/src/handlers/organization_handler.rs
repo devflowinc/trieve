@@ -32,7 +32,7 @@ use utoipa::ToSchema;
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -68,7 +68,7 @@ pub async fn get_organization_by_id(
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -113,7 +113,7 @@ pub struct UpdateOrganizationData {
     ),
     security(
         ("ApiKey" = ["owner"]),
-        ("Cookie" = ["owner"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -165,7 +165,7 @@ pub struct CreateOrganizationData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -211,7 +211,7 @@ pub async fn create_organization(
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -247,7 +247,7 @@ pub async fn get_organization_usage(
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
