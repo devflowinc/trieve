@@ -424,7 +424,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
               {(_, i) => (
                 <img
                   class="mx-auto my-auto"
-                  src={`${apiHost}/image/${
+                  src={`${apiHost}/get_signed_url/${
                     imgInformation()?.imgRangePrefix ?? ""
                   }${(imgInformation()?.imgRangeStart ?? 0) + i()}.png`}
                 />
