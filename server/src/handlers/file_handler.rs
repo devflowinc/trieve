@@ -88,7 +88,7 @@ pub struct UploadFileResult {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[tracing::instrument(skip(pool, redis_client))]
@@ -192,7 +192,7 @@ pub async fn upload_file_handler(
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -246,7 +246,7 @@ pub struct FileData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -299,7 +299,7 @@ pub struct DeleteFileQueryParams {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]

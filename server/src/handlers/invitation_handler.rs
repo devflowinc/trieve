@@ -54,7 +54,7 @@ pub struct InvitationData {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]

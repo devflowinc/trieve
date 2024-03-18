@@ -535,8 +535,7 @@ pub async fn callback(
         (status = 400, description = "Error message indicitating you are not currently signed in", body = ErrorResponseBody),
     ),
     security(
-        ("ApiKey" = []),
-        ("Cookie" = [])
+        ("ApiKey" = ["readonly"]),
     )
 )]
 #[tracing::instrument(skip(pool))]

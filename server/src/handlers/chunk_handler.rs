@@ -93,7 +93,7 @@ pub struct UploadIngestionMessage {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -224,7 +224,7 @@ pub async fn create_chunk(
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -268,7 +268,6 @@ pub async fn bulk_create_chunk(
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"]),
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -334,7 +333,7 @@ pub async fn delete_chunk(
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[deprecated]
@@ -416,7 +415,7 @@ pub struct UpdateIngestionMessage {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -567,7 +566,7 @@ pub struct UpdateChunkByTrackingIdData {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -821,7 +820,6 @@ pub fn parse_query(query: String) -> ParsedQuery {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -913,7 +911,7 @@ pub async fn search_chunk(
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -958,7 +956,7 @@ pub async fn get_chunk_by_id(
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[deprecated]
@@ -1014,7 +1012,7 @@ pub struct RecommendChunksRequest {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -1164,7 +1162,7 @@ pub struct GenerateChunksRequest {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]

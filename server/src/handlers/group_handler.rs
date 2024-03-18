@@ -77,7 +77,7 @@ pub struct CreateChunkGroupData {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -135,7 +135,7 @@ pub struct DatasetGroupQuery {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -194,7 +194,7 @@ pub struct GetGroupByTrackingIDData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[deprecated]
@@ -239,7 +239,7 @@ pub struct GetGroupData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 /// get_group
@@ -292,7 +292,7 @@ pub struct UpdateGroupByTrackingIDData {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[deprecated]
@@ -343,7 +343,7 @@ pub struct DeleteGroupByTrackingIDData {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[deprecated]
@@ -406,7 +406,7 @@ pub struct DeleteGroupData {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -492,7 +492,7 @@ pub struct UpdateChunkGroupData {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -562,7 +562,7 @@ pub struct AddChunkToGroupData {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[deprecated]
@@ -624,7 +624,7 @@ pub struct AddChunkToGroupByTrackingIdData {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[deprecated]
@@ -700,7 +700,7 @@ pub struct GetAllBookmarksData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -770,7 +770,7 @@ pub struct GetAllBookmarksByTrackingIdData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[deprecated]
@@ -823,7 +823,7 @@ pub struct GetGroupsForChunksData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -869,7 +869,7 @@ pub struct DeleteBookmarkPathData {
     request_body(content = CreateChunkGroupData, description = "JSON request payload to cretea a chunkGroup", content_type = "application/json"),
     security(
         ("ApiKey" = ["admin"]),
-        ("Cookie" = ["admin"])
+        
     )
 )]
 #[deprecated]
@@ -956,7 +956,7 @@ pub struct ReccomendGroupChunksRequest {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -1149,7 +1149,7 @@ pub struct SearchGroupsResult {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[allow(clippy::too_many_arguments)]

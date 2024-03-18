@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        ("Cookie" = ["readonly"])
+        
     )
 )]
 #[tracing::instrument(skip(pool))]
