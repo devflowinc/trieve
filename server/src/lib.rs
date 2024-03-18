@@ -110,11 +110,6 @@ impl Modify for SecurityAddon {
             "ApiKey",
             SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("Authorization"))),
         );
-
-        components.add_security_scheme(
-            "Cookie",
-            SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::new("Authorization"))),
-        );
     }
 }
 
@@ -132,7 +127,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.3.4",
+        version = "0.3.5",
     ),
     modifiers(&SecurityAddon),
     paths(
