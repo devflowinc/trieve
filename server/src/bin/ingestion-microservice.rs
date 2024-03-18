@@ -279,6 +279,16 @@ async fn upload_chunk(
         }
     };
 
+    let splade_vector = if dataset_config.FULLTEXT_ENABLED {
+        match get_splade_embedding(&payload.chunk_metadata.content, "doc").await {
+            Ok(v) => v,
+            Err(_) => vec![(0, 0.0)],
+        }
+    } else {
+        vec![(0, 0.0)]
+    };
+    // let splade_vector = vec![(0, 0.0)];
+
     let mut collision: Option<uuid::Uuid> = None;
 
     let duplicate_distance_threshold = dataset_config.DUPLICATE_DISTANCE_THRESHOLD;
@@ -326,15 +336,6 @@ async fn upload_chunk(
             "update_collision",
             "update_qdrant_point_query and insert_duplicate_chunk_metadata_query",
         );
-
-        let splade_vector = if dataset_config.FULLTEXT_ENABLED {
-            match get_splade_embedding(&payload.chunk_metadata.content, "doc").await {
-                Ok(v) => v,
-                Err(_) => vec![(0, 0.0)],
-            }
-        } else {
-            vec![(0, 0.0)]
-        };
 
         update_qdrant_point_query(
             None,
@@ -395,15 +396,6 @@ async fn upload_chunk(
 
         let insert_tx =
             transaction.start_child("calling_create_qdrant_point", "calling_create_qdrant_point");
-
-        let splade_vector = if dataset_config.FULLTEXT_ENABLED {
-            match get_splade_embedding(&payload.chunk_metadata.content, "doc").await {
-                Ok(v) => v,
-                Err(_) => vec![(0, 0.0)],
-            }
-        } else {
-            vec![(0, 0.0)]
-        };
 
         create_new_qdrant_point_query(
             qdrant_point_id,
