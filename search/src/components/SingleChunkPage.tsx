@@ -151,7 +151,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     if (!currentDataset) return;
 
     setFetching(true);
-    void fetch(`${apiHost}/chunk/${props.chunkId ?? ""}`, {
+    void fetch(`${apiHost}/chunk/chunk/${props.chunkId ?? ""}`, {
       method: "GET",
       credentials: "include",
       headers: {

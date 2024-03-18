@@ -28,7 +28,7 @@ use utoipa::ToSchema;
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
-        ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch."),
+        ("organization_id" = Option<uuid::Uuid>, Path, description = "The id of the organization you want to fetch."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -64,7 +64,7 @@ pub async fn get_organization_by_id(
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
-        ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch."),
+        ("organization_id" = Option<uuid::Uuid>, Path, description = "The id of the organization you want to fetch."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -207,7 +207,7 @@ pub async fn create_organization(
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
-        ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch the usage of."),
+        ("organization_id" = Option<uuid::Uuid>, Path, description = "The id of the organization you want to fetch the usage of."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -243,7 +243,7 @@ pub async fn get_organization_usage(
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
-        ("organization_id" = Option<uuid>, Path, description = "The id of the organization you want to fetch the users of."),
+        ("organization_id" = Option<uuid::Uuid>, Path, description = "The id of the organization you want to fetch the users of."),
     ),
     security(
         ("ApiKey" = ["admin"]),
