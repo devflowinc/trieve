@@ -120,7 +120,20 @@ impl Modify for SecurityAddon {
 
 #[derive(OpenApi)]
 #[openapi(
-    info(description = "Trieve REST API OpenAPI Documentation", version = "0.3.3"),
+    info(
+        title = "Trieve API",
+        description = "Trieve OpenAPI Specification. This document describes all of the operations available through the Trieve API.", 
+        contact(
+            name = "Trieve Team",
+            url = "https://trieve.ai",
+            email = "developers@trieve.ai",
+        ),
+        license(
+            name = "BSL",
+            url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
+        ),
+        version = "0.3.4",
+    ),
     modifiers(&SecurityAddon),
     paths(
         handlers::invitation_handler::post_invitation,
