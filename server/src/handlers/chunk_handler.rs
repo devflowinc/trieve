@@ -254,7 +254,7 @@ pub async fn bulk_create_chunk(
 /// Delete a chunk by its id. If deleting a root chunk which has a collision, the most recently created collision will become a new root chunk.
 #[utoipa::path(
     delete,
-    path = "/{tracking_or_chunk}/{chunk_id}",
+    path = "/chunk/{tracking_or_chunk}/{chunk_id}",
     context_path = "/api",
     tag = "chunk",
     responses(
@@ -263,8 +263,8 @@ pub async fn bulk_create_chunk(
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("chunk_id" = Option<uuid>, Path, description = "Id of the chunk you want to fetch. This can be either the chunk_id or the tracking_id."),
         ("tracking_or_chunk" = String, Path, description = "The type of id you are using to search for the chunk. This can be either 'chunk' or 'tracking_id'"),
+        ("chunk_id" = Option<uuid::Uuid>, Path, description = "Id of the chunk you want to fetch. This can be either the chunk_id or the tracking_id."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -897,7 +897,7 @@ pub async fn search_chunk(
 /// Get a singular chunk by id.
 #[utoipa::path(
     get,
-    path = "/{tracking_or_chunk}/{chunk_id}",
+    path = "/chunk/{tracking_or_chunk}/{chunk_id}",
     context_path = "/api",
     tag = "chunk",
     responses(
@@ -906,8 +906,8 @@ pub async fn search_chunk(
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("chunk_id" = Option<uuid>, Path, description = "Id of the chunk you want to fetch. This can be either the chunk_id or the tracking_id."),
         ("tracking_or_chunk" = String, Path, description = "The type of id you are using to search for the chunk. This can be either 'chunk' or 'tracking_id'"),
+        ("chunk_id" = Option<uuid::Uuid>, Path, description = "Id of the chunk you want to fetch. This can be either the chunk_id or the tracking_id."),
     ),
     security(
         ("ApiKey" = ["readonly"]),

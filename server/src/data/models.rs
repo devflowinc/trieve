@@ -1530,14 +1530,20 @@ impl FromRequest for IdParams {
         let tracking_or_chunk = req
             .match_info()
             .get("tracking_or_chunk")
-            .unwrap()
+            .unwrap_or("chunk")
             .to_string();
-        let id = req.match_info().get("id").unwrap().to_string();
-        let req_params = if tracking_or_chunk.starts_with("tracking") {
+
+        let id = req.match_info().get("id").unwrap_or("").to_string();
+        let req_params = if tracking_or_chunk.starts_with("tracking_id") {
             IdParams {
                 id: UnifiedId::TrackingId(id),
             }
         } else if tracking_or_chunk.starts_with("chunk") {
+            if id.is_empty() {
+                return ready(Err(actix_web::error::ErrorBadRequest(
+                    "Invalid request: Specify whether this id is a chunk_id or tracking_id by either /chunk/{id} or /tracking_id/{id}".to_string(),
+                )));
+            };
             let id = id.parse::<uuid::Uuid>();
             match id {
                 Ok(id) => IdParams {

@@ -542,6 +542,12 @@ pub async fn main() -> std::io::Result<()> {
                             .service(web::resource("/tracking_id/update").route(
                                 web::put().to(handlers::chunk_handler::update_chunk_by_tracking_id),
                             ))
+
+                            .service(
+                                web::resource("/{chunk_id}")
+                                    .route(web::get().to(handlers::chunk_handler::get_chunk_by_id))
+                                    .route(web::delete().to(handlers::chunk_handler::delete_chunk)),
+                            )
                             .service(
                                 web::resource("/{tracking_or_chunk}/{id}")
                                     .route(web::get().to(
@@ -562,11 +568,6 @@ pub async fn main() -> std::io::Result<()> {
                                             handlers::chunk_handler::delete_chunk_by_tracking_id,
                                         ),
                                     ),
-                            )
-                            .service(
-                                web::resource("/{chunk_id}")
-                                    .route(web::get().to(handlers::chunk_handler::get_chunk_by_id))
-                                    .route(web::delete().to(handlers::chunk_handler::delete_chunk)),
                             )
                     )
                     .service(
