@@ -5,7 +5,7 @@ use super::{
 use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFile, ChunkGroupBookmark, ChunkMetadataWithFileData,
-        DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration, UnifiedId,
+        DatasetAndOrgWithSubAndPlan, IdParams, Pool, ServerDatasetConfiguration, UnifiedId,
     },
     errors::ServiceError,
     operators::{
@@ -197,6 +197,7 @@ pub struct GetGroupByTrackingIDData {
         ("Cookie" = ["readonly"])
     )
 )]
+#[deprecated]
 /// get_group_by_tracking_id
 #[tracing::instrument(skip(pool))]
 pub async fn get_group_by_tracking_id(
@@ -212,6 +213,55 @@ pub async fn get_group_by_tracking_id(
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+    Ok(HttpResponse::Ok().json(group))
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GetGroupData {
+    pub group_id: Option<uuid::Uuid>,
+    pub tracking_id: Option<String>,
+}
+
+#[utoipa::path(
+    get,
+    path = "/{tracking_or_chunk}/{group_id}",
+    context_path = "/api",
+    tag = "chunk_group",
+    responses(
+        (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroup),
+        (status = 400, description = "Service error relating to getting the group with the given tracking id", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("group_id" = Option<uuid>, Path, description = "Id of the group you want to fetch. This can be either the group_id or the tracking_id."),
+        ("tracking_or_chunk" = String, Path, description = "The type of id you are using to search for the group. This can be either 'chunk' or 'tracking_id'"),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+        ("Cookie" = ["readonly"])
+    )
+)]
+/// get_group
+#[tracing::instrument(skip(pool))]
+pub async fn get_chunk_group(
+    chunk_id: IdParams,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    _user: LoggedUser,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let group = match chunk_id.id {
+        UnifiedId::TrieveUuid(group_id) => {
+            get_group_by_id_query(group_id, dataset_org_plan_sub.dataset.id, pool)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+        }
+        UnifiedId::TrackingId(tracking_id) => {
+            get_group_from_tracking_id_query(tracking_id, dataset_org_plan_sub.dataset.id, pool)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+        }
+    };
 
     Ok(HttpResponse::Ok().json(group))
 }
@@ -245,6 +295,7 @@ pub struct UpdateGroupByTrackingIDData {
         ("Cookie" = ["admin"])
     )
 )]
+#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn update_group_by_tracking_id(
     data: web::Json<UpdateGroupByTrackingIDData>,
@@ -295,6 +346,7 @@ pub struct DeleteGroupByTrackingIDData {
         ("Cookie" = ["admin"])
     )
 )]
+#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn delete_group_by_tracking_id(
     tracking_id: web::Path<String>,
@@ -339,7 +391,7 @@ pub struct DeleteGroupData {
 /// This will delete a chunk_group. This will not delete the chunks that are in the group. We will soon support deleting a chunk_group along with its member chunks.
 #[utoipa::path(
     delete,
-    path = "/chunk_group/{group_id}",
+    path = "/{tracking_or_chunk}/{group_id}",
     context_path = "/api",
     tag = "chunk_group",
     responses(
@@ -348,7 +400,8 @@ pub struct DeleteGroupData {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("group_id" = uuid::Uuid, description = "Id of the chunk_group to delete"),
+        ("group_id" = Option<uuid>, Path, description = "Id of the group you want to fetch. This can be either the group_id or the tracking_id. If both are provided, the group_id will be used."),
+        ("tracking_or_chunk" = String, Path, description = "The type of id you are using to search for the group. This can be either 'chunk' or 'tracking_id'"),
         ("delete_chunks" = bool, Query, description = "Delete the chunks within the group"),
     ),
     security(
@@ -358,7 +411,7 @@ pub struct DeleteGroupData {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn delete_chunk_group(
-    group_id: web::Path<uuid::Uuid>,
+    group_id: IdParams,
     data: web::Query<DeleteGroupData>,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -369,24 +422,42 @@ pub async fn delete_chunk_group(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    let group_id = group_id.into_inner();
-
-    dataset_owns_group(
-        UnifiedId::TrieveUuid(group_id),
-        dataset_org_plan_sub.dataset.id,
-        pool,
-    )
-    .await?;
-
-    delete_group_by_id_query(
-        group_id,
-        dataset_org_plan_sub.dataset,
-        data.delete_chunks,
-        delete_group_pool,
-        server_dataset_config,
-    )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    match group_id.id {
+        UnifiedId::TrieveUuid(group_id) => {
+            dataset_owns_group(
+                UnifiedId::TrieveUuid(group_id),
+                dataset_org_plan_sub.dataset.id,
+                pool.clone(),
+            )
+            .await?;
+            delete_group_by_id_query(
+                group_id,
+                dataset_org_plan_sub.dataset,
+                data.delete_chunks,
+                delete_group_pool,
+                server_dataset_config,
+            )
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        }
+        UnifiedId::TrackingId(tracking_id) => {
+            let group = dataset_owns_group(
+                UnifiedId::TrackingId(tracking_id),
+                dataset_org_plan_sub.dataset.id,
+                pool.clone(),
+            )
+            .await?;
+            delete_group_by_id_query(
+                group.id,
+                dataset_org_plan_sub.dataset,
+                data.delete_chunks,
+                delete_group_pool,
+                server_dataset_config,
+            )
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        }
+    }
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -394,7 +465,9 @@ pub async fn delete_chunk_group(
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct UpdateChunkGroupData {
     /// Id of the chunk_group to update.
-    pub group_id: uuid::Uuid,
+    pub group_id: Option<uuid::Uuid>,
+    /// Tracking Id of the chunk_group to update.
+    pub tracking_id: Option<String>,
     /// Name to assign to the chunk_group. Does not need to be unique. If not provided, the name will not be updated.
     pub name: Option<String>,
     /// Description to assign to the chunk_group. Convenience field for you to avoid having to remember what the group is for. If not provided, the description will not be updated.
@@ -433,12 +506,23 @@ pub async fn update_chunk_group(
     let description = body.description.clone();
     let group_id = body.group_id;
 
-    let group = dataset_owns_group(
-        UnifiedId::TrieveUuid(group_id),
-        dataset_org_plan_sub.dataset.id,
-        pool.clone(),
-    )
-    .await?;
+    let group = if let Some(group_id) = group_id {
+        dataset_owns_group(
+            UnifiedId::TrieveUuid(group_id),
+            dataset_org_plan_sub.dataset.id,
+            pool.clone(),
+        )
+        .await?
+    } else if let Some(tracking_id) = body.tracking_id.clone() {
+        dataset_owns_group(
+            UnifiedId::TrackingId(tracking_id),
+            dataset_org_plan_sub.dataset.id,
+            pool.clone(),
+        )
+        .await?
+    } else {
+        return Err(ServiceError::BadRequest("No group id or tracking id provided".into()).into());
+    };
 
     update_chunk_group_query(
         group,
@@ -481,6 +565,7 @@ pub struct AddChunkToGroupData {
         ("Cookie" = ["admin"])
     )
 )]
+#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn add_chunk_to_group(
     body: web::Json<AddChunkToGroupData>,
@@ -542,6 +627,7 @@ pub struct AddChunkToGroupByTrackingIdData {
         ("Cookie" = ["admin"])
     )
 )]
+#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn add_chunk_to_group_by_tracking_id(
     body: web::Json<AddChunkToGroupByTrackingIdData>,
@@ -589,7 +675,8 @@ pub struct BookmarkData {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GetAllBookmarksData {
-    pub group_id: uuid::Uuid,
+    pub group_id: Option<uuid::Uuid>,
+    pub tracking_id: Option<String>,
     pub page: Option<u64>,
 }
 
@@ -598,7 +685,7 @@ pub struct GetAllBookmarksData {
 /// Route to get all chunks for a group. The response is paginated, with each page containing 10 chunks. Support for custom page size is coming soon.
 #[utoipa::path(
     get,
-    path = "/chunk_group/{group_id}/{page}",
+    path = "/chunk_group/{tracking_or_chunk}/{group_id}/{page}",
     context_path = "/api",
     tag = "chunk_group",
     responses(
@@ -607,7 +694,8 @@ pub struct GetAllBookmarksData {
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("group_id" = uuid::Uuid, description = "The id of the group to get the chunks from"),
+        ("group_id" = Option<uuid>, Path, description = "Id of the group you want to fetch. This can be either the group_id or the tracking_id. If both are provided, the group_id will be used."),
+        ("tracking_or_chunk" = String, Path, description = "The type of id you are using to search for the group. This can be either 'chunk' or 'tracking_id'"),
         ("page" = u64, description = "The page of chunks to get from the group"),
     ),
     security(
@@ -626,7 +714,7 @@ pub async fn get_chunks_in_group(
     let page = path_data.page.unwrap_or(1);
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
-    let bookmarks = {
+    let bookmarks = if let Some(group_id) = group_id {
         get_bookmarks_for_group_query(
             UnifiedId::TrieveUuid(group_id),
             page,
@@ -636,6 +724,18 @@ pub async fn get_chunks_in_group(
         )
         .await
         .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?
+    } else if let Some(tracking_id) = path_data.tracking_id.clone() {
+        get_bookmarks_for_group_query(
+            UnifiedId::TrackingId(tracking_id),
+            page,
+            None,
+            dataset_id,
+            pool,
+        )
+        .await
+        .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?
+    } else {
+        return Err(ServiceError::BadRequest("No group id or tracking id provided".into()).into());
     };
 
     Ok(HttpResponse::Ok().json(BookmarkData {
@@ -673,6 +773,7 @@ pub struct GetAllBookmarksByTrackingIdData {
         ("Cookie" = ["readonly"])
     )
 )]
+#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn get_chunks_in_group_by_tracking_id(
     path_data: web::Path<GetAllBookmarksByTrackingIdData>,
@@ -771,6 +872,7 @@ pub struct DeleteBookmarkPathData {
         ("Cookie" = ["admin"])
     )
 )]
+#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn remove_chunk_from_group(
     group_id: web::Path<uuid::Uuid>,

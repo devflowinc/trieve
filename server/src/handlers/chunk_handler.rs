@@ -1,7 +1,7 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan, Pool,
-    ServerDatasetConfiguration, UnifiedId,
+    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan,
+    IdParams, Pool, ServerDatasetConfiguration, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -254,7 +254,7 @@ pub async fn bulk_create_chunk(
 /// Delete a chunk by its id. If deleting a root chunk which has a collision, the most recently created collision will become a new root chunk.
 #[utoipa::path(
     delete,
-    path = "/chunk/{chunk_id}",
+    path = "/{tracking_or_chunk}/{chunk_id}",
     context_path = "/api",
     tag = "chunk",
     responses(
@@ -263,7 +263,8 @@ pub async fn bulk_create_chunk(
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("chunk_id" = Option<uuid>, Path, description = "id of the chunk you want to delete"),
+        ("chunk_id" = Option<uuid>, Path, description = "Id of the chunk you want to fetch. This can be either the chunk_id or the tracking_id."),
+        ("tracking_or_chunk" = String, Path, description = "The type of id you are using to search for the chunk. This can be either 'chunk' or 'tracking_id'"),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -272,24 +273,45 @@ pub async fn bulk_create_chunk(
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn delete_chunk(
-    chunk_id: web::Path<uuid::Uuid>,
+    chunk_id: IdParams,
     pool: web::Data<Pool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let chunk_id_inner = chunk_id.into_inner();
     let server_dataset_config = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    delete_chunk_metadata_query(
-        chunk_id_inner,
-        dataset_org_plan_sub.dataset,
-        pool,
-        server_dataset_config,
-    )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    match chunk_id.id {
+        UnifiedId::TrackingId(tracking_id) => {
+            let chunk_metadata = get_metadata_from_tracking_id_query(
+                tracking_id,
+                dataset_org_plan_sub.dataset.id,
+                pool.clone(),
+            )
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+            delete_chunk_metadata_query(
+                chunk_metadata.id,
+                dataset_org_plan_sub.dataset,
+                pool,
+                server_dataset_config,
+            )
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        }
+        UnifiedId::TrieveUuid(chunk_id_inner) => {
+            delete_chunk_metadata_query(
+                chunk_id_inner,
+                dataset_org_plan_sub.dataset,
+                pool,
+                server_dataset_config,
+            )
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        }
+    }
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -315,6 +337,7 @@ pub async fn delete_chunk(
         ("Cookie" = ["admin"])
     )
 )]
+#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn delete_chunk_by_tracking_id(
     tracking_id: web::Path<String>,
@@ -361,6 +384,10 @@ pub struct UpdateChunkData {
     time_stamp: Option<String>,
     /// Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset. If no weight is provided, the existing weight will be used.
     weight: Option<f64>,
+    /// Group ids are the ids of the groups that the chunk should be placed into. This is useful for when you want to update a chunk and add it to a group or multiple groups in one request.
+    group_ids: Option<Vec<uuid::Uuid>>,
+    /// Group tracking_ids are the tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to update a chunk and add it to a group or multiple groups in one request.
+    group_tracking_ids: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
@@ -368,6 +395,7 @@ pub struct UpdateIngestionMessage {
     pub chunk_metadata: ChunkMetadata,
     pub server_dataset_config: ServerDatasetConfiguration,
     pub dataset_id: uuid::Uuid,
+    pub group_ids: Option<Vec<UnifiedId>>,
 }
 
 /// update_chunk
@@ -466,10 +494,27 @@ pub async fn update_chunk(
         chunk.weight.unwrap_or(1.0),
     );
 
+    let group_ids = if let Some(group_ids) = chunk.group_ids.clone() {
+        Some(
+            group_ids
+                .into_iter()
+                .map(UnifiedId::from)
+                .collect::<Vec<UnifiedId>>(),
+        )
+    } else {
+        chunk.group_tracking_ids.clone().map(|group_tracking_ids| {
+            group_tracking_ids
+                .into_iter()
+                .map(UnifiedId::from)
+                .collect::<Vec<UnifiedId>>()
+        })
+    };
+
     let message = UpdateIngestionMessage {
         chunk_metadata: metadata.clone(),
         server_dataset_config,
         dataset_id,
+        group_ids,
     };
 
     let mut pub_client = redis_client
@@ -497,6 +542,10 @@ pub struct UpdateChunkByTrackingIdData {
     time_stamp: Option<String>,
     /// Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset. If no weight is provided, the existing weight will be used.
     weight: Option<f64>,
+    /// Group ids are the ids of the groups that the chunk should be placed into. This is useful for when you want to update a chunk and add it to a group or multiple groups in one request.
+    group_ids: Option<Vec<uuid::Uuid>>,
+    /// Group tracking_ids are the tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to update a chunk and add it to a group or multiple groups in one request.
+    group_tracking_ids: Option<Vec<String>>,
 }
 
 /// update_chunk_by_tracking_id
@@ -587,11 +636,27 @@ pub async fn update_chunk_by_tracking_id(
         dataset_org_plan_sub.dataset.id,
         chunk.weight.unwrap_or(1.0),
     );
+    let group_ids = if let Some(group_ids) = chunk.group_ids.clone() {
+        Some(
+            group_ids
+                .into_iter()
+                .map(UnifiedId::from)
+                .collect::<Vec<UnifiedId>>(),
+        )
+    } else {
+        chunk.group_tracking_ids.clone().map(|group_tracking_ids| {
+            group_tracking_ids
+                .into_iter()
+                .map(UnifiedId::from)
+                .collect::<Vec<UnifiedId>>()
+        })
+    };
 
     let message = UpdateIngestionMessage {
         chunk_metadata: metadata.clone(),
         server_dataset_config,
         dataset_id,
+        group_ids,
     };
 
     let mut pub_client = redis_client
@@ -834,7 +899,7 @@ pub async fn search_chunk(
 /// Get a singular chunk by id.
 #[utoipa::path(
     get,
-    path = "/chunk/{chunk_id}",
+    path = "/{tracking_or_chunk}/{chunk_id}",
     context_path = "/api",
     tag = "chunk",
     responses(
@@ -843,7 +908,8 @@ pub async fn search_chunk(
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("chunk_id" = Option<uuid>, Path, description = "Id of the chunk you want to fetch."),
+        ("chunk_id" = Option<uuid>, Path, description = "Id of the chunk you want to fetch. This can be either the chunk_id or the tracking_id."),
+        ("tracking_or_chunk" = String, Path, description = "The type of id you are using to search for the chunk. This can be either 'chunk' or 'tracking_id'"),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -852,15 +918,24 @@ pub async fn search_chunk(
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn get_chunk_by_id(
-    chunk_id: web::Path<uuid::Uuid>,
+    chunk_id: IdParams,
     _user: LoggedUser,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let chunk =
-        get_metadata_from_id_query(chunk_id.into_inner(), dataset_org_plan_sub.dataset.id, pool)
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let chunk_id = chunk_id.id;
+    let chunk = match chunk_id {
+        UnifiedId::TrieveUuid(chunk_id) => {
+            get_metadata_from_id_query(chunk_id, dataset_org_plan_sub.dataset.id, pool)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+        }
+        UnifiedId::TrackingId(tracking_id) => {
+            get_metadata_from_tracking_id_query(tracking_id, dataset_org_plan_sub.dataset.id, pool)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+        }
+    };
 
     Ok(HttpResponse::Ok().json(chunk))
 }
@@ -886,6 +961,7 @@ pub async fn get_chunk_by_id(
         ("Cookie" = ["readonly"])
     )
 )]
+#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn get_chunk_by_tracking_id(
     tracking_id: web::Path<String>,

@@ -3,6 +3,9 @@
 use crate::get_env;
 
 use super::schema::*;
+use actix::fut::{ready, Ready};
+use actix_web::dev::Payload;
+use actix_web::{Error, FromRequest, HttpRequest};
 use chrono::{DateTime, NaiveDateTime};
 use dateparser::DateTimeUtc;
 use diesel::expression::ValidGrouping;
@@ -1511,5 +1514,42 @@ impl From<uuid::Uuid> for UnifiedId {
 impl From<String> for UnifiedId {
     fn from(tracking_id: String) -> Self {
         UnifiedId::TrackingId(tracking_id)
+    }
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct IdParams {
+    pub id: UnifiedId,
+}
+
+impl FromRequest for IdParams {
+    type Error = Error;
+    type Future = Ready<Result<IdParams, Error>>;
+
+    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
+        let tracking_or_chunk = req
+            .match_info()
+            .get("tracking_or_chunk")
+            .unwrap()
+            .to_string();
+        let id = req.match_info().get("id").unwrap().to_string();
+        let req_params = if tracking_or_chunk.starts_with("tracking") {
+            IdParams {
+                id: UnifiedId::TrackingId(id),
+            }
+        } else if tracking_or_chunk.starts_with("chunk") {
+            let id = id.parse::<uuid::Uuid>();
+            match id {
+                Ok(id) => IdParams {
+                    id: UnifiedId::TrieveUuid(id),
+                },
+                Err(e) => return ready(Err(actix_web::error::ErrorBadRequest(e.to_string()))),
+            }
+        } else {
+            return ready(Err(actix_web::error::ErrorBadRequest(
+                "Invalid request".to_string(),
+            )));
+        };
+        ready(Ok(req_params))
     }
 }

@@ -120,7 +120,20 @@ impl Modify for SecurityAddon {
 
 #[derive(OpenApi)]
 #[openapi(
-    info(description = "Trieve REST API OpenAPI Documentation", version = "0.3.3"),
+    info(
+        title = "Trieve API",
+        description = "Trieve OpenAPI Specification. This document describes all of the operations available through the Trieve API.", 
+        contact(
+            name = "Trieve Team",
+            url = "https://trieve.ai",
+            email = "developers@trieve.ai",
+        ),
+        license(
+            name = "BSL",
+            url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
+        ),
+        version = "0.3.4",
+    ),
     modifiers(&SecurityAddon),
     paths(
         handlers::invitation_handler::post_invitation,
@@ -507,7 +520,8 @@ pub async fn main() -> std::io::Result<()> {
                         web::scope("/chunk")
                             .service(
                                 web::resource("")
-                                    .route(web::post().to(handlers::chunk_handler::create_chunk)),
+                                    .route(web::post().to(handlers::chunk_handler::create_chunk))
+                                    .route(web::put().to(handlers::chunk_handler::update_chunk)),
                             )
                             .service(
                                 web::resource("/bulk")
@@ -518,10 +532,6 @@ pub async fn main() -> std::io::Result<()> {
                             .service(web::resource("/recommend").route(
                                 web::post().to(handlers::chunk_handler::get_recommended_chunks),
                             ))
-                            .service(
-                                web::resource("/update")
-                                    .route(web::put().to(handlers::chunk_handler::update_chunk)),
-                            )
                             .service(
                                 web::resource("/search")
                                     .route(web::post().to(handlers::chunk_handler::search_chunk)),
@@ -538,6 +548,15 @@ pub async fn main() -> std::io::Result<()> {
                                 web::put().to(handlers::chunk_handler::update_chunk_by_tracking_id),
                             ))
                             .service(
+                                web::resource("/{tracking_or_chunk}/{id}")
+                                    .route(web::get().to(
+                                        handlers::chunk_handler::get_chunk_by_id
+                                    ))
+                                    .route(web::delete().to(
+                                        handlers::chunk_handler::delete_chunk
+                                    )),
+                            )
+                            .service(
                                 web::resource("/tracking_id/{tracking_id}")
                                     .route(
                                         web::get()
@@ -553,7 +572,7 @@ pub async fn main() -> std::io::Result<()> {
                                 web::resource("/{chunk_id}")
                                     .route(web::get().to(handlers::chunk_handler::get_chunk_by_id))
                                     .route(web::delete().to(handlers::chunk_handler::delete_chunk)),
-                            ),
+                            )
                     )
                     .service(
                         web::scope("/user")
@@ -586,7 +605,18 @@ pub async fn main() -> std::io::Result<()> {
                                         web::put().to(handlers::group_handler::update_chunk_group),
                                     ),
                             )
-                            .route("/{group_id}", web::delete().to(handlers::group_handler::delete_chunk_group))
+                            .service(
+                                web::scope("/{tracking_or_chunk}/{group_id}")
+                                    .service(
+                                        web::resource("")
+                                            .route(web::get().to(handlers::group_handler::get_chunk_group))
+                                            .route(web::delete().to(handlers::group_handler::delete_chunk_group)),
+                                    )
+                                    .service(
+                                        web::resource("/{page}")
+                                            .route(web::post().to(handlers::group_handler::get_chunks_in_group)),
+                                    )
+                                )
                             .service(web::resource("/chunks").route(
                                 web::post().to(handlers::group_handler::get_groups_chunk_is_in),
                             ))
@@ -628,9 +658,14 @@ pub async fn main() -> std::io::Result<()> {
                                                 handlers::group_handler::add_chunk_to_group_by_tracking_id
                                             )
                                         )
-                                        .route(web::delete().to(
-                                            handlers::group_handler::delete_group_by_tracking_id,
-                                        )),
+                                        .route(
+                                            web::delete().to(
+                                                handlers::group_handler::delete_group_by_tracking_id,
+                                            )
+                                        )
+                                        .route(
+                                            web::put().to(handlers::group_handler::update_group_by_tracking_id),
+                                        )
                                     ).service(
                                         web::resource("/{page}").route(
                                             web::get().to(
@@ -638,14 +673,6 @@ pub async fn main() -> std::io::Result<()> {
                                             ),
                                         ),
                                     ),
-                            )
-                            .service(web::resource("/tracking_id").route(
-                                web::put().to(handlers::group_handler::update_group_by_tracking_id),
-                            ))
-                            .service(
-                                web::resource("/{group_id}/{page}").route(
-                                    web::get().to(handlers::group_handler::get_chunks_in_group),
-                                ),
                             )
                     )
                     .service(
