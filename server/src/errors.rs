@@ -3,7 +3,7 @@ use derive_more::Display;
 use diesel::result::{DatabaseErrorKind, Error as DBError};
 use serde::{Deserialize, Serialize};
 use std::convert::From;
-use utoipa::ToSchema;
+use utoipa::{openapi::schema, ToSchema};
 use uuid::Error as ParseError;
 
 #[derive(Serialize, Deserialize, Debug, Display, derive_more::Error)]
@@ -13,6 +13,7 @@ pub struct DefaultError {
 }
 
 #[derive(Serialize, Deserialize, Debug, Display, ToSchema)]
+#[schema(example = json!({"message": "Bad Request"}))]
 pub struct ErrorResponseBody {
     pub message: String,
 }
