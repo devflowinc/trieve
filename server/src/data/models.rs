@@ -1520,6 +1520,7 @@ impl From<String> for UnifiedId {
 #[derive(Debug, Serialize, Clone)]
 pub struct IdParams {
     pub id: UnifiedId,
+    pub page: Option<u64>,
 }
 
 impl FromRequest for IdParams {
@@ -1527,16 +1528,49 @@ impl FromRequest for IdParams {
     type Future = Ready<Result<IdParams, Error>>;
 
     fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
-        let tracking_or_chunk = req
-            .match_info()
-            .get("tracking_or_chunk")
-            .unwrap_or("chunk")
-            .to_string();
+        let tracking_or_chunk = match req.match_info().get("tracking_or_chunk") {
+            Some(tracking_or_chunk) => tracking_or_chunk.to_string(),
+            None => match req.match_info().get("id") {
+                Some(id) => {
+                    if id.parse::<uuid::Uuid>().is_ok() {
+                        if let Some(page) = req.match_info().get("page") {
+                            return ready(Ok(IdParams {
+                                id: UnifiedId::TrieveUuid(id.parse().unwrap()),
+                                page: Some(page.parse().unwrap()),
+                            }));
+                        } else {
+                            return ready(Ok(IdParams {
+                                id: UnifiedId::TrieveUuid(id.parse().unwrap()),
+                                page: None,
+                            }));
+                        }
+                    } else {
+                        return ready(Err(actix_web::error::ErrorBadRequest(
+                            "Invalid request: Specify whether this id is a chunk_id or tracking_id by either /chunk/{id} or /tracking_id/{id}".to_string(),
+                        )));
+                    }
+                }
+                None => {
+                    return ready(Err(actix_web::error::ErrorBadRequest(
+                            "Invalid request: Specify whether this id is a chunk_id or tracking_id by either /chunk/{id} or /tracking_id/{id}".to_string(),
+                        )));
+                }
+            },
+        };
 
         let id = req.match_info().get("id").unwrap_or("").to_string();
+
         let req_params = if tracking_or_chunk.starts_with("tracking_id") {
-            IdParams {
-                id: UnifiedId::TrackingId(id),
+            if let Some(page) = req.match_info().get("page") {
+                IdParams {
+                    id: UnifiedId::TrackingId(id),
+                    page: Some(page.parse().unwrap()),
+                }
+            } else {
+                IdParams {
+                    id: UnifiedId::TrackingId(id),
+                    page: None,
+                }
             }
         } else if tracking_or_chunk.starts_with("chunk") {
             if id.is_empty() {
@@ -1546,14 +1580,24 @@ impl FromRequest for IdParams {
             };
             let id = id.parse::<uuid::Uuid>();
             match id {
-                Ok(id) => IdParams {
-                    id: UnifiedId::TrieveUuid(id),
-                },
+                Ok(id) => {
+                    if let Some(page) = req.match_info().get("page") {
+                        IdParams {
+                            id: UnifiedId::TrieveUuid(id),
+                            page: Some(page.parse().unwrap()),
+                        }
+                    } else {
+                        IdParams {
+                            id: UnifiedId::TrieveUuid(id),
+                            page: None,
+                        }
+                    }
+                }
                 Err(e) => return ready(Err(actix_web::error::ErrorBadRequest(e.to_string()))),
             }
         } else {
             return ready(Err(actix_web::error::ErrorBadRequest(
-                "Invalid request".to_string(),
+                "Invalid request: Specify whether this id is a chunk_id or tracking_id by either /chunk/{id} or /tracking_id/{id}".to_string(),
             )));
         };
         ready(Ok(req_params))
