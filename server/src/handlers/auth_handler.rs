@@ -316,7 +316,7 @@ pub struct LoginState {
     path = "/auth",
     context_path = "/api",
     tag = "auth",
-    request_body(content = AuthQuery, description = "Query parameters for login to be included as kv pairs after ? on the request URL.", content_type = "application/x-www-form-urlencoded"),
+    params(("content" = AuthQuery, Query, description = "Query parameters for login to be included as kv pairs after ? on the request URL." )),
     responses(
         (status = 303, description = "Response that redirects to OAuth provider through a Location header to be handled by browser."),
         (status = 400, description = "OAuth error likely with OIDC provider.", body = ErrorResponseBody),

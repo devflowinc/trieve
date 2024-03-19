@@ -6,6 +6,7 @@ use openssl::ssl::SslVerifyMode;
 use openssl::ssl::{SslConnector, SslMethod};
 use postgres_openssl::MakeTlsConnector;
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
+use utoipa_swagger_ui::SwaggerUi;
 
 use crate::{
     errors::ServiceError,
@@ -435,6 +436,10 @@ pub async fn main() -> std::io::Result<()> {
             // enable logger
             .wrap(middleware::Logger::default())
             .service(Redoc::with_url("/redoc", ApiDoc::openapi()))
+            .service(
+                SwaggerUi::new("/swagger-ui/{_:.*}")
+                    .url("/api-docs/openapi.json", ApiDoc::openapi()),
+            )
             // everything under '/api/' route
             .service(
                 web::scope("/api")
