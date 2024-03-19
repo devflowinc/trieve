@@ -287,7 +287,7 @@ const OIDC_SESSION_KEY: &str = "oidc_state";
 
 #[derive(Deserialize, Debug, ToSchema)]
 #[schema(
-    example = json!({"organization_id": "00000000-0000-0000-0000-000000000000", "redirect_uri": "https://example.com", "inv_code": "00000000-0000-0000-0000-000000000000"}),
+    example = json!({"organization_id": "00000000-0000-0000-0000-000000000000", "redirect_uri": "https://api.trieve.ai", "inv_code": "00000000-0000-0000-0000-000000000000"}),
 )]
 pub struct AuthQuery {
     /// ID of organization to authenticate into

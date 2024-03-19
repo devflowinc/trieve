@@ -31,6 +31,21 @@ use tokio_stream::StreamExt;
 use utoipa::ToSchema;
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[schema(example = json!({
+    "chunk_html": "<p>Some HTML content</p>",
+    "link": "https://example.com",
+    "tag_set": ["tag1", "tag2"],
+    "file_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+    "metadata": {"key1": "value1", "key2": "value2"},
+    "chunk_vector": [0.1, 0.2, 0.3],
+    "tracking_id": "tracking_id",
+    "upsert_by_tracking_id": true,
+    "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
+    "group_tracking_ids": ["group_tracking_id"],
+    "time_stamp": "2021-01-01T00:00:00",
+    "weight": 0.5,
+    "split_avg": false
+}))]
 pub struct CreateChunkData {
     /// HTML content of the chunk. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content.
     pub chunk_html: Option<String>,
@@ -61,12 +76,26 @@ pub struct CreateChunkData {
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[schema(example = json!({
+    "chunk_metadata": {
+        "content": "Some content",
+        "link": "https://example.com",
+        "tag_set": ["tag1", "tag2"],
+        "file_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+        "metadata": {"key1": "value1", "key2": "value2"},
+        "chunk_vector": [0.1, 0.2, 0.3],
+        "tracking_id": "tracking_id",
+        "time_stamp": "2021-01-01T00:00:00",
+        "weight": 0.5
+    },
+    "pos_in_queue": 1
+}))]
 pub struct ReturnQueuedChunk {
     pub chunk_metadata: ChunkMetadata,
     pub pos_in_queue: i32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UploadIngestionMessage {
     pub chunk_metadata: ChunkMetadata,
     pub chunk: CreateChunkData,
@@ -368,6 +397,15 @@ pub async fn delete_chunk_by_tracking_id(
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[schema(example = json!({
+    "chunk_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+    "link": "https://example.com",
+    "chunk_html": "<p>Some HTML content</p>",
+    "metadata": {"key1": "value1", "key2": "value2"},
+    "time_stamp": "2021-01-01T00:00:00",
+    "weight": 0.5,
+    "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
+}))]
 pub struct UpdateChunkData {
     /// Id of the chunk you want to update. You can provide either the chunk_id or the tracking_id. If both are provided, the chunk_id will be used.
     chunk_id: Option<uuid::Uuid>,
@@ -389,7 +427,7 @@ pub struct UpdateChunkData {
     group_tracking_ids: Option<Vec<String>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateIngestionMessage {
     pub chunk_metadata: ChunkMetadata,
     pub server_dataset_config: ServerDatasetConfiguration,
@@ -670,6 +708,12 @@ pub async fn update_chunk_by_tracking_id(
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[schema(example = json!({
+    "gte": 0.0,
+    "lte": 1.0,
+    "gt": 0.0,
+    "lt": 1.0
+}))]
 pub struct Range {
     // gte is the lower bound of the range. This is inclusive.
     pub gte: Option<f64>,
@@ -706,6 +750,16 @@ impl MatchCondition {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[schema(example = json!({
+    "field": "metadata.key1",
+    "match": ["value1", "value2"],
+    "range": {
+        "gte": 0.0,
+        "lte": 1.0,
+        "gt": 0.0,
+        "lt": 1.0
+    }
+}))]
 pub struct FieldCondition {
     /// Field is the name of the field to filter on. The field value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`.
     pub field: String,
@@ -716,6 +770,44 @@ pub struct FieldCondition {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[schema(example = json!({
+    "should": [
+        {
+            "field": "metadata.key1",
+            "match": ["value1", "value2"],
+            "range": {
+                "gte": 0.0,
+                "lte": 1.0,
+                "gt": 0.0,
+                "lt": 1.0
+            }
+        }
+    ],
+    "must": [
+        {
+            "field": "metadata.key2",
+            "match": ["value3", "value4"],
+            "range": {
+                "gte": 0.0,
+                "lte": 1.0,
+                "gt": 0.0,
+                "lt": 1.0
+            }
+        }
+    ],
+    "must_not": [
+        {
+            "field": "metadata.key3",
+            "match": ["value5", "value6"],
+            "range": {
+                "gte": 0.0,
+                "lte": 1.0,
+                "gt": 0.0,
+                "lt": 1.0
+            }
+        }
+    ]
+}))]
 pub struct ChunkFilter {
     /// Only one of these field conditions has to match for the chunk to be included in the result set.
     pub should: Option<Vec<FieldCondition>>,
@@ -726,6 +818,56 @@ pub struct ChunkFilter {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[schema(example = json!({
+    "search_type": "semantic",
+    "query": "Some search query",
+    "page": 1,
+    "page_size": 10,
+    "filters": {
+        "should": [
+            {
+                "field": "metadata.key1",
+                "match": ["value1", "value2"],
+                "range": {
+                    "gte": 0.0,
+                    "lte": 1.0,
+                    "gt": 0.0,
+                    "lt": 1.0
+                }
+            }
+        ],
+        "must": [
+            {
+                "field": "metadata.key2",
+                "match": ["value3", "value4"],
+                "range": {
+                    "gte": 0.0,
+                    "lte": 1.0,
+                    "gt": 0.0,
+                    "lt": 1.0
+                }
+            }
+        ],
+        "must_not": [
+            {
+                "field": "metadata.key3",
+                "match": ["value5", "value6"],
+                "range": {
+                    "gte": 0.0,
+                    "lte": 1.0,
+                    "gt": 0.0,
+                    "lt": 1.0
+                }
+            }
+        ]
+    },
+    "date_bias": true,
+    "use_weights": true,
+    "get_collisions": true,
+    "highlight_results": true,
+    "highlight_delimiters": ["?", ",", ".", "!"],
+    "score_threshold": 0.5
+}))]
 pub struct SearchChunkData {
     /// Can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: String,
@@ -752,6 +894,20 @@ pub struct SearchChunkData {
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[schema(example = json!({
+    "metadata": [
+        {
+            "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+            "content": "Some content",
+            "link": "https://example.com",
+            "chunk_html": "<p>Some HTML content</p>",
+            "metadata": {"key1": "value1", "key2": "value2"},
+            "time_stamp": "2021-01-01T00:00:00",
+            "weight": 0.5,
+        }
+    ],
+    "score": 0.5
+}))]
 pub struct ScoreChunkDTO {
     pub metadata: Vec<ChunkMetadataWithFileData>,
     pub score: f64,
@@ -1130,6 +1286,18 @@ pub async fn get_recommended_chunks(
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({
+    "model": "text-embedding-small",
+    "prev_messages": [
+        {
+            "role": "user",
+            "content": "I am going to provide several pieces of information (docs) for you to use in response to a request or question.",
+        }
+    ],
+    "chunk_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
+    "prompt": "Respond to the instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:",
+    "stream_response": true
+}))]
 pub struct GenerateChunksRequest {
     /// The model to use for the chat. This can be any model from the openrouter model list. If no model is provided, gpt-3.5-turbo will be used.
     pub model: Option<String>,

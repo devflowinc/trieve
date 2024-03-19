@@ -18,6 +18,16 @@ use utoipa::ToSchema;
 pub type Pool = diesel_async::pooled_connection::deadpool::Pool<diesel_async::AsyncPgConnection>;
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "email": "developers@trieve.ai",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "username": "trieve",
+    "website": "https://trieve.ai",
+    "visible_email": true,
+    "name": "Trieve",
+}))]
 #[diesel(table_name = users)]
 pub struct User {
     pub id: uuid::Uuid,
@@ -63,6 +73,15 @@ impl User {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping, Clone, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "user_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "name": "Trieve",
+    "deleted": false,
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+}))]
 #[diesel(table_name = topics)]
 pub struct Topic {
     pub id: uuid::Uuid,
@@ -93,6 +112,19 @@ impl Topic {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Clone, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "topic_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "sort_order": 1,
+    "content": "Hello, world!",
+    "role": "user",
+    "deleted": false,
+    "prompt_tokens": 300,
+    "completion_tokens": 300,
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+}))]
 #[diesel(table_name = messages)]
 pub struct Message {
     pub id: uuid::Uuid,
@@ -127,6 +159,10 @@ impl From<Message> for ChatMessage {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[schema(example=json!({
+    "role": "user",
+    "content": "Hello, world!"
+}))]
 pub struct ChatMessageProxy {
     pub role: String,
     pub content: String,
@@ -196,6 +232,21 @@ pub struct ChunkMetadataWithCount {
 #[derive(
     Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema, AsChangeset,
 )]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "content": "Hello, world!",
+    "link": "https://trieve.ai",
+    "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "tag_set": "tag1,tag2",
+    "chunk_html": "<p>Hello, world!</p>",
+    "metadata": {"key": "value"},
+    "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "time_stamp": "2021-01-01T00:00:00",
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "weight": 0.5,
+}))]
 #[diesel(table_name = chunk_metadata)]
 pub struct ChunkMetadata {
     pub id: uuid::Uuid,
@@ -301,6 +352,22 @@ impl ChunkCollision {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[schema(example=json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "content": "Hello, world!",
+    "link": "https://trieve.ai",
+    "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "tag_set": "tag1,tag2",
+    "chunk_html": "<p>Hello, world!</p>",
+    "metadata": {"key": "value"},
+    "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "time_stamp": "2021-01-01T00:00:00",
+    "weight": 0.5,
+    "file_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "file_name": "file.txt",
+}))]
 pub struct ChunkMetadataWithFileData {
     pub id: uuid::Uuid,
     pub content: String,
@@ -319,6 +386,33 @@ pub struct ChunkMetadataWithFileData {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[schema(example=json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "name": "Trieve",
+    "email": "developers@trieve.ai",
+    "username": "trieve",
+    "website": "https://trieve.ai",
+    "visible_email": true,
+    "user_orgs": [
+        {
+            "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+            "user_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+            "org_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+            "role": 0,
+            "created_at": "2021-01-01T00:00:00",
+            "updated_at": "2021-01-01T00:00:00",
+        }
+    ],
+    "orgs": [
+        {
+            "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+            "name": "Trieve",
+            "created_at": "2021-01-01T00:00:00",
+            "updated_at": "2021-01-01T00:00:00",
+            "registerable": true,
+        }
+    ],
+}))]
 pub struct SlimUser {
     pub id: uuid::Uuid,
     pub name: Option<String>,
@@ -362,6 +456,14 @@ pub struct UserDTO {
 #[derive(
     Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema,
 )]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "name": "Trieve",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "tracking_id": "3",
+}))]
 #[diesel(table_name = chunk_group)]
 pub struct ChunkGroup {
     pub id: uuid::Uuid,
@@ -393,6 +495,12 @@ impl ChunkGroup {
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "name": "Trieve",
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "of_current_dataset": true,
+}))]
 pub struct SlimGroup {
     pub id: uuid::Uuid,
     pub name: String,
@@ -401,6 +509,16 @@ pub struct SlimGroup {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Queryable, ToSchema)]
+#[schema(example=json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "name": "Trieve",
+    "description": "A group of chunks",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "file_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "tracking_id": "3",
+}))]
 pub struct ChunkGroupAndFile {
     pub id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
@@ -443,6 +561,13 @@ impl From<ChunkGroupAndFileWithCount> for ChunkGroupAndFile {
 #[derive(
     Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema,
 )]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "group_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "chunk_metadata_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+}))]
 #[diesel(table_name = chunk_group_bookmarks)]
 pub struct ChunkGroupBookmark {
     pub id: uuid::Uuid,
@@ -467,6 +592,13 @@ impl ChunkGroupBookmark {
 #[derive(
     Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema,
 )]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "file_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "group_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+}))]
 #[diesel(table_name = groups_from_files)]
 pub struct FileGroup {
     pub id: uuid::Uuid,
@@ -584,6 +716,18 @@ impl From<ChunkMetadataWithCount> for FullTextSearchResult {
 #[derive(
     Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema,
 )]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "file_name": "file.txt",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "size": 1000,
+    "tag_set": "tag1,tag2",
+    "metadata": {"key": "value"},
+    "link": "https://trieve.ai",
+    "time_stamp": "2021-01-01T00:00:00",
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+}))]
 #[diesel(table_name = files)]
 pub struct File {
     pub id: uuid::Uuid,
@@ -631,13 +775,23 @@ impl File {
     }
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize)]
 pub struct FileAndGroupId {
     pub file: File,
     pub group_id: Option<uuid::Uuid>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, ToSchema)]
+#[schema(example=json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "file_name": "file.txt",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "size": 1000,
+    "s3_url": "https://trieve.ai",
+    "metadata": {"key": "value"},
+    "link": "https://trieve.ai",
+}))]
 pub struct FileDTO {
     pub id: uuid::Uuid,
     pub file_name: String,
@@ -694,6 +848,14 @@ pub struct ChunkFileWithName {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable, Selectable, ToSchema)]
+#[schema(example=json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "event_type": "file_uploaded",
+    "event_data": {"group_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3", "file_name": "file.txt"},
+}))]
 #[diesel(table_name = events)]
 pub struct Event {
     pub id: uuid::Uuid,
@@ -704,7 +866,7 @@ pub struct Event {
     pub event_data: serde_json::Value,
 }
 
-#[derive(Debug, Deserialize, Clone, ToSchema)]
+#[derive(Debug, Deserialize, Clone)]
 pub enum EventType {
     FileUploaded {
         group_id: uuid::Uuid,
@@ -781,6 +943,15 @@ pub struct DatasetEventCount {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[schema(example=json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "name": "Trieve",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "server_configuration": {"key": "value"},
+    "client_configuration": {"key": "value"},
+}))]
 #[diesel(table_name = datasets)]
 pub struct Dataset {
     pub id: uuid::Uuid,
@@ -812,6 +983,14 @@ impl Dataset {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Clone, ToSchema)]
+#[schema(example=json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "name": "Trieve",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "client_configuration": {"key": "value"},
+}))]
 pub struct DatasetDTO {
     pub id: uuid::Uuid,
     pub name: String,
@@ -835,6 +1014,11 @@ impl From<Dataset> for DatasetDTO {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "chunk_count": 100,
+}))]
 #[diesel(table_name = dataset_usage_counts)]
 pub struct DatasetUsageCount {
     pub id: uuid::Uuid,
@@ -843,6 +1027,21 @@ pub struct DatasetUsageCount {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[schema(example = json!({
+    "dataset": {
+        "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "name": "Trieve",
+        "created_at": "2021-01-01T00:00:00",
+        "updated_at": "2021-01-01T00:00:00",
+        "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "client_configuration": {"key": "value"},
+    },
+    "dataset_usage": {
+        "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "chunk_count": 100,
+    }
+}))]
 pub struct DatasetAndUsage {
     pub dataset: DatasetDTO,
     pub dataset_usage: DatasetUsageCount,
@@ -858,6 +1057,24 @@ impl DatasetAndUsage {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[schema(example=json!({
+    "DOCUMENT_UPLOAD_FEATURE": true,
+    "DOCUMENT_DOWNLOAD_FEATURE": true,
+    "LLM_BASE_URL": "https://api.openai.com/v1",
+    "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
+    "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
+    "QDRANT_URL": "http://localhost:6333",
+    "QDRANT_API_KEY": "api_key",
+    "QDRANT_COLLECTION_NAME": "collection",
+    "RAG_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
+    "N_RETRIEVALS_TO_INCLUDE": 5,
+    "DUPLICATE_DISTANCE_THRESHOLD": 1.1,
+    "COLLISIONS_ENABLED": false,
+    "EMBEDDING_SIZE": 1536,
+    "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
+    "FULLTEXT_ENABLED": true,
+    "EMBEDDING_QUERY_PREFIX": "Search for",
+}))]
 #[allow(non_snake_case)]
 pub struct ServerDatasetConfiguration {
     pub DOCUMENT_UPLOAD_FEATURE: bool,
@@ -1029,6 +1246,19 @@ impl ServerDatasetConfiguration {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[schema(example=json!({
+    "CREATE_CHUNK_FEATURE": true,
+    "SEARCH_QUERIES": "search queries",
+    "FRONTMATTER_VALS": "frontmatter vals",
+    "LINES_BEFORE_SHOW_MORE": 10,
+    "DATE_RANGE_VALUE": "date range value",
+    "FILTER_ITEMS": [],
+    "SUGGESTED_QUERIES": "suggested queries",
+    "IMAGE_RANGE_START_KEY": "image range start key",
+    "IMAGE_RANGE_END_KEY": "image range end key",
+    "DOCUMENT_UPLOAD_FEATURE": true,
+    "FILE_NAME_KEY": "file_name_key",
+}))]
 #[allow(non_snake_case)]
 pub struct ClientDatasetConfiguration {
     pub CREATE_CHUNK_FEATURE: Option<bool>,
@@ -1126,6 +1356,13 @@ impl DatasetAndOrgWithSubAndPlan {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "name": "Trieve",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "registerable": true,
+}))]
 #[diesel(table_name = organizations)]
 pub struct Organization {
     pub id: uuid::Uuid,
@@ -1192,6 +1429,19 @@ impl Invitation {
 #[derive(
     Debug, Serialize, Deserialize, Selectable, Clone, Queryable, Insertable, ValidGrouping, ToSchema,
 )]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "stripe_id": "plan_123",
+    "chunk_count": 1000,
+    "file_storage": 512,
+    "user_count": 5,
+    "dataset_count": 1,
+    "message_count": 1000,
+    "amount": 1000,
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "name": "Free",
+}))]
 #[diesel(table_name = stripe_plans)]
 pub struct StripePlan {
     pub id: uuid::Uuid,
@@ -1272,6 +1522,15 @@ impl Default for StripePlan {
 #[derive(
     Debug, Serialize, Deserialize, Selectable, Clone, Queryable, Insertable, ValidGrouping, ToSchema,
 )]
+#[schema(example=json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "stripe_id": "sub_123",
+    "plan_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "current_period_end": "2021-01-01T00:00:00",
+}))]
 #[diesel(table_name = stripe_subscriptions)]
 pub struct StripeSubscription {
     pub id: uuid::Uuid,
@@ -1303,6 +1562,35 @@ impl StripeSubscription {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "name": "Trieve",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "registerable": true,
+    "plan": {
+        "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "stripe_id": "plan_123",
+        "chunk_count": 1000,
+        "file_storage": 512,
+        "user_count": 5,
+        "dataset_count": 1,
+        "message_count": 1000,
+        "amount": 1000,
+        "created_at": "2021-01-01T00:00:00",
+        "updated_at": "2021-01-01T00:00:00",
+        "name": "Free",
+    },
+    "subscription": {
+        "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "stripe_id": "sub_123",
+        "plan_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "created_at": "2021-01-01T00:00:00",
+        "updated_at": "2021-01-01T00:00:00",
+        "current_period_end": "2021-01-01T00:00:00",
+    }
+}))]
 pub struct OrganizationWithSubAndPlan {
     pub id: uuid::Uuid,
     pub name: String,
@@ -1371,6 +1659,14 @@ impl From<UserRole> for i32 {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "user_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "role": 2,
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+}))]
 #[diesel(table_name = user_organizations)]
 pub struct UserOrganization {
     pub id: uuid::Uuid,
@@ -1395,6 +1691,14 @@ impl UserOrganization {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "org_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "dataset_count": 1,
+    "user_count": 5,
+    "file_storage": 512,
+    "message_count": 1000,
+}))]
 #[diesel(table_name = organization_usage_counts)]
 pub struct OrganizationUsageCount {
     pub id: uuid::Uuid,
@@ -1430,6 +1734,15 @@ impl From<ApiKeyRole> for i32 {
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "user_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3",
+    "api_key_hash": "hash",
+    "name": "Trieve",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "role": 1,
+}))]
 #[diesel(table_name = user_api_key)]
 pub struct UserApiKey {
     pub id: uuid::Uuid,
@@ -1461,6 +1774,14 @@ impl UserApiKey {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "user_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "name": "Trieve",
+    "role": 1,
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+}))]
 pub struct ApiKeyDTO {
     pub id: uuid::Uuid,
     pub user_id: uuid::Uuid,

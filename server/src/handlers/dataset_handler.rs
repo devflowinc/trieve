@@ -40,6 +40,12 @@ impl FromRequest for DatasetAndOrgWithSubAndPlan {
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[schema(example = json!({
+    "dataset_name": "My Dataset",
+    "organization_id": "00000000-0000-0000-0000-000000000000",
+    "server_configuration": {},
+    "client_configuration": {}
+}))]
 pub struct CreateDatasetRequest {
     /// Name of the dataset. Must be unique within the organization.
     pub dataset_name: String,
@@ -111,6 +117,12 @@ pub async fn create_dataset(
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[schema(example = json!({
+    "dataset_id": "00000000-0000-0000-0000-000000000000",
+    "dataset_name": "My Dataset",
+    "server_configuration": {},
+    "client_configuration": {}
+}))]
 pub struct UpdateDatasetRequest {
     /// The id of the dataset you want to update.
     pub dataset_id: uuid::Uuid,
