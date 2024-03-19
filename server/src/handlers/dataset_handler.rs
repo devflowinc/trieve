@@ -51,7 +51,7 @@ pub struct CreateDatasetRequest {
     pub client_configuration: serde_json::Value,
 }
 
-/// create_dataset
+/// Create dataset
 ///
 /// Create a new dataset. The auth'ed user must be an owner of the organization to create a dataset.
 #[utoipa::path(
@@ -122,7 +122,7 @@ pub struct UpdateDatasetRequest {
     pub client_configuration: Option<serde_json::Value>,
 }
 
-/// update_dataset
+/// Update Dataset
 ///
 /// Update a dataset. The auth'ed user must be an owner of the organization to update a dataset.
 #[utoipa::path(
@@ -179,7 +179,7 @@ pub struct DeleteDatasetRequest {
     pub dataset_id: uuid::Uuid,
 }
 
-/// delete_dataset
+/// Delete Dataset
 ///
 /// Delete a dataset. The auth'ed user must be an owner of the organization to delete a dataset.
 #[utoipa::path(
@@ -214,7 +214,7 @@ pub async fn delete_dataset(
     Ok(HttpResponse::NoContent().finish())
 }
 
-/// get_dataset
+/// Get Dataset
 ///
 /// Get a dataset by id. The auth'ed user must be an admin or owner of the organization to get a dataset.
 #[utoipa::path(
@@ -252,7 +252,7 @@ pub async fn get_dataset(
     Ok(HttpResponse::Ok().json(d))
 }
 
-/// get_organization_datasets
+/// Get Datasets from Organization
 ///
 /// Get all datasets for an organization. The auth'ed user must be an admin or owner of the organization to get its datasets.
 #[utoipa::path(
@@ -293,7 +293,7 @@ pub async fn get_datasets_from_organization(
     Ok(HttpResponse::Ok().json(dataset_and_usages))
 }
 
-/// get_client_dataset_config
+/// Get Client Configuration
 ///
 /// Get the client configuration for a dataset. Will use the TR-D
 #[utoipa::path(

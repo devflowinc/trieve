@@ -59,7 +59,7 @@ pub struct CreateChunkGroupData {
     pub tracking_id: Option<String>,
 }
 
-/// create_chunk_group
+/// Create Chunk Group
 ///
 /// Create a new chunk_group.
 #[utoipa::path(
@@ -116,7 +116,7 @@ pub struct DatasetGroupQuery {
     pub page: u64,
 }
 
-/// get_dataset_groups
+/// Get Groups for Dataset
 ///
 /// Fetch the groups which belong to a dataset specified by its id.
 #[utoipa::path(
@@ -179,6 +179,10 @@ pub struct GetGroupByTrackingIDData {
     pub tracking_id: String,
 }
 
+/// Get Group by Tracking ID
+/// 
+/// Fetch the group with the given tracking id.
+
 #[utoipa::path(
     get,
     path = "/chunk_group/tracking_id/{tracking_id}",
@@ -222,6 +226,10 @@ pub struct GetGroupData {
     pub group_id: Option<uuid::Uuid>,
     pub tracking_id: Option<String>,
 }
+
+/// Get Group
+/// 
+/// Fetch the group with the given id.
 
 #[utoipa::path(
     get,
@@ -276,6 +284,9 @@ pub struct UpdateGroupByTrackingIDData {
     pub description: Option<String>,
 }
 
+/// Update Group by Tracking ID
+/// 
+/// Update a chunk_group with the given tracking id.
 #[utoipa::path(
     put,
     path = "/chunk_group/tracking_id/{tracking_id}",
@@ -328,6 +339,9 @@ pub struct DeleteGroupByTrackingIDData {
     pub delete_chunks: Option<bool>,
 }
 
+/// Delete Group by Tracking ID
+/// 
+/// Delete a chunk_group with the given tracking id.
 #[utoipa::path(
     delete,
     path = "/chunk_group/tracking_id/{tracking_id}",
@@ -386,7 +400,7 @@ pub struct DeleteGroupData {
     pub delete_chunks: Option<bool>,
 }
 
-/// delete_chunk_group
+/// Delete Group
 ///
 /// This will delete a chunk_group. This will not delete the chunks that are in the group. We will soon support deleting a chunk_group along with its member chunks.
 #[utoipa::path(
@@ -474,7 +488,7 @@ pub struct UpdateChunkGroupData {
     pub description: Option<String>,
 }
 
-/// update_chunk_group
+/// Update Group
 ///
 /// Update a chunk_group.
 #[utoipa::path(
@@ -543,7 +557,7 @@ pub struct AddChunkToGroupData {
     pub chunk_id: uuid::Uuid,
 }
 
-/// add_chunk_to_group
+/// Add Chunk to Group
 ///
 /// Route to add a chunk to a group
 #[utoipa::path(
@@ -605,7 +619,7 @@ pub struct AddChunkToGroupByTrackingIdData {
     pub chunk_id: uuid::Uuid,
 }
 
-/// add_chunk_to_group_by_tracking_id
+/// Add Chunk to Group by Tracking ID
 ///
 /// Route to add a chunk to a group by tracking id. Think of a bookmark as a chunk which is a member of a group.
 #[utoipa::path(
@@ -673,7 +687,7 @@ pub struct BookmarkData {
     pub total_pages: i64,
 }
 
-/// get_chunks_in_group
+/// Get Chunks in Group
 ///
 /// Route to get all chunks for a group. The response is paginated, with each page containing 10 chunks. Support for custom page size is coming soon.
 #[utoipa::path(
@@ -724,7 +738,7 @@ pub struct GetAllBookmarksByTrackingIdData {
     pub page: Option<u64>,
 }
 
-/// get_chunks_in_group_by_tracking_id
+/// Get Chunks in Group by Tracking ID
 ///
 /// Route to get all chunks for a group. The response is paginated, with each page containing 10 chunks. Support for custom page size is coming soon.
 #[utoipa::path(
@@ -781,6 +795,10 @@ pub struct GetGroupsForChunksData {
     pub chunk_ids: Vec<uuid::Uuid>,
 }
 
+/// Get Groups for Chunks
+/// 
+/// Route to get the groups that a chunk is in.
+
 #[utoipa::path(
     post,
     path = "/chunk_group/chunks",
@@ -822,7 +840,7 @@ pub struct DeleteBookmarkPathData {
     pub chunk_id: uuid::Uuid,
 }
 
-/// remove_chunk_from_group
+/// Remove Chunk from Group
 ///
 /// Route to remove a chunk from a group.
 #[utoipa::path(
@@ -876,18 +894,6 @@ pub async fn remove_chunk_from_group(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[tracing::instrument(skip(pool))]
-pub async fn group_unique_search(
-    group_id: uuid::Uuid,
-    dataset_id: uuid::Uuid,
-    pool: web::Data<Pool>,
-) -> Result<ChunkGroup, actix_web::Error> {
-    let group = get_group_by_id_query(group_id, dataset_id, pool)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-
-    Ok(group)
-}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GenerateOffGroupData {
@@ -913,6 +919,10 @@ pub struct ReccomendGroupChunksRequest {
     /// The number of chunks to fetch for each group. This is the number of chunks which will be returned in the response for each group. The default is 10.
     pub group_size: Option<u32>,
 }
+
+/// Get Recommended Groups
+/// 
+/// Route to get recommended groups. This route will return groups which are similar to the groups in the request body.
 
 #[utoipa::path(
     post,
@@ -1104,7 +1114,7 @@ pub struct SearchGroupsResult {
     pub total_pages: i64,
 }
 
-/// search_within_group
+/// Search Within Group
 ///
 /// This route allows you to search only within a group. This is useful for when you only want search results to contain chunks which are members of a specific group. If choosing hybrid search, the results will be re-ranked using BAAI/bge-reranker-large.
 #[utoipa::path(
@@ -1235,7 +1245,7 @@ pub struct SearchOverGroupsData {
     pub group_size: Option<u32>,
 }
 
-/// group_oriented_search
+/// Search Over Groups
 ///
 /// This route allows you to get groups as results instead of chunks. Each group returned will have the matching chunks sorted by similarity within the group. This is useful for when you want to get groups of chunks which are similar to the search query. If choosing hybrid search, the results will be re-ranked using BAAI/bge-reranker-large. Compatible with semantic, fulltext, or hybrid search modes.
 #[utoipa::path(

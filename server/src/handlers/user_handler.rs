@@ -37,7 +37,7 @@ pub struct GetUserWithChunksData {
     pub page: i64,
 }
 
-/// update_user
+/// Update User
 ///
 /// Update a user's information. If the user_id is not provided, the auth'ed user will be updated. If the user_id is provided, the auth'ed user must be an admin (1) or owner (2) of the organization.
 #[utoipa::path(
@@ -150,7 +150,7 @@ pub struct SetUserApiKeyResponse {
     api_key: String,
 }
 
-/// set_user_api_key
+/// Set User Api Key
 ///
 /// Create a new api key for the auth'ed user. Successful response will contain the newly created api key. If a write role is assigned the api key will have permission level of the auth'ed user who calls this endpoint.
 #[utoipa::path(
@@ -185,7 +185,7 @@ pub async fn set_user_api_key(
     }))
 }
 
-/// get_users_api_keys
+/// Get User Api Keys
 ///
 /// Get the api keys which belong to the auth'ed user. The actual api key values are not returned, only the ids, names, and creation dates.
 #[utoipa::path(
@@ -220,7 +220,7 @@ pub struct DeleteUserApiKeyRequest {
     pub api_key_id: uuid::Uuid,
 }
 
-/// delete_user_api_key
+/// Delete User Api Key
 ///
 /// Delete an api key for the auth'ed user.
 #[utoipa::path(

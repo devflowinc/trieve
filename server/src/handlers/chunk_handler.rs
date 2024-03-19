@@ -75,7 +75,7 @@ pub struct UploadIngestionMessage {
     pub upsert_by_tracking_id: bool,
 }
 
-/// create_chunk
+/// Create Chunk
 ///
 /// Create a new chunk. If the chunk has the same tracking_id as an existing chunk, the request will fail. Once a chunk is created, it can be searched for using the search endpoint.
 #[utoipa::path(
@@ -206,7 +206,7 @@ pub async fn create_chunk(
     }))
 }
 
-/// bulk_create_chunk
+/// Bulk Create Chunk
 ///
 /// Create a new chunk from an array of chunks. If the chunk has the same tracking_id as an existing chunk, the request will fail. Once a chunk is created, it can be searched for using the search endpoint.
 #[utoipa::path(
@@ -249,7 +249,7 @@ pub async fn bulk_create_chunk(
     Ok(HttpResponse::NoContent().finish())
 }
 
-/// delete_chunk
+/// Delete Chunk
 ///
 /// Delete a chunk by its id. If deleting a root chunk which has a collision, the most recently created collision will become a new root chunk.
 #[utoipa::path(
@@ -315,7 +315,7 @@ pub async fn delete_chunk(
     Ok(HttpResponse::NoContent().finish())
 }
 
-/// delete_chunk_by_tracking_id
+/// Delete Chunk By Tracking Id
 ///
 /// Delete a chunk by tracking_id. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk. If deleting a root chunk which has a collision, the most recently created collision will become a new root chunk.
 #[utoipa::path(
@@ -397,7 +397,7 @@ pub struct UpdateIngestionMessage {
     pub group_ids: Option<Vec<UnifiedId>>,
 }
 
-/// update_chunk
+/// Update Chunk
 ///
 /// Update a chunk. If you try to change the tracking_id of the chunk to have the same tracking_id as an existing chunk, the request will fail.
 #[utoipa::path(
@@ -547,7 +547,7 @@ pub struct UpdateChunkByTrackingIdData {
     group_tracking_ids: Option<Vec<String>>,
 }
 
-/// update_chunk_by_tracking_id
+/// Update Chunk By Tracking Id
 ///
 /// Update a chunk by tracking_id. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk.
 #[deprecated]
@@ -802,7 +802,7 @@ pub fn parse_query(query: String) -> ParsedQuery {
     }
 }
 
-/// search
+/// Search
 ///
 /// This route provides the primary search functionality for the API. It can be used to search for chunks by semantic similarity, full-text similarity, or a combination of both. Results' `chunk_html` values will be modified with `<b>` tags for sub-sentence highlighting.
 #[utoipa::path(
@@ -892,7 +892,7 @@ pub async fn search_chunk(
         .json(result_chunks))
 }
 
-/// get_chunk
+/// Get Chunk By Id
 ///
 /// Get a singular chunk by id.
 #[utoipa::path(
@@ -938,7 +938,7 @@ pub async fn get_chunk_by_id(
     Ok(HttpResponse::Ok().json(chunk))
 }
 
-/// get_chunk_by_tracking_id
+/// Get Chunk By Tracking Id
 ///
 /// Get a singular chunk by tracking_id. This is useful for when you are coordinating with an external system and want to use your own id as the primary reference for a chunk.
 #[utoipa::path(
@@ -994,7 +994,7 @@ pub struct RecommendChunksRequest {
     pub limit: Option<u64>,
 }
 
-/// get_recommended_chunks
+/// Get Recommended Chunks
 ///
 /// Get recommendations of chunks similar to the chunks in the request. Think about this as a feature similar to the "add to playlist" recommendation feature on Spotify. This request pairs especially well with our groups endpoint.
 #[utoipa::path(
@@ -1143,7 +1143,7 @@ pub struct GenerateChunksRequest {
     pub stream_response: Option<bool>,
 }
 
-/// augmented_generation_from_chunks
+/// RAG on User Defined Chunks
 ///
 /// This endpoint exists as an alternative to the topic+message concept where our API handles chat memory. With this endpoint, the user is responsible for providing the context window and the prompt. See more in the "search before generate" page at docs.trieve.ai.
 #[utoipa::path(
