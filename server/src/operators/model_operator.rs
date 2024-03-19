@@ -151,7 +151,17 @@ pub async fn get_splade_embedding(
         ));
     }
 
-    let server_origin = match std::env::var("SPARSE_SERVER_ORIGIN")
+    let origin_key = match embed_type {
+        "doc" => {
+            "SPARSE_SERVER_DOC_ORIGIN"
+        },
+        "query" => {
+            "SPARSE_SERVER_QUERY_ORIGIN"
+        },
+        _ => unreachable!("Invalid embed_type passed")
+    };
+
+    let server_origin = match std::env::var(origin_key)
         .ok()
         .filter(|s| !s.is_empty())
     {
