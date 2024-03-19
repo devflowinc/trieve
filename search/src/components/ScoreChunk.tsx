@@ -168,7 +168,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
     props.setOnDelete(() => {
       return () => {
         setDeleting(true);
-        void fetch(`${apiHost}/chunk/chunk/${curChunkMetadataId}`, {
+        void fetch(`${apiHost}/chunk/${curChunkMetadataId}`, {
           method: "DELETE",
           headers: {
             "TR-Dataset": dataset.dataset.id,

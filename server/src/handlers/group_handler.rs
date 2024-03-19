@@ -673,13 +673,6 @@ pub struct BookmarkData {
     pub total_pages: i64,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct GetAllBookmarksData {
-    pub group_id: Option<uuid::Uuid>,
-    pub tracking_id: Option<String>,
-    pub page: Option<u64>,
-}
-
 /// get_chunks_in_group
 ///
 /// Route to get all chunks for a group. The response is paginated, with each page containing 10 chunks. Support for custom page size is coming soon.
@@ -705,38 +698,18 @@ pub struct GetAllBookmarksData {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn get_chunks_in_group(
-    path_data: web::Path<GetAllBookmarksData>,
+    path_data: IdParams,
     pool: web::Data<Pool>,
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let group_id = path_data.group_id;
+    let group_id = path_data.id;
     let page = path_data.page.unwrap_or(1);
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
-    let bookmarks = if let Some(group_id) = group_id {
-        get_bookmarks_for_group_query(
-            UnifiedId::TrieveUuid(group_id),
-            page,
-            None,
-            dataset_id,
-            pool,
-        )
+    let bookmarks = get_bookmarks_for_group_query(group_id, page, None, dataset_id, pool)
         .await
-        .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?
-    } else if let Some(tracking_id) = path_data.tracking_id.clone() {
-        get_bookmarks_for_group_query(
-            UnifiedId::TrackingId(tracking_id),
-            page,
-            None,
-            dataset_id,
-            pool,
-        )
-        .await
-        .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?
-    } else {
-        return Err(ServiceError::BadRequest("No group id or tracking id provided".into()).into());
-    };
+        .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?;
 
     Ok(HttpResponse::Ok().json(BookmarkData {
         chunks: bookmarks.metadata,
