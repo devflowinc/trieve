@@ -138,11 +138,11 @@ async def encode(encodingRequest: EncodeRequest, Authorization: Annotated[str | 
 
 
 class SparseEncodeRequest(BaseModel):
-    input: str
+    inputs: str
     encode_type: str
 
 
-@app.post("/sparse_embed")
+@app.post("/embed_sparse")
 async def sparse_encode(encodingRequest: SparseEncodeRequest, Authorization: Annotated[str | None, Header()] = None):
     if api_key is not None:
         if Authorization is None or Authorization != f"Bearer: {api_key}":
@@ -156,11 +156,11 @@ async def sparse_encode(encodingRequest: SparseEncodeRequest, Authorization: Ann
     vec = []
     if encodingRequest.encode_type == "doc":
         vec = compute_vector(
-            encodingRequest.input, model=doc_model, tokenizer=doc_tokenizer
+            encodingRequest.inputs, model=doc_model, tokenizer=doc_tokenizer
         )
     elif encodingRequest.encode_type == "query":
         vec = compute_vector(
-            encodingRequest.input, model=query_model, tokenizer=query_tokenizer
+            encodingRequest.inputs, model=query_model, tokenizer=query_tokenizer
         )
     else:
         return JSONResponse(
@@ -212,7 +212,7 @@ async def rerank(rerankRequest: ReRankRequest, Authorization: Annotated[str | No
     ]
 
     return JSONResponse(
-        content=reranked_docs,
+        content=[reranked_docs],
         status_code=200,
     )
 

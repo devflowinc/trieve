@@ -128,7 +128,7 @@ pub struct SpladeEmbedding {
     pub embeddings: Vec<(u32, f32)>,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 struct SpladeIndicies {
     index: u32,
     value: f32,
@@ -136,7 +136,7 @@ struct SpladeIndicies {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CustomSparseEmbedData {
-    pub input: String,
+    pub inputs: String,
     pub encode_type: String,
 }
 
@@ -152,19 +152,12 @@ pub async fn get_splade_embedding(
     }
 
     let origin_key = match embed_type {
-        "doc" => {
-            "SPARSE_SERVER_DOC_ORIGIN"
-        },
-        "query" => {
-            "SPARSE_SERVER_QUERY_ORIGIN"
-        },
-        _ => unreachable!("Invalid embed_type passed")
+        "doc" => "SPARSE_SERVER_DOC_ORIGIN",
+        "query" => "SPARSE_SERVER_QUERY_ORIGIN",
+        _ => unreachable!("Invalid embed_type passed"),
     };
 
-    let server_origin = match std::env::var(origin_key)
-        .ok()
-        .filter(|s| !s.is_empty())
-    {
+    let server_origin = match std::env::var(origin_key).ok().filter(|s| !s.is_empty()) {
         Some(origin) => origin,
         None => get_env!(
             "GPU_SERVER_ORIGIN",
@@ -172,8 +165,7 @@ pub async fn get_splade_embedding(
         )
         .to_string(),
     };
-
-    let embedding_server_call = format!("{}/sparse_embed", server_origin);
+    let embedding_server_call = format!("{}/embed_sparse", server_origin);
 
     let resp = ureq::post(&embedding_server_call)
         .set("Content-Type", "application/json")
@@ -185,11 +177,17 @@ pub async fn get_splade_embedding(
             ),
         )
         .send_json(CustomSparseEmbedData {
-            input: message.to_string(),
+            inputs: message.to_string(),
             encode_type: embed_type.to_string(),
         })
-        .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
-        .into_json::<Vec<SpladeIndicies>>()
+        .map_err(|err| {
+            log::error!(
+                "Failed parsing response from custom embedding server {:?}",
+                err
+            );
+            ServiceError::BadRequest(format!("Failed making call to server {:?}", err))
+        })?
+        .into_json::<Vec<Vec<SpladeIndicies>>>()
         .map_err(|_e| {
             log::error!(
                 "Failed parsing response from custom embedding server {:?}",
@@ -200,7 +198,11 @@ pub async fn get_splade_embedding(
             )
         })?;
 
-    Ok(resp
+    let first_vector = resp.get(0).ok_or(ServiceError::BadRequest(
+        "Failed getting sparse vector from embedding server".to_string(),
+    ))?; 
+
+    Ok(first_vector
         .iter()
         .map(|splade_idx| (splade_idx.index, splade_idx.value))
         .collect())
