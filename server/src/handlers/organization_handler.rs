@@ -14,7 +14,7 @@ use actix_web::{web, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// get_organization
+/// Get Organization
 ///
 /// Fetch the details of an organization by its id. The auth'ed user must be an admin or owner of the organization to fetch it.
 #[utoipa::path(
@@ -50,7 +50,7 @@ pub async fn get_organization_by_id(
     Ok(HttpResponse::Ok().json(org_plan_sub.with_defaults()))
 }
 
-/// delete_organization
+/// Delete Organization
 ///
 /// Delete an organization by its id. The auth'ed user must be an owner of the organization to delete it.
 #[utoipa::path(
@@ -95,7 +95,7 @@ pub struct UpdateOrganizationData {
     name: Option<String>,
 }
 
-/// update_organization
+/// Update Organization
 ///
 /// Update an organization. Only the owner of the organization can update it.
 #[utoipa::path(
@@ -150,7 +150,7 @@ pub struct CreateOrganizationData {
     name: String,
 }
 
-/// create_organization
+/// Create Organization
 ///
 /// Create a new organization. The auth'ed user who creates the organization will be the default owner of the organization.
 #[utoipa::path(
@@ -193,7 +193,7 @@ pub async fn create_organization(
     Ok(HttpResponse::Ok().json(created_organization))
 }
 
-/// get_organization_usage
+/// Get Organization Usage
 ///
 /// Fetch the current usage specification of an organization by its id. The auth'ed user must be an admin or owner of the organization to fetch it.
 #[utoipa::path(
@@ -229,7 +229,7 @@ pub async fn get_organization_usage(
     Ok(HttpResponse::Ok().json(usage))
 }
 
-/// get_organization_users
+/// Get Organization Users
 ///
 /// Fetch the users of an organization by its id. The auth'ed user must be an admin or owner of the organization to fetch it.
 #[utoipa::path(

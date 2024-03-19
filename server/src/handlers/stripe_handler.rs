@@ -159,6 +159,10 @@ pub struct GetDirectPaymentLinkData {
     pub organization_id: uuid::Uuid,
 }
 
+/// Checkout
+///
+/// Get a direct link to the stripe checkout page for the plan and organization
+
 #[utoipa::path(
     get,
     path = "/stripe/payment_link/{plan_id}/{organization_id}",
@@ -212,6 +216,9 @@ pub async fn direct_to_payment_link(
         .finish())
 }
 
+/// Cancel Subscription
+///
+/// Cancel a subscription by its id
 #[utoipa::path(
     delete,
     path = "/stripe/subscription/{subscription_id}",
@@ -261,6 +268,9 @@ pub struct UpdateSubscriptionData {
     pub plan_id: uuid::Uuid,
 }
 
+/// Update Subscription Plan
+///
+/// Update a subscription to a new plan
 #[utoipa::path(
     patch,
     path = "/stripe/subscription_plan/{subscription_id}/{plan_id}",
@@ -316,6 +326,9 @@ pub async fn update_subscription_plan(
     Ok(HttpResponse::Ok().finish())
 }
 
+/// Get All Plans
+///
+/// Get a list of all plans
 #[utoipa::path(
     get,
     path = "/stripe/plans",

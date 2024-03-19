@@ -22,7 +22,7 @@ pub struct CreateTopicData {
     pub name: Option<String>,
 }
 
-/// create_topic
+/// Create Topic
 ///
 /// Create a new chat topic. Topics are attached to a user and act as a coordinator for memory of gen-AI chat sessions. We are considering refactoring this resource of the API soon.
 #[utoipa::path(
@@ -97,7 +97,7 @@ pub struct DeleteTopicData {
     pub topic_id: uuid::Uuid,
 }
 
-/// delete_topic
+/// Delete Topic
 ///
 /// Delete an existing chat topic. When a topic is deleted, all associated chat messages are also deleted.
 #[utoipa::path(
@@ -159,7 +159,7 @@ pub struct UpdateTopicData {
     pub name: String,
 }
 
-/// update_topic
+/// Update Topic
 ///
 /// Update an existing chat topic. Currently, only the name of the topic can be updated.
 #[utoipa::path(
@@ -220,7 +220,7 @@ pub async fn update_topic(
     }
 }
 
-/// get_all_topics_for_user
+/// Get All Topics for User
 ///
 /// Get all topics belonging to a the auth'ed user. Soon, we plan to allow specification of the user for this route and include pagination.
 #[utoipa::path(

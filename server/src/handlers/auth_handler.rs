@@ -230,7 +230,7 @@ pub struct LogoutRequest {
     pub redirect_uri: Option<String>,
 }
 
-/// logout
+/// Logout
 ///
 /// Invalidate your current auth credential stored typically stored in a cookie. This does not invalidate your API key.
 #[utoipa::path(
@@ -286,6 +286,9 @@ pub struct OpenIdConnectState {
 const OIDC_SESSION_KEY: &str = "oidc_state";
 
 #[derive(Deserialize, Debug, ToSchema)]
+#[schema(
+    example = json!({"organization_id": "00000000-0000-0000-0000-000000000000", "redirect_uri": "https://example.com", "inv_code": "00000000-0000-0000-0000-000000000000"}),
+)]
 pub struct AuthQuery {
     /// ID of organization to authenticate into
     pub organization_id: Option<uuid::Uuid>,
@@ -305,7 +308,7 @@ pub struct LoginState {
     pub inv_code: Option<uuid::Uuid>,
 }
 
-/// login
+/// Login
 ///
 /// This will redirect you to the OAuth provider for authentication with email/pass, SSO, Google, Github, etc.
 #[utoipa::path(
@@ -374,7 +377,7 @@ pub async fn login(
         .finish())
 }
 
-/// openid_callback
+/// OpenID Connect callback
 ///
 /// This is the callback route for the OAuth provider, it should not be called directly. Redirects to browser with set-cookie header.
 #[utoipa::path(
@@ -522,7 +525,7 @@ pub async fn callback(
         .finish())
 }
 
-/// get_me
+/// Get Me
 ///
 /// Get the user corresponding to your current auth credentials.
 #[utoipa::path(
@@ -553,6 +556,9 @@ pub async fn get_me(
     }
 }
 
+/// Health Check
+///
+/// Confirmation that the service is healthy and can make embedding vectors
 #[utoipa::path(
     get,
     path = "/health",

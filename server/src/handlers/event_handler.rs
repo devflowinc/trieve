@@ -7,7 +7,7 @@ use crate::{
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
-/// get_events
+/// Get events for the dataset
 ///
 /// Get events for the auth'ed user. Currently, this is only for events belonging to the auth'ed user. Soon, we plan to associate events to datasets instead of users. Each page contains 10 events.
 #[utoipa::path(
