@@ -1,0 +1,3 @@
+extends: [[spectral:oas,recommended]]
+rules:
+  paths-kebab-case: false
