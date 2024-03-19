@@ -128,6 +128,12 @@ pub struct SpladeEmbedding {
     pub embeddings: Vec<(u32, f32)>,
 }
 
+#[derive(Deserialize)]
+struct SpladeIndicies {
+    index: u32,
+    value: f32,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CustomSparseEmbedData {
     pub input: String,
@@ -157,7 +163,7 @@ pub async fn get_splade_embedding(
         .to_string(),
     };
 
-    let embedding_server_call = format!("{}/sparse_encode", server_origin);
+    let embedding_server_call = format!("{}/sparse_embed", server_origin);
 
     let resp = ureq::post(&embedding_server_call)
         .set("Content-Type", "application/json")
@@ -173,7 +179,7 @@ pub async fn get_splade_embedding(
             encode_type: embed_type.to_string(),
         })
         .map_err(|err| ServiceError::BadRequest(format!("Failed making call to server {:?}", err)))?
-        .into_json::<SpladeEmbedding>()
+        .into_json::<Vec<SpladeIndicies>>()
         .map_err(|_e| {
             log::error!(
                 "Failed parsing response from custom embedding server {:?}",
@@ -184,7 +190,10 @@ pub async fn get_splade_embedding(
             )
         })?;
 
-    Ok(resp.embeddings)
+    Ok(resp
+        .iter()
+        .map(|splade_idx| (splade_idx.index, splade_idx.value))
+        .collect())
 }
 
 #[derive(Debug, Serialize, Deserialize)]
