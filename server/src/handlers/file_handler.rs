@@ -44,6 +44,20 @@ pub fn validate_file_name(s: String) -> Result<String, actix_web::Error> {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[schema(example = json!({
+    "file_name": "example.pdf",
+    "file_mime_type": "application/pdf",
+    "base64_file": "base64_encoded_file",
+    "tag_set": ["tag1", "tag2"],
+    "description": "This is an example file",
+    "link": "https://example.com",
+    "time_stamp": "2021-01-01T00:00:00Z",
+    "metadata": {
+        "key1": "value1",
+        "key2": "value2"
+    },
+    "create_chunks": true
+}))]
 pub struct UploadFileData {
     /// Base64 encoded file. Convert + to -, / to _, and remove the ending = if present. This is the standard base64url encoding.
     pub base64_file: String,
@@ -221,7 +235,7 @@ pub struct DatasetFileQuery {
     pub dataset_id: uuid::Uuid,
     pub page: u64,
 }
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize)]
 pub struct FileData {
     pub file_and_group_ids: Vec<FileAndGroupId>,
     pub total_pages: i64,

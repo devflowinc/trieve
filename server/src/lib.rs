@@ -438,7 +438,7 @@ pub async fn main() -> std::io::Result<()> {
             .service(Redoc::with_url("/redoc", ApiDoc::openapi()))
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")
-                    .url("/api-docs/openapi.json", ApiDoc::openapi()),
+                    .url("/api-docs/openapi.json", ApiDoc::openapi())
             )
             // everything under '/api/' route
             .service(

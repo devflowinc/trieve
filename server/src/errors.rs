@@ -3,7 +3,7 @@ use derive_more::Display;
 use diesel::result::{DatabaseErrorKind, Error as DBError};
 use serde::{Deserialize, Serialize};
 use std::convert::From;
-use utoipa::{openapi::schema, ToSchema};
+use utoipa::ToSchema;
 use uuid::Error as ParseError;
 
 #[derive(Serialize, Deserialize, Debug, Display, derive_more::Error)]
