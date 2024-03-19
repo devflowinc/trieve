@@ -142,7 +142,7 @@ class SparseEncodeRequest(BaseModel):
     encode_type: str
 
 
-@app.post("/sparse_encode")
+@app.post("/sparse_embed")
 async def sparse_encode(encodingRequest: SparseEncodeRequest, Authorization: Annotated[str | None, Header()] = None):
     if api_key is not None:
         if Authorization is None or Authorization != f"Bearer: {api_key}":
@@ -177,12 +177,11 @@ async def sparse_encode(encodingRequest: SparseEncodeRequest, Authorization: Ann
         indices = [indices]
     if type(values) != list:
         values = [values]
+    
+    content = list(map(lambda pair: dict(index=pair[0], value=pair[1]), zip(indices, values)))
 
     return JSONResponse(
-        content={
-            "embeddings": list(zip(indices, values)),
-            "status": 200,
-        },
+        content=content,
         status_code=200,
     )
 
