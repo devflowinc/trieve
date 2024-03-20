@@ -37,6 +37,7 @@ import { AiOutlineCopy, AiOutlineFile } from "solid-icons/ai";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { A } from "@solidjs/router";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
+import { ImageModal } from "./ImageModal";
 
 export const sanitzerOptions = {
   allowedTags: [...sanitizeHtml.defaults.allowedTags, "font", "button", "span"],
@@ -579,29 +580,11 @@ const ScoreChunk = (props: ScoreChunkProps) => {
           </Show>
         </div>
       </Show>
-      <Show when={showImageModal()}>
-        <FullScreenModal isOpen={showImageModal} setIsOpen={setShowImageModal}>
-          <div class="flex max-h-[75vh] max-w-[75vw] flex-col space-y-2 overflow-auto">
-            <For
-              each={Array.from({
-                length:
-                  (imgInformation()?.imgRangeEnd ?? 0) -
-                  (imgInformation()?.imgRangeStart ?? 0) +
-                  1,
-              })}
-            >
-              {(_, i) => (
-                <img
-                  class="mx-auto my-auto"
-                  src={`${apiHost}/image/${
-                    imgInformation()?.imgRangePrefix ?? ""
-                  }${(imgInformation()?.imgRangeStart ?? 0) + i()}.png`}
-                />
-              )}
-            </For>
-          </div>
-        </FullScreenModal>
-      </Show>
+      <ImageModal
+        showImageModal={showImageModal}
+        setShowImageModal={setShowImageModal}
+        imgInformation={imgInformation}
+      />
       <Show when={showMetadata()}>
         <FullScreenModal isOpen={showMetadata} setIsOpen={setShowMetadata}>
           <div class="flex max-h-[60vh] max-w-[75vw] flex-col space-y-2 overflow-auto scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-thumb-rounded-md dark:text-white dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600">
