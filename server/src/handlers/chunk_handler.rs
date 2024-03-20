@@ -243,7 +243,7 @@ pub async fn create_chunk(
     path = "/chunk/bulk",
     context_path = "/api",
     tag = "chunk",
-    request_body(content = CreateChunkData, description = "JSON request payload to create a new chunk (chunk)", content_type = "application/json"),
+    request_body(content = Vec<CreateChunkData>, description = "JSON request payload to create a new chunk (chunk)", content_type = "application/json"),
     responses(
         (status = 200, description = "JSON response payload containing the created chunk", body = ReturnQueuedChunk),
         (status = 400, description = "Service error relating to to creating a chunk, likely due to conflicting tracking_id", body = ErrorResponseBody),
