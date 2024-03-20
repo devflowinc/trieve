@@ -1,5 +1,5 @@
 use crate::{
-    data::models::{DatasetAndOrgWithSubAndPlan, Pool, UserRole},
+    data::models::{DatasetAndOrgWithSubAndPlan, Pool, RedisPool, UserRole},
     errors::ServiceError,
     handlers::auth_handler::{LoggedUser, OrganizationRole},
     operators::{
@@ -43,6 +43,9 @@ where
             let transaction = sentry::start_transaction(tx_ctx);
             let org_id_span = transaction.start_child("orgid", "Getting organization id");
 
+            let pool = req.app_data::<web::Data<Pool>>().unwrap().to_owned();
+            let redis_pool = req.app_data::<web::Data<RedisPool>>().unwrap().to_owned();
+
             let org_id = match req.headers().get("TR-Organization") {
                 Some(org_header) => {
                     let orgid_result = org_header
@@ -55,8 +58,6 @@ where
                         .parse::<uuid::Uuid>();
 
                     if let Some(dataset_header) = req.headers().get("TR-Dataset") {
-                        let pool = req.app_data::<web::Data<Pool>>().unwrap().to_owned();
-
                         let dataset_id = dataset_header
                             .to_str()
                             .map_err(|_| {
@@ -67,9 +68,12 @@ where
                                 ServiceError::BadRequest("Dataset must be valid UUID".to_string())
                             })?;
 
-                        let dataset = get_dataset_by_id_query(dataset_id, pool.clone()).await?;
+                        let dataset =
+                            get_dataset_by_id_query(dataset_id, redis_pool.clone(), pool.clone())
+                                .await?;
                         let org_plan_sub = get_organization_by_key_query(
                             dataset.organization_id.into(),
+                            redis_pool.clone(),
                             pool.clone(),
                         )
                         .await
@@ -95,6 +99,7 @@ where
                                     })?
                                     .to_string()
                                     .into(),
+                                redis_pool,
                                 pool,
                             )
                             .await
@@ -110,8 +115,6 @@ where
 
                 None => match req.headers().get("TR-Dataset") {
                     Some(dataset_header) => {
-                        let pool = req.app_data::<web::Data<Pool>>().unwrap().to_owned();
-
                         let dataset_id = dataset_header
                             .to_str()
                             .map_err(|_| {
@@ -122,9 +125,12 @@ where
                                 ServiceError::BadRequest("Dataset must be valid UUID".to_string())
                             })?;
 
-                        let dataset = get_dataset_by_id_query(dataset_id, pool.clone()).await?;
+                        let dataset =
+                            get_dataset_by_id_query(dataset_id, redis_pool.clone(), pool.clone())
+                                .await?;
                         let org_plan_sub = get_organization_by_key_query(
                             dataset.organization_id.into(),
+                            redis_pool.clone(),
                             pool.clone(),
                         )
                         .await

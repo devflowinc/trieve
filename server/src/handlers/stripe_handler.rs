@@ -1,5 +1,5 @@
 use crate::{
-    data::models::Pool,
+    data::models::{Pool, RedisPool},
     errors::ServiceError,
     get_env,
     operators::{
@@ -20,10 +20,11 @@ use stripe::{EventObject, EventType, Webhook};
 
 use super::auth_handler::OwnerOnly;
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn webhook(
     req: HttpRequest,
     payload: web::Bytes,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let payload_str = String::from_utf8(payload.to_vec())
@@ -97,6 +98,7 @@ pub async fn webhook(
 
                         delete_subscription_by_id_query(
                             existing_subscription.id,
+                            redis_pool.clone(),
                             delete_subscription_pool,
                         )
                         .await
@@ -107,6 +109,7 @@ pub async fn webhook(
                         subscription_stripe_id,
                         plan_id,
                         organization_id,
+                        redis_pool,
                         pool,
                     )
                     .await
@@ -140,6 +143,7 @@ pub async fn webhook(
                     set_stripe_subscription_current_period_end(
                         subscription_stripe_id,
                         current_period_end,
+                        redis_pool,
                         pool,
                     )
                     .await
@@ -177,9 +181,10 @@ pub struct GetDirectPaymentLinkData {
         ("organization_id" = uuid::Uuid, Path, description = "id of the organization you want to subscribe to the plan"),
     ),
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn direct_to_payment_link(
     path_data: web::Path<GetDirectPaymentLinkData>,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_pool = pool.clone();
@@ -199,7 +204,7 @@ pub async fn direct_to_payment_link(
     let organization_id = path_data.organization_id;
     let organization_id_clone = path_data.organization_id;
     let _org_plan_sub =
-        get_organization_by_key_query(organization_id_clone.into(), organization_pool)
+        get_organization_by_key_query(organization_id_clone.into(), redis_pool, organization_pool)
             .await
             .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
@@ -234,13 +239,13 @@ pub async fn direct_to_payment_link(
     ),
     security(
         ("ApiKey" = ["owner"]),
-        
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn cancel_subscription(
     subscription_id: web::Path<uuid::Uuid>,
     _user: OwnerOnly,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let get_sub_pool = pool.clone();
@@ -257,7 +262,8 @@ pub async fn cancel_subscription(
             ))
         })?;
 
-    let _ = refresh_redis_org_plan_sub(subscription.organization_id, pool.clone()).await;
+    let _ =
+        refresh_redis_org_plan_sub(subscription.organization_id, redis_pool, pool.clone()).await;
 
     Ok(HttpResponse::Ok().finish())
 }
@@ -287,13 +293,13 @@ pub struct UpdateSubscriptionData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn update_subscription_plan(
     path_data: web::Path<UpdateSubscriptionData>,
     _user: OwnerOnly,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let get_subscription_pool = pool.clone();
@@ -319,7 +325,7 @@ pub async fn update_subscription_plan(
             ))
         })?;
 
-    update_stripe_subscription_plan_query(subscription.id, plan.id, update_subscription_plan_pool)
+    update_stripe_subscription_plan_query(subscription.id, plan.id, redis_pool, update_subscription_plan_pool)
         .await
         .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 

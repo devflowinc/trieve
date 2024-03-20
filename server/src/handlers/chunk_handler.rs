@@ -1,7 +1,7 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan,
-    IdParams, Pool, ServerDatasetConfiguration, UnifiedId,
+    IdParams, Pool, RedisPool, ServerDatasetConfiguration, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -22,7 +22,6 @@ use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{
     ChatCompletionParameters, ChatMessage, ChatMessageContent, Role,
 };
-use redis::Commands;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -122,16 +121,15 @@ pub struct UploadIngestionMessage {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn create_chunk(
     chunk: web::Json<CreateChunkData>,
     pool: web::Data<Pool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    redis_client: web::Data<redis::Client>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let count_dataset_id = dataset_org_plan_sub.dataset.id;
 
@@ -217,16 +215,22 @@ pub async fn create_chunk(
         upsert_by_tracking_id: chunk.upsert_by_tracking_id.unwrap_or(false),
     };
 
-    let mut pub_client = redis_client
-        .get_connection()
+    let mut redis_conn = redis_pool
+        .get()
+        .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    pub_client
-        .lpush("ingestion", serde_json::to_string(&ingestion_message)?)
+    deadpool_redis::redis::cmd("lpush")
+        .arg("ingestion")
+        .arg(serde_json::to_string(&ingestion_message)?)
+        .query_async(&mut redis_conn)
+        .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    let pos_in_queue = pub_client
-        .llen("ingestion")
+    let pos_in_queue = deadpool_redis::redis::cmd("llen")
+        .arg("ingestion")
+        .query_async(&mut redis_conn)
+        .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     Ok(HttpResponse::Ok().json(ReturnQueuedChunk {
@@ -253,16 +257,15 @@ pub async fn create_chunk(
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn bulk_create_chunk(
     chunks: web::Json<Vec<CreateChunkData>>,
     pool: web::Data<Pool>,
     user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    redis_client: web::Data<redis::Client>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     for chunk in chunks.into_inner() {
         create_chunk(
@@ -270,7 +273,7 @@ pub async fn bulk_create_chunk(
             pool.clone(),
             user.clone(),
             dataset_org_plan_sub.clone(),
-            redis_client.clone(),
+            redis_pool.clone(),
         )
         .await?;
     }
@@ -362,7 +365,6 @@ pub async fn delete_chunk(
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
 #[deprecated]
@@ -453,14 +455,13 @@ pub struct UpdateIngestionMessage {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn update_chunk(
     chunk: web::Json<UpdateChunkData>,
     pool: web::Data<Pool>,
-    redis_client: web::Data<redis::Client>,
+    redis_pool: web::Data<RedisPool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -554,12 +555,16 @@ pub async fn update_chunk(
         group_ids,
     };
 
-    let mut pub_client = redis_client
-        .get_connection()
+    let mut redis_conn = redis_pool
+        .get()
+        .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    pub_client
-        .lpush("ingestion", serde_json::to_string(&message)?)
+    deadpool_redis::redis::cmd("lpush")
+        .arg("ingestion")
+        .arg(serde_json::to_string(&message)?)
+        .query_async(&mut redis_conn)
+        .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     Ok(HttpResponse::NoContent().finish())
@@ -604,14 +609,13 @@ pub struct UpdateChunkByTrackingIdData {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn update_chunk_by_tracking_id(
     chunk: web::Json<UpdateChunkByTrackingIdData>,
     pool: web::Data<Pool>,
-    redis_client: web::Data<redis::Client>,
+    redis_pool: web::Data<RedisPool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -696,12 +700,16 @@ pub async fn update_chunk_by_tracking_id(
         group_ids,
     };
 
-    let mut pub_client = redis_client
-        .get_connection()
+    let mut redis_conn = redis_pool
+        .get()
+        .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    pub_client
-        .lpush("ingestion", serde_json::to_string(&message)?)
+    deadpool_redis::redis::cmd("lpush")
+        .arg("ingestion")
+        .arg(serde_json::to_string(&message)?)
+        .query_async(&mut redis_conn)
+        .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     Ok(HttpResponse::NoContent().finish())
@@ -1067,7 +1075,6 @@ pub async fn search_chunk(
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -1112,7 +1119,6 @@ pub async fn get_chunk_by_id(
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[deprecated]
@@ -1168,7 +1174,6 @@ pub struct RecommendChunksRequest {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -1330,7 +1335,6 @@ pub struct GenerateChunksRequest {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]

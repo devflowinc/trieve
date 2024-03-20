@@ -1,6 +1,6 @@
 use super::auth_handler::AdminOnly;
 use crate::{
-    data::models::{Invitation, Pool},
+    data::models::{Invitation, Pool, RedisPool},
     errors::{DefaultError, ServiceError},
     operators::{
         invitation_operator::{create_invitation_query, send_invitation},
@@ -54,12 +54,12 @@ pub struct InvitationData {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn post_invitation(
     invitation_data: web::Json<InvitationData>,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
     user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -87,16 +87,15 @@ pub async fn post_invitation(
         );
     }
 
-    let existing_user_pool = pool.clone();
-    let existing_user_email = email.clone();
     let existing_user_org_id = invitation_data.organization_id;
     let existing_user_role = invitation_data.user_role;
 
     let added_user_to_org = add_existing_user_to_org(
-        existing_user_email,
+        email.clone(),
         existing_user_org_id,
         existing_user_role.into(),
-        existing_user_pool,
+        redis_pool,
+        pool.clone(),
     )
     .await
     .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;

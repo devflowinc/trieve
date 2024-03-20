@@ -25,7 +25,6 @@ use serde::{Deserialize, Serialize};
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]

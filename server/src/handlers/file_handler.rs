@@ -1,7 +1,8 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
     data::models::{
-        DatasetAndOrgWithSubAndPlan, File, FileAndGroupId, Pool, ServerDatasetConfiguration,
+        DatasetAndOrgWithSubAndPlan, File, FileAndGroupId, Pool, RedisPool,
+        ServerDatasetConfiguration,
     },
     errors::ServiceError,
     operators::{
@@ -102,16 +103,15 @@ pub struct UploadFileResult {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
-#[tracing::instrument(skip(pool, redis_client))]
+#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn upload_file_handler(
     data: web::Json<UploadFileData>,
     pool: web::Data<Pool>,
     user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    redis_client: web::Data<redis::Client>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let document_upload_feature = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
@@ -180,7 +180,7 @@ pub async fn upload_file_handler(
         user.0,
         dataset_org_plan_sub.clone(),
         pool_inner,
-        redis_client,
+        redis_pool,
     )
     .await
     .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
@@ -206,7 +206,6 @@ pub async fn upload_file_handler(
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -260,7 +259,6 @@ pub struct FileData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -313,7 +311,6 @@ pub struct DeleteFileQueryParams {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]

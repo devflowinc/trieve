@@ -77,7 +77,6 @@ pub struct CreateChunkGroupData {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -135,7 +134,6 @@ pub struct DatasetGroupQuery {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -198,7 +196,6 @@ pub struct GetGroupByTrackingIDData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[deprecated]
@@ -247,7 +244,6 @@ pub struct GetGroupData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 /// get_group
@@ -303,7 +299,6 @@ pub struct UpdateGroupByTrackingIDData {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
 #[deprecated]
@@ -357,7 +352,6 @@ pub struct DeleteGroupByTrackingIDData {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
 #[deprecated]
@@ -420,7 +414,6 @@ pub struct DeleteGroupData {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -506,7 +499,6 @@ pub struct UpdateChunkGroupData {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -576,7 +568,6 @@ pub struct AddChunkToGroupData {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
 #[deprecated]
@@ -638,7 +629,6 @@ pub struct AddChunkToGroupByTrackingIdData {
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
 #[deprecated]
@@ -707,7 +697,6 @@ pub struct BookmarkData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -757,7 +746,6 @@ pub struct GetAllBookmarksByTrackingIdData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[deprecated]
@@ -814,7 +802,6 @@ pub struct GetGroupsForChunksData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -860,7 +847,6 @@ pub struct DeleteBookmarkPathData {
     request_body(content = CreateChunkGroupData, description = "JSON request payload to cretea a chunkGroup", content_type = "application/json"),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
 #[deprecated]
@@ -939,7 +925,6 @@ pub struct ReccomendGroupChunksRequest {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -1132,7 +1117,6 @@ pub struct SearchGroupsResult {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[allow(clippy::too_many_arguments)]

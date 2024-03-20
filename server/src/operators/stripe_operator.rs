@@ -1,6 +1,6 @@
 use crate::{
     data::models::{
-        Organization, OrganizationWithSubAndPlan, Pool, StripePlan, StripeSubscription,
+        Organization, OrganizationWithSubAndPlan, Pool, RedisPool, StripePlan, StripeSubscription,
     },
     errors::DefaultError,
     get_env,
@@ -17,9 +17,10 @@ pub fn get_stripe_client() -> stripe::Client {
     stripe::Client::new(stripe_secret)
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn refresh_redis_org_plan_sub(
     organization_id: uuid::Uuid,
+    redis_pool: actix_web::web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::organizations::dsl as organizations_columns;
@@ -51,18 +52,11 @@ pub async fn refresh_redis_org_plan_sub(
     let org_plan_sub =
         OrganizationWithSubAndPlan::from_components(org_plan_sub.0, org_plan_sub.1, org_plan_sub.2);
 
-    let redis_url = get_env!("REDIS_URL", "REDIS_URL must be set");
-    let client = redis::Client::open(redis_url).map_err(|_| DefaultError {
+    let mut redis_conn = redis_pool.get().await.map_err(|_| DefaultError {
         message: "Could not create redis client",
     })?;
-    let mut redis_conn = client
-        .get_multiplexed_async_connection()
-        .await
-        .map_err(|_| DefaultError {
-            message: "Could not create redis client",
-        })?;
 
-    redis::cmd("SET")
+    deadpool_redis::redis::cmd("SET")
         .arg(format!("organization:{}", org_plan_sub.id))
         .arg(
             serde_json::to_string(&org_plan_sub).map_err(|_| DefaultError {
@@ -75,7 +69,7 @@ pub async fn refresh_redis_org_plan_sub(
             message: "Could not set organization in redis",
         })?;
 
-    redis::cmd("SET")
+    deadpool_redis::redis::cmd("SET")
         .arg(format!("organization:{}", org_plan_sub.name))
         .arg(
             serde_json::to_string(&org_plan_sub).map_err(|_| DefaultError {
@@ -91,11 +85,12 @@ pub async fn refresh_redis_org_plan_sub(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn create_stripe_subscription_query(
     stripe_id: String,
     plan_id: uuid::Uuid,
     organization_id: uuid::Uuid,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
@@ -118,7 +113,7 @@ pub async fn create_stripe_subscription_query(
             }
         })?;
 
-    refresh_redis_org_plan_sub(stripe_subscription.organization_id, pool).await?;
+    refresh_redis_org_plan_sub(stripe_subscription.organization_id, redis_pool, pool).await?;
 
     Ok(())
 }
@@ -286,9 +281,10 @@ pub async fn get_subscription_by_id_query(
     Ok(stripe_subscription)
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn delete_subscription_by_id_query(
     subscription_id: uuid::Uuid,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
@@ -310,7 +306,7 @@ pub async fn delete_subscription_by_id_query(
         }
     })?;
 
-    refresh_redis_org_plan_sub(deleted_subscription.organization_id, pool).await?;
+    refresh_redis_org_plan_sub(deleted_subscription.organization_id, redis_pool, pool).await?;
 
     Ok(())
 }
@@ -341,10 +337,11 @@ pub async fn get_option_subscription_by_organization_id_query(
     Ok(stripe_subscriptions.into_iter().next())
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn set_stripe_subscription_current_period_end(
     stripe_subscription_id: String,
     current_period_end: chrono::NaiveDateTime,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
@@ -367,7 +364,7 @@ pub async fn set_stripe_subscription_current_period_end(
         }
     })?;
 
-    refresh_redis_org_plan_sub(updated_subscription.organization_id, pool).await?;
+    refresh_redis_org_plan_sub(updated_subscription.organization_id, redis_pool, pool).await?;
 
     Ok(())
 }
@@ -397,10 +394,11 @@ pub async fn cancel_stripe_subscription(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn update_stripe_subscription_plan_query(
     subscription_id: uuid::Uuid,
     plan_id: uuid::Uuid,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<(), DefaultError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
@@ -423,7 +421,7 @@ pub async fn update_stripe_subscription_plan_query(
         }
     })?;
 
-    refresh_redis_org_plan_sub(updated_subscription.organization_id, pool).await?;
+    refresh_redis_org_plan_sub(updated_subscription.organization_id, redis_pool, pool).await?;
 
     Ok(())
 }

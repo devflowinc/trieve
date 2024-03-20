@@ -200,7 +200,7 @@ pub async fn get_splade_embedding(
 
     let first_vector = resp.get(0).ok_or(ServiceError::BadRequest(
         "Failed getting sparse vector from embedding server".to_string(),
-    ))?; 
+    ))?;
 
     Ok(first_vector
         .iter()

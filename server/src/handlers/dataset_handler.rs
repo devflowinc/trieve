@@ -1,7 +1,7 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
     data::models::{
-        ClientDatasetConfiguration, Dataset, DatasetAndOrgWithSubAndPlan, Pool,
+        ClientDatasetConfiguration, Dataset, DatasetAndOrgWithSubAndPlan, Pool, RedisPool,
         ServerDatasetConfiguration, StripePlan,
     },
     errors::ServiceError,
@@ -75,23 +75,23 @@ pub struct CreateDatasetRequest {
     ),
     security(
         ("ApiKey" = ["owner"]),
-        
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn create_dataset(
     data: web::Json<CreateDatasetRequest>,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
     _user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let org_pool = pool.clone();
     let org_id = data.organization_id;
 
-    let organization_sub_plan = get_organization_by_key_query(org_id.into(), org_pool.clone())
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let organization_sub_plan =
+        get_organization_by_key_query(org_id.into(), redis_pool.clone(), pool.clone())
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
-    let dataset_count = get_org_dataset_count(org_id, org_pool)
+    let dataset_count = get_org_dataset_count(org_id, pool.clone())
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -112,7 +112,7 @@ pub async fn create_dataset(
         data.client_configuration.clone(),
     );
 
-    let d = create_dataset_query(dataset, pool).await?;
+    let d = create_dataset_query(dataset, redis_pool, pool).await?;
     Ok(HttpResponse::Ok().json(d))
 }
 
@@ -152,16 +152,17 @@ pub struct UpdateDatasetRequest {
     ),
     security(
         ("ApiKey" = ["owner"]),
-        
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn update_dataset(
     data: web::Json<UpdateDatasetRequest>,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
     _user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let curr_dataset = get_dataset_by_id_query(data.dataset_id, pool.clone()).await?;
+    let curr_dataset =
+        get_dataset_by_id_query(data.dataset_id, redis_pool.clone(), pool.clone()).await?;
     let d = update_dataset_query(
         data.dataset_id,
         data.dataset_name.clone().unwrap_or(curr_dataset.name),
@@ -171,10 +172,11 @@ pub async fn update_dataset(
         data.client_configuration
             .clone()
             .unwrap_or(curr_dataset.client_configuration),
+        redis_pool.clone(),
         pool.clone(),
     )
     .await?;
-    let _ = refresh_redis_org_plan_sub(d.organization_id, pool.clone())
+    let _ = refresh_redis_org_plan_sub(d.organization_id, redis_pool.clone(), pool.clone())
         .await
         .map_err(|err| {
             ServiceError::InternalServerError(format!(
@@ -209,20 +211,20 @@ pub struct DeleteDatasetRequest {
     ),
     security(
         ("ApiKey" = ["owner"]),
-        
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn delete_dataset(
     data: web::Json<DeleteDatasetRequest>,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
     let server_dataset_config = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
-    delete_dataset_by_id_query(data.dataset_id, pool, server_dataset_config).await?;
+    delete_dataset_by_id_query(data.dataset_id, pool, redis_pool, server_dataset_config).await?;
     Ok(HttpResponse::NoContent().finish())
 }
 
@@ -245,16 +247,16 @@ pub async fn delete_dataset(
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn get_dataset(
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     dataset_id: web::Path<uuid::Uuid>,
     _user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let mut d = get_dataset_by_id_query(dataset_id.into_inner(), pool).await?;
+    let mut d = get_dataset_by_id_query(dataset_id.into_inner(), redis_pool, pool).await?;
     d.server_configuration = json!(ServerDatasetConfiguration::from_json(
         d.server_configuration
     ));
@@ -282,7 +284,6 @@ pub async fn get_dataset(
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -322,7 +323,6 @@ pub async fn get_datasets_from_organization(
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument]
