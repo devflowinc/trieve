@@ -16,6 +16,7 @@ use utoipa::ToSchema;
 
 // type alias to use in multiple places
 pub type Pool = diesel_async::pooled_connection::deadpool::Pool<diesel_async::AsyncPgConnection>;
+pub type RedisPool = deadpool_redis::Pool;
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[schema(example = json!({

@@ -1,6 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
-    data::models::{Pool, UserOrganization, UserRole},
+    data::models::{Pool, RedisPool, UserOrganization, UserRole},
     errors::ServiceError,
     operators::{
         organization_operator::{
@@ -32,18 +32,18 @@ use utoipa::ToSchema;
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn get_organization_by_id(
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     _user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_id = organization_id.into_inner();
 
-    let org_plan_sub = get_organization_by_key_query(organization_id.into(), pool)
+    let org_plan_sub = get_organization_by_key_query(organization_id.into(), redis_pool, pool)
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
@@ -68,21 +68,27 @@ pub async fn get_organization_by_id(
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn delete_organization_by_id(
     req: HttpRequest,
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_id = organization_id.into_inner();
 
-    let org = delete_organization_query(Some(&req), Some(user.0.id), organization_id, pool)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let org = delete_organization_query(
+        Some(&req),
+        Some(user.0.id),
+        organization_id,
+        redis_pool,
+        pool,
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(org))
 }
@@ -113,18 +119,19 @@ pub struct UpdateOrganizationData {
     ),
     security(
         ("ApiKey" = ["owner"]),
-        
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn update_organization(
     organization: web::Json<UpdateOrganizationData>,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     _user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_update_data = organization.into_inner();
     let old_organization = get_organization_by_key_query(
         organization_update_data.organization_id.into(),
+        redis_pool.clone(),
         pool.clone(),
     )
     .await
@@ -136,6 +143,7 @@ pub async fn update_organization(
             .name
             .unwrap_or(old_organization.name)
             .as_str(),
+        redis_pool,
         pool,
     )
     .await
@@ -165,27 +173,31 @@ pub struct CreateOrganizationData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn create_organization(
     req: HttpRequest,
     organization: web::Json<CreateOrganizationData>,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_create_data = organization.into_inner();
 
-    let created_organization =
-        create_organization_query(organization_create_data.name.as_str(), pool.clone())
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let created_organization = create_organization_query(
+        organization_create_data.name.as_str(),
+        redis_pool.clone(),
+        pool.clone(),
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     add_user_to_organization(
         Some(&req),
         Some(user.id),
         UserOrganization::from_details(user.id, created_organization.id, UserRole::Owner),
+        redis_pool,
         pool,
     )
     .await?;
@@ -211,7 +223,6 @@ pub async fn create_organization(
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -247,7 +258,6 @@ pub async fn get_organization_usage(
     ),
     security(
         ("ApiKey" = ["admin"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]

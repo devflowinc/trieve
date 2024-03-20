@@ -1,6 +1,7 @@
 use super::event_operator::create_event_query;
 use super::group_operator::{create_group_from_file_query, create_group_query};
 use super::parse_operator::{coarse_doc_chunker, convert_html_to_text};
+use crate::data::models::RedisPool;
 use crate::data::models::{
     ChunkMetadata, Dataset, DatasetAndOrgWithSubAndPlan, EventType, ServerDatasetConfiguration,
 };
@@ -102,7 +103,7 @@ pub async fn create_file_query(
 }
 
 #[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(pool, redis_client))]
+#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn convert_doc_to_html_query(
     file_name: String,
     file_data: Vec<u8>,
@@ -115,7 +116,7 @@ pub async fn convert_doc_to_html_query(
     user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
-    redis_client: web::Data<redis::Client>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<UploadFileResult, DefaultError> {
     let file_id = uuid::Uuid::new_v4();
     let file_id_query_clone = file_id;
@@ -239,7 +240,7 @@ pub async fn convert_doc_to_html_query(
             html_content,
             dataset_org_plan_sub1,
             pool,
-            redis_client,
+            redis_pool,
         )
         .await;
 
@@ -265,7 +266,7 @@ pub async fn convert_doc_to_html_query(
 }
 
 #[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(pool, redis_client))]
+#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn create_chunks_with_handler(
     tag_set: Option<String>,
     file_name: String,
@@ -278,7 +279,7 @@ pub async fn create_chunks_with_handler(
     html_content: String,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
-    redis_client: web::Data<redis::Client>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<(), DefaultError> {
     let file_text = convert_html_to_text(&html_content);
     let chunk_htmls = coarse_doc_chunker(file_text);
@@ -339,7 +340,7 @@ pub async fn create_chunks_with_handler(
             pool.clone(),
             AdminOnly(user.clone()),
             dataset_org_plan_sub.clone(),
-            redis_client.clone(),
+            redis_pool.clone(),
         )
         .await
         {

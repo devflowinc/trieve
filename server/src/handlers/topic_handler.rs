@@ -40,7 +40,6 @@ pub struct CreateTopicData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -115,7 +114,6 @@ pub struct DeleteTopicData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -177,7 +175,6 @@ pub struct UpdateTopicData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -238,7 +235,6 @@ pub async fn update_topic(
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]

@@ -1,6 +1,6 @@
 use crate::{
     data::models::{
-        Dataset, Organization, OrganizationUsageCount, OrganizationWithSubAndPlan, Pool,
+        Dataset, Organization, OrganizationUsageCount, OrganizationWithSubAndPlan, Pool, RedisPool,
         ServerDatasetConfiguration, SlimUser, StripePlan, StripeSubscription, User,
         UserOrganization,
     },
@@ -23,9 +23,10 @@ use itertools::Itertools;
 
 /// Creates a dataset from Name if it doesn't conflict. If it does, then it creates a random name
 /// for the user
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn create_organization_query(
     name: &str,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<Organization, DefaultError> {
     use crate::data::schema::organizations::dsl as organizations_columns;
@@ -61,15 +62,16 @@ pub async fn create_organization_query(
             })?;
     }
 
-    refresh_redis_org_plan_sub(new_organization.id, pool).await?;
+    refresh_redis_org_plan_sub(new_organization.id, redis_pool, pool).await?;
 
     Ok(new_organization)
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn update_organization_query(
     id: uuid::Uuid,
     name: &str,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<Organization, DefaultError> {
     use crate::data::schema::organizations::dsl as organizations_columns;
@@ -97,16 +99,17 @@ pub async fn update_organization_query(
             },
         })?;
 
-    refresh_redis_org_plan_sub(updated_organization.id, pool).await?;
+    refresh_redis_org_plan_sub(updated_organization.id, redis_pool, pool).await?;
 
     Ok(updated_organization)
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn delete_organization_query(
     req: Option<&HttpRequest>,
     calling_user_id: Option<uuid::Uuid>,
     org_id: uuid::Uuid,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<Organization, DefaultError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
@@ -134,7 +137,7 @@ pub async fn delete_organization_query(
     for dataset in datasets {
         let config = ServerDatasetConfiguration::from_json(dataset.server_configuration);
 
-        delete_dataset_by_id_query(dataset.id, pool.clone(), config.clone())
+        delete_dataset_by_id_query(dataset.id, pool.clone(), redis_pool.clone(), config.clone())
             .await
             .map_err(|e| {
                 log::error!(
@@ -219,23 +222,17 @@ impl From<String> for OrganizationKey {
 }
 
 /// Gets organization by id or name
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn get_organization_by_key_query(
     key: OrganizationKey,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<OrganizationWithSubAndPlan, DefaultError> {
-    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
-    let redis_client = redis::Client::open(redis_url).map_err(|_| DefaultError {
-        message: "Could not create redis client",
+    let mut redis_conn = redis_pool.get().await.map_err(|_| DefaultError {
+        message: "Failed to parse error",
     })?;
-    let mut redis_conn = redis_client
-        .get_multiplexed_async_connection()
-        .await
-        .map_err(|_| DefaultError {
-            message: "Could not connect to redis",
-        })?;
 
-    let redis_organization: Result<String, DefaultError> = redis::cmd("GET")
+    let redis_organization: Result<String, DefaultError> = deadpool_redis::redis::cmd("GET")
         .arg(format!("organization:{}", key.display()))
         .query_async(&mut redis_conn)
         .await
@@ -299,18 +296,11 @@ pub async fn get_organization_by_key_query(
                     org_plan_sub.2,
                 );
 
-            let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
-            let client = redis::Client::open(redis_url).map_err(|_| DefaultError {
+            let mut redis_conn = redis_pool.get().await.map_err(|_| DefaultError {
                 message: "Could not create redis client",
             })?;
-            let mut redis_conn = client
-                .get_multiplexed_async_connection()
-                .await
-                .map_err(|_| DefaultError {
-                    message: "Could not create redis client",
-                })?;
 
-            redis::cmd("SET")
+            deadpool_redis::redis::cmd("SET")
                 .arg(format!("organization:{}", org_with_plan_sub.id))
                 .arg(
                     serde_json::to_string(&org_with_plan_sub).map_err(|_| DefaultError {
@@ -323,7 +313,7 @@ pub async fn get_organization_by_key_query(
                     message: "Could not set organization in redis",
                 })?;
 
-            redis::cmd("SET")
+            deadpool_redis::redis::cmd("SET")
                 .arg(format!("organization:{}", org_with_plan_sub.name))
                 .arg(
                     serde_json::to_string(&org_with_plan_sub).map_err(|_| DefaultError {

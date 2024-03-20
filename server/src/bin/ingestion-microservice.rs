@@ -1,5 +1,4 @@
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
-use redis::AsyncCommands;
 use sentry::{Hub, SentryFutureExt};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{self, Event, ServerDatasetConfiguration};
@@ -71,6 +70,7 @@ fn main() {
     };
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
+    let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
 
     let mut config = ManagerConfig::default();
     config.custom_setup = Box::new(establish_connection);
@@ -87,26 +87,25 @@ fn main() {
 
     let web_pool = actix_web::web::Data::new(pool.clone());
 
+    let redis_pool = deadpool_redis::Config::from_url(redis_url)
+        .create_pool(Some(deadpool_redis::Runtime::Tokio1))
+        .unwrap();
+    redis_pool.resize(30);
+    let web_redis_pool = actix_web::web::Data::new(redis_pool);
+
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .unwrap()
         .block_on(
             async move {
-                let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
-                let redis_client = redis::Client::open(redis_url).unwrap();
-                let redis_connection = redis_client
-                    .get_multiplexed_tokio_connection()
-                    .await
-                    .unwrap();
-
                 let threads: Vec<_> = (0..thread_num)
                     .map(|i| {
                         let web_pool = web_pool.clone();
-                        let redis_connection = redis_connection.clone();
-                        tokio::spawn(async move {
-                            ingestion_service(i, redis_connection, web_pool).await
-                        })
+                        let web_redis_pool = web_redis_pool.clone();
+                        tokio::spawn(
+                            async move { ingestion_service(i, web_redis_pool, web_pool).await },
+                        )
                     })
                     .collect();
 
@@ -116,21 +115,30 @@ fn main() {
         );
 }
 
-#[tracing::instrument(skip(web_pool, redis_connection))]
+#[tracing::instrument(skip(web_pool, redis_pool))]
 async fn ingestion_service(
     thread: usize,
-    mut redis_connection: redis::aio::MultiplexedConnection,
+    redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
 ) {
     log::info!("Starting ingestion service thread");
     loop {
-        let payload_result = redis_connection
-            .brpop::<&str, Vec<String>>("ingestion", 0.0)
-            .await;
+        let mut redis_connection = redis_pool
+            .get()
+            .await
+            .expect("Failed to fetch from redis pool");
+
+        let payload_result: Result<Vec<String>, deadpool_redis::redis::RedisError> =
+            deadpool_redis::redis::cmd("brpop")
+                .arg("ingestion")
+                .arg(0.0)
+                .query_async(&mut redis_connection)
+                .await;
 
         let payload = if let Ok(payload) = payload_result {
             payload
         } else {
+            log::error!("Unable to process {:?}", payload_result);
             continue;
         };
 

@@ -5,7 +5,7 @@ use crate::errors::ServiceError;
 use crate::handlers::auth_handler::LoggedUser;
 use crate::operators::stripe_operator::refresh_redis_org_plan_sub;
 use crate::{
-    data::models::{Pool, User},
+    data::models::{Pool, RedisPool, User},
     errors::DefaultError,
 };
 use actix_identity::Identity;
@@ -99,11 +99,12 @@ pub async fn get_user_by_id_query(
     }
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn add_existing_user_to_org(
     email: String,
     organization_id: uuid::Uuid,
     user_role: UserRole,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<bool, DefaultError> {
     use crate::data::schema::users::dsl as users_columns;
@@ -127,6 +128,7 @@ pub async fn add_existing_user_to_org(
             None,
             None,
             UserOrganization::from_details(user.id, organization_id, user_role),
+            redis_pool,
             pool,
         )
         .await
@@ -444,11 +446,12 @@ pub async fn create_user_query(
     Ok(user_org)
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn add_user_to_organization(
     req: Option<&HttpRequest>,
     calling_user_id: Option<uuid::Uuid>,
     user_org: UserOrganization,
+    redis_pool: actix_web::web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
@@ -467,7 +470,7 @@ pub async fn add_user_to_organization(
             ServiceError::InternalServerError("Failed to add user to organization".to_string())
         })?;
 
-    refresh_redis_org_plan_sub(org_id_refresh, pool)
+    refresh_redis_org_plan_sub(org_id_refresh, redis_pool, pool)
         .await
         .map_err(|e| {
             log::error!("Error refreshing redis org plan sub: {:?}", e);

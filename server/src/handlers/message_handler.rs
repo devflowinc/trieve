@@ -70,7 +70,6 @@ pub struct CreateMessageData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -198,7 +197,6 @@ pub async fn create_message_completion_handler(
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -279,7 +277,6 @@ pub struct EditMessageData {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -355,7 +352,6 @@ pub async fn edit_message_handler(
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 )]
 #[tracing::instrument(skip(pool))]
@@ -919,7 +915,6 @@ pub struct SuggestedQueriesResponse {
     ),
     security(
         ("ApiKey" = ["readonly"]),
-        
     )
 
 )]

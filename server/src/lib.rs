@@ -367,7 +367,10 @@ pub async fn main() -> std::io::Result<()> {
         .await
         .expect("Failed to create redis store");
 
-    let redis_client = redis::Client::open(redis_url).expect("Failed to create redis client");
+    let redis_pool = deadpool_redis::Config::from_url(redis_url)
+        .create_pool(Some(deadpool_redis::Runtime::Tokio1))
+        .unwrap();
+    redis_pool.resize(30);
 
     let oidc_client = build_oidc_client().await;
 
@@ -402,7 +405,7 @@ pub async fn main() -> std::io::Result<()> {
             )
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(oidc_client.clone()))
-            .app_data(web::Data::new(redis_client.clone()))
+            .app_data(web::Data::new(redis_pool.clone()))
             .wrap(af_middleware::auth_middleware::AuthMiddlewareFactory)
             .wrap(sentry_actix::Sentry::new())
             .wrap(

@@ -1,4 +1,4 @@
-use crate::data::models::{Organization, StripePlan, UserRole};
+use crate::data::models::{Organization, RedisPool, StripePlan, UserRole};
 use crate::get_env;
 use crate::operators::invitation_operator::check_inv_valid;
 use crate::operators::organization_operator::{
@@ -162,13 +162,14 @@ pub async fn build_oidc_client() -> CoreClient {
     )
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn create_account(
     email: String,
     name: String,
     user_id: uuid::Uuid,
     organization_id: Option<uuid::Uuid>,
     inv_code: Option<uuid::Uuid>,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<(User, Vec<UserOrganization>, Vec<Organization>), ServiceError> {
     let (mut role, org) = match organization_id {
@@ -184,7 +185,7 @@ pub async fn create_account(
                 .replace(' ', "-");
             (
                 UserRole::Owner,
-                create_organization_query(org_name.as_str(), pool.clone())
+                create_organization_query(org_name.as_str(), redis_pool.clone(), pool.clone())
                     .await
                     .map_err(|error| {
                         ServiceError::InternalServerError(error.message.to_string())
@@ -194,9 +195,10 @@ pub async fn create_account(
     };
     let org_id = org.id;
 
-    let org_plan_sub = get_organization_by_key_query(org_id.into(), pool.clone())
-        .await
-        .map_err(|error| ServiceError::InternalServerError(error.message.to_string()))?;
+    let org_plan_sub =
+        get_organization_by_key_query(org_id.into(), redis_pool.clone(), pool.clone())
+            .await
+            .map_err(|error| ServiceError::InternalServerError(error.message.to_string()))?;
     let user_org_count_pool = pool.clone();
     let user_org_count = get_user_org_count(org_id, user_org_count_pool)
         .await
@@ -390,12 +392,13 @@ pub async fn login(
         (status = 400, description = "Email or password empty or incorrect", body = ErrorResponseBody),
     )
 )]
-#[tracing::instrument(skip(session, oidc_client, pool))]
+#[tracing::instrument(skip(session, oidc_client, pool, redis_pool))]
 pub async fn callback(
     req: HttpRequest,
     session: Session,
     oidc_client: web::Data<CoreClient>,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     query: web::Query<OpCallback>,
 ) -> Result<HttpResponse, Error> {
     let state: OpenIdConnectState = session
@@ -482,6 +485,7 @@ pub async fn callback(
                 user_id,
                 login_state.organization_id,
                 login_state.inv_code,
+                redis_pool.clone(),
                 pool.clone(),
             )
             .await?
@@ -508,7 +512,7 @@ pub async fn callback(
                 invitation.organization_id,
                 invitation.role.into(),
             );
-            add_user_to_organization(None, None, user_org, pool).await?;
+            add_user_to_organization(None, None, user_org, redis_pool, pool).await?;
         }
     }
 

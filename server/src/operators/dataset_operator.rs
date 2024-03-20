@@ -1,5 +1,6 @@
-use crate::data::models::{DatasetAndUsage, DatasetUsageCount, ServerDatasetConfiguration};
-use crate::get_env;
+use crate::data::models::{
+    DatasetAndUsage, DatasetUsageCount, RedisPool, ServerDatasetConfiguration,
+};
 use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::{
     data::models::{Dataset, Pool},
@@ -10,9 +11,10 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use qdrant_client::qdrant::{Condition, Filter};
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn create_dataset_query(
     new_dataset: Dataset,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<Dataset, ServiceError> {
     use crate::data::schema::datasets::dsl::*;
@@ -28,15 +30,12 @@ pub async fn create_dataset_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to create dataset".to_string()))?;
 
-    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
-    let client = redis::Client::open(redis_url).map_err(|err| {
-        ServiceError::BadRequest(format!("Could not create redis client: {}", err))
-    })?;
-    let mut redis_conn = client
-        .get_multiplexed_async_connection()
+    let mut redis_conn = redis_pool
+        .get()
         .await
-        .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
-    redis::cmd("SET")
+        .map_err(|_| ServiceError::BadRequest("Could not fetch redis connection".to_string()))?;
+
+    deadpool_redis::redis::cmd("SET")
         .arg(format!("dataset:{}", new_dataset.id))
         .arg(serde_json::to_string(&new_dataset).map_err(|err| {
             ServiceError::BadRequest(format!("Could not stringify dataset: {}", err))
@@ -50,21 +49,19 @@ pub async fn create_dataset_query(
     Ok(new_dataset)
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn get_dataset_by_id_query(
     id: uuid::Uuid,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<Dataset, ServiceError> {
     // Check cache first
-    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
-    let redis_client = redis::Client::open(redis_url)
-        .map_err(|_| ServiceError::BadRequest("Could not create redis client".to_string()))?;
-    let mut redis_conn = redis_client
-        .get_multiplexed_async_connection()
+    let mut redis_conn = redis_pool
+        .get()
         .await
-        .map_err(|_| ServiceError::BadRequest("Could not get redis connection".to_string()))?;
+        .map_err(|_| ServiceError::BadRequest("Could not fetch redis connection".to_string()))?;
 
-    let redis_dataset: Result<String, ServiceError> = redis::cmd("GET")
+    let redis_dataset: Result<String, ServiceError> = deadpool_redis::redis::cmd("GET")
         .arg(format!("dataset:{}", id))
         .query_async(&mut redis_conn)
         .await
@@ -90,7 +87,11 @@ pub async fn get_dataset_by_id_query(
             let dataset_stringified = serde_json::to_string(&dataset)
                 .map_err(|_| ServiceError::BadRequest("Could not stringify dataset".to_string()))?;
 
-            redis::cmd("SET")
+            let mut redis_conn = redis_pool.get().await.map_err(|_| {
+                ServiceError::BadRequest("Could not get redis connection".to_string())
+            })?;
+
+            deadpool_redis::redis::cmd("SET")
                 .arg(format!("dataset:{}", dataset.id))
                 .arg(dataset_stringified)
                 .query_async(&mut redis_conn)
@@ -104,25 +105,23 @@ pub async fn get_dataset_by_id_query(
     }
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn delete_dataset_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
     config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
 
-    let dataset = get_dataset_by_id_query(id, pool.clone()).await?;
+    let dataset = get_dataset_by_id_query(id, redis_pool.clone(), pool.clone()).await?;
 
-    let redis_url = get_env!("REDIS_URL", "REDIS_URL must be set");
-    let client = redis::Client::open(redis_url).map_err(|err| {
-        ServiceError::BadRequest(format!("Could not create redis client: {}", err))
-    })?;
-    let mut redis_conn = client
-        .get_multiplexed_async_connection()
+    let mut redis_conn = redis_pool
+        .get()
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
-    redis::cmd("DEL")
+
+    deadpool_redis::redis::cmd("DEL")
         .arg(format!("dataset:{}", dataset.id))
         .query_async(&mut redis_conn)
         .await
@@ -161,12 +160,13 @@ pub async fn delete_dataset_by_id_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn update_dataset_query(
     id: uuid::Uuid,
     name: String,
     server_configuration: serde_json::Value,
     client_configuration: serde_json::Value,
+    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<Dataset, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
@@ -189,18 +189,12 @@ pub async fn update_dataset_query(
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to update dataset".to_string()))?;
 
-    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
-
-    let client = redis::Client::open(redis_url).map_err(|err| {
-        ServiceError::BadRequest(format!("Could not create redis client: {}", err))
-    })?;
-
-    let mut redis_conn = client
-        .get_multiplexed_async_connection()
+    let mut redis_conn = redis_pool
+        .get()
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
 
-    redis::cmd("SET")
+    deadpool_redis::redis::cmd("SET")
         .arg(format!("dataset:{}", id))
         .arg(serde_json::to_string(&new_dataset).map_err(|err| {
             ServiceError::BadRequest(format!("Could not stringify dataset: {}", err))
