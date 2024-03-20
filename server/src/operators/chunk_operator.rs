@@ -973,7 +973,7 @@ pub fn find_relevant_sentence(
 pub async fn get_row_count_for_dataset_id_query(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<i32, DefaultError> {
+) -> Result<usize, DefaultError> {
     use crate::data::schema::dataset_usage_counts::dsl as dataset_usage_counts_columns;
 
     let mut conn = pool.get().await.expect("Failed to get connection to db");
@@ -987,5 +987,5 @@ pub async fn get_row_count_for_dataset_id_query(
             message: "Failed to get chunk count for dataset",
         })?;
 
-    Ok(chunk_metadata_count)
+    Ok(chunk_metadata_count as usize)
 }

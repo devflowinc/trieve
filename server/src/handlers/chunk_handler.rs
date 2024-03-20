@@ -45,7 +45,7 @@ use utoipa::ToSchema;
     "weight": 0.5,
     "split_avg": false
 }))]
-pub struct CreateChunkData {
+pub struct ChunkData {
     /// HTML content of the chunk. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content.
     pub chunk_html: Option<String>,
     /// Link to the chunk. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation.
@@ -75,8 +75,14 @@ pub struct CreateChunkData {
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
+pub struct FailedChunk {
+    index: usize,
+    message: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
 #[schema(example = json!({
-    "chunk_metadata": {
+    "chunk_metadata": [{
         "content": "Some content",
         "link": "https://example.com",
         "tag_set": ["tag1", "tag2"],
@@ -86,22 +92,58 @@ pub struct CreateChunkData {
         "tracking_id": "tracking_id",
         "time_stamp": "2021-01-01T00:00:00",
         "weight": 0.5
-    },
+    }],
     "pos_in_queue": 1
 }))]
-pub struct ReturnQueuedChunk {
-    pub chunk_metadata: ChunkMetadata,
-    pub pos_in_queue: i32,
+#[serde(untagged)]
+pub enum ReturnQueuedChunk {
+    /// All Chunks that have been queue'd with any errors filtered out
+    Single {
+        chunk_metadata: ChunkMetadata,
+        /// The current position the last access item is in the queue
+        pos_in_queue: i32,
+    },
+    Batch {
+        chunk_metadata: Vec<ChunkMetadata>,
+        /// The current position the last access item is in the queue
+        pos_in_queue: i32,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UploadIngestionMessage {
     pub chunk_metadata: ChunkMetadata,
-    pub chunk: CreateChunkData,
+    pub chunk: ChunkData,
     pub dataset_id: uuid::Uuid,
     pub dataset_config: ServerDatasetConfiguration,
     pub upsert_by_tracking_id: bool,
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(untagged)]
+#[schema(example = json!({
+    "chunk_html": "<p>Some HTML content</p>",
+    "link": "https://example.com",
+    "tag_set": ["tag1", "tag2"],
+    "file_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+    "metadata": {"key1": "value1", "key2": "value2"},
+    "chunk_vector": [0.1, 0.2, 0.3],
+    "tracking_id": "tracking_id",
+    "upsert_by_tracking_id": true,
+    "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
+    "group_tracking_ids": ["group_tracking_id"],
+    "time_stamp": "2021-01-01T00:00:00",
+    "weight": 0.5,
+    "split_avg": false
+}))]
+pub enum CreateChunkData {
+    Single(ChunkData),
+    Batch(Vec<ChunkData>),
+}
+
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[serde(untagged)]
+pub enum SingleOrMultiChunkMetadata {}
 
 /// Create Chunk
 ///
@@ -114,7 +156,7 @@ pub struct UploadIngestionMessage {
     request_body(content = CreateChunkData, description = "JSON request payload to create a new chunk (chunk)", content_type = "application/json"),
     responses(
         (status = 200, description = "JSON response payload containing the created chunk", body = ReturnQueuedChunk),
-        (status = 400, description = "Service error relating to to creating a chunk, likely due to conflicting tracking_id", body = ErrorResponseBody),
+        (status = 400, description = "", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -125,118 +167,157 @@ pub struct UploadIngestionMessage {
 )]
 #[tracing::instrument(skip(redis_pool, pool))]
 pub async fn create_chunk(
-    chunk: web::Json<CreateChunkData>,
+    create_chunk_data: web::Json<CreateChunkData>,
     pool: web::Data<Pool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let chunks = match create_chunk_data.clone() {
+        CreateChunkData::Single(chunk) => vec![chunk],
+        CreateChunkData::Batch(chunks) => chunks,
+    };
+
     let count_dataset_id = dataset_org_plan_sub.dataset.id;
 
+    let mut timer = Timer::new();
     let chunk_count = get_row_count_for_dataset_id_query(count_dataset_id, pool.clone())
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    timer.add("get daataset count");
 
-    if chunk_count
+    if chunk_count + chunks.len()
         >= dataset_org_plan_sub
             .organization
             .plan
             .unwrap_or_default()
-            .chunk_count
+            .chunk_count as usize
     {
         return Ok(HttpResponse::UpgradeRequired()
             .json(json!({"message": "Must upgrade your plan to add more chunks"})));
     }
 
-    let chunk_tracking_id = chunk
-        .tracking_id
-        .clone()
-        .filter(|chunk_tracking| !chunk_tracking.is_empty());
-
-    let content = convert_html_to_text(chunk.chunk_html.as_ref().unwrap_or(&"".to_string()));
-
-    let chunk_tag_set = chunk.tag_set.clone().map(|tag_set| tag_set.join(","));
-
-    let chunk_metadata = ChunkMetadata::from_details(
-        content,
-        &chunk.chunk_html,
-        &chunk.link,
-        &chunk_tag_set,
-        None,
-        chunk.metadata.clone(),
-        chunk_tracking_id,
-        chunk
-            .time_stamp
-            .clone()
-            .map(|ts| -> Result<NaiveDateTime, ServiceError> {
-                Ok(ts
-                    .parse::<DateTimeUtc>()
-                    .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))?
-                    .0
-                    .with_timezone(&chrono::Local)
-                    .naive_local())
-            })
-            .transpose()?,
-        dataset_org_plan_sub.dataset.id,
-        chunk.weight.unwrap_or(0.0),
-    );
-
-    let group_ids_from_group_tracking_ids =
-        if let Some(group_tracking_ids) = chunk.group_tracking_ids.clone() {
-            get_groups_from_tracking_ids_query(group_tracking_ids, count_dataset_id, pool)
-                .await
-                .map_err(|err| ServiceError::BadRequest(err.message.into()))?
-                .into_iter()
-                .map(|group| group.id)
-                .collect::<Vec<uuid::Uuid>>()
-        } else {
-            vec![]
-        };
-
-    let initial_group_ids = chunk.group_ids.clone().unwrap_or_default();
-    let mut chunk_only_group_ids = chunk.clone();
-    let deduped_group_ids = group_ids_from_group_tracking_ids
-        .into_iter()
-        .chain(initial_group_ids.into_iter())
-        .unique()
-        .collect::<Vec<uuid::Uuid>>();
-    chunk_only_group_ids.group_ids = Some(deduped_group_ids.clone());
-    chunk_only_group_ids.group_tracking_ids = None;
-
     let server_dataset_configuration = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    let ingestion_message = UploadIngestionMessage {
-        chunk_metadata: chunk_metadata.clone(),
-        chunk: chunk_only_group_ids.clone(),
-        dataset_id: count_dataset_id,
-        dataset_config: server_dataset_configuration.clone(),
-        upsert_by_tracking_id: chunk.upsert_by_tracking_id.unwrap_or(false),
-    };
+    let mut ingestion_messages = vec![];
+
+    for chunk in chunks {
+        let content = convert_html_to_text(chunk.chunk_html.as_ref().unwrap_or(&"".to_string()));
+        let chunk_tag_set = chunk.tag_set.clone().map(|tag_set| tag_set.join(","));
+
+        let chunk_tracking_id = chunk
+            .tracking_id
+            .clone()
+            .filter(|chunk_tracking| !chunk_tracking.is_empty());
+
+        let timestamp = {
+            chunk
+                .time_stamp
+                .clone()
+                .map(|ts| -> Result<NaiveDateTime, ServiceError> {
+                    Ok(ts
+                        .parse::<DateTimeUtc>()
+                        .map_err(|_| {
+                            ServiceError::BadRequest("Invalid timestamp format".to_string())
+                        })?
+                        .0
+                        .with_timezone(&chrono::Local)
+                        .naive_local())
+                })
+                .transpose()?
+        };
+
+        let chunk_metadata = ChunkMetadata::from_details(
+            content,
+            &chunk.chunk_html,
+            &chunk.link,
+            &chunk_tag_set,
+            None,
+            chunk.metadata.clone(),
+            chunk_tracking_id,
+            timestamp,
+            dataset_org_plan_sub.dataset.id,
+            chunk.weight.unwrap_or(0.0),
+        );
+
+        let group_ids_from_group_tracking_ids = if let Some(group_tracking_ids) =
+            chunk.group_tracking_ids.clone()
+        {
+            get_groups_from_tracking_ids_query(group_tracking_ids, count_dataset_id, pool.clone())
+                .await
+                .ok()
+                .map(|groups| {
+                    groups
+                        .into_iter()
+                        .map(|group| group.id)
+                        .collect::<Vec<uuid::Uuid>>()
+                })
+                .unwrap_or(vec![])
+        } else {
+            vec![]
+        };
+
+        let initial_group_ids = chunk.group_ids.clone().unwrap_or_default();
+        let mut chunk_only_group_ids = chunk.clone();
+        let deduped_group_ids = group_ids_from_group_tracking_ids
+            .into_iter()
+            .chain(initial_group_ids.into_iter())
+            .unique()
+            .collect::<Vec<uuid::Uuid>>();
+
+        chunk_only_group_ids.group_ids = Some(deduped_group_ids);
+        chunk_only_group_ids.group_tracking_ids = None;
+
+        let upload_message = UploadIngestionMessage {
+            chunk_metadata: chunk_metadata.clone(),
+            chunk: chunk_only_group_ids.clone(),
+            dataset_id: count_dataset_id,
+            dataset_config: server_dataset_configuration.clone(),
+            upsert_by_tracking_id: chunk.upsert_by_tracking_id.unwrap_or(false),
+        };
+
+        ingestion_messages.push(upload_message);
+    }
 
     let mut redis_conn = redis_pool
         .get()
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    timer.add("Got redis conn");
 
-    deadpool_redis::redis::cmd("lpush")
+    let serialized_messages: Vec<String> = ingestion_messages
+        .iter()
+        .filter_map(|msg| serde_json::to_string(&msg).ok())
+        .collect();
+
+    let pos_in_queue = deadpool_redis::redis::cmd("lpush")
         .arg("ingestion")
-        .arg(serde_json::to_string(&ingestion_message)?)
+        .arg(&serialized_messages)
         .query_async(&mut redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    let pos_in_queue = deadpool_redis::redis::cmd("llen")
-        .arg("ingestion")
-        .query_async(&mut redis_conn)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    let chunk_metadatas: Vec<ChunkMetadata> = ingestion_messages
+        .iter()
+        .map(|message| message.chunk_metadata.clone())
+        .collect();
 
-    Ok(HttpResponse::Ok().json(ReturnQueuedChunk {
-        chunk_metadata: chunk_metadata.clone(),
-        pos_in_queue,
-    }))
+    let response = match create_chunk_data.into_inner() {
+        CreateChunkData::Single(_) => ReturnQueuedChunk::Single {
+            chunk_metadata: chunk_metadatas.get(0).ok_or(ServiceError::BadRequest(
+                "Failed to upload chunk".to_string(),
+            ))?.clone(),
+            pos_in_queue,
+        },
+        CreateChunkData::Batch(_) => ReturnQueuedChunk::Batch {
+            chunk_metadata: chunk_metadatas,
+            pos_in_queue,
+        },
+    };
+
+    Ok(HttpResponse::Ok().json(response))
 }
 
 /// Bulk Create Chunk
