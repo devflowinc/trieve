@@ -6,6 +6,7 @@ use crate::data::models::{
     ChunkMetadata, Dataset, DatasetAndOrgWithSubAndPlan, EventType, ServerDatasetConfiguration,
 };
 use crate::handlers::auth_handler::AdminOnly;
+use crate::handlers::chunk_handler::ChunkData;
 use crate::operators::chunk_operator::delete_chunk_metadata_query;
 use crate::{data::models::ChunkGroup, handlers::chunk_handler::ReturnQueuedChunk};
 use crate::{data::models::Event, get_env};
@@ -318,7 +319,7 @@ pub async fn create_chunks_with_handler(
         })?;
 
     for chunk_html in chunk_htmls {
-        let create_chunk_data = CreateChunkData {
+        let create_chunk_data = ChunkData {
             chunk_html: Some(chunk_html.clone()),
             link: link.clone(),
             tag_set: split_tag_set.clone(),
@@ -333,7 +334,7 @@ pub async fn create_chunks_with_handler(
             weight: None,
             split_avg: None,
         };
-        let web_json_create_chunk_data = web::Json(create_chunk_data);
+        let web_json_create_chunk_data = web::Json(CreateChunkData::Single(create_chunk_data));
 
         match create_chunk(
             web_json_create_chunk_data,
@@ -346,13 +347,16 @@ pub async fn create_chunks_with_handler(
         {
             Ok(response) => {
                 if response.status().is_success() {
-                    let chunk_metadata: ReturnQueuedChunk = serde_json::from_slice(
+                    let queued_chunk: ReturnQueuedChunk = serde_json::from_slice(
                         response.into_body().try_into_bytes().unwrap().as_ref(),
                     )
                     .map_err(|_err| DefaultError {
                         message: "Error creating chunk metadata's for file",
                     })?;
-                    chunk_ids.push(chunk_metadata.chunk_metadata.id);
+                    match queued_chunk {
+                        ReturnQueuedChunk::Single{ chunk_metadata, pos_in_queue: _ } => chunk_ids.push(chunk_metadata.id),
+                        _ => unreachable!("Only uploaded 1 chunk but multiple chunks returned"),
+                    }
                 }
             }
             Err(error) => {

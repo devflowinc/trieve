@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate diesel;
-use actix_web::HttpResponse;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::ManagerConfig;
 use openssl::ssl::SslVerifyMode;
@@ -129,7 +128,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.3.6",
+        version = "0.3.7",
     ),
     servers(
         (url = "http://localhost:8090",
@@ -218,6 +217,7 @@ impl Modify for SecurityAddon {
             handlers::message_handler::EditMessageData,
             handlers::message_handler::SuggestedQueriesRequest,
             handlers::message_handler::SuggestedQueriesResponse,
+            handlers::chunk_handler::ChunkData,
             handlers::chunk_handler::CreateChunkData,
             handlers::chunk_handler::ReturnQueuedChunk,
             handlers::chunk_handler::UpdateChunkData,
@@ -370,7 +370,7 @@ pub async fn main() -> std::io::Result<()> {
     let redis_pool = deadpool_redis::Config::from_url(redis_url)
         .create_pool(Some(deadpool_redis::Runtime::Tokio1))
         .unwrap();
-    redis_pool.resize(30);
+    redis_pool.resize(200);
 
     let oidc_client = build_oidc_client().await;
 

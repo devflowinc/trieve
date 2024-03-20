@@ -74,5 +74,5 @@ jobs:
       - name: Generating OpenAPI spec
         run: cargo run --features runtime-env --manifest-path server/Cargo.toml --bin redoc_ci > openapi.json
       - name: Vaccum lint
-        run: vacuum lint openapi.json -r '.github/workflows/rules.yaml'
+        run: vacuum lint openapi.json -r '.github/workflows/rules.yaml' -d
 
