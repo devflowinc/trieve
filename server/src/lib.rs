@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate diesel;
+use actix_web::HttpResponse;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::ManagerConfig;
 use openssl::ssl::SslVerifyMode;
@@ -439,6 +440,9 @@ pub async fn main() -> std::io::Result<()> {
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")
                     .url("/api-docs/openapi.json", ApiDoc::openapi())
+            )
+            .service(
+                web::redirect("/swagger-ui", "/swagger-ui/")
             )
             // everything under '/api/' route
             .service(
