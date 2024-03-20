@@ -347,6 +347,8 @@ pub async fn get_signed_url(
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
+    log::info!("Getting signed url for file: {}", file_name);
+
     let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
 
     let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
@@ -358,7 +360,10 @@ pub async fn get_signed_url(
 
     let signed_url = bucket
         .presign_get(format!("{}/{}", s3_path, file_name.into_inner()), 300, None)
-        .map_err(|e| ServiceError::BadRequest(format!("Error getting signed url: {}", e)))?;
+        .map_err(|e| {
+            log::error!("Error getting signed url: {}", e);
+            ServiceError::BadRequest(format!("Error getting signed url: {}", e))
+        })?;
 
     Ok(HttpResponse::SeeOther()
         .append_header(("Location", signed_url))

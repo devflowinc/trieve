@@ -1,0 +1,92 @@
+import {
+  Accessor,
+  createEffect,
+  createSignal,
+  For,
+  Setter,
+  Show,
+} from "solid-js";
+import { FullScreenModal } from "./Atoms/FullScreenModal";
+import { useStore } from "@nanostores/solid";
+import { currentDataset } from "../stores/datasetStore";
+
+export interface ImageModalProps {
+  showImageModal: Accessor<boolean>;
+  setShowImageModal: Setter<boolean>;
+  imgInformation: Accessor<{
+    imgRangeStart: number;
+    imgRangeEnd: number;
+    imgRangePrefix: string;
+  } | null>;
+}
+
+export const ImageModal = (props: ImageModalProps) => {
+  const apiHost = import.meta.env.VITE_API_HOST as string;
+  const $currentDataset = useStore(currentDataset);
+
+  const [signedImageUrlsHashmap, setSignedImageUrlsHashmap] = createSignal<
+    Record<string, string>
+  >({});
+
+  createEffect(() => {
+    const rangeArray = Array.from({
+      length:
+        (props.imgInformation()?.imgRangeEnd ?? 0) -
+        (props.imgInformation()?.imgRangeStart ?? 0) +
+        1,
+    });
+
+    rangeArray.forEach((_, i) => {
+      const fileName = `${props.imgInformation()?.imgRangePrefix ?? ""}${
+        (props.imgInformation()?.imgRangeStart ?? 0) + i
+      }`;
+
+      void fetch(`${apiHost}/get_signed_url/${fileName}`, {
+        headers: {
+          "TR-Dataset": $currentDataset()?.dataset.id ?? "",
+        },
+        credentials: "include",
+      }).then((response) => {
+        const location = response.headers.get("Location");
+        if (location) {
+          setSignedImageUrlsHashmap((prev) => ({
+            ...prev,
+            [fileName]: location,
+          }));
+        }
+      });
+    });
+  });
+
+  return (
+    <Show when={props.showImageModal()}>
+      <FullScreenModal
+        isOpen={props.showImageModal}
+        setIsOpen={props.setShowImageModal}
+      >
+        <div class="flex max-h-[75vh] max-w-[75vw] flex-col space-y-2 overflow-auto">
+          <For
+            each={Array.from({
+              length:
+                (props.imgInformation()?.imgRangeEnd ?? 0) -
+                (props.imgInformation()?.imgRangeStart ?? 0) +
+                1,
+            })}
+          >
+            {(_, i) => {
+              const fileName = `${
+                props.imgInformation()?.imgRangePrefix ?? ""
+              }${
+                // eslint-disable-next-line solid/reactivity
+                (props.imgInformation()?.imgRangeStart ?? 0) + i()
+              }`;
+              const signedUrl = signedImageUrlsHashmap()[fileName] ?? "";
+
+              return <img class="mx-auto my-auto" src={signedUrl} />;
+            }}
+          </For>
+        </div>
+      </FullScreenModal>
+    </Show>
+  );
+};

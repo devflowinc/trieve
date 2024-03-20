@@ -54,8 +54,11 @@ pub fn get_aws_bucket() -> Result<Bucket, DefaultError> {
     };
 
     let aws_bucket = Bucket::new(s3_bucket_name, aws_region, aws_credentials)
-        .map_err(|_| DefaultError {
-            message: "Could not create bucket",
+        .map_err(|e| {
+            log::error!("Could not create or get bucket {:?}", e);
+            DefaultError {
+                message: "Could not create or get bucket",
+            }
         })?
         .with_path_style();
 
