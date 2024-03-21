@@ -6,7 +6,7 @@ use crate::data::models::{
     ChunkMetadata, Dataset, DatasetAndOrgWithSubAndPlan, EventType, ServerDatasetConfiguration,
 };
 use crate::handlers::auth_handler::AdminOnly;
-use crate::handlers::chunk_handler::ChunkData;
+use crate::handlers::chunk_handler::{ChunkData, CreateSingleChunkData, SingleQueuedChunkResponse};
 use crate::operators::chunk_operator::delete_chunk_metadata_query;
 use crate::{data::models::ChunkGroup, handlers::chunk_handler::ReturnQueuedChunk};
 use crate::{data::models::Event, get_env};
@@ -334,7 +334,9 @@ pub async fn create_chunks_with_handler(
             weight: None,
             split_avg: None,
         };
-        let web_json_create_chunk_data = web::Json(CreateChunkData::Single(create_chunk_data));
+        let web_json_create_chunk_data = web::Json(CreateChunkData::Single(CreateSingleChunkData(
+            create_chunk_data,
+        )));
 
         match create_chunk(
             web_json_create_chunk_data,
@@ -354,7 +356,10 @@ pub async fn create_chunks_with_handler(
                         message: "Error creating chunk metadata's for file",
                     })?;
                     match queued_chunk {
-                        ReturnQueuedChunk::Single{ chunk_metadata, pos_in_queue: _ } => chunk_ids.push(chunk_metadata.id),
+                        ReturnQueuedChunk::Single(SingleQueuedChunkResponse {
+                            chunk_metadata,
+                            pos_in_queue: _,
+                        }) => chunk_ids.push(chunk_metadata.id),
                         _ => unreachable!("Only uploaded 1 chunk but multiple chunks returned"),
                     }
                 }

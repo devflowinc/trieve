@@ -163,7 +163,6 @@ impl Modify for SecurityAddon {
         handlers::chunk_handler::get_chunk_by_tracking_id,
         handlers::chunk_handler::delete_chunk_by_tracking_id,
         handlers::chunk_handler::get_chunk_by_id,
-        handlers::chunk_handler::bulk_create_chunk,
         handlers::user_handler::update_user,
         handlers::user_handler::set_user_api_key,
         handlers::user_handler::delete_user_api_key,
@@ -219,6 +218,10 @@ impl Modify for SecurityAddon {
             handlers::message_handler::SuggestedQueriesResponse,
             handlers::chunk_handler::ChunkData,
             handlers::chunk_handler::CreateChunkData,
+            handlers::chunk_handler::CreateSingleChunkData,
+            handlers::chunk_handler::CreateBatchChunkData,
+            handlers::chunk_handler::SingleQueuedChunkResponse,
+            handlers::chunk_handler::BatchQueuedChunkResponse,
             handlers::chunk_handler::ReturnQueuedChunk,
             handlers::chunk_handler::UpdateChunkData,
             handlers::chunk_handler::RecommendChunksRequest,
@@ -535,12 +538,6 @@ pub async fn main() -> std::io::Result<()> {
                                 web::resource("")
                                     .route(web::post().to(handlers::chunk_handler::create_chunk))
                                     .route(web::put().to(handlers::chunk_handler::update_chunk)),
-                            )
-                            .service(
-                                web::resource("/bulk")
-                                    .route(
-                                        web::post().to(handlers::chunk_handler::bulk_create_chunk),
-                                    ),
                             )
                             .service(web::resource("/recommend").route(
                                 web::post().to(handlers::chunk_handler::get_recommended_chunks),
