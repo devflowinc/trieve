@@ -12,7 +12,7 @@ import { useStore } from "@nanostores/solid";
 import { currentDataset } from "../stores/datasetStore";
 
 export const CreateNewDocChunkForm = () => {
-  const apiHost = import.meta.env.VITE_API_HOST as string;
+const apiHost = window.API_HOST || import.meta.env.VITE_API_HOST as string;
   const $dataset = useStore(currentDataset);
   const [docChunkLink, setDocChunkLink] = createSignal("");
   const [tagSet, setTagSet] = createSignal("");

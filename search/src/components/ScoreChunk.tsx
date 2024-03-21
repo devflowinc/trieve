@@ -86,7 +86,7 @@ export interface ScoreChunkProps {
 const ScoreChunk = (props: ScoreChunkProps) => {
   const $currentDataset = useStore(currentDataset);
   const $currentUser = useStore(currentUser);
-  const apiHost = import.meta.env.VITE_API_HOST as string;
+const apiHost = window.API_HOST || import.meta.env.VITE_API_HOST as string;
   const $envs = useStore(clientConfig);
 
   const frontMatterValsToHide = $envs().FRONTMATTER_VALS?.split(",");

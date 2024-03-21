@@ -5,7 +5,7 @@ import { currentDataset } from "../stores/datasetStore";
 export const SuggestedQueries = (props: { query: string }) => {
   const [suggestedQueries, setSuggestedQueries] = createSignal<string[]>([]);
   const [authed, setAuthed] = createSignal<boolean>(true);
-  const apiHost = import.meta.env.VITE_API_HOST as string;
+const apiHost = window.API_HOST || import.meta.env.VITE_API_HOST as string;
   const $dataset = useStore(currentDataset);
 
   createEffect(() => {

@@ -22,7 +22,7 @@ export interface FileUserPageViewProps {
 }
 
 export const OrgFileViewPage = (props: FileUserPageViewProps) => {
-  const apiHost = import.meta.env.VITE_API_HOST as string;
+const apiHost = window.API_HOST || import.meta.env.VITE_API_HOST as string;
   const $dataset = useStore(currentDataset);
   const [loading, setLoading] = createSignal(true);
   const [fileAndGroupIds, setFileAndGroupIds] = createSignal<FileAndGroupId[]>(

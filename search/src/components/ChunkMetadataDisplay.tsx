@@ -60,7 +60,7 @@ export interface ChunkMetadataDisplayProps {
 }
 
 const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
-  const apiHost = import.meta.env.VITE_API_HOST as string;
+const apiHost = window.API_HOST || import.meta.env.VITE_API_HOST as string;
   const $envs = useStore(clientConfig);
 
   const frontMatterValsToHide = $envs().FRONTMATTER_VALS?.split(",");

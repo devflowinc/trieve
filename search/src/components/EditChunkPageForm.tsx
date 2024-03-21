@@ -17,7 +17,7 @@ import { useStore } from "@nanostores/solid";
 import { currentDataset } from "../stores/datasetStore";
 
 export const EditChunkPageForm = (props: SingleChunkPageProps) => {
-  const apiHost = import.meta.env.VITE_API_HOST as string;
+const apiHost = window.API_HOST || import.meta.env.VITE_API_HOST as string;
   const $dataset = useStore(currentDataset);
   const initialChunkMetadata = props.defaultResultChunk.metadata;
 

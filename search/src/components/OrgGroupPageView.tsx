@@ -18,7 +18,7 @@ export interface GroupUserPageViewProps {
 }
 
 export const GroupUserPageView = (props: GroupUserPageViewProps) => {
-  const apiHost = import.meta.env.VITE_API_HOST as string;
+const apiHost = window.API_HOST || import.meta.env.VITE_API_HOST as string;
   const $dataset = useStore(currentDataset);
   const [groups, setGroups] = createSignal<ChunkGroupDTO[]>([]);
   const [groupPage, setGroupPage] = createSignal(1);

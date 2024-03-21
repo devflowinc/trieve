@@ -1,0 +1,1 @@
+window.API_HOST="http://localhost:5176"

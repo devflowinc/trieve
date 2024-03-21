@@ -5,7 +5,7 @@ import {
 } from "../../utils/apiTypes";
 import { currentDataset } from "./datasetStore";
 
-const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
+const apiHost = window.API_HOST || import.meta.env.VITE_API_HOST as unknown as string;
 
 const tryParse = (encoded: string) => {
   try {
