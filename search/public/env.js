@@ -1,1 +1,2 @@
-// add window objects here
+// add window variables here
+
