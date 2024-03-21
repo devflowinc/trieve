@@ -103,7 +103,11 @@ pub async fn create_embedding(
     .set("Content-Type", "application/json")
     .send_json(serde_json::to_value(parameters).unwrap())
     .map_err(|e| {
-        ServiceError::InternalServerError(format!("Could not get embeddings from server: {:?}", e))
+        ServiceError::InternalServerError(format!(
+            "Could not get embeddings from server: {:?}, {:?}",
+            e,
+            e.to_string()
+        ))
     })?;
 
     let embeddings: EmbeddingResponse = format_response(embeddings_resp.into_string().unwrap())
