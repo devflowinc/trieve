@@ -36,6 +36,8 @@ pub struct EventReturn {
 pub async fn get_events_query(
     dataset_id: uuid::Uuid,
     page: i64,
+    page_size: i64,
+    event_types: Vec<String>,
     pool: web::Data<Pool>,
 ) -> Result<EventReturn, DefaultError> {
     use crate::data::schema::dataset_event_counts::dsl as dataset_event_counts_columns;
@@ -48,13 +50,21 @@ pub async fn get_events_query(
                 .on(events_columns::dataset_id.eq(dataset_event_counts_columns::dataset_uuid)),
         )
         .filter(events_columns::dataset_id.eq(dataset_id))
+        .filter(
+            events_columns::event_type.eq_any(
+                event_types
+                    .iter()
+                    .map(|event_type| event_type.as_str())
+                    .collect::<Vec<&str>>(),
+            ),
+        )
         .select((
             Event::as_select(),
             crate::data::schema::dataset_event_counts::dsl::notification_count.nullable(),
         ))
         .order(events_columns::created_at.desc())
-        .limit(10)
-        .offset((page - 1) * 10)
+        .limit(page_size)
+        .offset((page - 1) * page_size)
         .load::<(Event, Option<i32>)>(&mut conn)
         .await
         .map_err(|_| DefaultError {

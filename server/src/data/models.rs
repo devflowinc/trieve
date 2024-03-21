@@ -894,6 +894,15 @@ impl EventType {
             EventType::CardUpdated { .. } => "card_updated".to_string(),
         }
     }
+
+    pub fn get_all_event_types() -> Vec<String> {
+        vec![
+            "file_uploaded".to_string(),
+            "card_uploaded".to_string(),
+            "card_action_failed".to_string(),
+            "card_updated".to_string(),
+        ]
+    }
 }
 
 impl From<EventType> for serde_json::Value {
