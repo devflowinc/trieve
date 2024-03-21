@@ -15,5 +15,5 @@
     "prettier/prettier": ["error", { "endOfLine": "auto" }]
   },
   "overrides": [],
-  "ignorePatterns": ["node_modules", "dist", "tailwind.config.cjs", "prettier.config.cjs"]
+  "ignorePatterns": ["node_modules", "dist", "tailwind.config.cjs", "prettier.config.cjs", "vite.config.ts", "postcss.config.cjs"]
 }
