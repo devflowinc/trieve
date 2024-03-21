@@ -17,8 +17,6 @@ pub struct EmbeddingParameters {
     pub input: EmbeddingInput,
     /// ID of the model to use.
     pub model: String,
-    /// Whether to truncate the input to the first 2048 tokens for the 'text-embedding-3' model and the first 4096 tokens for the 'text-embedding-4' model. If false, the entire input will be used.
-    pub truncate: bool,
 }
 
 #[tracing::instrument]
@@ -91,7 +89,6 @@ pub async fn create_embedding(
     let parameters = EmbeddingParameters {
         model: dataset_config.EMBEDDING_MODEL_NAME.to_string(),
         input,
-        truncate: true,
     };
 
     let embeddings_resp = ureq::post(&format!(
