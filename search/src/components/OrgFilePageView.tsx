@@ -1,5 +1,5 @@
 import { FiTrash } from "solid-icons/fi";
-import { ChunkFile, FileAndGroupId, type UserDTO } from "../../utils/apiTypes";
+import { ChunkFile, FileAndGroupId } from "../../utils/apiTypes";
 import {
   For,
   Match,
@@ -8,22 +8,24 @@ import {
   Switch,
   createEffect,
   createSignal,
+  useContext,
 } from "solid-js";
 import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
 import { getLocalTime } from "./ChunkMetadataDisplay";
-import { useStore } from "@nanostores/solid";
-import { currentDataset } from "../stores/datasetStore";
 import { A } from "@solidjs/router";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export interface FileUserPageViewProps {
-  loggedUser: UserDTO | null;
   setOnDelete: Setter<() => void>;
   setShowConfirmModal: Setter<boolean>;
 }
 
 export const OrgFileViewPage = (props: FileUserPageViewProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
-  const $dataset = useStore(currentDataset);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+  const user = datasetAndUserContext.user;
+
+  const $dataset = datasetAndUserContext.currentDataset;
   const [loading, setLoading] = createSignal(true);
   const [fileAndGroupIds, setFileAndGroupIds] = createSignal<FileAndGroupId[]>(
     [],
@@ -33,10 +35,10 @@ export const OrgFileViewPage = (props: FileUserPageViewProps) => {
   const [deleting, setDeleting] = createSignal(false);
 
   createEffect(() => {
-    const userId = props.loggedUser?.id;
+    const userId = user?.()?.id;
     if (userId === undefined) return;
 
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     setLoading(true);
@@ -69,7 +71,7 @@ export const OrgFileViewPage = (props: FileUserPageViewProps) => {
   });
 
   const deleteFile = (file: ChunkFile) => {
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     props.setOnDelete(() => {
@@ -114,12 +116,10 @@ export const OrgFileViewPage = (props: FileUserPageViewProps) => {
             No files found for this dataset
           </div>
         </Match>
-        <Match
-          when={props.loggedUser !== undefined && fileAndGroupIds().length > 0}
-        >
+        <Match when={user?.() !== undefined && fileAndGroupIds().length > 0}>
           <div>
             <div class="mx-auto w-full text-center text-2xl font-bold">
-              {$dataset()?.dataset.name}'s Files
+              {$dataset?.()?.dataset.name}'s Files
             </div>
             <div class="mt-2 flow-root">
               <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -140,7 +140,7 @@ export const OrgFileViewPage = (props: FileUserPageViewProps) => {
                         >
                           Created at
                         </th>
-                        <Show when={props.loggedUser != undefined}>
+                        <Show when={user?.() != undefined}>
                           <th
                             scope="col"
                             class="relative hidden py-3.5 pl-3 pr-4 sm:pr-0"

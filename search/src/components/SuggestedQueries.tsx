@@ -1,15 +1,16 @@
-import { useStore } from "@nanostores/solid";
-import { createSignal, createEffect, For, Show } from "solid-js";
-import { currentDataset } from "../stores/datasetStore";
+import { createSignal, createEffect, For, Show, useContext } from "solid-js";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export const SuggestedQueries = (props: { query: string }) => {
   const [suggestedQueries, setSuggestedQueries] = createSignal<string[]>([]);
   const [authed, setAuthed] = createSignal<boolean>(true);
   const apiHost = import.meta.env.VITE_API_HOST as string;
-  const $dataset = useStore(currentDataset);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+
+  const $dataset = datasetAndUserContext.currentDataset;
 
   createEffect(() => {
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     void fetch(`${apiHost}/chunk/gen_suggestions`, {

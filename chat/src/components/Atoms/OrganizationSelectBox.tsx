@@ -11,6 +11,7 @@ import { UserContext } from "../contexts/UserContext";
 
 export const OrganizationSelectBox = () => {
   const userContext = useContext(UserContext);
+  console.log(userContext.currentOrganization?.()?.name)
 
   return (
     <div>

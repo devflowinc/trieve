@@ -1,14 +1,12 @@
 import { A } from "@solidjs/router";
-import { Show, createSignal } from "solid-js";
-import { useStore } from "@nanostores/solid";
-import { clientConfig } from "../../stores/envsStore";
-import { currentDataset } from "../../stores/datasetStore";
+import { Show, createSignal, useContext } from "solid-js";
+import { DatasetAndUserContext } from "../Contexts/DatasetAndUserContext";
 
 export const Navbar = () => {
-  const $envs = useStore(clientConfig);
-  const $datasetName = useStore(currentDataset)()?.dataset.name;
-  const createChunkFeature = $envs().CREATE_CHUNK_FEATURE;
-  const uploadDocumentFeature = $envs().DOCUMENT_UPLOAD_FEATURE;
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+
+  const $envs = datasetAndUserContext.clientConfig;
+  const $datasetName = datasetAndUserContext.currentDataset?.()?.dataset.name;
 
   const [isOpen, setIsOpen] = createSignal(false);
 
@@ -46,7 +44,7 @@ export const Navbar = () => {
               >
                 Files
               </A>
-              <Show when={createChunkFeature}>
+              <Show when={$envs().CREATE_CHUNK_FEATURE}>
                 <A
                   href="/create"
                   class="hidden text-center min-[420px]:text-lg min-[920px]:block"
@@ -54,7 +52,7 @@ export const Navbar = () => {
                   Create Doc Chunk
                 </A>
               </Show>
-              <Show when={uploadDocumentFeature}>
+              <Show when={$envs().DOCUMENT_UPLOAD_FEATURE}>
                 <A
                   href="/upload"
                   class="hidden text-center min-[420px]:text-lg min-[920px]:block"
@@ -115,7 +113,7 @@ export const Navbar = () => {
         id="mobile-menu"
       >
         <div class="space-y-1 px-2 pb-3 pt-2 sm:px-3">
-          <Show when={createChunkFeature}>
+          <Show when={$envs().CREATE_CHUNK_FEATURE}>
             <a
               href="/create"
               class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
@@ -123,7 +121,7 @@ export const Navbar = () => {
               Create Doc Chunk
             </a>
           </Show>
-          <Show when={uploadDocumentFeature}>
+          <Show when={$envs().DOCUMENT_UPLOAD_FEATURE}>
             <a
               href="/upload"
               class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"

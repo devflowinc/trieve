@@ -1,5 +1,5 @@
 import type { Setter } from "solid-js";
-import { Show, createSignal, onMount } from "solid-js";
+import { Show, createSignal, onMount, useContext } from "solid-js";
 import {
   indirectHasOwnProperty,
   type ChunkGroupDTO,
@@ -8,8 +8,7 @@ import {
 import type { ScoreChunkProps } from "./ScoreChunk";
 import { FiChevronLeft, FiChevronRight } from "solid-icons/fi";
 import ScoreChunk from "./ScoreChunk";
-import { useStore } from "@nanostores/solid";
-import { clientConfig } from "../stores/envsStore";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export type ScoreChunkAraryProps = Omit<
   ScoreChunkProps,
@@ -20,14 +19,17 @@ export type ScoreChunkAraryProps = Omit<
 };
 
 export const ScoreChunkArray = (props: ScoreChunkAraryProps) => {
-  const $envs = useStore(clientConfig);
-  const dateValue = $envs().DATE_RANGE_VALUE;
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+
+  const $envs = datasetAndUserContext.clientConfig;
 
   const [curChunk, setCurChunk] = createSignal(0);
   const [beginTime, setBeginTime] = createSignal<number | undefined>();
   const [endTime, setEndTime] = createSignal<number | undefined>();
 
   onMount(() => {
+    const dateValue = $envs().DATE_RANGE_VALUE;
+
     props.chunks.forEach((chunk) => {
       if (
         chunk.metadata &&

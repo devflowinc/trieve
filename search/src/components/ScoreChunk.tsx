@@ -13,6 +13,7 @@ import {
   createMemo,
   createSignal,
   Match,
+  useContext,
 } from "solid-js";
 import {
   ChunkBookmarksDTO,
@@ -34,11 +35,8 @@ import {
 import { Tooltip } from "./Atoms/Tooltip";
 import { AiOutlineCopy, AiOutlineFile } from "solid-icons/ai";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
-import { useStore } from "@nanostores/solid";
-import { clientConfig } from "../stores/envsStore";
-import { currentDataset } from "../stores/datasetStore";
 import { A } from "@solidjs/router";
-import { currentUser } from "../stores/userStore";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export const sanitzerOptions = {
   allowedTags: [...sanitizeHtml.defaults.allowedTags, "font", "button", "span"],
@@ -84,14 +82,13 @@ export interface ScoreChunkProps {
 }
 
 const ScoreChunk = (props: ScoreChunkProps) => {
-  const $currentDataset = useStore(currentDataset);
-  const $currentUser = useStore(currentUser);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+
+  const $currentDataset = datasetAndUserContext.currentDataset;
+  const $currentUser = datasetAndUserContext.user;
   const apiHost = import.meta.env.VITE_API_HOST as string;
-  const $envs = useStore(clientConfig);
+  const $envs = datasetAndUserContext.clientConfig;
 
-  const frontMatterValsToHide = $envs().FRONTMATTER_VALS?.split(",");
-
-  const linesBeforeShowMore = $envs().LINES_BEFORE_SHOW_MORE;
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
   const [showPropsModal, setShowPropsModal] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
@@ -160,7 +157,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
 
   const deleteChunk = () => {
     if (!props.setOnDelete) return;
-    const dataset = $currentDataset();
+    const dataset = $currentDataset?.();
     if (!dataset) return;
 
     const curChunkMetadataId = props.chunk.id;
@@ -214,13 +211,14 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const useExpand = createMemo(() => {
     if (!props.chunk.content) return false;
     return (
-      props.chunk.content.split(" ").length > 20 * (linesBeforeShowMore ?? 0)
+      props.chunk.content.split(" ").length >
+      20 * ($envs().LINES_BEFORE_SHOW_MORE ?? 0)
     );
   });
 
   const currentUserRole = createMemo(() => {
-    const curUser = $currentUser();
-    const curDatasetOrg = $currentDataset()?.dataset.organization_id;
+    const curUser = $currentUser?.();
+    const curDatasetOrg = $currentDataset?.()?.dataset.organization_id;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const curUserOrg = curUser?.user_orgs?.find(
       (org) => org.organization_id === curDatasetOrg,
@@ -425,7 +423,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               <Show
                 when={
                   props.chunk.link &&
-                  !frontMatterValsToHide?.find((val) => val == "link")
+                  !$envs()
+                    .FRONTMATTER_VALS?.split(",")
+                    ?.find((val) => val == "link")
                 }
               >
                 <a
@@ -445,7 +445,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               <Show
                 when={
                   props.chunk.tag_set &&
-                  !frontMatterValsToHide?.find((val) => val == "tag_set")
+                  !$envs()
+                    .FRONTMATTER_VALS?.split(",")
+                    ?.find((val) => val == "tag_set")
                 }
               >
                 <div class="flex space-x-2">
@@ -460,7 +462,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               <Show
                 when={
                   props.chunk.time_stamp &&
-                  !frontMatterValsToHide?.find((val) => val == "time_stamp")
+                  !$envs()
+                    .FRONTMATTER_VALS?.split(",")
+                    ?.find((val) => val == "time_stamp")
                 }
               >
                 <div class="flex space-x-2">
@@ -498,7 +502,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                         <Show
                           when={
                             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                            !frontMatterValsToHide?.find((val) => val == key) &&
+                            !$envs()
+                              .FRONTMATTER_VALS?.split(",")
+                              ?.find((val) => val == key) &&
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             (props.chunk.metadata as any)[key]
                           }
@@ -534,7 +540,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
             }}
             style={
               useExpand() && !expanded()
-                ? { "-webkit-line-clamp": linesBeforeShowMore }
+                ? { "-webkit-line-clamp": $envs().LINES_BEFORE_SHOW_MORE }
                 : {}
             }
             // eslint-disable-next-line solid/no-innerhtml

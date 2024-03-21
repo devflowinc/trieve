@@ -1,4 +1,4 @@
-import { Show, For, createMemo } from "solid-js";
+import { Show, For, createMemo, useContext } from "solid-js";
 import {
   Menu,
   MenuItem,
@@ -6,17 +6,15 @@ import {
   PopoverButton,
   PopoverPanel,
 } from "solid-headless";
-import { useStore } from "@nanostores/solid";
-import {
-  currentOrganization,
-  organizations,
-} from "../stores/organizationStore";
 import { FaSolidCheck } from "solid-icons/fa";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export const OrganizationSelectBox = () => {
-  const $organizations = useStore(organizations);
-  const organizationsList = createMemo(() => $organizations());
-  const $currentOrganization = useStore(currentOrganization);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+
+  const $organizations = datasetAndUserContext.organizations;
+  const organizationsList = createMemo(() => $organizations?.());
+  const $currentOrganization = datasetAndUserContext.currentOrganization;
 
   return (
     <div>
@@ -30,7 +28,7 @@ export const OrganizationSelectBox = () => {
                 class="flex items-center space-x-1 pb-1 text-sm"
               >
                 <span class="line-clamp-1 text-left text-sm">
-                  {$currentOrganization()?.name}
+                  {$currentOrganization?.()?.name}
                 </span>
                 <svg
                   fill="currentColor"
@@ -56,7 +54,9 @@ export const OrganizationSelectBox = () => {
                         const onClick = (e: Event) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          currentOrganization.set(organizationItem);
+                          datasetAndUserContext.setCurrentOrganization(
+                            organizationItem,
+                          );
                           setState(false);
                         };
                         return (
@@ -67,7 +67,7 @@ export const OrganizationSelectBox = () => {
                                 true,
                               "bg-neutral-300 dark:bg-neutral-700":
                                 organizationItem.id ===
-                                $currentOrganization()?.id,
+                                $currentOrganization?.()?.id,
                             }}
                             onClick={onClick}
                           >
@@ -77,7 +77,7 @@ export const OrganizationSelectBox = () => {
                               </span>
                             </div>
                             {organizationItem.id ==
-                              $currentOrganization()?.id && (
+                              $currentOrganization?.()?.id && (
                               <span>
                                 <FaSolidCheck class="text-sm" />
                               </span>

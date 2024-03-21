@@ -3,13 +3,14 @@ import { Footer } from "../components/Footer";
 import type { Filters } from "../components/ResultsPage";
 import { HomeLayout } from "../layouts/HomeLayout";
 import { DefaultQueries } from "../components/DefaultQueries";
-import { useStore } from "@nanostores/solid";
-import { currentDataset } from "../stores/datasetStore";
-import { clientConfig } from "../stores/envsStore";
+import { useContext } from "solid-js";
+import { DatasetAndUserContext } from "../components/Contexts/DatasetAndUserContext";
 
 export const Home = () => {
-  const $dataset = useStore(currentDataset);
-  const $env = useStore(clientConfig);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+
+  const $dataset = datasetAndUserContext.currentDataset;
+  const $env = datasetAndUserContext.clientConfig;
   const suggestedQueries = $env()
     .SUGGESTED_QUERIES?.split(",")
     .filter((query) => query !== "");
@@ -64,7 +65,7 @@ export const Home = () => {
             />
             <div>
               <div class="mb-[-4px] w-full text-end align-bottom text-lg leading-3 text-turquoise">
-                {$dataset()?.dataset.name ?? "Dataset"}
+                {$dataset?.()?.dataset.name ?? "Dataset"}
               </div>
               <div class="text-4xl">
                 <span>Trieve</span>

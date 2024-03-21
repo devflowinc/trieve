@@ -2,13 +2,10 @@ import { createSignal } from "solid-js";
 import { SearchLayout } from "../../layouts/SearchLayout";
 import { Footer } from "../../components/Footer";
 import { GroupUserPageView } from "../../components/OrgGroupPageView";
-import { useStore } from "@nanostores/solid";
-import { currentUser } from "../../stores/userStore";
 import { ConfirmModal } from "../../components/Atoms/ConfirmModal";
 
 export const OrgGroups = () => {
   // Define your component logic here
-  const $currentUser = useStore(currentUser);
   const [showConfirmGroupDeleteModal, setShowConfirmGroupDeleteModal] =
     createSignal(false);
   const [onGroupDelete, setOnGroupDelete] = createSignal(() => {});
@@ -17,7 +14,6 @@ export const OrgGroups = () => {
     <SearchLayout>
       <div class="mx-[10rem] mb-4 mt-4  flex flex-col  overflow-hidden pt-4 text-xl">
         <GroupUserPageView
-          loggedUser={$currentUser()}
           setOnDelete={setOnGroupDelete}
           setShowConfirmModal={setShowConfirmGroupDeleteModal}
         />

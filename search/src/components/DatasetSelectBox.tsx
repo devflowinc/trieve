@@ -1,7 +1,5 @@
 import { FaSolidCheck } from "solid-icons/fa";
-import { Show, For, createMemo } from "solid-js";
-import { currentDataset, datasetsAndUsagesStore } from "../stores/datasetStore";
-import { useStore } from "@nanostores/solid";
+import { Show, For, createMemo, useContext } from "solid-js";
 import {
   Menu,
   MenuItem,
@@ -9,15 +7,18 @@ import {
   PopoverButton,
   PopoverPanel,
 } from "solid-headless";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export const DatasetSelectBox = () => {
-  const $datasetsAndUsages = useStore(datasetsAndUsagesStore);
-  const $currentDataset = useStore(currentDataset);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
 
-  const datasetList = createMemo(() => $datasetsAndUsages());
+  const $datasetsAndUsages = datasetAndUserContext.datasetsAndUsages;
+  const $currentDataset = datasetAndUserContext.currentDataset;
+
+  const datasetList = createMemo(() => $datasetsAndUsages?.());
 
   return (
-    <Show when={$datasetsAndUsages().length != 0}>
+    <Show when={$datasetsAndUsages?.().length != 0}>
       <Popover defaultOpen={false} class="relative">
         {({ isOpen, setState }) => (
           <>
@@ -27,7 +28,7 @@ export const DatasetSelectBox = () => {
               class="flex items-center space-x-1 pb-1 text-sm"
             >
               <span class="line-clamp-1 text-left text-sm">
-                {$currentDataset()?.dataset.name}
+                {$currentDataset?.()?.dataset.name}
               </span>
               <svg
                 fill="currentColor"
@@ -58,12 +59,14 @@ export const DatasetSelectBox = () => {
                               true,
                             "bg-neutral-300 dark:bg-neutral-700":
                               datasetItem.dataset.id ===
-                              $currentDataset()?.dataset.id,
+                              $currentDataset?.()?.dataset.id,
                           }}
                           onClick={(e: Event) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            currentDataset.set(datasetItem);
+                            datasetAndUserContext.setCurrentDataset(
+                              datasetItem,
+                            );
                             setState(false);
                           }}
                         >
@@ -75,7 +78,7 @@ export const DatasetSelectBox = () => {
                           <Show
                             when={
                               datasetItem.dataset.id ==
-                              $currentDataset()?.dataset.id
+                              $currentDataset?.()?.dataset.id
                             }
                           >
                             <span>

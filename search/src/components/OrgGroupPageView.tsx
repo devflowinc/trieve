@@ -1,35 +1,39 @@
 import { FiTrash } from "solid-icons/fi";
+import { isChunkGroupPageDTO, type ChunkGroupDTO } from "../../utils/apiTypes";
 import {
-  isChunkGroupPageDTO,
-  type ChunkGroupDTO,
-  type UserDTO,
-} from "../../utils/apiTypes";
-import { For, Setter, Show, createEffect, createSignal } from "solid-js";
+  For,
+  Setter,
+  Show,
+  createEffect,
+  createSignal,
+  useContext,
+} from "solid-js";
 import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
 import { getLocalTime } from "./ChunkMetadataDisplay";
 import { Transition } from "solid-headless";
-import { useStore } from "@nanostores/solid";
-import { currentDataset } from "../stores/datasetStore";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export interface GroupUserPageViewProps {
-  loggedUser: UserDTO | null;
   setOnDelete: Setter<() => void>;
   setShowConfirmModal: Setter<boolean>;
 }
 
 export const GroupUserPageView = (props: GroupUserPageViewProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
-  const $dataset = useStore(currentDataset);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+
+  const $dataset = datasetAndUserContext.currentDataset;
+  const $user = datasetAndUserContext.user;
   const [groups, setGroups] = createSignal<ChunkGroupDTO[]>([]);
   const [groupPage, setGroupPage] = createSignal(1);
   const [groupPageCount, setGroupPageCount] = createSignal(1);
   const [deleting, setDeleting] = createSignal(false);
 
   createEffect(() => {
-    const userId = props.loggedUser?.id;
+    const userId = $user?.()?.id;
     if (userId === undefined) return;
 
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     void fetch(
@@ -56,7 +60,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
   });
 
   const deleteGroup = (group: ChunkGroupDTO) => {
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     props.setOnDelete(() => {
@@ -96,7 +100,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
         </div>
       </Show>
       <Transition
-        show={props.loggedUser !== undefined && groups().length > 0}
+        show={$user?.() !== undefined && groups().length > 0}
         enter="transition duration-200"
         enterFrom="opacity-0"
         enterTo="opacity-100"
@@ -106,7 +110,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
       >
         <div>
           <div class="mx-auto w-full text-center text-2xl font-bold">
-            {$dataset()?.dataset.name}'s Groups
+            {$dataset?.()?.dataset.name}'s Groups
           </div>
           <div class="mt-2 flow-root">
             <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -132,7 +136,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                       >
                         Created at
                       </th>
-                      <Show when={props.loggedUser != undefined}>
+                      <Show when={$user?.() != undefined}>
                         <th
                           scope="col"
                           class="relative hidden py-3.5 pl-3 pr-4 sm:pr-0"
