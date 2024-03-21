@@ -726,8 +726,8 @@ pub async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::scope("/events").service(
-                            web::resource("/{page}")
-                                .route(web::get().to(handlers::event_handler::get_events)),
+                            web::resource("")
+                                .route(web::post().to(handlers::event_handler::get_events)),
                         ),
                     )
                     .service(
