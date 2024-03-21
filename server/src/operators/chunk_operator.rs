@@ -423,7 +423,8 @@ pub async fn insert_chunk_metadata_query(
         .get_result::<ChunkMetadata>(&mut conn)
         .await
         .map_err(|e| {
-            log::error!("Failed to insert chunk metadata: {:?}", e);
+            sentry::capture_error(&e);
+            log::error!("Failed to insert chunk_metadata: {:?}", e);
             match e {
                 diesel::result::Error::DatabaseError(
                     diesel::result::DatabaseErrorKind::UniqueViolation,
@@ -432,7 +433,7 @@ pub async fn insert_chunk_metadata_query(
                     message: "Duplicate tracking_id",
                 },
                 _ => DefaultError {
-                    message: "Failed to insert card metadata",
+                    message: "Failed to insert chunk_metadata",
                 },
             }
         })?;
