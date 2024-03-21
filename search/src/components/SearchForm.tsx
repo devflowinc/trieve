@@ -11,6 +11,7 @@ import {
   createSignal,
   onCleanup,
   onMount,
+  useContext,
 } from "solid-js";
 import { Combobox, ComboboxSection } from "./Atoms/ComboboxChecklist";
 import {
@@ -23,8 +24,7 @@ import {
 import { FaSolidCheck } from "solid-icons/fa";
 import type { Filters } from "./ResultsPage";
 import { DatePicker } from "./Atoms/DatePicker";
-import { clientConfig } from "../stores/envsStore";
-import { useStore } from "@nanostores/solid";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 const SearchForm = (props: {
   query?: string;
@@ -33,16 +33,16 @@ const SearchForm = (props: {
   groupUniqueSearch?: boolean;
   groupID?: string;
 }) => {
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const $envs = useStore(clientConfig);
+  const $envs = datasetAndUserContext.clientConfig;
   const navigate = useNavigate();
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const comboboxSections: ComboboxSection[] = $envs().FILTER_ITEMS ?? [];
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const customComboBoxFilterVals: ComboboxSection[] = comboboxSections;
-
-  const createChunkFeature = $envs().CREATE_CHUNK_FEATURE;
 
   const [searchTypes, setSearchTypes] = createSignal([
     { name: "Full Text", isSelected: false, route: "fulltext" },
@@ -183,6 +183,10 @@ const SearchForm = (props: {
 
     navigate(urlToNavigateTo);
   };
+
+  createEffect(() => {
+    setComboBoxSections($envs().FILTER_ITEMS ?? []);
+  });
 
   onMount(() => {
     const filters = props.filters;
@@ -408,7 +412,7 @@ const SearchForm = (props: {
   });
 
   createEffect(() => {
-    createChunkFeature?.valueOf();
+    $envs().CREATE_CHUNK_FEATURE?.valueOf();
   });
 
   const textareaVal = createMemo(() => {
@@ -713,7 +717,7 @@ const SearchForm = (props: {
             >
               Search
             </button>
-            <Show when={createChunkFeature}>
+            <Show when={$envs().CREATE_CHUNK_FEATURE}>
               <A
                 class="w-fit rounded bg-neutral-100 p-2 text-center hover:bg-neutral-100 dark:bg-neutral-700"
                 href="/create"

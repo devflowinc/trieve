@@ -1,16 +1,15 @@
-import { Show, createSignal } from "solid-js";
+import { Show, createSignal, useContext } from "solid-js";
 import { OrganizationSelectBox } from "../OrganizationSelectBox";
 import { DatasetSelectBox } from "../DatasetSelectBox";
-import { useStore } from "@nanostores/solid";
-import { clientConfig } from "../../stores/envsStore";
-import { currentUser } from "../../stores/userStore";
+
 import { A } from "@solidjs/router";
+import { DatasetAndUserContext } from "../Contexts/DatasetAndUserContext";
 
 export const HomeNavbar = () => {
-  const $envs = useStore(clientConfig);
-  const $currentUser = useStore(currentUser);
-  const uploadDocumentFeature = $envs().DOCUMENT_UPLOAD_FEATURE;
-  const createChunkFeature = $envs().CREATE_CHUNK_FEATURE;
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+
+  const $envs = datasetAndUserContext.clientConfig;
+  const $currentUser = datasetAndUserContext.user;
 
   const [isOpen, setIsOpen] = createSignal(false);
 
@@ -19,7 +18,7 @@ export const HomeNavbar = () => {
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 items-center justify-between">
           <div class="mx-auto flex h-[60px] w-full max-w-6xl items-center justify-between">
-            <Show when={$currentUser()}>
+            <Show when={$currentUser?.()}>
               <div class="flex items-center space-x-2">
                 <OrganizationSelectBox />
                 <span class="text-2xl">/</span>
@@ -39,7 +38,7 @@ export const HomeNavbar = () => {
               >
                 Files
               </A>
-              <Show when={createChunkFeature}>
+              <Show when={$envs().CREATE_CHUNK_FEATURE}>
                 <A
                   href="/create"
                   class="hidden text-center min-[420px]:text-lg min-[920px]:block"
@@ -47,7 +46,7 @@ export const HomeNavbar = () => {
                   Create Doc Chunk
                 </A>
               </Show>
-              <Show when={uploadDocumentFeature}>
+              <Show when={$envs().DOCUMENT_UPLOAD_FEATURE}>
                 <A
                   href="/upload"
                   class="hidden text-center min-[420px]:text-lg min-[920px]:block"
@@ -108,7 +107,7 @@ export const HomeNavbar = () => {
         id="mobile-menu"
       >
         <div class="space-y-1 px-2 pb-3 pt-2 sm:px-3">
-          <Show when={uploadDocumentFeature}>
+          <Show when={$envs().DOCUMENT_UPLOAD_FEATURE}>
             <a
               href="/upload"
               class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"

@@ -1,11 +1,12 @@
 import { BiRegularLogIn, BiRegularXCircle, BiSolidFile } from "solid-icons/bi";
-import { Show, createSignal } from "solid-js";
+import { Show, createSignal, useContext } from "solid-js";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
-import { useStore } from "@nanostores/solid";
-import { currentDataset } from "../stores/datasetStore";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export const UploadFile = () => {
-  const $dataset = useStore(currentDataset);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+
+  const $dataset = datasetAndUserContext.currentDataset;
   const apiHost = import.meta.env.VITE_API_HOST as string;
   const [file, setFile] = createSignal<File | undefined>();
   const [link, setLink] = createSignal("");
@@ -27,7 +28,7 @@ export const UploadFile = () => {
     setFile(e.target.files ? e.target.files[0] : undefined);
   };
   const submitEvidence = async (e: Event) => {
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     if (!file()) {
@@ -220,7 +221,7 @@ export const UploadFile = () => {
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
                 href={`${apiHost}/auth?dataset_id=${
-                  $dataset()?.dataset.name ?? ""
+                  $dataset?.()?.dataset.name ?? ""
                 }`}
               >
                 Login/Register

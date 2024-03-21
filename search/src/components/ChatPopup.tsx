@@ -9,6 +9,7 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  useContext,
 } from "solid-js";
 import { FiSend, FiStopCircle } from "solid-icons/fi";
 import {
@@ -17,8 +18,7 @@ import {
   ScoreChunkDTO,
 } from "../../utils/apiTypes";
 import { AfMessage } from "./Atoms/AfMessage";
-import { useStore } from "@nanostores/solid";
-import { currentDataset } from "../stores/datasetStore";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export interface LayoutProps {
   selectedIds: Accessor<string[]>;
@@ -28,7 +28,8 @@ export interface LayoutProps {
 
 const ChatPopup = (props: LayoutProps) => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
-  const $dataset = useStore(currentDataset);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+  const $dataset = datasetAndUserContext.currentDataset;
   const resizeTextarea = (textarea: HTMLTextAreaElement) => {
     textarea.style.height = "auto";
     textarea.style.height = `${textarea.scrollHeight}px`;
@@ -77,7 +78,7 @@ const ChatPopup = (props: LayoutProps) => {
   }) => {
     setStreamingCompletion(true);
     setNewMessageContent("");
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     const newMessageTextarea = document.querySelector(

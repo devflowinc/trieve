@@ -8,6 +8,7 @@ import {
   Switch,
   Match,
   createMemo,
+  useContext,
 } from "solid-js";
 import {
   type ChunkGroupDTO,
@@ -31,10 +32,8 @@ import { Portal } from "solid-js/web";
 import ChatPopup from "./ChatPopup";
 import { AiOutlineRobot } from "solid-icons/ai";
 import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
-import { currentUser } from "../stores/userStore";
-import { useStore } from "@nanostores/solid";
-import { currentDataset } from "../stores/datasetStore";
 import { useLocation, useNavigate } from "@solidjs/router";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export interface GroupPageProps {
   groupID: string;
@@ -42,7 +41,9 @@ export interface GroupPageProps {
 
 export const GroupPage = (props: GroupPageProps) => {
   const apiHost: string = import.meta.env.VITE_API_HOST as string;
-  const $dataset = useStore(currentDataset);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+
+  const $dataset = datasetAndUserContext.currentDataset;
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -68,7 +69,7 @@ export const GroupPage = (props: GroupPageProps) => {
   const [fetchingGroups, setFetchingGroups] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
   const [editing, setEditing] = createSignal(false);
-  const $currentUser = useStore(currentUser);
+  const $currentUser = datasetAndUserContext.user;
   const [totalPages, setTotalPages] = createSignal(0);
   const [loadingRecommendations, setLoadingRecommendations] =
     createSignal(false);
@@ -140,7 +141,7 @@ export const GroupPage = (props: GroupPageProps) => {
   createEffect(() => {
     const abortController = new AbortController();
     let group_id: string | null = null;
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     if (query() === "") {
@@ -252,9 +253,9 @@ export const GroupPage = (props: GroupPageProps) => {
 
   // Fetch the chunk groups for the auth'ed user
   const fetchChunkGroups = () => {
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
-    if (!$currentUser()) return;
+    if (!$currentUser?.()) return;
 
     void fetch(`${apiHost}/dataset/groups/${currentDataset.dataset.id}/1`, {
       method: "GET",
@@ -275,7 +276,7 @@ export const GroupPage = (props: GroupPageProps) => {
   };
 
   const fetchBookmarks = () => {
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     void fetch(`${apiHost}/chunk_group/chunks`, {
@@ -300,7 +301,7 @@ export const GroupPage = (props: GroupPageProps) => {
   };
 
   const updateGroup = () => {
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     setFetchingGroups(true);
@@ -329,7 +330,7 @@ export const GroupPage = (props: GroupPageProps) => {
     ids: string[],
     prev_recommendations: ChunkMetadataWithFileData[],
   ) => {
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     setLoadingRecommendations(true);

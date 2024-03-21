@@ -12,10 +12,7 @@
   },
   "description": "The admin client for Trieve Search (https://search.trieve.ai)",
   "dependencies": {
-    "@nanostores/persistent": "^0.9.1",
-    "@nanostores/solid": "^0.4.2",
-    "@solidjs/router": "^0.10.8",
-    "nanostores": "^0.9.5",
+    "@solidjs/router": "^0.13.1",
     "sanitize-html": "^2.11.0",
     "solid-headless": "^0.13.1",
     "solid-icons": "^1.0.4",

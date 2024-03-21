@@ -1,4 +1,4 @@
-import { JSX, Show, createEffect, createSignal } from "solid-js";
+import { JSX, Show, createEffect, createSignal, useContext } from "solid-js";
 import {
   ChunkMetadataWithFileData,
   isActixChunkUpdateError,
@@ -13,12 +13,13 @@ import type { SingleChunkPageProps } from "./SingleChunkPage";
 import sanitize from "sanitize-html";
 import { sanitzerOptions } from "./ScoreChunk";
 import { Tooltip } from "./Atoms/Tooltip";
-import { useStore } from "@nanostores/solid";
-import { currentDataset } from "../stores/datasetStore";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
-  const $dataset = useStore(currentDataset);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+
+  const $dataset = datasetAndUserContext.currentDataset;
   const initialChunkMetadata = props.defaultResultChunk.metadata;
 
   const [topLevelError, setTopLevelError] = createSignal("");
@@ -50,7 +51,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   }
 
   const updateEvidence = () => {
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     const chunkHTMLContentValue =
@@ -130,7 +131,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   };
 
   createEffect(() => {
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     setFetching(true);
@@ -390,7 +391,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
                 href={`${apiHost}/auth?dataset_id=${
-                  $dataset()?.dataset.name ?? ""
+                  $dataset?.()?.dataset.name ?? ""
                 }`}
               >
                 Login/Register

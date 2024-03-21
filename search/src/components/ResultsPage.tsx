@@ -8,6 +8,7 @@ import {
   Accessor,
   Match,
   Switch,
+  useContext,
 } from "solid-js";
 import {
   type ChunkGroupDTO,
@@ -25,9 +26,8 @@ import { Portal } from "solid-js/web";
 import { AiOutlineRobot } from "solid-icons/ai";
 import ChatPopup from "./ChatPopup";
 import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
-import { currentUser } from "../stores/userStore";
-import { useStore } from "@nanostores/solid";
-import { currentDataset } from "../stores/datasetStore";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
+
 export interface Filters {
   tagSet: string[];
   link: string[];
@@ -48,12 +48,14 @@ export interface ResultsPageProps {
 
 const ResultsPage = (props: ResultsPageProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
-  const $dataset = useStore(currentDataset);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+
+  const $dataset = datasetAndUserContext.currentDataset;
 
   const [chunkCollections, setChunkCollections] = createSignal<ChunkGroupDTO[]>(
     [],
   );
-  const $currentUser = useStore(currentUser);
+  const $currentUser = datasetAndUserContext.user;
   const [resultChunks, setResultChunks] = createSignal<ScoreChunkDTO[]>([]);
   const [clientSideRequestFinished, setClientSideRequestFinished] =
     createSignal(false);
@@ -67,8 +69,8 @@ const ResultsPage = (props: ResultsPageProps) => {
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
 
   const fetchChunkCollections = () => {
-    if (!$currentUser()) return;
-    const dataset = $dataset();
+    if (!$currentUser?.()) return;
+    const dataset = $dataset?.();
     if (!dataset) return;
     void fetch(`${apiHost}/dataset/groups/${dataset.dataset.id}/1`, {
       method: "GET",
@@ -89,7 +91,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   };
 
   const fetchBookmarks = () => {
-    const dataset = $dataset();
+    const dataset = $dataset?.();
     if (!dataset) return;
 
     void fetch(`${apiHost}/chunk_group/chunks`, {
@@ -115,7 +117,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   };
 
   createEffect(() => {
-    const dataset = $dataset();
+    const dataset = $dataset?.();
     if (!dataset) return;
 
     const filters: ChunkFilter = {

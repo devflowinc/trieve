@@ -1,11 +1,12 @@
-import { Show, createEffect, createSignal } from "solid-js";
+import { Show, createEffect, createSignal, useContext } from "solid-js";
 import { APIRequest, isActixApiDefaultError } from "../../utils/apiTypes";
-import { currentUser } from "../stores/userStore";
-import { useStore } from "@nanostores/solid";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 const SearchForm = () => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
-  const $currentUser = useStore(currentUser);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+
+  const $currentUser = datasetAndUserContext.user;
   const [username, setUsername] = createSignal("");
   const [website, setWebsite] = createSignal("");
   const [hideEmail, setHideEmail] = createSignal(false);
@@ -92,22 +93,21 @@ const SearchForm = () => {
   };
 
   createEffect(() => {
-    currentUser.subscribe((user) => {
-      if (user) {
-        setUsername(user.username ?? "");
-        setWebsite(user.website ?? "");
-        setHideEmail(!user.visible_email);
-        return;
-      }
-    });
+    const user = $currentUser?.();
+    if (user) {
+      setUsername(user.username ?? "");
+      setWebsite(user.website ?? "");
+      setHideEmail(!user.visible_email);
+      return;
+    }
   });
 
   return (
     <>
-      <Show when={!$currentUser()}>
+      <Show when={!$currentUser?.()}>
         <div class="mx-auto mt-16 h-32 w-32 animate-spin rounded-full border-b-2 border-t-2 border-neutral-900 dark:border-white" />
       </Show>
-      <Show when={!!$currentUser()}>
+      <Show when={!!$currentUser?.()}>
         <form
           class="mb-8 h-full w-full text-neutral-800 dark:text-white"
           onSubmit={(e) => {
@@ -118,7 +118,9 @@ const SearchForm = () => {
           <div class="text-center text-red-500">{errorText()}</div>
           <div class="mt-8 grid w-full grid-cols-[1fr,2fr] justify-items-end gap-x-8 gap-y-6">
             <div>Email</div>
-            <div class="flex w-full justify-start">{$currentUser()?.email}</div>
+            <div class="flex w-full justify-start">
+              {$currentUser?.()?.email}
+            </div>
 
             <div>Username</div>
             <input

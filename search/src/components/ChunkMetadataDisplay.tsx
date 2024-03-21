@@ -8,6 +8,7 @@ import {
   createSignal,
   Switch,
   Match,
+  useContext,
 } from "solid-js";
 import {
   indirectHasOwnProperty,
@@ -29,9 +30,7 @@ import {
 } from "solid-icons/fa";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { RiOthersCharacterRecognitionLine } from "solid-icons/ri";
-import { useStore } from "@nanostores/solid";
-import { currentDataset } from "../stores/datasetStore";
-import { clientConfig } from "../stores/envsStore";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export const getLocalTime = (strDate: string | Date) => {
   const utcDate = new Date(strDate);
@@ -61,11 +60,9 @@ export interface ChunkMetadataDisplayProps {
 
 const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
-  const $envs = useStore(clientConfig);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
 
-  const frontMatterValsToHide = $envs().FRONTMATTER_VALS?.split(",");
-
-  const linesBeforeShowMore = $envs().LINES_BEFORE_SHOW_MORE;
+  const $envs = datasetAndUserContext.clientConfig;
 
   const [expanded, setExpanded] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
@@ -73,7 +70,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   const [showImageModal, setShowImageModal] = createSignal(false);
   const [showMetadata, setShowMetadata] = createSignal(false);
   const [expandMetadata, setExpandMetadata] = createSignal(false);
-  const $currentDataset = useStore(currentDataset);
+  const $currentDataset = datasetAndUserContext.currentDataset;
 
   const onDelete = () => {
     if (props.signedInUserId !== props.viewingUserId) return;
@@ -86,7 +83,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
           method: "DELETE",
           credentials: "include",
           headers: {
-            "TR-Dataset": $currentDataset()?.dataset.id ?? "",
+            "TR-Dataset": $currentDataset?.()?.dataset.id ?? "",
           },
         }).then((response) => {
           setDeleting(false);
@@ -140,7 +137,8 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
 
   const useExpand = createMemo(() => {
     return (
-      props.chunk.content.split(" ").length > 20 * (linesBeforeShowMore ?? 0)
+      props.chunk.content.split(" ").length >
+      20 * ($envs().LINES_BEFORE_SHOW_MORE ?? 0)
     );
   });
 
@@ -267,7 +265,9 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
               <Show
                 when={
                   props.chunk.link &&
-                  !frontMatterValsToHide?.find((val) => val == "link")
+                  !$envs()
+                    .FRONTMATTER_VALS?.split(",")
+                    ?.find((val) => val == "link")
                 }
               >
                 <a
@@ -281,7 +281,9 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
               <Show
                 when={
                   props.chunk.tag_set &&
-                  !frontMatterValsToHide?.find((val) => val == "tag_set")
+                  !$envs()
+                    .FRONTMATTER_VALS?.split(",")
+                    ?.find((val) => val == "tag_set")
                 }
               >
                 <div class="flex space-x-2">
@@ -296,7 +298,9 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
               <Show
                 when={
                   props.chunk.time_stamp &&
-                  !frontMatterValsToHide?.find((val) => val == "time_stamp")
+                  !$envs()
+                    .FRONTMATTER_VALS?.split(",")
+                    ?.find((val) => val == "time_stamp")
                 }
               >
                 <div class="flex space-x-2">
@@ -334,7 +338,9 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                         <Show
                           when={
                             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                            !frontMatterValsToHide?.find((val) => val == key) &&
+                            !$envs()
+                              .FRONTMATTER_VALS?.split(",")
+                              ?.find((val) => val == key) &&
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             (props.chunk.metadata as any)[key]
                           }
@@ -370,7 +376,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
             }}
             style={
               useExpand() && !expanded()
-                ? { "-webkit-line-clamp": linesBeforeShowMore }
+                ? { "-webkit-line-clamp": $envs().LINES_BEFORE_SHOW_MORE }
                 : {}
             }
             // eslint-disable-next-line solid/no-innerhtml

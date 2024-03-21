@@ -4,16 +4,17 @@ import {
   BiRegularQuestionMark,
   BiRegularXCircle,
 } from "solid-icons/bi";
-import { JSX, Show, createEffect, createSignal } from "solid-js";
+import { JSX, Show, createEffect, createSignal, useContext } from "solid-js";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { CreateChunkDTO, isActixApiDefaultError } from "../../utils/apiTypes";
 import { Tooltip } from "./Atoms/Tooltip";
-import { useStore } from "@nanostores/solid";
-import { currentDataset } from "../stores/datasetStore";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export const CreateNewDocChunkForm = () => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
-  const $dataset = useStore(currentDataset);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+
+  const $dataset = datasetAndUserContext.currentDataset;
   const [docChunkLink, setDocChunkLink] = createSignal("");
   const [tagSet, setTagSet] = createSignal("");
   const [weight, setWeight] = createSignal(1);
@@ -27,7 +28,7 @@ export const CreateNewDocChunkForm = () => {
 
   const submitDocChunk = (e: Event) => {
     e.preventDefault();
-    const dataset = $dataset();
+    const dataset = $dataset?.();
     if (!dataset) return;
 
     const chunkHTMLContentValue =
@@ -306,7 +307,7 @@ export const CreateNewDocChunkForm = () => {
               <a
                 class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
                 href={`${apiHost}/auth?dataset_id=${
-                  $dataset()?.dataset.name ?? ""
+                  $dataset?.()?.dataset.name ?? ""
                 }`}
               >
                 Login/Register

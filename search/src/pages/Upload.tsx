@@ -1,13 +1,15 @@
-import { useStore } from "@nanostores/solid";
 import { Footer } from "../components/Footer";
 import { UploadFile } from "../components/UploadFile";
 import { SearchLayout } from "../layouts/SearchLayout";
-import { clientConfig } from "../stores/envsStore";
 import { useNavigate } from "@solidjs/router";
+import { useContext } from "solid-js";
+import { DatasetAndUserContext } from "../components/Contexts/DatasetAndUserContext";
 
 export const Upload = () => {
   const navigate = useNavigate();
-  const $env = useStore(clientConfig);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+
+  const $env = datasetAndUserContext.clientConfig;
 
   const documentUploadFeature = $env().DOCUMENT_UPLOAD_FEATURE;
   if (!documentUploadFeature) {

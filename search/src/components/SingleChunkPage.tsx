@@ -1,4 +1,11 @@
-import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
+import {
+  For,
+  Show,
+  createEffect,
+  createMemo,
+  createSignal,
+  useContext,
+} from "solid-js";
 import {
   type ChunkGroupDTO,
   SingleChunkDTO,
@@ -15,9 +22,7 @@ import { Portal } from "solid-js/web";
 import ChatPopup from "./ChatPopup";
 import { AiOutlineRobot } from "solid-icons/ai";
 import { IoDocumentOutline } from "solid-icons/io";
-import { currentUser } from "../stores/userStore";
-import { useStore } from "@nanostores/solid";
-import { currentDataset } from "../stores/datasetStore";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export interface SingleChunkPageProps {
   chunkId: string | undefined;
@@ -25,7 +30,9 @@ export interface SingleChunkPageProps {
 }
 export const SingleChunkPage = (props: SingleChunkPageProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
-  const $dataset = useStore(currentDataset);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+
+  const $dataset = datasetAndUserContext.currentDataset;
   const initialChunkMetadata = props.defaultResultChunk.metadata;
 
   const [chunkMetadata, setChunkMetadata] =
@@ -33,7 +40,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   const [error, setError] = createSignal("");
   const [fetching, setFetching] = createSignal(true);
   const [chunkGroups, setChunkGroups] = createSignal<ChunkGroupDTO[]>([]);
-  const $currentUser = useStore(currentUser);
+  const $currentUser = datasetAndUserContext.user;
   const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
     createSignal(false);
@@ -60,8 +67,8 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
 
   // Fetch the chunk groups for the auth'ed user
   const fetchChunkGroups = () => {
-    if (!$currentUser()) return;
-    const currentDataset = $dataset();
+    if (!$currentUser?.()) return;
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     void fetch(`${apiHost}/dataset/groups/${currentDataset.dataset.id}/1`, {
@@ -83,7 +90,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   };
 
   const fetchBookmarks = () => {
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
     void fetch(`${apiHost}/chunk_group/chunks`, {
       method: "POST",
@@ -109,7 +116,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     prev_recommendations: ChunkMetadataWithFileData[],
   ) => {
     setLoadingRecommendations(true);
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     void fetch(`${apiHost}/chunk/recommend`, {
@@ -147,7 +154,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   });
 
   createEffect(() => {
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     setFetching(true);

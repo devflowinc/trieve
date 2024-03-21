@@ -1,4 +1,11 @@
-import { For, Setter, Show, createEffect, createSignal } from "solid-js";
+import {
+  For,
+  Setter,
+  Show,
+  createEffect,
+  createSignal,
+  useContext,
+} from "solid-js";
 import {
   Menu,
   MenuItem,
@@ -16,10 +23,8 @@ import {
 import InputRowsForm from "./Atoms/InputRowsForm";
 import { VsBookmark } from "solid-icons/vs";
 import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
-import { useStore } from "@nanostores/solid";
-import { currentUser } from "../stores/userStore";
-import { currentDataset } from "../stores/datasetStore";
 import { A } from "@solidjs/router";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export interface BookmarkPopoverProps {
   chunkMetadata: ChunkMetadataWithFileData;
@@ -32,8 +37,9 @@ export interface BookmarkPopoverProps {
 
 const BookmarkPopover = (props: BookmarkPopoverProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
-  const $dataset = useStore(currentDataset);
-  const $currentUser = useStore(currentUser);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+  const $currentUser = datasetAndUserContext.user;
+  const $dataset = datasetAndUserContext.currentDataset;
 
   const [refetchingChunkGroups, setRefetchingChunkGroups] = createSignal(false);
   const [refetchingBookmarks, setRefetchingBookmarks] = createSignal(false);
@@ -80,7 +86,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
   }, 1);
 
   createEffect(() => {
-    if ($currentUser()?.id === undefined) {
+    if ($currentUser?.()?.id === undefined) {
       return;
     }
     if (!refetchingChunkGroups()) {
@@ -95,7 +101,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
   });
 
   createEffect(() => {
-    if ($currentUser()?.id === undefined) {
+    if ($currentUser?.()?.id === undefined) {
       return;
     }
     if (!refetchingBookmarks()) {
@@ -112,7 +118,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
     chunkBookmarks: ChunkBookmarksDTO[],
     setChunkGroups: Setter<ChunkGroupDTO[]> | undefined,
   ) => {
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     void fetch(
@@ -176,7 +182,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
   };
 
   const refetchBookmarks = (curPage: number) => {
-    const currentDataset = $dataset();
+    const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
     void fetch(`${apiHost}/chunk_group/chunks`, {
@@ -241,7 +247,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
             <PopoverButton
               title="Bookmark"
               onClick={() => {
-                if (notLoggedIn() || $currentUser()?.id === undefined) {
+                if (notLoggedIn() || $currentUser?.()?.id === undefined) {
                   props.setLoginModal?.(true);
                   return;
                 }
@@ -255,7 +261,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
             when={
               (isOpen() || usingPanel()) &&
               !notLoggedIn() &&
-              !($currentUser()?.id === undefined)
+              !($currentUser?.()?.id === undefined)
             }
           >
             <PopoverPanel
@@ -298,7 +304,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                                   : false
                               }
                               onChange={(e) => {
-                                const currentDataset = $dataset();
+                                const currentDataset = $dataset?.();
                                 if (!currentDataset) return;
                                 void fetch(
                                   `${apiHost}/chunk_group/chunk/${group.id}`,
@@ -375,7 +381,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                         onCreate={() => {
                           const title = groupFormTitle();
                           if (title.trim() == "") return;
-                          const currentDataset = $dataset();
+                          const currentDataset = $dataset?.();
                           if (!currentDataset) return;
                           void fetch(`${apiHost}/chunk_group`, {
                             method: "POST",
