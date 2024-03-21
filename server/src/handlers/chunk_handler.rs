@@ -81,6 +81,14 @@ pub struct FailedChunk {
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[serde(untagged)]
+pub enum ReturnQueuedChunk {
+    /// All Chunks that have been queue'd with any errors filtered out
+    Single(SingleQueuedChunkResponse),
+    Batch(BatchQueuedChunkResponse),
+}
+
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
 #[schema(example = json!({
     "chunk_metadata": [{
         "content": "Some content",
@@ -95,19 +103,44 @@ pub struct FailedChunk {
     }],
     "pos_in_queue": 1
 }))]
-#[serde(untagged)]
-pub enum ReturnQueuedChunk {
-    /// All Chunks that have been queue'd with any errors filtered out
-    Single {
-        chunk_metadata: ChunkMetadata,
-        /// The current position the last access item is in the queue
-        pos_in_queue: i32,
+pub struct SingleQueuedChunkResponse {
+    /// The chunk that got queue'd
+    pub chunk_metadata: ChunkMetadata,
+    /// The current position the last access item is in the queue
+    pub pos_in_queue: i32,
+}
+
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[schema(example = json!({
+    "chunk_metadata": [{
+        "content": "Some content",
+        "link": "https://example.com",
+        "tag_set": ["tag1", "tag2"],
+        "file_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+        "metadata": {"key1": "value1", "key2": "value2"},
+        "chunk_vector": [0.1, 0.2, 0.3],
+        "tracking_id": "tracking_id",
+        "time_stamp": "2021-01-01T00:00:00",
+        "weight": 0.5
     },
-    Batch {
-        chunk_metadata: Vec<ChunkMetadata>,
-        /// The current position the last access item is in the queue
-        pos_in_queue: i32,
-    },
+    {
+        "content": "Some content",
+        "link": "https://example.com",
+        "tag_set": ["tag1", "tag2"],
+        "file_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+        "metadata": {"key1": "value1", "key2": "value2"},
+        "chunk_vector": [0.1, 0.2, 0.3],
+        "tracking_id": "tracking_id",
+        "time_stamp": "2021-01-01T00:00:00",
+        "weight": 0.5
+    }],
+    "pos_in_queue": 2
+}))]
+pub struct BatchQueuedChunkResponse {
+    // All the chunks that got queue'd
+    pub chunk_metadata: Vec<ChunkMetadata>,
+    /// The current position the last access item is in the queue
+    pub pos_in_queue: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -120,7 +153,6 @@ pub struct UploadIngestionMessage {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-#[serde(untagged)]
 #[schema(example = json!({
     "chunk_html": "<p>Some HTML content</p>",
     "link": "https://example.com",
@@ -136,14 +168,47 @@ pub struct UploadIngestionMessage {
     "weight": 0.5,
     "split_avg": false
 }))]
-pub enum CreateChunkData {
-    Single(ChunkData),
-    Batch(Vec<ChunkData>),
-}
+pub struct CreateSingleChunkData(pub ChunkData);
 
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[schema(example = json!([{
+    "chunk_html": "<p>Some HTML content</p>",
+    "link": "https://example.com",
+    "tag_set": ["tag1", "tag2"],
+    "file_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+    "metadata": {"key1": "value1", "key2": "value2"},
+    "chunk_vector": [0.1, 0.2, 0.3],
+    "tracking_id": "tracking_id",
+    "upsert_by_tracking_id": true,
+    "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
+    "group_tracking_ids": ["group_tracking_id"],
+    "time_stamp": "2021-01-01T00:00:00",
+    "weight": 0.5,
+    "split_avg": false
+}, {
+    "chunk_html": "<p>Some more HTML content</p>",
+    "link": "https://explain.com",
+    "tag_set": ["tag3", "tag4"],
+    "file_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+    "metadata": {"key1": "value1", "key2": "value2"},
+    "chunk_vector": [0.1, 0.2, 0.3],
+    "tracking_id": "tracking_id",
+    "upsert_by_tracking_id": true,
+    "group_ids": ["d290f1ee-6c54-4b01-90e6-d701748f0851"],
+    "group_tracking_ids": ["group_tracking_id"],
+    "time_stamp": "2021-01-01T00:00:00",
+    "weight": 0.5,
+    "split_avg": false
+}]
+))]
+pub struct CreateBatchChunkData(pub Vec<ChunkData>);
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(untagged)]
-pub enum SingleOrMultiChunkMetadata {}
+pub enum CreateChunkData {
+    Single(CreateSingleChunkData),
+    Batch(CreateBatchChunkData),
+}
 
 /// Create Chunk
 ///
@@ -156,7 +221,8 @@ pub enum SingleOrMultiChunkMetadata {}
     request_body(content = CreateChunkData, description = "JSON request payload to create a new chunk (chunk)", content_type = "application/json"),
     responses(
         (status = 200, description = "JSON response payload containing the created chunk", body = ReturnQueuedChunk),
-        (status = 400, description = "", body = ErrorResponseBody),
+        (status = 426, description = "Error when upgrade is needed to process more chunks", body = ErrorResponseBody),
+        (status = 400, description = "Error typically due to deserialization issues", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -174,8 +240,8 @@ pub async fn create_chunk(
     redis_pool: web::Data<RedisPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let chunks = match create_chunk_data.clone() {
-        CreateChunkData::Single(chunk) => vec![chunk],
-        CreateChunkData::Batch(chunks) => chunks,
+        CreateChunkData::Single(chunk) => vec![chunk.0],
+        CreateChunkData::Batch(chunks) => chunks.0,
     };
 
     let count_dataset_id = dataset_org_plan_sub.dataset.id;
@@ -184,10 +250,10 @@ pub async fn create_chunk(
     let chunk_count = get_row_count_for_dataset_id_query(count_dataset_id, pool.clone())
         .await
         .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-    timer.add("get daataset count");
+    timer.add("get dataset count");
 
     if chunk_count + chunks.len()
-        >= dataset_org_plan_sub
+        > dataset_org_plan_sub
             .organization
             .plan
             .unwrap_or_default()
@@ -285,7 +351,7 @@ pub async fn create_chunk(
         .get()
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-    timer.add("Got redis conn");
+    timer.add("got redis connection");
 
     let serialized_messages: Vec<String> = ingestion_messages
         .iter()
@@ -305,61 +371,24 @@ pub async fn create_chunk(
         .collect();
 
     let response = match create_chunk_data.into_inner() {
-        CreateChunkData::Single(_) => ReturnQueuedChunk::Single {
-            chunk_metadata: chunk_metadatas.get(0).ok_or(ServiceError::BadRequest(
-                "Failed to upload chunk".to_string(),
-            ))?.clone(),
+        CreateChunkData::Single(_) => ReturnQueuedChunk::Single(SingleQueuedChunkResponse {
+            chunk_metadata: chunk_metadatas
+                .get(0)
+                .ok_or(ServiceError::BadRequest(
+                    "Failed to upload chunk".to_string(),
+                ))?
+                .clone(),
             pos_in_queue,
-        },
-        CreateChunkData::Batch(_) => ReturnQueuedChunk::Batch {
+        }),
+        CreateChunkData::Batch(_) => ReturnQueuedChunk::Batch(BatchQueuedChunkResponse {
             chunk_metadata: chunk_metadatas,
             pos_in_queue,
-        },
+        }),
     };
 
-    Ok(HttpResponse::Ok().json(response))
-}
-
-/// Bulk Create Chunk
-///
-/// Create a new chunk from an array of chunks. If the chunk has the same tracking_id as an existing chunk, the request will fail. Once a chunk is created, it can be searched for using the search endpoint.
-#[utoipa::path(
-    post,
-    path = "/chunk/bulk",
-    context_path = "/api",
-    tag = "chunk",
-    request_body(content = Vec<CreateChunkData>, description = "JSON request payload to create a new chunk (chunk)", content_type = "application/json"),
-    responses(
-        (status = 200, description = "JSON response payload containing the created chunk", body = ReturnQueuedChunk),
-        (status = 400, description = "Service error relating to to creating a chunk, likely due to conflicting tracking_id", body = ErrorResponseBody),
-    ),
-    params(
-        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-    ),
-    security(
-        ("ApiKey" = ["admin"]),
-    )
-)]
-#[tracing::instrument(skip(pool, redis_pool))]
-pub async fn bulk_create_chunk(
-    chunks: web::Json<Vec<CreateChunkData>>,
-    pool: web::Data<Pool>,
-    user: AdminOnly,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    redis_pool: web::Data<RedisPool>,
-) -> Result<HttpResponse, actix_web::Error> {
-    for chunk in chunks.into_inner() {
-        create_chunk(
-            actix_web::web::Json(chunk),
-            pool.clone(),
-            user.clone(),
-            dataset_org_plan_sub.clone(),
-            redis_pool.clone(),
-        )
-        .await?;
-    }
-
-    Ok(HttpResponse::NoContent().finish())
+    Ok(HttpResponse::Ok()
+        .insert_header((Timer::header_key(), timer.header_value()))
+        .json(response))
 }
 
 /// Delete Chunk
