@@ -375,7 +375,7 @@ pub async fn create_chunk(
             chunk_metadata: chunk_metadatas
                 .get(0)
                 .ok_or(ServiceError::BadRequest(
-                    "Failed to upload chunk".to_string(),
+                    "Failed to queue a single chunk due to deriving 0 ingestion_messages from the request data".to_string(),
                 ))?
                 .clone(),
             pos_in_queue,
