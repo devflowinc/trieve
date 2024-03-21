@@ -181,7 +181,7 @@ async def sparse_encode(encodingRequest: SparseEncodeRequest, Authorization: Ann
     content = list(map(lambda pair: dict(index=pair[0], value=pair[1]), zip(indices, values)))
 
     return JSONResponse(
-        content=content,
+        content=[content],
         status_code=200,
     )
 
