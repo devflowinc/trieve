@@ -1,1 +1,1 @@
-window.API_HOST="http://localhost:5176"
+// add window objects here

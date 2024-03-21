@@ -1,11 +1,26 @@
-FROM node:18-alpine3.18 AS runtime
+FROM node:18 as build
+
 WORKDIR /app
 
-RUN apk update && apk add --no-cache openssl-dev libpq pkgconfig build-base
-COPY package.json yarn.lock ./
-RUN yarn install
+COPY package*.json ./
+
 COPY . .
-ENV HOST=0.0.0.0 \
-    PORT=3000
-EXPOSE 3000
-CMD yarn build && node ./dist/server/entry.mjs
+
+RUN yarn install
+RUN yarn run build
+
+FROM nginx:1.25.4-alpine-slim
+
+WORKDIR /usr/share/nginx/html
+
+COPY --from=build /app/dist /usr/share/nginx/html
+# below hack only seems to work if the container isn't built with corresponding vite variable
+COPY <<EOF /docker-entrypoint.d/99-insert.sh
+#!/bin/sh 
+if [ -n "$API_HOST" ]; then
+  echo "window.API_HOST = '$API_HOST';"
+fi
+EOF
+
+EXPOSE 80
+
