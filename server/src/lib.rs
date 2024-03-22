@@ -128,7 +128,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.3.7",
+        version = "0.4.0",
     ),
     servers(
         (url = "http://localhost:8090",
@@ -255,6 +255,7 @@ impl Modify for SecurityAddon {
             handlers::file_handler::UploadFileData,
             handlers::file_handler::UploadFileResult,
             handlers::invitation_handler::InvitationData,
+            handlers::event_handler::GetEventsData,
             handlers::organization_handler::CreateOrganizationData,
             handlers::organization_handler::UpdateOrganizationData,
             operators::event_operator::EventReturn,
