@@ -118,7 +118,7 @@ services:
     profiles: [dev]
 
   server:
-    image: arguflow/server:no-ocr
+    image: trieve/server:no-ocr
     container_name: server
     build:
       context: ./server/
@@ -176,7 +176,7 @@ services:
       - UNLIMITED=${UNLIMITED}
 
   ingestion-service:
-    image: arguflow/ingest
+    image: trieve/ingest
     container_name: ingestion-service 
     build:
       context: ./server/
@@ -195,7 +195,7 @@ services:
     profiles: [dev]
 
   chat:
-    image: arguflow/chat
+    image: trieve/chat
     container_name: chat
     build: ./chat/
     networks:
@@ -207,7 +207,7 @@ services:
       - VITE_SEARCH_UI_URL=${VITE_SEARCH_UI_URL}
 
   search:
-    image: arguflow/search:no-ocr
+    image: trieve/search
     container_name: search
     build: ./search/
     networks:
@@ -218,7 +218,7 @@ services:
       - VITE_API_HOST=${VITE_API_HOST}
 
   splade-embeddings:
-    image: arguflow/splade-embeddings
+    image: trieve/splade-embeddings
     container_name: splade-embeddings
     build: ./embedding-server/
     networks:
