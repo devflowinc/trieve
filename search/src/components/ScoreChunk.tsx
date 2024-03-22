@@ -98,8 +98,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const [showImageModal, setShowImageModal] = createSignal(false);
   const [showMetadata, setShowMetadata] = createSignal(false);
   const [expandMetadata, setExpandMetadata] = createSignal(false);
+  const [fileLink, setFileLink] = createSignal<string | null>(null);
 
-  const fileName = createMemo(() => {
+  createEffect(() => {
     const fileNameKey = $envs().FILE_NAME_KEY;
 
     if (
@@ -110,7 +111,19 @@ const ScoreChunk = (props: ScoreChunkProps) => {
       return null;
     }
 
-    return props.chunk.metadata[fileNameKey];
+    const fileName = props.chunk.metadata[fileNameKey] as string;
+
+    void fetch(`${apiHost}/get_signed_url/${fileName}`, {
+      headers: {
+        "TR-Dataset": $currentDataset?.()?.dataset.id ?? "",
+      },
+      credentials: "include",
+    }).then((response) => {
+      void response.json().then((data) => {
+        const signedUrl = data.signed_url as string;
+        setFileLink(signedUrl);
+      });
+    });
   });
 
   const imgInformation = createMemo(() => {
@@ -337,12 +350,10 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               />
               <Tooltip
                 body={
-                  <Show when={fileName()}>
+                  <Show when={fileLink()}>
                     <a
                       class="h-fit"
-                      href={`${apiHost}/get_signed_url/${encodeURIComponent(
-                        fileName() ?? "",
-                      )}`}
+                      href={`${fileLink()}`}
                       target="_blank"
                       title="Open PDF"
                     >
