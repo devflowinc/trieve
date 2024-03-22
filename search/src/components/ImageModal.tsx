@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   Accessor,
   createEffect,
@@ -38,23 +39,25 @@ export const ImageModal = (props: ImageModalProps) => {
     });
 
     rangeArray.forEach((_, i) => {
+      console.log("fetching image", i);
+
       const fileName = `${props.imgInformation()?.imgRangePrefix ?? ""}${
         (props.imgInformation()?.imgRangeStart ?? 0) + i
       }`;
 
-      void fetch(`${apiHost}/get_signed_url/${fileName}`, {
+      void fetch(`${apiHost}/get_signed_url/${fileName}.png`, {
         headers: {
           "TR-Dataset": $currentDataset?.()?.dataset.id ?? "",
         },
         credentials: "include",
       }).then((response) => {
-        const location = response.headers.get("Location");
-        if (location) {
+        void response.json().then((data) => {
+          const signedUrl = data.signed_url as string;
           setSignedImageUrlsHashmap((prev) => ({
             ...prev,
-            [fileName]: location,
+            [fileName]: signedUrl,
           }));
-        }
+        });
       });
     });
   });
