@@ -201,7 +201,7 @@ services:
     networks:
       - app-network
     ports:
-      - 3000:3000
+      - 3000:80
     environment:
       - VITE_API_HOST=${VITE_API_HOST}
       - VITE_SEARCH_UI_URL=${VITE_SEARCH_UI_URL}
@@ -213,7 +213,7 @@ services:
     networks:
       - app-network
     ports:
-      - 3001:3000
+      - 3001:80
     environment:
       - VITE_API_HOST=${VITE_API_HOST}
 
