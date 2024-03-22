@@ -5,10 +5,10 @@ import {
   For,
   Setter,
   Show,
+  useContext,
 } from "solid-js";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
-import { useStore } from "@nanostores/solid";
-import { currentDataset } from "../stores/datasetStore";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export interface ImageModalProps {
   showImageModal: Accessor<boolean>;
@@ -22,7 +22,8 @@ export interface ImageModalProps {
 
 export const ImageModal = (props: ImageModalProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
-  const $currentDataset = useStore(currentDataset);
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+  const $currentDataset = datasetAndUserContext.currentDataset;
 
   const [signedImageUrlsHashmap, setSignedImageUrlsHashmap] = createSignal<
     Record<string, string>
@@ -43,7 +44,7 @@ export const ImageModal = (props: ImageModalProps) => {
 
       void fetch(`${apiHost}/get_signed_url/${fileName}`, {
         headers: {
-          "TR-Dataset": $currentDataset()?.dataset.id ?? "",
+          "TR-Dataset": $currentDataset?.()?.dataset.id ?? "",
         },
         credentials: "include",
       }).then((response) => {
