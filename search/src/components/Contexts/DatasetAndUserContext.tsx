@@ -62,6 +62,8 @@ export const DatasetAndUserContext: Context<DatasetAndUserStore> =
 export const DatasetAndUserContextWrapper = (
   props: DatasetAndUserStoreContextProps,
 ) => {
+  const apiHost: string = import.meta.env.VITE_API_HOST as string;
+
   const [user, setUser] = createSignal<UserDTO | null>(null);
   const [selectedOrganization, setSelectedOrganization] =
     createSignal<OrganizationDTO | null>(null);
@@ -77,7 +79,6 @@ export const DatasetAndUserContextWrapper = (
   );
 
   const login = () => {
-    const apiHost: string = import.meta.env.VITE_API_HOST as string;
     fetch(`${apiHost}/auth/me`, {
       credentials: "include",
     })
@@ -104,131 +105,149 @@ export const DatasetAndUserContextWrapper = (
   };
 
   createEffect(() => {
+    login();
+  });
+
+  createEffect(() => {
     const dataset = currentDataset();
-    if (dataset) {
-      const params = new URL(window.location.href).searchParams;
-      params.set("dataset", dataset.dataset.id);
-      window.history.replaceState(
-        {},
-        "",
-        `${window.location.pathname}?${params.toString()}`,
-      );
-      localStorage.setItem("currentDataset", JSON.stringify(dataset));
+    if (!dataset) {
+      return;
     }
+
+    const params = new URL(window.location.href).searchParams;
+    params.set("dataset", dataset.dataset.id);
+    window.history.replaceState(
+      {},
+      "",
+      `${window.location.pathname}?${params.toString()}`,
+    );
+    localStorage.setItem("currentDataset", JSON.stringify(dataset));
   });
 
   createEffect(() => {
     let organization = selectedOrganization();
+
     if (!organization) {
+      const storedOrganization = localStorage.getItem("currentOrganization");
       const user_orgs = user()?.orgs;
       if (user_orgs && user_orgs.length > 0) {
         organization = user_orgs[0];
+        if (storedOrganization) {
+          const storedOrgJson = JSON.parse(
+            storedOrganization,
+          ) as OrganizationDTO;
+
+          if (user_orgs.find((org) => org.id === storedOrgJson?.id)) {
+            organization = storedOrgJson;
+          } else {
+            localStorage.removeItem("currentOrganization");
+          }
+        }
+
         setSelectedOrganization(organization);
       }
     }
 
     if (organization) {
       const params = new URLSearchParams(window.location.search);
-      if (params.get("organization") === null) {
-        params.set("organization", organization.id);
-        window.history.replaceState(
-          {},
-          "",
-          `${window.location.pathname}?${params.toString()}`,
-        );
-        localStorage.setItem(
-          "currentOrganization",
-          JSON.stringify(organization),
-        );
-      }
+
+      params.set("organization", organization.id);
+      window.history.replaceState(
+        {},
+        "",
+        `${window.location.pathname}?${params.toString()}`,
+      );
+      localStorage.setItem("currentOrganization", JSON.stringify(organization));
     }
   });
 
   createEffect(() => {
-    const api_host: string = import.meta.env.VITE_API_HOST as string;
-    const organization = selectedOrganization();
+    const selectedOrg = selectedOrganization();
 
-    if (organization) {
-      const params = new URLSearchParams(window.location.search);
-      void fetch(`${api_host}/dataset/organization/${organization.id}`, {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "TR-Organization": organization.id,
-        },
-      }).then((res) => {
+    if (!selectedOrg) {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    void fetch(`${apiHost}/dataset/organization/${selectedOrg.id}`, {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "TR-Organization": selectedOrg.id,
+      },
+    }).then((res) => {
+      void res
+        .json()
+        .then((data: unknown[]) => {
+          if (!data.every(isDatasetAndUsageDTO)) {
+            setDatasetsAndUsages([]);
+            return;
+          }
+
+          if (data.length === 0) {
+            setDatasetsAndUsages([]);
+            return;
+          }
+
+          let newDataset = data[0];
+
+          const paramsDataset = params.get("dataset");
+          const storedDataset = localStorage.getItem("currentDataset");
+
+          if (storedDataset !== null) {
+            const storedDatasetJson = JSON.parse(
+              storedDataset,
+            ) as DatasetAndUsageDTO;
+            if (
+              data.find((d) => d.dataset.id === storedDatasetJson.dataset.id)
+            ) {
+              newDataset = storedDatasetJson;
+            }
+          } else if (paramsDataset !== null) {
+            const foundParamsDataset = data.find(
+              (d) => d.dataset.id === paramsDataset,
+            );
+            if (foundParamsDataset) {
+              newDataset = foundParamsDataset;
+            }
+          }
+
+          setCurrentDataset(newDataset);
+
+          setDatasetsAndUsages(data);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    });
+  });
+
+  createEffect(() => {
+    const dataset = currentDataset();
+    if (!dataset) {
+      return;
+    }
+
+    void fetch(`${apiHost}/dataset/envs`, {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "TR-Dataset": dataset.dataset.id,
+      },
+    }).then((res) => {
+      if (res.ok) {
         void res
           .json()
-          .then((data: unknown[]) => {
-            if (data.every(isDatasetAndUsageDTO)) {
-              if (data.length === 0) {
-                setDatasetsAndUsages([]);
-              }
-
-              if (data.length > 0) {
-                if (
-                  currentDataset() === null &&
-                  params.get("dataset") === null &&
-                  localStorage.getItem("currentDataset") === null
-                ) {
-                  setCurrentDataset(data[0]);
-                } else if (params.get("dataset") !== null) {
-                  const dataset = data.find(
-                    (d: DatasetAndUsageDTO) =>
-                      d.dataset.id === params.get("dataset"),
-                  );
-                  if (dataset) {
-                    setCurrentDataset(dataset);
-                  } else {
-                    setCurrentDataset(data[0]);
-                  }
-                } else if (localStorage.getItem("currentDataset") !== null) {
-                  const dataset = JSON.parse(
-                    localStorage.getItem("currentDataset") as string,
-                  ) as DatasetAndUsageDTO;
-                  setCurrentDataset(dataset);
-                }
-              }
-
-              setDatasetsAndUsages(data);
+          .then((data) => {
+            if (data) {
+              setClientConfig(data);
             }
           })
           .catch((err) => {
             console.log(err);
           });
-      });
-    }
-  });
-
-  createEffect(() => {
-    const dataset = currentDataset();
-    if (dataset) {
-      const apiHost: string = import.meta.env.VITE_API_HOST as string;
-      void fetch(`${apiHost}/dataset/envs`, {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "TR-Dataset": dataset.dataset.id,
-        },
-      }).then((res) => {
-        if (res.ok) {
-          void res
-            .json()
-            .then((data) => {
-              if (data) {
-                setClientConfig(data);
-              }
-            })
-            .catch((err) => {
-              console.log(err);
-            });
-        }
-      });
-    }
-  });
-
-  createEffect(() => {
-    login();
+      }
+    });
   });
 
   const datasetAndUserStore: DatasetAndUserStore = {

@@ -286,7 +286,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
                 }}
                 onClick={() =>
                   fetchRecommendations(
-                    [chunkMetadata()?.qdrant_point_id ?? ""],
+                    [chunkMetadata()?.id ?? ""],
                     recommendedChunks(),
                   )
                 }

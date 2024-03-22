@@ -476,7 +476,14 @@ pub async fn get_bookmarks_for_group_query(
             .filter(chunk_group_columns::id.eq(group_uuid))
             .first::<ChunkGroup>(&mut conn)
             .await
-            .map_err(|_err| ServiceError::BadRequest("Error getting group".to_string()))?
+            .map_err(|err| {
+                sentry::capture_message(
+                    &format!("Error getting group {:?}", err),
+                    sentry::Level::Error,
+                );
+                log::error!("Error getting group {:?}", err);
+                ServiceError::BadRequest("Error getting group".to_string())
+            })?
     };
 
     let converted_chunks: Vec<FullTextSearchResult> = bookmark_metadata
