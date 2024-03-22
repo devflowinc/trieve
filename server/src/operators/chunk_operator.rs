@@ -423,7 +423,10 @@ pub async fn insert_chunk_metadata_query(
         .get_result::<ChunkMetadata>(&mut conn)
         .await
         .map_err(|e| {
-            sentry::capture_error(&e);
+            sentry::capture_message(
+                &format!("Failed to insert chunk_metadata: {:?}", e),
+                sentry::Level::Error,
+            );
             log::error!("Failed to insert chunk_metadata: {:?}", e);
             match e {
                 diesel::result::Error::DatabaseError(
