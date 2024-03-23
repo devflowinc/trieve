@@ -1,186 +1,61 @@
-version: "3"
-
 services:
-  db:
-    image: postgres:15
-    container_name: db
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: trieve
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    networks:
-      - app-network
-    profiles: [dev]
-
-  redis:
-    image: redis:7.2.2
-    container_name: redis
-    restart: always
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    networks:
-      - app-network
-    command: redis-server --requirepass ${REDIS_PASSWORD}
-    profiles: [dev]
-
-  qdrant-database:
-    image: qdrant/qdrant:v1.8.0
-    container_name: qdrant-database
-    environment:
-      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
-    ports:
-      - 6333:6333
-      - 6334:6334
-    volumes:
-      - qdrant_data:/qdrant/storage
-    networks:
-      - app-network
-    profiles: [dev]
-
   s3:
-    image: minio/minio:RELEASE.2023-09-27T15-22-50Z
-    container_name: s3
+    image: minio/minio:latest
     ports:
       - 9000:9000
-      - 42625:42625
+      - 9001:9001
     environment:
-      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
-      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      MINIO_ROOT_USER: &access_key minioadmin
+      MINIO_ROOT_PASSWORD: &secret_key minioadmin
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://s3:9000/minio/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
       timeout: 5s
       retries: 10
-    volumes:
-      - s3-data:/data
-    command: server --console-address ":42625" /data
-    networks:
-      - app-network
-    profiles: [dev]
+    entrypoint: /bin/bash
+    command: -c 'minio server /data --console-address ":9001"'
 
   s3-client:
     image: minio/mc
-    container_name: s3-client
-    depends_on:
-      s3:
-        condition: service_healthy
     restart: on-failure
-    networks:
-      - app-network
+    environment:
+      MINIO_ROOT_USER: *access_key
+      MINIO_ROOT_PASSWORD: *secret_key
+      S3_BUCKET: &bucketname trieve
     entrypoint: >
       /bin/sh -c "
       mc config host add myminio http://s3:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
-      mc alias set myminio http://s3:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
-
-      mc admin user add myminio ${S3_ACCESS_KEY} ${S3_SECRET_KEY};
-      mc admin policy attach myminio readwrite --user ${S3_ACCESS_KEY};
-
+      mc alias set myminio http://localhost:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
       mc mb myminio/${S3_BUCKET};
-
-
       exit 0;
       "
-    profiles: [dev]
 
-  tika:
-    image: apache/tika:2.9.1.0-full
-    container_name: tika
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "wget --spider -S 'http://tika:9998/version' 2>&1 | grep 'HTTP/' | awk '{print $2}' | grep 200 || exit 1",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    networks:
-      - app-network
-    ports:
-      - 9998:9998
-    profiles: [dev]
+  # chat:
+  #   image: chat
+  #   ports:
+  #     - 3000:3000
+  #   environment:
+  #     VITE_FRONTMATTER_VALS: "link,tag_set"
+  #     VITE_API_HOST: "http://server:8090/api"
+  #     VITE_SEARCH_UI_URL: "http://search:3001"
 
-  server:
-    image: trieve/server:no-ocr
-    container_name: server
-    build:
-      context: ./server/
-      dockerfile: Dockerfile.no-ocr
-    depends_on:
-      tika:
-        condition: service_healthy
-      db:
-        condition: service_healthy
-      qdrant-database:
-        condition: service_started
-      redis:
-        condition: service_healthy
-      keycloak:
-        condition: service_healthy
-    networks:
-      - app-network
+  # search:
+  #   image: search
+  #   ports:
+  #     - 3001:3000
+  #   environment:
+  #     VITE_API_HOST: "http://server:8090/api"
+
+  splade-embeddings:
+    image: splade-embeddings
     ports:
-      - 8090:8090
+      - 7070:7070
     environment:
-      - ADMIN_API_KEY=${ADMIN_API_KEY}
-      - BASE_SERVER_URL=${BASE_SERVER_URL}
-      - REDIS_URL=${REDIS_URL}
-      - QDRANT_URL=${QDRANT_URL}
-      - QDRANT_API_KEY=${QDRANT_API_KEY}
-      - DATABASE_URL=${DATABASE_URL}
-      - SMTP_RELAY=${SMTP_RELAY}
-      - SMTP_USERNAME=${SMTP_USERNAME}
-      - SMTP_PASSWORD=${SMTP_PASSWORD}
-      - SMTP_EMAIL_ADDRESS=${SMTP_EMAIL_ADDRESS}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - LLM_API_KEY=${LLM_API_KEY}
-      - SECRET_KEY=${SECRET_KEY}
-      - SALT=${SALT}
-      - S3_ENDPOINT=${S3_ENDPOINT}
-      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
-      - S3_SECRET_KEY=${S3_SECRET_KEY}
-      - S3_BUCKET=${S3_BUCKET}
-      - COOKIE_SECURE=${COOKIE_SECURE}
-      - QDRANT_COLLECTION=${QDRANT_COLLECTION}
-      - TIKA_URL=${TIKA_URL}
-      - OPENAI_BASE_URL=${OPENAI_BASE_URL}
-      - STRIPE_SECRET=${STRIPE_SECRET}
-      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
-      - ADMIN_DASHBOARD_URL=${ADMIN_DASHBOARD_URL}
-      - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET}
-      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID}
-      - OIDC_AUTH_REDIRECT_URL=${OIDC_AUTH_REDIRECT_URL}
-      - OIDC_ISSUER_URL=${OIDC_ISSUER_URL}
-      - GPU_SERVER_ORIGIN=${GPU_SERVER_ORIGIN}
-      - AWS_REGION=${AWS_REGION}
-      - SPARSE_SERVER_ORIGIN=${SPARSE_SERVER_ORIGIN}
-      - EMBEDDING_SERVER_ORIGIN=${EMBEDDING_SERVER_ORIGIN}
-      - RERANKER_SERVER_ORIGIN=${RERANKER_SERVER_ORIGIN}
-      - UNLIMITED=${UNLIMITED}
+      - HF_TOKEN=${HF_TOKEN}
+      - API_KEY=${OPENAI_API_KEY}
 
   ingestion-service:
-    image: trieve/ingest
-    container_name: ingestion-service 
-    build:
-      context: ./server/
-      dockerfile: Dockerfile.microservice
+    image: ingest
     depends_on:
       tika:
         condition: service_healthy
@@ -192,58 +67,135 @@ services:
         condition: service_healthy
     env_file:
       .env
-    profiles: [dev]
 
-  chat:
-    image: trieve/chat
-    container_name: chat
-    build: ./chat/
-    networks:
-      - app-network
+  server:
+    image: server-no-ocr
+    depends_on:
+      tika:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      qdrant-database:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
     ports:
-      - 3000:80
+      - 8090:8090
     environment:
-      - VITE_API_HOST=${VITE_API_HOST}
-      - VITE_SEARCH_UI_URL=${VITE_SEARCH_UI_URL}
+      ADMIN_API_KEY: ${ADMIN_API_KEY}
+      BASE_SERVER_URL: ${BASE_SERVER_URL}
+      REDIS_URL: ${REDIS_URL}
+      QDRANT_URL: http://qdrant-database:6334
+      QDRANT_API_KEY: &qdrant_api_key aintsecure
+      DATABASE_URL: ${DATABASE_URL}
+      SMTP_RELAY: ${SMTP_RELAY}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_EMAIL_ADDRESS: ${SMTP_EMAIL_ADDRESS}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      LLM_API_KEY: ${LLM_API_KEY}
+      SECRET_KEY: ${SECRET_KEY}
+      SALT: ${SALT}
+      AWS_REGION: "us-east-1"
+      S3_ENDPOINT: http://s3:9000
+      S3_ACCESS_KEY: *access_key
+      S3_SECRET_KEY: *secret_key
+      S3_BUCKET: *bucketname
+      COOKIE_SECURE: false
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION}
+      TIKA_URL: ${TIKA_URL}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL}
+      ADMIN_DASHBOARD_URL: ${ADMIN_DASHBOARD_URL}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
+      OIDC_AUTH_REDIRECT_URL: ${OIDC_AUTH_REDIRECT_URL}
+      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL}
+      GPU_SERVER_ORIGIN: ${GPU_SERVER_ORIGIN}
+      SPARSE_SERVER_ORIGIN: ${SPARSE_SERVER_ORIGIN}
+      EMBEDDING_SERVER_ORIGIN: ${EMBEDDING_SERVER_ORIGIN}
+      RERANKER_SERVER_ORIGIN: ${RERANKER_SERVER_ORIGIN}
+      UNLIMITED: true
+      RUST_BACKTRACE: 1
 
-  search:
-    image: trieve/search
-    container_name: search
-    build: ./search/
-    networks:
-      - app-network
-    ports:
-      - 3001:80
+  db:
+    image: postgres:15
+    restart: always
     environment:
-      - VITE_API_HOST=${VITE_API_HOST}
+      POSTGRES_USER: &pguser postgres
+      POSTGRES_PASSWORD: &pgpassword password
+      POSTGRES_DB: &pgdb trieve
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
 
-  splade-embeddings:
-    image: trieve/splade-embeddings
-    container_name: splade-embeddings
-    build: ./embedding-server/
-    networks:
-      - app-network
+  redis:
+    image: redis:7.2.2
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     ports:
-      - 7070:7070
+      - "6379:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    
+  qdrant-database:
+    image: qdrant/qdrant:v1.8.0
     environment:
-      - HF_TOKEN=${HF_TOKEN}
-      - API_KEY=${OPENAI_API_KEY}
-    profiles: [dev]
+      QDRANT__SERVICE__API_KEY: *qdrant_api_key
+    ports:
+      - 6333:6333
+      - 6334:6334
+    
+  tika:
+    image: apache/tika:2.9.1.0-full
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --spider -S 'http://tika:9998/version' 2>&1 | grep 'HTTP/' | awk '{print $2}' | grep 200 || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    ports:
+      - 9998:9998
+    
+  keycloak-db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: &kcpguser postgres
+      POSTGRES_PASSWORD: &kcpgpass password
+      POSTGRES_DB: &kcdb keycloak
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5434:5432"
 
   keycloak:
-    image: quay.io/keycloak/keycloak:23.0.7
-    container_name: keycloak
+    image: keycloak
     depends_on:
       keycloak-db:
         condition: service_healthy
     environment:
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=aintsecure
-      - KC_DB=postgres
-      - KC_DB_URL=jdbc:postgresql://keycloak-db:5432/keycloak
-      - KC_DB_USERNAME=postgres
-      - KC_DB_PASSWORD=password
-      - KC_HEALTH_ENABLED=true
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: aintsecure
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: *kcpguser
+      KC_DB_PASSWORD: *kcpgpass
+      KC_HEALTH_ENABLED: true
     healthcheck:
       test:
         [
@@ -253,47 +205,5 @@ services:
       interval: 10s
       timeout: 5s
       retries: 20 # Account for keycloak db starting up and taking time.
-    entrypoint: "/opt/keycloak/bin/kc.sh start-dev --import-realm --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false"
-    volumes:
-      - keycloak-data:/opt/keycloak/data
-      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
-      - ./keycloak/themes/arguflow:/opt/keycloak/themes/arguflow
     ports:
       - 8080:8080
-    networks:
-      - app-network
-    profiles: [dev]
-
-  keycloak-db:
-    image: postgres:15
-    container_name: keycloak-db
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: keycloak
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d keycloak"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    volumes:
-      - pg-keycloak-data:/var/lib/postgresql/data
-    ports:
-      - "5434:5432"
-    networks:
-      - app-network
-    profiles: [dev]
-
-networks:
-  app-network:
-    driver: bridge
-
-volumes:
-  redis-data:
-  script-redis-data:
-  pgdata:
-  qdrant_data:
-  s3-data:
-  keycloak-data:
-  pg-keycloak-data:
