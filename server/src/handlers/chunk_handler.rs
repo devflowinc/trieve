@@ -1,7 +1,7 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan,
-    IdParams, Pool, RedisPool, ServerDatasetConfiguration, UnifiedId,
+    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan, Pool,
+    RedisPool, ServerDatasetConfiguration, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -396,7 +396,7 @@ pub async fn create_chunk(
 /// Delete a chunk by its id. If deleting a root chunk which has a collision, the most recently created collision will become a new root chunk.
 #[utoipa::path(
     delete,
-    path = "/chunk/{tracking_or_chunk}/{chunk_id}",
+    path = "/chunk/{chunk_id}",
     context_path = "/api",
     tag = "chunk",
     responses(
@@ -405,8 +405,7 @@ pub async fn create_chunk(
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("tracking_or_chunk" = String, Path, description = "The type of id you are using to search for the chunk. This can be either 'chunk' or 'tracking_id'"),
-        ("chunk_id" = Option<uuid::Uuid>, Path, description = "Id of the chunk you want to fetch. This can be either the chunk_id or the tracking_id."),
+        ("chunk_id" = Option<uuid::Uuid>, Path, description = "Id of the chunk you want to fetch."),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -414,7 +413,7 @@ pub async fn create_chunk(
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn delete_chunk(
-    chunk_id: IdParams,
+    chunk_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -423,36 +422,16 @@ pub async fn delete_chunk(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    match chunk_id.id {
-        UnifiedId::TrackingId(tracking_id) => {
-            let chunk_metadata = get_metadata_from_tracking_id_query(
-                tracking_id,
-                dataset_org_plan_sub.dataset.id,
-                pool.clone(),
-            )
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let chunk_id = chunk_id.into_inner();
 
-            delete_chunk_metadata_query(
-                chunk_metadata.id,
-                dataset_org_plan_sub.dataset,
-                pool,
-                server_dataset_config,
-            )
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-        }
-        UnifiedId::TrieveUuid(chunk_id_inner) => {
-            delete_chunk_metadata_query(
-                chunk_id_inner,
-                dataset_org_plan_sub.dataset,
-                pool,
-                server_dataset_config,
-            )
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
-        }
-    }
+    delete_chunk_metadata_query(
+        chunk_id,
+        dataset_org_plan_sub.dataset,
+        pool,
+        server_dataset_config,
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -477,7 +456,6 @@ pub async fn delete_chunk(
         ("ApiKey" = ["admin"]),
     )
 )]
-#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn delete_chunk_by_tracking_id(
     tracking_id: web::Path<String>,
@@ -1171,7 +1149,7 @@ pub async fn search_chunk(
 /// Get a singular chunk by id.
 #[utoipa::path(
     get,
-    path = "/chunk/{tracking_or_chunk}/{chunk_id}",
+    path = "/chunk/{chunk_id}",
     context_path = "/api",
     tag = "chunk",
     responses(
@@ -1180,8 +1158,7 @@ pub async fn search_chunk(
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
-        ("tracking_or_chunk" = String, Path, description = "The type of id you are using to search for the chunk. This can be either 'chunk' or 'tracking_id'"),
-        ("chunk_id" = Option<uuid::Uuid>, Path, description = "Id of the chunk you want to fetch. This can be either the chunk_id or the tracking_id."),
+        ("chunk_id" = Option<uuid::Uuid>, Path, description = "Id of the chunk you want to fetch."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -1189,24 +1166,15 @@ pub async fn search_chunk(
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn get_chunk_by_id(
-    chunk_id: IdParams,
+    chunk_id: web::Path<uuid::Uuid>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let chunk_id = chunk_id.id;
-    let chunk = match chunk_id {
-        UnifiedId::TrieveUuid(chunk_id) => {
-            get_metadata_from_id_query(chunk_id, dataset_org_plan_sub.dataset.id, pool)
-                .await
-                .map_err(|err| ServiceError::BadRequest(err.message.into()))?
-        }
-        UnifiedId::TrackingId(tracking_id) => {
-            get_metadata_from_tracking_id_query(tracking_id, dataset_org_plan_sub.dataset.id, pool)
-                .await
-                .map_err(|err| ServiceError::BadRequest(err.message.into()))?
-        }
-    };
+    let chunk_id = chunk_id.into_inner();
+    let chunk = get_metadata_from_id_query(chunk_id, dataset_org_plan_sub.dataset.id, pool)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
     Ok(HttpResponse::Ok().json(chunk))
 }
@@ -1231,7 +1199,6 @@ pub async fn get_chunk_by_id(
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn get_chunk_by_tracking_id(
     tracking_id: web::Path<String>,
