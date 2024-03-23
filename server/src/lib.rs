@@ -564,15 +564,6 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(web::delete().to(handlers::chunk_handler::delete_chunk)),
                             )
                             .service(
-                                web::resource("/{tracking_or_chunk}/{id}")
-                                    .route(web::get().to(
-                                        handlers::chunk_handler::get_chunk_by_id
-                                    ))
-                                    .route(web::delete().to(
-                                        handlers::chunk_handler::delete_chunk
-                                    )),
-                            )
-                            .service(
                                 web::resource("/tracking_id/{tracking_id}")
                                     .route(
                                         web::get()
@@ -675,7 +666,7 @@ pub async fn main() -> std::io::Result<()> {
                                     ),
                             )
                             .service(
-                                web::scope("/{id}")
+                                web::scope("/{group_id}")
                                     .service(
                                         web::resource("")
                                             .route(web::get().to(handlers::group_handler::get_chunk_group))
@@ -686,18 +677,7 @@ pub async fn main() -> std::io::Result<()> {
                                             .route(web::get().to(handlers::group_handler::get_chunks_in_group)),
                                     )
                             )
-                            .service(
-                                web::scope("/{tracking_or_chunk}/{id}")
-                                    .service(
-                                        web::resource("")
-                                            .route(web::get().to(handlers::group_handler::get_chunk_group))
-                                            .route(web::delete().to(handlers::group_handler::delete_chunk_group)),
-                                    )
-                                    .service(
-                                        web::resource("/{page}")
-                                            .route(web::get().to(handlers::group_handler::get_chunks_in_group)),
-                                    )
-                                )
+
                     )
                     .service(
                         web::scope("/file")
