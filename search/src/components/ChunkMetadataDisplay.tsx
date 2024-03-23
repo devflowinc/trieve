@@ -168,7 +168,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                   <Show when={imgInformation()}>
                     <a
                       class="h-fit"
-                      href={`${apiHost}/pdf_from_range/${
+                      href={`${apiHost}/file/pdf_from_range/${
                         imgInformation()?.imgRangeStart ?? 0
                       }/${imgInformation()?.imgRangeEnd ?? 0}/${
                         imgInformation()?.imgRangePrefix ?? ""
@@ -192,7 +192,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                   <Show when={imgInformation()}>
                     <a
                       class="h-fit"
-                      href={`${apiHost}/pdf_from_range/${
+                      href={`${apiHost}/file/pdf_from_range/${
                         imgInformation()?.imgRangeStart ?? 0
                       }/${imgInformation()?.imgRangeEnd ?? 0}/${
                         imgInformation()?.imgRangePrefix ?? ""
