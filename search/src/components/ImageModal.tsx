@@ -45,7 +45,7 @@ export const ImageModal = (props: ImageModalProps) => {
         (props.imgInformation()?.imgRangeStart ?? 0) + i
       }`;
 
-      void fetch(`${apiHost}/get_signed_url/${fileName}.png`, {
+      void fetch(`${apiHost}/file/get_signed_url/${fileName}.png`, {
         headers: {
           "TR-Dataset": $currentDataset?.()?.dataset.id ?? "",
         },
