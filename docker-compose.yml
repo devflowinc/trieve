@@ -187,7 +187,7 @@ services:
       - "5434:5432"
 
   keycloak:
-    image: trieve/keybase:demo
+    image: trieve/keycloak:demo
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: aintsecure
