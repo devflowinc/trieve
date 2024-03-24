@@ -63,11 +63,11 @@ services:
       retries: 10
     entrypoint: >
      /bin/bash -c ' 
-     minio server /data --console-address ":9001" &&
-     mc alias set myminio http://localhost:9000/ $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD &&
+     minio server /data --console-address ":9001" &
+     mc alias set myminio http://127.0.0.1:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD &&
      mc mb myminio/${S3_BUCKET} $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD &&
-     mc admin user add myminio ${S3_ACCESS_KEY} ${S3_SECRET_KEY} $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD &&
-     mc admin policy attach myminio readwrite --user ${S3_ACCESS_KEY} $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD
+     mc admin user add myminio ${S3_ACCESS_KEY} ${S3_SECRET_KEY} &&
+     mc admin policy attach myminio readwrite --user ${S3_ACCESS_KEY}
      '
 
   db:
