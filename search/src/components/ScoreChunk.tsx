@@ -240,6 +240,10 @@ const ScoreChunk = (props: ScoreChunkProps) => {
     return curUserOrg?.role ?? 0;
   });
 
+  const currentOrgId = createMemo(() => {
+    return $currentDataset?.()?.dataset.organization_id;
+  });
+
   return (
     <>
       <Show when={!deleted()}>
@@ -305,7 +309,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                   <Show when={imgInformation()}>
                     <a
                       class="h-fit"
-                      href={`${apiHost}/file/pdf_from_range/${
+                      href={`${apiHost}/file/pdf_from_range/${currentOrgId()}/${
                         imgInformation()?.imgRangeStart ?? 0
                       }/${imgInformation()?.imgRangeEnd ?? 0}/${
                         imgInformation()?.imgRangePrefix ?? ""
@@ -329,7 +333,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                   <Show when={imgInformation()}>
                     <a
                       class="h-fit"
-                      href={`${apiHost}/file/pdf_from_range/${
+                      href={`${apiHost}/file/pdf_from_range/${currentOrgId()}/${
                         imgInformation()?.imgRangeStart ?? 0
                       }/${imgInformation()?.imgRangeEnd ?? 0}/${
                         imgInformation()?.imgRangePrefix ?? ""
