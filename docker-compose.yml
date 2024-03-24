@@ -53,30 +53,22 @@ services:
     environment:
       MINIO_ROOT_USER: &access_key minioadmin
       MINIO_ROOT_PASSWORD: &secret_key minioadmin
+      S3_ACCESS_KEY: &s3_access_key ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: &s3_secret_key ${S3_SECRET_KEY}
+      S3_BUCKET: &bucketname trieve
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 10s
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
       timeout: 5s
       retries: 10
-    entrypoint: /bin/bash
-    command: -c 'minio server /data --console-address ":9001"'
-
-  s3-mb:
-    image: minio/mc
-    restart: on-failure
-    depends_on:
-      s3:
-        condition: service_healthy
-    environment:
-      MINIO_ROOT_USER: *access_key
-      MINIO_ROOT_PASSWORD: *secret_key
-      S3_BUCKET: &bucketname trieve
     entrypoint: >
-      /bin/sh -c "
-      mc alias set myminio http://localhost:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD
-      mc mb myminio/${S3_BUCKET};
-      exit 0;
-      "
+     /bin/bash -c ' 
+     minio server /data --console-address ":9001" &&
+     mc alias set myminio http://localhost:9000/ $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD &&
+     mc mb myminio/${S3_BUCKET} $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD &&
+     mc admin user add myminio ${S3_ACCESS_KEY} ${S3_SECRET_KEY} $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD &&
+     mc admin policy attach myminio readwrite --user ${S3_ACCESS_KEY} $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD
+     '
 
   db:
     image: postgres:15
@@ -146,8 +138,6 @@ services:
       - db
       - qdrant-database
       - redis
-    env_file:
-      .env
 
   server:
     image: trieve/server-no-ocr:demo
@@ -168,8 +158,8 @@ services:
       SALT: ${SALT}
       AWS_REGION: "us-east-1"
       S3_ENDPOINT: http://s3:9000
-      S3_ACCESS_KEY: *access_key
-      S3_SECRET_KEY: *secret_key
+      S3_ACCESS_KEY: *s3_access_key
+      S3_SECRET_KEY: *s3_secret_key
       S3_BUCKET: *bucketname
       COOKIE_SECURE: false
       QDRANT_COLLECTION: ${QDRANT_COLLECTION}
@@ -208,19 +198,13 @@ services:
       VITE_FRONTMATTER_VALS: "link,tag_set"
       VITE_API_HOST: "http://localhost:8090/api"
       VITE_SEARCH_UI_URL: "http://localhost:3001"
-    depends_on:
-      server:
-        condition: service_healthy
 
   search:
     image: trieve/search:demo
     ports:
       - 3001:80
     environment:
-      VITE_API_HOST: "http://server:8090/api"
-    depends_on:
-      server:
-        condition: service_healthy
+      VITE_API_HOST: "http://localhost:8090/api"
 
 volumes:
   redis-data: {}
