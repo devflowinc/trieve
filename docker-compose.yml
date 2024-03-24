@@ -133,13 +133,13 @@ services:
 
   ingestion-service:
     image: ingest:demo
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
     depends_on:
       - tika
       - db
       - qdrant-database
       - redis
+    env_file:
+      .env
 
   server:
     image: trieve/server-no-ocr:demo
