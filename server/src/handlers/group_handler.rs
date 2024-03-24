@@ -61,7 +61,7 @@ pub struct CreateChunkGroupData {
 
 /// Create Chunk Group
 ///
-/// Create a new chunk_group.
+/// Create a new chunk_group. This is a way to group chunks together. If you try to create a chunk_group with the same tracking_id as an existing chunk_group, this operation will fail.
 #[utoipa::path(
     post,
     path = "/chunk_group",
@@ -290,7 +290,6 @@ pub struct UpdateGroupByTrackingIDData {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn update_group_by_tracking_id(
     data: web::Json<UpdateGroupByTrackingIDData>,
@@ -452,7 +451,7 @@ pub struct UpdateChunkGroupData {
 
 /// Update Group
 ///
-/// Update a chunk_group.
+/// Update a chunk_group. If you try to change the tracking_id to one that already exists, this operation will fail.
 #[utoipa::path(
     put,
     path = "/chunk_group",
@@ -514,13 +513,13 @@ pub async fn update_chunk_group(
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct AddChunkToGroupData {
-    /// Id of the chunk to make a member of the group. Think of this as "bookmark"ing a chunk.
+    /// Id of the chunk to make a member of the group.
     pub chunk_id: uuid::Uuid,
 }
 
 /// Add Chunk to Group
 ///
-/// Route to add a chunk to a group
+/// Route to add a chunk to a group.
 #[utoipa::path(
     post,
     path = "/chunk_group/chunk/{group_id}",
@@ -539,7 +538,6 @@ pub struct AddChunkToGroupData {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn add_chunk_to_group(
     body: web::Json<AddChunkToGroupData>,
@@ -575,13 +573,13 @@ pub async fn add_chunk_to_group(
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct AddChunkToGroupByTrackingIdData {
-    /// Id of the chunk to make a member of the group. Think of this as "bookmark"ing a chunk.
+    /// Id of the chunk to make a member of the group.
     pub chunk_id: uuid::Uuid,
 }
 
 /// Add Chunk to Group by Tracking ID
 ///
-/// Route to add a chunk to a group by tracking id. Think of a bookmark as a chunk which is a member of a group.
+/// Route to add a chunk to a group by tracking id.
 #[utoipa::path(
     post,
     path = "/chunk_group/tracking_id/{tracking_id}",
@@ -600,7 +598,6 @@ pub struct AddChunkToGroupByTrackingIdData {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn add_chunk_to_group_by_tracking_id(
     body: web::Json<AddChunkToGroupByTrackingIdData>,
@@ -827,7 +824,6 @@ pub struct DeleteBookmarkPathData {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn remove_chunk_from_group(
     group_id: web::Path<uuid::Uuid>,
