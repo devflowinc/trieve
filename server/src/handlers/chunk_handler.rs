@@ -210,7 +210,7 @@ pub enum CreateChunkData {
     Batch(CreateBatchChunkData),
 }
 
-/// Create Chunk
+/// Create or Upsert Chunk or Chunks
 ///
 /// Create a new chunk. If the chunk has the same tracking_id as an existing chunk, the request will fail. Once a chunk is created, it can be searched for using the search endpoint.
 #[utoipa::path(
@@ -681,7 +681,6 @@ pub struct UpdateChunkByTrackingIdData {
 /// Update Chunk By Tracking Id
 ///
 /// Update a chunk by tracking_id. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk.
-#[deprecated]
 #[utoipa::path(
     put,
     path = "/chunk/tracking_id/update",
@@ -1393,7 +1392,7 @@ pub struct GenerateChunksRequest {
     pub stream_response: Option<bool>,
 }
 
-/// RAG on User Defined Chunks
+/// RAG on Specified Chunks
 ///
 /// This endpoint exists as an alternative to the topic+message concept where our API handles chat memory. With this endpoint, the user is responsible for providing the context window and the prompt. See more in the "search before generate" page at docs.trieve.ai.
 #[utoipa::path(

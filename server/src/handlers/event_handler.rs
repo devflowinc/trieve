@@ -19,7 +19,7 @@ pub struct GetEventsData {
     pub page: Option<i64>,
     /// The number of items per page. Default is 10.
     pub page_size: Option<i64>,
-    /// The type of events to get. Any combination of file_uploaded, card_uploaded, card_action_failed, or card_updated. Leave undefined to get all events.
+    /// The types of events to get. Any combination of file_uploaded, card_uploaded, card_action_failed, or card_updated. Leave undefined to get all events.
     pub event_types: Option<Vec<String>>,
 }
 
