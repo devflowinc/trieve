@@ -139,6 +139,7 @@ struct SpladeIndicies {
 pub struct CustomSparseEmbedData {
     pub inputs: String,
     pub encode_type: String,
+    pub truncate: bool,
 }
 
 #[tracing::instrument]
@@ -180,6 +181,7 @@ pub async fn get_splade_embedding(
         .send_json(CustomSparseEmbedData {
             inputs: message.to_string(),
             encode_type: embed_type.to_string(),
+            truncate: true,
         })
         .map_err(|err| {
             log::error!(
@@ -213,11 +215,6 @@ pub async fn get_splade_embedding(
 struct ScorePair {
     index: usize,
     score: f32,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ReRankResponse {
-    pub docs: Vec<(String, f32)>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
