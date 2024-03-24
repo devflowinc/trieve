@@ -132,7 +132,10 @@ services:
       - API_KEY=${OPENAI_API_KEY}
 
   ingestion-service:
-    image: ingest:demo
+    container_name: ingest 
+    build:
+      context: ./server/
+      dockerfile: Dockerfile.microservice
     depends_on:
       - tika
       - db
