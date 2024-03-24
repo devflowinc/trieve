@@ -133,6 +133,8 @@ services:
 
   ingestion-service:
     image: ingest:demo
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
     depends_on:
       - tika
       - db
