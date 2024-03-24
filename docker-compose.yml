@@ -122,9 +122,7 @@ services:
       - 6334:6334
     
   splade-embeddings:
-    image: trieve/splade-embeddings
-    container_name: splade-embeddings
-    build: ./embedding-server/
+    image: trieve/splade-embeddings:demo
     ports:
       - 7070:7070
     environment:
