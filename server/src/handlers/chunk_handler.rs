@@ -358,10 +358,10 @@ pub async fn create_chunk(
         .filter_map(|msg| serde_json::to_string(&msg).ok())
         .collect();
 
-    let pos_in_queue = deadpool_redis::redis::cmd("lpush")
+    let pos_in_queue = redis::cmd("lpush")
         .arg("ingestion")
         .arg(&serialized_messages)
-        .query_async(&mut redis_conn)
+        .query_async(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
@@ -648,10 +648,10 @@ pub async fn update_chunk(
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    deadpool_redis::redis::cmd("lpush")
+    redis::cmd("lpush")
         .arg("ingestion")
         .arg(serde_json::to_string(&message)?)
-        .query_async(&mut redis_conn)
+        .query_async(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
@@ -792,10 +792,10 @@ pub async fn update_chunk_by_tracking_id(
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    deadpool_redis::redis::cmd("lpush")
+    redis::cmd("lpush")
         .arg("ingestion")
         .arg(serde_json::to_string(&message)?)
-        .query_async(&mut redis_conn)
+        .query_async(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
