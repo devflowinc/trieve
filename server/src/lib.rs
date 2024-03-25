@@ -709,7 +709,7 @@ pub async fn main() -> std::io::Result<()> {
                             )
                             .service(
                                 web::resource(
-                                    "/pdf_from_range/{organizaton_id}/{file_start}/{file_end}/{prefix}/{file_name}/{ocr}",
+                                    "/pdf_from_range/{organization_id}/{file_start}/{file_end}/{prefix}/{file_name}/{ocr}",
                                 )
                                 .route(web::get().to(handlers::file_handler::get_pdf_from_range)),
                             ),
