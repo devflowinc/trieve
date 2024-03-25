@@ -64,9 +64,14 @@ fn main() {
     };
 
     let thread_num = if let Ok(thread_num) = std::env::var("THREAD_NUM") {
-        thread_num.parse::<usize>().unwrap()
+        thread_num
+            .parse::<usize>()
+            .expect("THREAD_NUM must be a number")
     } else {
-        std::thread::available_parallelism().unwrap().get() * 2
+        std::thread::available_parallelism()
+            .expect("Failed to get available parallelism")
+            .get()
+            * 2
     };
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
@@ -82,14 +87,14 @@ fn main() {
     let pool = diesel_async::pooled_connection::deadpool::Pool::builder(mgr)
         .max_size(10)
         .build()
-        .unwrap();
+        .expect("Failed to create diesel_async pool");
 
     let web_pool = actix_web::web::Data::new(pool.clone());
 
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
-        .unwrap()
+        .expect("Failed to create tokio runtime")
         .block_on(
             async move {
                 let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
@@ -139,13 +144,18 @@ async fn ingestion_service(
         .expect("Failed to fetch from redis pool");
 
     loop {
+        log::info!("Thread {} waiting for payload", thread);
         let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpop")
             .arg("ingestion")
-            .arg(0.0)
+            .arg(1.0)
             .query_async(&mut *redis_connection)
             .await;
 
         let payload = if let Ok(payload) = payload_result {
+            if payload.len() == 0 {
+                continue;
+            }
+
             payload
         } else {
             log::error!("Unable to process {:?}", payload_result);
@@ -155,7 +165,12 @@ async fn ingestion_service(
         let ctx = sentry::TransactionContext::new("Processing chunk", "Processing chunk");
         let transaction = sentry::start_transaction(ctx);
 
-        let payload: IngestionMessage = serde_json::from_str(&payload[1]).unwrap();
+        let payload: IngestionMessage = serde_json::from_str(
+            &payload
+                .first()
+                .expect("Payload must have at least 1 item to reach this point"),
+        )
+        .expect("Failed to parse ingestion message");
         match payload {
             IngestionMessage::Upload(payload) => {
                 match upload_chunk(payload.clone(), web_pool.clone(), payload.dataset_config).await
@@ -336,7 +351,10 @@ async fn upload_chunk(
                     .await;
 
             match score_chunk_result {
-                Ok(chunk_results) => chunk_results.first().unwrap().clone(),
+                Ok(chunk_results) => chunk_results
+                    .first()
+                    .expect("First chunk must exist on collision check")
+                    .clone(),
                 Err(err) => {
                     return Err(ServiceError::InternalServerError(format!(
                         "Failed to get chunk metadata: {:?}",
