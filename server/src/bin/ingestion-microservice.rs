@@ -127,11 +127,13 @@ async fn ingestion_service(
     web_pool: actix_web::web::Data<models::Pool>,
 ) {
     log::info!("Starting ingestion service thread");
+
+    let mut redis_connection = redis_pool
+        .get()
+        .await
+        .expect("Failed to fetch from redis pool");
+
     loop {
-        let mut redis_connection = redis_pool
-            .get()
-            .await
-            .expect("Failed to fetch from redis pool");
 
         let payload_result: Result<Vec<String>, redis::RedisError> =
             redis::cmd("brpop")
