@@ -70,7 +70,6 @@ fn main() {
     };
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
-    let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
 
     let mut config = ManagerConfig::default();
     config.custom_setup = Box::new(establish_connection);
@@ -93,11 +92,17 @@ fn main() {
         .unwrap()
         .block_on(
             async move {
-                let redis_manager =
-                    bb8_redis::RedisConnectionManager::new(redis_url).expect("Failed to connect to redis");
+                let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
+                let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
+                    .unwrap_or("30".to_string())
+                    .parse()
+                    .unwrap_or(30);
+
+                let redis_manager = bb8_redis::RedisConnectionManager::new(redis_url)
+                    .expect("Failed to connect to redis");
 
                 let redis_pool = bb8_redis::bb8::Pool::builder()
-                    .max_size(30)
+                    .max_size(redis_connections)
                     .build(redis_manager)
                     .await
                     .expect("Failed to create redis pool");
@@ -134,13 +139,11 @@ async fn ingestion_service(
         .expect("Failed to fetch from redis pool");
 
     loop {
-
-        let payload_result: Result<Vec<String>, redis::RedisError> =
-            redis::cmd("brpop")
-                .arg("ingestion")
-                .arg(0.0)
-                .query_async(&mut *redis_connection)
-                .await;
+        let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpop")
+            .arg("ingestion")
+            .arg(0.0)
+            .query_async(&mut *redis_connection)
+            .await;
 
         let payload = if let Ok(payload) = payload_result {
             payload
