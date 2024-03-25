@@ -374,8 +374,13 @@ pub async fn main() -> std::io::Result<()> {
     let redis_manager = bb8_redis::RedisConnectionManager::new(redis_url)
         .expect("Failed to connect to redis");
 
+    let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
+        .unwrap_or("200".to_string())
+        .parse()
+        .unwrap_or(200);
+
     let redis_pool = bb8_redis::bb8::Pool::builder()
-        .max_size(200)
+        .max_size(redis_connections)
         .build(redis_manager)
         .await
         .expect("Failed to create redis pool");
