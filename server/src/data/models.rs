@@ -1094,7 +1094,7 @@ pub struct ServerDatasetConfiguration {
     pub QDRANT_COLLECTION_NAME: String,
     pub RAG_PROMPT: String,
     pub N_RETRIEVALS_TO_INCLUDE: usize,
-    pub DUPLICATE_DISTANCE_THRESHOLD: f32,
+    pub DUPLICATE_DISTANCE_THRESHOLD: f64,
     pub COLLISIONS_ENABLED: bool,
     pub EMBEDDING_SIZE: usize,
     pub LLM_DEFAULT_MODEL: String,
@@ -1164,7 +1164,6 @@ impl ServerDatasetConfiguration {
                 .get("DUPLICATE_DISTANCE_THRESHOLD")
                 .unwrap_or(&json!(1.1))
                 .as_f64()
-                .map(|f| f as f32)
                 .unwrap_or(1.1),
             EMBEDDING_SIZE: configuration
                 .get("EMBEDDING_SIZE")
