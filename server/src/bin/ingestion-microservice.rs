@@ -317,7 +317,7 @@ async fn upload_chunk(
             ServiceError::InternalServerError(format!("Failed to get top match: {:?}", err))
         })?;
 
-        if first_semantic_result.score >= duplicate_distance_threshold {
+        if first_semantic_result.score >= duplicate_distance_threshold as f32 {
             //Sets collision to collided chunk id
             collision = Some(first_semantic_result.point_id);
 
