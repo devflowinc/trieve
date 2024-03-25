@@ -530,7 +530,7 @@ pub struct UpdateIngestionMessage {
 /// Update a chunk. If you try to change the tracking_id of the chunk to have the same tracking_id as an existing chunk, the request will fail.
 #[utoipa::path(
     put,
-    path = "/chunk/update",
+    path = "/chunk",
     context_path = "/api",
     tag = "chunk",
     request_body(content = UpdateChunkData, description = "JSON request payload to update a chunk (chunk)", content_type = "application/json"),

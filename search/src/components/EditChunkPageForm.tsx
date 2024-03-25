@@ -72,7 +72,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
     setFormErrorFields([]);
     setIsUpdating(true);
 
-    void fetch(`${apiHost}/chunk/update`, {
+    void fetch(`${apiHost}/chunk`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
