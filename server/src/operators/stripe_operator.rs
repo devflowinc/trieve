@@ -56,27 +56,27 @@ pub async fn refresh_redis_org_plan_sub(
         message: "Could not create redis client",
     })?;
 
-    deadpool_redis::redis::cmd("SET")
+    redis::cmd("SET")
         .arg(format!("organization:{}", org_plan_sub.id))
         .arg(
             serde_json::to_string(&org_plan_sub).map_err(|_| DefaultError {
                 message: "Could not stringify organization",
             })?,
         )
-        .query_async(&mut redis_conn)
+        .query_async(&mut *redis_conn)
         .await
         .map_err(|_| DefaultError {
             message: "Could not set organization in redis",
         })?;
 
-    deadpool_redis::redis::cmd("SET")
+    redis::cmd("SET")
         .arg(format!("organization:{}", org_plan_sub.name))
         .arg(
             serde_json::to_string(&org_plan_sub).map_err(|_| DefaultError {
                 message: "Could not stringify organization",
             })?,
         )
-        .query_async(&mut redis_conn)
+        .query_async(&mut *redis_conn)
         .await
         .map_err(|_| DefaultError {
             message: "Could not set organization in redis",

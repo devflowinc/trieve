@@ -232,9 +232,9 @@ pub async fn get_organization_by_key_query(
         message: "Failed to parse error",
     })?;
 
-    let redis_organization: Result<String, DefaultError> = deadpool_redis::redis::cmd("GET")
+    let redis_organization: Result<String, DefaultError> = redis::cmd("GET")
         .arg(format!("organization:{}", key.display()))
-        .query_async(&mut redis_conn)
+        .query_async(&mut *redis_conn)
         .await
         .map_err(|_| DefaultError {
             message: "Could not get dataset from redis",
@@ -300,27 +300,27 @@ pub async fn get_organization_by_key_query(
                 message: "Could not create redis client",
             })?;
 
-            deadpool_redis::redis::cmd("SET")
+            redis::cmd("SET")
                 .arg(format!("organization:{}", org_with_plan_sub.id))
                 .arg(
                     serde_json::to_string(&org_with_plan_sub).map_err(|_| DefaultError {
                         message: "Could not stringify organization",
                     })?,
                 )
-                .query_async(&mut redis_conn)
+                .query_async(&mut *redis_conn)
                 .await
                 .map_err(|_| DefaultError {
                     message: "Could not set organization in redis",
                 })?;
 
-            deadpool_redis::redis::cmd("SET")
+            redis::cmd("SET")
                 .arg(format!("organization:{}", org_with_plan_sub.name))
                 .arg(
                     serde_json::to_string(&org_with_plan_sub).map_err(|_| DefaultError {
                         message: "Could not stringify organization",
                     })?,
                 )
-                .query_async(&mut redis_conn)
+                .query_async(&mut *redis_conn)
                 .await
                 .map_err(|_| DefaultError {
                     message: "Could not set organization in redis",

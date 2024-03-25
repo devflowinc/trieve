@@ -87,18 +87,23 @@ fn main() {
 
     let web_pool = actix_web::web::Data::new(pool.clone());
 
-    let redis_pool = deadpool_redis::Config::from_url(redis_url)
-        .create_pool(Some(deadpool_redis::Runtime::Tokio1))
-        .unwrap();
-    redis_pool.resize(30);
-    let web_redis_pool = actix_web::web::Data::new(redis_pool);
-
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .unwrap()
         .block_on(
             async move {
+                let redis_manager =
+                    bb8_redis::RedisConnectionManager::new(redis_url).expect("Failed to connect to redis");
+
+                let redis_pool = bb8_redis::bb8::Pool::builder()
+                    .max_size(30)
+                    .build(redis_manager)
+                    .await
+                    .expect("Failed to create redis pool");
+
+                let web_redis_pool = actix_web::web::Data::new(redis_pool);
+
                 let threads: Vec<_> = (0..thread_num)
                     .map(|i| {
                         let web_pool = web_pool.clone();
@@ -128,11 +133,11 @@ async fn ingestion_service(
             .await
             .expect("Failed to fetch from redis pool");
 
-        let payload_result: Result<Vec<String>, deadpool_redis::redis::RedisError> =
-            deadpool_redis::redis::cmd("brpop")
+        let payload_result: Result<Vec<String>, redis::RedisError> =
+            redis::cmd("brpop")
                 .arg("ingestion")
                 .arg(0.0)
-                .query_async(&mut redis_connection)
+                .query_async(&mut *redis_connection)
                 .await;
 
         let payload = if let Ok(payload) = payload_result {

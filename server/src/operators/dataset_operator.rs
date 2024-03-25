@@ -35,12 +35,12 @@ pub async fn create_dataset_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not fetch redis connection".to_string()))?;
 
-    deadpool_redis::redis::cmd("SET")
+    redis::cmd("SET")
         .arg(format!("dataset:{}", new_dataset.id))
         .arg(serde_json::to_string(&new_dataset).map_err(|err| {
             ServiceError::BadRequest(format!("Could not stringify dataset: {}", err))
         })?)
-        .query_async(&mut redis_conn)
+        .query_async(&mut *redis_conn)
         .await
         .map_err(|err| {
             ServiceError::BadRequest(format!("Could not set dataset in redis: {}", err))
@@ -61,9 +61,9 @@ pub async fn get_dataset_by_id_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not fetch redis connection".to_string()))?;
 
-    let redis_dataset: Result<String, ServiceError> = deadpool_redis::redis::cmd("GET")
+    let redis_dataset: Result<String, ServiceError> = redis::cmd("GET")
         .arg(format!("dataset:{}", id))
-        .query_async(&mut redis_conn)
+        .query_async(&mut *redis_conn)
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get dataset from redis".to_string()));
 
@@ -91,10 +91,10 @@ pub async fn get_dataset_by_id_query(
                 ServiceError::BadRequest("Could not get redis connection".to_string())
             })?;
 
-            deadpool_redis::redis::cmd("SET")
+            redis::cmd("SET")
                 .arg(format!("dataset:{}", dataset.id))
                 .arg(dataset_stringified)
-                .query_async(&mut redis_conn)
+                .query_async(&mut *redis_conn)
                 .await
                 .map_err(|_| {
                     ServiceError::BadRequest("Could not set dataset in redis".to_string())
@@ -121,9 +121,9 @@ pub async fn delete_dataset_by_id_query(
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
 
-    deadpool_redis::redis::cmd("DEL")
+    redis::cmd("DEL")
         .arg(format!("dataset:{}", dataset.id))
-        .query_async(&mut redis_conn)
+        .query_async(&mut *redis_conn)
         .await
         .map_err(|err| {
             ServiceError::BadRequest(format!("Could not delete dataset in redis: {}", err))
@@ -194,12 +194,12 @@ pub async fn update_dataset_query(
         .await
         .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
 
-    deadpool_redis::redis::cmd("SET")
+    redis::cmd("SET")
         .arg(format!("dataset:{}", id))
         .arg(serde_json::to_string(&new_dataset).map_err(|err| {
             ServiceError::BadRequest(format!("Could not stringify dataset: {}", err))
         })?)
-        .query_async(&mut redis_conn)
+        .query_async(&mut *redis_conn)
         .await
         .map_err(|err| {
             ServiceError::BadRequest(format!("Could not set dataset in redis: {}", err))

@@ -371,10 +371,14 @@ pub async fn main() -> std::io::Result<()> {
         .await
         .expect("Failed to create redis store");
 
-    let redis_pool = deadpool_redis::Config::from_url(redis_url)
-        .create_pool(Some(deadpool_redis::Runtime::Tokio1))
-        .unwrap();
-    redis_pool.resize(200);
+    let redis_manager = bb8_redis::RedisConnectionManager::new(redis_url)
+        .expect("Failed to connect to redis");
+
+    let redis_pool = bb8_redis::bb8::Pool::builder()
+        .max_size(200)
+        .build(redis_manager)
+        .await
+        .expect("Failed to create redis pool");
 
     let oidc_client = build_oidc_client().await;
 
