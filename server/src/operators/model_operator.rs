@@ -20,7 +20,7 @@ pub struct EmbeddingParameters {
 }
 
 #[tracing::instrument]
-pub async fn create_embedding(
+pub async fn create_embeddings(
     message: Vec<String>,
     embed_type: &str,
     dataset_config: ServerDatasetConfiguration,

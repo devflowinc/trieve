@@ -13,7 +13,7 @@ use crate::{
             get_message_by_sort_for_topic_query, get_messages_for_topic_query, get_topic_messages,
             user_owns_topic_query,
         },
-        model_operator::create_embedding,
+        model_operator::create_embeddings,
         organization_operator::get_message_org_count,
         qdrant_operator::VectorType,
         search_operator::retrieve_qdrant_points_query,
@@ -675,7 +675,7 @@ pub async fn stream_response(
         _ => "".to_string(),
     };
     let embedding_vectors =
-        create_embedding(vec![query.clone()], "query", dataset_config.clone()).await?;
+        create_embeddings(vec![query.clone()], "query", dataset_config.clone()).await?;
     let embedding_vector = embedding_vectors
         .first()
         .ok_or(ServiceError::BadRequest(
