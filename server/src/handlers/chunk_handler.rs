@@ -557,11 +557,11 @@ pub struct UpdateIngestionMessage {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool, redis_pool))]
+#[tracing::instrument(skip(pool, rabbit_pool))]
 pub async fn update_chunk(
     chunk: web::Json<UpdateChunkData>,
     pool: web::Data<Pool>,
-    redis_pool: web::Data<RedisPool>,
+    rabbit_pool: web::Data<RabbitPool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -652,17 +652,33 @@ pub async fn update_chunk(
         group_ids,
     };
 
-    let mut redis_conn = redis_pool
-        .get()
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    let rmq_con = rabbit_pool.get().await.map_err(|e| {
+        eprintln!("can't connect to rmq, {}", e);
+        ServiceError::BadRequest(e.to_string())
+    })?;
 
-    redis::cmd("lpush")
-        .arg("ingestion")
-        .arg(serde_json::to_string(&message)?)
-        .query_async(&mut *redis_conn)
+    let channel = rmq_con.create_channel().await.map_err(|e| {
+        eprintln!("can't create channel, {}", e);
+        ServiceError::BadRequest(e.to_string())
+    })?;
+
+
+     channel
+        .basic_publish(
+            "",
+            "ingestion",
+            BasicPublishOptions {
+                mandatory: false,
+                immediate: false,
+            },
+            serde_json::to_string(&message)?.as_bytes(),
+            Default::default(),
+        )
         .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        .map_err(|e| {
+            eprintln!("can't publish message, {}", e);
+            ServiceError::BadRequest(e.to_string())
+        })?;
 
     Ok(HttpResponse::NoContent().finish())
 }
