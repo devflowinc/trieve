@@ -144,7 +144,6 @@ async fn ingestion_service(
         .expect("Failed to fetch from redis pool");
 
     loop {
-        log::info!("Thread {} waiting for payload", thread);
         let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpop")
             .arg("ingestion")
             .arg(1.0)
@@ -152,7 +151,7 @@ async fn ingestion_service(
             .await;
 
         let payload = if let Ok(payload) = payload_result {
-            if payload.len() == 0 {
+            if payload.len() < 2 {
                 continue;
             }
 
@@ -165,12 +164,8 @@ async fn ingestion_service(
         let ctx = sentry::TransactionContext::new("Processing chunk", "Processing chunk");
         let transaction = sentry::start_transaction(ctx);
 
-        let payload: IngestionMessage = serde_json::from_str(
-            &payload
-                .first()
-                .expect("Payload must have at least 1 item to reach this point"),
-        )
-        .expect("Failed to parse ingestion message");
+        let payload: IngestionMessage =
+            serde_json::from_str(&payload[1]).expect("Failed to parse ingestion message");
         match payload {
             IngestionMessage::Upload(payload) => {
                 match upload_chunk(payload.clone(), web_pool.clone(), payload.dataset_config).await
