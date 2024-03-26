@@ -2,6 +2,9 @@ use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
 use futures::StreamExt;
+use lapin::options::BasicQosOptions;
+use lapin::types::FieldTable;
+use lapin::BasicProperties;
 use sentry::{Hub, SentryFutureExt};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{self, ChunkMetadata, Event, ServerDatasetConfiguration};
@@ -28,6 +31,25 @@ use trieve_server::{establish_connection, get_env, set_up_rabbit};
 pub enum IngestionMessage {
     Upload(UploadIngestionMessage),
     Update(UpdateIngestionMessage),
+}
+
+async fn send_to_delay_queue(
+    payload: IngestionMessage,
+    publish_headers: lapin::types::FieldTable,
+    channel: &lapin::Channel,
+) -> Result<(), Box<dyn std::error::Error>> {
+    channel
+        .basic_publish(
+            "ingestion_exchange",
+            "delay",
+            lapin::options::BasicPublishOptions::default(),
+            serde_json::to_string(&payload)?.as_bytes(),
+            BasicProperties::default().with_headers(publish_headers),
+        )
+        .await
+        .expect("Failed to publish message");
+
+    Ok(())
 }
 
 fn main() {
@@ -102,7 +124,6 @@ fn main() {
         .expect("Failed to create tokio runtime")
         .block_on(
             async move {
-
                 let rabbit_pool = set_up_rabbit().await;
                 let web_rabbit_pool = actix_web::web::Data::new(rabbit_pool);
                 let threads: Vec<_> = (0..thread_num)
@@ -139,9 +160,14 @@ async fn ingestion_service(
         .await
         .expect("Failed to create channel");
 
+    channel
+        .basic_qos(10, BasicQosOptions::default())
+        .await
+        .expect("Failed to set QoS");
+
     let mut consumer = channel
         .basic_consume(
-            "ingestion",
+            "ingestion_queue",
             "ingestion_microservice",
             lapin::options::BasicConsumeOptions {
                 no_ack: true,
@@ -178,7 +204,12 @@ async fn ingestion_service(
         let payload: IngestionMessage = serde_json::from_str(string_payload).unwrap();
         match payload {
             IngestionMessage::Upload(payload) => {
-                match upload_chunk(payload.clone(), web_pool.clone(), payload.dataset_config).await
+                match upload_chunk(
+                    payload.clone(),
+                    web_pool.clone(),
+                    payload.clone().dataset_config,
+                )
+                .await
                 {
                     Ok(_) => {
                         log::info!(
@@ -200,6 +231,39 @@ async fn ingestion_service(
                         });
                     }
                         log::error!("Failed to upload chunk: {:?}", err);
+                        let delivery_count = delivery
+                            .properties
+                            .headers()
+                            .clone()
+                            .and_then(|h| {
+                                if h.contains_key("delivery_count") {
+                                    h.inner()
+                                        .get("delivery_count")
+                                        .and_then(|v| v.as_short_int())
+                                } else {
+                                    None
+                                }
+                            })
+                            .unwrap_or(0);
+
+                        if delivery_count <= 3 {
+                            log::info!("Resending to delay queue");
+                            let mut publish_headers = FieldTable::default();
+                            publish_headers.insert(
+                                "delivery_count".into(),
+                                lapin::types::AMQPValue::ShortInt(delivery_count + 1),
+                            );
+                            let _ = send_to_delay_queue(
+                                IngestionMessage::Upload(payload.clone()),
+                                publish_headers,
+                                &channel,
+                            )
+                            .await
+                            .map_err(|err| {
+                                log::error!("Failed to send to delay queue: {:?}", err);
+                            });
+                        }
+
                         let _ = create_event_query(
                             Event::from_details(
                                 payload.ingest_specific_chunk_metadata.dataset_id,
@@ -243,13 +307,44 @@ async fn ingestion_service(
                         });
                     }
                     Err(err) => {
-                        log::error!("Failed to upload chunk: {:?}", err);
+                        log::error!("Failed to update chunk: {:?}", err);
+                        let delivery_count = delivery
+                            .properties
+                            .headers()
+                            .clone()
+                            .and_then(|h| {
+                                if h.contains_key("delivery_count") {
+                                    h.inner()
+                                        .get("delivery_count")
+                                        .and_then(|v| v.as_short_int())
+                                } else {
+                                    None
+                                }
+                            })
+                            .unwrap_or(0);
+
+                        if delivery_count <= 3 {
+                            let mut publish_headers = FieldTable::default();
+                            publish_headers.insert(
+                                "delivery_count".into(),
+                                lapin::types::AMQPValue::ShortInt(delivery_count + 1),
+                            );
+                            let _ = send_to_delay_queue(
+                                IngestionMessage::Update(payload.clone()),
+                                publish_headers,
+                                &channel,
+                            )
+                            .await
+                            .map_err(|err| {
+                                log::error!("Failed to send to delay queue: {:?}", err);
+                            });
+                        }
                         let _ = create_event_query(
                             Event::from_details(
                                 payload.dataset_id,
                                 models::EventType::CardActionFailed {
                                     chunk_id: payload.chunk_metadata.id,
-                                    error: format!("Failed to upload chunk: {:?}", err),
+                                    error: format!("Failed to update chunk: {:?}", err),
                                 },
                             ),
                             web_pool.clone(),
@@ -488,6 +583,7 @@ async fn upload_chunk(
         insert_tx.finish();
 
         qdrant_point_id = inserted_chunk.qdrant_point_id.unwrap_or(qdrant_point_id);
+        log::info!("calling_create_qdrant_point");
 
         let insert_tx =
             transaction.start_child("calling_create_qdrant_point", "calling_create_qdrant_point");

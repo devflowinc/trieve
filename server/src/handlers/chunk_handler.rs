@@ -17,6 +17,8 @@ use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
 use itertools::Itertools;
 use lapin::options::BasicPublishOptions;
+use lapin::types::FieldTable;
+use lapin::BasicProperties;
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{
     ChatCompletionParameters, ChatMessage, ChatMessageContent, Role,
@@ -362,17 +364,20 @@ pub async fn create_chunk(
         .filter_map(|msg| serde_json::to_string(&msg).ok())
         .collect();
 
+    let mut publish_headers = FieldTable::default();
+    publish_headers.insert("delivery_count".into(), lapin::types::AMQPValue::ShortInt(1));
+
     let futures = serialized_messages.iter().map(|msg| async {
         channel
             .basic_publish(
-                "",
+                "ingestion_exchange",
                 "ingestion",
                 BasicPublishOptions {
                     mandatory: false,
                     immediate: false,
                 },
                 msg.as_bytes(),
-                Default::default(),
+                BasicProperties::default().with_headers(publish_headers.clone()),
             )
             .await
             .map_err(|e| {
@@ -649,7 +654,7 @@ pub async fn update_chunk(
         chunk_metadata: metadata.clone(),
         server_dataset_config,
         dataset_id,
-        group_ids,
+        group_ids,    
     };
 
     let rmq_con = rabbit_pool.get().await.map_err(|e| {
@@ -662,17 +667,20 @@ pub async fn update_chunk(
         ServiceError::BadRequest(e.to_string())
     })?;
 
+    let mut publish_headers = FieldTable::default();
+    publish_headers.insert("delivery_count".into(), lapin::types::AMQPValue::ShortInt(1));
+
 
      channel
         .basic_publish(
-            "",
+            "ingestion_exchange",
             "ingestion",
             BasicPublishOptions {
                 mandatory: false,
                 immediate: false,
             },
             serde_json::to_string(&message)?.as_bytes(),
-            Default::default(),
+            BasicProperties::default().with_headers(publish_headers.clone()),
         )
         .await
         .map_err(|e| {
@@ -723,11 +731,11 @@ pub struct UpdateChunkByTrackingIdData {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool, redis_pool))]
+#[tracing::instrument(skip(pool, rabbit_pool))]
 pub async fn update_chunk_by_tracking_id(
     chunk: web::Json<UpdateChunkByTrackingIdData>,
     pool: web::Data<Pool>,
-    redis_pool: web::Data<RedisPool>,
+    rabbit_pool: web::Data<RabbitPool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -809,17 +817,36 @@ pub async fn update_chunk_by_tracking_id(
         group_ids,
     };
 
-    let mut redis_conn = redis_pool
-        .get()
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    let rmq_con = rabbit_pool.get().await.map_err(|e| {
+        eprintln!("can't connect to rmq, {}", e);
+        ServiceError::BadRequest(e.to_string())
+    })?;
 
-    redis::cmd("lpush")
-        .arg("ingestion")
-        .arg(serde_json::to_string(&message)?)
-        .query_async(&mut *redis_conn)
+    let channel = rmq_con.create_channel().await.map_err(|e| {
+        eprintln!("can't create channel, {}", e);
+        ServiceError::BadRequest(e.to_string())
+    })?;
+
+    let mut publish_headers = FieldTable::default();
+    publish_headers.insert("delivery_count".into(), lapin::types::AMQPValue::ShortInt(1));
+
+     channel
+        .basic_publish(
+            "ingestion_exchange",
+            "ingestion",
+            BasicPublishOptions {
+                mandatory: false,
+                immediate: false,
+            },
+            serde_json::to_string(&message)?.as_bytes(),
+            BasicProperties::default().with_headers(publish_headers.clone()),
+        )
         .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        .map_err(|e| {
+            eprintln!("can't publish message, {}", e);
+            ServiceError::BadRequest(e.to_string())
+        })?;
+
 
     Ok(HttpResponse::NoContent().finish())
 }

@@ -410,6 +410,8 @@ pub async fn insert_chunk_metadata_query(
         )
         .await;
 
+        log::info!("Checking for existing chunk with tracking_id");
+
         if existing_chunk.is_ok() {
             log::info!("Avoided potential write conflict by pre-checking tracking_id");
             return Err(DefaultError {
@@ -417,6 +419,8 @@ pub async fn insert_chunk_metadata_query(
             });
         }
     }
+
+    log::info!("Inserting chunk metadata");
 
     let inserted_chunk = diesel::insert_into(chunk_metadata)
         .values(&chunk_data)
@@ -440,6 +444,8 @@ pub async fn insert_chunk_metadata_query(
                 },
             }
         })?;
+
+    log::info!("Inserted chunk metadata");
 
     if file_uuid.is_some() {
         diesel::insert_into(chunk_files_columns::chunk_files)
