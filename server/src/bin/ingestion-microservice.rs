@@ -160,11 +160,6 @@ async fn ingestion_service(
         .await
         .expect("Failed to create channel");
 
-    channel
-        .basic_qos(10, BasicQosOptions::default())
-        .await
-        .expect("Failed to set QoS");
-
     let mut consumer = channel
         .basic_consume(
             "ingestion_queue",
@@ -583,7 +578,6 @@ async fn upload_chunk(
         insert_tx.finish();
 
         qdrant_point_id = inserted_chunk.qdrant_point_id.unwrap_or(qdrant_point_id);
-        log::info!("calling_create_qdrant_point");
 
         let insert_tx =
             transaction.start_child("calling_create_qdrant_point", "calling_create_qdrant_point");

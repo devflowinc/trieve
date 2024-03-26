@@ -117,10 +117,10 @@ impl Modify for SecurityAddon {
     }
 }
 
-pub async fn set_up_rabbit(thread_num: Option<usize>) -> deadpool_lapin::Pool {
+pub async fn set_up_rabbit() -> deadpool_lapin::Pool {
     let manager = Manager::new(get_env!("RABBITMQ_HOST", "RABBITMQ_HOST must be set"), ConnectionProperties::default());
     let pool: deadpool_lapin::Pool = deadpool_lapin::Pool::builder(manager)
-        .max_size(thread_num.unwrap_or(10))
+        .max_size(10)
         .build()
         .expect("can create pool");
 
@@ -442,7 +442,7 @@ pub async fn main() -> std::io::Result<()> {
         .expect("Failed to create redis pool");
 
 
-    let rabbit_pool: Pool = set_up_rabbit(None).await;
+    let rabbit_pool: Pool = set_up_rabbit().await;
 
 
     let oidc_client = build_oidc_client().await;
