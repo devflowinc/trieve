@@ -1,7 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan,
-    IngestSpecificChunkMetadata, Pool, RedisPool, ServerDatasetConfiguration, UnifiedId,
+    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan, IngestSpecificChunkMetadata, Pool, RabbitPool, RedisPool, ServerDatasetConfiguration, UnifiedId
 };
 use crate::errors::{DefaultError, ServiceError};
 use crate::get_env;
@@ -17,6 +16,7 @@ use actix_web::{web, HttpResponse};
 use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
 use itertools::Itertools;
+use lapin::options::BasicPublishOptions;
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{
     ChatCompletionParameters, ChatMessage, ChatMessageContent, Role,
@@ -106,8 +106,7 @@ pub enum ReturnQueuedChunk {
 pub struct SingleQueuedChunkResponse {
     /// The chunk that got queue'd
     pub chunk_metadata: ChunkMetadata,
-    /// The current position the last access item is in the queue
-    pub pos_in_queue: i32,
+
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
@@ -139,8 +138,7 @@ pub struct SingleQueuedChunkResponse {
 pub struct BatchQueuedChunkResponse {
     // All the chunks that got queue'd
     pub chunk_metadata: Vec<ChunkMetadata>,
-    /// The current position the last access item is in the queue
-    pub pos_in_queue: i32,
+
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -231,13 +229,13 @@ pub enum CreateChunkData {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(redis_pool, pool))]
+#[tracing::instrument(skip(rabbit_pool, pool))]
 pub async fn create_chunk(
     create_chunk_data: web::Json<CreateChunkData>,
     pool: web::Data<Pool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    redis_pool: web::Data<RedisPool>,
+    rabbit_pool: web::Data<RabbitPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let chunks = match create_chunk_data.clone() {
         CreateChunkData::Single(chunk) => vec![chunk.0],
@@ -347,10 +345,16 @@ pub async fn create_chunk(
         ingestion_messages.push(upload_message);
     }
 
-    let mut redis_conn = redis_pool
-        .get()
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    let rmq_con = rabbit_pool.get().await.map_err(|e| {
+        eprintln!("can't connect to rmq, {}", e);
+        ServiceError::BadRequest(e.to_string())
+    })?;
+
+    let channel = rmq_con.create_channel().await.map_err(|e| {
+        eprintln!("can't create channel, {}", e);
+        ServiceError::BadRequest(e.to_string())
+    })?;
+
     timer.add("got redis connection");
 
     let serialized_messages: Vec<String> = ingestion_messages
@@ -358,12 +362,26 @@ pub async fn create_chunk(
         .filter_map(|msg| serde_json::to_string(&msg).ok())
         .collect();
 
-    let pos_in_queue = redis::cmd("lpush")
-        .arg("ingestion")
-        .arg(&serialized_messages)
-        .query_async(&mut *redis_conn)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    let futures = serialized_messages.iter().map(|msg| async {
+        channel
+            .basic_publish(
+                "",
+                "ingestion",
+                BasicPublishOptions {
+                    mandatory: false,
+                    immediate: false,
+                },
+                msg.as_bytes(),
+                Default::default(),
+            )
+            .await
+            .map_err(|e| {
+                eprintln!("can't publish message, {}", e);
+                ServiceError::BadRequest(e.to_string())
+            })
+    });
+
+    futures::future::join_all(futures).await;
 
     let response = match create_chunk_data.into_inner() {
         CreateChunkData::Single(_) => ReturnQueuedChunk::Single(SingleQueuedChunkResponse {
@@ -373,11 +391,10 @@ pub async fn create_chunk(
                     "Failed to queue a single chunk due to deriving 0 ingestion_messages from the request data".to_string(),
                 ))?
                 .clone(),
-            pos_in_queue,
+            
         }),
         CreateChunkData::Batch(_) => ReturnQueuedChunk::Batch(BatchQueuedChunkResponse {
             chunk_metadata: chunk_metadatas,
-            pos_in_queue,
         }),
     };
 

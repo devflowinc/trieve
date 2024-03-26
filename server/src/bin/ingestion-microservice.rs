@@ -1,6 +1,8 @@
 use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
+use futures::StreamExt;
+use lapin::options::BasicAckOptions;
 use sentry::{Hub, SentryFutureExt};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{self, ChunkMetadata, Event, ServerDatasetConfiguration};
@@ -20,7 +22,7 @@ use trieve_server::operators::qdrant_operator::{
     create_new_qdrant_point_query, update_qdrant_point_query,
 };
 use trieve_server::operators::search_operator::global_unfiltered_top_match_query;
-use trieve_server::{establish_connection, get_env};
+use trieve_server::{establish_connection, get_env, set_up_rabbit};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(untagged)]
@@ -101,31 +103,16 @@ fn main() {
         .expect("Failed to create tokio runtime")
         .block_on(
             async move {
-                let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
-                let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
-                    .unwrap_or("30".to_string())
-                    .parse()
-                    .unwrap_or(30);
 
-                let redis_manager = bb8_redis::RedisConnectionManager::new(redis_url)
-                    .expect("Failed to connect to redis");
-
-                let redis_pool = bb8_redis::bb8::Pool::builder()
-                    .max_size(redis_connections)
-                    .connection_timeout(std::time::Duration::from_secs(2))
-                    .build(redis_manager)
-                    .await
-                    .expect("Failed to create redis pool");
-
-                let web_redis_pool = actix_web::web::Data::new(redis_pool);
-
+                let rabbit_pool = set_up_rabbit().await;
+                let web_rabbit_pool = actix_web::web::Data::new(rabbit_pool);
                 let threads: Vec<_> = (0..thread_num)
                     .map(|i| {
                         let web_pool = web_pool.clone();
-                        let web_redis_pool = web_redis_pool.clone();
-                        tokio::spawn(
-                            async move { ingestion_service(i, web_redis_pool, web_pool).await },
-                        )
+                        let web_rabbit_pool = web_rabbit_pool.clone();
+                        tokio::spawn(async move {
+                            ingestion_service(i, web_rabbit_pool, web_pool).await
+                        })
                     })
                     .collect();
 
@@ -135,45 +122,61 @@ fn main() {
         );
 }
 
-#[tracing::instrument(skip(web_pool, redis_pool))]
+#[tracing::instrument(skip(web_pool, rabbit_pool))]
 async fn ingestion_service(
     thread: usize,
-    redis_pool: actix_web::web::Data<models::RedisPool>,
+    rabbit_pool: actix_web::web::Data<models::RabbitPool>,
     web_pool: actix_web::web::Data<models::Pool>,
 ) {
     log::info!("Starting ingestion service thread");
 
-    let mut redis_connection = match redis_pool.get().await {
-        Ok(redis_connection) => redis_connection,
-        Err(err) => {
-            log::error!("Failed to get redis connection outside of loop: {:?}", err);
-            return;
-        }
-    };
+
+    let rabbit_connection = rabbit_pool
+        .get()
+        .await
+        .expect("Failed to fetch from redis pool");
+    let channel = rabbit_connection
+        .create_channel()
+        .await
+        .expect("Failed to create channel");
+
+    let mut consumer = channel
+        .basic_consume(
+            "ingestion",
+            "ingestion_microservice",
+            lapin::options::BasicConsumeOptions {
+                no_ack: true,
+                nowait: true,
+                ..Default::default()
+            },
+            lapin::types::FieldTable::default(),
+        )
+        .await
+        .expect("Failed to consume from queue");
 
     loop {
-        let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpop")
-            .arg("ingestion")
-            .arg(1.0)
-            .query_async(&mut *redis_connection)
-            .await;
-
-        let payload = if let Ok(payload) = payload_result {
-            if payload.len() < 2 {
+        let delivery = match consumer.next().await {
+            Some(Ok(delivery)) => delivery,
+            Some(Err(err)) => {
+                log::error!("Failed to consume message: {:?}", err);
                 continue;
             }
-
-            payload
-        } else {
-            log::error!("Unable to process {:?}", payload_result);
-            continue;
+            None => {
+                continue;
+            }
         };
 
         let ctx = sentry::TransactionContext::new("Processing chunk", "Processing chunk");
         let transaction = sentry::start_transaction(ctx);
 
-        let payload: IngestionMessage =
-            serde_json::from_str(&payload[1]).expect("Failed to parse ingestion message");
+
+        let string_payload = std::str::from_utf8(&delivery.data)
+            .map_err(|err| {
+                log::error!("Failed to parse payload: {:?}", err);
+            })
+            .unwrap_or("");
+
+        let payload: IngestionMessage = serde_json::from_str(string_payload).unwrap();
         match payload {
             IngestionMessage::Upload(payload) => {
                 match upload_chunk(payload.clone(), web_pool.clone(), payload.dataset_config).await
@@ -197,7 +200,6 @@ async fn ingestion_service(
                             log::error!("Failed to create event: {:?}", err);
                         });
                     }
-                    Err(err) => {
                         log::error!("Failed to upload chunk: {:?}", err);
                         let _ = create_event_query(
                             Event::from_details(

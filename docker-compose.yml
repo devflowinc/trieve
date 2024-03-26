@@ -178,7 +178,7 @@ services:
 
   ingestion-service:
     image: trieve/ingest
-    container_name: ingestion-service 
+    container_name: ingestion-service
     build:
       context: ./server/
       dockerfile: Dockerfile.microservice
@@ -191,8 +191,7 @@ services:
         condition: service_started
       redis:
         condition: service_healthy
-    env_file:
-      .env
+    env_file: .env
     profiles: [dev]
 
   chat:
@@ -285,6 +284,18 @@ services:
     networks:
       - app-network
     profiles: [dev]
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: "rabbitmq"
+    ports:
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
+      - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+    networks:
+      - app-network
 
 networks:
   app-network:
