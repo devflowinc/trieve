@@ -674,8 +674,14 @@ pub async fn stream_response(
         ChatMessageContent::Text(query) => query.clone(),
         _ => "".to_string(),
     };
-    let embedding_vector =
-        create_embedding(query.as_str(), "query", dataset_config.clone()).await?;
+    let embedding_vectors =
+        create_embedding(vec![query.clone()], "query", dataset_config.clone()).await?;
+    let embedding_vector = embedding_vectors
+        .first()
+        .ok_or(ServiceError::BadRequest(
+            "Empty set of dense vectors returned from call to create_embedding".to_string(),
+        ))?
+        .clone();
 
     let n_retrievals_to_include = dataset_config.N_RETRIEVALS_TO_INCLUDE;
 

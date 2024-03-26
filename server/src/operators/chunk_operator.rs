@@ -843,8 +843,8 @@ pub async fn delete_chunk_metadata_query(
                     .clone()
                     .unwrap_or(latest_collision_metadata.content.clone());
 
-                let new_embedding_vector = create_embedding(
-                    collision_content.as_str(),
+                let new_embedding_vectors = create_embedding(
+                    vec![collision_content],
                     "doc",
                     ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
                 )
@@ -852,6 +852,12 @@ pub async fn delete_chunk_metadata_query(
                 .map_err(|_e| DefaultError {
                     message: "Failed to create embedding for chunk",
                 })?;
+
+                let new_embedding_vector = new_embedding_vectors.get(0).ok_or(DefaultError {
+                    message:
+                        "Failed to get embedding vector due to empty result from create_embedding",
+                })?
+                .clone();
 
                 let _ = qdrant
                     .update_vectors_blocking(
