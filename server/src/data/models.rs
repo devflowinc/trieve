@@ -5,15 +5,16 @@ use crate::get_env;
 use super::schema::*;
 use chrono::{DateTime, NaiveDateTime};
 use dateparser::DateTimeUtc;
+use deadpool_lapin::Manager;
 use diesel::expression::ValidGrouping;
 use openai_dive::v1::resources::chat::{ChatMessage, ChatMessageContent, Role};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use utoipa::ToSchema;
-
 // type alias to use in multiple places
 pub type Pool = diesel_async::pooled_connection::deadpool::Pool<diesel_async::AsyncPgConnection>;
 pub type RedisPool = bb8_redis::bb8::Pool<bb8_redis::RedisConnectionManager>;
+pub type RabbitPool = deadpool::managed::Pool<Manager, deadpool::managed::Object<Manager>>;
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[schema(example = json!({

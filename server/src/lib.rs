@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate diesel;
+use deadpool_lapin::{Manager, Pool};
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::ManagerConfig;
 use openssl::ssl::SslVerifyMode;
@@ -28,6 +29,7 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use futures_util::future::BoxFuture;
 use futures_util::FutureExt;
 use utoipa_redoc::{Redoc, Servable};
+use lapin::ConnectionProperties;
 
 pub mod af_middleware;
 pub mod data;
@@ -112,6 +114,26 @@ impl Modify for SecurityAddon {
             SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("Authorization"))),
         );
     }
+}
+
+pub async fn set_up_rabbit() -> Pool {
+    let manager = Manager::new(get_env!("RABBITMQ_HOST", "RABBITMQ_HOST must be set"), ConnectionProperties::default());
+    let pool: Pool = deadpool::managed::Pool::builder(manager)
+        .max_size(10)
+        .build()
+        .expect("can create pool");
+
+    let channel = pool.get().await.expect("can get connection").create_channel().await.expect("can create channel");
+    let _ = channel
+        .queue_declare("ingestion", lapin::options::QueueDeclareOptions {
+            durable: true,
+            nowait: true,
+            ..Default::default()
+        }, Default::default())
+        .await
+        .expect("can declare queue");
+
+    pool
 }
 
 #[derive(OpenApi)]
@@ -385,6 +407,10 @@ pub async fn main() -> std::io::Result<()> {
         .await
         .expect("Failed to create redis pool");
 
+
+    let rabbit_pool: Pool = set_up_rabbit().await;
+
+
     let oidc_client = build_oidc_client().await;
 
     let _ = create_new_qdrant_collection_query(None, None, None, false)
@@ -419,6 +445,7 @@ pub async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(oidc_client.clone()))
             .app_data(web::Data::new(redis_pool.clone()))
+            .app_data(web::Data::new(rabbit_pool.clone()))
             .wrap(af_middleware::auth_middleware::AuthMiddlewareFactory)
             .wrap(sentry_actix::Sentry::new())
             .wrap(

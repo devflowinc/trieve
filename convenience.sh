@@ -37,6 +37,7 @@ start_local_services() {
     docker compose up -d s3-client
     docker compose up -d keycloak
     docker compose up -d keycloak-db
+    docker compose up -d rabbitmq
 }
 
 # Main script logic
