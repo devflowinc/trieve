@@ -3,6 +3,7 @@ extern crate diesel;
 use deadpool_lapin::{Manager, Pool};
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::ManagerConfig;
+use lapin::types::FieldTable;
 use openssl::ssl::SslVerifyMode;
 use openssl::ssl::{SslConnector, SslMethod};
 use postgres_openssl::MakeTlsConnector;
@@ -116,22 +117,55 @@ impl Modify for SecurityAddon {
     }
 }
 
-pub async fn set_up_rabbit() -> deadpool_lapin::Pool {
+pub async fn set_up_rabbit(thread_num: Option<usize>) -> deadpool_lapin::Pool {
     let manager = Manager::new(get_env!("RABBITMQ_HOST", "RABBITMQ_HOST must be set"), ConnectionProperties::default());
     let pool: deadpool_lapin::Pool = deadpool_lapin::Pool::builder(manager)
-        .max_size(10)
+        .max_size(thread_num.unwrap_or(10))
         .build()
         .expect("can create pool");
 
     let channel = pool.get().await.expect("can get connection").create_channel().await.expect("can create channel");
+
+    let mut delay_options  = FieldTable::default();
+    delay_options.insert("x-message-ttl".into(), lapin::types::AMQPValue::LongUInt(5000));
+
+
     channel
-        .queue_declare("ingestion", lapin::options::QueueDeclareOptions {
+        .exchange_declare("ingestion_exchange", lapin::ExchangeKind::Direct, lapin::options::ExchangeDeclareOptions {
             durable: true,
             nowait: true,
             ..Default::default()
-        }, Default::default())
+        }, FieldTable::default())
+        .await
+        .expect("can declare exchange");
+
+    channel
+        .queue_declare("ingestion_queue", lapin::options::QueueDeclareOptions {
+            durable: true,
+            nowait: true,
+            ..Default::default()
+        }, FieldTable::default())
         .await
         .expect("can declare queue");
+
+    channel
+        .queue_declare("ingestion_queue.delay", lapin::options::QueueDeclareOptions {
+            durable: true,
+            nowait: true,
+            ..Default::default()
+        }, delay_options)
+        .await
+        .expect("can declare queue");
+
+    channel.queue_bind("ingestion_queue", "ingestion_exchange", "ingestion", lapin::options::QueueBindOptions::default(), FieldTable::default())
+        .await
+        .expect("can bind queue");
+    
+    channel.queue_bind("ingestion_queue.delay", "ingestion_exchange", "delay", lapin::options::QueueBindOptions::default(), FieldTable::default())
+        .await
+        .expect("can bind queue");
+
+    channel.close(0, "").await.expect("can close channel");
 
     pool
 }
@@ -408,7 +442,7 @@ pub async fn main() -> std::io::Result<()> {
         .expect("Failed to create redis pool");
 
 
-    let rabbit_pool: Pool = set_up_rabbit().await;
+    let rabbit_pool: Pool = set_up_rabbit(None).await;
 
 
     let oidc_client = build_oidc_client().await;
