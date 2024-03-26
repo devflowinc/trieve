@@ -11,5 +11,17 @@
   "rust-analyzer.linkedProjects": ["./server/Cargo.toml"],
   "rust-analyzer.showUnlinkedFileNotification": false,
   "python.analysis.typeCheckingMode": "basic",
-  "python.analysis.autoImportCompletions": true
+  "python.analysis.autoImportCompletions": true,
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 5432,
+      "driver": "PostgreSQL",
+      "name": "trieve",
+      "database": "trieve",
+      "username": "postgres",
+      "password": "postgres"
+    }
+  ]
 }
