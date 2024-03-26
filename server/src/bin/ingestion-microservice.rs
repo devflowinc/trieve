@@ -1,6 +1,5 @@
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
 use futures::StreamExt;
-use lapin::options::BasicAckOptions;
 use sentry::{Hub, SentryFutureExt};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{self, Event, ServerDatasetConfiguration};
@@ -130,7 +129,7 @@ async fn ingestion_service(
     let rabbit_connection = rabbit_pool
         .get()
         .await
-        .expect("Failed to fetch from redis pool");
+        .expect("Failed to fetch from rabbit pool");
     let channel = rabbit_connection
         .create_channel()
         .await

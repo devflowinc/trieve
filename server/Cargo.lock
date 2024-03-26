@@ -5424,7 +5424,6 @@ dependencies = [
  "chrono",
  "crossbeam-channel",
  "dateparser",
- "deadpool 0.10.0",
  "deadpool-lapin",
  "derive_more",
  "diesel",

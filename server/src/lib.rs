@@ -116,15 +116,15 @@ impl Modify for SecurityAddon {
     }
 }
 
-pub async fn set_up_rabbit() -> Pool {
+pub async fn set_up_rabbit() -> deadpool_lapin::Pool {
     let manager = Manager::new(get_env!("RABBITMQ_HOST", "RABBITMQ_HOST must be set"), ConnectionProperties::default());
-    let pool: Pool = deadpool::managed::Pool::builder(manager)
+    let pool: deadpool_lapin::Pool = deadpool_lapin::Pool::builder(manager)
         .max_size(10)
         .build()
         .expect("can create pool");
 
     let channel = pool.get().await.expect("can get connection").create_channel().await.expect("can create channel");
-    let _ = channel
+    channel
         .queue_declare("ingestion", lapin::options::QueueDeclareOptions {
             durable: true,
             nowait: true,
