@@ -21,10 +21,10 @@ pub struct EmbeddingParameters {
 
 #[tracing::instrument]
 pub async fn create_embedding(
-    message: &str,
+    message: Vec<String>,
     embed_type: &str,
     dataset_config: ServerDatasetConfiguration,
-) -> Result<Vec<f32>, actix_web::Error> {
+) -> Result<Vec<Vec<f32>>, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
         Some(parent) => parent
@@ -68,21 +68,30 @@ pub async fn create_embedding(
         organization: None,
     };
 
-    let mut first_7k_words = message.to_string();
-    if message.len() > 7000 {
-        first_7k_words = message
-            .split_whitespace()
-            .take(7000)
-            .collect::<Vec<&str>>()
-            .join(" ");
-    }
+    let clipped_messages = message
+        .iter()
+        .map(|msg| {
+            if msg.len() > 7000 {
+                msg.chars().take(20000).collect()
+            } else {
+                msg.clone()
+            }
+        })
+        .collect::<Vec<String>>();
 
     let input = match embed_type {
-        "doc" => EmbeddingInput::String(first_7k_words),
-        "query" => {
-            EmbeddingInput::String(dataset_config.EMBEDDING_QUERY_PREFIX + first_7k_words.as_str())
-        }
-        _ => EmbeddingInput::String(first_7k_words),
+        "doc" => EmbeddingInput::StringArray(clipped_messages),
+        "query" => EmbeddingInput::String(
+            format!(
+                "{}{}",
+                dataset_config.EMBEDDING_QUERY_PREFIX,
+                clipped_messages
+                    .first()
+                    .unwrap_or(&"Arbitrary because query is empty".to_string())
+            )
+            .to_string(),
+        ),
+        _ => EmbeddingInput::StringArray(clipped_messages),
     };
 
     // Vectorize
@@ -115,13 +124,26 @@ pub async fn create_embedding(
             )
         })?;
 
-    let vector = match embeddings.data.first().unwrap().embedding.clone() {
-        EmbeddingOutput::Float(vector) => vector,
-        _ => vec![],
-    };
+    let vectors: Vec<Vec<f32>> = embeddings
+        .data
+        .into_iter()
+        .map(|x| match x.embedding {
+            EmbeddingOutput::Float(v) => v.iter().map(|x| *x as f32).collect(),
+            EmbeddingOutput::Base64(_) => {
+                log::error!("Embedding server responded with Base64 and that is not currently supported for embeddings");
+                vec![]
+            }
+        })
+        .collect();
+
+    if vectors.iter().any(|x| x.is_empty()) {
+        return Err(ServiceError::InternalServerError(
+            "Embedding server responded with Base64 and that is not currently supported for embeddings".to_owned(),
+        ).into());
+    }
 
     transaction.finish();
-    Ok(vector.iter().map(|&x| x as f32).collect())
+    Ok(vectors)
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -281,14 +281,22 @@ async fn upload_chunk(
                 let chunks = coarse_doc_chunker(payload.chunk_metadata.content.clone());
                 let mut embeddings: Vec<Vec<f32>> = vec![];
                 for chunk in chunks {
-                    let embedding = create_embedding(&chunk, "doc", dataset_config.clone())
-                        .await
-                        .map_err(|err| {
-                            ServiceError::InternalServerError(format!(
-                                "Failed to create embedding: {:?}",
-                                err
-                            ))
-                        })?;
+                    let embedding_vectors =
+                        create_embedding(vec![chunk], "doc", dataset_config.clone())
+                            .await
+                            .map_err(|err| {
+                                ServiceError::InternalServerError(format!(
+                                    "Failed to create embedding: {:?}",
+                                    err
+                                ))
+                            })?;
+                    let embedding = embedding_vectors
+                        .first()
+                        .ok_or(ServiceError::InternalServerError(
+                            "Failed to get first embedding".into(),
+                        ))?
+                        .clone();
+
                     embeddings.push(embedding);
                 }
 
@@ -299,15 +307,27 @@ async fn upload_chunk(
                     ))
                 })?
             }
-            false => create_embedding(
-                &payload.chunk_metadata.content,
-                "doc",
-                dataset_config.clone(),
-            )
-            .await
-            .map_err(|err| {
-                ServiceError::InternalServerError(format!("Failed to create embedding: {:?}", err))
-            })?,
+            false => {
+                let embedding_vectors = create_embedding(
+                    vec![payload.chunk_metadata.content.clone()],
+                    "doc",
+                    dataset_config.clone(),
+                )
+                .await
+                .map_err(|err| {
+                    ServiceError::InternalServerError(format!(
+                        "Failed to create embedding: {:?}",
+                        err
+                    ))
+                })?;
+
+                embedding_vectors
+                    .first()
+                    .ok_or(ServiceError::InternalServerError(
+                        "Failed to get first embedding".into(),
+                    ))?
+                    .clone()
+            }
         }
     };
 
@@ -461,13 +481,19 @@ async fn update_chunk(
     web_pool: actix_web::web::Data<models::Pool>,
     server_dataset_config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    let embedding_vector = create_embedding(
-        &payload.chunk_metadata.content,
+    let embedding_vectors = create_embedding(
+        vec![payload.chunk_metadata.content.clone()],
         "doc",
         server_dataset_config.clone(),
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    let embedding_vector = embedding_vectors
+        .first()
+        .ok_or(ServiceError::BadRequest(
+            "Failed to get first embedding due to empty response from create_embedding".into(),
+        ))?
+        .clone();
 
     let qdrant_point_id =
         get_qdrant_id_from_chunk_id_query(payload.chunk_metadata.id, web_pool.clone())
