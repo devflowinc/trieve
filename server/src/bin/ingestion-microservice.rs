@@ -279,26 +279,15 @@ async fn upload_chunk(
         match payload.chunk.split_avg.unwrap_or(false) {
             true => {
                 let chunks = coarse_doc_chunker(payload.chunk_metadata.content.clone());
-                let mut embeddings: Vec<Vec<f32>> = vec![];
-                for chunk in chunks {
-                    let embedding_vectors =
-                        create_embedding(vec![chunk], "doc", dataset_config.clone())
-                            .await
-                            .map_err(|err| {
-                                ServiceError::InternalServerError(format!(
-                                    "Failed to create embedding: {:?}",
-                                    err
-                                ))
-                            })?;
-                    let embedding = embedding_vectors
-                        .first()
-                        .ok_or(ServiceError::InternalServerError(
-                            "Failed to get first embedding".into(),
-                        ))?
-                        .clone();
 
-                    embeddings.push(embedding);
-                }
+                let embeddings = create_embedding(chunks, "doc", dataset_config.clone())
+                    .await
+                    .map_err(|err| {
+                        ServiceError::InternalServerError(format!(
+                            "Failed to create embedding: {:?}",
+                            err
+                        ))
+                    })?;
 
                 average_embeddings(embeddings).map_err(|err| {
                     ServiceError::InternalServerError(format!(
