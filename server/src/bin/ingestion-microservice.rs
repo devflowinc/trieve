@@ -108,6 +108,7 @@ fn main() {
 
                 let redis_pool = bb8_redis::bb8::Pool::builder()
                     .max_size(redis_connections)
+                    .connection_timeout(std::time::Duration::from_secs(2))
                     .build(redis_manager)
                     .await
                     .expect("Failed to create redis pool");
@@ -138,10 +139,13 @@ async fn ingestion_service(
 ) {
     log::info!("Starting ingestion service thread");
 
-    let mut redis_connection = redis_pool
-        .get()
-        .await
-        .expect("Failed to fetch from redis pool");
+    let mut redis_connection = match redis_pool.get().await {
+        Ok(redis_connection) => redis_connection,
+        Err(err) => {
+            log::error!("Failed to get redis connection outside of loop: {:?}", err);
+            return;
+        }
+    };
 
     loop {
         let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpop")
