@@ -2,7 +2,7 @@ use super::chunk_operator::{
     find_relevant_sentence, get_metadata_and_collided_chunks_from_point_ids_query,
     get_metadata_from_point_ids,
 };
-use super::model_operator::{create_embedding, cross_encoder};
+use super::model_operator::{create_embeddings, cross_encoder};
 use super::qdrant_operator::{
     get_point_count_qdrant_query, search_over_groups_query, GroupSearchResults, VectorType,
 };
@@ -1011,7 +1011,7 @@ pub async fn search_semantic_chunks(
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     let embedding_vectors =
-        create_embedding(vec![data.query.clone()], "query", dataset_config.clone()).await?;
+        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
     let embedding_vector = embedding_vectors
         .first()
         .ok_or(ServiceError::BadRequest(
@@ -1132,7 +1132,7 @@ pub async fn search_hybrid_chunks(
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     let embedding_vectors =
-        create_embedding(vec![data.query.clone()], "query", dataset_config.clone()).await?;
+        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
     let embedding_vector = embedding_vectors
         .first()
         .ok_or(ServiceError::BadRequest(
@@ -1313,7 +1313,7 @@ pub async fn search_semantic_groups(
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     let embedding_vectors =
-        create_embedding(vec![data.query.clone()], "query", dataset_config.clone()).await?;
+        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
     let embedding_vector = embedding_vectors
         .first()
         .ok_or(ServiceError::BadRequest(
@@ -1416,7 +1416,7 @@ pub async fn search_hybrid_groups(
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     let dense_embedding_vectors =
-        create_embedding(vec![data.query.clone()], "query", dataset_config.clone()).await?;
+        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
     let dense_embedding_vector = dense_embedding_vectors
         .first()
         .ok_or(ServiceError::BadRequest(
@@ -1543,7 +1543,7 @@ pub async fn semantic_search_over_groups(
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
     let embedding_vectors =
-        create_embedding(vec![data.query.clone()], "query", dataset_config.clone()).await?;
+        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
     let embedding_vector = embedding_vectors
         .first()
         .ok_or(ServiceError::BadRequest(
@@ -1670,7 +1670,7 @@ pub async fn hybrid_search_over_groups(
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
     let dense_embedding_vectors =
-        create_embedding(vec![data.query.clone()], "query", dataset_config.clone()).await?;
+        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
     let dense_embedding_vector = dense_embedding_vectors
         .first()
         .ok_or(ServiceError::BadRequest(

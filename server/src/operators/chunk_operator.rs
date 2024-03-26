@@ -2,7 +2,7 @@ use crate::data::models::{
     ChunkCollision, ChunkFile, ChunkGroupBookmark, ChunkMetadataWithFileData, Dataset,
     FullTextSearchResult, ServerDatasetConfiguration, UnifiedId,
 };
-use crate::operators::model_operator::create_embedding;
+use crate::operators::model_operator::create_embeddings;
 use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::operators::search_operator::get_metadata_query;
 use crate::{
@@ -843,7 +843,7 @@ pub async fn delete_chunk_metadata_query(
                     .clone()
                     .unwrap_or(latest_collision_metadata.content.clone());
 
-                let new_embedding_vectors = create_embedding(
+                let new_embedding_vectors = create_embeddings(
                     vec![collision_content],
                     "doc",
                     ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),

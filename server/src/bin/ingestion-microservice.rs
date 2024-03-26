@@ -10,7 +10,7 @@ use trieve_server::operators::chunk_operator::{
     insert_duplicate_chunk_metadata_query, update_chunk_metadata_query,
 };
 use trieve_server::operators::event_operator::create_event_query;
-use trieve_server::operators::model_operator::{create_embedding, get_splade_embedding};
+use trieve_server::operators::model_operator::{create_embeddings, get_splade_embedding};
 use trieve_server::operators::parse_operator::{average_embeddings, coarse_doc_chunker};
 use trieve_server::operators::qdrant_operator::{
     create_new_qdrant_point_query, update_qdrant_point_query,
@@ -280,7 +280,7 @@ async fn upload_chunk(
             true => {
                 let chunks = coarse_doc_chunker(payload.chunk_metadata.content.clone());
 
-                let embeddings = create_embedding(chunks, "doc", dataset_config.clone())
+                let embeddings = create_embeddings(chunks, "doc", dataset_config.clone())
                     .await
                     .map_err(|err| {
                         ServiceError::InternalServerError(format!(
@@ -297,7 +297,7 @@ async fn upload_chunk(
                 })?
             }
             false => {
-                let embedding_vectors = create_embedding(
+                let embedding_vectors = create_embeddings(
                     vec![payload.chunk_metadata.content.clone()],
                     "doc",
                     dataset_config.clone(),
@@ -470,7 +470,7 @@ async fn update_chunk(
     web_pool: actix_web::web::Data<models::Pool>,
     server_dataset_config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    let embedding_vectors = create_embedding(
+    let embedding_vectors = create_embeddings(
         vec![payload.chunk_metadata.content.clone()],
         "doc",
         server_dataset_config.clone(),
