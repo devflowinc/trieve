@@ -1,4 +1,4 @@
-FROM minio:minio:latest
+FROM minio/minio:latest
 LABEL LICENSE="Dual AGPLv3 & Commercial"
 LABEL LICENSE_URL="https://min.io/compliance"
 
