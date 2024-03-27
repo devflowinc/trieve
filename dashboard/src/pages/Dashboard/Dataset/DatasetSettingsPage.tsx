@@ -31,7 +31,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   LLM_DEFAULT_MODEL: "",
   EMBEDDING_BASE_URL: "",
   RAG_PROMPT: "",
-  EMBEDDING_SIZE: 1536,
+  EMBEDDING_SIZE: 768,
   N_RETRIEVALS_TO_INCLUDE: 8,
   DUPLICATE_DISTANCE_THRESHOLD: 1.1,
   DOCUMENT_UPLOAD_FEATURE: true,
