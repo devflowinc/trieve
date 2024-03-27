@@ -3,7 +3,6 @@ services:
     image: postgres:15
     restart: always
     volumes: 
-      - ./docker/postgres/pg-multi-db.sh:/docker-entrypoint-initdb.d/initdb.sh
       - pgdata:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: ${POSTGRES_USER} 
@@ -38,14 +37,11 @@ services:
         ]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20 # Account for keycloak db starting up and taking time.
     ports:
       - 8080:8080
     volumes:
       - keycloak-data:/opt/keycloak/data
-      - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
-      - ./docker/keycloak/themes/trieve:/opt/keycloak/themes/trieve
-    entrypoint: "/opt/keycloak/bin/kc.sh start-dev --import-realm --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false"
     depends_on:
       db:
         condition: service_healthy
@@ -53,7 +49,6 @@ services:
   s3:
     image: minio/minio:latest
     volumes:
-      - ./docker/minio/docker-entrypoint.sh:/docker-entrypoint.sh
       - s3-data:/data
     ports:
       - 9000:9000
@@ -66,11 +61,9 @@ services:
       S3_BUCKET: &bucketname ${S3_BUCKET}
     healthcheck:
       test: ["CMD", "mc", "ready", "${S3_BUCKET}"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 10
-    entrypoint: ["/docker-entrypoint.sh"]
-    command: minio server --console-address ":9001" /data
 
   redis:
     image: redis:7.2.2
