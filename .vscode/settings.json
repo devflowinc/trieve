@@ -18,8 +18,8 @@
       "server": "localhost",
       "port": 5432,
       "driver": "PostgreSQL",
-      "name": "trieve",
-      "database": "trieve",
+      "name": "keycloak",
+      "database": "keycloak",
       "username": "postgres",
       "password": "postgres"
     }

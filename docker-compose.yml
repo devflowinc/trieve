@@ -3,7 +3,7 @@ services:
     image: postgres:15
     restart: always
     volumes: 
-      - ./docker/pg-multi-db.sh:/docker-entrypoint-initdb.d/initdb.sh
+      - ./docker/postgres/pg-multi-db.sh:/docker-entrypoint-initdb.d/initdb.sh
       - pgdata:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: ${POSTGRES_USER} 
@@ -21,14 +21,14 @@ services:
       - "5432:5432"
 
   keycloak:
-    image: trieve/keycloak:demo
+    image: quay.io/keycloak/keycloak:23.0.7
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: aintsecure
-      KC_DB_URL: jdbc:postgresql://localhost:5432/${KEYCLOAK_DB}
-      KC_DB: ${KEYCLOAK_DB}
-      KC_DB_USERNAME: ${KEYCLOAK_USER}
-      KC_DB_PASSWORD: ${KEYCLOAK_PASSWORD}
+      KC_DB_URL: jdbc:postgresql://db:5432/${KC_DB}
+      KC_DB: postgres
+      KC_DB_USERNAME: ${KC_DB_USERNAME}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
       KC_HEALTH_ENABLED: true
     healthcheck:
       test:
@@ -45,6 +45,7 @@ services:
       - keycloak-data:/opt/keycloak/data
       - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
       - ./docker/keycloak/themes/trieve:/opt/keycloak/themes/trieve
+    entrypoint: "/opt/keycloak/bin/kc.sh start-dev --import-realm --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false"
     depends_on:
       db:
         condition: service_healthy
@@ -52,6 +53,7 @@ services:
   s3:
     image: minio/minio:latest
     volumes:
+      - ./docker/minio/docker-entrypoint.sh:/docker-entrypoint.sh
       - s3-data:/data
     ports:
       - 9000:9000
@@ -61,20 +63,14 @@ services:
       MINIO_ROOT_PASSWORD: &secret_key minioadmin
       S3_ACCESS_KEY: &s3_access_key ${S3_ACCESS_KEY}
       S3_SECRET_KEY: &s3_secret_key ${S3_SECRET_KEY}
-      S3_BUCKET: &bucketname trieve
+      S3_BUCKET: &bucketname ${S3_BUCKET}
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ["CMD", "mc", "ready", "${S3_BUCKET}"]
       interval: 5s
       timeout: 5s
       retries: 10
-    entrypoint: >
-     /bin/bash -c ' 
-     minio server /data --console-address ":9001" &
-     mc alias set myminio http://127.0.0.1:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD &&
-     mc mb myminio/${S3_BUCKET} $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD &&
-     mc admin user add myminio ${S3_ACCESS_KEY} ${S3_SECRET_KEY} &&
-     mc admin policy attach myminio readwrite --user ${S3_ACCESS_KEY}
-     '
+    entrypoint: ["/docker-entrypoint.sh"]
+    command: minio server --console-address ":9001" /data
 
   redis:
     image: redis:7.2.2
@@ -93,11 +89,10 @@ services:
   tika:
     image: apache/tika:2.9.1.0-full
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "wget --spider -S 'http://tika:9998/version' 2>&1 | grep 'HTTP/' | awk '{print $2}' | grep 200 || exit 1",
-        ]
+      test: [
+        "CMD-SHELL",
+        "curl -f -I http://localhost:9998/version 2>&1 | grep 'HTTP/1.[01] 200 OK' || exit 1"
+      ]
       interval: 10s
       timeout: 5s
       retries: 10
