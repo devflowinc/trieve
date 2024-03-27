@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:15
+    image: trieve/postgres:latest
     restart: always
     volumes: 
       - pgdata:/var/lib/postgresql/data
@@ -20,7 +20,7 @@ services:
       - "5432:5432"
 
   keycloak:
-    image: quay.io/keycloak/keycloak:23.0.7
+    image: trieve/keycloak:latest
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: aintsecure
@@ -43,19 +43,18 @@ services:
     volumes:
       - keycloak-data:/opt/keycloak/data
     depends_on:
-      db:
-        condition: service_healthy
+      - db
 
   s3:
-    image: minio/minio:latest
+    image: trieve/minio:latest
     volumes:
       - s3-data:/data
     ports:
       - 9000:9000
       - 9001:9001
     environment:
-      MINIO_ROOT_USER: &access_key minioadmin
-      MINIO_ROOT_PASSWORD: &secret_key minioadmin
+      MINIO_ROOT_USER: &access_key ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: &secret_key ${MINIO_ROOT_PASSWORD}
       S3_ACCESS_KEY: &s3_access_key ${S3_ACCESS_KEY}
       S3_SECRET_KEY: &s3_secret_key ${S3_SECRET_KEY}
       S3_BUCKET: &bucketname ${S3_BUCKET}
@@ -66,7 +65,7 @@ services:
       retries: 10
 
   redis:
-    image: redis:7.2.2
+    image: trieve/redis:latest
     restart: always
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
