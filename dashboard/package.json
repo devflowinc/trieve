@@ -15,7 +15,8 @@
     "@solidjs/router": "^0.10.1",
     "solid-icons": "^1.1.0",
     "solid-js": "^1.8.11",
-    "terracotta": "^1.0.3"
+    "terracotta": "^1.0.3",
+    "vite-plugin-runtime-env": "^0.1.1"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.10",

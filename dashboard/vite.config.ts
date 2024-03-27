@@ -3,6 +3,7 @@ import solid from "vite-plugin-solid";
 import md from "vite-plugin-solid-markdown";
 import remarkGfm from "remark-gfm";
 import rehypePrettyCode from "rehype-pretty-code";
+import runtimeEnv from 'vite-plugin-runtime-env';
 
 export default defineConfig({
   plugins: [
@@ -24,5 +25,6 @@ export default defineConfig({
     solid({
       extensions: [".mdx", ".md"],
     }),
+    runtimeEnv(),
   ],
 });
