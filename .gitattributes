@@ -1,0 +1,10 @@
+*.py -linguist-detectable
+*.sh -linguist-detectable
+*.bat -linguist-detectable
+*.md -linguist-detectable
+*.ipynb -linguist-detectable
+chat/** -linguist-detectable
+dashboard/** -linguist-detectable
+embedding-server/** -linguist-detectable
+keycloak/** -linguist-detectable
+search/** -linguist-detectable
