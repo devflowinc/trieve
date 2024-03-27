@@ -22,8 +22,8 @@ services:
   keycloak:
     image: trieve/keycloak:latest
     environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: aintsecure
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_DB_URL: jdbc:postgresql://db:5432/${KC_DB}
       KC_DB: postgres
       KC_DB_USERNAME: ${KC_DB_USERNAME}
