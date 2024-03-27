@@ -175,6 +175,69 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
+<<<<<<< HEAD
+=======
+    networks:
+      - app-network
+    ports:
+      - 8090:8090
+    environment:
+      - ADMIN_API_KEY=${ADMIN_API_KEY}
+      - BASE_SERVER_URL=${BASE_SERVER_URL}
+      - REDIS_URL=${REDIS_URL}
+      - QDRANT_URL=${QDRANT_URL}
+      - QDRANT_API_KEY=${QDRANT_API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - SMTP_RELAY=${SMTP_RELAY}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_EMAIL_ADDRESS=${SMTP_EMAIL_ADDRESS}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+      - SALT=${SALT}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - S3_BUCKET=${S3_BUCKET}
+      - COOKIE_SECURE=${COOKIE_SECURE}
+      - QDRANT_COLLECTION=${QDRANT_COLLECTION}
+      - TIKA_URL=${TIKA_URL}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL}
+      - STRIPE_SECRET=${STRIPE_SECRET}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - ADMIN_DASHBOARD_URL=${ADMIN_DASHBOARD_URL}
+      - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET}
+      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID}
+      - OIDC_AUTH_REDIRECT_URL=${OIDC_AUTH_REDIRECT_URL}
+      - OIDC_ISSUER_URL=${OIDC_ISSUER_URL}
+      - GPU_SERVER_ORIGIN=${GPU_SERVER_ORIGIN}
+      - AWS_REGION=${AWS_REGION}
+      - SPARSE_SERVER_ORIGIN=${SPARSE_SERVER_ORIGIN}
+      - EMBEDDING_SERVER_ORIGIN=${EMBEDDING_SERVER_ORIGIN}
+      - RERANKER_SERVER_ORIGIN=${RERANKER_SERVER_ORIGIN}
+      - UNLIMITED=${UNLIMITED}
+      - REDIS_CONNECTIONS=${REDIS_CONNECTIONS}
+
+  ingestion-service:
+    image: trieve/ingest
+    container_name: ingestion-service 
+    build:
+      context: ./server/
+      dockerfile: Dockerfile.microservice
+    depends_on:
+      tika:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      qdrant-database:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    env_file:
+      .env
+    profiles: [dev]
+>>>>>>> main
 
   chat:
     image: trieve/chat:demo

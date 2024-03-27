@@ -3,9 +3,6 @@
 use crate::get_env;
 
 use super::schema::*;
-use actix::fut::{ready, Ready};
-use actix_web::dev::Payload;
-use actix_web::{Error, FromRequest, HttpRequest};
 use chrono::{DateTime, NaiveDateTime};
 use dateparser::DateTimeUtc;
 use diesel::expression::ValidGrouping;
@@ -16,7 +13,7 @@ use utoipa::ToSchema;
 
 // type alias to use in multiple places
 pub type Pool = diesel_async::pooled_connection::deadpool::Pool<diesel_async::AsyncPgConnection>;
-pub type RedisPool = deadpool_redis::Pool;
+pub type RedisPool = bb8_redis::bb8::Pool<bb8_redis::RedisConnectionManager>;
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[schema(example = json!({
@@ -1097,7 +1094,7 @@ pub struct ServerDatasetConfiguration {
     pub QDRANT_COLLECTION_NAME: String,
     pub RAG_PROMPT: String,
     pub N_RETRIEVALS_TO_INCLUDE: usize,
-    pub DUPLICATE_DISTANCE_THRESHOLD: f32,
+    pub DUPLICATE_DISTANCE_THRESHOLD: f64,
     pub COLLISIONS_ENABLED: bool,
     pub EMBEDDING_SIZE: usize,
     pub LLM_DEFAULT_MODEL: String,
@@ -1167,7 +1164,6 @@ impl ServerDatasetConfiguration {
                 .get("DUPLICATE_DISTANCE_THRESHOLD")
                 .unwrap_or(&json!(1.1))
                 .as_f64()
-                .map(|f| f as f32)
                 .unwrap_or(1.1),
             EMBEDDING_SIZE: configuration
                 .get("EMBEDDING_SIZE")
@@ -1845,92 +1841,5 @@ impl From<uuid::Uuid> for UnifiedId {
 impl From<String> for UnifiedId {
     fn from(tracking_id: String) -> Self {
         UnifiedId::TrackingId(tracking_id)
-    }
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct IdParams {
-    pub id: UnifiedId,
-    pub page: Option<u64>,
-}
-
-impl FromRequest for IdParams {
-    type Error = Error;
-    type Future = Ready<Result<IdParams, Error>>;
-
-    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
-        let tracking_or_chunk = match req.match_info().get("tracking_or_chunk") {
-            Some(tracking_or_chunk) => tracking_or_chunk.to_string(),
-            None => match req.match_info().get("id") {
-                Some(id) => {
-                    if id.parse::<uuid::Uuid>().is_ok() {
-                        if let Some(page) = req.match_info().get("page") {
-                            return ready(Ok(IdParams {
-                                id: UnifiedId::TrieveUuid(id.parse().unwrap()),
-                                page: Some(page.parse().unwrap()),
-                            }));
-                        } else {
-                            return ready(Ok(IdParams {
-                                id: UnifiedId::TrieveUuid(id.parse().unwrap()),
-                                page: None,
-                            }));
-                        }
-                    } else {
-                        return ready(Err(actix_web::error::ErrorBadRequest(
-                            "Invalid request: Specify whether this id is a chunk_id or tracking_id by either /chunk/{id} or /tracking_id/{id}".to_string(),
-                        )));
-                    }
-                }
-                None => {
-                    return ready(Err(actix_web::error::ErrorBadRequest(
-                            "Invalid request: Specify whether this id is a chunk_id or tracking_id by either /chunk/{id} or /tracking_id/{id}".to_string(),
-                        )));
-                }
-            },
-        };
-
-        let id = req.match_info().get("id").unwrap_or("").to_string();
-
-        let req_params = if tracking_or_chunk.starts_with("tracking_id") {
-            if let Some(page) = req.match_info().get("page") {
-                IdParams {
-                    id: UnifiedId::TrackingId(id),
-                    page: Some(page.parse().unwrap()),
-                }
-            } else {
-                IdParams {
-                    id: UnifiedId::TrackingId(id),
-                    page: None,
-                }
-            }
-        } else if tracking_or_chunk.starts_with("chunk") {
-            if id.is_empty() {
-                return ready(Err(actix_web::error::ErrorBadRequest(
-                    "Invalid request: Specify whether this id is a chunk_id or tracking_id by either /chunk/{id} or /tracking_id/{id}".to_string(),
-                )));
-            };
-            let id = id.parse::<uuid::Uuid>();
-            match id {
-                Ok(id) => {
-                    if let Some(page) = req.match_info().get("page") {
-                        IdParams {
-                            id: UnifiedId::TrieveUuid(id),
-                            page: Some(page.parse().unwrap()),
-                        }
-                    } else {
-                        IdParams {
-                            id: UnifiedId::TrieveUuid(id),
-                            page: None,
-                        }
-                    }
-                }
-                Err(e) => return ready(Err(actix_web::error::ErrorBadRequest(e.to_string()))),
-            }
-        } else {
-            return ready(Err(actix_web::error::ErrorBadRequest(
-                "Invalid request: Specify whether this id is a chunk_id or tracking_id by either /chunk/{id} or /tracking_id/{id}".to_string(),
-            )));
-        };
-        ready(Ok(req_params))
     }
 }

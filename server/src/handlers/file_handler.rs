@@ -372,6 +372,7 @@ pub async fn get_signed_url(
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct GetPdfFromRangeData {
+    pub organization_id: String,
     pub file_start: u32,
     pub file_end: u32,
     pub prefix: String,
@@ -384,7 +385,6 @@ pub struct GetPdfFromRangeData {
 pub async fn get_pdf_from_range(
     path_data: web::Path<GetPdfFromRangeData>,
     _user: LoggedUser,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<NamedFile, actix_web::Error> {
     cfg_if::cfg_if! {
         if #[cfg(feature = "ocr")] {
@@ -397,8 +397,8 @@ pub async fn get_pdf_from_range(
     let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
     let s3_path = match unlimited.as_str() {
         "true" => "images".to_string(),
-        "false" => dataset_org_plan_sub.organization.id.to_string(),
-        _ => dataset_org_plan_sub.organization.id.to_string(),
+        "false" => path_data.organization_id.clone(),
+        _ => path_data.organization_id.clone(),
     };
 
     for i in path_data.file_start..=path_data.file_end {

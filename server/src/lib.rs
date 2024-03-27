@@ -128,7 +128,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.4.0",
+        version = "0.5.0",
     ),
     servers(
         (url = "http://localhost:8090",
@@ -371,10 +371,19 @@ pub async fn main() -> std::io::Result<()> {
         .await
         .expect("Failed to create redis store");
 
-    let redis_pool = deadpool_redis::Config::from_url(redis_url)
-        .create_pool(Some(deadpool_redis::Runtime::Tokio1))
-        .unwrap();
-    redis_pool.resize(200);
+    let redis_manager = bb8_redis::RedisConnectionManager::new(redis_url)
+        .expect("Failed to connect to redis");
+
+    let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
+        .unwrap_or("200".to_string())
+        .parse()
+        .unwrap_or(200);
+
+    let redis_pool = bb8_redis::bb8::Pool::builder()
+        .max_size(redis_connections)
+        .build(redis_manager)
+        .await
+        .expect("Failed to create redis pool");
 
     let oidc_client = build_oidc_client().await;
 
@@ -564,15 +573,6 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(web::delete().to(handlers::chunk_handler::delete_chunk)),
                             )
                             .service(
-                                web::resource("/{tracking_or_chunk}/{id}")
-                                    .route(web::get().to(
-                                        handlers::chunk_handler::get_chunk_by_id
-                                    ))
-                                    .route(web::delete().to(
-                                        handlers::chunk_handler::delete_chunk
-                                    )),
-                            )
-                            .service(
                                 web::resource("/tracking_id/{tracking_id}")
                                     .route(
                                         web::get()
@@ -675,7 +675,7 @@ pub async fn main() -> std::io::Result<()> {
                                     ),
                             )
                             .service(
-                                web::scope("/{id}")
+                                web::scope("/{group_id}")
                                     .service(
                                         web::resource("")
                                             .route(web::get().to(handlers::group_handler::get_chunk_group))
@@ -686,18 +686,7 @@ pub async fn main() -> std::io::Result<()> {
                                             .route(web::get().to(handlers::group_handler::get_chunks_in_group)),
                                     )
                             )
-                            .service(
-                                web::scope("/{tracking_or_chunk}/{id}")
-                                    .service(
-                                        web::resource("")
-                                            .route(web::get().to(handlers::group_handler::get_chunk_group))
-                                            .route(web::delete().to(handlers::group_handler::delete_chunk_group)),
-                                    )
-                                    .service(
-                                        web::resource("/{page}")
-                                            .route(web::get().to(handlers::group_handler::get_chunks_in_group)),
-                                    )
-                                )
+
                     )
                     .service(
                         web::scope("/file")
@@ -713,18 +702,19 @@ pub async fn main() -> std::io::Result<()> {
                                         web::delete()
                                             .to(handlers::file_handler::delete_file_handler),
                                     ),
+                            )
+                            .service(
+                                web::resource("/get_signed_url/{file_name}")
+                                    .route(web::get().to(handlers::file_handler::get_signed_url)),
+                            )
+                            .service(
+                                web::resource(
+                                    "/pdf_from_range/{organization_id}/{file_start}/{file_end}/{prefix}/{file_name}/{ocr}",
+                                )
+                                .route(web::get().to(handlers::file_handler::get_pdf_from_range)),
                             ),
                     )
-                    .service(
-                        web::resource("/get_signed_url/{file_name}")
-                            .route(web::get().to(handlers::file_handler::get_signed_url)),
-                    )
-                    .service(
-                        web::resource(
-                            "/pdf_from_range/{file_start}/{file_end}/{prefix}/{file_name}/{ocr}",
-                        )
-                        .route(web::get().to(handlers::file_handler::get_pdf_from_range)),
-                    )
+                    
                     .service(
                         web::scope("/events").service(
                             web::resource("")

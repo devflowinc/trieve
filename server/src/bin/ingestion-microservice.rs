@@ -10,7 +10,7 @@ use trieve_server::operators::chunk_operator::{
     insert_duplicate_chunk_metadata_query, update_chunk_metadata_query,
 };
 use trieve_server::operators::event_operator::create_event_query;
-use trieve_server::operators::model_operator::{create_embedding, get_splade_embedding};
+use trieve_server::operators::model_operator::{create_embeddings, get_splade_embedding};
 use trieve_server::operators::parse_operator::{average_embeddings, coarse_doc_chunker};
 use trieve_server::operators::qdrant_operator::{
     create_new_qdrant_point_query, update_qdrant_point_query,
@@ -64,13 +64,17 @@ fn main() {
     };
 
     let thread_num = if let Ok(thread_num) = std::env::var("THREAD_NUM") {
-        thread_num.parse::<usize>().unwrap()
+        thread_num
+            .parse::<usize>()
+            .expect("THREAD_NUM must be a number")
     } else {
-        std::thread::available_parallelism().unwrap().get() * 2
+        std::thread::available_parallelism()
+            .expect("Failed to get available parallelism")
+            .get()
+            * 2
     };
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
-    let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
 
     let mut config = ManagerConfig::default();
     config.custom_setup = Box::new(establish_connection);
@@ -83,22 +87,34 @@ fn main() {
     let pool = diesel_async::pooled_connection::deadpool::Pool::builder(mgr)
         .max_size(10)
         .build()
-        .unwrap();
+        .expect("Failed to create diesel_async pool");
 
     let web_pool = actix_web::web::Data::new(pool.clone());
-
-    let redis_pool = deadpool_redis::Config::from_url(redis_url)
-        .create_pool(Some(deadpool_redis::Runtime::Tokio1))
-        .unwrap();
-    redis_pool.resize(30);
-    let web_redis_pool = actix_web::web::Data::new(redis_pool);
 
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
-        .unwrap()
+        .expect("Failed to create tokio runtime")
         .block_on(
             async move {
+                let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
+                let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
+                    .unwrap_or("30".to_string())
+                    .parse()
+                    .unwrap_or(30);
+
+                let redis_manager = bb8_redis::RedisConnectionManager::new(redis_url)
+                    .expect("Failed to connect to redis");
+
+                let redis_pool = bb8_redis::bb8::Pool::builder()
+                    .max_size(redis_connections)
+                    .connection_timeout(std::time::Duration::from_secs(2))
+                    .build(redis_manager)
+                    .await
+                    .expect("Failed to create redis pool");
+
+                let web_redis_pool = actix_web::web::Data::new(redis_pool);
+
                 let threads: Vec<_> = (0..thread_num)
                     .map(|i| {
                         let web_pool = web_pool.clone();
@@ -122,20 +138,27 @@ async fn ingestion_service(
     web_pool: actix_web::web::Data<models::Pool>,
 ) {
     log::info!("Starting ingestion service thread");
-    loop {
-        let mut redis_connection = redis_pool
-            .get()
-            .await
-            .expect("Failed to fetch from redis pool");
 
-        let payload_result: Result<Vec<String>, deadpool_redis::redis::RedisError> =
-            deadpool_redis::redis::cmd("brpop")
-                .arg("ingestion")
-                .arg(0.0)
-                .query_async(&mut redis_connection)
-                .await;
+    let mut redis_connection = match redis_pool.get().await {
+        Ok(redis_connection) => redis_connection,
+        Err(err) => {
+            log::error!("Failed to get redis connection outside of loop: {:?}", err);
+            return;
+        }
+    };
+
+    loop {
+        let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpop")
+            .arg("ingestion")
+            .arg(1.0)
+            .query_async(&mut *redis_connection)
+            .await;
 
         let payload = if let Ok(payload) = payload_result {
+            if payload.len() < 2 {
+                continue;
+            }
+
             payload
         } else {
             log::error!("Unable to process {:?}", payload_result);
@@ -145,7 +168,8 @@ async fn ingestion_service(
         let ctx = sentry::TransactionContext::new("Processing chunk", "Processing chunk");
         let transaction = sentry::start_transaction(ctx);
 
-        let payload: IngestionMessage = serde_json::from_str(&payload[1]).unwrap();
+        let payload: IngestionMessage =
+            serde_json::from_str(&payload[1]).expect("Failed to parse ingestion message");
         match payload {
             IngestionMessage::Upload(payload) => {
                 match upload_chunk(payload.clone(), web_pool.clone(), payload.dataset_config).await
@@ -255,18 +279,15 @@ async fn upload_chunk(
         match payload.chunk.split_avg.unwrap_or(false) {
             true => {
                 let chunks = coarse_doc_chunker(payload.chunk_metadata.content.clone());
-                let mut embeddings: Vec<Vec<f32>> = vec![];
-                for chunk in chunks {
-                    let embedding = create_embedding(&chunk, "doc", dataset_config.clone())
-                        .await
-                        .map_err(|err| {
-                            ServiceError::InternalServerError(format!(
-                                "Failed to create embedding: {:?}",
-                                err
-                            ))
-                        })?;
-                    embeddings.push(embedding);
-                }
+
+                let embeddings = create_embeddings(chunks, "doc", dataset_config.clone())
+                    .await
+                    .map_err(|err| {
+                        ServiceError::InternalServerError(format!(
+                            "Failed to create embedding: {:?}",
+                            err
+                        ))
+                    })?;
 
                 average_embeddings(embeddings).map_err(|err| {
                     ServiceError::InternalServerError(format!(
@@ -275,15 +296,27 @@ async fn upload_chunk(
                     ))
                 })?
             }
-            false => create_embedding(
-                &payload.chunk_metadata.content,
-                "doc",
-                dataset_config.clone(),
-            )
-            .await
-            .map_err(|err| {
-                ServiceError::InternalServerError(format!("Failed to create embedding: {:?}", err))
-            })?,
+            false => {
+                let embedding_vectors = create_embeddings(
+                    vec![payload.chunk_metadata.content.clone()],
+                    "doc",
+                    dataset_config.clone(),
+                )
+                .await
+                .map_err(|err| {
+                    ServiceError::InternalServerError(format!(
+                        "Failed to create embedding: {:?}",
+                        err
+                    ))
+                })?;
+
+                embedding_vectors
+                    .first()
+                    .ok_or(ServiceError::InternalServerError(
+                        "Failed to get first embedding".into(),
+                    ))?
+                    .clone()
+            }
         }
     };
 
@@ -317,7 +350,7 @@ async fn upload_chunk(
             ServiceError::InternalServerError(format!("Failed to get top match: {:?}", err))
         })?;
 
-        if first_semantic_result.score >= duplicate_distance_threshold {
+        if first_semantic_result.score >= duplicate_distance_threshold as f32 {
             //Sets collision to collided chunk id
             collision = Some(first_semantic_result.point_id);
 
@@ -326,7 +359,10 @@ async fn upload_chunk(
                     .await;
 
             match score_chunk_result {
-                Ok(chunk_results) => chunk_results.first().unwrap().clone(),
+                Ok(chunk_results) => chunk_results
+                    .first()
+                    .expect("First chunk must exist on collision check")
+                    .clone(),
                 Err(err) => {
                     return Err(ServiceError::InternalServerError(format!(
                         "Failed to get chunk metadata: {:?}",
@@ -434,13 +470,19 @@ async fn update_chunk(
     web_pool: actix_web::web::Data<models::Pool>,
     server_dataset_config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    let embedding_vector = create_embedding(
-        &payload.chunk_metadata.content,
+    let embedding_vectors = create_embeddings(
+        vec![payload.chunk_metadata.content.clone()],
         "doc",
         server_dataset_config.clone(),
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    let embedding_vector = embedding_vectors
+        .first()
+        .ok_or(ServiceError::BadRequest(
+            "Failed to get first embedding due to empty response from create_embedding".into(),
+        ))?
+        .clone();
 
     let qdrant_point_id =
         get_qdrant_id_from_chunk_id_query(payload.chunk_metadata.id, web_pool.clone())

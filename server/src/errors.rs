@@ -39,6 +39,10 @@ pub enum ServiceError {
 // impl ResponseError trait allows to convert our errors into http responses with appropriate data
 impl ResponseError for ServiceError {
     fn error_response(&self) -> HttpResponse {
+        sentry::capture_message(
+            &format!("Error {:?}", self),
+            sentry::Level::Error,
+        );
         match self {
             ServiceError::InternalServerError(ref message) => HttpResponse::InternalServerError()
                 .json(ErrorResponseBody {

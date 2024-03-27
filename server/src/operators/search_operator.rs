@@ -2,7 +2,7 @@ use super::chunk_operator::{
     find_relevant_sentence, get_metadata_and_collided_chunks_from_point_ids_query,
     get_metadata_from_point_ids,
 };
-use super::model_operator::{create_embedding, cross_encoder};
+use super::model_operator::{create_embeddings, cross_encoder};
 use super::qdrant_operator::{
     get_point_count_qdrant_query, search_over_groups_query, GroupSearchResults, VectorType,
 };
@@ -253,7 +253,7 @@ pub async fn retrieve_qdrant_points_query(
     let (point_ids, count) = futures::join!(point_ids_future, count_future);
 
     let pages = (count.map_err(|e| {
-        log::error!("Failed to get point count from Qdrant {:?}", e);
+        log::error!("Failed to get search count from Qdrant {:?}", e);
         DefaultError {
             message: "Failed to get point count from Qdrant",
         }
@@ -263,9 +263,9 @@ pub async fn retrieve_qdrant_points_query(
 
     Ok(SearchChunkQueryResult {
         search_results: point_ids.map_err(|e| {
-            log::error!("Failed to get point count from Qdrant {:?}", e);
+            log::error!("Failed to get points from Qdrant {:?}", e);
             DefaultError {
-                message: "Failed to get point count from Qdrant",
+                message: "Failed to get points from Qdrant",
             }
         })?,
         total_chunk_pages: pages,
@@ -1010,7 +1010,16 @@ pub async fn search_semantic_chunks(
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
-    let embedding_vector = create_embedding(&data.query, "query", dataset_config.clone()).await?;
+    let embedding_vectors =
+        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
+    let embedding_vector = embedding_vectors
+        .first()
+        .ok_or(ServiceError::BadRequest(
+            "Failed to get embedding vector due to empty vec response from create_embedding"
+                .to_string(),
+        ))?
+        .clone();
+
     timer.add("Created Embedding vector");
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
@@ -1122,7 +1131,15 @@ pub async fn search_hybrid_chunks(
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
-    let embedding_vector = create_embedding(&data.query, "query", dataset_config.clone()).await?;
+    let embedding_vectors =
+        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
+    let embedding_vector = embedding_vectors
+        .first()
+        .ok_or(ServiceError::BadRequest(
+            "Failed to get embedding vector due to empty vec response from create_embedding"
+                .to_string(),
+        ))?
+        .clone();
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
         VectorType::Dense(embedding_vector),
@@ -1294,8 +1311,16 @@ pub async fn search_semantic_groups(
 ) -> Result<SearchGroupsResult, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
-    let embedding_vector: Vec<f32> =
-        create_embedding(&data.query, "query", dataset_config.clone()).await?;
+
+    let embedding_vectors =
+        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
+    let embedding_vector = embedding_vectors
+        .first()
+        .ok_or(ServiceError::BadRequest(
+            "Failed to get embedding vector due to empty vec response from create_embedding"
+                .to_string(),
+        ))?
+        .clone();
 
     let search_semantic_chunk_query_results = search_within_chunk_group_query(
         VectorType::Dense(embedding_vector),
@@ -1390,8 +1415,16 @@ pub async fn search_hybrid_groups(
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
-    let dense_embedding_vector =
-        create_embedding(&data.query, "query", dataset_config.clone()).await?;
+    let dense_embedding_vectors =
+        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
+    let dense_embedding_vector = dense_embedding_vectors
+        .first()
+        .ok_or(ServiceError::BadRequest(
+            "Failed to get embedding vector due to empty vec response from create_embedding"
+                .to_string(),
+        ))?
+        .clone();
+
     let sparse_embedding_vector = get_splade_embedding(&data.query, "query").await?;
 
     let semantic_future = search_within_chunk_group_query(
@@ -1509,7 +1542,14 @@ pub async fn semantic_search_over_groups(
 ) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
-    let embedding_vector = create_embedding(&data.query, "query", dataset_config.clone()).await?;
+    let embedding_vectors =
+        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
+    let embedding_vector = embedding_vectors
+        .first()
+        .ok_or(ServiceError::BadRequest(
+            "Failed to get embedding vector due to empty array from create_embedding".to_string(),
+        ))?
+        .clone();
 
     let search_chunk_query_results = retrieve_group_qdrant_points_query(
         VectorType::Dense(embedding_vector),
@@ -1628,8 +1668,16 @@ pub async fn hybrid_search_over_groups(
 ) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
-    let dense_embedding_vector =
-        create_embedding(&data.query, "query", dataset_config.clone()).await?;
+
+    let dense_embedding_vectors =
+        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
+    let dense_embedding_vector = dense_embedding_vectors
+        .first()
+        .ok_or(ServiceError::BadRequest(
+            "Failed to get embedding vector due to empty array from create_embedding".to_string(),
+        ))?
+        .clone();
+
     let sparse_embedding_vector = get_splade_embedding(&data.query, "query")
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;

@@ -287,8 +287,9 @@ pub async fn create_new_qdrant_point_query(
         .upsert_points_blocking(qdrant_collection, None, vec![point], None)
         .await
         .map_err(|err| {
-            log::info!("Failed inserting chunk to qdrant {:?}", err);
-            ServiceError::BadRequest("Failed inserting chunk to qdrant".into())
+            sentry::capture_message(&format!("Error {:?}", err), sentry::Level::Error);
+            log::error!("Failed inserting chunk to qdrant {:?}", err);
+            ServiceError::BadRequest(format!("Failed inserting chunk to qdrant {:?}", err))
         })?;
 
     Ok(())
