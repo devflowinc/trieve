@@ -159,16 +159,11 @@ services:
     ports:
       - 8090:8090
     depends_on:
-      tika:
-        condition: service_healthy
-      db:
-        condition: service_healthy
-      qdrant-database:
-        condition: service_started
-      redis:
-        condition: service_healthy
-      keycloak:
-        condition: service_healthy
+      - tika
+      - db
+      - qdrant-database
+      - redis
+      - keycloak
 
   chat:
     image: trieve/chat:977100d9
