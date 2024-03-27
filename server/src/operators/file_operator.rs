@@ -199,19 +199,12 @@ pub async fn convert_doc_to_html_query(
             }
         }
 
-        let file_size = match file_data.len().try_into() {
-            Ok(file_size) => file_size,
-            Err(_) => {
-                return Err(DefaultError {
-                    message: "Could not convert file size to i64",
-                })
-            }
-        };
+        let file_size_mb = (file_data.len() as f64 / 1024.0 / 1024.0).round() as i64;
 
         let created_file = create_file_query(
             file_id_query_clone,
             &file_name,
-            file_size,
+            file_size_mb,
             tag_set.clone(),
             Some(tika_metadata_response_json.clone()),
             link.clone(),
@@ -233,7 +226,7 @@ pub async fn convert_doc_to_html_query(
             })?;
 
         if create_chunks.is_some_and(|create_chunks_bool| !create_chunks_bool) {
-            return Ok(());
+            return Ok::<(), DefaultError>(());
         }
 
         let resp = create_chunks_with_handler(
