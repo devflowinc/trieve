@@ -1,7 +1,9 @@
 #[macro_use]
 extern crate diesel;
+use deadpool_lapin::{Manager, Pool};
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::ManagerConfig;
+use lapin::types::FieldTable;
 use openssl::ssl::SslVerifyMode;
 use openssl::ssl::{SslConnector, SslMethod};
 use postgres_openssl::MakeTlsConnector;
@@ -28,6 +30,7 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use futures_util::future::BoxFuture;
 use futures_util::FutureExt;
 use utoipa_redoc::{Redoc, Servable};
+use lapin::ConnectionProperties;
 
 pub mod af_middleware;
 pub mod data;
@@ -112,6 +115,59 @@ impl Modify for SecurityAddon {
             SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("Authorization"))),
         );
     }
+}
+
+pub async fn set_up_rabbit() -> deadpool_lapin::Pool {
+    let manager = Manager::new(get_env!("RABBITMQ_HOST", "RABBITMQ_HOST must be set"), ConnectionProperties::default());
+    let pool: deadpool_lapin::Pool = deadpool_lapin::Pool::builder(manager)
+        .max_size(10)
+        .build()
+        .expect("can create pool");
+
+    let channel = pool.get().await.expect("can get connection").create_channel().await.expect("can create channel");
+
+    let mut delay_options  = FieldTable::default();
+    delay_options.insert("x-message-ttl".into(), lapin::types::AMQPValue::LongUInt(5000));
+
+
+    channel
+        .exchange_declare("ingestion_exchange", lapin::ExchangeKind::Direct, lapin::options::ExchangeDeclareOptions {
+            durable: true,
+            nowait: true,
+            ..Default::default()
+        }, FieldTable::default())
+        .await
+        .expect("can declare exchange");
+
+    channel
+        .queue_declare("ingestion_queue", lapin::options::QueueDeclareOptions {
+            durable: true,
+            nowait: true,
+            ..Default::default()
+        }, FieldTable::default())
+        .await
+        .expect("can declare queue");
+
+    channel
+        .queue_declare("ingestion_queue.delay", lapin::options::QueueDeclareOptions {
+            durable: true,
+            nowait: true,
+            ..Default::default()
+        }, delay_options)
+        .await
+        .expect("can declare queue");
+
+    channel.queue_bind("ingestion_queue", "ingestion_exchange", "ingestion", lapin::options::QueueBindOptions::default(), FieldTable::default())
+        .await
+        .expect("can bind queue");
+    
+    channel.queue_bind("ingestion_queue.delay", "ingestion_exchange", "delay", lapin::options::QueueBindOptions::default(), FieldTable::default())
+        .await
+        .expect("can bind queue");
+
+    channel.close(0, "").await.expect("can close channel");
+
+    pool
 }
 
 #[derive(OpenApi)]
@@ -385,6 +441,10 @@ pub async fn main() -> std::io::Result<()> {
         .await
         .expect("Failed to create redis pool");
 
+
+    let rabbit_pool: Pool = set_up_rabbit().await;
+
+
     let oidc_client = build_oidc_client().await;
 
     let _ = create_new_qdrant_collection_query(None, None, None, false)
@@ -419,6 +479,7 @@ pub async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(oidc_client.clone()))
             .app_data(web::Data::new(redis_pool.clone()))
+            .app_data(web::Data::new(rabbit_pool.clone()))
             .wrap(af_middleware::auth_middleware::AuthMiddlewareFactory)
             .wrap(sentry_actix::Sentry::new())
             .wrap(

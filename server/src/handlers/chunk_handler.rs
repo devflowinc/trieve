@@ -1,7 +1,7 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan, Pool,
-    RedisPool, ServerDatasetConfiguration, UnifiedId,
+    RabbitPool, ServerDatasetConfiguration, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -18,6 +18,9 @@ use actix_web::{web, HttpResponse};
 use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
 use itertools::Itertools;
+use lapin::options::BasicPublishOptions;
+use lapin::types::FieldTable;
+use lapin::BasicProperties;
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{
     ChatCompletionParameters, ChatMessage, ChatMessageContent, Role,
@@ -106,8 +109,7 @@ pub enum ReturnQueuedChunk {
 pub struct SingleQueuedChunkResponse {
     /// The chunk that got queue'd
     pub chunk_metadata: ChunkMetadata,
-    /// The current position the last access item is in the queue
-    pub pos_in_queue: i32,
+
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
@@ -139,8 +141,7 @@ pub struct SingleQueuedChunkResponse {
 pub struct BatchQueuedChunkResponse {
     // All the chunks that got queue'd
     pub chunk_metadata: Vec<ChunkMetadata>,
-    /// The current position the last access item is in the queue
-    pub pos_in_queue: i32,
+
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -231,13 +232,13 @@ pub enum CreateChunkData {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(redis_pool, pool))]
+#[tracing::instrument(skip(rabbit_pool, pool))]
 pub async fn create_chunk(
     create_chunk_data: web::Json<CreateChunkData>,
     pool: web::Data<Pool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    redis_pool: web::Data<RedisPool>,
+    rabbit_pool: web::Data<RabbitPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let chunks = match create_chunk_data.clone() {
         CreateChunkData::Single(chunk) => vec![chunk.0],
@@ -347,10 +348,16 @@ pub async fn create_chunk(
         ingestion_messages.push(upload_message);
     }
 
-    let mut redis_conn = redis_pool
-        .get()
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    let rmq_con = rabbit_pool.get().await.map_err(|e| {
+        eprintln!("can't connect to rmq, {}", e);
+        ServiceError::BadRequest(e.to_string())
+    })?;
+
+    let channel = rmq_con.create_channel().await.map_err(|e| {
+        eprintln!("can't create channel, {}", e);
+        ServiceError::BadRequest(e.to_string())
+    })?;
+
     timer.add("got redis connection");
 
     let serialized_messages: Vec<String> = ingestion_messages
@@ -358,12 +365,29 @@ pub async fn create_chunk(
         .filter_map(|msg| serde_json::to_string(&msg).ok())
         .collect();
 
-    let pos_in_queue = redis::cmd("lpush")
-        .arg("ingestion")
-        .arg(&serialized_messages)
-        .query_async(&mut *redis_conn)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    let mut publish_headers = FieldTable::default();
+    publish_headers.insert("delivery_count".into(), lapin::types::AMQPValue::ShortInt(1));
+
+    let futures = serialized_messages.iter().map(|msg| async {
+        channel
+            .basic_publish(
+                "ingestion_exchange",
+                "ingestion",
+                BasicPublishOptions {
+                    mandatory: false,
+                    immediate: false,
+                },
+                msg.as_bytes(),
+                BasicProperties::default().with_headers(publish_headers.clone()),
+            )
+            .await
+            .map_err(|e| {
+                eprintln!("can't publish message, {}", e);
+                ServiceError::BadRequest(e.to_string())
+            })
+    });
+
+    futures::future::join_all(futures).await;
 
     let chunk_metadatas: Vec<ChunkMetadata> = ingestion_messages
         .iter()
@@ -378,11 +402,10 @@ pub async fn create_chunk(
                     "Failed to queue a single chunk due to deriving 0 ingestion_messages from the request data".to_string(),
                 ))?
                 .clone(),
-            pos_in_queue,
+            
         }),
         CreateChunkData::Batch(_) => ReturnQueuedChunk::Batch(BatchQueuedChunkResponse {
             chunk_metadata: chunk_metadatas,
-            pos_in_queue,
         }),
     };
 
@@ -545,11 +568,11 @@ pub struct UpdateIngestionMessage {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool, redis_pool))]
+#[tracing::instrument(skip(pool, rabbit_pool))]
 pub async fn update_chunk(
     chunk: web::Json<UpdateChunkData>,
     pool: web::Data<Pool>,
-    redis_pool: web::Data<RedisPool>,
+    rabbit_pool: web::Data<RabbitPool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -640,20 +663,39 @@ pub async fn update_chunk(
         chunk_metadata: metadata.clone(),
         server_dataset_config,
         dataset_id,
-        group_ids,
+        group_ids,    
     };
 
-    let mut redis_conn = redis_pool
-        .get()
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    let rmq_con = rabbit_pool.get().await.map_err(|e| {
+        eprintln!("can't connect to rmq, {}", e);
+        ServiceError::BadRequest(e.to_string())
+    })?;
 
-    redis::cmd("lpush")
-        .arg("ingestion")
-        .arg(serde_json::to_string(&message)?)
-        .query_async(&mut *redis_conn)
+    let channel = rmq_con.create_channel().await.map_err(|e| {
+        eprintln!("can't create channel, {}", e);
+        ServiceError::BadRequest(e.to_string())
+    })?;
+
+    let mut publish_headers = FieldTable::default();
+    publish_headers.insert("delivery_count".into(), lapin::types::AMQPValue::ShortInt(1));
+
+
+     channel
+        .basic_publish(
+            "ingestion_exchange",
+            "ingestion",
+            BasicPublishOptions {
+                mandatory: false,
+                immediate: false,
+            },
+            serde_json::to_string(&message)?.as_bytes(),
+            BasicProperties::default().with_headers(publish_headers.clone()),
+        )
         .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        .map_err(|e| {
+            eprintln!("can't publish message, {}", e);
+            ServiceError::BadRequest(e.to_string())
+        })?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -698,11 +740,11 @@ pub struct UpdateChunkByTrackingIdData {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool, redis_pool))]
+#[tracing::instrument(skip(pool, rabbit_pool))]
 pub async fn update_chunk_by_tracking_id(
     chunk: web::Json<UpdateChunkByTrackingIdData>,
     pool: web::Data<Pool>,
-    redis_pool: web::Data<RedisPool>,
+    rabbit_pool: web::Data<RabbitPool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -787,17 +829,36 @@ pub async fn update_chunk_by_tracking_id(
         group_ids,
     };
 
-    let mut redis_conn = redis_pool
-        .get()
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    let rmq_con = rabbit_pool.get().await.map_err(|e| {
+        eprintln!("can't connect to rmq, {}", e);
+        ServiceError::BadRequest(e.to_string())
+    })?;
 
-    redis::cmd("lpush")
-        .arg("ingestion")
-        .arg(serde_json::to_string(&message)?)
-        .query_async(&mut *redis_conn)
+    let channel = rmq_con.create_channel().await.map_err(|e| {
+        eprintln!("can't create channel, {}", e);
+        ServiceError::BadRequest(e.to_string())
+    })?;
+
+    let mut publish_headers = FieldTable::default();
+    publish_headers.insert("delivery_count".into(), lapin::types::AMQPValue::ShortInt(1));
+
+     channel
+        .basic_publish(
+            "ingestion_exchange",
+            "ingestion",
+            BasicPublishOptions {
+                mandatory: false,
+                immediate: false,
+            },
+            serde_json::to_string(&message)?.as_bytes(),
+            BasicProperties::default().with_headers(publish_headers.clone()),
+        )
         .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        .map_err(|e| {
+            eprintln!("can't publish message, {}", e);
+            ServiceError::BadRequest(e.to_string())
+        })?;
+
 
     Ok(HttpResponse::NoContent().finish())
 }
