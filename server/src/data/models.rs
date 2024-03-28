@@ -327,6 +327,13 @@ impl ChunkMetadata {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct IngestSpecificChunkMetadata {
+    pub id: uuid::Uuid,
+    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub dataset_id: uuid::Uuid,
+}
+
 #[derive(Debug, Serialize, Deserialize, Queryable, Selectable, Insertable, Clone)]
 #[diesel(table_name = chunk_collisions)]
 pub struct ChunkCollision {
