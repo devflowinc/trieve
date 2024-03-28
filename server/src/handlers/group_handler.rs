@@ -916,80 +916,87 @@ pub async fn get_recommended_groups(
     let server_dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
-    let positive_qdrant_ids = if positive_group_ids.is_some() {
-        get_point_ids_from_unified_group_ids(
-            positive_group_ids
-                .clone()
-                .unwrap()
-                .into_iter()
-                .map(UnifiedId::TrieveUuid)
-                .collect(),
-            pool.clone(),
-        )
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!("Could not get positive qdrant_point_ids: {}", err))
-        })?
-    } else if positive_group_ids.is_none() && positive_tracking_ids.is_some() {
-        get_point_ids_from_unified_group_ids(
-            positive_tracking_ids
-                .clone()
-                .unwrap()
-                .into_iter()
-                .map(UnifiedId::TrackingId)
-                .collect(),
-            pool.clone(),
-        )
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!(
-                "Could not get positive qdrant_point_ids from tracking_ids: {}",
-                err
-            ))
-        })?
-    } else {
-        return Err(ServiceError::BadRequest(
-            "You must provide either positive_group_ids or positive_group_tracking_ids".into(),
-        )
-        .into());
-    };
+    let mut positive_qdrant_ids = vec![];
+
+    if let Some(positive_group_ids) = positive_group_ids {
+        positive_qdrant_ids.extend(
+            get_point_ids_from_unified_group_ids(
+                positive_group_ids
+                    .into_iter()
+                    .map(UnifiedId::TrieveUuid)
+                    .collect(),
+                pool.clone(),
+            )
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!(
+                    "Could not get positive qdrant_point_ids: {}",
+                    err
+                ))
+            })?,
+        );
+    }
+
+    if let Some(positive_tracking_ids) = positive_tracking_ids {
+        positive_qdrant_ids.extend(
+            get_point_ids_from_unified_group_ids(
+                positive_tracking_ids
+                    .into_iter()
+                    .map(UnifiedId::TrackingId)
+                    .collect(),
+                pool.clone(),
+            )
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!(
+                    "Could not get positive qdrant_point_ids from tracking_ids: {}",
+                    err
+                ))
+            })?,
+        );
+    }
 
     log::info!("positive: {:?}", positive_qdrant_ids);
 
-    let negative_qdrant_ids = if negative_group_ids.is_some() {
-        get_point_ids_from_unified_group_ids(
-            negative_group_ids
-                .clone()
-                .unwrap()
-                .into_iter()
-                .map(UnifiedId::TrieveUuid)
-                .collect(),
-            pool.clone(),
-        )
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!("Could not get negative qdrant_point_ids: {}", err))
-        })?
-    } else if negative_group_ids.is_none() && negative_tracking_ids.is_some() {
-        get_point_ids_from_unified_group_ids(
-            negative_tracking_ids
-                .clone()
-                .unwrap()
-                .into_iter()
-                .map(UnifiedId::TrackingId)
-                .collect(),
-            pool.clone(),
-        )
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!(
-                "Could not get negative qdrant_point_ids from tracking_ids: {}",
-                err
-            ))
-        })?
-    } else {
-        vec![]
-    };
+    let mut negative_qdrant_ids = vec![];
+
+    if let Some(negative_group_ids) = negative_group_ids {
+        negative_qdrant_ids.extend(
+            get_point_ids_from_unified_group_ids(
+                negative_group_ids
+                    .into_iter()
+                    .map(UnifiedId::TrieveUuid)
+                    .collect(),
+                pool.clone(),
+            )
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!(
+                    "Could not get negative qdrant_point_ids: {}",
+                    err
+                ))
+            })?,
+        );
+    }
+
+    if let Some(negative_tracking_ids) = negative_tracking_ids {
+        negative_qdrant_ids.extend(
+            get_point_ids_from_unified_group_ids(
+                negative_tracking_ids
+                    .into_iter()
+                    .map(UnifiedId::TrackingId)
+                    .collect(),
+                pool.clone(),
+            )
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!(
+                    "Could not get negative qdrant_point_ids from tracking_ids: {}",
+                    err
+                ))
+            })?,
+        );
+    }
 
     log::info!("negative: {:?}", negative_qdrant_ids);
 
@@ -1001,7 +1008,7 @@ pub async fn get_recommended_groups(
         data.group_size.unwrap_or(10),
         dataset_org_plan_sub.dataset.id,
         server_dataset_config,
-        pool.clone()
+        pool.clone(),
     )
     .await
     .map_err(|err| {

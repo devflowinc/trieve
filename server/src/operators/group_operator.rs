@@ -59,9 +59,7 @@ pub async fn get_groups_from_tracking_ids_query(
     let group_ids = chunk_group_columns::chunk_group
         .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
         .filter(chunk_group_columns::tracking_id.eq_any(tracking_ids))
-        .select(
-            chunk_group_columns::id
-        )
+        .select(chunk_group_columns::id)
         .load::<uuid::Uuid>(&mut conn)
         .await
         .map_err(|_err| DefaultError {
@@ -717,4 +715,20 @@ pub async fn get_point_ids_from_unified_group_ids(
     };
 
     Ok(qdrant_point_ids)
+}
+
+pub async fn get_group_tracking_ids_from_group_ids_query(
+    group_ids: Vec<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<Vec<Option<String>>, ServiceError> {
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    chunk_group_columns::chunk_group
+        .filter(chunk_group_columns::id.eq_any(&group_ids))
+        .select(chunk_group_columns::tracking_id)
+        .load::<Option<String>>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to fetch group_tracking_id".to_string()))
 }
