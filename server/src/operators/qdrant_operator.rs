@@ -1,10 +1,11 @@
 use super::search_operator::{assemble_qdrant_filter, SearchResult};
 use crate::{
-    data::models::{ChunkMetadata, ServerDatasetConfiguration},
+    data::models::{ChunkMetadata, Pool, ServerDatasetConfiguration},
     errors::{DefaultError, ServiceError},
     get_env,
     handlers::chunk_handler::ChunkFilter,
 };
+use actix_web::web;
 use itertools::Itertools;
 use qdrant_client::{
     client::{QdrantClient, QdrantClientConfig},
@@ -800,7 +801,7 @@ pub async fn search_qdrant_query(
     Ok(point_ids)
 }
 
-#[tracing::instrument]
+#[tracing::instrument(skip(pool))]
 pub async fn recommend_qdrant_query(
     positive_ids: Vec<uuid::Uuid>,
     negative_ids: Vec<uuid::Uuid>,
@@ -808,10 +809,11 @@ pub async fn recommend_qdrant_query(
     limit: u64,
     dataset_id: uuid::Uuid,
     config: ServerDatasetConfiguration,
+    pool: web::Data<Pool>
 ) -> Result<Vec<uuid::Uuid>, DefaultError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
-    let filter = assemble_qdrant_filter(filters, None, None, dataset_id, None).await?;
+    let filter = assemble_qdrant_filter(filters, None, None, dataset_id, pool).await?;
 
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
@@ -889,13 +891,14 @@ pub async fn recommend_qdrant_groups_query(
     group_size: u32,
     dataset_id: uuid::Uuid,
     config: ServerDatasetConfiguration,
+    pool: web::Data<Pool>,
 ) -> Result<Vec<GroupSearchResults>, DefaultError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
 
-    let filters = assemble_qdrant_filter(filter, None, None, dataset_id, None).await?;
+    let filters = assemble_qdrant_filter(filter, None, None, dataset_id, pool).await?;
 
     let positive_point_ids: Vec<PointId> = positive_ids
         .iter()

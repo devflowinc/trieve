@@ -2,6 +2,7 @@ use super::chunk_operator::{
     find_relevant_sentence, get_metadata_and_collided_chunks_from_point_ids_query,
     get_metadata_from_point_ids,
 };
+use super::group_operator::get_groups_from_tracking_ids_query;
 use super::model_operator::{create_embeddings, cross_encoder};
 use super::qdrant_operator::{
     get_point_count_qdrant_query, search_over_groups_query, GroupSearchResults, VectorType,
@@ -12,8 +13,7 @@ use crate::data::models::{
 };
 use crate::errors::ServiceError;
 use crate::handlers::chunk_handler::{
-    ChunkFilter, MatchCondition, ParsedQuery, ScoreChunkDTO, SearchChunkData,
-    SearchChunkQueryResponseBody,
+    ChunkFilter, FieldCondition, MatchCondition, ParsedQuery, ScoreChunkDTO, SearchChunkData, SearchChunkQueryResponseBody
 };
 use crate::handlers::group_handler::{
     SearchGroupsResult, SearchOverGroupsData, SearchWithinGroupData,
@@ -27,10 +27,10 @@ use simple_server_timing_header::Timer;
 use utoipa::ToSchema;
 
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
+use qdrant_client::qdrant::Filter;
 use qdrant_client::qdrant::{
     point_id::PointIdOptions, Condition, HasIdCondition, PointId, SearchPoints,
 };
-use qdrant_client::qdrant::{Filter, Range};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
@@ -46,6 +46,28 @@ pub struct SearchChunkQueryResult {
     pub total_chunk_pages: i64,
 }
 
+async fn convert_group_tracking_ids_to_group_ids(condition: FieldCondition, dataset_id: uuid::Uuid, pool: web::Data<Pool>) -> Result<FieldCondition, DefaultError> {
+    if condition.field == "group_tracking_ids" {
+        let matches = condition
+            .r#match
+            .ok_or(DefaultError {
+                message: "match key not found for group_tracking_ids",
+            })?.iter().map(|item| item.to_string()).collect();
+
+        let correct_matches: Vec<MatchCondition> = get_groups_from_tracking_ids_query(matches, dataset_id, pool.clone()).await?.iter().map(|ids| {
+            MatchCondition::Text(ids.to_string())
+        }).collect();
+
+        Ok(FieldCondition {
+            field: "group_ids".to_string(),
+            r#match: Some(correct_matches),
+            range: None,
+        })
+    } else {
+        Ok(condition)
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
 pub async fn assemble_qdrant_filter(
@@ -53,7 +75,7 @@ pub async fn assemble_qdrant_filter(
     quote_words: Option<Vec<String>>,
     negated_words: Option<Vec<String>>,
     dataset_id: uuid::Uuid,
-    pool: Option<web::Data<Pool>>,
+    pool: web::Data<Pool>,
 ) -> Result<Filter, DefaultError> {
     let mut filter = Filter::default();
 
@@ -64,121 +86,62 @@ pub async fn assemble_qdrant_filter(
 
     if let Some(filters) = filters {
         if let Some(should_filters) = filters.should {
-            for should_filter in should_filters {
-                if let Some(r#match) = should_filter.r#match {
-                    if r#match.first().is_none() {
-                        return Err(DefaultError {
-                            message: "Must pass a match value for should filter",
-                        });
-                    }
+            for should_condition in should_filters {
 
-                    if let MatchCondition::Text(_) = r#match.first().unwrap() {
-                        filter.should.push(Condition::matches(
-                            should_filter.field.as_str(),
-                            r#match.iter().map(|x| x.to_string()).collect_vec(),
-                        ));
-                    }
+                let should_condition = convert_group_tracking_ids_to_group_ids(
+                    should_condition,
+                    dataset_id,
+                    pool.clone()
+                ).await?;
 
-                    if let MatchCondition::Integer(_) = r#match.first().unwrap() {
-                        filter.should.push(Condition::matches(
-                            should_filter.field.as_str(),
-                            r#match.iter().map(|x| x.to_i64()).collect_vec(),
-                        ));
-                    }
-                }
-                if let Some(range) = should_filter.range {
-                    filter.should.push(Condition::range(
-                        should_filter.field.as_str(),
-                        Range {
-                            gt: range.gt,
-                            gte: range.gte,
-                            lt: range.lt,
-                            lte: range.lte,
-                        },
-                    ));
+                let qdrant_condition = should_condition.convert_to_qdrant_condition()?;
+
+                if let Some(condition) = qdrant_condition {
+                    filter.should.push(condition.into());
                 }
             }
         }
 
         if let Some(must_filters) = filters.must {
-            for must_filter in must_filters {
-                if let Some(r#match) = must_filter.r#match {
-                    if r#match.first().is_none() {
-                        return Err(DefaultError {
-                            message: "Must pass a match value for should filter",
-                        });
-                    }
+            for must_condition in must_filters {
+                let must_condition = convert_group_tracking_ids_to_group_ids(
+                    must_condition,
+                    dataset_id,
+                    pool.clone()
+                ).await?;
 
-                    if let MatchCondition::Text(_) = r#match.first().unwrap() {
-                        filter.must.push(Condition::matches(
-                            must_filter.field.as_str(),
-                            r#match.iter().map(|x| x.to_string()).collect_vec(),
-                        ));
-                    }
+                let qdrant_condition = must_condition.convert_to_qdrant_condition()?;
 
-                    if let MatchCondition::Integer(_) = r#match.first().unwrap() {
-                        filter.must.push(Condition::matches(
-                            must_filter.field.as_str(),
-                            r#match.iter().map(|x| x.to_i64()).collect_vec(),
-                        ));
-                    }
-                }
-                if let Some(range) = must_filter.range {
-                    filter.must.push(Condition::range(
-                        must_filter.field.as_str(),
-                        Range {
-                            gt: range.gt,
-                            gte: range.gte,
-                            lt: range.lt,
-                            lte: range.lte,
-                        },
-                    ));
+                if let Some(condition) = qdrant_condition {
+                    filter.must.push(condition.into());
                 }
             }
         }
+
         if let Some(must_not_filters) = filters.must_not {
-            for must_not_filter in must_not_filters {
-                if let Some(r#match) = must_not_filter.r#match {
-                    filter.must_not.push(Condition::matches(
-                        must_not_filter.field.as_str(),
-                        r#match.iter().map(|x| x.to_string()).collect_vec(),
-                    ));
+            for must_not_condition in must_not_filters {
 
-                    if let MatchCondition::Text(_) = r#match.first().unwrap() {
-                        filter.must_not.push(Condition::matches(
-                            must_not_filter.field.as_str(),
-                            r#match.iter().map(|x| x.to_string()).collect_vec(),
-                        ));
-                    }
+                let must_not_condition = convert_group_tracking_ids_to_group_ids(
+                    must_not_condition,
+                    dataset_id,
+                    pool.clone()
+                ).await?;
 
-                    if let MatchCondition::Integer(_) = r#match.first().unwrap() {
-                        filter.must_not.push(Condition::matches(
-                            must_not_filter.field.as_str(),
-                            r#match.iter().map(|x| x.to_i64()).collect_vec(),
-                        ));
-                    }
-                }
-                if let Some(range) = must_not_filter.range {
-                    filter.must_not.push(Condition::range(
-                        must_not_filter.field.as_str(),
-                        Range {
-                            gt: range.gt,
-                            gte: range.gte,
-                            lt: range.lt,
-                            lte: range.lte,
-                        },
-                    ));
+                let qdrant_condition = must_not_condition.convert_to_qdrant_condition()?;
+
+                if let Some(condition) = qdrant_condition {
+                    filter.must_not.push(condition.into());
                 }
             }
         }
     };
 
-    if (quote_words.is_some() || negated_words.is_some()) && pool.is_some() {
+    if quote_words.is_some() || negated_words.is_some() {
         let available_qdrant_ids = get_qdrant_point_ids_from_pg_for_quote_negated_words(
             quote_words,
             negated_words,
             dataset_id,
-            pool.unwrap(),
+            pool,
         )
         .await?;
 
@@ -235,7 +198,7 @@ pub async fn retrieve_qdrant_points_query(
         parsed_query.quote_words,
         parsed_query.negated_words,
         dataset_id,
-        Some(pool),
+        pool,
     )
     .await?;
 
@@ -299,7 +262,7 @@ pub async fn retrieve_group_qdrant_points_query(
         parsed_query.quote_words,
         parsed_query.negated_words,
         dataset_id,
-        Some(pool),
+        pool,
     )
     .await?;
 
@@ -440,7 +403,7 @@ pub async fn search_within_chunk_group_query(
         parsed_query.quote_words,
         parsed_query.negated_words,
         dataset_id,
-        Some(pool),
+        pool,
     )
     .await?;
 
