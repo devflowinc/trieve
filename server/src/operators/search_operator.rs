@@ -2,7 +2,9 @@ use super::chunk_operator::{
     find_relevant_sentence, get_metadata_and_collided_chunks_from_point_ids_query,
     get_metadata_from_point_ids,
 };
-use super::group_operator::get_groups_from_tracking_ids_query;
+use super::group_operator::{
+    get_group_tracking_ids_from_group_ids_query, get_groups_from_tracking_ids_query,
+};
 use super::model_operator::{create_embeddings, cross_encoder};
 use super::qdrant_operator::{
     get_point_count_qdrant_query, search_over_groups_query, GroupSearchResults, VectorType,
@@ -13,7 +15,8 @@ use crate::data::models::{
 };
 use crate::errors::ServiceError;
 use crate::handlers::chunk_handler::{
-    ChunkFilter, FieldCondition, MatchCondition, ParsedQuery, ScoreChunkDTO, SearchChunkData, SearchChunkQueryResponseBody
+    ChunkFilter, FieldCondition, MatchCondition, ParsedQuery, ScoreChunkDTO, SearchChunkData,
+    SearchChunkQueryResponseBody,
 };
 use crate::handlers::group_handler::{
     SearchGroupsResult, SearchOverGroupsData, SearchWithinGroupData,
@@ -46,17 +49,27 @@ pub struct SearchChunkQueryResult {
     pub total_chunk_pages: i64,
 }
 
-async fn convert_group_tracking_ids_to_group_ids(condition: FieldCondition, dataset_id: uuid::Uuid, pool: web::Data<Pool>) -> Result<FieldCondition, DefaultError> {
+async fn convert_group_tracking_ids_to_group_ids(
+    condition: FieldCondition,
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<FieldCondition, DefaultError> {
     if condition.field == "group_tracking_ids" {
         let matches = condition
             .r#match
             .ok_or(DefaultError {
                 message: "match key not found for group_tracking_ids",
-            })?.iter().map(|item| item.to_string()).collect();
+            })?
+            .iter()
+            .map(|item| item.to_string())
+            .collect();
 
-        let correct_matches: Vec<MatchCondition> = get_groups_from_tracking_ids_query(matches, dataset_id, pool.clone()).await?.iter().map(|ids| {
-            MatchCondition::Text(ids.to_string())
-        }).collect();
+        let correct_matches: Vec<MatchCondition> =
+            get_groups_from_tracking_ids_query(matches, dataset_id, pool.clone())
+                .await?
+                .iter()
+                .map(|ids| MatchCondition::Text(ids.to_string()))
+                .collect();
 
         Ok(FieldCondition {
             field: "group_ids".to_string(),
@@ -87,12 +100,12 @@ pub async fn assemble_qdrant_filter(
     if let Some(filters) = filters {
         if let Some(should_filters) = filters.should {
             for should_condition in should_filters {
-
                 let should_condition = convert_group_tracking_ids_to_group_ids(
                     should_condition,
                     dataset_id,
-                    pool.clone()
-                ).await?;
+                    pool.clone(),
+                )
+                .await?;
 
                 let qdrant_condition = should_condition.convert_to_qdrant_condition()?;
 
@@ -107,8 +120,9 @@ pub async fn assemble_qdrant_filter(
                 let must_condition = convert_group_tracking_ids_to_group_ids(
                     must_condition,
                     dataset_id,
-                    pool.clone()
-                ).await?;
+                    pool.clone(),
+                )
+                .await?;
 
                 let qdrant_condition = must_condition.convert_to_qdrant_condition()?;
 
@@ -120,12 +134,12 @@ pub async fn assemble_qdrant_filter(
 
         if let Some(must_not_filters) = filters.must_not {
             for must_not_condition in must_not_filters {
-
                 let must_not_condition = convert_group_tracking_ids_to_group_ids(
                     must_not_condition,
                     dataset_id,
-                    pool.clone()
-                ).await?;
+                    pool.clone(),
+                )
+                .await?;
 
                 let qdrant_condition = must_not_condition.convert_to_qdrant_condition()?;
 
@@ -624,6 +638,7 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct GroupScoreChunkDTO {
     pub group_id: uuid::Uuid,
+    pub group_tracking_id: Option<String>,
     pub metadata: Vec<ScoreChunkDTO>,
 }
 
@@ -638,9 +653,10 @@ pub async fn retrieve_chunks_for_groups(
     search_over_groups_query_result: SearchOverGroupsQueryResult,
     data: &web::Json<SearchOverGroupsData>,
     pool: web::Data<Pool>,
-) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
+) -> Result<SearchOverGroupsResponseBody, ServiceError> {
     let point_ids = search_over_groups_query_result
         .search_results
+        .clone()
         .iter()
         .flat_map(|hit| hit.hits.iter().map(|point| point.point_id).collect_vec())
         .collect_vec();
@@ -648,15 +664,26 @@ pub async fn retrieve_chunks_for_groups(
     let (metadata_chunks, collided_chunks) = get_metadata_and_collided_chunks_from_point_ids_query(
         point_ids,
         data.get_collisions.unwrap_or(false),
-        pool,
+        pool.clone(),
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
+    let group_tracking_ids = get_group_tracking_ids_from_group_ids_query(
+        search_over_groups_query_result
+            .search_results
+            .iter()
+            .map(|group| group.group_id)
+            .collect(),
+        pool,
+    )
+    .await?;
+
     let group_chunks: Vec<GroupScoreChunkDTO> = search_over_groups_query_result
         .search_results
         .iter()
-        .map(|group| {
+        .enumerate()
+        .map(|(i, group)| {
             let score_chunk: Vec<ScoreChunkDTO> = group
                 .hits
                 .iter()
@@ -715,8 +742,11 @@ pub async fn retrieve_chunks_for_groups(
                 })
                 .collect_vec();
 
+            let group_tracking_id = group_tracking_ids.get(i).map(|x| x.clone()).flatten();
+
             GroupScoreChunkDTO {
                 group_id: group.group_id,
+                group_tracking_id,
                 metadata: score_chunk,
             }
         })
@@ -742,19 +772,31 @@ pub async fn get_metadata_from_groups(
     let (metadata_chunks, collided_chunks) = get_metadata_and_collided_chunks_from_point_ids_query(
         point_ids,
         get_collisions.unwrap_or(false),
-        pool,
+        pool.clone(),
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
 
+    let group_tracking_ids = get_group_tracking_ids_from_group_ids_query(
+        search_over_groups_query_result
+            .search_results
+            .iter()
+            .map(|group| group.group_id)
+            .collect(),
+        pool,
+    )
+    .await?;
+
     let group_chunks: Vec<GroupScoreChunkDTO> = search_over_groups_query_result
         .search_results
         .iter()
-        .map(|group| {
+        .enumerate()
+        .map(|(i, group)| {
             let score_chunk: Vec<ScoreChunkDTO> = group
                 .hits
                 .iter()
                 .map(|search_result| {
+
                     let chunk: ChunkMetadataWithFileData =
                         match metadata_chunks.iter().find(|metadata_chunk| {
                             metadata_chunk.qdrant_point_id == search_result.point_id
@@ -793,8 +835,11 @@ pub async fn get_metadata_from_groups(
                 })
                 .collect_vec();
 
+            let group_tracking_id = group_tracking_ids.get(i).map(|x| x.clone()).flatten();
+
             GroupScoreChunkDTO {
                 group_id: group.group_id,
+                group_tracking_id,
                 metadata: score_chunk,
             }
         })
