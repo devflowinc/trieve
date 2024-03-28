@@ -114,10 +114,42 @@ pub async fn delete_organization_query(
 ) -> Result<Organization, DefaultError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
     use crate::data::schema::organizations::dsl as organizations_columns;
+    use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
     let mut conn = pool.get().await.map_err(|_| DefaultError {
         message: "Could not get database connection",
     })?;
+
+    let existing_subscription: Option<StripeSubscription> =
+        stripe_subscriptions_columns::stripe_subscriptions
+            .filter(stripe_subscriptions_columns::organization_id.eq(org_id))
+            .first(&mut conn)
+            .await
+            .ok();
+
+    if let Some(subscription) = existing_subscription {
+        if !subscription.current_period_end.is_some() {
+            return Err(DefaultError {
+                message: "Cannot delete organization with active subscription",
+            });
+        };
+
+        diesel::delete(
+            stripe_subscriptions_columns::stripe_subscriptions
+                .filter(stripe_subscriptions_columns::organization_id.eq(org_id)),
+        )
+        .execute(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!(
+                "Error deleting subscription in delete_organization_query: {:?}",
+                e
+            );
+            DefaultError {
+                message: "Could not delete subscription, try again",
+            }
+        })?;
+    }
 
     let datasets: Vec<Dataset> = datasets_columns::datasets
         .filter(datasets_columns::organization_id.eq(org_id))
