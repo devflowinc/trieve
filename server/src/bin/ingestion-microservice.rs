@@ -1,7 +1,9 @@
+use chrono::NaiveDateTime;
+use dateparser::DateTimeUtc;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
 use sentry::{Hub, SentryFutureExt};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
-use trieve_server::data::models::{self, Event, ServerDatasetConfiguration};
+use trieve_server::data::models::{self, ChunkMetadata, Event, ServerDatasetConfiguration};
 use trieve_server::errors::ServiceError;
 use trieve_server::handlers::chunk_handler::{UpdateIngestionMessage, UploadIngestionMessage};
 use trieve_server::handlers::group_handler::dataset_owns_group;
@@ -11,7 +13,9 @@ use trieve_server::operators::chunk_operator::{
 };
 use trieve_server::operators::event_operator::create_event_query;
 use trieve_server::operators::model_operator::{create_embeddings, get_splade_embedding};
-use trieve_server::operators::parse_operator::{average_embeddings, coarse_doc_chunker};
+use trieve_server::operators::parse_operator::{
+    average_embeddings, coarse_doc_chunker, convert_html_to_text,
+};
 use trieve_server::operators::qdrant_operator::{
     create_new_qdrant_point_query, update_qdrant_point_query,
 };
@@ -175,12 +179,15 @@ async fn ingestion_service(
                 match upload_chunk(payload.clone(), web_pool.clone(), payload.dataset_config).await
                 {
                     Ok(_) => {
-                        log::info!("Uploaded chunk: {:?}", payload.chunk_metadata.id);
+                        log::info!(
+                            "Uploaded chunk: {:?}",
+                            payload.ingest_specific_chunk_metadata.id
+                        );
                         let _ = create_event_query(
                             Event::from_details(
-                                payload.chunk_metadata.dataset_id,
+                                payload.ingest_specific_chunk_metadata.dataset_id,
                                 models::EventType::CardUploaded {
-                                    chunk_id: payload.chunk_metadata.id,
+                                    chunk_id: payload.ingest_specific_chunk_metadata.id,
                                 },
                             ),
                             web_pool.clone(),
@@ -194,9 +201,9 @@ async fn ingestion_service(
                         log::error!("Failed to upload chunk: {:?}", err);
                         let _ = create_event_query(
                             Event::from_details(
-                                payload.chunk_metadata.dataset_id,
+                                payload.ingest_specific_chunk_metadata.dataset_id,
                                 models::EventType::CardActionFailed {
-                                    chunk_id: payload.chunk_metadata.id,
+                                    chunk_id: payload.ingest_specific_chunk_metadata.id,
                                     error: format!("Failed to upload chunk: {:?}", err),
                                 },
                             ),
@@ -269,16 +276,62 @@ async fn upload_chunk(
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
 
     let mut qdrant_point_id = payload
-        .chunk_metadata
+        .ingest_specific_chunk_metadata
         .qdrant_point_id
         .unwrap_or(uuid::Uuid::new_v4());
+
+    let content = convert_html_to_text(&payload.chunk.chunk_html.clone().unwrap_or_default());
+
+    let chunk_tag_set = payload
+        .chunk
+        .tag_set
+        .clone()
+        .map(|tag_set| tag_set.join(","));
+
+    let chunk_tracking_id = payload
+        .chunk
+        .tracking_id
+        .clone()
+        .filter(|chunk_tracking| !chunk_tracking.is_empty());
+
+    let timestamp = {
+        payload
+            .chunk
+            .time_stamp
+            .clone()
+            .map(|ts| -> Result<NaiveDateTime, ServiceError> {
+                Ok(ts
+                    .parse::<DateTimeUtc>()
+                    .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))?
+                    .0
+                    .with_timezone(&chrono::Local)
+                    .naive_local())
+            })
+            .transpose()?
+    };
+
+    let chunk_metadata = ChunkMetadata {
+        id: payload.ingest_specific_chunk_metadata.id,
+        content: content.clone(),
+        link: payload.chunk.link.clone(),
+        qdrant_point_id: Some(qdrant_point_id),
+        created_at: chrono::Utc::now().naive_local(),
+        updated_at: chrono::Utc::now().naive_local(),
+        tag_set: chunk_tag_set,
+        chunk_html: payload.chunk.chunk_html.clone(),
+        metadata: payload.chunk.metadata.clone(),
+        tracking_id: chunk_tracking_id,
+        time_stamp: timestamp,
+        dataset_id: payload.ingest_specific_chunk_metadata.dataset_id,
+        weight: payload.chunk.weight.unwrap_or(0.0),
+    };
 
     let embedding_vector = if let Some(embedding_vector) = payload.chunk.chunk_vector.clone() {
         embedding_vector
     } else {
         match payload.chunk.split_avg.unwrap_or(false) {
             true => {
-                let chunks = coarse_doc_chunker(payload.chunk_metadata.content.clone());
+                let chunks = coarse_doc_chunker(content.clone());
 
                 let embeddings = create_embeddings(chunks, "doc", dataset_config.clone())
                     .await
@@ -297,18 +350,15 @@ async fn upload_chunk(
                 })?
             }
             false => {
-                let embedding_vectors = create_embeddings(
-                    vec![payload.chunk_metadata.content.clone()],
-                    "doc",
-                    dataset_config.clone(),
-                )
-                .await
-                .map_err(|err| {
-                    ServiceError::InternalServerError(format!(
-                        "Failed to create embedding: {:?}",
-                        err
-                    ))
-                })?;
+                let embedding_vectors =
+                    create_embeddings(vec![content.clone()], "doc", dataset_config.clone())
+                        .await
+                        .map_err(|err| {
+                            ServiceError::InternalServerError(format!(
+                                "Failed to create embedding: {:?}",
+                                err
+                            ))
+                        })?;
 
                 embedding_vectors
                     .first()
@@ -321,7 +371,7 @@ async fn upload_chunk(
     };
 
     let splade_vector = if dataset_config.FULLTEXT_ENABLED {
-        match get_splade_embedding(&payload.chunk_metadata.content, "doc").await {
+        match get_splade_embedding(&content.clone(), "doc").await {
             Ok(v) => v,
             Err(_) => vec![(0, 0.0)],
         }
@@ -342,7 +392,7 @@ async fn upload_chunk(
 
         let first_semantic_result = global_unfiltered_top_match_query(
             embedding_vector.clone(),
-            payload.chunk_metadata.dataset_id,
+            payload.ingest_specific_chunk_metadata.dataset_id,
             dataset_config.clone(),
         )
         .await
@@ -386,7 +436,7 @@ async fn upload_chunk(
             collision.expect("Collision must be some"),
             None,
             None,
-            payload.chunk_metadata.dataset_id,
+            payload.ingest_specific_chunk_metadata.dataset_id,
             splade_vector,
             dataset_config.clone(),
         )
@@ -396,7 +446,7 @@ async fn upload_chunk(
         })?;
 
         insert_duplicate_chunk_metadata_query(
-            payload.chunk_metadata.clone(),
+            chunk_metadata.clone(),
             collision.expect("Collision should must be some"),
             payload.chunk.file_id,
             payload.chunk.group_ids,
@@ -414,7 +464,7 @@ async fn upload_chunk(
     }
     //if collision is nil and embedding vector is some, insert chunk with no collision
     else {
-        payload.chunk_metadata.qdrant_point_id = Some(qdrant_point_id);
+        payload.ingest_specific_chunk_metadata.qdrant_point_id = Some(qdrant_point_id);
 
         let insert_tx = transaction.start_child(
             "calling_insert_chunk_metadata_query",
@@ -422,7 +472,7 @@ async fn upload_chunk(
         );
 
         let inserted_chunk = insert_chunk_metadata_query(
-            payload.chunk_metadata.clone(),
+            chunk_metadata.clone(),
             payload.chunk.file_id,
             payload.chunk.group_ids.clone(),
             payload.dataset_id,
@@ -444,7 +494,7 @@ async fn upload_chunk(
         create_new_qdrant_point_query(
             qdrant_point_id,
             embedding_vector,
-            payload.chunk_metadata.clone(),
+            chunk_metadata.clone(),
             splade_vector,
             payload.chunk.group_ids,
             dataset_config.clone(),

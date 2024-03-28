@@ -1,7 +1,7 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan, Pool,
-    RedisPool, ServerDatasetConfiguration, UnifiedId,
+    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan,
+    IngestSpecificChunkMetadata, Pool, RedisPool, ServerDatasetConfiguration, UnifiedId,
 };
 use crate::errors::{DefaultError, ServiceError};
 use crate::get_env;
@@ -146,7 +146,7 @@ pub struct BatchQueuedChunkResponse {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UploadIngestionMessage {
-    pub chunk_metadata: ChunkMetadata,
+    pub ingest_specific_chunk_metadata: IngestSpecificChunkMetadata,
     pub chunk: ChunkData,
     pub dataset_id: uuid::Uuid,
     pub dataset_config: ServerDatasetConfiguration,
@@ -270,8 +270,9 @@ pub async fn create_chunk(
 
     let mut ingestion_messages = vec![];
 
+    let mut chunk_metadatas = vec![];
+
     for chunk in chunks {
-        let content = convert_html_to_text(chunk.chunk_html.as_ref().unwrap_or(&"".to_string()));
         let chunk_tag_set = chunk.tag_set.clone().map(|tag_set| tag_set.join(","));
 
         let chunk_tracking_id = chunk
@@ -297,7 +298,7 @@ pub async fn create_chunk(
         };
 
         let chunk_metadata = ChunkMetadata::from_details(
-            content,
+            "".to_string(),
             &chunk.chunk_html,
             &chunk.link,
             &chunk_tag_set,
@@ -308,6 +309,7 @@ pub async fn create_chunk(
             dataset_org_plan_sub.dataset.id,
             chunk.weight.unwrap_or(0.0),
         );
+        chunk_metadatas.push(chunk_metadata.clone());
 
         let group_ids_from_group_tracking_ids = if let Some(group_tracking_ids) =
             chunk.group_tracking_ids.clone()
@@ -332,7 +334,11 @@ pub async fn create_chunk(
         chunk_only_group_ids.group_tracking_ids = None;
 
         let upload_message = UploadIngestionMessage {
-            chunk_metadata: chunk_metadata.clone(),
+            ingest_specific_chunk_metadata: IngestSpecificChunkMetadata {
+                id: chunk_metadata.id,
+                qdrant_point_id: chunk_metadata.qdrant_point_id,
+                dataset_id: count_dataset_id,
+            },
             chunk: chunk_only_group_ids.clone(),
             dataset_id: count_dataset_id,
             dataset_config: server_dataset_configuration.clone(),
@@ -359,11 +365,6 @@ pub async fn create_chunk(
         .query_async(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-
-    let chunk_metadatas: Vec<ChunkMetadata> = ingestion_messages
-        .iter()
-        .map(|message| message.chunk_metadata.clone())
-        .collect();
 
     let response = match create_chunk_data.into_inner() {
         CreateChunkData::Single(_) => ReturnQueuedChunk::Single(SingleQueuedChunkResponse {
