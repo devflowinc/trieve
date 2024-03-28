@@ -7,60 +7,10 @@ on:
     - '.github/workflows/**'
 
 jobs:
-  clippy_check_ingestion:
+  rust-tests:
     runs-on: blacksmith-8vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v1
-      - name: Caching Rust Dep
-        uses: useblacksmith/cache@v5
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: rustup component add clippy
-      - uses: clechasseur/rs-clippy-check@v3
-        with:
-          args: --features runtime-env --bin ingestion-microservice --manifest-path server/Cargo.toml
-      - uses: useblacksmith/cache@v5
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.labels }}-rust-${{ matrix.rust }}-
-  clippy_check:
-    runs-on: blacksmith-8vcpu-ubuntu-2204
-    steps:
-      - uses: actions/checkout@v1
-      - name: Caching Rust Dep
-        uses: useblacksmith/cache@v5
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: rustup component add clippy
-      - uses: clechasseur/rs-clippy-check@v3
-        with:
-          args: --features runtime-env --manifest-path server/Cargo.toml
-      - uses: useblacksmith/cache@v5
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.labels }}-rust-${{ matrix.rust }}-
-  redoc:
-    runs-on: blacksmith-8vcpu-ubuntu-2204
-    steps:
-      - uses: actions/checkout@v2
       - name: Caching Rust Dep
         uses: useblacksmith/cache@v5
         with:
@@ -71,6 +21,15 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Installing Vaccum
         run: npm install -g @quobix/vacuum
+      - run: rustup component add clippy
+      - name: Clippy ingestion
+        uses: clechasseur/rs-clippy-check@v3
+        with:
+          args: --features runtime-env --bin ingestion-microservice --manifest-path server/Cargo.toml
+      - name: Clippy Main
+        uses: clechasseur/rs-clippy-check@v3
+        with:
+          args: --features runtime-env --manifest-path server/Cargo.toml
       - name: Generating OpenAPI spec
         run: cargo run --features runtime-env --manifest-path server/Cargo.toml --bin redoc_ci > openapi.json
       - name: Vaccum lint
