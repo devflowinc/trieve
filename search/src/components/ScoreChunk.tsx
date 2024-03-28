@@ -595,11 +595,13 @@ const ScoreChunk = (props: ScoreChunkProps) => {
           </Show>
         </div>
       </Show>
-      <ImageModal
-        showImageModal={showImageModal}
-        setShowImageModal={setShowImageModal}
-        imgInformation={imgInformation}
-      />
+      <Show when={imgInformation()}>
+        <ImageModal
+          showImageModal={showImageModal}
+          setShowImageModal={setShowImageModal}
+          imgInformation={imgInformation}
+        />
+      </Show>
       <Show when={showMetadata()}>
         <FullScreenModal isOpen={showMetadata} setIsOpen={setShowMetadata}>
           <div class="flex max-h-[60vh] max-w-[75vw] flex-col space-y-2 overflow-auto scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-thumb-rounded-md dark:text-white dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600">

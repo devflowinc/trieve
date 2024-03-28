@@ -8,7 +8,6 @@ use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
 use crate::operators::group_operator::get_groups_from_tracking_ids_query;
-use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::recommend_qdrant_query;
 use crate::operators::search_operator::{
     search_full_text_chunks, search_hybrid_chunks, search_semantic_chunks,
@@ -580,9 +579,6 @@ pub async fn update_chunk(
         .clone()
         .filter(|chunk_tracking| !chunk_tracking.is_empty());
 
-    let new_content =
-        convert_html_to_text(chunk.chunk_html.as_ref().unwrap_or(&chunk_metadata.content));
-
     let chunk_html = match chunk.chunk_html.clone() {
         Some(chunk_html) => Some(chunk_html),
         None => chunk_metadata.chunk_html,
@@ -590,7 +586,7 @@ pub async fn update_chunk(
 
     let metadata = ChunkMetadata::from_details_with_id(
         chunk_metadata.id,
-        new_content,
+        "".to_string(),
         &chunk_html,
         &Some(link),
         &chunk_metadata.tag_set,
@@ -725,9 +721,6 @@ pub async fn update_chunk_by_tracking_id(
         .clone()
         .unwrap_or_else(|| chunk_metadata.link.clone().unwrap_or_default());
 
-    let new_content =
-        convert_html_to_text(chunk.chunk_html.as_ref().unwrap_or(&chunk_metadata.content));
-
     let chunk_html = match chunk.chunk_html.clone() {
         Some(chunk_html) => Some(chunk_html),
         None => chunk_metadata.chunk_html,
@@ -735,7 +728,7 @@ pub async fn update_chunk_by_tracking_id(
 
     let metadata = ChunkMetadata::from_details_with_id(
         chunk_metadata.id,
-        new_content,
+        "".to_string(),
         &chunk_html,
         &Some(link),
         &chunk_metadata.tag_set,
