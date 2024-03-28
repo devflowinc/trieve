@@ -520,8 +520,19 @@ async fn update_chunk(
     web_pool: actix_web::web::Data<models::Pool>,
     server_dataset_config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
+    let content = convert_html_to_text(
+        &payload
+            .chunk_metadata
+            .clone()
+            .chunk_html
+            .unwrap_or("".to_string())
+            .clone(),
+    );
+    let mut chunk_metadata = payload.chunk_metadata.clone();
+    chunk_metadata.content = content.clone();
+
     let embedding_vectors = create_embeddings(
-        vec![payload.chunk_metadata.content.clone()],
+        vec![content.to_string()],
         "doc",
         server_dataset_config.clone(),
     )
@@ -535,12 +546,12 @@ async fn update_chunk(
         .clone();
 
     let qdrant_point_id =
-        get_qdrant_id_from_chunk_id_query(payload.chunk_metadata.id, web_pool.clone())
+        get_qdrant_id_from_chunk_id_query(chunk_metadata.id, web_pool.clone())
             .await
             .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
 
     let splade_vector = if server_dataset_config.FULLTEXT_ENABLED {
-        match get_splade_embedding(&payload.chunk_metadata.content, "doc").await {
+        match get_splade_embedding(&content, "doc").await {
             Ok(v) => v,
             Err(_) => vec![(0, 0.0)],
         }
@@ -558,7 +569,7 @@ async fn update_chunk(
         }
 
         let chunk = update_chunk_metadata_query(
-            payload.chunk_metadata.clone(),
+            chunk_metadata.clone(),
             None,
             Some(chunk_group_ids.clone()),
             payload.dataset_id,
@@ -570,10 +581,10 @@ async fn update_chunk(
         if let Some(qdrant_point_id) = chunk.qdrant_point_id {
             update_qdrant_point_query(
                 // If the chunk is a collision, we don't want to update the qdrant point
-                if payload.chunk_metadata.qdrant_point_id.is_none() {
+                if chunk_metadata.qdrant_point_id.is_none() {
                     None
                 } else {
-                    Some(payload.chunk_metadata)
+                    Some(chunk_metadata)
                 },
                 qdrant_point_id,
                 Some(embedding_vector),
@@ -587,7 +598,7 @@ async fn update_chunk(
         }
     } else {
         update_chunk_metadata_query(
-            payload.chunk_metadata.clone(),
+            chunk_metadata.clone(),
             None,
             None,
             payload.dataset_id,
@@ -598,10 +609,10 @@ async fn update_chunk(
 
         update_qdrant_point_query(
             // If the chunk is a collision, we don't want to update the qdrant point
-            if payload.chunk_metadata.qdrant_point_id.is_none() {
+            if chunk_metadata.qdrant_point_id.is_none() {
                 None
             } else {
-                Some(payload.chunk_metadata)
+                Some(chunk_metadata)
             },
             qdrant_point_id,
             Some(embedding_vector),

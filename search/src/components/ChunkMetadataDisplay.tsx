@@ -420,7 +420,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
           </Show>
         </div>
       </Show>
-      <Show when={showImageModal()}>
+      <Show when={showImageModal() && imgInformation()}>
         <FullScreenModal isOpen={showImageModal} setIsOpen={setShowImageModal}>
           <div class="flex max-h-[75vh] max-w-[75vw] flex-col space-y-2 overflow-auto">
             <For
