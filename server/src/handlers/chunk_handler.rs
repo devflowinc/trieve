@@ -3,7 +3,7 @@ use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan, Pool,
     RedisPool, ServerDatasetConfiguration, UnifiedId,
 };
-use crate::errors::ServiceError;
+use crate::errors::{DefaultError, ServiceError};
 use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
@@ -22,6 +22,7 @@ use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{
     ChatCompletionParameters, ChatMessage, ChatMessageContent, Role,
 };
+use qdrant_client::qdrant;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -314,12 +315,6 @@ pub async fn create_chunk(
             get_groups_from_tracking_ids_query(group_tracking_ids, count_dataset_id, pool.clone())
                 .await
                 .ok()
-                .map(|groups| {
-                    groups
-                        .into_iter()
-                        .map(|group| group.id)
-                        .collect::<Vec<uuid::Uuid>>()
-                })
                 .unwrap_or(vec![])
         } else {
             vec![]
@@ -864,6 +859,41 @@ pub struct FieldCondition {
     pub range: Option<Range>,
 }
 
+impl FieldCondition {
+    pub fn convert_to_qdrant_condition(&self) -> Result<Option<qdrant::Condition>, DefaultError> {
+        if let Some(range) = self.range.clone() {
+            return Ok(Some(qdrant::Condition::range(
+                self.field.as_str(),
+                qdrant::Range {
+                    gt: range.gt,
+                    gte: range.gte,
+                    lt: range.lt,
+                    lte: range.lte,
+                },
+            )));
+        };
+
+        let matches = match self.r#match.clone() {
+            Some(matches) => matches,
+            // Return nothing, there isn't a
+            None => return Ok(None),
+        };
+
+        match matches.first().ok_or(DefaultError {
+            message: "Should have at least one value for match",
+        })? {
+            MatchCondition::Text(_) => Ok(Some(qdrant::Condition::matches(
+                self.field.as_str(),
+                matches.iter().map(|x| x.to_string()).collect_vec(),
+            ))),
+            MatchCondition::Integer(_) => Ok(Some(qdrant::Condition::matches(
+                self.field.as_str(),
+                matches.iter().map(|x| x.to_i64()).collect_vec(),
+            ))),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[schema(example = json!({
     "should": [
@@ -1347,6 +1377,7 @@ pub async fn get_recommended_chunks(
         limit,
         dataset_org_plan_sub.dataset.id,
         server_dataset_config,
+        pool.clone()
     )
     .await
     .map_err(|err| {

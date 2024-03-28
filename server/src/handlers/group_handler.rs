@@ -1001,6 +1001,7 @@ pub async fn get_recommended_groups(
         data.group_size.unwrap_or(10),
         dataset_org_plan_sub.dataset.id,
         server_dataset_config,
+        pool.clone()
     )
     .await
     .map_err(|err| {
