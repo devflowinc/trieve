@@ -102,7 +102,16 @@ pub fn coarse_doc_chunker(document: String) -> Vec<String> {
 
 #[tracing::instrument(skip(embeddings))]
 pub fn average_embeddings(embeddings: Vec<Vec<f32>>) -> Result<Vec<f32>, DefaultError> {
-    let shape = (embeddings.len(), embeddings[0].len());
+    let first_embedding_len = match embeddings.first() {
+        Some(embedding) => embedding.len(),
+        None => {
+            return Err(DefaultError {
+                message: "No embeddings provided",
+            });
+        }
+    };
+
+    let shape = (embeddings.len(), first_embedding_len);
     let flat: Vec<f32> = embeddings.iter().flatten().cloned().collect();
     let arr: Array2<f32> = Array2::from_shape_vec(shape, flat).map_err(|e| {
         log::error!("Error creating ndarray from embeddings: {}", e);
