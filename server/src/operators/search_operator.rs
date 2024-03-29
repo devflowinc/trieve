@@ -589,22 +589,36 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
                 .find(|metadata_chunk| metadata_chunk.qdrant_point_id == search_result.point_id)
             {
                 Some(metadata_chunk) => metadata_chunk.clone(),
-                None => ChunkMetadataWithFileData {
-                    id: uuid::Uuid::default(),
-                    qdrant_point_id: uuid::Uuid::default(),
-                    created_at: chrono::Utc::now().naive_local(),
-                    updated_at: chrono::Utc::now().naive_local(),
-                    file_id: None,
-                    file_name: None,
-                    content: "".to_string(),
-                    chunk_html: Some("".to_string()),
-                    link: Some("".to_string()),
-                    tag_set: Some("".to_string()),
-                    metadata: None,
-                    tracking_id: None,
-                    time_stamp: None,
-                    weight: 1.0,
-                },
+                None => {
+                    log::error!(
+                        "Failed to find metadata chunk for point id without collisions: {:?}",
+                        search_result.point_id
+                    );
+                    sentry::capture_message(
+                        &format!(
+                            "Failed to find metadata chunk for point id without collisions {:?}",
+                            search_result.point_id
+                        ),
+                        sentry::Level::Error,
+                    );
+
+                    ChunkMetadataWithFileData {
+                        id: uuid::Uuid::default(),
+                        qdrant_point_id: uuid::Uuid::default(),
+                        created_at: chrono::Utc::now().naive_local(),
+                        updated_at: chrono::Utc::now().naive_local(),
+                        file_id: None,
+                        file_name: None,
+                        content: "".to_string(),
+                        chunk_html: Some("".to_string()),
+                        link: Some("".to_string()),
+                        tag_set: Some("".to_string()),
+                        metadata: None,
+                        tracking_id: None,
+                        time_stamp: None,
+                        weight: 1.0,
+                    }
+                }
             };
             if data.highlight_results.unwrap_or(true) {
                 chunk = find_relevant_sentence(
@@ -693,7 +707,17 @@ pub async fn retrieve_chunks_for_groups(
                             metadata_chunk.qdrant_point_id == search_result.point_id
                         }) {
                             Some(metadata_chunk) => metadata_chunk.clone(),
-                            None => ChunkMetadataWithFileData {
+                            None => {
+                                log::error!(
+                                    "Failed to find metadata chunk for point id for chunks with groups: {:?}",
+                                    search_result.point_id
+                                );
+                                sentry::capture_message(
+                                    &format!("Failed to find metadata chunk for point id for chunks with groups: {:?}", search_result.point_id),
+                                    sentry::Level::Error,
+                                );
+
+                                ChunkMetadataWithFileData {
                                 id: uuid::Uuid::default(),
                                 qdrant_point_id: uuid::Uuid::default(),
                                 created_at: chrono::Utc::now().naive_local(),
@@ -708,7 +732,7 @@ pub async fn retrieve_chunks_for_groups(
                                 tracking_id: None,
                                 time_stamp: None,
                                 weight: 1.0,
-                            },
+                            }},
                         };
 
                     if data.highlight_results.unwrap_or(true) {
@@ -796,13 +820,22 @@ pub async fn get_metadata_from_groups(
                 .hits
                 .iter()
                 .map(|search_result| {
-
                     let chunk: ChunkMetadataWithFileData =
                         match metadata_chunks.iter().find(|metadata_chunk| {
                             metadata_chunk.qdrant_point_id == search_result.point_id
                         }) {
                             Some(metadata_chunk) => metadata_chunk.clone(),
-                            None => ChunkMetadataWithFileData {
+                            None => {
+                                log::error!(
+                                    "Failed to find metadata chunk for point id for metadata with groups: {:?}",
+                                    search_result.point_id
+                                );
+                                sentry::capture_message(
+                                    &format!("Failed to find metadata chunk for point id for metadata with groups: {:?}", search_result.point_id),
+                                    sentry::Level::Error,
+                                );
+
+                                ChunkMetadataWithFileData {
                                 id: uuid::Uuid::default(),
                                 qdrant_point_id: uuid::Uuid::default(),
                                 created_at: chrono::Utc::now().naive_local(),
@@ -817,7 +850,7 @@ pub async fn get_metadata_from_groups(
                                 tracking_id: None,
                                 time_stamp: None,
                                 weight: 1.0,
-                            },
+                            }},
                         };
 
                     let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
@@ -896,22 +929,36 @@ pub async fn retrieve_chunks_from_point_ids(
                 .find(|metadata_chunk| metadata_chunk.qdrant_point_id == search_result.point_id)
             {
                 Some(metadata_chunk) => metadata_chunk.clone(),
-                None => ChunkMetadataWithFileData {
-                    id: uuid::Uuid::default(),
-                    qdrant_point_id: uuid::Uuid::default(),
-                    created_at: chrono::Utc::now().naive_local(),
-                    updated_at: chrono::Utc::now().naive_local(),
-                    file_id: None,
-                    file_name: None,
-                    content: "".to_string(),
-                    chunk_html: Some("".to_string()),
-                    link: Some("".to_string()),
-                    tag_set: Some("".to_string()),
-                    metadata: None,
-                    tracking_id: None,
-                    time_stamp: None,
-                    weight: 1.0,
-                },
+                None => {
+                    log::error!(
+                        "Failed to find metadata chunk from point ids: {:?}",
+                        search_result.point_id
+                    );
+                    sentry::capture_message(
+                        &format!(
+                            "Failed to find metadata chunk from point ids: {:?}",
+                            search_result.point_id
+                        ),
+                        sentry::Level::Error,
+                    );
+
+                    ChunkMetadataWithFileData {
+                        id: uuid::Uuid::default(),
+                        qdrant_point_id: uuid::Uuid::default(),
+                        created_at: chrono::Utc::now().naive_local(),
+                        updated_at: chrono::Utc::now().naive_local(),
+                        file_id: None,
+                        file_name: None,
+                        content: "".to_string(),
+                        chunk_html: Some("".to_string()),
+                        link: Some("".to_string()),
+                        tag_set: Some("".to_string()),
+                        metadata: None,
+                        tracking_id: None,
+                        time_stamp: None,
+                        weight: 1.0,
+                    }
+                }
             };
 
             if data.highlight_results.unwrap_or(true) {
@@ -1213,22 +1260,36 @@ pub async fn search_hybrid_chunks(
                 .find(|metadata_chunk| metadata_chunk.qdrant_point_id == search_result.point_id)
             {
                 Some(metadata_chunk) => metadata_chunk.clone(),
-                None => ChunkMetadataWithFileData {
-                    id: uuid::Uuid::default(),
-                    qdrant_point_id: uuid::Uuid::default(),
-                    created_at: chrono::Utc::now().naive_local(),
-                    updated_at: chrono::Utc::now().naive_local(),
-                    file_id: None,
-                    file_name: None,
-                    content: "".to_string(),
-                    chunk_html: Some("".to_string()),
-                    link: Some("".to_string()),
-                    tag_set: Some("".to_string()),
-                    metadata: None,
-                    tracking_id: None,
-                    time_stamp: None,
-                    weight: 1.0,
-                },
+                None => {
+                    log::error!(
+                        "Failed to find metadata chunk for point id for hybrid chunks: {:?}",
+                        search_result.point_id
+                    );
+                    sentry::capture_message(
+                        &format!(
+                            "Failed to find metadata for point id for hybrid chunk: {:?}",
+                            search_result.point_id
+                        ),
+                        sentry::Level::Error,
+                    );
+
+                    ChunkMetadataWithFileData {
+                        id: uuid::Uuid::default(),
+                        qdrant_point_id: uuid::Uuid::default(),
+                        created_at: chrono::Utc::now().naive_local(),
+                        updated_at: chrono::Utc::now().naive_local(),
+                        file_id: None,
+                        file_name: None,
+                        content: "".to_string(),
+                        chunk_html: Some("".to_string()),
+                        link: Some("".to_string()),
+                        tag_set: Some("".to_string()),
+                        metadata: None,
+                        tracking_id: None,
+                        time_stamp: None,
+                        weight: 1.0,
+                    }
+                }
             };
 
             if data.highlight_results.unwrap_or(true) {
