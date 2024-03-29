@@ -122,6 +122,7 @@ postgres-openssl = "0.5.0"
 openssl = "0.10.64"
 utoipa-swagger-ui = { version = "6.0.0", features = ["actix-web"] }
 bb8-redis = "0.15.0"
+bashrand = "0.2.0"
 
 
 [build-dependencies]
