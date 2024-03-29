@@ -1,8 +1,8 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    ChatMessageProxy, ChunkMetadata, ChunkMetadataIDs, ChunkMetadataWithFileData,
-    DatasetAndOrgWithSubAndPlan, IngestSpecificChunkMetadata, Pool, RedisPool, ScoreIDs,
-    SearchChunkQueryIDsResponseBody, ServerDatasetConfiguration, UnifiedId,
+    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan,
+    IngestSpecificChunkMetadata, Pool, RedisPool, ScoreIDs, SearchChunkQueryIDsResponseBody,
+    ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
 };
 use crate::errors::{DefaultError, ServiceError};
 use crate::get_env;
@@ -1011,8 +1011,8 @@ pub struct SearchChunkData {
     pub highlight_delimiters: Option<Vec<String>>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold.
     pub score_threshold: Option<f32>,
-    /// Set only_ids to true to only return the ids and tracking ids of the chunks. This is useful for when you want to get the ids of the chunks to use in another request. Default is false.
-    pub only_ids: Option<bool>,
+    /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement. Default is false.
+    pub slim_chunks: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
@@ -1037,7 +1037,7 @@ pub struct ScoreChunkDTO {
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub enum ChunkMetadataTypes {
-    IDs(Vec<ChunkMetadataIDs>),
+    IDs(Vec<SlimChunkMetadata>),
     MetadataWithFileData(Vec<ChunkMetadataWithFileData>),
 }
 
@@ -1171,7 +1171,7 @@ pub async fn search_chunk(
 
     transaction.finish();
 
-    if data.only_ids.unwrap_or(false) {
+    if data.slim_chunks.unwrap_or(false) {
         let ids = result_chunks
             .score_chunks
             .iter()
@@ -1280,8 +1280,8 @@ pub struct RecommendChunksRequest {
     pub filters: Option<ChunkFilter>,
     /// The number of chunks to return. This is the number of chunks which will be returned in the response. The default is 10.
     pub limit: Option<u64>,
-    /// Set only_ids to true to only return the ids and tracking ids of the chunks. This is useful for when you want to get the ids of the chunks to use in another request. Default is false.
-    pub only_ids: Option<bool>,
+    /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement. Default is false.
+    pub slim_chunks: Option<bool>,
 }
 
 /// Get Recommended Chunks
@@ -1416,11 +1416,11 @@ pub async fn get_recommended_chunks(
                 ))
             })?;
 
-    if data.only_ids.unwrap_or(false) {
+    if data.slim_chunks.unwrap_or(false) {
         let res = recommended_chunk_metadatas
             .into_iter()
             .map(|chunk| chunk.into())
-            .collect::<Vec<ChunkMetadataIDs>>();
+            .collect::<Vec<SlimChunkMetadata>>();
 
         return Ok(HttpResponse::Ok().json(res));
     }

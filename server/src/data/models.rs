@@ -392,7 +392,7 @@ pub struct ChunkMetadataWithFileData {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
-pub struct ChunkMetadataIDs {
+pub struct SlimChunkMetadata {
     pub id: uuid::Uuid,
     pub link: Option<String>,
     pub qdrant_point_id: Option<uuid::Uuid>,
@@ -405,9 +405,9 @@ pub struct ChunkMetadataIDs {
     pub weight: f64,
 }
 
-impl From<ChunkMetadata> for ChunkMetadataIDs {
+impl From<ChunkMetadata> for SlimChunkMetadata {
     fn from(chunk: ChunkMetadata) -> Self {
-        ChunkMetadataIDs {
+        SlimChunkMetadata {
             id: chunk.id,
             link: chunk.link,
             qdrant_point_id: chunk.qdrant_point_id,
@@ -422,9 +422,9 @@ impl From<ChunkMetadata> for ChunkMetadataIDs {
     }
 }
 
-impl From<ChunkMetadataWithFileData> for ChunkMetadataIDs {
+impl From<ChunkMetadataWithFileData> for SlimChunkMetadata {
     fn from(chunk: ChunkMetadataWithFileData) -> Self {
-        ChunkMetadataIDs {
+        SlimChunkMetadata {
             id: chunk.id,
             link: chunk.link,
             qdrant_point_id: Some(chunk.qdrant_point_id),
@@ -441,7 +441,7 @@ impl From<ChunkMetadataWithFileData> for ChunkMetadataIDs {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
 pub struct ScoreIDs {
-    pub metadata: Vec<ChunkMetadataIDs>,
+    pub metadata: Vec<SlimChunkMetadata>,
     pub score: f64,
 }
 

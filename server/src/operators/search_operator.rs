@@ -1110,7 +1110,7 @@ pub async fn search_full_text_chunks(
     result_chunks.score_chunks =
         rerank_chunks(result_chunks.score_chunks, data.date_bias, data.use_weights);
 
-    if data.only_ids.unwrap_or(false) {
+    if data.slim_chunks.unwrap_or(false) {
         result_chunks.score_chunks = result_chunks
             .score_chunks
             .into_iter()

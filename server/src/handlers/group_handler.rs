@@ -878,8 +878,8 @@ pub struct ReccomendGroupChunksRequest {
     pub limit: Option<u64>,
     /// The number of chunks to fetch for each group. This is the number of chunks which will be returned in the response for each group. The default is 10.
     pub group_size: Option<u32>,
-    /// Set only_ids to true to only return the ids and tracking ids of the chunks. This is useful for when you want to get the ids of the chunks to use in another request. Default is false.
-    pub only_ids: Option<bool>,
+    /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement. Default is false.
+    pub slim_chunks: Option<bool>,
 }
 
 /// Get Recommended Groups
@@ -1026,7 +1026,7 @@ pub async fn get_recommended_groups(
     let recommended_chunk_metadatas =
         get_metadata_from_groups(group_query_result, Some(false), pool).await?;
 
-    if data.only_ids.unwrap_or(false) {
+    if data.slim_chunks.unwrap_or(false) {
         let res = recommended_chunk_metadatas
             .into_iter()
             .map(|metadata| GroupIDsDTO {
@@ -1072,8 +1072,8 @@ pub struct SearchWithinGroupData {
     pub highlight_delimiters: Option<Vec<String>>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold.
     pub score_threshold: Option<f32>,
-    /// Set only_ids to true to only return the ids of the chunks in the result set. If not specified, this defaults to false.
-    pub only_ids: Option<bool>,
+    /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement. Default is false.
+    pub slim_chunks: Option<bool>,
 }
 
 impl From<SearchWithinGroupData> for SearchChunkData {
@@ -1090,7 +1090,7 @@ impl From<SearchWithinGroupData> for SearchChunkData {
             highlight_results: data.highlight_results,
             highlight_delimiters: data.highlight_delimiters,
             score_threshold: data.score_threshold,
-            only_ids: data.only_ids,
+            slim_chunks: data.slim_chunks,
         }
     }
 }
@@ -1205,7 +1205,7 @@ pub async fn search_within_group(
         }
     };
 
-    if data.only_ids.unwrap_or(false) {
+    if data.slim_chunks.unwrap_or(false) {
         let ids = result_chunks
             .bookmarks
             .into_iter()
@@ -1246,8 +1246,8 @@ pub struct SearchOverGroupsData {
     pub score_threshold: Option<f32>,
     // Group_size is the number of chunks to fetch for each group.
     pub group_size: Option<u32>,
-    /// Set only_ids to true to only return the ids of the chunks in the result set. If not specified, this defaults to false.
-    pub only_ids: Option<bool>,
+    /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement. Default is false.
+    pub slim_chunks: Option<bool>,
 }
 
 /// Search Over Groups
@@ -1326,7 +1326,7 @@ pub async fn search_over_groups(
         }
     };
 
-    if data.only_ids.unwrap_or(false) {
+    if data.slim_chunks.unwrap_or(false) {
         let ids = result_chunks
             .group_chunks
             .into_iter()
