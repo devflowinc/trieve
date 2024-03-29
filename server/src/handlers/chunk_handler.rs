@@ -1,6 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan, IngestSpecificChunkMetadata, Pool, RabbitPool, RedisPool, ServerDatasetConfiguration, UnifiedId
+    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan, IngestSpecificChunkMetadata, Pool, RabbitPool, ServerDatasetConfiguration, UnifiedId
 };
 use crate::errors::{DefaultError, ServiceError};
 use crate::get_env;

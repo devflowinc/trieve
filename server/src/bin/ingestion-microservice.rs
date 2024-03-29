@@ -2,7 +2,6 @@ use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
 use futures::StreamExt;
-use lapin::options::BasicQosOptions;
 use lapin::types::FieldTable;
 use lapin::BasicProperties;
 use sentry::{Hub, SentryFutureExt};
@@ -150,7 +149,6 @@ async fn ingestion_service(
 ) {
     log::info!("Starting ingestion service thread");
 
-
     let rabbit_connection = rabbit_pool
         .get()
         .await
@@ -189,7 +187,6 @@ async fn ingestion_service(
         let ctx = sentry::TransactionContext::new("Processing chunk", "Processing chunk");
         let transaction = sentry::start_transaction(ctx);
 
-
         let string_payload = std::str::from_utf8(&delivery.data)
             .map_err(|err| {
                 log::error!("Failed to parse payload: {:?}", err);
@@ -225,6 +222,7 @@ async fn ingestion_service(
                             log::error!("Failed to create event: {:?}", err);
                         });
                     }
+                    Err(err) => {
                         log::error!("Failed to upload chunk: {:?}", err);
                         let delivery_count = delivery
                             .properties
@@ -636,10 +634,9 @@ async fn update_chunk(
         ))?
         .clone();
 
-    let qdrant_point_id =
-        get_qdrant_id_from_chunk_id_query(chunk_metadata.id, web_pool.clone())
-            .await
-            .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
+    let qdrant_point_id = get_qdrant_id_from_chunk_id_query(chunk_metadata.id, web_pool.clone())
+        .await
+        .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
 
     let splade_vector = if server_dataset_config.FULLTEXT_ENABLED {
         match get_splade_embedding(&content, "doc").await {
