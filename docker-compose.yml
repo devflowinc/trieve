@@ -257,8 +257,8 @@ services:
     entrypoint: "/opt/keycloak/bin/kc.sh start-dev --import-realm --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false"
     volumes:
       - keycloak-data:/opt/keycloak/data
-      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
-      - ./keycloak/themes/arguflow:/opt/keycloak/themes/arguflow
+      - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - ./docker/keycloak/themes/trieve:/opt/keycloak/themes/treive
     ports:
       - 8080:8080
     networks:
