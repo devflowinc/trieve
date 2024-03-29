@@ -3,6 +3,7 @@
 use crate::get_env;
 
 use super::schema::*;
+use crate::handlers::chunk_handler::ScoreChunkDTO;
 use chrono::{DateTime, NaiveDateTime};
 use dateparser::DateTimeUtc;
 use diesel::expression::ValidGrouping;
@@ -388,6 +389,79 @@ pub struct ChunkMetadataWithFileData {
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
     pub weight: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
+pub struct ChunkMetadataIDs {
+    pub id: uuid::Uuid,
+    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub tracking_id: Option<String>,
+    pub weight: f64,
+    pub time_stamp: Option<NaiveDateTime>,
+}
+
+impl From<ChunkMetadata> for ChunkMetadataIDs {
+    fn from(chunk: ChunkMetadata) -> Self {
+        ChunkMetadataIDs {
+            id: chunk.id,
+            qdrant_point_id: chunk.qdrant_point_id,
+            tracking_id: chunk.tracking_id,
+            weight: chunk.weight,
+            time_stamp: chunk.time_stamp,
+        }
+    }
+}
+
+impl From<ChunkMetadataWithFileData> for ChunkMetadataIDs {
+    fn from(chunk: ChunkMetadataWithFileData) -> Self {
+        ChunkMetadataIDs {
+            id: chunk.id,
+            qdrant_point_id: Some(chunk.qdrant_point_id),
+            tracking_id: chunk.tracking_id,
+            weight: chunk.weight,
+            time_stamp: chunk.time_stamp,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
+pub struct ScoreIDs {
+    pub metadata: Vec<ChunkMetadataIDs>,
+    pub score: f64,
+}
+
+impl From<ScoreChunkDTO> for ScoreIDs {
+    fn from(score: ScoreChunkDTO) -> Self {
+        ScoreIDs {
+            metadata: score.metadata.into_iter().map(|m| m.into()).collect(),
+            score: score.score,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct SearchChunkQueryIDsResponseBody {
+    pub score_chunks: Vec<ScoreIDs>,
+    pub total_chunk_pages: i64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct GroupIDsDTO {
+    pub group_id: uuid::Uuid,
+    pub metadata: Vec<ScoreIDs>,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct SearchGroupIDsResult {
+    pub bookmarks: Vec<ScoreIDs>,
+    pub group: ChunkGroup,
+    pub total_pages: i64,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct SearchOverGroupsIDsResponseBody {
+    pub group_chunks: Vec<GroupIDsDTO>,
+    pub total_chunk_pages: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -845,7 +919,7 @@ impl ChunkFile {
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, Queryable)]
+#[derive(Debug, Default, Serialize, Deserialize, Queryable, Clone)]
 pub struct ChunkFileWithName {
     pub chunk_id: uuid::Uuid,
     pub file_id: uuid::Uuid,

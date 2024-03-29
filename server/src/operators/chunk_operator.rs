@@ -1,6 +1,6 @@
 use crate::data::models::{
-    ChunkCollision, ChunkFile, ChunkGroupBookmark, ChunkMetadataWithFileData, Dataset,
-    FullTextSearchResult, ServerDatasetConfiguration, UnifiedId,
+    ChunkCollision, ChunkFile, ChunkFileWithName, ChunkGroupBookmark, ChunkMetadataWithFileData,
+    Dataset, FullTextSearchResult, ServerDatasetConfiguration, UnifiedId,
 };
 use crate::operators::model_operator::create_embeddings;
 use crate::operators::qdrant_operator::get_qdrant_connection;
@@ -122,7 +122,9 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
     DefaultError,
 > {
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
+    use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+    use crate::data::schema::files::dsl as files_columns;
 
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
@@ -147,13 +149,34 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
         "Fetching matching points from qdrant",
     );
 
+    // Fetch the chunk metadata for root cards
     let chunk_search_result = {
         let mut conn = pool.get().await.unwrap();
-        let chunk_metadata: Vec<ChunkMetadata> = chunk_metadata_columns::chunk_metadata
+        let chunk_metadata = chunk_metadata_columns::chunk_metadata
+            .left_outer_join(
+                chunk_files_columns::chunk_files
+                    .on(chunk_metadata_columns::id.eq(chunk_files_columns::chunk_id)),
+            )
+            .left_outer_join(
+                files_columns::files.on(chunk_files_columns::file_id.eq(files_columns::id)),
+            )
+            .left_outer_join(
+                chunk_collisions_columns::chunk_collisions
+                    .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
+            )
+            .select((
+                ChunkMetadata::as_select(),
+                (chunk_collisions_columns::collision_qdrant_id).nullable(),
+                (
+                    chunk_files_columns::chunk_id,
+                    chunk_files_columns::file_id,
+                    files_columns::file_name,
+                )
+                    .nullable(),
+            ))
             .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
-            .select(ChunkMetadata::as_select())
             .limit(500)
-            .load::<ChunkMetadata>(&mut conn)
+            .load::<(ChunkMetadata, Option<uuid::Uuid>, Option<ChunkFileWithName>)>(&mut conn)
             .await
             .map_err(|_| DefaultError {
                 message: "Failed to load metadata",
@@ -161,8 +184,27 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
 
         chunk_metadata
             .iter()
-            .map(|chunk| <ChunkMetadata as Into<FullTextSearchResult>>::into(chunk.clone()))
-            .collect::<Vec<FullTextSearchResult>>()
+            .map(|chunk| ChunkMetadataWithFileData {
+                id: chunk.0.id,
+                content: chunk.0.content.clone(),
+                link: chunk.0.link.clone(),
+                tag_set: chunk.0.tag_set.clone(),
+                qdrant_point_id: chunk.0.qdrant_point_id.unwrap_or_else(|| {
+                    chunk
+                        .1
+                        .expect("Must have qdrant_id from collision or metadata")
+                }),
+                created_at: chunk.0.created_at,
+                updated_at: chunk.0.updated_at,
+                chunk_html: chunk.0.chunk_html.clone(),
+                file_id: chunk.2.clone().map(|file| file.file_id),
+                file_name: chunk.2.clone().map(|file| file.file_name.to_string()),
+                metadata: chunk.0.metadata.clone(),
+                tracking_id: chunk.0.tracking_id.clone(),
+                time_stamp: chunk.0.time_stamp,
+                weight: chunk.0.weight,
+            })
+            .collect::<Vec<ChunkMetadataWithFileData>>()
     };
 
     chunk_search_span.finish();
@@ -172,120 +214,79 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
         "Fetching matching points from qdrant",
     );
 
-    let (collided_search_result, collided_qdrant_ids) = {
-        let mut conn = pool.get().await.unwrap();
-        if get_collisions {
-            let chunk_metadata: Vec<(ChunkMetadata, uuid::Uuid)> =
-                chunk_collisions_columns::chunk_collisions
-                    .inner_join(
-                        chunk_metadata_columns::chunk_metadata
-                            .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
+    if get_collisions {
+        // Fetch the collided chunks
+        let collided_chunks = {
+            let mut conn = pool.get().await.unwrap();
+            let chunk_metadata = chunk_collisions_columns::chunk_collisions
+                .inner_join(
+                    chunk_metadata_columns::chunk_metadata
+                        .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
+                )
+                .left_outer_join(
+                    chunk_files_columns::chunk_files
+                        .on(chunk_metadata_columns::id.eq(chunk_files_columns::chunk_id)),
+                )
+                .left_outer_join(
+                    files_columns::files.on(chunk_files_columns::file_id.eq(files_columns::id)),
+                )
+                .filter(chunk_collisions_columns::collision_qdrant_id.eq_any(point_ids))
+                .select((
+                    ChunkMetadata::as_select(),
+                    chunk_collisions_columns::collision_qdrant_id.assume_not_null(),
+                    (
+                        chunk_files_columns::chunk_id,
+                        chunk_files_columns::file_id,
+                        files_columns::file_name,
                     )
-                    .select((
-                        ChunkMetadata::as_select(),
-                        (chunk_collisions_columns::collision_qdrant_id.assume_not_null()),
-                    ))
-                    .filter(chunk_collisions_columns::collision_qdrant_id.eq_any(point_ids))
-                    // TODO: Properly handle this and remove the arbitrary limit
-                    .limit(500)
-                    .load::<(ChunkMetadata, uuid::Uuid)>(&mut conn)
-                    .await
-                    .map_err(|_| DefaultError {
-                        message: "Failed to load metadata",
-                    })?;
-
-            let collided_qdrant_ids = chunk_metadata
-                .iter()
-                .map(|(_, qdrant_id)| *qdrant_id)
-                .collect::<Vec<uuid::Uuid>>();
-
-            let converted_chunks: Vec<FullTextSearchResult> = chunk_metadata
-                .iter()
-                .map(|chunk| <ChunkMetadata as Into<FullTextSearchResult>>::into(chunk.0.clone()))
-                .collect::<Vec<FullTextSearchResult>>();
-
-            (converted_chunks, collided_qdrant_ids)
-        } else {
-            let chunk_metadata: Vec<(ChunkMetadata, uuid::Uuid)> =
-                chunk_collisions_columns::chunk_collisions
-                    .inner_join(
-                        chunk_metadata_columns::chunk_metadata
-                            .on(chunk_metadata_columns::id.eq(chunk_collisions_columns::chunk_id)),
-                    )
-                    .select((
-                        ChunkMetadata::as_select(),
-                        (chunk_collisions_columns::collision_qdrant_id.assume_not_null()),
-                    ))
-                    .filter(chunk_collisions_columns::collision_qdrant_id.eq_any(point_ids))
-                    .load::<(ChunkMetadata, uuid::Uuid)>(&mut conn)
-                    .await
-                    .map_err(|_| DefaultError {
-                        message: "Failed to load metadata",
-                    })?;
-
-            let converted_chunks: Vec<FullTextSearchResult> = chunk_metadata
-                .iter()
-                .map(|chunk| <ChunkMetadata as Into<FullTextSearchResult>>::into(chunk.0.clone()))
-                .collect::<Vec<FullTextSearchResult>>();
-
-            (converted_chunks, vec![])
-        }
-    };
-
-    collision_search_span.finish();
-
-    let iter_mapping_extra_data_span = transaction.start_child(
-        "Iter mapping to add extra data",
-        "Iter mapping to add extra data",
-    );
-
-    let (chunk_metadata_with_file_id, collided_chunk_metadata_with_file_id) = {
-        // Assuming that get_metadata will maintain the order of the Vec<> returned
-        let split_index = chunk_search_result.len();
-        let all_chunks = chunk_search_result
-            .iter()
-            .chain(collided_search_result.iter())
-            .cloned()
-            .collect::<Vec<FullTextSearchResult>>();
-
-        let all_metadata =
-            get_metadata_query(all_chunks, pool)
+                        .nullable(),
+                ))
+                // TODO: Properly handle this and remove the arbitrary limit
+                .limit(500)
+                .load::<(ChunkMetadata, uuid::Uuid, Option<ChunkFileWithName>)>(&mut conn)
                 .await
                 .map_err(|_| DefaultError {
                     message: "Failed to load metadata",
                 })?;
 
-        let meta_chunks = all_metadata
-            .iter()
-            .take(split_index)
-            .cloned()
-            .collect::<Vec<ChunkMetadataWithFileData>>();
+            // Convert the collided chunks into the appropriate format
+            chunk_metadata
+                .iter()
+                .map(|chunk| {
+                    let chunk_metadata = ChunkMetadataWithFileData {
+                        id: chunk.0.id,
+                        content: chunk.0.content.clone(),
+                        link: chunk.0.link.clone(),
+                        tag_set: chunk.0.tag_set.clone(),
+                        qdrant_point_id: chunk.0.qdrant_point_id.unwrap_or(chunk.1),
+                        created_at: chunk.0.created_at,
+                        updated_at: chunk.0.updated_at,
+                        chunk_html: chunk.0.chunk_html.clone(),
+                        file_id: chunk.2.clone().map(|file| file.file_id),
+                        file_name: chunk.2.clone().map(|file| file.file_name.to_string()),
+                        metadata: chunk.0.metadata.clone(),
+                        tracking_id: chunk.0.tracking_id.clone(),
+                        time_stamp: chunk.0.time_stamp,
+                        weight: chunk.0.weight,
+                    };
+                    ChunkMetadataWithQdrantId {
+                        metadata: chunk_metadata,
+                        qdrant_id: chunk.1,
+                    }
+                })
+                .collect::<Vec<ChunkMetadataWithQdrantId>>()
+        };
 
-        let meta_collided = all_metadata
-            .iter()
-            .skip(split_index)
-            .cloned()
-            .collect::<Vec<ChunkMetadataWithFileData>>();
-
-        (meta_chunks, meta_collided)
-    };
-
-    let chunk_metadatas_with_collided_qdrant_ids = collided_chunk_metadata_with_file_id
-        .iter()
-        .zip(collided_qdrant_ids.iter())
-        .map(|(chunk, qdrant_id)| ChunkMetadataWithQdrantId {
-            metadata: chunk.clone(),
-            qdrant_id: *qdrant_id,
-        })
-        .collect::<Vec<ChunkMetadataWithQdrantId>>();
-
-    iter_mapping_extra_data_span.finish();
-    transaction.finish();
-
-    Ok((
-        chunk_metadata_with_file_id,
-        chunk_metadatas_with_collided_qdrant_ids,
-    ))
+        collision_search_span.finish();
+        transaction.finish();
+        // Return the chunk metadata and the collided chunks
+        Ok((chunk_search_result, collided_chunks))
+    } else {
+        collision_search_span.finish();
+        transaction.finish();
+        // Return only the chunk metadata
+        Ok((chunk_search_result, vec![]))
+    }
 }
 
 #[tracing::instrument(skip(pool))]

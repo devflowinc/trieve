@@ -651,7 +651,7 @@ pub struct SearchOverGroupsResponseBody {
 #[tracing::instrument(skip(pool))]
 pub async fn retrieve_chunks_for_groups(
     search_over_groups_query_result: SearchOverGroupsQueryResult,
-    data: &web::Json<SearchOverGroupsData>,
+    data: &SearchOverGroupsData,
     pool: web::Data<Pool>,
 ) -> Result<SearchOverGroupsResponseBody, ServiceError> {
     let point_ids = search_over_groups_query_result
@@ -852,7 +852,7 @@ pub async fn get_metadata_from_groups(
 #[tracing::instrument(skip(pool))]
 pub async fn retrieve_chunks_from_point_ids(
     search_chunk_query_results: SearchChunkQueryResult,
-    data: &web::Json<SearchChunkData>,
+    data: &SearchChunkData,
     pool: web::Data<Pool>,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -994,7 +994,7 @@ pub fn rerank_chunks(
 
 #[tracing::instrument(skip(timer, pool))]
 pub async fn search_semantic_chunks(
-    data: web::Json<SearchChunkData>,
+    data: SearchChunkData,
     parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
@@ -1060,7 +1060,7 @@ pub async fn search_semantic_chunks(
 
 #[tracing::instrument(skip(pool))]
 pub async fn search_full_text_chunks(
-    data: web::Json<SearchChunkData>,
+    data: SearchChunkData,
     mut parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
@@ -1110,6 +1110,17 @@ pub async fn search_full_text_chunks(
     result_chunks.score_chunks =
         rerank_chunks(result_chunks.score_chunks, data.date_bias, data.use_weights);
 
+    if data.only_ids.unwrap_or(false) {
+        result_chunks.score_chunks = result_chunks
+            .score_chunks
+            .into_iter()
+            .map(|score_chunk| ScoreChunkDTO {
+                metadata: vec![score_chunk.metadata.first().unwrap().clone()],
+                score: score_chunk.score,
+            })
+            .collect();
+    }
+
     transaction.finish();
     Ok(result_chunks)
 }
@@ -1117,7 +1128,7 @@ pub async fn search_full_text_chunks(
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
 pub async fn search_hybrid_chunks(
-    data: web::Json<SearchChunkData>,
+    data: SearchChunkData,
     parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
@@ -1162,7 +1173,7 @@ pub async fn search_hybrid_chunks(
     );
 
     let full_text_handler_results = search_full_text_chunks(
-        web::Json(data.clone()),
+        data.clone(),
         parsed_query,
         page,
         pool.clone(),
@@ -1309,7 +1320,7 @@ pub async fn search_hybrid_chunks(
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
 pub async fn search_semantic_groups(
-    data: web::Json<SearchWithinGroupData>,
+    data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
     group: ChunkGroup,
     page: u64,
@@ -1365,7 +1376,7 @@ pub async fn search_semantic_groups(
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
 pub async fn search_full_text_groups(
-    data: web::Json<SearchWithinGroupData>,
+    data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
     group: ChunkGroup,
     page: u64,
@@ -1411,7 +1422,7 @@ pub async fn search_full_text_groups(
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
 pub async fn search_hybrid_groups(
-    data: web::Json<SearchWithinGroupData>,
+    data: SearchWithinGroupData,
     parsed_query: ParsedQuery,
     group: ChunkGroup,
     page: u64,
@@ -1541,7 +1552,7 @@ pub async fn search_hybrid_groups(
 
 #[tracing::instrument(skip(pool))]
 pub async fn semantic_search_over_groups(
-    data: web::Json<SearchOverGroupsData>,
+    data: SearchOverGroupsData,
     parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
@@ -1584,7 +1595,7 @@ pub async fn semantic_search_over_groups(
 
 #[tracing::instrument(skip(pool))]
 pub async fn full_text_search_over_groups(
-    data: web::Json<SearchOverGroupsData>,
+    data: SearchOverGroupsData,
     parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
@@ -1667,7 +1678,7 @@ async fn cross_encoder_for_groups(
 
 #[tracing::instrument(skip(pool))]
 pub async fn hybrid_search_over_groups(
-    data: web::Json<SearchOverGroupsData>,
+    data: SearchOverGroupsData,
     parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
