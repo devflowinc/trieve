@@ -1,0 +1,124 @@
+:root {
+  --textColor: #7c858d;
+  --textOffColor: #f6f5f7;
+  --baseColor: rgb(255 255 255);
+  --baseDarkColor: #1e2b36;
+  --baseLightColor: rgb(255 255 255);
+  --secColor: rgb(64 64 64);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --textColor: #f6f5f7;
+    --textOffColor: #7c858d;
+    --baseColor: rgb(18, 18, 18);
+    --baseDarkColor: #1e2b36;
+    --baseLightColor: #262626;
+    --secColor: rgb(64 64 64);
+  }
+}
+
+body {
+  background: var(--baseColor) !important;
+  color: var(--textColor) !important;
+  font-size: 18px;
+}
+
+/* Login Card */
+
+.login-pf-page .card-pf {
+  border-radius: 20px;
+  background: var(--baseLightColor);
+}
+
+/* Card Title */
+
+.login-pf-page .login-pf-header {
+  margin-bottom: 50px;
+}
+
+#kc-page-title {
+  font-size: 26px;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--textColor);
+}
+
+#kc-header-wrapper {
+  color: var(--textColor);
+}
+
+/* Login Form */
+
+.login-pf-page .form-group {
+  margin-bottom: 30px;
+}
+
+.login-pf-page .form-control {
+  border: none;
+  padding: 22px 30px;
+  font-size: 18px;
+  color: var(--textColor);
+  height: auto;
+
+  border-radius: 32px;
+  background: var(--baseColor);
+}
+
+.login-pf-page .form-control::placeholder {
+  font-style: normal;
+  color: var(--textOffColor);
+}
+
+/* Remember Me Toggle */
+
+#kc-form-options .checkbox {
+  font-size: 16px;
+  color: var(--textColor);
+  margin-bottom: 0;
+}
+
+#kc-form-options label {
+  display: inline-flex;
+  align-items: center;
+  padding-left: 8px;
+}
+
+#kc-form-options .label-text {
+  margin-left: 16px;
+  margin-top: 4px;
+}
+
+/* Reset Password Link */
+
+#kc-form-reset-psw a {
+  font-size: 16px;
+  color: var(--secColor);
+  padding-right: 8px;
+}
+
+#kc-form-buttons {
+  margin-top: 50px;
+}
+
+/* Login Button */
+
+#kc-login {
+  border: none;
+  padding: 22px 30px;
+  font-size: 18px;
+  color: #f6f5f7;
+
+  border-radius: 32px;
+  background: rgb(163 62 181);
+}
+
+#kc-login:active:focus {
+  background: linear-gradient(145deg, #202e39, #253743) !important;
+  outline: none;
+}
+
+/* Register Link */
+#kc-info-wrapper {
+  background: var(--baseColor);
+}
