@@ -394,20 +394,30 @@ pub struct ChunkMetadataWithFileData {
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
 pub struct ChunkMetadataIDs {
     pub id: uuid::Uuid,
+    pub link: Option<String>,
     pub qdrant_point_id: Option<uuid::Uuid>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub tag_set: Option<String>,
+    pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
-    pub weight: f64,
     pub time_stamp: Option<NaiveDateTime>,
+    pub weight: f64,
 }
 
 impl From<ChunkMetadata> for ChunkMetadataIDs {
     fn from(chunk: ChunkMetadata) -> Self {
         ChunkMetadataIDs {
             id: chunk.id,
+            link: chunk.link,
             qdrant_point_id: chunk.qdrant_point_id,
+            created_at: chunk.created_at,
+            updated_at: chunk.updated_at,
+            tag_set: chunk.tag_set,
+            metadata: chunk.metadata,
             tracking_id: chunk.tracking_id,
-            weight: chunk.weight,
             time_stamp: chunk.time_stamp,
+            weight: chunk.weight,
         }
     }
 }
@@ -416,10 +426,15 @@ impl From<ChunkMetadataWithFileData> for ChunkMetadataIDs {
     fn from(chunk: ChunkMetadataWithFileData) -> Self {
         ChunkMetadataIDs {
             id: chunk.id,
+            link: chunk.link,
             qdrant_point_id: Some(chunk.qdrant_point_id),
+            created_at: chunk.created_at,
+            updated_at: chunk.updated_at,
+            tag_set: chunk.tag_set,
+            metadata: chunk.metadata,
             tracking_id: chunk.tracking_id,
-            weight: chunk.weight,
             time_stamp: chunk.time_stamp,
+            weight: chunk.weight,
         }
     }
 }
