@@ -1,7 +1,8 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan,
-    IngestSpecificChunkMetadata, Pool, RedisPool, ServerDatasetConfiguration, UnifiedId,
+    ChatMessageProxy, ChunkMetadata, ChunkMetadataIDs, ChunkMetadataWithFileData,
+    DatasetAndOrgWithSubAndPlan, IngestSpecificChunkMetadata, Pool, RedisPool, ScoreIDs,
+    SearchChunkQueryIDsResponseBody, ServerDatasetConfiguration, UnifiedId,
 };
 use crate::errors::{DefaultError, ServiceError};
 use crate::get_env;
@@ -1010,6 +1011,8 @@ pub struct SearchChunkData {
     pub highlight_delimiters: Option<Vec<String>>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold.
     pub score_threshold: Option<f32>,
+    /// Set only_ids to true to only return the ids and tracking ids of the chunks. This is useful for when you want to get the ids of the chunks to use in another request. Default is false.
+    pub only_ids: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
@@ -1030,6 +1033,12 @@ pub struct SearchChunkData {
 pub struct ScoreChunkDTO {
     pub metadata: Vec<ChunkMetadataWithFileData>,
     pub score: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+pub enum ChunkMetadataTypes {
+    IDs(Vec<ChunkMetadataIDs>),
+    MetadataWithFileData(Vec<ChunkMetadataWithFileData>),
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Debug)]
@@ -1126,7 +1135,7 @@ pub async fn search_chunk(
             }
 
             search_full_text_chunks(
-                data,
+                data.clone(),
                 parsed_query,
                 page,
                 pool,
@@ -1137,7 +1146,7 @@ pub async fn search_chunk(
         }
         "hybrid" => {
             search_hybrid_chunks(
-                data,
+                data.clone(),
                 parsed_query,
                 page,
                 pool,
@@ -1148,7 +1157,7 @@ pub async fn search_chunk(
         }
         _ => {
             search_semantic_chunks(
-                data,
+                data.clone(),
                 parsed_query,
                 page,
                 pool,
@@ -1161,6 +1170,23 @@ pub async fn search_chunk(
     };
 
     transaction.finish();
+
+    if data.only_ids.unwrap_or(false) {
+        let ids = result_chunks
+            .score_chunks
+            .iter()
+            .map(|score_chunk| <ScoreChunkDTO as Clone>::clone(&(*score_chunk)).into())
+            .collect::<Vec<ScoreIDs>>();
+
+        let res = SearchChunkQueryIDsResponseBody {
+            score_chunks: ids,
+            total_chunk_pages: result_chunks.total_chunk_pages,
+        };
+
+        return Ok(HttpResponse::Ok()
+            .insert_header((Timer::header_key(), timer.header_value()))
+            .json(res));
+    }
 
     Ok(HttpResponse::Ok()
         .insert_header((Timer::header_key(), timer.header_value()))
@@ -1254,6 +1280,8 @@ pub struct RecommendChunksRequest {
     pub filters: Option<ChunkFilter>,
     /// The number of chunks to return. This is the number of chunks which will be returned in the response. The default is 10.
     pub limit: Option<u64>,
+    /// Set only_ids to true to only return the ids and tracking ids of the chunks. This is useful for when you want to get the ids of the chunks to use in another request. Default is false.
+    pub only_ids: Option<bool>,
 }
 
 /// Get Recommended Chunks
@@ -1371,7 +1399,7 @@ pub async fn get_recommended_chunks(
         limit,
         dataset_org_plan_sub.dataset.id,
         server_dataset_config,
-        pool.clone()
+        pool.clone(),
     )
     .await
     .map_err(|err| {
@@ -1387,6 +1415,15 @@ pub async fn get_recommended_chunks(
                     err
                 ))
             })?;
+
+    if data.only_ids.unwrap_or(false) {
+        let res = recommended_chunk_metadatas
+            .into_iter()
+            .map(|chunk| chunk.into())
+            .collect::<Vec<ChunkMetadataIDs>>();
+
+        return Ok(HttpResponse::Ok().json(res));
+    }
 
     Ok(HttpResponse::Ok().json(recommended_chunk_metadatas))
 }

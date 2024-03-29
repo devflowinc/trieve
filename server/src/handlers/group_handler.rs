@@ -5,7 +5,8 @@ use super::{
 use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFile, ChunkGroupBookmark, ChunkMetadataWithFileData,
-        DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration, UnifiedId,
+        DatasetAndOrgWithSubAndPlan, GroupIDsDTO, Pool, ScoreIDs, SearchGroupIDsResult,
+        SearchOverGroupsIDsResponseBody, ServerDatasetConfiguration, UnifiedId,
     },
     errors::ServiceError,
     operators::{
@@ -877,6 +878,8 @@ pub struct ReccomendGroupChunksRequest {
     pub limit: Option<u64>,
     /// The number of chunks to fetch for each group. This is the number of chunks which will be returned in the response for each group. The default is 10.
     pub group_size: Option<u32>,
+    /// Set only_ids to true to only return the ids and tracking ids of the chunks. This is useful for when you want to get the ids of the chunks to use in another request. Default is false.
+    pub only_ids: Option<bool>,
 }
 
 /// Get Recommended Groups
@@ -1023,6 +1026,22 @@ pub async fn get_recommended_groups(
     let recommended_chunk_metadatas =
         get_metadata_from_groups(group_query_result, Some(false), pool).await?;
 
+    if data.only_ids.unwrap_or(false) {
+        let res = recommended_chunk_metadatas
+            .into_iter()
+            .map(|metadata| GroupIDsDTO {
+                group_id: metadata.group_id,
+                metadata: metadata
+                    .metadata
+                    .into_iter()
+                    .map(|chunk| chunk.into())
+                    .collect::<Vec<ScoreIDs>>(),
+            })
+            .collect::<Vec<GroupIDsDTO>>();
+
+        return Ok(HttpResponse::Ok().json(res));
+    }
+
     Ok(HttpResponse::Ok().json(recommended_chunk_metadatas))
 }
 
@@ -1053,6 +1072,8 @@ pub struct SearchWithinGroupData {
     pub highlight_delimiters: Option<Vec<String>>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold.
     pub score_threshold: Option<f32>,
+    /// Set only_ids to true to only return the ids of the chunks in the result set. If not specified, this defaults to false.
+    pub only_ids: Option<bool>,
 }
 
 impl From<SearchWithinGroupData> for SearchChunkData {
@@ -1069,6 +1090,7 @@ impl From<SearchWithinGroupData> for SearchChunkData {
             highlight_results: data.highlight_results,
             highlight_delimiters: data.highlight_delimiters,
             score_threshold: data.score_threshold,
+            only_ids: data.only_ids,
         }
     }
 }
@@ -1147,7 +1169,7 @@ pub async fn search_within_group(
             }
 
             search_full_text_groups(
-                data,
+                data.clone(),
                 parsed_query,
                 group,
                 page,
@@ -1159,7 +1181,7 @@ pub async fn search_within_group(
         }
         "hybrid" => {
             search_hybrid_groups(
-                data,
+                data.clone(),
                 parsed_query,
                 group,
                 page,
@@ -1171,7 +1193,7 @@ pub async fn search_within_group(
         }
         _ => {
             search_semantic_groups(
-                data,
+                data.clone(),
                 parsed_query,
                 group,
                 page,
@@ -1182,6 +1204,22 @@ pub async fn search_within_group(
             .await?
         }
     };
+
+    if data.only_ids.unwrap_or(false) {
+        let ids = result_chunks
+            .bookmarks
+            .into_iter()
+            .map(|metadata| metadata.into())
+            .collect::<Vec<ScoreIDs>>();
+
+        let res = SearchGroupIDsResult {
+            bookmarks: ids,
+            group: result_chunks.group,
+            total_pages: result_chunks.total_pages,
+        };
+
+        return Ok(HttpResponse::Ok().json(res));
+    }
 
     Ok(HttpResponse::Ok().json(result_chunks))
 }
@@ -1208,6 +1246,8 @@ pub struct SearchOverGroupsData {
     pub score_threshold: Option<f32>,
     // Group_size is the number of chunks to fetch for each group.
     pub group_size: Option<u32>,
+    /// Set only_ids to true to only return the ids of the chunks in the result set. If not specified, this defaults to false.
+    pub only_ids: Option<bool>,
 }
 
 /// Search Over Groups
@@ -1222,6 +1262,9 @@ pub struct SearchOverGroupsData {
     responses(
         (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchOverGroupsResponseBody),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
 )]
 #[tracing::instrument(skip(pool))]
@@ -1250,7 +1293,7 @@ pub async fn search_over_groups(
             }
 
             full_text_search_over_groups(
-                data,
+                data.clone(),
                 parsed_query,
                 page,
                 pool,
@@ -1261,7 +1304,7 @@ pub async fn search_over_groups(
         }
         "hybrid" => {
             hybrid_search_over_groups(
-                data,
+                data.clone(),
                 parsed_query,
                 page,
                 pool,
@@ -1272,7 +1315,7 @@ pub async fn search_over_groups(
         }
         _ => {
             semantic_search_over_groups(
-                data,
+                data.clone(),
                 parsed_query,
                 page,
                 pool,
@@ -1282,6 +1325,28 @@ pub async fn search_over_groups(
             .await?
         }
     };
+
+    if data.only_ids.unwrap_or(false) {
+        let ids = result_chunks
+            .group_chunks
+            .into_iter()
+            .map(|metadata| GroupIDsDTO {
+                group_id: metadata.group_id,
+                metadata: metadata
+                    .metadata
+                    .into_iter()
+                    .map(|chunk| chunk.into())
+                    .collect::<Vec<ScoreIDs>>(),
+            })
+            .collect::<Vec<GroupIDsDTO>>();
+
+        let res = SearchOverGroupsIDsResponseBody {
+            group_chunks: ids,
+            total_chunk_pages: result_chunks.total_chunk_pages,
+        };
+
+        return Ok(HttpResponse::Ok().json(res));
+    }
 
     Ok(HttpResponse::Ok().json(result_chunks))
 }
