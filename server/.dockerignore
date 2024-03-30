@@ -1,4 +1,3 @@
-target
 .env
 Dockerfile.no-ocr
 Dockerfile.ocr
