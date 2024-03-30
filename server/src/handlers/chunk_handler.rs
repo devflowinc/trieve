@@ -1,8 +1,8 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
     ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan,
-    IngestSpecificChunkMetadata, Pool, RedisPool, ScoreIDs, SearchChunkQueryIDsResponseBody,
-    ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
+    IngestSpecificChunkMetadata, Pool, RedisPool, ScoreSlimChunks,
+    SearchSlimChunkQueryResponseBody, ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
 };
 use crate::errors::{DefaultError, ServiceError};
 use crate::get_env;
@@ -1093,7 +1093,7 @@ pub fn parse_query(query: String) -> ParsedQuery {
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 #[serde(untagged)]
 pub enum SearchChunkResponseTypes {
-    SearchChunkQueryIDsResponseBody(SearchChunkQueryIDsResponseBody),
+    SearchSlimChunkQueryResponseBody(SearchSlimChunkQueryResponseBody),
     SearchChunkQueryResponseBody(SearchChunkQueryResponseBody),
 }
 
@@ -1188,9 +1188,9 @@ pub async fn search_chunk(
             .score_chunks
             .iter()
             .map(|score_chunk| <ScoreChunkDTO as Clone>::clone(&(*score_chunk)).into())
-            .collect::<Vec<ScoreIDs>>();
+            .collect::<Vec<ScoreSlimChunks>>();
 
-        let res = SearchChunkQueryIDsResponseBody {
+        let res = SearchSlimChunkQueryResponseBody {
             score_chunks: ids,
             total_chunk_pages: result_chunks.total_chunk_pages,
         };
