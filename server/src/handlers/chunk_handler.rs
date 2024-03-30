@@ -1090,6 +1090,13 @@ pub fn parse_query(query: String) -> ParsedQuery {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[serde(untagged)]
+pub enum SearchChunkResponseTypes {
+    SearchChunkQueryIDsResponseBody(SearchChunkQueryIDsResponseBody),
+    SearchChunkQueryResponseBody(SearchChunkQueryResponseBody),
+}
+
 /// Search
 ///
 /// This route provides the primary search functionality for the API. It can be used to search for chunks by semantic similarity, full-text similarity, or a combination of both. Results' `chunk_html` values will be modified with `<b>` tags for sub-sentence highlighting.
@@ -1100,10 +1107,7 @@ pub fn parse_query(query: String) -> ParsedQuery {
     tag = "chunk",
     request_body(content = SearchChunkData, description = "JSON request payload to semantically search for chunks (chunks)", content_type = "application/json"),
     responses(
-        (status = 200, content(
-            ("application/json" = SearchChunkQueryResponseBody),
-            ("application/json.only_ids" = SearchChunkQueryIDsResponseBody)
-        ), description = "Chunks with embedding vectors which are similar to those in the request body"),
+        (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body", body = SearchChunkResponseTypes),
 
         (status = 400, description = "Service error relating to searching", body = ErrorResponseBody),
     ),
@@ -1292,6 +1296,41 @@ pub struct RecommendChunksRequest {
     pub slim_chunks: Option<bool>,
 }
 
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[serde(untagged)]
+pub enum RecommendChunksResponseTypes {
+    #[schema(example = json!([{
+        "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "content": "Hello, world!",
+        "link": "https://trieve.ai",
+        "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "created_at": "2021-01-01T00:00:00",
+        "updated_at": "2021-01-01T00:00:00",
+        "tag_set": "tag1,tag2",
+        "chunk_html": "<p>Hello, world!</p>",
+        "metadata": {"key": "value"},
+        "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "time_stamp": "2021-01-01T00:00:00",
+        "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "weight": 0.5,
+    }]))]
+    Chunks(Vec<ChunkMetadata>),
+    #[schema(example = json!([{
+        "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "link": "https://trieve.ai",
+        "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "created_at": "2021-01-01T00:00:00",
+        "updated_at": "2021-01-01T00:00:00",
+        "tag_set": "tag1,tag2",
+        "metadata": {"key": "value"},
+        "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "time_stamp": "2021-01-01T00:00:00",
+        "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "weight": 0.5,
+    }]))]
+    SlimChunks(Vec<SlimChunkMetadata>),
+}
+
 /// Get Recommended Chunks
 ///
 /// Get recommendations of chunks similar to the chunks in the request. Think about this as a feature similar to the "add to playlist" recommendation feature on Spotify. This request pairs especially well with our groups endpoint.
@@ -1303,10 +1342,7 @@ pub struct RecommendChunksRequest {
     request_body(content = RecommendChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
 
-        (status = 200, content(
-            ("application/json" = Vec<ChunkMetadata>),
-            ("application/json.only_ids" = Vec<SlimChunkMetadata>)
-        ), description = "Chunks with embedding vectors which are similar to those in the request body"),
+        (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body", body = RecommendChunksResponseTypes),
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
     ),
     params(

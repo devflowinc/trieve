@@ -392,6 +392,19 @@ pub struct ChunkMetadataWithFileData {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "link": "https://trieve.ai",
+    "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "tag_set": "tag1,tag2",
+    "metadata": {"key": "value"},
+    "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "time_stamp": "2021-01-01T00:00:00",
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "weight": 0.5,
+}))]
 pub struct SlimChunkMetadata {
     pub id: uuid::Uuid,
     pub link: Option<String>,
@@ -440,6 +453,26 @@ impl From<ChunkMetadataWithFileData> for SlimChunkMetadata {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, ToSchema)]
+#[schema(
+    example = json!({
+        "metadata": [
+            {
+                "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+                "link": "https://trieve.ai",
+                "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+                "created_at": "2021-01-01T00:00:00",
+                "updated_at": "2021-01-01T00:00:00",
+                "tag_set": "tag1,tag2",
+                "metadata": {"key": "value"},
+                "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+                "time_stamp": "2021-01-01T00:00:00",
+                "weight": 0.5,
+            }
+        ],
+        "score": 0.5,
+    })
+
+)]
 pub struct ScoreIDs {
     pub metadata: Vec<SlimChunkMetadata>,
     pub score: f64,
@@ -461,6 +494,28 @@ pub struct SearchChunkQueryIDsResponseBody {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[schema(example = json!({
+    "group_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "metadata": [
+        {
+            "metadata": [
+                {
+                    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+                    "link": "https://trieve.ai",
+                    "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+                    "created_at": "2021-01-01T00:00:00",
+                    "updated_at": "2021-01-01T00:00:00",
+                    "tag_set": "tag1,tag2",
+                    "metadata": {"key": "value"},
+                    "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+                    "time_stamp": "2021-01-01T00:00:00",
+                    "weight": 0.5,
+                }
+            ],
+            "score": 0.5,
+        }
+    ],
+}))]
 pub struct GroupIDsDTO {
     pub group_id: uuid::Uuid,
     pub metadata: Vec<ScoreIDs>,

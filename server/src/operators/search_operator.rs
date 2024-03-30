@@ -649,6 +649,29 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
     })
 }
 
+
+#[schema(example = json!({
+    "group_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "metadata": [
+        {
+            "metadata": [
+                {
+                    "id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+                    "content": "This is a test content",
+                    "link": "https://www.google.com",
+                    "tag_set": "test",
+                    "metadata": {
+                        "key": "value"
+                    },
+                    "tracking_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+                    "time_stamp": "2021-01-01T00:00:00Z",
+                    "weight": 1.0
+                }
+            ],
+            "score": 0.5
+        }
+    ]
+}))]
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct GroupScoreChunkDTO {
     pub group_id: uuid::Uuid,

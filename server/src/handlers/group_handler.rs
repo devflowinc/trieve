@@ -18,7 +18,8 @@ use crate::{
         search_operator::{
             full_text_search_over_groups, get_metadata_from_groups, hybrid_search_over_groups,
             search_full_text_groups, search_hybrid_groups, search_semantic_groups,
-            semantic_search_over_groups, SearchOverGroupsQueryResult,
+            semantic_search_over_groups, GroupScoreChunkDTO, SearchOverGroupsQueryResult,
+            SearchOverGroupsResponseBody,
         },
     },
 };
@@ -882,10 +883,59 @@ pub struct ReccomendGroupChunksRequest {
     pub slim_chunks: Option<bool>,
 }
 
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[serde(untagged)]
+pub enum RecommendGroupChunkResponseTypes {
+    #[schema(example = json!([{
+        "group_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "metadata": [
+            {
+                "metadata": [
+                    {
+                        "id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+                        "content": "This is a test content",
+                        "link": "https://www.google.com",
+                        "tag_set": "test",
+                        "metadata": {
+                            "key": "value"
+                        },
+                        "tracking_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+                        "time_stamp": "2021-01-01T00:00:00Z",
+                        "weight": 1.0
+                    }
+                ],
+                "score": 0.5
+            }
+        ]
+    }]))]
+    GroupIDsDTO(Vec<GroupIDsDTO>),
+    #[schema(example = json!({
+        "group_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "metadata": [
+            {
+                "metadata": [
+                    {
+                        "id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+                        "link": "https://www.google.com",
+                        "tag_set": "test",
+                        "metadata": {
+                            "key": "value"
+                        },
+                        "tracking_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+                        "time_stamp": "2021-01-01T00:00:00Z",
+                        "weight": 1.0
+                    }
+                ],
+                "score": 0.5
+            }
+        ]
+    }))]
+    GroupScoreChunkDTO(Vec<GroupScoreChunkDTO>),
+}
+
 /// Get Recommended Groups
 ///
 /// Route to get recommended groups. This route will return groups which are similar to the groups in the request body.
-
 #[utoipa::path(
     post,
     path = "/chunk_group/recommend",
@@ -893,10 +943,7 @@ pub struct ReccomendGroupChunksRequest {
     tag = "chunk_group",
     request_body(content = ReccomendGroupChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON body representing the groups which are similar to the groups in the request", content(
-            ("application/json" = Vec<GroupScoreChunkDTO>),
-            ("application/json.only_ids" = Vec<GroupIDsDTO>)
-        )),
+        (status = 200, description = "JSON body representing the groups which are similar to the groups in the request", body = RecommendGroupChunkResponseTypes),
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
     ),
     params(
@@ -1105,6 +1152,13 @@ pub struct SearchGroupsResult {
     pub total_pages: i64,
 }
 
+#[derive(Serialize, Deserialize, ToSchema)]
+#[serde(untagged)]
+pub enum SearchWithinGroupResponseTypes {
+    SearchGroupsResult(SearchGroupsResult),
+    SearchGroupIDsResult(SearchGroupIDsResult),
+}
+
 /// Search Within Group
 ///
 /// This route allows you to search only within a group. This is useful for when you only want search results to contain chunks which are members of a specific group. If choosing hybrid search, the results will be re-ranked using BAAI/bge-reranker-large.
@@ -1115,10 +1169,7 @@ pub struct SearchGroupsResult {
     tag = "chunk_group",
     request_body(content = SearchWithinGroupData, description = "JSON request payload to semantically search a group", content_type = "application/json"),
     responses(
-        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", content(
-            ("application/json" = SearchGroupsResult),
-            ("application/json.only_ids" = SearchGroupIDsResult),
-        )),
+        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchWithinGroupResponseTypes),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
     ),
     params(
@@ -1256,6 +1307,13 @@ pub struct SearchOverGroupsData {
     pub slim_chunks: Option<bool>,
 }
 
+#[derive(Serialize, Deserialize, ToSchema)]
+#[serde(untagged)]
+pub enum SearchOverGroupsResponseTypes {
+    SearchOverGroupsResponseBody(SearchOverGroupsResponseBody),
+    SearchOverGroupsIDsResponseBody(SearchOverGroupsIDsResponseBody),
+}
+
 /// Search Over Groups
 ///
 /// This route allows you to get groups as results instead of chunks. Each group returned will have the matching chunks sorted by similarity within the group. This is useful for when you want to get groups of chunks which are similar to the search query. If choosing hybrid search, the results will be re-ranked using BAAI/bge-reranker-large. Compatible with semantic, fulltext, or hybrid search modes.
@@ -1266,10 +1324,7 @@ pub struct SearchOverGroupsData {
     tag = "chunk_group",
     request_body(content = SearchOverGroupsData, description = "JSON request payload to semantically search over groups", content_type = "application/json"),
     responses(
-        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", content(
-            ("application/json" = SearchOverGroupsResponseBody),
-            ("application/json.only_ids" = SearchOverGroupsIDsResponseBody),
-        )),
+        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchOverGroupsResponseTypes),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
     ),
     params(
