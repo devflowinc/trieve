@@ -680,6 +680,10 @@ pub async fn readd_error_to_queue(
     }
 
     if let IngestionMessage::Upload(mut payload) = message {
+        let old_paylaod_message = serde_json::to_string(&payload).map_err(|_| {
+            ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
+        })?;
+
         payload.ingest_specific_chunk_metadata.attempt_number += 1;
 
         if payload.ingest_specific_chunk_metadata.attempt_number == 3 {
@@ -704,6 +708,14 @@ pub async fn readd_error_to_queue(
             error,
             payload.ingest_specific_chunk_metadata.attempt_number
         );
+
+        // Remove from the processing queue
+        let _ = redis::cmd("LREM")
+            .arg("processing")
+            .arg(1)
+            .arg(old_paylaod_message)
+            .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
+            .await;
 
         redis::cmd("lpush")
             .arg("ingestion")

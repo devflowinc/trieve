@@ -360,7 +360,7 @@ pub async fn create_chunk(
         .filter_map(|msg| serde_json::to_string(&msg).ok())
         .collect();
 
-    let pos_in_queue = redis::cmd("lpush")
+    let pos_in_queue = redis::cmd("rpush")
         .arg("ingestion")
         .arg(&serialized_messages)
         .query_async(&mut *redis_conn)
@@ -646,7 +646,7 @@ pub async fn update_chunk(
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    redis::cmd("lpush")
+    redis::cmd("rpush")
         .arg("ingestion")
         .arg(serde_json::to_string(&message)?)
         .query_async(&mut *redis_conn)
@@ -787,7 +787,7 @@ pub async fn update_chunk_by_tracking_id(
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    redis::cmd("lpush")
+    redis::cmd("rpush")
         .arg("ingestion")
         .arg(serde_json::to_string(&message)?)
         .query_async(&mut *redis_conn)
