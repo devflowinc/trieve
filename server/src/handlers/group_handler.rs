@@ -5,8 +5,9 @@ use super::{
 use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFile, ChunkGroupBookmark, ChunkMetadataWithFileData,
-        DatasetAndOrgWithSubAndPlan, GroupIDsDTO, Pool, ScoreIDs, SearchGroupIDsResult,
-        SearchOverGroupsIDsResponseBody, ServerDatasetConfiguration, UnifiedId,
+        DatasetAndOrgWithSubAndPlan, GroupSlimChunksDTO, Pool, ScoreSlimChunks,
+        SearchGroupSlimChunksResult, SearchOverGroupsSlimChunksResponseBody,
+        ServerDatasetConfiguration, UnifiedId,
     },
     errors::ServiceError,
     operators::{
@@ -908,7 +909,7 @@ pub enum RecommendGroupChunkResponseTypes {
             }
         ]
     }]))]
-    GroupIDsDTO(Vec<GroupIDsDTO>),
+    GroupSlimChunksDTO(Vec<GroupSlimChunksDTO>),
     #[schema(example = json!({
         "group_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
         "metadata": [
@@ -1079,15 +1080,15 @@ pub async fn get_recommended_groups(
     if data.slim_chunks.unwrap_or(false) {
         let res = recommended_chunk_metadatas
             .into_iter()
-            .map(|metadata| GroupIDsDTO {
+            .map(|metadata| GroupSlimChunksDTO {
                 group_id: metadata.group_id,
                 metadata: metadata
                     .metadata
                     .into_iter()
                     .map(|chunk| chunk.into())
-                    .collect::<Vec<ScoreIDs>>(),
+                    .collect::<Vec<ScoreSlimChunks>>(),
             })
-            .collect::<Vec<GroupIDsDTO>>();
+            .collect::<Vec<GroupSlimChunksDTO>>();
 
         return Ok(HttpResponse::Ok().json(res));
     }
@@ -1156,7 +1157,7 @@ pub struct SearchGroupsResult {
 #[serde(untagged)]
 pub enum SearchWithinGroupResponseTypes {
     SearchGroupsResult(SearchGroupsResult),
-    SearchGroupIDsResult(SearchGroupIDsResult),
+    SearchGroupSlimChunksResult(SearchGroupSlimChunksResult),
 }
 
 /// Search Within Group
@@ -1267,9 +1268,9 @@ pub async fn search_within_group(
             .bookmarks
             .into_iter()
             .map(|metadata| metadata.into())
-            .collect::<Vec<ScoreIDs>>();
+            .collect::<Vec<ScoreSlimChunks>>();
 
-        let res = SearchGroupIDsResult {
+        let res = SearchGroupSlimChunksResult {
             bookmarks: ids,
             group: result_chunks.group,
             total_pages: result_chunks.total_pages,
@@ -1311,7 +1312,7 @@ pub struct SearchOverGroupsData {
 #[serde(untagged)]
 pub enum SearchOverGroupsResponseTypes {
     SearchOverGroupsResponseBody(SearchOverGroupsResponseBody),
-    SearchOverGroupsIDsResponseBody(SearchOverGroupsIDsResponseBody),
+    SearchOverGroupsSlimChunksResponseBody(SearchOverGroupsSlimChunksResponseBody),
 }
 
 /// Search Over Groups
@@ -1394,17 +1395,17 @@ pub async fn search_over_groups(
         let ids = result_chunks
             .group_chunks
             .into_iter()
-            .map(|metadata| GroupIDsDTO {
+            .map(|metadata| GroupSlimChunksDTO {
                 group_id: metadata.group_id,
                 metadata: metadata
                     .metadata
                     .into_iter()
                     .map(|chunk| chunk.into())
-                    .collect::<Vec<ScoreIDs>>(),
+                    .collect::<Vec<ScoreSlimChunks>>(),
             })
-            .collect::<Vec<GroupIDsDTO>>();
+            .collect::<Vec<GroupSlimChunksDTO>>();
 
-        let res = SearchOverGroupsIDsResponseBody {
+        let res = SearchOverGroupsSlimChunksResponseBody {
             group_chunks: ids,
             total_chunk_pages: result_chunks.total_chunk_pages,
         };

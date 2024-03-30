@@ -473,14 +473,14 @@ impl From<ChunkMetadataWithFileData> for SlimChunkMetadata {
     })
 
 )]
-pub struct ScoreIDs {
+pub struct ScoreSlimChunks {
     pub metadata: Vec<SlimChunkMetadata>,
     pub score: f64,
 }
 
-impl From<ScoreChunkDTO> for ScoreIDs {
+impl From<ScoreChunkDTO> for ScoreSlimChunks {
     fn from(score: ScoreChunkDTO) -> Self {
-        ScoreIDs {
+        ScoreSlimChunks {
             metadata: score.metadata.into_iter().map(|m| m.into()).collect(),
             score: score.score,
         }
@@ -488,8 +488,8 @@ impl From<ScoreChunkDTO> for ScoreIDs {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct SearchChunkQueryIDsResponseBody {
-    pub score_chunks: Vec<ScoreIDs>,
+pub struct SearchSlimChunkQueryResponseBody {
+    pub score_chunks: Vec<ScoreSlimChunks>,
     pub total_chunk_pages: i64,
 }
 
@@ -516,21 +516,21 @@ pub struct SearchChunkQueryIDsResponseBody {
         }
     ],
 }))]
-pub struct GroupIDsDTO {
+pub struct GroupSlimChunksDTO {
     pub group_id: uuid::Uuid,
-    pub metadata: Vec<ScoreIDs>,
+    pub metadata: Vec<ScoreSlimChunks>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
-pub struct SearchGroupIDsResult {
-    pub bookmarks: Vec<ScoreIDs>,
+pub struct SearchGroupSlimChunksResult {
+    pub bookmarks: Vec<ScoreSlimChunks>,
     pub group: ChunkGroup,
     pub total_pages: i64,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
-pub struct SearchOverGroupsIDsResponseBody {
-    pub group_chunks: Vec<GroupIDsDTO>,
+pub struct SearchOverGroupsSlimChunksResponseBody {
+    pub group_chunks: Vec<GroupSlimChunksDTO>,
     pub total_chunk_pages: i64,
 }
 
