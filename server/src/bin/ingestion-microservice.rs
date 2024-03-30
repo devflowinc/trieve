@@ -176,12 +176,15 @@ async fn ingestion_service(
             .query_async(&mut *redis_connection)
             .await;
 
-        let payload = if let Ok(payload) = payload_result {
-            if payload.len() < 2 {
+        let serialized_message = if let Ok(payload) = payload_result {
+            if payload.is_empty() {
                 continue;
             }
 
             payload
+                .first()
+                .expect("Payload must have a first element")
+                .clone()
         } else {
             log::error!("Unable to process {:?}", payload_result);
             continue;
@@ -189,9 +192,8 @@ async fn ingestion_service(
 
         let ctx = sentry::TransactionContext::new("Processing chunk", "Processing chunk");
         let transaction = sentry::start_transaction(ctx);
-        let serailized_message = &payload[1];
         let ingestion_message: IngestionMessage =
-            serde_json::from_str(serailized_message).expect("Failed to parse ingestion message");
+            serde_json::from_str(&serialized_message).expect("Failed to parse ingestion message");
         match ingestion_message.clone() {
             IngestionMessage::Upload(payload) => {
                 match upload_chunk(payload.clone(), web_pool.clone(), payload.dataset_config).await
@@ -218,13 +220,15 @@ async fn ingestion_service(
                         let _ = redis::cmd("LREM")
                             .arg("processing")
                             .arg(1)
-                            .arg(serailized_message)
+                            .arg(serialized_message)
                             .query_async::<redis::aio::MultiplexedConnection, usize>(
                                 &mut *redis_connection,
                             )
                             .await;
                     }
                     Err(err) => {
+                        log::error!("Failed to upload chunk: {:?}", err);
+
                         let _ = readd_error_to_queue(
                             ingestion_message,
                             err,
@@ -263,7 +267,7 @@ async fn ingestion_service(
                         let _ = redis::cmd("LREM")
                             .arg("processing")
                             .arg(1)
-                            .arg(serailized_message)
+                            .arg(serialized_message)
                             .query_async::<redis::aio::MultiplexedConnection, usize>(
                                 &mut *redis_connection,
                             )
@@ -660,13 +664,16 @@ pub async fn readd_error_to_queue(
     web_pool: actix_web::web::Data<models::Pool>,
     redis_pool: actix_web::web::Data<models::RedisPool>,
 ) -> Result<(), ServiceError> {
-    if let ServiceError::DuplicateTrackingId(id) = error.clone() {
+    if let ServiceError::DuplicateTrackingId(tracking_id) = error.clone() {
         let _ = create_event_query(
             Event::from_details(
                 message.get_dataset_id(),
                 models::EventType::CardActionFailed {
                     chunk_id: message.get_chunkmetadata_id(),
-                    error: format!("Failed to upload chunk tracking_id {:?}: {:?}", id, error),
+                    error: format!(
+                        "Failed to upload chunk with tracking_id: {:?}: {:?}",
+                        tracking_id, error
+                    ),
                 },
             ),
             web_pool.clone(),
@@ -709,7 +716,6 @@ pub async fn readd_error_to_queue(
             payload.ingest_specific_chunk_metadata.attempt_number
         );
 
-        // Remove from the processing queue
         let _ = redis::cmd("LREM")
             .arg("processing")
             .arg(1)
