@@ -2,6 +2,7 @@ use crate::data::models::{
     ChunkCollision, ChunkFile, ChunkFileWithName, ChunkGroupBookmark, ChunkMetadataWithFileData,
     Dataset, FullTextSearchResult, ServerDatasetConfiguration, UnifiedId,
 };
+use crate::errors::ServiceError;
 use crate::operators::model_operator::create_embeddings;
 use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::operators::search_operator::get_metadata_query;
@@ -367,7 +368,7 @@ pub async fn insert_chunk_metadata_query(
     dataset_uuid: uuid::Uuid,
     upsert_by_tracking_id: bool,
     pool: web::Data<Pool>,
-) -> Result<ChunkMetadata, DefaultError> {
+) -> Result<ChunkMetadata, ServiceError> {
     use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl::*;
@@ -395,7 +396,8 @@ pub async fn insert_chunk_metadata_query(
                 dataset_uuid,
                 pool.clone(),
             )
-            .await?;
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.to_string()))?;
 
             return Ok(updated_chunk);
         }
@@ -405,7 +407,7 @@ pub async fn insert_chunk_metadata_query(
 
     if let Some(other_tracking_id) = chunk_data.tracking_id.clone() {
         let existing_chunk = get_metadata_from_tracking_id_query(
-            other_tracking_id,
+            other_tracking_id.clone(),
             chunk_data.dataset_id,
             pool.clone(),
         )
@@ -413,9 +415,7 @@ pub async fn insert_chunk_metadata_query(
 
         if existing_chunk.is_ok() {
             log::info!("Avoided potential write conflict by pre-checking tracking_id");
-            return Err(DefaultError {
-                message: "Duplicate tracking_id",
-            });
+            return Err(ServiceError::DuplicateTrackingId(other_tracking_id));
         }
     }
 
@@ -433,28 +433,21 @@ pub async fn insert_chunk_metadata_query(
                 diesel::result::Error::DatabaseError(
                     diesel::result::DatabaseErrorKind::UniqueViolation,
                     _,
-                ) => DefaultError {
-                    message: "Duplicate tracking_id",
-                },
-                _ => DefaultError {
-                    message: "Failed to insert chunk_metadata",
-                },
+                ) => ServiceError::DuplicateTrackingId(
+                    chunk_data.tracking_id.clone().unwrap_or("".to_string()),
+                ),
+                _ => ServiceError::BadRequest("Failed to insert chunk_metadata".to_string()),
             }
         })?;
 
-    if file_uuid.is_some() {
+    if let Some(file_uuid) = file_uuid {
         diesel::insert_into(chunk_files_columns::chunk_files)
-            .values(&ChunkFile::from_details(
-                inserted_chunk.id,
-                file_uuid.expect("file_uuid should be Some"),
-            ))
+            .values(&ChunkFile::from_details(inserted_chunk.id, file_uuid))
             .execute(&mut conn)
             .await
             .map_err(|e| {
                 log::error!("Failed to insert chunk file: {:?}", e);
-                DefaultError {
-                    message: "Failed to insert chunk file",
-                }
+                ServiceError::BadRequest("Failed to insert chunk file".to_string())
             })?;
     }
 
@@ -470,13 +463,73 @@ pub async fn insert_chunk_metadata_query(
             .await
             .map_err(|e| {
                 log::error!("Failed to insert chunk into groups {:?}", e);
-                DefaultError {
-                    message: "Failed to insert chunk file",
-                }
+                ServiceError::BadRequest("Failed to insert chunk into groups".to_string())
             })?;
     }
 
     Ok(chunk_data)
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn revert_insert_chunk_metadata_query(
+    chunk_id: uuid::Uuid,
+    file_uuid: Option<uuid::Uuid>,
+    group_ids: Option<Vec<uuid::Uuid>>,
+    dataset_uuid: uuid::Uuid,
+    upsert_by_tracking_id: bool,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::chunk_files::dsl as chunk_files_columns;
+    use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
+    use crate::data::schema::chunk_metadata::dsl::*;
+
+    if upsert_by_tracking_id {
+        // TODO Properly revert here
+        return Ok(())
+    }
+
+    let mut conn = pool.get().await.expect("Failed to get connection to db");
+
+    diesel::delete(chunk_metadata.filter(id.eq(chunk_id)))
+        .execute(&mut conn)
+        .await
+        .map_err(|e| {
+            sentry::capture_message(
+                &format!("Failed to revert insert transaction: {:?}", e),
+                sentry::Level::Error,
+            );
+            log::error!("Failed to revert insert transaction: {:?}", e);
+            match e {
+                _ => ServiceError::BadRequest("Failed to revert insert transaction".to_string()),
+            }
+        })?;
+
+    if let Some(file_uuid) = file_uuid {
+        diesel::delete(
+            chunk_files_columns::chunk_files.filter(chunk_files_columns::chunk_id.eq(file_uuid)),
+        )
+        .execute(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to insert chunk file: {:?}", e);
+            ServiceError::BadRequest("Failed to insert chunk file".to_string())
+        })?;
+    }
+
+    if let Some(_) = group_ids {
+        diesel::delete(
+            chunk_group_bookmarks_columns::chunk_group_bookmarks
+                .filter(chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_id)),
+        )
+        .execute(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to insert chunk into groups {:?}", e);
+            ServiceError::BadRequest("Failed to insert chunk into groups".to_string())
+        })?;
+    }
+
+    Ok(())
 }
 
 #[tracing::instrument(skip(pool))]
