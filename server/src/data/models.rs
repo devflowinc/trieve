@@ -391,7 +391,7 @@ pub struct ChunkMetadataWithFileData {
     pub weight: f64,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable, ToSchema)]
 pub struct SlimChunkMetadata {
     pub id: uuid::Uuid,
     pub link: Option<String>,
@@ -439,7 +439,7 @@ impl From<ChunkMetadataWithFileData> for SlimChunkMetadata {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable, ToSchema)]
 pub struct ScoreIDs {
     pub metadata: Vec<SlimChunkMetadata>,
     pub score: f64,

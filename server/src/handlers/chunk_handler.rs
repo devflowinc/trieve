@@ -497,6 +497,8 @@ pub struct UpdateChunkData {
     chunk_id: Option<uuid::Uuid>,
     /// Tracking_id of the chunk you want to update. This is required to match an existing chunk.
     tracking_id: Option<String>,
+    /// Tag set is a list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them. If no tag_set is provided, the existing tag_set will be used.
+    tag_set: Option<Vec<String>>,
     /// Link of the chunk you want to update. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation. If no link is provided, the existing link will be used.
     link: Option<String>,
     /// HTML content of the chunk you want to update. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content. If no chunk_html is provided, the existing chunk_html will be used.
@@ -580,6 +582,8 @@ pub async fn update_chunk(
         .clone()
         .filter(|chunk_tracking| !chunk_tracking.is_empty());
 
+    let chunk_tag_set = chunk.tag_set.clone().map(|tag_set| tag_set.join(","));
+
     let chunk_html = match chunk.chunk_html.clone() {
         Some(chunk_html) => Some(chunk_html),
         None => chunk_metadata.chunk_html,
@@ -590,7 +594,7 @@ pub async fn update_chunk(
         "".to_string(),
         &chunk_html,
         &Some(link),
-        &chunk_metadata.tag_set,
+        &chunk_tag_set.or(chunk_metadata.tag_set),
         chunk_metadata.qdrant_point_id,
         <std::option::Option<serde_json::Value> as Clone>::clone(&chunk.metadata)
             .or(chunk_metadata.metadata),
@@ -1096,7 +1100,11 @@ pub fn parse_query(query: String) -> ParsedQuery {
     tag = "chunk",
     request_body(content = SearchChunkData, description = "JSON request payload to semantically search for chunks (chunks)", content_type = "application/json"),
     responses(
-        (status = 200, description = "chunks which are similar to the embedding vector of the search query", body = SearchChunkQueryResponseBody),
+        (status = 200, content(
+            ("application/json" = SearchChunkQueryResponseBody),
+            ("application/json.only_ids" = SearchChunkQueryIDsResponseBody)
+        ), description = "Chunks with embedding vectors which are similar to those in the request body"),
+
         (status = 400, description = "Service error relating to searching", body = ErrorResponseBody),
     ),
     params(
@@ -1294,7 +1302,11 @@ pub struct RecommendChunksRequest {
     tag = "chunk",
     request_body(content = RecommendChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON response payload containing chunks with scores which are similar to those in the request body", body = Vec<ChunkMetadataWithFileData>),
+
+        (status = 200, content(
+            ("application/json" = Vec<ChunkMetadata>),
+            ("application/json.only_ids" = Vec<SlimChunkMetadata>)
+        ), description = "Chunks with embedding vectors which are similar to those in the request body"),
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
     ),
     params(

@@ -893,7 +893,10 @@ pub struct ReccomendGroupChunksRequest {
     tag = "chunk_group",
     request_body(content = ReccomendGroupChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON response payload containing chunks with scores which are similar to those in the request body", body = Vec<GroupScoreChunkDTO>),
+        (status = 200, description = "JSON body representing the groups which are similar to the groups in the request", content(
+            ("application/json" = Vec<GroupScoreChunkDTO>),
+            ("application/json.only_ids" = Vec<GroupIDsDTO>)
+        )),
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
     ),
     params(
@@ -1112,7 +1115,10 @@ pub struct SearchGroupsResult {
     tag = "chunk_group",
     request_body(content = SearchWithinGroupData, description = "JSON request payload to semantically search a group", content_type = "application/json"),
     responses(
-        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchGroupsResult),
+        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", content(
+            ("application/json" = SearchGroupsResult),
+            ("application/json.only_ids" = SearchGroupIDsResult),
+        )),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
     ),
     params(
@@ -1260,7 +1266,10 @@ pub struct SearchOverGroupsData {
     tag = "chunk_group",
     request_body(content = SearchOverGroupsData, description = "JSON request payload to semantically search over groups", content_type = "application/json"),
     responses(
-        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchOverGroupsResponseBody),
+        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", content(
+            ("application/json" = SearchOverGroupsResponseBody),
+            ("application/json.only_ids" = SearchOverGroupsIDsResponseBody),
+        )),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
     ),
     params(
