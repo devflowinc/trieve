@@ -9,7 +9,8 @@ use trieve_server::handlers::chunk_handler::{UpdateIngestionMessage, UploadInges
 use trieve_server::handlers::group_handler::dataset_owns_group;
 use trieve_server::operators::chunk_operator::{
     get_metadata_from_point_ids, get_qdrant_id_from_chunk_id_query, insert_chunk_metadata_query,
-    insert_duplicate_chunk_metadata_query, update_chunk_metadata_query,
+    insert_duplicate_chunk_metadata_query, revert_insert_chunk_metadata_query,
+    update_chunk_metadata_query,
 };
 use trieve_server::operators::event_operator::create_event_query;
 use trieve_server::operators::model_operator::{create_embeddings, get_splade_embedding};
@@ -27,6 +28,22 @@ use trieve_server::{establish_connection, get_env};
 pub enum IngestionMessage {
     Upload(UploadIngestionMessage),
     Update(UpdateIngestionMessage),
+}
+
+impl IngestionMessage {
+    fn get_dataset_id(&self) -> uuid::Uuid {
+        match self {
+            IngestionMessage::Update(message) => message.dataset_id,
+            IngestionMessage::Upload(message) => message.dataset_id,
+        }
+    }
+
+    fn get_chunkmetadata_id(&self) -> uuid::Uuid {
+        match self {
+            IngestionMessage::Update(message) => message.chunk_metadata.id,
+            IngestionMessage::Upload(message) => message.ingest_specific_chunk_metadata.id,
+        }
+    }
 }
 
 fn main() {
@@ -152,8 +169,9 @@ async fn ingestion_service(
     };
 
     loop {
-        let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpop")
+        let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpoplpush")
             .arg("ingestion")
+            .arg("processing")
             .arg(1.0)
             .query_async(&mut *redis_connection)
             .await;
@@ -171,10 +189,10 @@ async fn ingestion_service(
 
         let ctx = sentry::TransactionContext::new("Processing chunk", "Processing chunk");
         let transaction = sentry::start_transaction(ctx);
-
-        let payload: IngestionMessage =
-            serde_json::from_str(&payload[1]).expect("Failed to parse ingestion message");
-        match payload {
+        let serailized_message = &payload[1];
+        let ingestion_message: IngestionMessage =
+            serde_json::from_str(serailized_message).expect("Failed to parse ingestion message");
+        match ingestion_message.clone() {
             IngestionMessage::Upload(payload) => {
                 match upload_chunk(payload.clone(), web_pool.clone(), payload.dataset_config).await
                 {
@@ -196,23 +214,24 @@ async fn ingestion_service(
                         .map_err(|err| {
                             log::error!("Failed to create event: {:?}", err);
                         });
+
+                        let _ = redis::cmd("LREM")
+                            .arg("processing")
+                            .arg(1)
+                            .arg(serailized_message)
+                            .query_async::<redis::aio::MultiplexedConnection, usize>(
+                                &mut *redis_connection,
+                            )
+                            .await;
                     }
                     Err(err) => {
-                        log::error!("Failed to upload chunk: {:?}", err);
-                        let _ = create_event_query(
-                            Event::from_details(
-                                payload.ingest_specific_chunk_metadata.dataset_id,
-                                models::EventType::CardActionFailed {
-                                    chunk_id: payload.ingest_specific_chunk_metadata.id,
-                                    error: format!("Failed to upload chunk: {:?}", err),
-                                },
-                            ),
+                        let _ = readd_error_to_queue(
+                            ingestion_message,
+                            err,
                             web_pool.clone(),
+                            redis_pool.clone(),
                         )
-                        .await
-                        .map_err(|err| {
-                            log::error!("Failed to create event: {:?}", err);
-                        });
+                        .await;
                     }
                 }
             }
@@ -240,23 +259,24 @@ async fn ingestion_service(
                         .map_err(|err| {
                             log::error!("Failed to create event: {:?}", err);
                         });
+
+                        let _ = redis::cmd("LREM")
+                            .arg("processing")
+                            .arg(1)
+                            .arg(serailized_message)
+                            .query_async::<redis::aio::MultiplexedConnection, usize>(
+                                &mut *redis_connection,
+                            )
+                            .await;
                     }
                     Err(err) => {
-                        log::error!("Failed to upload chunk: {:?}", err);
-                        let _ = create_event_query(
-                            Event::from_details(
-                                payload.dataset_id,
-                                models::EventType::CardActionFailed {
-                                    chunk_id: payload.chunk_metadata.id,
-                                    error: format!("Failed to upload chunk: {:?}", err),
-                                },
-                            ),
+                        let _ = readd_error_to_queue(
+                            ingestion_message,
+                            err,
                             web_pool.clone(),
+                            redis_pool.clone(),
                         )
-                        .await
-                        .map_err(|err| {
-                            log::error!("Failed to create event: {:?}", err);
-                        });
+                        .await;
                     }
                 }
             }
@@ -479,10 +499,7 @@ async fn upload_chunk(
             payload.upsert_by_tracking_id,
             web_pool.clone(),
         )
-        .await
-        .map_err(|err| {
-            ServiceError::InternalServerError(format!("Failed to insert chunk metadata: {:?}", err))
-        })?;
+        .await?;
 
         insert_tx.finish();
 
@@ -491,21 +508,31 @@ async fn upload_chunk(
         let insert_tx =
             transaction.start_child("calling_create_qdrant_point", "calling_create_qdrant_point");
 
-        create_new_qdrant_point_query(
+        let create_point_result = create_new_qdrant_point_query(
             qdrant_point_id,
             embedding_vector,
             chunk_metadata.clone(),
             splade_vector,
-            payload.chunk.group_ids,
+            payload.chunk.group_ids.clone(),
             dataset_config.clone(),
         )
-        .await
-        .map_err(|err| {
-            ServiceError::InternalServerError(format!(
-                "Failed to create new qdrant point: {:?}",
-                err
-            ))
-        })?;
+        .await;
+
+        if let Err(err) = create_point_result {
+            if !payload.upsert_by_tracking_id {
+                // remove added chunk_id
+                revert_insert_chunk_metadata_query(
+                    inserted_chunk.id,
+                    payload.chunk.file_id,
+                    payload.chunk.group_ids.clone(),
+                    payload.dataset_id,
+                    payload.upsert_by_tracking_id,
+                    web_pool.clone(),
+                )
+                .await?;
+            }
+            return Err(err);
+        }
 
         insert_tx.finish();
     }
@@ -545,10 +572,9 @@ async fn update_chunk(
         ))?
         .clone();
 
-    let qdrant_point_id =
-        get_qdrant_id_from_chunk_id_query(chunk_metadata.id, web_pool.clone())
-            .await
-            .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
+    let qdrant_point_id = get_qdrant_id_from_chunk_id_query(chunk_metadata.id, web_pool.clone())
+        .await
+        .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
 
     let splade_vector = if server_dataset_config.FULLTEXT_ENABLED {
         match get_splade_embedding(&content, "doc").await {
@@ -623,6 +649,68 @@ async fn update_chunk(
         )
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    }
+
+    Ok(())
+}
+
+pub async fn readd_error_to_queue(
+    message: IngestionMessage,
+    error: ServiceError,
+    web_pool: actix_web::web::Data<models::Pool>,
+    redis_pool: actix_web::web::Data<models::RedisPool>,
+) -> Result<(), ServiceError> {
+    if let ServiceError::DuplicateTrackingId(id) = error.clone() {
+        let _ = create_event_query(
+            Event::from_details(
+                message.get_dataset_id(),
+                models::EventType::CardActionFailed {
+                    chunk_id: message.get_chunkmetadata_id(),
+                    error: format!("Failed to upload chunk tracking_id {:?}: {:?}", id, error),
+                },
+            ),
+            web_pool.clone(),
+        )
+        .await
+        .map_err(|err| {
+            log::error!("Failed to create event: {:?}", err);
+        });
+
+        return Ok(());
+    }
+
+    if let IngestionMessage::Upload(mut payload) = message {
+        payload.ingest_specific_chunk_metadata.attempt_number += 1;
+
+        if payload.ingest_specific_chunk_metadata.attempt_number == 3 {
+            log::error!("Failed to insert data 3 times quitting {:?}", error);
+            return Err(ServiceError::InternalServerError(format!(
+                "Failed to create new qdrant point: {:?}",
+                error
+            )));
+        }
+
+        let new_payload_message = serde_json::to_string(&payload).map_err(|_| {
+            ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
+        })?;
+
+        let mut redis_conn = redis_pool
+            .get()
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+        log::error!(
+            "Failed to insert data, re-adding {:?} retry: {:?}",
+            error,
+            payload.ingest_specific_chunk_metadata.attempt_number
+        );
+
+        redis::cmd("lpush")
+            .arg("ingestion")
+            .arg(&new_payload_message)
+            .query_async(&mut *redis_conn)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?
     }
 
     Ok(())

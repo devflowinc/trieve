@@ -18,13 +18,16 @@ pub struct ErrorResponseBody {
     pub message: String,
 }
 
-#[derive(Debug, Display)]
+#[derive(Debug, Display, Clone)]
 pub enum ServiceError {
     #[display(fmt = "Internal Server Error: {_0}")]
     InternalServerError(String),
 
     #[display(fmt = "BadRequest: {_0}")]
     BadRequest(String),
+
+    #[display(fmt = "BadRequest: Duplicate Tracking Id Found")]
+    DuplicateTrackingId(String),
 
     #[display(fmt = "Unauthorized")]
     Unauthorized,
@@ -39,10 +42,7 @@ pub enum ServiceError {
 // impl ResponseError trait allows to convert our errors into http responses with appropriate data
 impl ResponseError for ServiceError {
     fn error_response(&self) -> HttpResponse {
-        sentry::capture_message(
-            &format!("Error {:?}", self),
-            sentry::Level::Error,
-        );
+        sentry::capture_message(&format!("Error {:?}", self), sentry::Level::Error);
         match self {
             ServiceError::InternalServerError(ref message) => HttpResponse::InternalServerError()
                 .json(ErrorResponseBody {
@@ -51,6 +51,11 @@ impl ResponseError for ServiceError {
             ServiceError::BadRequest(ref message) => {
                 HttpResponse::BadRequest().json(ErrorResponseBody {
                     message: message.to_string(),
+                })
+            }
+            ServiceError::DuplicateTrackingId(ref id) => {
+                HttpResponse::BadRequest().json(ErrorResponseBody {
+                    message: format!("Stoped overwriting data, Duplicate Tracking Id {:?}", id),
                 })
             }
             ServiceError::Unauthorized => HttpResponse::Unauthorized().json("Unauthorized"),

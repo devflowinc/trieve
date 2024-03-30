@@ -250,7 +250,7 @@ pub async fn create_new_qdrant_point_query(
     splade_vector: Vec<(u32, f32)>,
     group_ids: Option<Vec<uuid::Uuid>>,
     config: ServerDatasetConfiguration,
-) -> Result<(), actix_web::Error> {
+) -> Result<(), ServiceError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
     let qdrant = get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY))

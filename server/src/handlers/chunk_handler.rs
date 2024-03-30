@@ -338,6 +338,7 @@ pub async fn create_chunk(
                 id: chunk_metadata.id,
                 qdrant_point_id: chunk_metadata.qdrant_point_id,
                 dataset_id: count_dataset_id,
+                attempt_number: 0
             },
             chunk: chunk_only_group_ids.clone(),
             dataset_id: count_dataset_id,

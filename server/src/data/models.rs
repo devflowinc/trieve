@@ -333,6 +333,7 @@ pub struct IngestSpecificChunkMetadata {
     pub id: uuid::Uuid,
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub dataset_id: uuid::Uuid,
+    pub attempt_number: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Selectable, Insertable, Clone)]
