@@ -541,3 +541,98 @@ pub async fn get_org_users_by_id_query(
         })
         .collect_vec())
 }
+
+#[tracing::instrument(skip(pool))]
+pub async fn get_arbitrary_org_owner_from_org_id(
+    org_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<SlimUser, DefaultError> {
+    use crate::data::schema::organizations::dsl as organization_columns;
+    use crate::data::schema::user_organizations::dsl as user_organizations_columns;
+    use crate::data::schema::users::dsl as users_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    let user_orgs_orgs: (User, UserOrganization, Organization) = users_columns::users
+        .inner_join(user_organizations_columns::user_organizations)
+        .inner_join(
+            organization_columns::organizations
+                .on(organization_columns::id.eq(user_organizations_columns::organization_id)),
+        )
+        .filter(user_organizations_columns::organization_id.eq(org_id))
+        .filter(user_organizations_columns::role.eq(2))
+        .select((
+            User::as_select(),
+            UserOrganization::as_select(),
+            Organization::as_select(),
+        ))
+        .first::<(User, UserOrganization, Organization)>(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!(
+                "Error getting arbitrary org owner from org id in get_arbitrary_org_owner_from_org_id: {:?}",
+                e
+            );
+
+            DefaultError {
+                message: "Relevant organization had no owner level users",
+            }
+        }
+    )?;
+
+    Ok(SlimUser::from_details(
+        user_orgs_orgs.0,
+        vec![user_orgs_orgs.1],
+        vec![user_orgs_orgs.2],
+    ))
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn get_arbitrary_org_owner_from_dataset_id(
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<SlimUser, DefaultError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+    use crate::data::schema::organizations::dsl as organization_columns;
+    use crate::data::schema::user_organizations::dsl as user_organizations_columns;
+    use crate::data::schema::users::dsl as users_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    let user_orgs_orgs: (User, UserOrganization, Organization) = users_columns::users
+        .inner_join(user_organizations_columns::user_organizations)
+        .inner_join(
+            organization_columns::organizations
+                .on(organization_columns::id.eq(user_organizations_columns::organization_id)),
+        )
+        .inner_join(
+            datasets_columns::datasets
+                .on(datasets_columns::organization_id.eq(organization_columns::id)),
+        )
+        .filter(datasets_columns::id.eq(dataset_id))
+        .filter(user_organizations_columns::role.eq(2))
+        .select((
+            User::as_select(),
+            UserOrganization::as_select(),
+            Organization::as_select(),
+        ))
+        .first::<(User, UserOrganization, Organization)>(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!(
+                "Error getting arbitrary org owner from dataset id in get_arbitrary_org_owner_from_dataset_id: {:?}",
+                e
+            );
+            
+            DefaultError {
+                message: "Relevant organization for dataset had no owner level users",
+            }
+        }
+    )?;
+
+    Ok(SlimUser::from_details(
+        user_orgs_orgs.0,
+        vec![user_orgs_orgs.1],
+        vec![user_orgs_orgs.2],
+    ))
+}

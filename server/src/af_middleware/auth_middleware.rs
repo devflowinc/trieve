@@ -4,7 +4,10 @@ use crate::{
     handlers::auth_handler::{LoggedUser, OrganizationRole},
     operators::{
         dataset_operator::get_dataset_by_id_query,
-        organization_operator::get_organization_by_key_query,
+        organization_operator::{
+            get_arbitrary_org_owner_from_dataset_id, get_arbitrary_org_owner_from_org_id,
+            get_organization_by_key_query,
+        },
         user_operator::get_user_from_api_key_query,
     },
 };
@@ -163,6 +166,7 @@ where
 
             if let Some(user) = user {
                 req.extensions_mut().insert(user.clone());
+
                 let user_org = user
                     .user_orgs
                     .iter()
@@ -175,6 +179,7 @@ where
                         role: UserRole::from(user_org.role),
                     })
                 } else {
+                    log::error!("User does not have permission to access this organization");
                     Err(ServiceError::Forbidden)
                 }?;
 
@@ -202,6 +207,40 @@ async fn get_user(req: &HttpRequest, pl: &mut Payload) -> Option<LoggedUser> {
 
     if let Some(authen_header) = req.headers().get("Authorization") {
         if let Ok(authen_header) = authen_header.to_str() {
+            if authen_header == std::env::var("ADMIN_API_KEY").unwrap_or("".to_string()) {
+                if let Some(org_id_header) = req.headers().get("TR-Organization") {
+                    if let Ok(org_id) = org_id_header.to_str() {
+                        if let Ok(org_id) = org_id.parse::<uuid::Uuid>() {
+                            if let Some(pool) = req.app_data::<web::Data<Pool>>() {
+                                if let Ok(user) =
+                                    get_arbitrary_org_owner_from_org_id(org_id, pool.clone()).await
+                                {
+                                    return Some(user);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if let Some(dataset_id_header) = req.headers().get("TR-Dataset") {
+                    if let Ok(dataset_id) = dataset_id_header.to_str() {
+                        if let Ok(dataset_id) = dataset_id.parse::<uuid::Uuid>() {
+                            if let Some(pool) = req.app_data::<web::Data<Pool>>() {
+                                if let Ok(user) = get_arbitrary_org_owner_from_dataset_id(
+                                    dataset_id,
+                                    pool.clone(),
+                                )
+                                .await
+                                {
+                                    log::info!("User: {:?}", user);
+                                    return Some(user);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             if let Some(pool) = req.app_data::<web::Data<Pool>>() {
                 if let Ok(user) = get_user_from_api_key_query(authen_header, pool).await {
                     return Some(user);
