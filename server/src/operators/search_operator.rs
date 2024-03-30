@@ -305,9 +305,9 @@ pub async fn retrieve_group_qdrant_points_query(
 
     Ok(SearchOverGroupsQueryResult {
         search_results: point_ids.map_err(|e| {
-            log::error!("Failed to get point count from Qdrant {:?}", e);
+            log::error!("Failed to get points from Qdrant {:?}", e);
             DefaultError {
-                message: "Failed to get point count from Qdrant",
+                message: "Failed to get points from Qdrant",
             }
         })?,
         total_chunk_pages: pages,
@@ -449,9 +449,9 @@ pub async fn search_within_chunk_group_query(
 
     Ok(SearchChunkQueryResult {
         search_results: point_ids.map_err(|e| {
-            log::error!("Failed to get point count from Qdrant {:?}", e);
+            log::error!("Failed to get points from Qdrant {:?}", e);
             DefaultError {
-                message: "Failed to get point count from Qdrant",
+                message: "Failed to get points from Qdrant",
             }
         })?,
         total_chunk_pages: pages,
