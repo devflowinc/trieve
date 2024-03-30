@@ -649,7 +649,7 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
     })
 }
 
-
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[schema(example = json!({
     "group_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "metadata": [
@@ -672,7 +672,6 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
         }
     ]
 }))]
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct GroupScoreChunkDTO {
     pub group_id: uuid::Uuid,
     pub group_tracking_id: Option<String>,
