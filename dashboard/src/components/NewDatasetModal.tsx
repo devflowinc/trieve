@@ -42,7 +42,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
   const createDataset = () => {
     const organizationId = userContext.selectedOrganizationId?.();
     if (!organizationId) return;
-
+    console.log(serverConfig());
     fetch(`${apiHost}/dataset`, {
       method: "POST",
       credentials: "include",
@@ -209,10 +209,11 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                             )?.name ?? availableEmbeddingModels[0].name
                           }
-                          onInput={(e) => {
+                          onSelect={(e) => {
                             const selectedModel = availableEmbeddingModels.find(
                               (model) => model.name === e.currentTarget.value,
                             );
+                            console.log(selectedModel);
 
                             setServerConfig((prev) => {
                               return {

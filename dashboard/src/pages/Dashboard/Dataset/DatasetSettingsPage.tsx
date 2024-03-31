@@ -29,7 +29,7 @@ export const defaultClientEnvsConfiguration: ClientEnvsConfiguration = {
 export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   LLM_BASE_URL: "",
   LLM_DEFAULT_MODEL: "",
-  EMBEDDING_BASE_URL: "",
+  EMBEDDING_BASE_URL: "https://embedding.trieve.ai",
   RAG_PROMPT: "",
   EMBEDDING_SIZE: 768,
   N_RETRIEVALS_TO_INCLUDE: 8,
