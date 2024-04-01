@@ -356,12 +356,12 @@ pub async fn get_optional_metadata_from_tracking_id_query(
         .await
         .map_err(|e| {
             log::error!(
-                "Failed to load execute get_metadata_from_tracking_id_query: {:?}",
+                "Failed to execute get_optional_metadata_from_tracking_id_query: {:?}",
                 e
             );
 
             DefaultError {
-                message: "Failed to execute get_metadata_from_tracking_id_query",
+                message: "Failed to execute get_optional_metadata_from_tracking_id_query",
             }
         })?
         .pop();
@@ -412,7 +412,7 @@ pub async fn insert_chunk_metadata_query(
     use crate::data::schema::chunk_metadata::dsl::*;
 
     if upsert_by_tracking_id && chunk_data.tracking_id.is_some() {
-        if let Ok(existing_chunk) = get_metadata_from_tracking_id_query(
+        if let Some(existing_chunk) = get_optional_metadata_from_tracking_id_query(
             chunk_data
                 .tracking_id
                 .clone()
@@ -421,6 +421,7 @@ pub async fn insert_chunk_metadata_query(
             pool.clone(),
         )
         .await
+        .map_err(|err| ServiceError::BadRequest(err.message.to_string()))?
         {
             let mut update_chunk = chunk_data.clone();
             update_chunk.id = existing_chunk.id;
@@ -444,14 +445,15 @@ pub async fn insert_chunk_metadata_query(
     let mut conn = pool.get().await.expect("Failed to get connection to db");
 
     if let Some(other_tracking_id) = chunk_data.tracking_id.clone() {
-        let existing_chunk = get_metadata_from_tracking_id_query(
+        let existing_chunk = get_optional_metadata_from_tracking_id_query(
             other_tracking_id.clone(),
             chunk_data.dataset_id,
             pool.clone(),
         )
-        .await;
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.message.to_string()))?;
 
-        if existing_chunk.is_ok() {
+        if existing_chunk.is_some() {
             log::info!("Avoided potential write conflict by pre-checking tracking_id");
             return Err(ServiceError::DuplicateTrackingId(other_tracking_id));
         }
