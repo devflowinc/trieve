@@ -408,7 +408,7 @@ async fn upload_chunk(
 
     let duplicate_distance_threshold = dataset_config.DUPLICATE_DISTANCE_THRESHOLD;
 
-    if duplicate_distance_threshold < 1.0 || dataset_config.COLLISIONS_ENABLED {
+    if duplicate_distance_threshold < 1.0 && dataset_config.COLLISIONS_ENABLED {
         let collision_detection_span = transaction.start_child(
             "collision_check",
             "global_unfiltered_top_match_query and get_metadata_from_point_ids",
