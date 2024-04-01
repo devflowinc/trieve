@@ -732,3 +732,33 @@ pub async fn get_group_tracking_ids_from_group_ids_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to fetch group_tracking_id".to_string()))
 }
+
+pub async fn check_group_ids_exist_query(
+    group_ids: Vec<uuid::Uuid>,
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Vec<uuid::Uuid>, DefaultError> {
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    let existing_group_ids: Vec<uuid::Uuid> = chunk_group_columns::chunk_group
+        .filter(chunk_group_columns::dataset_id.eq(dataset_id))
+        .filter(chunk_group_columns::id.eq_any(&group_ids))
+        .select(chunk_group_columns::id)
+        .load::<uuid::Uuid>(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!("Error getting group ids for exist check {:?}", e);
+            sentry::capture_message(
+                &format!("Error getting group ids for exist check {:?}", e),
+                sentry::Level::Error,
+            );
+
+            DefaultError {
+                message: "Failed to load group ids for exist check",
+            }
+        })?;
+
+    Ok(existing_group_ids)
+}

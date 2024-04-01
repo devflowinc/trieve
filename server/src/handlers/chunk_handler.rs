@@ -8,7 +8,9 @@ use crate::errors::{DefaultError, ServiceError};
 use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
-use crate::operators::group_operator::get_groups_from_tracking_ids_query;
+use crate::operators::group_operator::{
+    check_group_ids_exist_query, get_groups_from_tracking_ids_query,
+};
 use crate::operators::qdrant_operator::recommend_qdrant_query;
 use crate::operators::search_operator::{
     search_full_text_chunks, search_hybrid_chunks, search_semantic_chunks,
@@ -280,6 +282,25 @@ pub async fn create_chunk(
             .clone()
             .filter(|chunk_tracking| !chunk_tracking.is_empty());
 
+        if !chunk.upsert_by_tracking_id.unwrap_or(false) && chunk_tracking_id.is_some() {
+            let existing_chunk = get_optional_metadata_from_tracking_id_query(
+                chunk_tracking_id
+                    .clone()
+                    .expect("tracking_id must exist at this point"),
+                count_dataset_id,
+                pool.clone(),
+            )
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+            if existing_chunk.is_some() {
+                return Err(ServiceError::BadRequest(
+                    "Need to call with upsert_by_tracking_id set to true in request payload because a chunk with this tracking_id already exists".to_string(),
+                )
+                .into());
+            }
+        }
+
         let timestamp = {
             chunk
                 .time_stamp
@@ -311,6 +332,27 @@ pub async fn create_chunk(
         );
         chunk_metadatas.push(chunk_metadata.clone());
 
+        // check if a group_id is not in existent_group_ids and return an error if it is not
+        if let Some(group_ids) = chunk.group_ids.clone() {
+            let existent_group_ids = check_group_ids_exist_query(
+                chunk.group_ids.clone().unwrap_or_default(),
+                count_dataset_id,
+                pool.clone(),
+            )
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+
+            for group_id in group_ids {
+                if !existent_group_ids.contains(&group_id) {
+                    return Err(ServiceError::BadRequest(format!(
+                        "Group with id {} does not exist",
+                        group_id
+                    ))
+                    .into());
+                }
+            }
+        }
+
         let group_ids_from_group_tracking_ids = if let Some(group_tracking_ids) =
             chunk.group_tracking_ids.clone()
         {
@@ -338,7 +380,7 @@ pub async fn create_chunk(
                 id: chunk_metadata.id,
                 qdrant_point_id: chunk_metadata.qdrant_point_id,
                 dataset_id: count_dataset_id,
-                attempt_number: 0
+                attempt_number: 0,
             },
             chunk: chunk_only_group_ids.clone(),
             dataset_id: count_dataset_id,

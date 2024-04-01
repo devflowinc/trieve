@@ -326,9 +326,47 @@ pub async fn get_metadata_from_tracking_id_query(
         .select(ChunkMetadata::as_select())
         .first::<ChunkMetadata>(&mut conn)
         .await
-        .map_err(|_| DefaultError {
-            message: "Failed to load metadata",
+        .map_err(|e| {
+            log::error!(
+                "Failed to load execute get_metadata_from_tracking_id_query: {:?}",
+                e
+            );
+
+            DefaultError {
+                message: "Failed to execute get_metadata_from_tracking_id_query",
+            }
         })
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn get_optional_metadata_from_tracking_id_query(
+    tracking_id: String,
+    dataset_uuid: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Option<ChunkMetadata>, DefaultError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    let optional_chunk: Option<ChunkMetadata> = chunk_metadata_columns::chunk_metadata
+        .filter(chunk_metadata_columns::tracking_id.eq(tracking_id))
+        .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid))
+        .select(ChunkMetadata::as_select())
+        .load::<ChunkMetadata>(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!(
+                "Failed to load execute get_metadata_from_tracking_id_query: {:?}",
+                e
+            );
+
+            DefaultError {
+                message: "Failed to execute get_metadata_from_tracking_id_query",
+            }
+        })?
+        .pop();
+
+    Ok(optional_chunk)
 }
 
 #[tracing::instrument(skip(pool))]
