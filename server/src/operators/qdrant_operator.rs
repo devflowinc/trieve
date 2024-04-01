@@ -953,7 +953,11 @@ pub async fn recommend_qdrant_groups_query(
         timeout: None,
         shard_key_selector: None,
         group_by: "group_ids".to_string(),
-        group_size,
+        group_size: if group_size == 0 {
+            1
+        } else {
+            group_size
+        },
         with_lookup: None,
     };
 
@@ -991,7 +995,11 @@ pub async fn recommend_qdrant_groups_query(
                 })
                 .collect();
 
-            Some(GroupSearchResults { group_id, hits })
+            if group_size == 0 {
+                Some(GroupSearchResults { group_id, hits: vec![] })
+            } else {
+                Some(GroupSearchResults { group_id, hits })
+            }
         })
         .collect();
     Ok(recommended_point_ids)
