@@ -511,8 +511,8 @@ pub async fn revert_insert_chunk_metadata_query(
         .execute(&mut conn)
         .await
         .map_err(|e| {
-            log::error!("Failed to insert chunk file: {:?}", e);
-            ServiceError::BadRequest("Failed to insert chunk file".to_string())
+            log::error!("Failed to revert chunk file action: {:?}", e);
+            ServiceError::BadRequest("Failed to revert chunk file action".to_string())
         })?;
     }
 
@@ -524,8 +524,8 @@ pub async fn revert_insert_chunk_metadata_query(
         .execute(&mut conn)
         .await
         .map_err(|e| {
-            log::error!("Failed to insert chunk into groups {:?}", e);
-            ServiceError::BadRequest("Failed to insert chunk into groups".to_string())
+            log::error!("Failed to revert chunk into groups action {:?}", e);
+            ServiceError::BadRequest("Failed to revert chunk into groups action".to_string())
         })?;
     }
 
