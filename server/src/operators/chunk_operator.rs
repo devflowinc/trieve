@@ -485,7 +485,7 @@ pub async fn revert_insert_chunk_metadata_query(
 
     if upsert_by_tracking_id {
         // TODO Properly revert here
-        return Ok(())
+        return Ok(());
     }
 
     let mut conn = pool.get().await.expect("Failed to get connection to db");
@@ -579,8 +579,16 @@ pub async fn insert_duplicate_chunk_metadata_query(
             .scope_boxed()
         })
         .await
-        .map_err(|_| DefaultError {
-            message: "Failed to insert duplicate chunk metadata",
+        .map_err(|e| {
+            log::error!("Failed to insert duplicate chunk metadata: {:?}", e);
+            sentry::capture_message(
+                &format!("Failed to insert duplicate chunk metadata: {:?}", e),
+                sentry::Level::Error,
+            );
+
+            DefaultError {
+                message: "Failed to insert duplicate chunk metadata",
+            }
         })?;
 
     if let Some(group_ids) = group_ids {
@@ -593,8 +601,22 @@ pub async fn insert_duplicate_chunk_metadata_query(
             )
             .execute(&mut conn)
             .await
-            .map_err(|_| DefaultError {
-                message: "Failed to create bookmark",
+            .map_err(|e| {
+                log::error!(
+                    "Failed to insert duplicate chunk_metadata into groups {:?}",
+                    e
+                );
+                sentry::capture_message(
+                    &format!(
+                        "Failed to insert duplicate chunk_metadata into groups {:?}",
+                        e
+                    ),
+                    sentry::Level::Error,
+                );
+
+                DefaultError {
+                    message: "Failed to insert duplicate chunk_metadata into groups",
+                }
             })?;
     }
 
