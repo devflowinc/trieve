@@ -430,20 +430,15 @@ export const GroupPage = (props: GroupPageProps) => {
           </div>
           <Show when={!editing()}>
             <div class="flex w-full items-center justify-center">
-              <h1 class="break-all text-center text-lg min-[320px]:text-xl sm:text-3xl">
+              <h1 class="max-w-6xl break-all text-center text-lg min-[320px]:text-xl sm:text-3xl">
                 {groupInfo()?.name}
               </h1>
             </div>
             <Show
               when={groupInfo()?.description.length ?? (0 > 0 && !editing())}
             >
-              <div class="mx-auto flex max-w-[300px] justify-items-center gap-x-2 md:max-w-fit">
-                <div class="text-center text-lg font-semibold">
-                  Description:
-                </div>
-                <div class="line-clamp-1 flex w-full justify-start text-center text-lg">
-                  {groupInfo()?.description}
-                </div>
+              <div class="mx-auto flex max-w-6xl justify-items-center gap-x-2 text-center">
+                {groupInfo()?.description}
               </div>
             </Show>
           </Show>
@@ -467,9 +462,8 @@ export const GroupPage = (props: GroupPageProps) => {
                   }
                 }}
               />
-              <div class="text-md mr-2 font-semibold">Description:</div>
               <textarea
-                class="w-full justify-start rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
+                class="max-md w-full justify-start rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
                 value={groupInfo()?.description}
                 onInput={(e) => {
                   const curGroupInfo = groupInfo();
