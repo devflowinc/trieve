@@ -650,7 +650,11 @@ pub async fn search_over_groups_query(
                     with_payload: None,
                     filter: Some(filter),
                     group_by: "group_ids".to_string(),
-                    group_size,
+                    group_size: if group_size == 0 {
+                        1
+                    } else {
+                        group_size
+                    },
                     ..Default::default()
                 })
                 .await
@@ -669,7 +673,11 @@ pub async fn search_over_groups_query(
                     with_payload: None,
                     filter: Some(filter),
                     group_by: "group_ids".to_string(),
-                    group_size,
+                    group_size: if group_size == 0 {
+                        1
+                    } else {
+                        group_size
+                    },
                     ..Default::default()
                 })
                 .await
@@ -707,7 +715,11 @@ pub async fn search_over_groups_query(
                 })
                 .collect();
 
-            Some(GroupSearchResults { group_id, hits })
+            if group_size == 0 {
+                Some(GroupSearchResults { group_id, hits: vec![] })
+            } else {
+                Some(GroupSearchResults { group_id, hits })
+            }
         })
         .collect();
 
