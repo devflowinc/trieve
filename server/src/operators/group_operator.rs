@@ -539,7 +539,6 @@ pub async fn get_groups_for_bookmark_query(
             chunk_group_columns::dataset_id,
             chunk_group_bookmarks_columns::chunk_metadata_id.nullable(),
         ))
-        .limit(1000)
         .load::<(uuid::Uuid, String, uuid::Uuid, Option<uuid::Uuid>)>(&mut conn)
         .await
         .map_err(|_err| DefaultError {
