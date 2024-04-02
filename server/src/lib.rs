@@ -297,6 +297,7 @@ impl Modify for SecurityAddon {
             data::models::SearchGroupSlimChunksResult,
             data::models::SearchOverGroupsSlimChunksResponseBody,
             data::models::GroupSlimChunksDTO,
+            handlers::chunk_handler::RangeCondition,
             errors::ErrorResponseBody,
         )
     ),

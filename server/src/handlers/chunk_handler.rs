@@ -840,6 +840,13 @@ pub async fn update_chunk_by_tracking_id(
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(untagged)]
+pub enum RangeCondition {
+    String(String),
+    Float(f64),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[schema(example = json!({
     "gte": 0.0,
     "lte": 1.0,
@@ -848,13 +855,13 @@ pub async fn update_chunk_by_tracking_id(
 }))]
 pub struct Range {
     // gte is the lower bound of the range. This is inclusive.
-    pub gte: Option<f64>,
+    pub gte: Option<RangeCondition>,
     // lte is the upper bound of the range. This is inclusive.
-    pub lte: Option<f64>,
+    pub lte: Option<RangeCondition>,
     // gt is the lower bound of the range. This is exclusive.
-    pub gt: Option<f64>,
+    pub gt: Option<RangeCondition>,
     // lt is the upper bound of the range. This is exclusive.
-    pub lt: Option<f64>,
+    pub lt: Option<RangeCondition>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
@@ -901,18 +908,104 @@ pub struct FieldCondition {
     pub range: Option<Range>,
 }
 
+fn convert_to_date_time(time_stamp: String) -> Result<Option<f64>, DefaultError> {
+    Ok(Some(
+        time_stamp
+            .parse::<DateTimeUtc>()
+            .map_err(|_| DefaultError {
+                message: "Invalid timestamp format",
+            })?
+            .0
+            .with_timezone(&chrono::Local)
+            .naive_local()
+            .timestamp() as f64,
+    ))
+}
+
+fn get_range(range: Range, field: String) -> Result<qdrant::Condition, DefaultError> {
+    #[derive(PartialEq)]
+    enum RangeValueType {
+        Float,
+        String,
+        None,
+    }
+
+    // Determine the type of the range value if present
+    let mut range_value_type = RangeValueType::None;
+
+    // First pass to determine the consistent type of the range, if any
+    let range_values = [&range.gt, &range.gte, &range.lt, &range.lte];
+    for value in range_values {
+        match value {
+            Some(RangeCondition::Float(_)) => {
+                if range_value_type == RangeValueType::String {
+                    return Err(DefaultError {
+                        message: "Mixed types in range conditions",
+                    });
+                }
+                range_value_type = RangeValueType::Float;
+            }
+            Some(RangeCondition::String(_)) => {
+                if range_value_type == RangeValueType::Float {
+                    return Err(DefaultError {
+                        message: "Mixed types in range conditions",
+                    });
+                }
+                range_value_type = RangeValueType::String;
+            }
+            None => {}
+        }
+    }
+
+    // Based on the determined type, process the values
+    match range_value_type {
+        RangeValueType::Float | RangeValueType::String => {
+            let gt = match &range.gt {
+                Some(RangeCondition::Float(value)) => Some(*value),
+                Some(RangeCondition::String(value)) => convert_to_date_time(value.to_string())?,
+                None => None,
+            };
+            let gte = match &range.gte {
+                Some(RangeCondition::Float(value)) => Some(*value),
+                Some(RangeCondition::String(value)) => convert_to_date_time(value.to_string())?,
+                None => None,
+            };
+            let lt = match &range.lt {
+                Some(RangeCondition::Float(value)) => Some(*value),
+                Some(RangeCondition::String(value)) => convert_to_date_time(value.to_string())?,
+                None => None,
+            };
+            let lte = match &range.lte {
+                Some(RangeCondition::Float(value)) => Some(*value),
+                Some(RangeCondition::String(value)) => convert_to_date_time(value.to_string())?,
+                None => None,
+            };
+
+            Ok(qdrant::Condition::range(
+                field,
+                qdrant::Range { gt, gte, lt, lte },
+            ))
+        }
+        RangeValueType::None => Err(DefaultError {
+            message: "No range conditions provided",
+        }),
+    }
+}
+
 impl FieldCondition {
     pub fn convert_to_qdrant_condition(&self) -> Result<Option<qdrant::Condition>, DefaultError> {
+        if self.r#match.is_none() && self.range.is_none() {
+            return Ok(None);
+        }
+
+        if self.r#match.is_some() && self.range.is_some() {
+            return Err(DefaultError {
+                message: "Cannot have both match and range conditions",
+            });
+        }
+
         if let Some(range) = self.range.clone() {
-            return Ok(Some(qdrant::Condition::range(
-                self.field.as_str(),
-                qdrant::Range {
-                    gt: range.gt,
-                    gte: range.gte,
-                    lt: range.lt,
-                    lte: range.lte,
-                },
-            )));
+            return Ok(Some(get_range(range, self.field.clone())?));
         };
 
         let matches = match self.r#match.clone() {
