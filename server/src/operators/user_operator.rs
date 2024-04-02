@@ -18,31 +18,6 @@ use rand::distributions::Alphanumeric;
 use rand::Rng;
 
 #[tracing::instrument(skip(pool))]
-pub async fn get_user_by_username_query(
-    user_name: &String,
-    pool: web::Data<Pool>,
-) -> Result<User, DefaultError> {
-    use crate::data::schema::users::dsl::*;
-
-    let mut conn = pool.get().await.unwrap();
-
-    let user: Option<User> = users
-        .filter(username.eq(user_name))
-        .first::<User>(&mut conn)
-        .await
-        .optional()
-        .map_err(|_| DefaultError {
-            message: "Error loading user",
-        })?;
-    match user {
-        Some(user) => Ok(user),
-        None => Err(DefaultError {
-            message: "User not found",
-        }),
-    }
-}
-
-#[tracing::instrument(skip(pool))]
 pub async fn get_user_by_id_query(
     user_id: &uuid::Uuid,
     pool: web::Data<Pool>,
@@ -140,40 +115,16 @@ pub async fn add_existing_user_to_org(
 #[tracing::instrument(skip(pool))]
 pub async fn update_user_query(
     user: &LoggedUser,
-    username: &Option<String>,
     name: &Option<String>,
-    website: &Option<String>,
     role: Option<UserRole>,
-    visible_email: bool,
     pool: web::Data<Pool>,
 ) -> Result<User, DefaultError> {
     use crate::data::schema::users::dsl as user_columns;
 
     let mut conn = pool.get().await.unwrap();
 
-    if username.clone().is_some()
-        && username.clone().unwrap() != user.username.clone().unwrap_or("".to_string())
-    {
-        let user_by_username = get_user_by_username_query(&username.clone().unwrap(), pool).await;
-
-        if let Ok(old_user) = user_by_username {
-            if !(old_user.username.is_some()
-                && old_user.username.unwrap() == username.clone().unwrap())
-            {
-                return Err(DefaultError {
-                    message: "That username is already taken",
-                });
-            }
-        }
-    }
-
     let user: User = diesel::update(user_columns::users.filter(user_columns::id.eq(user.id)))
-        .set((
-            user_columns::username.eq(username),
-            user_columns::website.eq(website),
-            user_columns::visible_email.eq(&visible_email),
-            user_columns::name.eq(name),
-        ))
+        .set((user_columns::name.eq(name),))
         .get_result(&mut conn)
         .await
         .map_err(|_| DefaultError {
