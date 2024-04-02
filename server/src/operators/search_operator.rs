@@ -14,8 +14,8 @@ use crate::data::models::{
     ServerDatasetConfiguration,
 };
 use crate::handlers::chunk_handler::{
-    ChunkFilter, FieldCondition, MatchCondition, ParsedQuery, ScoreChunkDTO, SearchChunkData,
-    SearchChunkQueryResponseBody,
+    get_range, ChunkFilter, FieldCondition, MatchCondition, ParsedQuery, ScoreChunkDTO,
+    SearchChunkData, SearchChunkQueryResponseBody,
 };
 use crate::handlers::group_handler::{
     SearchGroupsResult, SearchOverGroupsData, SearchWithinGroupData,
@@ -24,6 +24,11 @@ use crate::operators::model_operator::get_splade_embedding;
 use crate::operators::qdrant_operator::{get_qdrant_connection, search_qdrant_query};
 use crate::{data::models::Pool, errors::ServiceError};
 use actix_web::web;
+use diesel::dsl::sql;
+use diesel::sql_types::Text;
+use diesel::{ExpressionMethods, PgTextExpressionMethods, QueryDsl};
+use diesel_async::RunQueryDsl;
+
 use itertools::Itertools;
 use simple_server_timing_header::Timer;
 use utoipa::ToSchema;
@@ -105,7 +110,9 @@ pub async fn assemble_qdrant_filter(
                 )
                 .await?;
 
-                let qdrant_condition = should_condition.convert_to_qdrant_condition()?;
+                let qdrant_condition = should_condition
+                    .convert_to_qdrant_condition(pool.clone(), dataset_id)
+                    .await?;
 
                 if let Some(condition) = qdrant_condition {
                     filter.should.push(condition);
@@ -122,7 +129,9 @@ pub async fn assemble_qdrant_filter(
                 )
                 .await?;
 
-                let qdrant_condition = must_condition.convert_to_qdrant_condition()?;
+                let qdrant_condition = must_condition
+                    .convert_to_qdrant_condition(pool.clone(), dataset_id)
+                    .await?;
 
                 if let Some(condition) = qdrant_condition {
                     filter.must.push(condition);
@@ -139,7 +148,9 @@ pub async fn assemble_qdrant_filter(
                 )
                 .await?;
 
-                let qdrant_condition = must_not_condition.convert_to_qdrant_condition()?;
+                let qdrant_condition = must_not_condition
+                    .convert_to_qdrant_condition(pool.clone(), dataset_id)
+                    .await?;
 
                 if let Some(condition) = qdrant_condition {
                     filter.must_not.push(condition);
@@ -241,6 +252,116 @@ pub async fn retrieve_qdrant_points_query(
         })?,
         total_chunk_pages: pages,
     })
+}
+
+pub async fn get_metadata_filter_condition(
+    filter: &FieldCondition,
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Filter, ServiceError> {
+    let mut metadata_filter = Filter::default();
+
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
+    let key = filter
+        .field
+        .strip_prefix("metadata.")
+        .unwrap_or(&filter.field)
+        .to_string();
+
+    let mut conn = pool.get().await.unwrap();
+
+    let mut query = chunk_metadata_columns::chunk_metadata
+        .select(chunk_metadata_columns::qdrant_point_id)
+        .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
+        .into_boxed();
+
+    if let Some(matches) = &filter.r#match {
+        if let Some(first_val) = matches.get(0) {
+            match first_val {
+                MatchCondition::Text(string_val) => {
+                    query = query.filter(
+                        sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
+                            .ilike(format!("%{}%", string_val)),
+                    );
+                }
+                MatchCondition::Integer(id_val) => {
+                    query = query.filter(
+                        sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
+                            .eq(id_val.to_string()),
+                    );
+                }
+            }
+        }
+
+        for match_condition in matches.iter().skip(1) {
+            match match_condition {
+                MatchCondition::Text(string_val) => {
+                    query = query.or_filter(
+                        sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
+                            .ilike(format!("%{}%", string_val)),
+                    );
+                }
+                MatchCondition::Integer(id_val) => {
+                    query = query.or_filter(
+                        sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key))
+                            .eq(id_val.to_string()),
+                    );
+                }
+            }
+        }
+    };
+
+    if let Some(range) = &filter.range {
+        let range_filter = get_range(range.clone())?;
+        if let Some(gt) = range_filter.gt {
+            query = query.filter(
+                sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key)).gt(gt.to_string()),
+            );
+        };
+
+        if let Some(gte) = range_filter.gte {
+            query = query.filter(
+                sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key)).ge(gte.to_string()),
+            );
+        };
+
+        if let Some(lt) = range_filter.lt {
+            query = query.filter(
+                sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key)).lt(lt.to_string()),
+            );
+        };
+
+        if let Some(lte) = range_filter.lte {
+            query = query.filter(
+                sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key)).le(lte.to_string()),
+            );
+        };
+    }
+
+    let qdrant_point_ids: Vec<uuid::Uuid> = query
+        .load::<Option<uuid::Uuid>>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?
+        .into_iter()
+        .filter_map(|point_id| point_id)
+        .collect();
+
+    let matching_point_ids: Vec<PointId> = qdrant_point_ids
+        .iter()
+        .map(|uuid| uuid.to_string())
+        .collect::<HashSet<String>>()
+        .iter()
+        .map(|uuid| (*uuid).clone().into())
+        .collect::<Vec<PointId>>();
+
+    metadata_filter.must.push(Condition {
+        condition_one_of: Some(HasId(HasIdCondition {
+            has_id: matching_point_ids,
+        })),
+    });
+
+    Ok(metadata_filter)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -349,7 +470,7 @@ pub async fn global_unfiltered_top_match_query(
             ServiceError::BadRequest("Failed to search points on Qdrant".to_string())
         })?;
 
-    let top_search_result: SearchResult = match data.result.first() {
+    let top_search_result: SearchResult = match data.result.get(0) {
         Some(point) => match point.clone().id {
             Some(point_id) => match point_id.point_id_options {
                 Some(PointIdOptions::Uuid(id)) => SearchResult {
@@ -1057,7 +1178,7 @@ pub async fn search_semantic_chunks(
     let embedding_vectors =
         create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
     let embedding_vector = embedding_vectors
-        .first()
+        .get(0)
         .ok_or(ServiceError::BadRequest(
             "Failed to get embedding vector due to empty vec response from create_embedding"
                 .to_string(),
@@ -1096,7 +1217,7 @@ pub async fn search_semantic_chunks(
 #[tracing::instrument(skip(pool))]
 pub async fn search_full_text_chunks(
     data: SearchChunkData,
-    mut parsed_query: ParsedQuery,
+    parsed_query: ParsedQuery,
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
@@ -1114,12 +1235,6 @@ pub async fn search_full_text_chunks(
         }
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
-
-    parsed_query.query = parsed_query
-        .query
-        .split_whitespace()
-        .join(" AND ")
-        .replace('\"', "");
 
     let embedding_vector = get_splade_embedding(&parsed_query.query, "query")
         .await
@@ -1149,7 +1264,7 @@ pub async fn search_full_text_chunks(
             .score_chunks
             .into_iter()
             .map(|score_chunk| ScoreChunkDTO {
-                metadata: vec![score_chunk.metadata.first().unwrap().clone()],
+                metadata: vec![score_chunk.metadata.get(0).unwrap().clone()],
                 score: score_chunk.score,
             })
             .collect();
@@ -1187,7 +1302,7 @@ pub async fn search_hybrid_chunks(
     let embedding_vectors =
         create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
     let embedding_vector = embedding_vectors
-        .first()
+        .get(0)
         .ok_or(ServiceError::BadRequest(
             "Failed to get embedding vector due to empty vec response from create_embedding"
                 .to_string(),
@@ -1326,7 +1441,7 @@ pub async fn search_hybrid_chunks(
                 data.query.clone(),
                 data.page_size.unwrap_or(10),
                 split_results
-                    .first()
+                    .get(0)
                     .expect("Split results must exist")
                     .to_vec(),
             )
@@ -1380,7 +1495,7 @@ pub async fn search_semantic_groups(
     let embedding_vectors =
         create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
     let embedding_vector = embedding_vectors
-        .first()
+        .get(0)
         .ok_or(ServiceError::BadRequest(
             "Failed to get embedding vector due to empty vec response from create_embedding"
                 .to_string(),
@@ -1481,7 +1596,7 @@ pub async fn search_hybrid_groups(
     let dense_embedding_vectors =
         create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
     let dense_embedding_vector = dense_embedding_vectors
-        .first()
+        .get(0)
         .ok_or(ServiceError::BadRequest(
             "Failed to get embedding vector due to empty vec response from create_embedding"
                 .to_string(),
@@ -1555,7 +1670,7 @@ pub async fn search_hybrid_groups(
                 data.query.clone(),
                 data.page_size.unwrap_or(10),
                 split_results
-                    .first()
+                    .get(0)
                     .expect("Split results must exist")
                     .to_vec(),
             )
@@ -1606,7 +1721,7 @@ pub async fn semantic_search_over_groups(
     let embedding_vectors =
         create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
     let embedding_vector = embedding_vectors
-        .first()
+        .get(0)
         .ok_or(ServiceError::BadRequest(
             "Failed to get embedding vector due to empty array from create_embedding".to_string(),
         ))?
@@ -1680,7 +1795,7 @@ async fn cross_encoder_for_groups(
             group
                 .metadata
                 .clone()
-                .first()
+                .get(0)
                 .expect("Metadata should have one element")
                 .clone()
         })
@@ -1731,7 +1846,7 @@ pub async fn hybrid_search_over_groups(
     let dense_embedding_vectors =
         create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
     let dense_embedding_vector = dense_embedding_vectors
-        .first()
+        .get(0)
         .ok_or(ServiceError::BadRequest(
             "Failed to get embedding vector due to empty array from create_embedding".to_string(),
         ))?
@@ -1805,7 +1920,7 @@ pub async fn hybrid_search_over_groups(
             data.query.clone(),
             data.page_size.unwrap_or(10).into(),
             split_results
-                .first()
+                .get(0)
                 .expect("Split results must exist")
                 .to_vec(),
         )
