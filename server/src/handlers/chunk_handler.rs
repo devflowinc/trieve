@@ -4,7 +4,7 @@ use crate::data::models::{
     IngestSpecificChunkMetadata, Pool, RedisPool, ScoreSlimChunks,
     SearchSlimChunkQueryResponseBody, ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
 };
-use crate::errors::{DefaultError, ServiceError};
+use crate::errors::ServiceError;
 use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
@@ -250,9 +250,7 @@ pub async fn create_chunk(
     let count_dataset_id = dataset_org_plan_sub.dataset.id;
 
     let mut timer = Timer::new();
-    let chunk_count = get_row_count_for_dataset_id_query(count_dataset_id, pool.clone())
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let chunk_count = get_row_count_for_dataset_id_query(count_dataset_id, pool.clone()).await?;
     timer.add("get dataset count");
 
     if chunk_count + chunks.len()
@@ -290,8 +288,7 @@ pub async fn create_chunk(
                 count_dataset_id,
                 pool.clone(),
             )
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+            .await?;
 
             if existing_chunk.is_some() {
                 return Err(ServiceError::BadRequest(
@@ -339,8 +336,7 @@ pub async fn create_chunk(
                 count_dataset_id,
                 pool.clone(),
             )
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+            .await?;
 
             for group_id in group_ids {
                 if !existent_group_ids.contains(&group_id) {
@@ -469,8 +465,7 @@ pub async fn delete_chunk(
         pool,
         server_dataset_config,
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -509,9 +504,7 @@ pub async fn delete_chunk_by_tracking_id(
     );
 
     let chunk_metadata =
-        get_metadata_from_tracking_id_query(tracking_id_inner, dataset_id, pool.clone())
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        get_metadata_from_tracking_id_query(tracking_id_inner, dataset_id, pool.clone()).await?;
 
     delete_chunk_metadata_query(
         chunk_metadata.id,
@@ -519,8 +512,7 @@ pub async fn delete_chunk_by_tracking_id(
         pool,
         server_dataset_config,
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -602,13 +594,9 @@ pub async fn update_chunk(
     let chunk_id = chunk.chunk_id;
 
     let chunk_metadata = if let Some(chunk_id) = chunk_id {
-        get_metadata_from_id_query(chunk_id, dataset_id, pool)
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+        get_metadata_from_id_query(chunk_id, dataset_id, pool).await?
     } else if let Some(tracking_id) = chunk.tracking_id.clone() {
-        get_metadata_from_tracking_id_query(tracking_id.clone(), dataset_id, pool)
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+        get_metadata_from_tracking_id_query(tracking_id.clone(), dataset_id, pool).await?
     } else {
         return Err(ServiceError::BadRequest(
             "Either chunk_id or tracking_id must be provided to update a chunk".into(),
@@ -760,9 +748,8 @@ pub async fn update_chunk_by_tracking_id(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    let chunk_metadata = get_metadata_from_tracking_id_query(tracking_id, dataset_id, pool.clone())
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let chunk_metadata =
+        get_metadata_from_tracking_id_query(tracking_id, dataset_id, pool.clone()).await?;
 
     let link = chunk
         .link
@@ -908,13 +895,11 @@ pub struct FieldCondition {
     pub range: Option<Range>,
 }
 
-fn convert_to_date_time(time_stamp: String) -> Result<Option<f64>, DefaultError> {
+fn convert_to_date_time(time_stamp: String) -> Result<Option<f64>, ServiceError> {
     Ok(Some(
         time_stamp
             .parse::<DateTimeUtc>()
-            .map_err(|_| DefaultError {
-                message: "Invalid timestamp format",
-            })?
+            .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))?
             .0
             .with_timezone(&chrono::Local)
             .naive_local()
@@ -922,7 +907,7 @@ fn convert_to_date_time(time_stamp: String) -> Result<Option<f64>, DefaultError>
     ))
 }
 
-fn get_range(range: Range, field: String) -> Result<qdrant::Condition, DefaultError> {
+fn get_range(range: Range, field: String) -> Result<qdrant::Condition, ServiceError> {
     #[derive(PartialEq)]
     enum RangeValueType {
         Float,
@@ -939,17 +924,17 @@ fn get_range(range: Range, field: String) -> Result<qdrant::Condition, DefaultEr
         match value {
             Some(RangeCondition::Float(_)) => {
                 if range_value_type == RangeValueType::String {
-                    return Err(DefaultError {
-                        message: "Mixed types in range conditions",
-                    });
+                    return Err(ServiceError::BadRequest(
+                        "Mixed types in range conditions".to_string(),
+                    ));
                 }
                 range_value_type = RangeValueType::Float;
             }
             Some(RangeCondition::String(_)) => {
                 if range_value_type == RangeValueType::Float {
-                    return Err(DefaultError {
-                        message: "Mixed types in range conditions",
-                    });
+                    return Err(ServiceError::BadRequest(
+                        "Mixed types in range conditions".to_string(),
+                    ));
                 }
                 range_value_type = RangeValueType::String;
             }
@@ -986,22 +971,22 @@ fn get_range(range: Range, field: String) -> Result<qdrant::Condition, DefaultEr
                 qdrant::Range { gt, gte, lt, lte },
             ))
         }
-        RangeValueType::None => Err(DefaultError {
-            message: "No range conditions provided",
-        }),
+        RangeValueType::None => Err(ServiceError::BadRequest(
+            "No range conditions provided".to_string(),
+        )),
     }
 }
 
 impl FieldCondition {
-    pub fn convert_to_qdrant_condition(&self) -> Result<Option<qdrant::Condition>, DefaultError> {
+    pub fn convert_to_qdrant_condition(&self) -> Result<Option<qdrant::Condition>, ServiceError> {
         if self.r#match.is_none() && self.range.is_none() {
             return Ok(None);
         }
 
         if self.r#match.is_some() && self.range.is_some() {
-            return Err(DefaultError {
-                message: "Cannot have both match and range conditions",
-            });
+            return Err(ServiceError::BadRequest(
+                "Cannot have both match and range conditions".to_string(),
+            ));
         }
 
         if let Some(range) = self.range.clone() {
@@ -1014,9 +999,9 @@ impl FieldCondition {
             None => return Ok(None),
         };
 
-        match matches.first().ok_or(DefaultError {
-            message: "Should have at least one value for match",
-        })? {
+        match matches.first().ok_or(ServiceError::BadRequest(
+            "Should have at least one value for match".to_string(),
+        ))? {
             MatchCondition::Text(_) => Ok(Some(qdrant::Condition::matches(
                 self.field.as_str(),
                 matches.iter().map(|x| x.to_string()).collect_vec(),
@@ -1379,9 +1364,7 @@ pub async fn get_chunk_by_id(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let chunk_id = chunk_id.into_inner();
-    let chunk = get_metadata_from_id_query(chunk_id, dataset_org_plan_sub.dataset.id, pool)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let chunk = get_metadata_from_id_query(chunk_id, dataset_org_plan_sub.dataset.id, pool).await?;
 
     Ok(HttpResponse::Ok().json(chunk))
 }
@@ -1418,8 +1401,7 @@ pub async fn get_chunk_by_tracking_id(
         dataset_org_plan_sub.dataset.id,
         pool,
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     Ok(HttpResponse::Ok().json(chunk))
 }
@@ -1688,9 +1670,8 @@ pub async fn generate_off_chunks(
     let prompt = data.prompt.clone();
     let stream_response = data.stream_response;
 
-    let mut chunks = get_metadata_from_ids_query(chunk_ids, dataset_org_plan_sub.dataset.id, pool)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let mut chunks =
+        get_metadata_from_ids_query(chunk_ids, dataset_org_plan_sub.dataset.id, pool).await?;
 
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);

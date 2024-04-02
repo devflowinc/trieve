@@ -4,7 +4,7 @@ use regex_split::RegexSplit;
 use scraper::Html;
 use std::cmp;
 
-use crate::errors::DefaultError;
+use crate::errors::ServiceError;
 
 #[tracing::instrument]
 pub fn convert_html_to_text(html: &str) -> String {
@@ -101,13 +101,13 @@ pub fn coarse_doc_chunker(document: String) -> Vec<String> {
 }
 
 #[tracing::instrument(skip(embeddings))]
-pub fn average_embeddings(embeddings: Vec<Vec<f32>>) -> Result<Vec<f32>, DefaultError> {
+pub fn average_embeddings(embeddings: Vec<Vec<f32>>) -> Result<Vec<f32>, ServiceError> {
     let first_embedding_len = match embeddings.first() {
         Some(embedding) => embedding.len(),
         None => {
-            return Err(DefaultError {
-                message: "No embeddings provided",
-            });
+            return Err(ServiceError::BadRequest(
+                "No embeddings provided".to_string(),
+            ));
         }
     };
 
@@ -115,9 +115,9 @@ pub fn average_embeddings(embeddings: Vec<Vec<f32>>) -> Result<Vec<f32>, Default
     let flat: Vec<f32> = embeddings.iter().flatten().cloned().collect();
     let arr: Array2<f32> = Array2::from_shape_vec(shape, flat).map_err(|e| {
         log::error!("Error creating ndarray from embeddings: {}", e);
-        DefaultError {
-            message: "Error creating ndarray from embeddings",
-        }
+        ServiceError::InternalServerError(
+            "Error creating ndarray from embeddings to average".to_string(),
+        )
     })?;
 
     Ok((arr.sum_axis(ndarray::Axis(0)) / (embeddings.len() as f32)).to_vec())

@@ -1,7 +1,7 @@
 use super::auth_handler::AdminOnly;
 use crate::{
     data::models::{Invitation, Pool, RedisPool},
-    errors::{DefaultError, ServiceError},
+    errors::ServiceError,
     operators::{
         invitation_operator::{create_invitation_query, send_invitation},
         user_operator::add_existing_user_to_org,
@@ -62,15 +62,11 @@ pub async fn post_invitation(
     redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
     user: AdminOnly,
-) -> Result<HttpResponse, actix_web::Error> {
+) -> Result<HttpResponse, ServiceError> {
     let invitation_data = invitation_data.into_inner();
     let email = invitation_data.email;
     if !email_regex().is_match(&email) {
-        return Ok(
-            HttpResponse::BadRequest().json(crate::errors::DefaultError {
-                message: "Invalid email",
-            }),
-        );
+        return Err(ServiceError::BadRequest("Invalid email".to_string()));
     }
 
     let org_role = user
@@ -80,11 +76,9 @@ pub async fn post_invitation(
         .find(|org| org.organization_id == invitation_data.organization_id);
 
     if org_role.is_none() || org_role.expect("cannot be none").role < invitation_data.user_role {
-        return Ok(
-            HttpResponse::BadRequest().json(crate::errors::DefaultError {
-                message: "Can not invite user with higher role than yours",
-            }),
-        );
+        return Err(ServiceError::BadRequest(
+            "Can not invite user with higher role than yours".to_string(),
+        ));
     }
 
     let existing_user_org_id = invitation_data.organization_id;
@@ -97,8 +91,7 @@ pub async fn post_invitation(
         redis_pool,
         pool.clone(),
     )
-    .await
-    .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    .await?;
 
     if added_user_to_org {
         return Ok(HttpResponse::NoContent().finish());
@@ -112,14 +105,9 @@ pub async fn post_invitation(
         invitation_data.user_role,
         pool,
     )
-    .await
-    .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    .await?;
 
-    send_invitation(invitation.registration_url, invitation.invitation)
-        .await
-        .map_err(|e| {
-            ServiceError::BadRequest(format!("Could not send invitation: {}", e.message))
-        })?;
+    send_invitation(invitation.registration_url, invitation.invitation).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -137,7 +125,7 @@ pub async fn create_invitation(
     redirect_uri: String,
     user_role: i32,
     pool: web::Data<Pool>,
-) -> Result<InvitationWithUrl, DefaultError> {
+) -> Result<InvitationWithUrl, ServiceError> {
     let invitation = create_invitation_query(email, organization_id, user_role, pool).await?;
     // send_invitation(app_url, &invitation)
 

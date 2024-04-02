@@ -1,7 +1,7 @@
 use super::search_operator::{assemble_qdrant_filter, SearchResult};
 use crate::{
     data::models::{ChunkMetadata, Pool, ServerDatasetConfiguration},
-    errors::{DefaultError, ServiceError},
+    errors::ServiceError,
     get_env,
     handlers::chunk_handler::ChunkFilter,
 };
@@ -26,7 +26,7 @@ use std::{collections::HashMap, str::FromStr};
 pub async fn get_qdrant_connection(
     qdrant_url: Option<&str>,
     qdrant_api_key: Option<&str>,
-) -> Result<QdrantClient, DefaultError> {
+) -> Result<QdrantClient, ServiceError> {
     let qdrant_url = qdrant_url.unwrap_or(get_env!(
         "QDRANT_URL",
         "QDRANT_URL should be set if this is called"
@@ -37,9 +37,9 @@ pub async fn get_qdrant_connection(
     ));
     let mut config = QdrantClientConfig::from_url(qdrant_url);
     config.api_key = Some(qdrant_api_key.to_owned());
-    QdrantClient::new(Some(config)).map_err(|_err| DefaultError {
-        message: "Failed to connect to Qdrant",
-    })
+    QdrantClient::new(Some(config)).map_err(|_err| ServiceError::BadRequest(
+        "Failed to connect to Qdrant".to_string(),
+    ))
 }
 
 /// Create Qdrant collection and indexes needed
@@ -59,7 +59,7 @@ pub async fn create_new_qdrant_collection_query(
 
     let qdrant_client = get_qdrant_connection(qdrant_url, qdrant_api_key)
         .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    ?;
 
     // check if collection exists
     let collection = qdrant_client
@@ -255,7 +255,7 @@ pub async fn create_new_qdrant_point_query(
 
     let qdrant = get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY))
         .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    ?;
 
     let payload = json!({
         "tag_set": chunk_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(),
@@ -312,7 +312,7 @@ pub async fn update_qdrant_point_query(
 
     let qdrant = get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY))
         .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    ?;
 
     let current_point_vec = qdrant
         .get_points(
@@ -426,7 +426,7 @@ pub async fn add_bookmark_to_qdrant_query(
     point_id: uuid::Uuid,
     group_id: uuid::Uuid,
     config: ServerDatasetConfiguration,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
     let qdrant =
@@ -444,17 +444,17 @@ pub async fn add_bookmark_to_qdrant_query(
             None,
         )
         .await
-        .map_err(|_err| DefaultError {
-            message: "Failed to search_points from qdrant",
-        })?
+        .map_err(|_err| ServiceError::BadRequest(
+            "Failed to search_points from qdrant".to_string(),
+        ))?
         .result;
 
     let current_point = match current_point_vec.first() {
         Some(point) => point,
         None => {
-            return Err(DefaultError {
-                message: "Failed getting vec.first chunk from qdrant",
-            })
+            return Err(ServiceError::BadRequest(
+                "Failed getting vec.first chunk from qdrant".to_string(),
+            ))
         }
     };
 
@@ -501,9 +501,9 @@ pub async fn add_bookmark_to_qdrant_query(
             None,
         )
         .await
-        .map_err(|_err| DefaultError {
-            message: "Failed updating chunk payload in qdrant",
-        })?;
+        .map_err(|_err| ServiceError::BadRequest(
+            "Failed updating chunk payload in qdrant".to_string(),
+        ))?;
 
     Ok(())
 }
@@ -513,7 +513,7 @@ pub async fn remove_bookmark_from_qdrant_query(
     point_id: uuid::Uuid,
     group_id: uuid::Uuid,
     config: ServerDatasetConfiguration,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
     let qdrant =
@@ -531,17 +531,17 @@ pub async fn remove_bookmark_from_qdrant_query(
             None,
         )
         .await
-        .map_err(|_err| DefaultError {
-            message: "Failed to search_points from qdrant",
-        })?
+        .map_err(|_err| ServiceError::BadRequest(
+            "Failed to search_points from qdrant".to_string(),
+        ))?
         .result;
 
     let current_point = match current_point_vec.first() {
         Some(point) => point,
         None => {
-            return Err(DefaultError {
-                message: "Failed getting vec.first chunk from qdrant",
-            })
+            return Err(ServiceError::BadRequest(
+                "Failed getting vec.first chunk from qdrant".to_string(),
+            ))
         }
     };
 
@@ -588,9 +588,9 @@ pub async fn remove_bookmark_from_qdrant_query(
             None,
         )
         .await
-        .map_err(|_err| DefaultError {
-            message: "Failed updating chunk payload in qdrant",
-        })?;
+        .map_err(|_err| ServiceError::BadRequest(
+            "Failed updating chunk payload in qdrant".to_string(),
+        ))?;
 
     Ok(())
 }
@@ -616,7 +616,7 @@ pub async fn search_over_groups_query(
     group_size: u32,
     vector: VectorType,
     config: ServerDatasetConfiguration,
-) -> Result<Vec<GroupSearchResults>, DefaultError> {
+) -> Result<Vec<GroupSearchResults>, ServiceError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
     let qdrant =
@@ -631,9 +631,9 @@ pub async fn search_over_groups_query(
             1024 => "1024_vectors",
             1536 => "1536_vectors",
             _ => {
-                return Err(DefaultError {
-                    message: "Invalid embedding vector size",
-                })
+                return Err(ServiceError::BadRequest(
+                    "Invalid embedding vector size".to_string(),
+                ))
             }
         },
     };
@@ -685,9 +685,9 @@ pub async fn search_over_groups_query(
     }
     .map_err(|e| {
         log::error!("Failed to search points on Qdrant {:?}", e);
-        DefaultError {
-            message: "Failed to search points on Qdrant",
-        }
+        ServiceError::BadRequest(
+            "Failed to search points on Qdrant".to_string(),
+        )
     })?;
 
     let point_ids: Vec<GroupSearchResults> = data
@@ -734,7 +734,7 @@ pub async fn search_qdrant_query(
     score_threshold: Option<f32>,
     vector: VectorType,
     config: ServerDatasetConfiguration,
-) -> Result<Vec<SearchResult>, DefaultError> {
+) -> Result<Vec<SearchResult>, ServiceError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
     let qdrant =
@@ -749,9 +749,9 @@ pub async fn search_qdrant_query(
             1024 => "1024_vectors",
             1536 => "1536_vectors",
             _ => {
-                return Err(DefaultError {
-                    message: "Invalid embedding vector size",
-                })
+                return Err(ServiceError::BadRequest(
+                    "Invalid embedding vector size".to_string(),
+                ))
             }
         },
     };
@@ -793,9 +793,9 @@ pub async fn search_qdrant_query(
     }
     .map_err(|e| {
         log::error!("Failed to search points on Qdrant {:?}", e);
-        DefaultError {
-            message: "Failed to search points on Qdrant",
-        }
+        ServiceError::BadRequest(
+            "Failed to search points on Qdrant".to_string(),
+        )
     })?;
 
     let point_ids: Vec<SearchResult> = data
@@ -822,7 +822,7 @@ pub async fn recommend_qdrant_query(
     dataset_id: uuid::Uuid,
     config: ServerDatasetConfiguration,
     pool: web::Data<Pool>
-) -> Result<Vec<uuid::Uuid>, DefaultError> {
+) -> Result<Vec<uuid::Uuid>, ServiceError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
     let filter = assemble_qdrant_filter(filters, None, None, dataset_id, pool).await?;
@@ -846,9 +846,9 @@ pub async fn recommend_qdrant_query(
         1024 => "1024_vectors",
         1536 => "1536_vectors",
         _ => {
-            return Err(DefaultError {
-                message: "Invalid embedding vector size",
-            })
+            return Err(ServiceError::BadRequest(
+                "Invalid embedding vector size".to_string(),
+            ))
         }
     };
 
@@ -880,9 +880,9 @@ pub async fn recommend_qdrant_query(
         .await
         .map_err(|err| {
             log::info!("Failed to recommend points from qdrant: {:?}", err);
-            DefaultError {
-                message: "Failed to recommend points from qdrant. Your are likely providing an invalid point id.",
-            }
+            ServiceError::BadRequest(
+                "Failed to recommend points from qdrant. Your are likely providing an invalid point id.".to_string(),
+            )
         })?
         .result
         .into_iter()
@@ -904,7 +904,7 @@ pub async fn recommend_qdrant_groups_query(
     dataset_id: uuid::Uuid,
     config: ServerDatasetConfiguration,
     pool: web::Data<Pool>,
-) -> Result<Vec<GroupSearchResults>, DefaultError> {
+) -> Result<Vec<GroupSearchResults>, ServiceError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
     let qdrant =
@@ -928,9 +928,9 @@ pub async fn recommend_qdrant_groups_query(
         1024 => "1024_vectors",
         1536 => "1536_vectors",
         _ => {
-            return Err(DefaultError {
-                message: "Invalid embedding vector size",
-            })
+            return Err(ServiceError::BadRequest(
+                "Invalid embedding vector size".to_string(),
+            ))
         }
     };
 
@@ -966,9 +966,9 @@ pub async fn recommend_qdrant_groups_query(
         .await
         .map_err(|err| {
             log::info!("Failed to recommend points from qdrant: {:?}", err);
-            DefaultError {
-                message: "Failed to recommend points from qdrant. Your are likely providing an invalid point id.",
-            }
+            ServiceError::BadRequest(
+                "Failed to recommend points from qdrant. Your are likely providing an invalid point id.".to_string(),
+            )
         })?;
     let recommended_point_ids = data
         .result
@@ -1009,7 +1009,7 @@ pub async fn recommend_qdrant_groups_query(
 pub async fn get_point_count_qdrant_query(
     filters: Filter,
     config: ServerDatasetConfiguration,
-) -> Result<u64, DefaultError> {
+) -> Result<u64, ServiceError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
     let qdrant =
@@ -1026,9 +1026,9 @@ pub async fn get_point_count_qdrant_query(
         .await
         .map_err(|err| {
             log::info!("Failed to count points from qdrant: {:?}", err);
-            DefaultError {
-                message: "Failed to count points from qdrant",
-            }
+            ServiceError::BadRequest(
+                "Failed to count points from qdrant".to_string(),
+            )
         })?;
 
     Ok(data.result.expect("Failed to get result from qdrant").count)

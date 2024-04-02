@@ -33,15 +33,13 @@ pub async fn dataset_owns_group(
     unified_group_id: UnifiedId,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<ChunkGroup, actix_web::Error> {
+) -> Result<ChunkGroup, ServiceError> {
     let group = match unified_group_id {
-        UnifiedId::TrieveUuid(group_id) => get_group_by_id_query(group_id, dataset_id, pool)
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?,
+        UnifiedId::TrieveUuid(group_id) => {
+            get_group_by_id_query(group_id, dataset_id, pool).await?
+        }
         UnifiedId::TrackingId(tracking_id) => {
-            get_group_from_tracking_id_query(tracking_id, dataset_id, pool)
-                .await
-                .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+            get_group_from_tracking_id_query(tracking_id, dataset_id, pool).await?
         }
     };
 
@@ -151,8 +149,7 @@ pub async fn get_specific_dataset_chunk_groups(
         dataset_and_page.dataset_id,
         pool,
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     Ok(HttpResponse::Ok().json(GroupData {
         groups: groups
@@ -214,8 +211,7 @@ pub async fn get_group_by_tracking_id(
         dataset_org_plan_sub.dataset.id,
         pool,
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     Ok(HttpResponse::Ok().json(group))
 }
@@ -255,9 +251,8 @@ pub async fn get_chunk_group(
     _user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let group = get_group_by_id_query(group_id.into_inner(), dataset_org_plan_sub.dataset.id, pool)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let group =
+        get_group_by_id_query(group_id.into_inner(), dataset_org_plan_sub.dataset.id, pool).await?;
 
     Ok(HttpResponse::Ok().json(group))
 }
@@ -314,8 +309,7 @@ pub async fn update_group_by_tracking_id(
         dataset_org_plan_sub.dataset.id,
         pool,
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -373,8 +367,7 @@ pub async fn delete_group_by_tracking_id(
         delete_group_pool,
         server_dataset_config,
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -434,8 +427,7 @@ pub async fn delete_chunk_group(
         delete_group_pool,
         server_dataset_config,
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -508,8 +500,7 @@ pub async fn update_chunk_group(
         dataset_org_plan_sub.dataset.id,
         pool,
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -562,13 +553,10 @@ pub async fn add_chunk_to_group(
         pool,
         ChunkGroupBookmark::from_details(group_id, chunk_metadata_id),
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     if let Some(qdrant_point_id) = qdrant_point_id {
-        add_bookmark_to_qdrant_query(qdrant_point_id, group_id, server_dataset_config)
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        add_bookmark_to_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
     }
 
     Ok(HttpResponse::NoContent().finish())
@@ -627,13 +615,10 @@ pub async fn add_chunk_to_group_by_tracking_id(
         pool,
         ChunkGroupBookmark::from_details(group_id, chunk_metadata_id),
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     if let Some(qdrant_point_id) = qdrant_point_id {
-        add_bookmark_to_qdrant_query(qdrant_point_id, group_id, server_dataset_config)
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        add_bookmark_to_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
     }
 
     Ok(HttpResponse::NoContent().finish())
@@ -793,9 +778,7 @@ pub async fn get_groups_chunk_is_in(
 
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
-    let groups = get_groups_for_bookmark_query(chunk_ids, dataset_id, pool)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let groups = get_groups_for_bookmark_query(chunk_ids, dataset_id, pool).await?;
 
     Ok(HttpResponse::Ok().json(groups))
 }
@@ -844,14 +827,10 @@ pub async fn remove_chunk_from_group(
 
     dataset_owns_group(UnifiedId::TrieveUuid(group_id), dataset_id, pool.clone()).await?;
 
-    let qdrant_point_id = delete_chunk_from_group_query(chunk_id, group_id, pool)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let qdrant_point_id = delete_chunk_from_group_query(chunk_id, group_id, pool).await?;
 
     if let Some(qdrant_point_id) = qdrant_point_id {
-        remove_bookmark_from_qdrant_query(qdrant_point_id, group_id, server_dataset_config)
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        remove_bookmark_from_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
     }
 
     Ok(HttpResponse::NoContent().finish())
@@ -1199,18 +1178,14 @@ pub async fn search_within_group(
 
     let group = {
         if let Some(group_id) = group_id {
-            get_group_by_id_query(group_id, dataset_id, pool)
-                .await
-                .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+            get_group_by_id_query(group_id, dataset_id, pool).await?
         } else if let Some(group_tracking_id) = data.group_tracking_id.clone() {
-            get_group_from_tracking_id_query(group_tracking_id, dataset_id, pool)
-                .await
-                .map_err(|err| ServiceError::BadRequest(err.message.into()))?
+            get_group_from_tracking_id_query(group_tracking_id, dataset_id, pool).await?
         } else {
             return Err(ServiceError::BadRequest(
                 "You must provide either group_id or group_tracking_id".into(),
             )
-            .into());
+            .into())
         }
     };
 

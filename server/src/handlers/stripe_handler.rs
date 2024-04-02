@@ -90,8 +90,7 @@ pub async fn webhook(
                             fetch_subscription_organization_id,
                             optional_subscription_pool,
                         )
-                        .await
-                        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+                        .await?;
 
                     if let Some(existing_subscription) = optional_existing_subscription {
                         let delete_subscription_pool = pool.clone();
@@ -101,8 +100,7 @@ pub async fn webhook(
                             redis_pool.clone(),
                             delete_subscription_pool,
                         )
-                        .await
-                        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+                        .await?;
                     }
 
                     create_stripe_subscription_query(
@@ -112,8 +110,7 @@ pub async fn webhook(
                         redis_pool,
                         pool,
                     )
-                    .await
-                    .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?
+                    .await?;
                 }
             }
             EventType::PlanCreated => {
@@ -123,9 +120,7 @@ pub async fn webhook(
                         "Plan must have an amount".to_string(),
                     ))?;
 
-                    create_stripe_plan_query(plan_id, plan_amount, pool)
-                        .await
-                        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+                    create_stripe_plan_query(plan_id, plan_amount, pool).await?;
                 }
             }
             EventType::CustomerSubscriptionDeleted => {
@@ -146,8 +141,7 @@ pub async fn webhook(
                         redis_pool,
                         pool,
                     )
-                    .await
-                    .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+                    .await?;
                 }
             }
             _ => {}
@@ -193,8 +187,7 @@ pub async fn direct_to_payment_link(
 
     let current_subscription =
         get_option_subscription_by_organization_id_query(subscription_org_id, subscription_pool)
-            .await
-            .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+            .await?;
 
     if current_subscription.is_some_and(|s| s.current_period_end.is_none()) {
         return Ok(HttpResponse::Conflict().finish());
@@ -205,16 +198,11 @@ pub async fn direct_to_payment_link(
     let organization_id_clone = path_data.organization_id;
     let _org_plan_sub =
         get_organization_by_key_query(organization_id_clone.into(), redis_pool, organization_pool)
-            .await
-            .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+            .await?;
 
-    let plan = get_plan_by_id_query(plan_id, pool)
-        .await
-        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    let plan = get_plan_by_id_query(plan_id, pool).await?;
 
-    let payment_link = create_stripe_payment_link(plan, organization_id)
-        .await
-        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    let payment_link = create_stripe_payment_link(plan, organization_id).await?;
 
     Ok(HttpResponse::SeeOther()
         .insert_header(("Location", payment_link))
@@ -249,18 +237,10 @@ pub async fn cancel_subscription(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let get_sub_pool = pool.clone();
-    let subscription = get_subscription_by_id_query(subscription_id.into_inner(), get_sub_pool)
-        .await
-        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    let subscription =
+        get_subscription_by_id_query(subscription_id.into_inner(), get_sub_pool).await?;
 
-    cancel_stripe_subscription(subscription.stripe_id)
-        .await
-        .map_err(|e| {
-            ServiceError::BadRequest(format!(
-                "Failed to cancel stripe subscription: {}",
-                e.message
-            ))
-        })?;
+    cancel_stripe_subscription(subscription.stripe_id).await?;
 
     let _ =
         refresh_redis_org_plan_sub(subscription.organization_id, redis_pool, pool.clone()).await;
@@ -307,27 +287,20 @@ pub async fn update_subscription_plan(
     let update_subscription_plan_pool = pool.clone();
 
     let subscription_id = path_data.subscription_id;
-    let subscription = get_subscription_by_id_query(subscription_id, get_subscription_pool)
-        .await
-        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    let subscription = get_subscription_by_id_query(subscription_id, get_subscription_pool).await?;
 
     let plan_id = path_data.plan_id;
-    let plan = get_plan_by_id_query(plan_id, get_plan_pool)
-        .await
-        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    let plan = get_plan_by_id_query(plan_id, get_plan_pool).await?;
 
-    update_stripe_subscription(subscription.stripe_id, plan.stripe_id)
-        .await
-        .map_err(|e| {
-            ServiceError::BadRequest(format!(
-                "Failed to update stripe subscription: {}",
-                e.message
-            ))
-        })?;
+    update_stripe_subscription(subscription.stripe_id, plan.stripe_id).await?;
 
-    update_stripe_subscription_plan_query(subscription.id, plan.id, redis_pool, update_subscription_plan_pool)
-        .await
-        .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    update_stripe_subscription_plan_query(
+        subscription.id,
+        plan.id,
+        redis_pool,
+        update_subscription_plan_pool,
+    )
+    .await?;
 
     Ok(HttpResponse::Ok().finish())
 }

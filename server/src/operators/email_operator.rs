@@ -1,4 +1,4 @@
-use crate::{errors::DefaultError, get_env};
+use crate::{errors::ServiceError, get_env};
 use lettre::message::header::ContentType;
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{Message, SmtpTransport, Transport};
@@ -12,7 +12,7 @@ pub fn get_smtp_creds() -> Credentials {
 }
 
 #[tracing::instrument]
-pub fn send_email(html_email_body: String, to_address: String) -> Result<(), DefaultError> {
+pub fn send_email(html_email_body: String, to_address: String) -> Result<(), ServiceError> {
     let smtp_relay = get_env!("SMTP_RELAY", "SMTP_RELAY should be set");
     let smtp_email_address = get_env!("SMTP_EMAIL_ADDRESS", "SMTP_EMAIL_ADDRESS should be set");
 
@@ -34,9 +34,9 @@ pub fn send_email(html_email_body: String, to_address: String) -> Result<(), Def
         Ok(_) => Ok(()),
         Err(e) => {
             log::error!("Error sending email: {:?}", e);
-            Err(DefaultError {
-                message: "Error sending email.",
-            })
+            Err(ServiceError::BadRequest(
+                "Error sending email.".to_string(),
+            ))
         }
     }
 }
