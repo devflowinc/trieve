@@ -149,7 +149,7 @@ export const AfMessage = (props: AfMessageProps) => {
                   </div>
                 </Show>
                 <Show when={metadata()}>
-                  <div class="scrollbar-thin scrollbar-track-neutral-200 dark:scrollbar-track-zinc-700 max-h-[800px] w-full flex-col space-y-3 overflow-scroll overflow-x-hidden pr-2">
+                  <div class="max-h-[800px] w-full flex-col space-y-3 overflow-scroll overflow-x-hidden pr-2 scrollbar-thin scrollbar-track-neutral-200 dark:scrollbar-track-zinc-700">
                     <For each={chunkMetadatas()}>
                       {(chunk, i) => (
                         <ScoreChunk
@@ -194,7 +194,7 @@ export const AfMessage = (props: AfMessageProps) => {
             <form class="w-full">
               <textarea
                 id="new-message-content-textarea"
-                class="scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600 max-h-[180px] w-full resize-none whitespace-pre-wrap rounded bg-neutral-100 bg-transparent p-2 py-1 focus:outline-none dark:bg-neutral-700 dark:text-white"
+                class="max-h-[180px] w-full resize-none whitespace-pre-wrap rounded bg-neutral-100 bg-transparent p-2 py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
                 placeholder="Write a question or prompt for the assistant..."
                 value={editingMessageContent()}
                 onInput={(e) => resizeTextarea(e.target)}
