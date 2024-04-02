@@ -357,8 +357,7 @@ async fn upload_chunk(
             true => {
                 let chunks = coarse_doc_chunker(content.clone());
 
-                let embeddings = create_embeddings(chunks, "doc", dataset_config.clone())
-                    .await?;
+                let embeddings = create_embeddings(chunks, "doc", dataset_config.clone()).await?;
 
                 average_embeddings(embeddings)?
             }
@@ -594,8 +593,7 @@ async fn update_chunk(
             payload.dataset_id,
             web_pool.clone(),
         )
-        .await
-        ?;
+        .await?;
 
         if let Some(qdrant_point_id) = chunk.qdrant_point_id {
             update_qdrant_point_query(
@@ -623,8 +621,7 @@ async fn update_chunk(
             payload.dataset_id,
             web_pool.clone(),
         )
-        .await
-            ?;
+        .await?;
 
         update_qdrant_point_query(
             // If the chunk is a collision, we don't want to update the qdrant point

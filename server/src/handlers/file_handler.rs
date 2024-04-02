@@ -182,8 +182,7 @@ pub async fn upload_file_handler(
         pool_inner,
         redis_pool,
     )
-    .await
-    ?;
+    .await?;
 
     Ok(HttpResponse::Ok().json(conversion_result))
 }

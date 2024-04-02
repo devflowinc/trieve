@@ -139,7 +139,7 @@ pub async fn create_embeddings(
     if vectors.iter().any(|x| x.is_empty()) {
         return Err(ServiceError::InternalServerError(
             "Embedding server responded with Base64 and that is not currently supported for embeddings".to_owned(),
-        ).into());
+        ));
     }
 
     transaction.finish();

@@ -1,3 +1,7 @@
+#![allow(
+    clippy::get_first
+)]
+
 #[macro_use]
 extern crate diesel;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
@@ -383,8 +387,8 @@ pub async fn main() -> std::io::Result<()> {
         .await
         .expect("Failed to create redis store");
 
-    let redis_manager = bb8_redis::RedisConnectionManager::new(redis_url)
-        .expect("Failed to connect to redis");
+    let redis_manager =
+        bb8_redis::RedisConnectionManager::new(redis_url).expect("Failed to connect to redis");
 
     let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
         .unwrap_or("200".to_string())
@@ -628,7 +632,6 @@ pub async fn main() -> std::io::Result<()> {
                                         web::put().to(handlers::group_handler::update_chunk_group),
                                     ),
                                 )
-                                
                             .service(web::resource("/chunks").route(
                                 web::post().to(handlers::group_handler::get_groups_chunk_is_in),
                             ))
@@ -726,7 +729,6 @@ pub async fn main() -> std::io::Result<()> {
                                 .route(web::get().to(handlers::file_handler::get_pdf_from_range)),
                             ),
                     )
-                    
                     .service(
                         web::scope("/events").service(
                             web::resource("")

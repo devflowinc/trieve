@@ -33,9 +33,10 @@ pub async fn create_organization_query(
 
     let mut new_organization = Organization::from_details(name.to_string());
 
-    let mut conn = pool.get().await.map_err(|_| ServiceError::BadRequest(
-        "Could not get database connection".to_string(),
-    ))?;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     let mut number: usize = diesel::insert_into(organizations_columns::organizations)
         .values(new_organization.clone())
@@ -43,9 +44,9 @@ pub async fn create_organization_query(
         .do_nothing()
         .execute(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Could not create organization, try again".to_string(),
-        ))?;
+        .map_err(|_| {
+            ServiceError::BadRequest("Could not create organization, try again".to_string())
+        })?;
 
     while number == 0 {
         // Get random name
@@ -57,9 +58,9 @@ pub async fn create_organization_query(
             .do_nothing()
             .execute(&mut conn)
             .await
-            .map_err(|_| ServiceError::BadRequest(
-                "Could not create organization, try again".to_string(),
-            ))?;
+            .map_err(|_| {
+                ServiceError::BadRequest("Could not create organization, try again".to_string())
+            })?;
     }
 
     refresh_redis_org_plan_sub(new_organization.id, redis_pool, pool).await?;
@@ -76,9 +77,10 @@ pub async fn update_organization_query(
 ) -> Result<Organization, ServiceError> {
     use crate::data::schema::organizations::dsl as organizations_columns;
 
-    let mut conn = pool.get().await.map_err(|_| ServiceError::BadRequest(
-        "Could not get database connection".to_string(),
-    ))?;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     let updated_organization: Organization = diesel::update(organizations_columns::organizations)
         .filter(organizations_columns::id.eq(id))
@@ -90,13 +92,9 @@ pub async fn update_organization_query(
         .await
         .map_err(|err| match err {
             diesel::result::Error::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
-                ServiceError::BadRequest(
-                    "Organization name already exists".to_string(),
-                )
+                ServiceError::BadRequest("Organization name already exists".to_string())
             }
-            _ => ServiceError::BadRequest(
-                "Failed to update organization, try again".to_string(),
-            ),
+            _ => ServiceError::BadRequest("Failed to update organization, try again".to_string()),
         })?;
 
     refresh_redis_org_plan_sub(updated_organization.id, redis_pool, pool).await?;
@@ -116,9 +114,10 @@ pub async fn delete_organization_query(
     use crate::data::schema::organizations::dsl as organizations_columns;
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
-    let mut conn = pool.get().await.map_err(|_| ServiceError::BadRequest(
-        "Could not get database connection".to_string(),
-    ))?;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     let existing_subscription: Option<StripeSubscription> =
         stripe_subscriptions_columns::stripe_subscriptions
@@ -128,7 +127,7 @@ pub async fn delete_organization_query(
             .ok();
 
     if let Some(subscription) = existing_subscription {
-        if !subscription.current_period_end.is_some() {
+        if subscription.current_period_end.is_none() {
             return Err(ServiceError::BadRequest(
                 "Cannot delete organization with active subscription".to_string(),
             ));
@@ -145,9 +144,7 @@ pub async fn delete_organization_query(
                 "Error deleting subscription in delete_organization_query: {:?}",
                 e
             );
-            ServiceError::BadRequest(
-                "Could not delete subscription, try again".to_string(),
-            )
+            ServiceError::BadRequest("Could not delete subscription, try again".to_string())
         })?;
     }
 
@@ -161,9 +158,7 @@ pub async fn delete_organization_query(
                 "Error loading datasets in delete_organization_query: {:?}",
                 e
             );
-            ServiceError::BadRequest(
-                "Error loading datasets".to_string(),
-            )
+            ServiceError::BadRequest("Error loading datasets".to_string())
         })?;
 
     for dataset in datasets {
@@ -176,9 +171,7 @@ pub async fn delete_organization_query(
                     "Error deleting dataset in delete_organization_query: {:?}",
                     e
                 );
-                ServiceError::BadRequest(
-                    "Error deleting dataset".to_string(),
-                )
+                ServiceError::BadRequest("Error deleting dataset".to_string())
             })?;
     }
 
@@ -192,9 +185,7 @@ pub async fn delete_organization_query(
             "Error deleting organization in delete_organization_query: {:?}",
             e
         );
-        ServiceError::BadRequest(
-            "Could not delete organization, try again".to_string(),
-        )
+        ServiceError::BadRequest("Could not delete organization, try again".to_string())
     })?;
 
     if req.is_some() && calling_user_id.is_some() {
@@ -211,9 +202,7 @@ pub async fn delete_organization_query(
                 "Error serializing user in delete_organization_query: {:?}",
                 e
             );
-            ServiceError::BadRequest(
-                "Could not serialize user".to_string(),
-            )
+            ServiceError::BadRequest("Could not serialize user".to_string())
         })?;
 
         Identity::login(
@@ -260,17 +249,16 @@ pub async fn get_organization_by_key_query(
     redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<OrganizationWithSubAndPlan, ServiceError> {
-    let mut redis_conn = redis_pool.get().await.map_err(|_| ServiceError::BadRequest(
-        "Failed to parse error".to_string(),
-    ))?;
+    let mut redis_conn = redis_pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to parse error".to_string()))?;
 
     let redis_organization: Result<String, ServiceError> = redis::cmd("GET")
         .arg(format!("organization:{}", key.display()))
         .query_async(&mut *redis_conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Could not get dataset from redis".to_string(),
-        ));
+        .map_err(|_| ServiceError::BadRequest("Could not get dataset from redis".to_string()));
 
     let org_plan_sub = match redis_organization {
         Ok(organization_str) => {
@@ -282,9 +270,9 @@ pub async fn get_organization_by_key_query(
             use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
             use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
-            let mut conn = pool.get().await.map_err(|_| ServiceError::BadRequest(
-                "Could not get database connection".to_string(),
-            ))?;
+            let mut conn = pool.get().await.map_err(|_| {
+                ServiceError::BadRequest("Could not get database connection".to_string())
+            })?;
 
             let query = organizations_columns::organizations
                 .left_outer_join(stripe_subscriptions_columns::stripe_subscriptions)
@@ -307,18 +295,18 @@ pub async fn get_organization_by_key_query(
                             &mut conn,
                         )
                         .await
-                        .map_err(|_| ServiceError::BadRequest(
-                            "Could not find organizations".to_string(),
-                        ))?,
+                        .map_err(|_| {
+                            ServiceError::BadRequest("Could not find organizations".to_string())
+                        })?,
                     OrganizationKey::Name(name) => query
                         .filter(organizations_columns::name.eq(name))
                         .first::<(Organization, Option<StripePlan>, Option<StripeSubscription>)>(
                             &mut conn,
                         )
                         .await
-                        .map_err(|_| ServiceError::BadRequest(
-                            "Could not find organizations".to_string(),
-                        ))?,
+                        .map_err(|_| {
+                            ServiceError::BadRequest("Could not find organizations".to_string())
+                        })?,
                 };
 
             let org_with_plan_sub: OrganizationWithSubAndPlan =
@@ -328,35 +316,31 @@ pub async fn get_organization_by_key_query(
                     org_plan_sub.2,
                 );
 
-            let mut redis_conn = redis_pool.get().await.map_err(|_| ServiceError::BadRequest(
-                "Could not create redis client".to_string(),
-            ))?;
+            let mut redis_conn = redis_pool.get().await.map_err(|_| {
+                ServiceError::BadRequest("Could not create redis client".to_string())
+            })?;
 
             redis::cmd("SET")
                 .arg(format!("organization:{}", org_with_plan_sub.id))
-                .arg(
-                    serde_json::to_string(&org_with_plan_sub).map_err(|_| ServiceError::BadRequest(
-                        "Could not stringify organization".to_string(),
-                    ))?,
-                )
+                .arg(serde_json::to_string(&org_with_plan_sub).map_err(|_| {
+                    ServiceError::BadRequest("Could not stringify organization".to_string())
+                })?)
                 .query_async(&mut *redis_conn)
                 .await
-                .map_err(|_| ServiceError::BadRequest(
-                    "Could not set organization in redis".to_string(),
-                ))?;
+                .map_err(|_| {
+                    ServiceError::BadRequest("Could not set organization in redis".to_string())
+                })?;
 
             redis::cmd("SET")
                 .arg(format!("organization:{}", org_with_plan_sub.name))
-                .arg(
-                    serde_json::to_string(&org_with_plan_sub).map_err(|_| ServiceError::BadRequest(
-                        "Could not stringify organization".to_string(),
-                    ))?,
-                )
+                .arg(serde_json::to_string(&org_with_plan_sub).map_err(|_| {
+                    ServiceError::BadRequest("Could not stringify organization".to_string())
+                })?)
                 .query_async(&mut *redis_conn)
                 .await
-                .map_err(|_| ServiceError::BadRequest(
-                    "Could not set organization in redis".to_string(),
-                ))?;
+                .map_err(|_| {
+                    ServiceError::BadRequest("Could not set organization in redis".to_string())
+                })?;
 
             org_with_plan_sub
         }
@@ -372,18 +356,21 @@ pub async fn get_org_from_id_query(
 ) -> Result<Organization, ServiceError> {
     use crate::data::schema::organizations::dsl as organizations_columns;
 
-    let mut conn = pool.get().await.map_err(|_| ServiceError::BadRequest(
-        "Could not get database connection".to_string(),
-    ))?;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     let organization: Organization = organizations_columns::organizations
         .filter(organizations_columns::id.eq(organization_id))
         .select(Organization::as_select())
         .first(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Could not find organization, try again with a different id".to_string(),
-        ))?;
+        .map_err(|_| {
+            ServiceError::BadRequest(
+                "Could not find organization, try again with a different id".to_string(),
+            )
+        })?;
 
     Ok(organization)
 }
@@ -395,18 +382,17 @@ pub async fn get_org_dataset_count(
 ) -> Result<i32, ServiceError> {
     use crate::data::schema::organization_usage_counts::dsl as organization_usage_counts_columns;
 
-    let mut conn = pool.get().await.map_err(|_| ServiceError::BadRequest(
-        "Could not get database connection".to_string(),
-    ))?;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     let dataset_count = organization_usage_counts_columns::organization_usage_counts
         .filter(organization_usage_counts_columns::org_id.eq(organization_id))
         .select(organization_usage_counts_columns::dataset_count)
         .first(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Error loading org dataset count".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::BadRequest("Error loading org dataset count".to_string()))?;
 
     Ok(dataset_count)
 }
@@ -418,18 +404,17 @@ pub async fn get_user_org_count(
 ) -> Result<i32, ServiceError> {
     use crate::data::schema::organization_usage_counts::dsl as organization_usage_counts_columns;
 
-    let mut conn = pool.get().await.map_err(|_| ServiceError::BadRequest(
-        "Could not get database connection".to_string(),
-    ))?;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     let user_count = organization_usage_counts_columns::organization_usage_counts
         .filter(organization_usage_counts_columns::org_id.eq(organization_id))
         .select(organization_usage_counts_columns::user_count)
         .get_result(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Error loading org user count".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::BadRequest("Error loading org user count".to_string()))?;
 
     Ok(user_count)
 }
@@ -441,18 +426,19 @@ pub async fn get_message_org_count(
 ) -> Result<i32, ServiceError> {
     use crate::data::schema::organization_usage_counts::dsl as organization_usage_counts_columns;
 
-    let mut conn = pool.get().await.map_err(|_| ServiceError::BadRequest(
-        "Could not get database connection".to_string(),
-    ))?;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     let messages_count = organization_usage_counts_columns::organization_usage_counts
         .filter(organization_usage_counts_columns::org_id.eq(organization_id))
         .select(organization_usage_counts_columns::message_count)
         .get_result(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Error loading message organization count".to_string(),
-        ))?;
+        .map_err(|_| {
+            ServiceError::BadRequest("Error loading message organization count".to_string())
+        })?;
 
     Ok(messages_count)
 }
@@ -464,18 +450,19 @@ pub async fn get_file_size_sum_org(
 ) -> Result<i64, ServiceError> {
     use crate::data::schema::organization_usage_counts::dsl as organization_usage_counts_columns;
 
-    let mut conn = pool.get().await.map_err(|_| ServiceError::BadRequest(
-        "Could not get database connection".to_string(),
-    ))?;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     let file_size_sums: i64 = organization_usage_counts_columns::organization_usage_counts
         .filter(organization_usage_counts_columns::org_id.eq(organization_id))
         .select(organization_usage_counts_columns::file_storage)
         .get_result(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Error loading file size sum organization count".to_string(),
-        ))?;
+        .map_err(|_| {
+            ServiceError::BadRequest("Error loading file size sum organization count".to_string())
+        })?;
 
     Ok(file_size_sums)
 }
@@ -485,18 +472,19 @@ pub async fn get_org_usage_by_id_query(
     org_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<OrganizationUsageCount, ServiceError> {
-    let mut conn = pool.get().await.map_err(|_| ServiceError::BadRequest(
-        "Could not get database connection".to_string(),
-    ))?;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     let org_usage_count: OrganizationUsageCount =
         crate::data::schema::organization_usage_counts::dsl::organization_usage_counts
             .filter(crate::data::schema::organization_usage_counts::dsl::org_id.eq(org_id))
             .first(&mut conn)
             .await
-            .map_err(|_| ServiceError::BadRequest(
-                "Could not find organization usage count".to_string(),
-            ))?;
+            .map_err(|_| {
+                ServiceError::BadRequest("Could not find organization usage count".to_string())
+            })?;
 
     Ok(org_usage_count)
 }
@@ -526,9 +514,7 @@ pub async fn get_org_users_by_id_query(
         ))
         .load::<(User, UserOrganization, Organization)>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Error loading user".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::BadRequest("Error loading user".to_string()))?;
 
     Ok(user_orgs_orgs
         .into_iter()
@@ -623,7 +609,6 @@ pub async fn get_arbitrary_org_owner_from_dataset_id(
                 "Error getting arbitrary org owner from dataset id in get_arbitrary_org_owner_from_dataset_id: {:?}",
                 e
             );
-            
             ServiceError::BadRequest(
                 "Relevant organization for dataset had no owner level users".to_string(),
             )

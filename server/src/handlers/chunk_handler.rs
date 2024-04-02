@@ -1318,7 +1318,7 @@ pub async fn search_chunk(
         let ids = result_chunks
             .score_chunks
             .iter()
-            .map(|score_chunk| <ScoreChunkDTO as Clone>::clone(&(*score_chunk)).into())
+            .map(|score_chunk| <ScoreChunkDTO as Clone>::clone(score_chunk).into())
             .collect::<Vec<ScoreSlimChunks>>();
 
         let res = SearchSlimChunkQueryResponseBody {

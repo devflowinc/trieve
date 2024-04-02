@@ -46,41 +46,32 @@ pub async fn refresh_redis_org_plan_sub(
             .filter(organizations_columns::id.eq(organization_id))
             .first::<(Organization, Option<StripePlan>, Option<StripeSubscription>)>(&mut conn)
             .await
-            .map_err(|_| ServiceError::BadRequest(
-                "Could not find organizations".to_string(),
-            ))?;
+            .map_err(|_| ServiceError::BadRequest("Could not find organizations".to_string()))?;
     let org_plan_sub =
         OrganizationWithSubAndPlan::from_components(org_plan_sub.0, org_plan_sub.1, org_plan_sub.2);
 
-    let mut redis_conn = redis_pool.get().await.map_err(|_| ServiceError::BadRequest(
-        "Could not create redis client".to_string(),
-    ))?;
+    let mut redis_conn = redis_pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not create redis client".to_string()))?;
 
     redis::cmd("SET")
         .arg(format!("organization:{}", org_plan_sub.id))
-        .arg(
-            serde_json::to_string(&org_plan_sub).map_err(|_| ServiceError::BadRequest(
-                "Could not stringify organization".to_string(),
-            ))?,
-        )
+        .arg(serde_json::to_string(&org_plan_sub).map_err(|_| {
+            ServiceError::BadRequest("Could not stringify organization".to_string())
+        })?)
         .query_async(&mut *redis_conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Could not set organization in redis".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::BadRequest("Could not set organization in redis".to_string()))?;
 
     redis::cmd("SET")
         .arg(format!("organization:{}", org_plan_sub.name))
-        .arg(
-            serde_json::to_string(&org_plan_sub).map_err(|_| ServiceError::BadRequest(
-                "Could not stringify organization".to_string(),
-            ))?,
-        )
+        .arg(serde_json::to_string(&org_plan_sub).map_err(|_| {
+            ServiceError::BadRequest("Could not stringify organization".to_string())
+        })?)
         .query_async(&mut *redis_conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Could not set organization in redis".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::BadRequest("Could not set organization in redis".to_string()))?;
 
     Ok(())
 }
@@ -108,9 +99,7 @@ pub async fn create_stripe_subscription_query(
         .await
         .map_err(|e| {
             log::error!("Failed to insert stripe subscription: {}", e);
-            ServiceError::BadRequest(
-                "Failed to insert stripe subscription".to_string(),
-            )
+            ServiceError::BadRequest("Failed to insert stripe subscription".to_string())
         })?;
 
     refresh_redis_org_plan_sub(stripe_subscription.organization_id, redis_pool, pool).await?;
@@ -148,9 +137,7 @@ pub async fn create_stripe_plan_query(
         .await
         .map_err(|e| {
             log::error!("Failed to insert stripe plan: {}", e);
-            ServiceError::BadRequest(
-                "Failed to insert stripe plan".to_string(),
-            )
+            ServiceError::BadRequest("Failed to insert stripe plan".to_string())
         })?;
 
     Ok(created_stripe_plan)
@@ -173,9 +160,7 @@ pub async fn get_plan_by_id_query(
         .await
         .map_err(|e| {
             log::error!("Failed to get stripe plan: {}", e);
-            ServiceError::BadRequest(
-                "Failed to get stripe plan".to_string(),
-            )
+            ServiceError::BadRequest("Failed to get stripe plan".to_string())
         })?;
 
     Ok(stripe_plan)
@@ -194,9 +179,7 @@ pub async fn get_all_plans_query(pool: web::Data<Pool>) -> Result<Vec<StripePlan
         .await
         .map_err(|e| {
             log::error!("Failed to get stripe plans: {}", e);
-            ServiceError::BadRequest(
-                "Failed to get stripe plans".to_string(),
-            )
+            ServiceError::BadRequest("Failed to get stripe plans".to_string())
         })?;
 
     Ok(stripe_plans)
@@ -231,26 +214,23 @@ pub async fn create_stripe_payment_link(
         .await
         .map_err(|e| {
             log::error!("Failed to create stripe payment link: {}", e);
-            ServiceError::BadRequest(
-                "Failed to create stripe payment link".to_string(),
-            )
+            ServiceError::BadRequest("Failed to create stripe payment link".to_string())
         })?;
 
     let payment_link_response_json: serde_json::Value =
         payment_link_response.json().await.map_err(|e| {
             log::error!("Failed to get stripe payment link json: {}", e);
-            ServiceError::BadRequest(
-                "Failed to get stripe payment link json".to_string(),
-            )
+            ServiceError::BadRequest("Failed to get stripe payment link json".to_string())
         })?;
 
     log::info!("Payment link response: {:?}", payment_link_response_json);
 
-    let payment_link = payment_link_response_json["url"]
-        .as_str()
-        .ok_or(ServiceError::BadRequest(
-            "Failed to get stripe payment link url".to_string(),
-        ))?;
+    let payment_link =
+        payment_link_response_json["url"]
+            .as_str()
+            .ok_or(ServiceError::BadRequest(
+                "Failed to get stripe payment link url".to_string(),
+            ))?;
 
     Ok(payment_link.to_string())
 }
@@ -273,9 +253,7 @@ pub async fn get_subscription_by_id_query(
             .await
             .map_err(|e| {
                 log::error!("Failed to get stripe subscription: {}", e);
-                ServiceError::BadRequest(
-                    "Failed to get stripe subscription".to_string(),
-                )
+                ServiceError::BadRequest("Failed to get stripe subscription".to_string())
             })?;
 
     Ok(stripe_subscription)
@@ -301,9 +279,7 @@ pub async fn delete_subscription_by_id_query(
     .await
     .map_err(|e| {
         log::error!("Failed to delete stripe subscription: {}", e);
-        ServiceError::BadRequest(
-            "Failed to delete stripe subscription".to_string(),
-        )
+        ServiceError::BadRequest("Failed to delete stripe subscription".to_string())
     })?;
 
     refresh_redis_org_plan_sub(deleted_subscription.organization_id, redis_pool, pool).await?;
@@ -329,9 +305,7 @@ pub async fn get_option_subscription_by_organization_id_query(
             .await
             .map_err(|e| {
                 log::error!("Failed to get stripe subscription: {}", e);
-                ServiceError::BadRequest(
-                    "Failed to get stripe subscription".to_string(),
-                )
+                ServiceError::BadRequest("Failed to get stripe subscription".to_string())
             })?;
 
     Ok(stripe_subscriptions.into_iter().next())
@@ -359,9 +333,7 @@ pub async fn set_stripe_subscription_current_period_end(
     .await
     .map_err(|e| {
         log::error!("Failed to update stripe subscription: {}", e);
-        ServiceError::BadRequest(
-            "Failed to update stripe subscription".to_string(),
-        )
+        ServiceError::BadRequest("Failed to update stripe subscription".to_string())
     })?;
 
     refresh_redis_org_plan_sub(updated_subscription.organization_id, redis_pool, pool).await?;
@@ -375,9 +347,9 @@ pub async fn cancel_stripe_subscription(
 ) -> Result<(), ServiceError> {
     let stripe_client = get_stripe_client();
     let stripe_subscription_id: stripe::SubscriptionId =
-        subscription_stripe_id.parse().map_err(|_| ServiceError::BadRequest(
-            "Failed to parse stripe subscription id".to_string(),
-        ))?;
+        subscription_stripe_id.parse().map_err(|_| {
+            ServiceError::BadRequest("Failed to parse stripe subscription id".to_string())
+        })?;
     stripe::Subscription::cancel(
         &stripe_client,
         &stripe_subscription_id,
@@ -386,9 +358,7 @@ pub async fn cancel_stripe_subscription(
     .await
     .map_err(|e| {
         log::error!("Failed to cancel stripe subscription: {}", e);
-        ServiceError::BadRequest(
-            "Request to stripe failed".to_string(),
-        )
+        ServiceError::BadRequest("Request to stripe failed".to_string())
     })?;
 
     Ok(())
@@ -416,9 +386,7 @@ pub async fn update_stripe_subscription_plan_query(
     .await
     .map_err(|e| {
         log::error!("Failed to update stripe subscription: {}", e);
-        ServiceError::BadRequest(
-            "Failed to update stripe subscription".to_string(),
-        )
+        ServiceError::BadRequest("Failed to update stripe subscription".to_string())
     })?;
 
     refresh_redis_org_plan_sub(updated_subscription.organization_id, redis_pool, pool).await?;
@@ -434,9 +402,9 @@ pub async fn update_stripe_subscription(
     let stripe_client = get_stripe_client();
 
     let stripe_subscription_id: stripe::SubscriptionId =
-        subscription_stripe_id.parse().map_err(|_| ServiceError::BadRequest(
-            "Failed to parse stripe subscription id".to_string(),
-        ))?;
+        subscription_stripe_id.parse().map_err(|_| {
+            ServiceError::BadRequest("Failed to parse stripe subscription id".to_string())
+        })?;
     let list_sub_items = stripe::generated::billing::subscription_item::ListSubscriptionItems::new(
         stripe_subscription_id.clone(),
     );
@@ -444,9 +412,7 @@ pub async fn update_stripe_subscription(
         .await
         .map_err(|e| {
             log::error!("Failed to list stripe subscription items: {}", e);
-            ServiceError::BadRequest(
-                "Failed to list stripe subscription items".to_string(),
-            )
+            ServiceError::BadRequest("Failed to list stripe subscription items".to_string())
         })?;
 
     let mut update_subscription_items: Vec<stripe::UpdateSubscriptionItems> = vec![];
@@ -477,9 +443,7 @@ pub async fn update_stripe_subscription(
     .await
     .map_err(|e| {
         log::error!("Failed to update stripe subscription: {}", e);
-        ServiceError::BadRequest(
-            "Failed to update stripe subscription".to_string(),
-        )
+        ServiceError::BadRequest("Failed to update stripe subscription".to_string())
     })?;
 
     Ok(())
