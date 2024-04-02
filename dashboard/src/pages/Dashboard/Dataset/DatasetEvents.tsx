@@ -1,5 +1,6 @@
 import {
   For,
+  Show,
   createEffect,
   createSignal,
   onCleanup,
@@ -17,11 +18,11 @@ export const DatasetEvents = () => {
   const [events, setEvents] = createSignal<Event[]>([]);
   const [page, setPage] = createSignal(1);
   const [pageCount, setPageCount] = createSignal(1);
+  const [loading, setLoading] = createSignal(true);
 
   const getEvents = () => {
     const datasetId = datasetContext.dataset?.()?.id;
     if (!datasetId) return;
-
     const eventsAbortController = new AbortController();
     void fetch(`${api_host}/events`, {
       method: "POST",
@@ -40,6 +41,7 @@ export const DatasetEvents = () => {
           if (Array.isArray(data.events) && data.events.every(isEvent)) {
             setEvents(data.events);
             setPageCount(Math.ceil(data.page_count / 10));
+            setLoading(false);
           }
         }
       }),
@@ -78,70 +80,81 @@ export const DatasetEvents = () => {
             <div class="mt-8 flow-root">
               <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
                 <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                  <table class="min-w-full max-w-md divide-y divide-gray-300">
-                    <thead>
-                      <tr>
-                        <th
-                          scope="col"
-                          class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
-                        >
-                          Level
-                        </th>
-                        <th
-                          scope="col"
-                          class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
-                        >
-                          Event Type
-                        </th>
-                        <th
-                          scope="col"
-                          class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                        >
-                          Time
-                        </th>
-                        <th
-                          scope="col"
-                          class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                        >
-                          Metadata
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody class="bg-white">
-                      <For each={events()}>
-                        {(event) => (
-                          <tr class="even:bg-gray-50">
-                            <td
-                              classList={{
-                                "whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium sm:pl-3":
-                                  true,
-                                "text-gray-900":
-                                  !event.event_type.includes("failed"),
-                                "text-red-500":
-                                  event.event_type.includes("failed"),
-                              }}
-                            >
-                              {event.event_type.includes("failed")
-                                ? "ERROR"
-                                : "INFO"}
-                            </td>
-                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 sm:pl-3">
-                              {event.event_type}
-                            </td>
-                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              {event.created_at}
-                            </td>
-                            <td class="text-wrap max-w-md overflow-ellipsis break-words px-3 py-4 text-sm text-gray-500">
-                              {JSON.stringify(event.event_data)}
-                            </td>
-                          </tr>
-                        )}
-                      </For>
-                    </tbody>
-                  </table>
+                  <Show when={!loading()}>
+                    <table class="min-w-full max-w-md divide-y divide-gray-300">
+                      <thead>
+                        <tr>
+                          <th
+                            scope="col"
+                            class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
+                          >
+                            Level
+                          </th>
+                          <th
+                            scope="col"
+                            class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
+                          >
+                            Event Type
+                          </th>
+                          <th
+                            scope="col"
+                            class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                          >
+                            Time
+                          </th>
+                          <th
+                            scope="col"
+                            class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                          >
+                            Metadata
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody class="bg-white">
+                        <For each={events()}>
+                          {(event) => (
+                            <tr class="even:bg-gray-50">
+                              <td
+                                classList={{
+                                  "whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium sm:pl-3":
+                                    true,
+                                  "text-gray-900":
+                                    !event.event_type.includes("failed"),
+                                  "text-red-500":
+                                    event.event_type.includes("failed"),
+                                }}
+                              >
+                                {event.event_type.includes("failed")
+                                  ? "ERROR"
+                                  : "INFO"}
+                              </td>
+                              <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 sm:pl-3">
+                                {event.event_type}
+                              </td>
+                              <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                {event.created_at}
+                              </td>
+                              <td class="text-wrap max-w-md overflow-ellipsis break-words px-3 py-4 text-sm text-gray-500">
+                                {JSON.stringify(event.event_data)}
+                              </td>
+                            </tr>
+                          )}
+                        </For>
+                      </tbody>
+                    </table>
+                  </Show>
                 </div>
               </div>
             </div>
+            <Show when={loading()}>
+              <div class="flex items-center justify-center">
+                <img
+                  src="https://media.tenor.com/17U_UB9LwVQAAAAi/loading-response.gif"
+                  alt="loading spinner"
+                  class="h-12 w-12"
+                />
+              </div>
+            </Show>
             <div class="mt-4 flex items-center justify-between">
               <div />
               <div class="flex items-center">
