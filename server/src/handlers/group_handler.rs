@@ -1,6 +1,6 @@
 use super::{
     auth_handler::{AdminOnly, LoggedUser},
-    chunk_handler::{parse_query, ChunkFilter, ScoreChunkDTO, SearchChunkData},
+    chunk_handler::{parse_query, ChunkFilter, ParsedQuery, ScoreChunkDTO, SearchChunkData},
 };
 use crate::{
     data::models::{
@@ -1117,6 +1117,8 @@ pub struct SearchWithinGroupData {
     pub highlight_results: Option<bool>,
     /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"].
     pub highlight_delimiters: Option<Vec<String>>,
+    /// Turn on quote words and negated words to search for exact phrases and exclude words from the search results. Default is false.
+    pub quote_negated_words: Option<bool>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold.
     pub score_threshold: Option<f32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement. Default is false.
@@ -1136,6 +1138,7 @@ impl From<SearchWithinGroupData> for SearchChunkData {
             get_collisions: Some(false),
             highlight_results: data.highlight_results,
             highlight_delimiters: data.highlight_delimiters,
+            quote_negated_words: data.quote_negated_words,
             score_threshold: data.score_threshold,
             slim_chunks: data.slim_chunks,
         }
@@ -1211,7 +1214,14 @@ pub async fn search_within_group(
         }
     };
 
-    let parsed_query = parse_query(data.query.clone());
+    let mut parsed_query = ParsedQuery {
+        query: data.query.clone(),
+        quote_words: None,
+        negated_words: None,
+    };
+    if data.quote_negated_words.unwrap_or(false) {
+        parsed_query = parse_query(data.query.clone());
+    }
 
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => {
@@ -1296,6 +1306,8 @@ pub struct SearchOverGroupsData {
     pub highlight_results: Option<bool>,
     /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"].
     pub highlight_delimiters: Option<Vec<String>>,
+    /// Turn on quote words and negated words to search for exact phrases and exclude words from the search results. Default is false.
+    pub quote_negated_words: Option<bool>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold.
     pub score_threshold: Option<f32>,
     // Group_size is the number of chunks to fetch for each group.
@@ -1327,6 +1339,9 @@ pub enum SearchOverGroupsResponseTypes {
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn search_over_groups(
@@ -1342,7 +1357,14 @@ pub async fn search_over_groups(
     //search over the links as well
     let page = data.page.unwrap_or(1);
 
-    let parsed_query = parse_query(data.query.clone());
+    let mut parsed_query = ParsedQuery {
+        query: data.query.clone(),
+        quote_words: None,
+        negated_words: None,
+    };
+    if data.quote_negated_words.unwrap_or(false) {
+        parsed_query = parse_query(data.query.clone());
+    }
 
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => {
