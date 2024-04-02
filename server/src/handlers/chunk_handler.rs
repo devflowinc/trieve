@@ -1056,6 +1056,8 @@ pub struct SearchChunkData {
     pub highlight_results: Option<bool>,
     /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"].
     pub highlight_delimiters: Option<Vec<String>>,
+    /// Turn on quote words and negated words to search for exact phrases and exclude words from the search results. Default is false.
+    pub quote_negated_words: Option<bool>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold.
     pub score_threshold: Option<f32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement. Default is false.
@@ -1173,7 +1175,15 @@ pub async fn search_chunk(
     );
 
     let page = data.page.unwrap_or(1);
-    let parsed_query = parse_query(data.query.clone());
+
+    let mut parsed_query = ParsedQuery {
+        query: data.query.clone(),
+        quote_words: None,
+        negated_words: None,
+    };
+    if data.quote_negated_words.unwrap_or(false) {
+        parsed_query = parse_query(data.query.clone());
+    }
 
     let tx_ctx = sentry::TransactionContext::new("search", "search_chunks");
     let transaction = sentry::start_transaction(tx_ctx);
