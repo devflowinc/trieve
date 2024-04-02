@@ -19,9 +19,13 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
   const [email, setEmail] = createSignal<string>("");
-  const [role, setRole] = createSignal<UserRole>(UserRole.User);
+  const [sendingEmail, setSendingEmail] = createSignal<boolean>(false);
+  const [role, setRole] = createSignal<UserRole>(UserRole.Owner);
+
   const userContext = useContext(UserContext);
+
   const inviteUser = () => {
+    setSendingEmail(true);
     void fetch(`${apiHost}/invitation`, {
       method: "POST",
       credentials: "include",
@@ -37,9 +41,16 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
         redirect_uri: `${window.location.origin}/dashboard`,
       }),
     }).then((res) => {
+      setSendingEmail(false);
       createEffect(() => {
         if (res.ok) {
           props.closeModal();
+          createToast({
+            title: "Success",
+            type: "success",
+            message:
+              "User invited successfully. If the user is not registered, they will receive an email invite to sign up and be automatically added to this organization.",
+          });
         } else {
           void res.json().then((data) => {
             createToast({
@@ -148,8 +159,12 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
                 </button>
                 <button
                   type="submit"
-                  disabled={email() === ""}
-                  class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 font-semibold text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600 disabled:bg-magenta-200"
+                  disabled={email() === "" || sendingEmail()}
+                  classList={{
+                    "inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 font-semibold text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600 disabled:bg-magenta-200":
+                      true,
+                    "cursor-not-allowed animate-pulse": sendingEmail(),
+                  }}
                 >
                   Invite New User
                 </button>
