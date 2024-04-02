@@ -2,13 +2,12 @@ use crate::data::models::{
     ChunkCollision, ChunkFile, ChunkFileWithName, ChunkGroupBookmark, ChunkMetadataWithFileData,
     Dataset, FullTextSearchResult, ServerDatasetConfiguration, UnifiedId,
 };
-use crate::errors::ServiceError;
 use crate::operators::model_operator::create_embeddings;
 use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::operators::search_operator::get_metadata_query;
 use crate::{
     data::models::{ChunkMetadata, Pool},
-    errors::DefaultError,
+    errors::ServiceError,
 };
 use actix_web::web;
 use diesel::dsl::not;
@@ -23,7 +22,7 @@ use simsearch::SimSearch;
 pub async fn get_metadata_from_point_ids(
     point_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<Vec<ChunkMetadataWithFileData>, DefaultError> {
+) -> Result<Vec<ChunkMetadataWithFileData>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let mut conn = pool
@@ -36,9 +35,9 @@ pub async fn get_metadata_from_point_ids(
         .select(ChunkMetadata::as_select())
         .load::<ChunkMetadata>(&mut conn)
         .await
-        .map_err(|_| DefaultError {
-            message: "Failed to load metadata",
-        })?;
+        .map_err(|_| ServiceError::BadRequest(
+            "Failed to load metadata".to_string(),
+        ))?;
 
     let converted_chunks: Vec<FullTextSearchResult> = chunk_metadata
         .iter()
@@ -48,9 +47,9 @@ pub async fn get_metadata_from_point_ids(
     let chunk_metadata_with_file_id =
         get_metadata_query(converted_chunks, pool)
             .await
-            .map_err(|_| DefaultError {
-                message: "Failed to load metadata",
-            })?;
+            .map_err(|_| ServiceError::BadRequest(
+                "Failed to load metadata".to_string(),
+            ))?;
 
     Ok(chunk_metadata_with_file_id)
 }
@@ -58,7 +57,7 @@ pub async fn get_metadata_from_point_ids(
 pub async fn get_point_ids_from_unified_chunk_ids(
     chunk_ids: Vec<UnifiedId>,
     pool: web::Data<Pool>,
-) -> Result<Vec<uuid::Uuid>, DefaultError> {
+) -> Result<Vec<uuid::Uuid>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let mut conn = pool.get().await.unwrap();
@@ -76,9 +75,9 @@ pub async fn get_point_ids_from_unified_chunk_ids(
             .select(chunk_metadata_columns::qdrant_point_id)
             .load::<Option<uuid::Uuid>>(&mut conn)
             .await
-            .map_err(|_| DefaultError {
-                message: "Failed to load metadata",
-            })?
+            .map_err(|_| ServiceError::BadRequest(
+                "Failed to load metadata".to_string(),
+            ))?
             .into_iter()
             .flatten()
             .collect(),
@@ -94,9 +93,9 @@ pub async fn get_point_ids_from_unified_chunk_ids(
             .select(chunk_metadata_columns::qdrant_point_id)
             .load::<Option<uuid::Uuid>>(&mut conn)
             .await
-            .map_err(|_| DefaultError {
-                message: "Failed to load metadata",
-            })?
+            .map_err(|_| ServiceError::BadRequest(
+                "Failed to load metadata".to_string(),
+            ))?
             .into_iter()
             .flatten()
             .collect(),
@@ -120,7 +119,7 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
         Vec<ChunkMetadataWithFileData>,
         Vec<ChunkMetadataWithQdrantId>,
     ),
-    DefaultError,
+    ServiceError,
 > {
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
     use crate::data::schema::chunk_files::dsl as chunk_files_columns;
@@ -178,9 +177,9 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
             .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
             .load::<(ChunkMetadata, Option<uuid::Uuid>, Option<ChunkFileWithName>)>(&mut conn)
             .await
-            .map_err(|_| DefaultError {
-                message: "Failed to load metadata",
-            })?;
+            .map_err(|_| ServiceError::BadRequest(
+                "Failed to load metadata".to_string(),
+            ))?;
 
         chunk_metadata
             .iter()
@@ -243,9 +242,9 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
                 ))
                 .load::<(ChunkMetadata, uuid::Uuid, Option<ChunkFileWithName>)>(&mut conn)
                 .await
-                .map_err(|_| DefaultError {
-                    message: "Failed to load metadata",
-                })?;
+                .map_err(|_| ServiceError::BadRequest(
+                    "Failed to load metadata".to_string(),
+                ))?;
 
             // Convert the collided chunks into the appropriate format
             chunk_metadata
@@ -292,7 +291,7 @@ pub async fn get_metadata_from_id_query(
     chunk_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<ChunkMetadata, DefaultError> {
+) -> Result<ChunkMetadata, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     let mut conn = pool.get().await.unwrap();
 
@@ -302,9 +301,9 @@ pub async fn get_metadata_from_id_query(
         .select(ChunkMetadata::as_select())
         .first::<ChunkMetadata>(&mut conn)
         .await
-        .map_err(|_| DefaultError {
-            message: "Failed to load metadata",
-        })
+        .map_err(|_| ServiceError::BadRequest(
+            "Failed to load metadata".to_string(),
+        ))
 }
 
 #[tracing::instrument(skip(pool))]
@@ -312,7 +311,7 @@ pub async fn get_metadata_from_tracking_id_query(
     tracking_id: String,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<ChunkMetadata, DefaultError> {
+) -> Result<ChunkMetadata, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let mut conn = pool.get().await.unwrap();
@@ -329,9 +328,9 @@ pub async fn get_metadata_from_tracking_id_query(
                 e
             );
 
-            DefaultError {
-                message: "Failed to execute get_metadata_from_tracking_id_query",
-            }
+            ServiceError::BadRequest(
+                "Failed to execute get_metadata_from_tracking_id_query".to_string(),
+            )
         })
 }
 
@@ -340,7 +339,7 @@ pub async fn get_optional_metadata_from_tracking_id_query(
     tracking_id: String,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Option<ChunkMetadata>, DefaultError> {
+) -> Result<Option<ChunkMetadata>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let mut conn = pool.get().await.unwrap();
@@ -357,9 +356,9 @@ pub async fn get_optional_metadata_from_tracking_id_query(
                 e
             );
 
-            DefaultError {
-                message: "Failed to execute get_optional_metadata_from_tracking_id_query",
-            }
+            ServiceError::BadRequest(
+                "Failed to execute get_optional_metadata_from_tracking_id_query".to_string(),
+            )
         })?
         .pop();
 
@@ -371,7 +370,7 @@ pub async fn get_metadata_from_ids_query(
     chunk_ids: Vec<uuid::Uuid>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<ChunkMetadataWithFileData>, DefaultError> {
+) -> Result<Vec<ChunkMetadataWithFileData>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let mut conn = pool.get().await.unwrap();
@@ -382,9 +381,9 @@ pub async fn get_metadata_from_ids_query(
         .select(ChunkMetadata::as_select())
         .load::<ChunkMetadata>(&mut conn)
         .await
-        .map_err(|_| DefaultError {
-            message: "Failed to load metadata",
-        })?;
+        .map_err(|_| ServiceError::BadRequest(
+            "Failed to load metadata".to_string(),
+        ))?;
     let full_text_metadatas = metadatas
         .iter()
         .map_into::<FullTextSearchResult>()
@@ -417,8 +416,7 @@ pub async fn insert_chunk_metadata_query(
             chunk_data.dataset_id,
             pool.clone(),
         )
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.to_string()))?
+        .await?
         {
             let mut update_chunk = chunk_data.clone();
             update_chunk.id = existing_chunk.id;
@@ -432,8 +430,7 @@ pub async fn insert_chunk_metadata_query(
                 dataset_uuid,
                 pool.clone(),
             )
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.message.to_string()))?;
+            .await?;
 
             return Ok(updated_chunk);
         }
@@ -448,7 +445,7 @@ pub async fn insert_chunk_metadata_query(
             pool.clone(),
         )
         .await
-        .map_err(|err| ServiceError::BadRequest(err.message.to_string()))?;
+        ?;
 
         if existing_chunk.is_some() {
             log::info!("Avoided potential write conflict by pre-checking tracking_id");
@@ -576,7 +573,7 @@ pub async fn insert_duplicate_chunk_metadata_query(
     file_uuid: Option<uuid::Uuid>,
     group_ids: Option<Vec<uuid::Uuid>>,
     pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     use crate::data::schema::chunk_collisions::dsl::*;
     use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
@@ -623,9 +620,9 @@ pub async fn insert_duplicate_chunk_metadata_query(
                 sentry::Level::Error,
             );
 
-            DefaultError {
-                message: "Failed to insert duplicate chunk metadata",
-            }
+            ServiceError::BadRequest(
+                "Failed to insert duplicate chunk metadata".to_string(),
+            )
         })?;
 
     if let Some(group_ids) = group_ids {
@@ -651,9 +648,9 @@ pub async fn insert_duplicate_chunk_metadata_query(
                     sentry::Level::Error,
                 );
 
-                DefaultError {
-                    message: "Failed to insert duplicate chunk_metadata into groups",
-                }
+                ServiceError::BadRequest(
+                    "Failed to insert duplicate chunk_metadata into groups".to_string(),
+                )
             })?;
     }
 
@@ -667,7 +664,7 @@ pub async fn update_chunk_metadata_query(
     group_ids: Option<Vec<uuid::Uuid>>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<ChunkMetadata, DefaultError> {
+) -> Result<ChunkMetadata, ServiceError> {
     use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
@@ -708,9 +705,9 @@ pub async fn update_chunk_metadata_query(
             .scope_boxed()
         })
         .await
-        .map_err(|_| DefaultError {
-            message: "Failed to update chunk metadata",
-        })?;
+        .map_err(|_| ServiceError::BadRequest(
+            "Failed to update chunk metadata".to_string(),
+        ))?;
 
     if let Some(group_ids) = group_ids {
         let group_id1 = group_ids.clone();
@@ -724,9 +721,9 @@ pub async fn update_chunk_metadata_query(
             .on_conflict_do_nothing()
             .execute(&mut conn)
             .await
-            .map_err(|_| DefaultError {
-                message: "Failed to create bookmark",
-            })?;
+            .map_err(|_| ServiceError::BadRequest(
+                "Failed to create bookmark".to_string(),
+            ))?;
 
         diesel::delete(
             chunk_group_bookmarks_columns::chunk_group_bookmarks
@@ -737,9 +734,9 @@ pub async fn update_chunk_metadata_query(
         )
         .execute(&mut conn)
         .await
-        .map_err(|_| DefaultError {
-            message: "Failed to delete chunk bookmarks",
-        })?;
+        .map_err(|_| ServiceError::BadRequest(
+            "Failed to delete chunk bookmarks".to_string(),
+        ))?;
     }
 
     Ok(updated_chunk)
@@ -756,12 +753,12 @@ pub async fn delete_chunk_metadata_query(
     dataset: Dataset,
     pool: web::Data<Pool>,
     config: ServerDatasetConfiguration,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     let chunk_metadata = get_metadata_from_id_query(chunk_uuid, dataset.id, pool.clone()).await?;
     if chunk_metadata.dataset_id != dataset.id {
-        return Err(DefaultError {
-            message: "chunk does not belong to dataset",
-        });
+        return Err(ServiceError::BadRequest(
+            "chunk does not belong to dataset".to_string(),
+        ));
     }
 
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
@@ -945,9 +942,9 @@ pub async fn delete_chunk_metadata_query(
                     )
                     .await
                     .map_err(|_e| {
-                        Err::<(), DefaultError>(DefaultError {
-                            message: "Failed to delete chunk from qdrant",
-                        })
+                        Err::<(), ServiceError>(ServiceError::BadRequest(
+                            "Failed to delete chunk from qdrant".to_string(),
+                        ))
                     });
             }
             TransactionResult::ChunkCollisionDetected(latest_collision_metadata) => {
@@ -962,14 +959,13 @@ pub async fn delete_chunk_metadata_query(
                     ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
                 )
                 .await
-                .map_err(|_e| DefaultError {
-                    message: "Failed to create embedding for chunk",
-                })?;
+                .map_err(|_e| ServiceError::BadRequest(
+                    "Failed to create embedding for chunk".to_string(),
+                ))?;
 
-                let new_embedding_vector = new_embedding_vectors.get(0).ok_or(DefaultError {
-                    message:
-                        "Failed to get embedding vector due to empty result from create_embedding",
-                })?
+                let new_embedding_vector = new_embedding_vectors.get(0).ok_or(ServiceError::BadRequest(
+                    "Failed to get embedding vector due to empty result from create_embedding".to_string(),
+                ))?
                 .clone();
 
                 let _ = qdrant
@@ -989,17 +985,17 @@ pub async fn delete_chunk_metadata_query(
                     )
                     .await
                     .map_err(|_e| {
-                        Err::<(), DefaultError>(DefaultError {
-                            message: "Failed to update chunk in qdrant",
-                        })
+                        Err::<(), ServiceError>(ServiceError::BadRequest(
+                            "Failed to update chunk in qdrant".to_string(),
+                        ))
                     });
             }
         },
 
         Err(_) => {
-            return Err(DefaultError {
-                message: "Failed to delete chunk data",
-            })
+            return Err(ServiceError::BadRequest(
+                "Failed to delete chunk data".to_string(),
+            ))
         }
     };
 
@@ -1010,7 +1006,7 @@ pub async fn delete_chunk_metadata_query(
 pub async fn get_qdrant_id_from_chunk_id_query(
     chunk_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<uuid::Uuid, DefaultError> {
+) -> Result<uuid::Uuid, ServiceError> {
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
@@ -1029,23 +1025,23 @@ pub async fn get_qdrant_id_from_chunk_id_query(
             .filter(chunk_metadata_columns::id.eq(chunk_id))
             .load(&mut conn)
             .await
-            .map_err(|_err| DefaultError {
-                message: "Failed to get qdrant_point_id and collision_qdrant_id",
-            })?;
+            .map_err(|_err| ServiceError::BadRequest(
+                "Failed to get qdrant_point_id and collision_qdrant_id".to_string(),
+            ))?;
 
     match qdrant_point_ids.get(0) {
         Some(x) => match x.0 {
             Some(y) => Ok(y),
             None => match x.1 {
                 Some(y) => Ok(y),
-                None => Err(DefaultError {
-                    message: "Both qdrant_point_id and collision_qdrant_id are None",
-                }),
+                None => Err(ServiceError::BadRequest(
+                    "Both qdrant_point_id and collision_qdrant_id are None".to_string(),
+                )),
             },
         },
-        None => Err(DefaultError {
-            message: "Failed to get qdrant_point_id for chunk_id",
-        }),
+        None => Err(ServiceError::BadRequest(
+            "Failed to get qdrant_point_id for chunk_id".to_string(),
+        )),
     }
 }
 
@@ -1054,7 +1050,7 @@ pub fn find_relevant_sentence(
     input: ChunkMetadataWithFileData,
     query: String,
     split_chars: Vec<String>,
-) -> Result<ChunkMetadataWithFileData, DefaultError> {
+) -> Result<ChunkMetadataWithFileData, ServiceError> {
     let content = &input.chunk_html.clone().unwrap_or(input.content.clone());
     let mut engine: SimSearch<String> = SimSearch::new();
     let mut split_content = content
@@ -1096,7 +1092,7 @@ pub fn find_relevant_sentence(
 pub async fn get_row_count_for_dataset_id_query(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<usize, DefaultError> {
+) -> Result<usize, ServiceError> {
     use crate::data::schema::dataset_usage_counts::dsl as dataset_usage_counts_columns;
 
     let mut conn = pool.get().await.expect("Failed to get connection to db");
@@ -1106,9 +1102,9 @@ pub async fn get_row_count_for_dataset_id_query(
         .select(dataset_usage_counts_columns::chunk_count)
         .first::<i32>(&mut conn)
         .await
-        .map_err(|_| DefaultError {
-            message: "Failed to get chunk count for dataset",
-        })?;
+        .map_err(|_| ServiceError::BadRequest(
+            "Failed to get chunk count for dataset".to_string(),
+        ))?;
 
     Ok(chunk_metadata_count as usize)
 }

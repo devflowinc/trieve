@@ -24,7 +24,7 @@ pub async fn create_embeddings(
     message: Vec<String>,
     embed_type: &str,
     dataset_config: ServerDatasetConfiguration,
-) -> Result<Vec<Vec<f32>>, actix_web::Error> {
+) -> Result<Vec<Vec<f32>>, ServiceError> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
         Some(parent) => parent

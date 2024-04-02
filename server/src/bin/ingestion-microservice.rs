@@ -358,20 +358,9 @@ async fn upload_chunk(
                 let chunks = coarse_doc_chunker(content.clone());
 
                 let embeddings = create_embeddings(chunks, "doc", dataset_config.clone())
-                    .await
-                    .map_err(|err| {
-                        ServiceError::InternalServerError(format!(
-                            "Failed to create embedding: {:?}",
-                            err
-                        ))
-                    })?;
+                    .await?;
 
-                average_embeddings(embeddings).map_err(|err| {
-                    ServiceError::InternalServerError(format!(
-                        "Failed to average embeddings: {:?}",
-                        err.message
-                    ))
-                })?
+                average_embeddings(embeddings)?
             }
             false => {
                 let embedding_vectors =
@@ -606,7 +595,7 @@ async fn update_chunk(
             web_pool.clone(),
         )
         .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        ?;
 
         if let Some(qdrant_point_id) = chunk.qdrant_point_id {
             update_qdrant_point_query(
@@ -635,7 +624,7 @@ async fn update_chunk(
             web_pool.clone(),
         )
         .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+            ?;
 
         update_qdrant_point_query(
             // If the chunk is a collision, we don't want to update the qdrant point

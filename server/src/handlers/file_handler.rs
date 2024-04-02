@@ -183,7 +183,7 @@ pub async fn upload_file_handler(
         redis_pool,
     )
     .await
-    .map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    ?;
 
     Ok(HttpResponse::Ok().json(conversion_result))
 }
@@ -347,7 +347,7 @@ pub async fn get_signed_url(
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
-    let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    let bucket = get_aws_bucket()?;
 
     let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
     let s3_path = match unlimited.as_str() {
@@ -392,7 +392,7 @@ pub async fn get_pdf_from_range(
     let validated_prefix = validate_file_name(path_data.prefix.clone())?;
 
     let mut wand = MagickWand::new();
-    let bucket = get_aws_bucket().map_err(|e| ServiceError::BadRequest(e.message.to_string()))?;
+    let bucket = get_aws_bucket()?;
 
     let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
     let s3_path = match unlimited.as_str() {

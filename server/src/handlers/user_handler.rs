@@ -1,7 +1,7 @@
 use super::auth_handler::LoggedUser;
 use crate::{
     data::models::{Pool, SlimUser},
-    errors::{DefaultError, ServiceError},
+    errors::ServiceError,
     operators::user_operator::{
         delete_user_api_keys_query, get_user_api_keys_query, get_user_by_id_query,
         set_user_api_key_query, update_user_query,
@@ -53,7 +53,7 @@ pub async fn update_user(
     data: web::Json<UpdateUserData>,
     mut user: LoggedUser,
     pool: web::Data<Pool>,
-) -> Result<HttpResponse, actix_web::Error> {
+) -> Result<HttpResponse, ServiceError> {
     let update_user_data = data.into_inner();
     let org_role = user
         .clone()
@@ -67,13 +67,13 @@ pub async fn update_user(
 
     if let Some(user_id) = update_user_data.user_id {
         if org_role < 1 {
-            return Ok(HttpResponse::BadRequest().json(DefaultError {
-                message: "You must be an admin to update other users",
-            }));
+            return Err(ServiceError::BadRequest(
+                "You must be an admin to update other users".to_string(),
+            ));
         }
         let user_info = get_user_by_id_query(&user_id, pool.clone())
             .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+        ?;
 
         let authorized = user_info
             .1
@@ -85,9 +85,9 @@ pub async fn update_user(
         if authorized {
             user = SlimUser::from_details(user_info.0, user_info.1, user_info.2);
         } else {
-            return Ok(HttpResponse::BadRequest().json(DefaultError {
-                message: "You must be in this organization to update other users",
-            }));
+            return Err(ServiceError::BadRequest(
+                "You must be in this organization to update other users".to_string(),
+            ));
         }
     }
 
@@ -97,25 +97,22 @@ pub async fn update_user(
             .expect("Role must not be null after the &&")
             > org_role
     {
-        return Ok(HttpResponse::BadRequest().json(DefaultError {
-            message: "Can not grant a user a higher role than yours",
-        }));
+        return Err(ServiceError::BadRequest(
+            "Can not grant a user a higher role than yours".to_string(),
+        ));
     }
 
     let new_role = update_user_data.role.map(|role| role.into());
 
-    let user_result = update_user_query(
+    let slim_user = update_user_query(
         &user.clone(),
         &update_user_data.name.clone().or(user.name),
         new_role,
         pool,
     )
-    .await;
-
-    match user_result {
-        Ok(slim_user) => Ok(HttpResponse::Ok().json(slim_user)),
-        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
-    }
+    .await?;
+    
+    Ok(HttpResponse::Ok().json(slim_user))
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

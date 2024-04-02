@@ -6,12 +6,6 @@ use std::convert::From;
 use utoipa::ToSchema;
 use uuid::Error as ParseError;
 
-#[derive(Serialize, Deserialize, Debug, Display, derive_more::Error)]
-#[display(fmt = "{}", message)]
-pub struct DefaultError {
-    pub message: &'static str,
-}
-
 #[derive(Serialize, Deserialize, Debug, Display, ToSchema)]
 #[schema(example = json!({"message": "Bad Request"}))]
 pub struct ErrorResponseBody {

@@ -2,7 +2,7 @@ use super::{auth_handler::LoggedUser, chunk_handler::ParsedQuery};
 use crate::{
     data::models::{self, DatasetAndOrgWithSubAndPlan, ServerDatasetConfiguration},
     data::models::{ChunkMetadataWithFileData, Dataset, Pool},
-    errors::{DefaultError, ServiceError},
+    errors::ServiceError,
     get_env,
     operators::{
         chunk_operator::{
@@ -85,9 +85,7 @@ pub async fn create_message_completion_handler(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    let org_message_count = get_message_org_count(message_count_org_id, message_count_pool)
-        .await
-        .map_err(|err| ServiceError::InternalServerError(err.message.to_string()))?;
+    let org_message_count = get_message_org_count(message_count_org_id, message_count_pool).await?;
 
     if org_message_count
         >= dataset_org_plan_sub
@@ -133,8 +131,7 @@ pub async fn create_message_completion_handler(
         dataset_org_plan_sub.dataset.id,
         &get_messages_pool,
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     // remove citations from the previous messages
     previous_messages = previous_messages
@@ -161,8 +158,7 @@ pub async fn create_message_completion_handler(
         dataset_org_plan_sub.dataset.id,
         &create_message_pool,
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     stream_response(
         previous_messages,
@@ -219,12 +215,9 @@ pub async fn get_all_topic_messages(
     .map_err(|_e| ServiceError::Unauthorized)?;
 
     let messages =
-        get_messages_for_topic_query(topic_id, dataset_org_plan_sub.dataset.id, &pool).await;
+        get_messages_for_topic_query(topic_id, dataset_org_plan_sub.dataset.id, &pool).await?;
 
-    match messages {
-        Ok(messages) => Ok(HttpResponse::Ok().json(messages)),
-        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
-    }
+    Ok(HttpResponse::Ok().json(messages))
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
@@ -293,20 +286,14 @@ pub async fn edit_message_handler(
     let second_pool = pool.clone();
     let third_pool = pool.clone();
 
-    let message_from_sort_order_result = get_message_by_sort_for_topic_query(
+    let message_id = get_message_by_sort_for_topic_query(
         topic_id,
         dataset_org_plan_sub.dataset.id,
         message_sort_order,
         &pool,
     )
-    .await;
-
-    let message_id = match message_from_sort_order_result {
-        Ok(message) => message.id,
-        Err(e) => {
-            return Ok(HttpResponse::BadRequest().json(e));
-        }
-    };
+    .await?
+    .id;
 
     let _ = delete_message_query(
         &user.id,
@@ -376,20 +363,13 @@ pub async fn regenerate_message_handler(
         .await
         .map_err(|_e| ServiceError::Unauthorized)?;
 
-    let previous_messages_result =
-        get_topic_messages(topic_id, dataset_id, &get_messages_pool).await;
-
-    let mut previous_messages = match previous_messages_result {
-        Ok(messages) => messages,
-        Err(e) => {
-            return Ok(HttpResponse::BadRequest().json(e));
-        }
-    };
+    let mut previous_messages =
+        get_topic_messages(topic_id, dataset_id, &get_messages_pool).await?;
 
     if previous_messages.len() < 2 {
-        return Ok(HttpResponse::BadRequest().json(DefaultError {
-            message: "Not enough messages to regenerate",
-        }));
+        return Err(
+            ServiceError::BadRequest("Not enough messages to regenerate".to_string()).into(),
+        );
     }
 
     if previous_messages.len() == 2 {
@@ -436,9 +416,7 @@ pub async fn regenerate_message_handler(
     let message_id = match message_to_regenerate {
         Some(message) => message.id,
         None => {
-            return Ok(HttpResponse::BadRequest().json(DefaultError {
-                message: "No message to regenerate",
-            }));
+            return Err(ServiceError::BadRequest("No message to regenerate".to_string()).into());
         }
     };
 
@@ -472,7 +450,7 @@ pub async fn get_topic_string(
     model: String,
     first_message: String,
     dataset: &Dataset,
-) -> Result<String, DefaultError> {
+) -> Result<String, ServiceError> {
     let prompt_topic_message = ChatMessage {
         role: Role::User,
         content: ChatMessageContent::Text(format!(
@@ -700,8 +678,7 @@ pub async fn stream_response(
         pool.clone(),
         config,
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     let retrieval_chunk_ids = search_chunk_query_results
         .search_results
@@ -714,8 +691,7 @@ pub async fn stream_response(
         false,
         pool.clone(),
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     let citation_chunks: Vec<ChunkMetadataWithFileData> = metadata_chunks.to_vec();
 

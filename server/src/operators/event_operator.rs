@@ -1,6 +1,6 @@
 use crate::{
     data::models::{Event, Pool},
-    errors::DefaultError,
+    errors::ServiceError,
 };
 use actix_web::web;
 use diesel::prelude::*;
@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 #[tracing::instrument(skip(pool))]
-pub async fn create_event_query(event: Event, pool: web::Data<Pool>) -> Result<(), DefaultError> {
+pub async fn create_event_query(event: Event, pool: web::Data<Pool>) -> Result<(), ServiceError> {
     use crate::data::schema::events::dsl as events_columns;
 
     let mut conn = pool.get().await.unwrap();
@@ -20,9 +20,9 @@ pub async fn create_event_query(event: Event, pool: web::Data<Pool>) -> Result<(
         .await
         .map_err(|err| {
             log::error!("Failed to create event: {:?}", err);
-            DefaultError {
-                message: "Failed to create event",
-            }
+            ServiceError::BadRequest(
+                "Failed to create event".to_string(),
+            )
         })?;
 
     Ok(())
@@ -39,7 +39,7 @@ pub async fn get_events_query(
     page_size: i64,
     event_types: Vec<String>,
     pool: web::Data<Pool>,
-) -> Result<EventReturn, DefaultError> {
+) -> Result<EventReturn, ServiceError> {
     use crate::data::schema::dataset_event_counts::dsl as dataset_event_counts_columns;
     use crate::data::schema::events::dsl as events_columns;
     let mut conn = pool.get().await.unwrap();
@@ -67,9 +67,9 @@ pub async fn get_events_query(
         .offset((page - 1) * page_size)
         .load::<(Event, Option<i32>)>(&mut conn)
         .await
-        .map_err(|_| DefaultError {
-            message: "Failed to get events",
-        })?;
+        .map_err(|_| ServiceError::BadRequest(
+            "Failed to get events".to_string(),
+        ))?;
 
     let events: Vec<Event> = events_and_count
         .iter()

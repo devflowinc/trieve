@@ -80,7 +80,7 @@ where
                             pool.clone(),
                         )
                         .await
-                        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+                        ?;
 
                         let dataset_org_plan_sub =
                             DatasetAndOrgWithSubAndPlan::from_components(dataset, org_plan_sub);
@@ -137,7 +137,7 @@ where
                             pool.clone(),
                         )
                         .await
-                        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+                        ?;
                         let dataset_org_plan_sub =
                             DatasetAndOrgWithSubAndPlan::from_components(dataset, org_plan_sub);
 

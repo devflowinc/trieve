@@ -1,7 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
     data::models::{Pool, RedisPool, UserOrganization, UserRole},
-    errors::ServiceError,
     operators::{
         organization_operator::{
             create_organization_query, delete_organization_query, get_org_usage_by_id_query,
@@ -43,9 +42,8 @@ pub async fn get_organization_by_id(
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_id = organization_id.into_inner();
 
-    let org_plan_sub = get_organization_by_key_query(organization_id.into(), redis_pool, pool)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let org_plan_sub =
+        get_organization_by_key_query(organization_id.into(), redis_pool, pool).await?;
 
     Ok(HttpResponse::Ok().json(org_plan_sub.with_defaults()))
 }
@@ -87,8 +85,7 @@ pub async fn delete_organization_by_id(
         redis_pool,
         pool,
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     Ok(HttpResponse::Ok().json(org))
 }
@@ -134,8 +131,7 @@ pub async fn update_organization(
         redis_pool.clone(),
         pool.clone(),
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     let updated_organization = update_organization_query(
         organization_update_data.organization_id,
@@ -146,8 +142,7 @@ pub async fn update_organization(
         redis_pool,
         pool,
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     Ok(HttpResponse::Ok().json(updated_organization))
 }
@@ -190,8 +185,7 @@ pub async fn create_organization(
         redis_pool.clone(),
         pool.clone(),
     )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    .await?;
 
     add_user_to_organization(
         Some(&req),
@@ -233,9 +227,7 @@ pub async fn get_organization_usage(
 ) -> Result<HttpResponse, actix_web::Error> {
     let org_id = organization.into_inner();
 
-    let usage = get_org_usage_by_id_query(org_id, pool)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let usage = get_org_usage_by_id_query(org_id, pool).await?;
 
     Ok(HttpResponse::Ok().json(usage))
 }
@@ -268,9 +260,7 @@ pub async fn get_organization_users(
 ) -> Result<HttpResponse, actix_web::Error> {
     let org_id = organization.into_inner();
 
-    let usage = get_org_users_by_id_query(org_id, pool)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    let usage = get_org_users_by_id_query(org_id, pool).await?;
 
     Ok(HttpResponse::Ok().json(usage))
 }

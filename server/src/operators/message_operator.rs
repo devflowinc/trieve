@@ -3,7 +3,7 @@ use crate::diesel::prelude::*;
 use crate::operators::topic_operator::get_topic_query;
 use crate::{
     data::models::{Message, Pool},
-    errors::DefaultError,
+    errors::ServiceError,
 };
 use actix_web::web;
 use diesel_async::RunQueryDsl;
@@ -20,7 +20,7 @@ pub async fn get_topic_messages(
     messages_topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
     pool: &web::Data<Pool>,
-) -> Result<Vec<Message>, DefaultError> {
+) -> Result<Vec<Message>, ServiceError> {
     use crate::data::schema::messages::dsl::*;
 
     let mut conn = pool.get().await.unwrap();
@@ -32,9 +32,9 @@ pub async fn get_topic_messages(
         .order(sort_order.asc())
         .load::<Message>(&mut conn)
         .await
-        .map_err(|_db_error| DefaultError {
-            message: "Error getting topic messages",
-        })?;
+        .map_err(|_db_error| ServiceError::BadRequest(
+            "Error getting topic messages".to_string(),
+        ))?;
 
     Ok(topic_messages)
 }
@@ -45,7 +45,7 @@ pub async fn user_owns_topic_query(
     topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
     pool: &web::Data<Pool>,
-) -> Result<Topic, DefaultError> {
+) -> Result<Topic, ServiceError> {
     use crate::data::schema::topics::dsl::*;
 
     let mut conn = pool.get().await.unwrap();
@@ -56,9 +56,9 @@ pub async fn user_owns_topic_query(
         .filter(dataset_id.eq(given_dataset_id))
         .first::<crate::data::models::Topic>(&mut conn)
         .await
-        .map_err(|_db_error| DefaultError {
-            message: "Error getting topic",
-        })?;
+        .map_err(|_db_error| ServiceError::BadRequest(
+            "Error getting topic".to_string(),
+        ))?;
 
     Ok(topic)
 }
@@ -68,16 +68,16 @@ pub async fn create_message_query(
     new_message: Message,
     given_user_id: uuid::Uuid,
     pool: &web::Data<Pool>,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     use crate::data::schema::messages::dsl::messages;
 
     let mut conn = pool.get().await.unwrap();
 
     match get_topic_query(new_message.topic_id, new_message.dataset_id, pool).await {
         Ok(topic) if topic.user_id != given_user_id => {
-            return Err(DefaultError {
-                message: "Unauthorized",
-            })
+            return Err(ServiceError::BadRequest(
+                "Unauthorized".to_string(),
+            ))
         }
         Ok(_topic) => {}
         Err(e) => return Err(e),
@@ -87,9 +87,9 @@ pub async fn create_message_query(
         .values(&new_message)
         .execute(&mut conn)
         .await
-        .map_err(|_db_error| DefaultError {
-            message: "Error creating message, try again",
-        })?;
+        .map_err(|_db_error| ServiceError::BadRequest(
+            "Error creating message, try again".to_string(),
+        ))?;
 
     Ok(())
 }
@@ -99,7 +99,7 @@ pub async fn create_generic_system_message(
     messages_topic_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     pool: &web::Data<Pool>,
-) -> Result<Message, DefaultError> {
+) -> Result<Message, ServiceError> {
     let topic =
         crate::operators::topic_operator::get_topic_query(messages_topic_id, dataset_id, pool)
             .await?;
@@ -126,7 +126,7 @@ pub async fn create_topic_message_query(
     given_user_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     pool: &web::Data<Pool>,
-) -> Result<Vec<Message>, DefaultError> {
+) -> Result<Vec<Message>, ServiceError> {
     let mut ret_messages = previous_messages.clone();
     let mut new_message_copy = new_message.clone();
     let mut previous_messages_len = previous_messages.len();
@@ -153,7 +153,7 @@ pub async fn get_message_by_sort_for_topic_query(
     given_dataset_id: uuid::Uuid,
     message_sort_order: i32,
     pool: &web::Data<Pool>,
-) -> Result<Message, DefaultError> {
+) -> Result<Message, ServiceError> {
     use crate::data::schema::messages::dsl::*;
 
     let mut conn = pool.get().await.unwrap();
@@ -165,9 +165,9 @@ pub async fn get_message_by_sort_for_topic_query(
         .filter(dataset_id.eq(given_dataset_id))
         .first::<Message>(&mut conn)
         .await
-        .map_err(|_db_error| DefaultError {
-            message: "This message does not exist for the authenticated user",
-        })
+        .map_err(|_db_error| ServiceError::BadRequest(
+            "This message does not exist for the authenticated user".to_string(),
+        ))
 }
 
 #[tracing::instrument(skip(pool))]
@@ -175,7 +175,7 @@ pub async fn get_messages_for_topic_query(
     message_topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
     pool: &web::Data<Pool>,
-) -> Result<Vec<Message>, DefaultError> {
+) -> Result<Vec<Message>, ServiceError> {
     use crate::data::schema::messages::dsl::*;
 
     let mut conn = pool.get().await.unwrap();
@@ -187,9 +187,9 @@ pub async fn get_messages_for_topic_query(
         .order_by(sort_order.asc())
         .load::<Message>(&mut conn)
         .await
-        .map_err(|_db_error| DefaultError {
-            message: "This topic does not exist for the authenticated user",
-        })
+        .map_err(|_db_error| ServiceError::BadRequest(
+            "This topic does not exist for the authenticated user".to_string(),
+        ))
 }
 
 #[tracing::instrument(skip(pool))]
@@ -199,16 +199,16 @@ pub async fn delete_message_query(
     given_topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
     pool: &web::Data<Pool>,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     use crate::data::schema::messages::dsl::*;
 
     let mut conn = pool.get().await.unwrap();
 
     match get_topic_query(given_topic_id, given_dataset_id, pool).await {
         Ok(topic) if topic.user_id != *given_user_id => {
-            return Err(DefaultError {
-                message: "Unauthorized",
-            })
+            return Err(ServiceError::BadRequest(
+                "Unauthorized".to_string(),
+            ))
         }
         Ok(_topic) => {}
         Err(e) => return Err(e),
@@ -218,9 +218,9 @@ pub async fn delete_message_query(
         .find(given_message_id)
         .first::<Message>(&mut conn)
         .await
-        .map_err(|_db_error| DefaultError {
-            message: "Error finding message",
-        })?;
+        .map_err(|_db_error| ServiceError::BadRequest(
+            "Error finding message".to_string(),
+        ))?;
 
     diesel::update(
         messages
@@ -231,9 +231,9 @@ pub async fn delete_message_query(
     .set(deleted.eq(true))
     .execute(&mut conn)
     .await
-    .map_err(|_| DefaultError {
-        message: "Error deleting message",
-    })?;
+    .map_err(|_| ServiceError::BadRequest(
+        "Error deleting message".to_string(),
+    ))?;
 
     Ok(())
 }

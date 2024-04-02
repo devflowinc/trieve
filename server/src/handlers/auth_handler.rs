@@ -175,9 +175,7 @@ pub async fn create_account(
     let (mut role, org) = match organization_id {
         Some(organization_id) => (
             UserRole::User,
-            get_org_from_id_query(organization_id, pool.clone())
-                .await
-                .map_err(|error| ServiceError::InternalServerError(error.message.to_string()))?,
+            get_org_from_id_query(organization_id, pool.clone()).await?,
         ),
         None => {
             let org_name = email.split('@').collect::<Vec<&str>>()[0]
@@ -186,23 +184,16 @@ pub async fn create_account(
             (
                 UserRole::Owner,
                 create_organization_query(org_name.as_str(), redis_pool.clone(), pool.clone())
-                    .await
-                    .map_err(|error| {
-                        ServiceError::InternalServerError(error.message.to_string())
-                    })?,
+                    .await?,
             )
         }
     };
     let org_id = org.id;
 
     let org_plan_sub =
-        get_organization_by_key_query(org_id.into(), redis_pool.clone(), pool.clone())
-            .await
-            .map_err(|error| ServiceError::InternalServerError(error.message.to_string()))?;
+        get_organization_by_key_query(org_id.into(), redis_pool.clone(), pool.clone()).await?;
     let user_org_count_pool = pool.clone();
-    let user_org_count = get_user_org_count(org_id, user_org_count_pool)
-        .await
-        .map_err(|err| ServiceError::InternalServerError(err.message.to_string()))?;
+    let user_org_count = get_user_org_count(org_id, user_org_count_pool).await?;
     if user_org_count
         >= org_plan_sub
             .plan
@@ -220,9 +211,7 @@ pub async fn create_account(
         role = invitation.role.into();
     }
 
-    let user_org = create_user_query(user_id, email, Some(name), role, org_id, pool)
-        .await
-        .map_err(|err| ServiceError::InternalServerError(err.message.to_string()))?;
+    let user_org = create_user_query(user_id, email, Some(name), role, org_id, pool).await?;
 
     Ok(user_org)
 }
@@ -552,12 +541,9 @@ pub async fn get_me(
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_query_id: uuid::Uuid = logged_user.id;
 
-    let user_result = get_user_by_id_query(&user_query_id, pool).await;
+    let user = get_user_by_id_query(&user_query_id, pool).await?;
 
-    match user_result {
-        Ok(user) => Ok(HttpResponse::Ok().json(SlimUser::from_details(user.0, user.1, user.2))),
-        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
-    }
+    Ok(HttpResponse::Ok().json(SlimUser::from_details(user.0, user.1, user.2)))
 }
 
 /// Health Check

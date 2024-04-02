@@ -89,11 +89,11 @@ pub async fn create_dataset(
     let organization_sub_plan =
         get_organization_by_key_query(org_id.into(), redis_pool.clone(), pool.clone())
             .await
-            .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    ?;
 
     let dataset_count = get_org_dataset_count(org_id, pool.clone())
         .await
-        .map_err(|err| ServiceError::BadRequest(err.message.into()))?;
+    ?;
 
     if dataset_count
         >= organization_sub_plan

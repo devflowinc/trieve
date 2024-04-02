@@ -2,7 +2,6 @@ use crate::{
     data::models::{
         ChunkGroup, ChunkMetadata, Dataset, FileGroup, Pool, ServerDatasetConfiguration, UnifiedId,
     },
-    errors::DefaultError,
     operators::chunk_operator::delete_chunk_metadata_query,
 };
 use crate::{
@@ -29,7 +28,7 @@ pub async fn get_group_from_tracking_id_query(
     tracking_id: String,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<ChunkGroup, DefaultError> {
+) -> Result<ChunkGroup, ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
 
     let mut conn = pool.get().await.unwrap();
@@ -39,9 +38,9 @@ pub async fn get_group_from_tracking_id_query(
         .filter(chunk_group_columns::tracking_id.eq(tracking_id))
         .first::<ChunkGroup>(&mut conn)
         .await
-        .map_err(|_err| DefaultError {
-            message: "Group not found",
-        })?;
+        .map_err(|_err| ServiceError::BadRequest(
+            "Group not found".to_string(),
+        ))?;
 
     Ok(group)
 }
@@ -51,7 +50,7 @@ pub async fn get_groups_from_tracking_ids_query(
     tracking_ids: Vec<String>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<uuid::Uuid>, DefaultError> {
+) -> Result<Vec<uuid::Uuid>, ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
 
     let mut conn = pool.get().await.unwrap();
@@ -62,9 +61,9 @@ pub async fn get_groups_from_tracking_ids_query(
         .select(chunk_group_columns::id)
         .load::<uuid::Uuid>(&mut conn)
         .await
-        .map_err(|_err| DefaultError {
-            message: "Groups not found",
-        })?;
+        .map_err(|_err| ServiceError::BadRequest(
+            "Groups not found".to_string(),
+        ))?;
 
     Ok(group_ids)
 }
@@ -76,7 +75,7 @@ pub async fn update_group_by_tracking_id_query(
     new_name: Option<String>,
     new_description: Option<String>,
     pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
 
     let mut conn = pool.get().await.unwrap();
@@ -92,9 +91,9 @@ pub async fn update_group_by_tracking_id_query(
     ))
     .execute(&mut conn)
     .await
-    .map_err(|_err| DefaultError {
-        message: "Error updating group",
-    })?;
+    .map_err(|_err| ServiceError::BadRequest(
+        "Error updating group".to_string(),
+    ))?;
 
     Ok(())
 }
@@ -125,7 +124,7 @@ pub async fn get_groups_for_specific_dataset_query(
     page: u64,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<ChunkGroupAndFileWithCount>, DefaultError> {
+) -> Result<Vec<ChunkGroupAndFileWithCount>, ServiceError> {
     use crate::data::schema::chunk_group::dsl::*;
     use crate::data::schema::dataset_group_counts::dsl as dataset_group_count_columns;
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
@@ -161,9 +160,9 @@ pub async fn get_groups_for_specific_dataset_query(
         .offset(((page - 1) * 10).try_into().unwrap_or(0))
         .load::<ChunkGroupAndFileWithCount>(&mut conn)
         .await
-        .map_err(|_err| DefaultError {
-            message: "Error getting groups",
-        })?;
+        .map_err(|_err| ServiceError::BadRequest(
+            "Error getting groups".to_string(),
+        ))?;
 
     Ok(groups)
 }
@@ -173,7 +172,7 @@ pub async fn get_group_by_id_query(
     group_id: uuid::Uuid,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<ChunkGroup, DefaultError> {
+) -> Result<ChunkGroup, ServiceError> {
     use crate::data::schema::chunk_group::dsl::*;
 
     let mut conn = pool.get().await.unwrap();
@@ -183,9 +182,9 @@ pub async fn get_group_by_id_query(
         .filter(id.eq(group_id))
         .first::<ChunkGroup>(&mut conn)
         .await
-        .map_err(|_err| DefaultError {
-            message: "Group not found",
-        })?;
+        .map_err(|_err| ServiceError::BadRequest(
+            "Group not found".to_string(),
+        ))?;
 
     Ok(group)
 }
@@ -197,7 +196,7 @@ pub async fn delete_group_by_id_query(
     delete_chunks: Option<bool>,
     pool: web::Data<Pool>,
     config: ServerDatasetConfiguration,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::events::dsl as events_columns;
@@ -220,9 +219,9 @@ pub async fn delete_group_by_id_query(
             .select(ChunkMetadata::as_select())
             .load::<ChunkMetadata>(&mut conn)
             .await
-            .map_err(|_err| DefaultError {
-                message: "Error getting chunks",
-            })?;
+            .map_err(|_err| ServiceError::BadRequest(
+                "Error getting chunks".to_string(),
+            ))?;
 
         chunk_ids = chunks
             .iter()
@@ -322,9 +321,9 @@ pub async fn delete_group_by_id_query(
 
     match transaction_result {
         Ok(_) => Ok(()),
-        Err(_) => Err(DefaultError {
-            message: "Error deleting group",
-        }),
+        Err(_) => Err(ServiceError::BadRequest(
+            "Error deleting group".to_string(),
+        )),
     }
 }
 
@@ -335,7 +334,7 @@ pub async fn update_chunk_group_query(
     new_description: Option<String>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     use crate::data::schema::chunk_group::dsl::*;
 
     let mut conn = pool.get().await.unwrap();
@@ -351,9 +350,9 @@ pub async fn update_chunk_group_query(
     ))
     .execute(&mut conn)
     .await
-    .map_err(|_err| DefaultError {
-        message: "Error updating group",
-    })?;
+    .map_err(|_err| ServiceError::BadRequest(
+        "Error updating group".to_string(),
+    ))?;
 
     //TODO: update bookmarks within the group
 
@@ -364,7 +363,7 @@ pub async fn update_chunk_group_query(
 pub async fn create_chunk_bookmark_query(
     pool: web::Data<Pool>,
     bookmark: ChunkGroupBookmark,
-) -> Result<Option<uuid::Uuid>, DefaultError> {
+) -> Result<Option<uuid::Uuid>, ServiceError> {
     use crate::data::schema::chunk_group_bookmarks::dsl::*;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
@@ -378,9 +377,9 @@ pub async fn create_chunk_bookmark_query(
         .await
         .map_err(|_err| {
             log::error!("Error creating bookmark {:}", _err);
-            DefaultError {
-                message: "Error creating bookmark",
-            }
+            ServiceError::BadRequest(
+                "Error creating bookmark".to_string(),
+            )
         })?;
 
     let qdrant_point_id = chunk_metadata_columns::chunk_metadata
@@ -390,9 +389,9 @@ pub async fn create_chunk_bookmark_query(
         .await
         .map_err(|_err| {
             log::error!("Error getting qdrant_point_id {:}", _err);
-            DefaultError {
-                message: "Error getting qdrant_point_id",
-            }
+            ServiceError::BadRequest(
+                "Error getting qdrant_point_id".to_string(),
+            )
         })?;
 
     Ok(qdrant_point_id)
@@ -520,7 +519,7 @@ pub async fn get_groups_for_bookmark_query(
     chunk_ids: Vec<uuid::Uuid>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<BookmarkGroupResult>, DefaultError> {
+) -> Result<Vec<BookmarkGroupResult>, ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
 
@@ -541,9 +540,9 @@ pub async fn get_groups_for_bookmark_query(
         ))
         .load::<(uuid::Uuid, String, uuid::Uuid, Option<uuid::Uuid>)>(&mut conn)
         .await
-        .map_err(|_err| DefaultError {
-            message: "Error getting bookmarks",
-        })?
+        .map_err(|_err| ServiceError::BadRequest(
+            "Error getting bookmarks".to_string(),
+        ))?
         .into_iter()
         .map(|(id, name, dataset_id, chunk_id)| match chunk_id {
             Some(chunk_id) => (
@@ -595,7 +594,7 @@ pub async fn delete_chunk_from_group_query(
     chunk_id: uuid::Uuid,
     group_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Option<uuid::Uuid>, DefaultError> {
+) -> Result<Option<uuid::Uuid>, ServiceError> {
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
@@ -610,9 +609,9 @@ pub async fn delete_chunk_from_group_query(
     .await
     .map_err(|_err| {
         log::error!("Error deleting bookmark {:}", _err);
-        DefaultError {
-            message: "Error deleting bookmark",
-        }
+        ServiceError::BadRequest(
+            "Error deleting bookmark".to_string(),
+        )
     })?;
 
     let qdrant_point_id = chunk_metadata_columns::chunk_metadata
@@ -622,9 +621,9 @@ pub async fn delete_chunk_from_group_query(
         .await
         .map_err(|_err| {
             log::error!("Error getting qdrant_point_id {:}", _err);
-            DefaultError {
-                message: "Error getting qdrant_point_id",
-            }
+            ServiceError::BadRequest(
+                "Error getting qdrant_point_id".to_string(),
+            )
         })?;
 
     Ok(qdrant_point_id)
@@ -635,7 +634,7 @@ pub async fn create_group_from_file_query(
     group_id: uuid::Uuid,
     file_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
     let file_group = FileGroup::from_details(file_id, group_id);
@@ -648,9 +647,9 @@ pub async fn create_group_from_file_query(
         .await
         .map_err(|_err| {
             log::error!("Error creating group from file {:}", _err);
-            DefaultError {
-                message: "Error creating group from file",
-            }
+            ServiceError::BadRequest(
+                "Error creating group from file".to_string(),
+            )
         })?;
 
     Ok(())
@@ -659,7 +658,7 @@ pub async fn create_group_from_file_query(
 pub async fn get_point_ids_from_unified_group_ids(
     group_ids: Vec<UnifiedId>,
     pool: web::Data<Pool>,
-) -> Result<Vec<uuid::Uuid>, DefaultError> {
+) -> Result<Vec<uuid::Uuid>, ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
@@ -683,9 +682,9 @@ pub async fn get_point_ids_from_unified_group_ids(
             .select(chunk_metadata_columns::qdrant_point_id)
             .load::<Option<uuid::Uuid>>(&mut conn)
             .await
-            .map_err(|_| DefaultError {
-                message: "Failed to load metadata",
-            })?
+            .map_err(|_| ServiceError::BadRequest(
+                "Failed to load metadata".to_string(),
+            ))?
             .into_iter()
             .flatten()
             .collect(),
@@ -705,9 +704,9 @@ pub async fn get_point_ids_from_unified_group_ids(
             .select(chunk_metadata_columns::qdrant_point_id)
             .load::<Option<uuid::Uuid>>(&mut conn)
             .await
-            .map_err(|_| DefaultError {
-                message: "Failed to load metadata",
-            })?
+            .map_err(|_| ServiceError::BadRequest(
+                "Failed to load metadata".to_string(),
+            ))?
             .into_iter()
             .flatten()
             .collect(),
@@ -736,7 +735,7 @@ pub async fn check_group_ids_exist_query(
     group_ids: Vec<uuid::Uuid>,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<uuid::Uuid>, DefaultError> {
+) -> Result<Vec<uuid::Uuid>, ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
 
     let mut conn = pool.get().await.unwrap();
@@ -754,9 +753,9 @@ pub async fn check_group_ids_exist_query(
                 sentry::Level::Error,
             );
 
-            DefaultError {
-                message: "Failed to load group ids for exist check",
-            }
+            ServiceError::BadRequest(
+                "Failed to load group ids for exist check".to_string(),
+            )
         })?;
 
     Ok(existing_group_ids)

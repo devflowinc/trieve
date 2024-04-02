@@ -2,7 +2,6 @@ use super::email_operator::send_email;
 use crate::errors::ServiceError;
 use crate::{
     data::models::{Invitation, Pool},
-    errors::DefaultError,
 };
 use actix_web::web;
 use diesel::prelude::*;
@@ -15,7 +14,7 @@ pub async fn create_invitation_query(
     organization_id: uuid::Uuid,
     user_role: i32,
     pool: web::Data<Pool>,
-) -> Result<Invitation, DefaultError> {
+) -> Result<Invitation, ServiceError> {
     use crate::data::schema::invitations::dsl::invitations;
 
     let mut conn = pool.get().await.unwrap();
@@ -26,9 +25,9 @@ pub async fn create_invitation_query(
         .values(&new_invitation)
         .get_result(&mut conn)
         .await
-        .map_err(|_db_error| DefaultError {
-            message: "Error inserting invitation.",
-        })?;
+        .map_err(|_db_error| ServiceError::BadRequest(
+            "Error inserting invitation.".to_string(),
+        ))?;
 
     Ok(inserted_invitation)
 }
@@ -37,7 +36,7 @@ pub async fn create_invitation_query(
 pub async fn get_invitation_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Invitation, DefaultError> {
+) -> Result<Invitation, ServiceError> {
     use crate::data::schema::invitations::dsl as invitations_columns;
 
     let mut conn = pool.get().await.unwrap();
@@ -46,15 +45,15 @@ pub async fn get_invitation_by_id_query(
         .filter(invitations_columns::id.eq(id))
         .first::<Invitation>(&mut conn)
         .await
-        .map_err(|_db_error| DefaultError {
-            message: "Error getting invitation.",
-        })?;
+        .map_err(|_db_error| ServiceError::BadRequest(
+            "Error getting invitation.".to_string(),
+        ))?;
 
     Ok(invitation)
 }
 
 #[tracing::instrument]
-pub async fn send_invitation(inv_url: String, invitation: Invitation) -> Result<(), DefaultError> {
+pub async fn send_invitation(inv_url: String, invitation: Invitation) -> Result<(), ServiceError> {
     let sg_email_content = format!(
         "You have been invited to join an Trieve AI dataset. <br/>
          Please click on the link below to register. <br/>
@@ -71,7 +70,7 @@ pub async fn send_invitation(inv_url: String, invitation: Invitation) -> Result<
 pub async fn set_invitation_used(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     use crate::data::schema::invitations::dsl as invitations_columns;
 
     let mut conn = pool.get().await.unwrap();
@@ -81,9 +80,9 @@ pub async fn set_invitation_used(
         .set(invitations_columns::used.eq(true))
         .execute(&mut conn)
         .await
-        .map_err(|_db_error| DefaultError {
-            message: "Error setting invitation as used.",
-        })?;
+        .map_err(|_db_error| ServiceError::BadRequest(
+            "Error setting invitation as used.".to_string(),
+        ))?;
 
     Ok(())
 }

@@ -1,7 +1,7 @@
 use super::message_handler::get_topic_string;
 use crate::{
     data::models::{DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration, Topic},
-    errors::{DefaultError, ServiceError},
+    errors::ServiceError,
     handlers::auth_handler::LoggedUser,
     operators::topic_operator::{
         create_topic_query, delete_topic_query, get_all_topics_for_user_query,
@@ -66,9 +66,9 @@ pub async fn create_topic(
     let first_message = data_inner.first_user_message;
 
     if first_message.is_none() && data_inner.name.is_none() {
-        return Ok(HttpResponse::BadRequest().json(DefaultError {
-            message: "first_user_message and name must not be empty",
-        }));
+        return Err(ServiceError::BadRequest(
+            "first_user_message and name must not be empty".to_string(),
+        ).into());
     }
 
     let topic_name = if let Some(first_user_message) = first_message {
@@ -82,12 +82,9 @@ pub async fn create_topic(
     let new_topic = Topic::from_details(topic_name, user.id, dataset_org_plan_sub.dataset.id);
     let new_topic1 = new_topic.clone();
 
-    let create_topic_result = create_topic_query(new_topic, &pool).await;
+    create_topic_query(new_topic, &pool).await?;
 
-    match create_topic_result {
-        Ok(()) => Ok(HttpResponse::Ok().json(new_topic1)),
-        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
-    }
+    Ok(HttpResponse::Ok().json(new_topic1))
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -133,20 +130,11 @@ pub async fn delete_topic(
         dataset_org_plan_sub.dataset.id,
         &pool_inner,
     )
-    .await;
+    .await?;
 
-    match user_topic {
-        Ok(topic) => {
-            let delete_topic_result =
-                delete_topic_query(topic.id, dataset_org_plan_sub.dataset.id, &pool).await;
+    delete_topic_query(user_topic.id, dataset_org_plan_sub.dataset.id, &pool).await?;
 
-            match delete_topic_result {
-                Ok(()) => Ok(HttpResponse::NoContent().finish()),
-                Err(e) => Ok(HttpResponse::BadRequest().json(e)),
-            }
-        }
-        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
-    }
+    Ok(HttpResponse::NoContent().finish())
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -190,9 +178,9 @@ pub async fn update_topic(
     let pool_inner = pool.clone();
 
     if name.is_empty() {
-        return Ok(HttpResponse::BadRequest().json(DefaultError {
-            message: "Resolution must not be empty",
-        }));
+        return Err(ServiceError::BadRequest(
+            "Resolution must not be empty".to_string(),
+        ).into());
     }
 
     let user_topic = get_topic_for_user_query(
@@ -201,20 +189,11 @@ pub async fn update_topic(
         dataset_org_plan_sub.dataset.id,
         &pool_inner,
     )
-    .await;
+    .await?;
 
-    match user_topic {
-        Ok(topic) => {
-            let update_topic_result =
-                update_topic_query(topic.id, name, dataset_org_plan_sub.dataset.id, &pool).await;
+    update_topic_query(user_topic.id, name, dataset_org_plan_sub.dataset.id, &pool).await?;
 
-            match update_topic_result {
-                Ok(()) => Ok(HttpResponse::NoContent().finish()),
-                Err(e) => Ok(HttpResponse::BadRequest().json(e)),
-            }
-        }
-        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
-    }
+    Ok(HttpResponse::NoContent().finish())
 }
 
 /// Get All Topics for User
@@ -243,7 +222,7 @@ pub async fn get_all_topics_for_user(
     req_user_id: web::Path<uuid::Uuid>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
-) -> Result<HttpResponse, actix_web::Error> {
+) -> Result<HttpResponse, ServiceError> {
     if user
         .user_orgs
         .iter()
@@ -257,16 +236,13 @@ pub async fn get_all_topics_for_user(
             .role
             < 1
     {
-        return Ok(HttpResponse::BadRequest().json(DefaultError {
-            message: "User does not have enough permissions to get topics for another user",
-        }));
+        return Err(ServiceError::BadRequest(
+            "User does not have enough permissions to get topics for another user".to_string(),
+        ));
     }
 
     let topics =
-        get_all_topics_for_user_query(*req_user_id, dataset_org_plan_sub.dataset.id, &pool).await;
+        get_all_topics_for_user_query(*req_user_id, dataset_org_plan_sub.dataset.id, &pool).await?;
 
-    match topics {
-        Ok(topics) => Ok(HttpResponse::Ok().json(topics)),
-        Err(e) => Ok(HttpResponse::BadRequest().json(e)),
-    }
+    Ok(HttpResponse::Ok().json(topics))
 }

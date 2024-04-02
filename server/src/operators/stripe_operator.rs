@@ -2,7 +2,7 @@ use crate::{
     data::models::{
         Organization, OrganizationWithSubAndPlan, Pool, RedisPool, StripePlan, StripeSubscription,
     },
-    errors::DefaultError,
+    errors::ServiceError,
     get_env,
 };
 use actix_web::web;
@@ -22,7 +22,7 @@ pub async fn refresh_redis_org_plan_sub(
     organization_id: uuid::Uuid,
     redis_pool: actix_web::web::Data<RedisPool>,
     pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     use crate::data::schema::organizations::dsl as organizations_columns;
     use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
@@ -46,41 +46,41 @@ pub async fn refresh_redis_org_plan_sub(
             .filter(organizations_columns::id.eq(organization_id))
             .first::<(Organization, Option<StripePlan>, Option<StripeSubscription>)>(&mut conn)
             .await
-            .map_err(|_| DefaultError {
-                message: "Could not find organizations",
-            })?;
+            .map_err(|_| ServiceError::BadRequest(
+                "Could not find organizations".to_string(),
+            ))?;
     let org_plan_sub =
         OrganizationWithSubAndPlan::from_components(org_plan_sub.0, org_plan_sub.1, org_plan_sub.2);
 
-    let mut redis_conn = redis_pool.get().await.map_err(|_| DefaultError {
-        message: "Could not create redis client",
-    })?;
+    let mut redis_conn = redis_pool.get().await.map_err(|_| ServiceError::BadRequest(
+        "Could not create redis client".to_string(),
+    ))?;
 
     redis::cmd("SET")
         .arg(format!("organization:{}", org_plan_sub.id))
         .arg(
-            serde_json::to_string(&org_plan_sub).map_err(|_| DefaultError {
-                message: "Could not stringify organization",
-            })?,
+            serde_json::to_string(&org_plan_sub).map_err(|_| ServiceError::BadRequest(
+                "Could not stringify organization".to_string(),
+            ))?,
         )
         .query_async(&mut *redis_conn)
         .await
-        .map_err(|_| DefaultError {
-            message: "Could not set organization in redis",
-        })?;
+        .map_err(|_| ServiceError::BadRequest(
+            "Could not set organization in redis".to_string(),
+        ))?;
 
     redis::cmd("SET")
         .arg(format!("organization:{}", org_plan_sub.name))
         .arg(
-            serde_json::to_string(&org_plan_sub).map_err(|_| DefaultError {
-                message: "Could not stringify organization",
-            })?,
+            serde_json::to_string(&org_plan_sub).map_err(|_| ServiceError::BadRequest(
+                "Could not stringify organization".to_string(),
+            ))?,
         )
         .query_async(&mut *redis_conn)
         .await
-        .map_err(|_| DefaultError {
-            message: "Could not set organization in redis",
-        })?;
+        .map_err(|_| ServiceError::BadRequest(
+            "Could not set organization in redis".to_string(),
+        ))?;
 
     Ok(())
 }
@@ -92,7 +92,7 @@ pub async fn create_stripe_subscription_query(
     organization_id: uuid::Uuid,
     redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
     let stripe_subscription =
@@ -108,9 +108,9 @@ pub async fn create_stripe_subscription_query(
         .await
         .map_err(|e| {
             log::error!("Failed to insert stripe subscription: {}", e);
-            DefaultError {
-                message: "Failed to insert stripe subscription",
-            }
+            ServiceError::BadRequest(
+                "Failed to insert stripe subscription".to_string(),
+            )
         })?;
 
     refresh_redis_org_plan_sub(stripe_subscription.organization_id, redis_pool, pool).await?;
@@ -123,7 +123,7 @@ pub async fn create_stripe_plan_query(
     stripe_id: String,
     amount: i64,
     pool: web::Data<Pool>,
-) -> Result<StripePlan, DefaultError> {
+) -> Result<StripePlan, ServiceError> {
     use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
 
     // TODO: Make this configurable
@@ -148,9 +148,9 @@ pub async fn create_stripe_plan_query(
         .await
         .map_err(|e| {
             log::error!("Failed to insert stripe plan: {}", e);
-            DefaultError {
-                message: "Failed to insert stripe plan",
-            }
+            ServiceError::BadRequest(
+                "Failed to insert stripe plan".to_string(),
+            )
         })?;
 
     Ok(created_stripe_plan)
@@ -160,7 +160,7 @@ pub async fn create_stripe_plan_query(
 pub async fn get_plan_by_id_query(
     plan_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<StripePlan, DefaultError> {
+) -> Result<StripePlan, ServiceError> {
     use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
 
     let mut conn = pool
@@ -173,16 +173,16 @@ pub async fn get_plan_by_id_query(
         .await
         .map_err(|e| {
             log::error!("Failed to get stripe plan: {}", e);
-            DefaultError {
-                message: "Failed to get stripe plan",
-            }
+            ServiceError::BadRequest(
+                "Failed to get stripe plan".to_string(),
+            )
         })?;
 
     Ok(stripe_plan)
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn get_all_plans_query(pool: web::Data<Pool>) -> Result<Vec<StripePlan>, DefaultError> {
+pub async fn get_all_plans_query(pool: web::Data<Pool>) -> Result<Vec<StripePlan>, ServiceError> {
     use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
 
     let mut conn = pool
@@ -194,9 +194,9 @@ pub async fn get_all_plans_query(pool: web::Data<Pool>) -> Result<Vec<StripePlan
         .await
         .map_err(|e| {
             log::error!("Failed to get stripe plans: {}", e);
-            DefaultError {
-                message: "Failed to get stripe plans",
-            }
+            ServiceError::BadRequest(
+                "Failed to get stripe plans".to_string(),
+            )
         })?;
 
     Ok(stripe_plans)
@@ -206,7 +206,7 @@ pub async fn get_all_plans_query(pool: web::Data<Pool>) -> Result<Vec<StripePlan
 pub async fn create_stripe_payment_link(
     plan: StripePlan,
     organization_id: uuid::Uuid,
-) -> Result<String, DefaultError> {
+) -> Result<String, ServiceError> {
     let admin_dashboard_url = get_env!("ADMIN_DASHBOARD_URL", "ADMIN_DASHBOARD_URL must be set");
 
     let stripe_secret = get_env!("STRIPE_SECRET", "STRIPE_SECRET must be set");
@@ -231,26 +231,26 @@ pub async fn create_stripe_payment_link(
         .await
         .map_err(|e| {
             log::error!("Failed to create stripe payment link: {}", e);
-            DefaultError {
-                message: "Failed to create stripe payment link",
-            }
+            ServiceError::BadRequest(
+                "Failed to create stripe payment link".to_string(),
+            )
         })?;
 
     let payment_link_response_json: serde_json::Value =
         payment_link_response.json().await.map_err(|e| {
             log::error!("Failed to get stripe payment link json: {}", e);
-            DefaultError {
-                message: "Failed to get stripe payment link json",
-            }
+            ServiceError::BadRequest(
+                "Failed to get stripe payment link json".to_string(),
+            )
         })?;
 
     log::info!("Payment link response: {:?}", payment_link_response_json);
 
     let payment_link = payment_link_response_json["url"]
         .as_str()
-        .ok_or(DefaultError {
-            message: "Failed to get stripe payment link url",
-        })?;
+        .ok_or(ServiceError::BadRequest(
+            "Failed to get stripe payment link url".to_string(),
+        ))?;
 
     Ok(payment_link.to_string())
 }
@@ -259,7 +259,7 @@ pub async fn create_stripe_payment_link(
 pub async fn get_subscription_by_id_query(
     subscription_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<StripeSubscription, DefaultError> {
+) -> Result<StripeSubscription, ServiceError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
     let mut conn = pool
@@ -273,9 +273,9 @@ pub async fn get_subscription_by_id_query(
             .await
             .map_err(|e| {
                 log::error!("Failed to get stripe subscription: {}", e);
-                DefaultError {
-                    message: "Failed to get stripe subscription",
-                }
+                ServiceError::BadRequest(
+                    "Failed to get stripe subscription".to_string(),
+                )
             })?;
 
     Ok(stripe_subscription)
@@ -286,7 +286,7 @@ pub async fn delete_subscription_by_id_query(
     subscription_id: uuid::Uuid,
     redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
     let mut conn = pool
@@ -301,9 +301,9 @@ pub async fn delete_subscription_by_id_query(
     .await
     .map_err(|e| {
         log::error!("Failed to delete stripe subscription: {}", e);
-        DefaultError {
-            message: "Failed to delete stripe subscription",
-        }
+        ServiceError::BadRequest(
+            "Failed to delete stripe subscription".to_string(),
+        )
     })?;
 
     refresh_redis_org_plan_sub(deleted_subscription.organization_id, redis_pool, pool).await?;
@@ -315,7 +315,7 @@ pub async fn delete_subscription_by_id_query(
 pub async fn get_option_subscription_by_organization_id_query(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Option<StripeSubscription>, DefaultError> {
+) -> Result<Option<StripeSubscription>, ServiceError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
     let mut conn = pool
@@ -329,9 +329,9 @@ pub async fn get_option_subscription_by_organization_id_query(
             .await
             .map_err(|e| {
                 log::error!("Failed to get stripe subscription: {}", e);
-                DefaultError {
-                    message: "Failed to get stripe subscription",
-                }
+                ServiceError::BadRequest(
+                    "Failed to get stripe subscription".to_string(),
+                )
             })?;
 
     Ok(stripe_subscriptions.into_iter().next())
@@ -343,7 +343,7 @@ pub async fn set_stripe_subscription_current_period_end(
     current_period_end: chrono::NaiveDateTime,
     redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
     let mut conn = pool
@@ -359,9 +359,9 @@ pub async fn set_stripe_subscription_current_period_end(
     .await
     .map_err(|e| {
         log::error!("Failed to update stripe subscription: {}", e);
-        DefaultError {
-            message: "Failed to update stripe subscription",
-        }
+        ServiceError::BadRequest(
+            "Failed to update stripe subscription".to_string(),
+        )
     })?;
 
     refresh_redis_org_plan_sub(updated_subscription.organization_id, redis_pool, pool).await?;
@@ -372,12 +372,12 @@ pub async fn set_stripe_subscription_current_period_end(
 #[tracing::instrument]
 pub async fn cancel_stripe_subscription(
     subscription_stripe_id: String,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     let stripe_client = get_stripe_client();
     let stripe_subscription_id: stripe::SubscriptionId =
-        subscription_stripe_id.parse().map_err(|_| DefaultError {
-            message: "Failed to parse stripe subscription id",
-        })?;
+        subscription_stripe_id.parse().map_err(|_| ServiceError::BadRequest(
+            "Failed to parse stripe subscription id".to_string(),
+        ))?;
     stripe::Subscription::cancel(
         &stripe_client,
         &stripe_subscription_id,
@@ -386,9 +386,9 @@ pub async fn cancel_stripe_subscription(
     .await
     .map_err(|e| {
         log::error!("Failed to cancel stripe subscription: {}", e);
-        DefaultError {
-            message: "Request to stripe failed",
-        }
+        ServiceError::BadRequest(
+            "Request to stripe failed".to_string(),
+        )
     })?;
 
     Ok(())
@@ -400,7 +400,7 @@ pub async fn update_stripe_subscription_plan_query(
     plan_id: uuid::Uuid,
     redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
     let mut conn = pool
@@ -416,9 +416,9 @@ pub async fn update_stripe_subscription_plan_query(
     .await
     .map_err(|e| {
         log::error!("Failed to update stripe subscription: {}", e);
-        DefaultError {
-            message: "Failed to update stripe subscription",
-        }
+        ServiceError::BadRequest(
+            "Failed to update stripe subscription".to_string(),
+        )
     })?;
 
     refresh_redis_org_plan_sub(updated_subscription.organization_id, redis_pool, pool).await?;
@@ -430,13 +430,13 @@ pub async fn update_stripe_subscription_plan_query(
 pub async fn update_stripe_subscription(
     subscription_stripe_id: String,
     plan_stripe_id: String,
-) -> Result<(), DefaultError> {
+) -> Result<(), ServiceError> {
     let stripe_client = get_stripe_client();
 
     let stripe_subscription_id: stripe::SubscriptionId =
-        subscription_stripe_id.parse().map_err(|_| DefaultError {
-            message: "Failed to parse stripe subscription id",
-        })?;
+        subscription_stripe_id.parse().map_err(|_| ServiceError::BadRequest(
+            "Failed to parse stripe subscription id".to_string(),
+        ))?;
     let list_sub_items = stripe::generated::billing::subscription_item::ListSubscriptionItems::new(
         stripe_subscription_id.clone(),
     );
@@ -444,9 +444,9 @@ pub async fn update_stripe_subscription(
         .await
         .map_err(|e| {
             log::error!("Failed to list stripe subscription items: {}", e);
-            DefaultError {
-                message: "Failed to list stripe subscription items",
-            }
+            ServiceError::BadRequest(
+                "Failed to list stripe subscription items".to_string(),
+            )
         })?;
 
     let mut update_subscription_items: Vec<stripe::UpdateSubscriptionItems> = vec![];
@@ -477,9 +477,9 @@ pub async fn update_stripe_subscription(
     .await
     .map_err(|e| {
         log::error!("Failed to update stripe subscription: {}", e);
-        DefaultError {
-            message: "Failed to update stripe subscription",
-        }
+        ServiceError::BadRequest(
+            "Failed to update stripe subscription".to_string(),
+        )
     })?;
 
     Ok(())
