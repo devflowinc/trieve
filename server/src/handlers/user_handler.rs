@@ -71,9 +71,7 @@ pub async fn update_user(
                 "You must be an admin to update other users".to_string(),
             ));
         }
-        let user_info = get_user_by_id_query(&user_id, pool.clone())
-            .await
-        ?;
+        let user_info = get_user_by_id_query(&user_id, pool.clone()).await?;
 
         let authorized = user_info
             .1
@@ -111,7 +109,7 @@ pub async fn update_user(
         pool,
     )
     .await?;
-    
+
     Ok(HttpResponse::Ok().json(slim_user))
 }
 

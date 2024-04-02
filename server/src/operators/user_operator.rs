@@ -41,9 +41,12 @@ pub async fn get_user_by_id_query(
         ))
         .load::<(User, UserOrganization, Organization)>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Error loading user with organizations and roles for get_user_by_id_query".to_string(),
-        ))?;
+        .map_err(|_| {
+            ServiceError::BadRequest(
+                "Error loading user with organizations and roles for get_user_by_id_query"
+                    .to_string(),
+            )
+        })?;
 
     match user_orgs_orgs.get(0) {
         Some(first_user_org) => {
@@ -64,9 +67,11 @@ pub async fn get_user_by_id_query(
                 .select(User::as_select())
                 .first::<User>(&mut conn)
                 .await
-                .map_err(|_| ServiceError::BadRequest(
-                    "Error loading user by itself for get_user_by_id_query".to_string(),
-                ))?;
+                .map_err(|_| {
+                    ServiceError::BadRequest(
+                        "Error loading user by itself for get_user_by_id_query".to_string(),
+                    )
+                })?;
 
             Ok((user, vec![], vec![]))
         }
@@ -92,9 +97,7 @@ pub async fn add_existing_user_to_org(
         .await
         .map_err(|e| {
             log::error!("Error loading users: {:?}", e);
-            ServiceError::BadRequest(
-                "Error loading users".to_string(),
-            )
+            ServiceError::BadRequest("Error loading users".to_string())
         })?;
 
     match user.get(0) {
@@ -126,9 +129,7 @@ pub async fn update_user_query(
         .set((user_columns::name.eq(name),))
         .get_result(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Error updating user".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::BadRequest("Error updating user".to_string()))?;
 
     if let Some(role) = role {
         diesel::update(
@@ -138,9 +139,7 @@ pub async fn update_user_query(
         .set(crate::data::schema::user_organizations::dsl::role.eq(Into::<i32>::into(role)))
         .execute(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Error updating user".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::BadRequest("Error updating user".to_string()))?;
     }
 
     Ok(user)
@@ -173,9 +172,7 @@ pub fn hash_password(password: &str) -> Result<String, ServiceError> {
         ..Config::original()
     };
     argon2::hash_encoded(password.as_bytes(), SALT.as_bytes(), &config).map_err(|_err| {
-        ServiceError::BadRequest(
-            "Error processing password, try again".to_string(),
-        )
+        ServiceError::BadRequest("Error processing password, try again".to_string())
     })
 }
 
@@ -197,9 +194,7 @@ pub async fn set_user_api_key_query(
         .values(&api_key_struct)
         .execute(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Error setting api key".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::BadRequest("Error setting api key".to_string()))?;
 
     Ok(raw_api_key)
 }
@@ -235,9 +230,7 @@ pub async fn get_user_from_api_key_query(
             ))
             .load::<(User, UserOrganization, Organization, UserApiKey)>(&mut conn)
             .await
-            .map_err(|_| ServiceError::BadRequest(
-                "Error loading user".to_string(),
-            ))?;
+            .map_err(|_| ServiceError::BadRequest("Error loading user".to_string()))?;
 
     match user_orgs_orgs.get(0) {
         Some(first_user_org) => {
@@ -267,9 +260,7 @@ pub async fn get_user_from_api_key_query(
                 .collect::<Vec<Organization>>();
             Ok(SlimUser::from_details(user, user_orgs, orgs))
         }
-        None => Err(ServiceError::BadRequest(
-            "User not found".to_string(),
-        )),
+        None => Err(ServiceError::BadRequest("User not found".to_string())),
     }
 }
 
@@ -287,9 +278,7 @@ pub async fn get_user_api_keys_query(
         .select(UserApiKey::as_select())
         .load::<UserApiKey>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Error loading user api keys".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::BadRequest("Error loading user api keys".to_string()))?;
 
     let api_keys = api_keys
         .into_iter()
@@ -315,9 +304,7 @@ pub async fn delete_user_api_keys_query(
     )
     .execute(&mut conn)
     .await
-    .map_err(|_| ServiceError::BadRequest(
-        "Error deleting user api key".to_string(),
-    ))?;
+    .map_err(|_| ServiceError::BadRequest("Error deleting user api key".to_string()))?;
 
     Ok(())
 }
@@ -342,9 +329,7 @@ pub async fn create_user_query(
         .first::<User>(&mut conn)
         .await
         .optional()
-        .map_err(|_| ServiceError::InternalServerError(
-            "Error loading user".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::InternalServerError("Error loading user".to_string()))?;
 
     if let Some(old_user) = old_user {
         let mut conn = pool.get().await.unwrap();
@@ -356,9 +341,7 @@ pub async fn create_user_query(
             .map_err(|e| {
                 log::error!("Error updating ids: {:?}", e);
 
-                ServiceError::InternalServerError(
-                    "Error creating user".to_string(),
-                )
+                ServiceError::InternalServerError("Error creating user".to_string())
             })?;
 
         let user = get_user_by_id_query(&user_id, pool).await?;
@@ -387,9 +370,11 @@ pub async fn create_user_query(
             .scope_boxed()
         })
         .await
-        .map_err(|_| ServiceError::InternalServerError(
-            "Failed to create user, likely that organization_id is invalid".to_string(),
-        ))?;
+        .map_err(|_| {
+            ServiceError::InternalServerError(
+                "Failed to create user, likely that organization_id is invalid".to_string(),
+            )
+        })?;
 
     let user_org = get_user_by_id_query(&user_org.0.id, pool).await?;
 
@@ -471,9 +456,7 @@ pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result
         .values(&user)
         .get_result::<User>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Failed to create default user".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::BadRequest("Failed to create default user".to_string()))?;
 
     let org = Organization::from_details("default".to_string());
 
@@ -481,9 +464,9 @@ pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result
         .values(&org)
         .get_result::<Organization>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Failed to create default organization".to_string(),
-        ))?;
+        .map_err(|_| {
+            ServiceError::BadRequest("Failed to create default organization".to_string())
+        })?;
 
     let user_org = UserOrganization::from_details(user.id, org.id, UserRole::Owner);
 
@@ -491,9 +474,9 @@ pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result
         .values(&user_org)
         .execute(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Failed to create default user organization".to_string(),
-        ))?;
+        .map_err(|_| {
+            ServiceError::BadRequest("Failed to create default user organization".to_string())
+        })?;
 
     let api_key_struct = UserApiKey::from_details(
         user.id,
@@ -506,9 +489,7 @@ pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result
         .values(&api_key_struct)
         .execute(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Error setting api key".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::BadRequest("Error setting api key".to_string()))?;
 
     Ok(())
 }

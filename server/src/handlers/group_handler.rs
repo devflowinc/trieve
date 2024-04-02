@@ -44,7 +44,7 @@ pub async fn dataset_owns_group(
     };
 
     if group.dataset_id != dataset_id {
-        return Err(ServiceError::Forbidden.into());
+        return Err(ServiceError::Forbidden);
     }
 
     Ok(group)
@@ -1185,7 +1185,7 @@ pub async fn search_within_group(
             return Err(ServiceError::BadRequest(
                 "You must provide either group_id or group_tracking_id".into(),
             )
-            .into())
+            .into());
         }
     };
 

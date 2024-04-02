@@ -68,7 +68,8 @@ pub async fn create_topic(
     if first_message.is_none() && data_inner.name.is_none() {
         return Err(ServiceError::BadRequest(
             "first_user_message and name must not be empty".to_string(),
-        ).into());
+        )
+        .into());
     }
 
     let topic_name = if let Some(first_user_message) = first_message {
@@ -178,9 +179,7 @@ pub async fn update_topic(
     let pool_inner = pool.clone();
 
     if name.is_empty() {
-        return Err(ServiceError::BadRequest(
-            "Resolution must not be empty".to_string(),
-        ).into());
+        return Err(ServiceError::BadRequest("Resolution must not be empty".to_string()).into());
     }
 
     let user_topic = get_topic_for_user_query(

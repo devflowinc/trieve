@@ -13,9 +13,9 @@ pub async fn create_topic_query(topic: Topic, pool: &web::Data<Pool>) -> Result<
         .values(&topic)
         .execute(&mut conn)
         .await
-        .map_err(|_db_error| ServiceError::BadRequest(
-            "Error inserting new topic, try again".to_string(),
-        ))?;
+        .map_err(|_db_error| {
+            ServiceError::BadRequest("Error inserting new topic, try again".to_string())
+        })?;
 
     Ok(())
 }
@@ -38,9 +38,7 @@ pub async fn delete_topic_query(
     .set(deleted.eq(true))
     .execute(&mut conn)
     .await
-    .map_err(|_db_error| ServiceError::BadRequest(
-        "Error deleting topic, try again".to_string(),
-    ))?;
+    .map_err(|_db_error| ServiceError::BadRequest("Error deleting topic, try again".to_string()))?;
 
     Ok(())
 }
@@ -64,9 +62,7 @@ pub async fn update_topic_query(
     .set((name.eq(topic_name), updated_at.eq(diesel::dsl::now)))
     .execute(&mut conn)
     .await
-    .map_err(|_db_error| ServiceError::BadRequest(
-        "Error updating topic, try again".to_string(),
-    ))?;
+    .map_err(|_db_error| ServiceError::BadRequest("Error updating topic, try again".to_string()))?;
 
     Ok(())
 }
@@ -87,9 +83,7 @@ pub async fn get_topic_query(
         .filter(dataset_id.eq(given_dataset_id))
         .first::<Topic>(&mut conn)
         .await
-        .map_err(|_db_error| ServiceError::BadRequest(
-            "This topic does not exist".to_string(),
-        ))
+        .map_err(|_db_error| ServiceError::BadRequest("This topic does not exist".to_string()))
 }
 
 #[tracing::instrument(skip(pool))]
@@ -110,9 +104,11 @@ pub async fn get_topic_for_user_query(
         .filter(dataset_id.eq(given_dataset_id))
         .first::<Topic>(&mut conn)
         .await
-        .map_err(|_db_error| ServiceError::BadRequest(
-            "This topic does not exist for the authenticated user".to_string(),
-        ))
+        .map_err(|_db_error| {
+            ServiceError::BadRequest(
+                "This topic does not exist for the authenticated user".to_string(),
+            )
+        })
 }
 
 #[tracing::instrument(skip(pool))]
@@ -132,7 +128,5 @@ pub async fn get_all_topics_for_user_query(
         .order(updated_at.desc())
         .load::<Topic>(&mut conn)
         .await
-        .map_err(|_db_error| ServiceError::BadRequest(
-            "Error getting topics for user".to_string(),
-        ))
+        .map_err(|_db_error| ServiceError::BadRequest("Error getting topics for user".to_string()))
 }

@@ -37,9 +37,8 @@ pub async fn get_qdrant_connection(
     ));
     let mut config = QdrantClientConfig::from_url(qdrant_url);
     config.api_key = Some(qdrant_api_key.to_owned());
-    QdrantClient::new(Some(config)).map_err(|_err| ServiceError::BadRequest(
-        "Failed to connect to Qdrant".to_string(),
-    ))
+    QdrantClient::new(Some(config))
+        .map_err(|_err| ServiceError::BadRequest("Failed to connect to Qdrant".to_string()))
 }
 
 /// Create Qdrant collection and indexes needed
@@ -57,9 +56,7 @@ pub async fn create_new_qdrant_collection_query(
         ))
         .to_string();
 
-    let qdrant_client = get_qdrant_connection(qdrant_url, qdrant_api_key)
-        .await
-    ?;
+    let qdrant_client = get_qdrant_connection(qdrant_url, qdrant_api_key).await?;
 
     // check if collection exists
     let collection = qdrant_client
@@ -253,9 +250,8 @@ pub async fn create_new_qdrant_point_query(
 ) -> Result<(), ServiceError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
-    let qdrant = get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY))
-        .await
-    ?;
+    let qdrant =
+        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
 
     let payload = json!({
         "tag_set": chunk_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(),
@@ -263,7 +259,7 @@ pub async fn create_new_qdrant_point_query(
         "metadata": chunk_metadata.metadata.unwrap_or_default(),
         "time_stamp": chunk_metadata.time_stamp.unwrap_or_default().timestamp(),
         "dataset_id": chunk_metadata.dataset_id.to_string(),
-        "group_ids": group_ids.unwrap_or(vec![])
+        "group_ids": group_ids.unwrap_or_default()
     })
     .try_into()
     .expect("A json! Value must always be a valid Payload");
@@ -274,7 +270,7 @@ pub async fn create_new_qdrant_point_query(
         768 => "768_vectors",
         1024 => "1024_vectors",
         1536 => "1536_vectors",
-        _ => return Err(ServiceError::BadRequest("Invalid embedding vector size".into()).into()),
+        _ => return Err(ServiceError::BadRequest("Invalid embedding vector size".into())),
     };
 
     let vector_payload = HashMap::from([
@@ -310,9 +306,8 @@ pub async fn update_qdrant_point_query(
 
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
-    let qdrant = get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY))
-        .await
-    ?;
+    let qdrant =
+        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
 
     let current_point_vec = qdrant
         .get_points(
@@ -444,9 +439,9 @@ pub async fn add_bookmark_to_qdrant_query(
             None,
         )
         .await
-        .map_err(|_err| ServiceError::BadRequest(
-            "Failed to search_points from qdrant".to_string(),
-        ))?
+        .map_err(|_err| {
+            ServiceError::BadRequest("Failed to search_points from qdrant".to_string())
+        })?
         .result;
 
     let current_point = match current_point_vec.first() {
@@ -501,9 +496,9 @@ pub async fn add_bookmark_to_qdrant_query(
             None,
         )
         .await
-        .map_err(|_err| ServiceError::BadRequest(
-            "Failed updating chunk payload in qdrant".to_string(),
-        ))?;
+        .map_err(|_err| {
+            ServiceError::BadRequest("Failed updating chunk payload in qdrant".to_string())
+        })?;
 
     Ok(())
 }
@@ -531,9 +526,9 @@ pub async fn remove_bookmark_from_qdrant_query(
             None,
         )
         .await
-        .map_err(|_err| ServiceError::BadRequest(
-            "Failed to search_points from qdrant".to_string(),
-        ))?
+        .map_err(|_err| {
+            ServiceError::BadRequest("Failed to search_points from qdrant".to_string())
+        })?
         .result;
 
     let current_point = match current_point_vec.first() {
@@ -588,9 +583,9 @@ pub async fn remove_bookmark_from_qdrant_query(
             None,
         )
         .await
-        .map_err(|_err| ServiceError::BadRequest(
-            "Failed updating chunk payload in qdrant".to_string(),
-        ))?;
+        .map_err(|_err| {
+            ServiceError::BadRequest("Failed updating chunk payload in qdrant".to_string())
+        })?;
 
     Ok(())
 }
@@ -650,11 +645,7 @@ pub async fn search_over_groups_query(
                     with_payload: None,
                     filter: Some(filter),
                     group_by: "group_ids".to_string(),
-                    group_size: if group_size == 0 {
-                        1
-                    } else {
-                        group_size
-                    },
+                    group_size: if group_size == 0 { 1 } else { group_size },
                     ..Default::default()
                 })
                 .await
@@ -673,11 +664,7 @@ pub async fn search_over_groups_query(
                     with_payload: None,
                     filter: Some(filter),
                     group_by: "group_ids".to_string(),
-                    group_size: if group_size == 0 {
-                        1
-                    } else {
-                        group_size
-                    },
+                    group_size: if group_size == 0 { 1 } else { group_size },
                     ..Default::default()
                 })
                 .await
@@ -685,9 +672,7 @@ pub async fn search_over_groups_query(
     }
     .map_err(|e| {
         log::error!("Failed to search points on Qdrant {:?}", e);
-        ServiceError::BadRequest(
-            "Failed to search points on Qdrant".to_string(),
-        )
+        ServiceError::BadRequest("Failed to search points on Qdrant".to_string())
     })?;
 
     let point_ids: Vec<GroupSearchResults> = data
@@ -716,7 +701,10 @@ pub async fn search_over_groups_query(
                 .collect();
 
             if group_size == 0 {
-                Some(GroupSearchResults { group_id, hits: vec![] })
+                Some(GroupSearchResults {
+                    group_id,
+                    hits: vec![],
+                })
             } else {
                 Some(GroupSearchResults { group_id, hits })
             }
@@ -793,9 +781,7 @@ pub async fn search_qdrant_query(
     }
     .map_err(|e| {
         log::error!("Failed to search points on Qdrant {:?}", e);
-        ServiceError::BadRequest(
-            "Failed to search points on Qdrant".to_string(),
-        )
+        ServiceError::BadRequest("Failed to search points on Qdrant".to_string())
     })?;
 
     let point_ids: Vec<SearchResult> = data
@@ -821,7 +807,7 @@ pub async fn recommend_qdrant_query(
     limit: u64,
     dataset_id: uuid::Uuid,
     config: ServerDatasetConfiguration,
-    pool: web::Data<Pool>
+    pool: web::Data<Pool>,
 ) -> Result<Vec<uuid::Uuid>, ServiceError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
@@ -895,6 +881,7 @@ pub async fn recommend_qdrant_query(
     Ok(recommended_point_ids)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn recommend_qdrant_groups_query(
     positive_ids: Vec<uuid::Uuid>,
     negative_ids: Vec<uuid::Uuid>,
@@ -953,11 +940,7 @@ pub async fn recommend_qdrant_groups_query(
         timeout: None,
         shard_key_selector: None,
         group_by: "group_ids".to_string(),
-        group_size: if group_size == 0 {
-            1
-        } else {
-            group_size
-        },
+        group_size: if group_size == 0 { 1 } else { group_size },
         with_lookup: None,
     };
 
@@ -996,7 +979,10 @@ pub async fn recommend_qdrant_groups_query(
                 .collect();
 
             if group_size == 0 {
-                Some(GroupSearchResults { group_id, hits: vec![] })
+                Some(GroupSearchResults {
+                    group_id,
+                    hits: vec![],
+                })
             } else {
                 Some(GroupSearchResults { group_id, hits })
             }
@@ -1026,9 +1012,7 @@ pub async fn get_point_count_qdrant_query(
         .await
         .map_err(|err| {
             log::info!("Failed to count points from qdrant: {:?}", err);
-            ServiceError::BadRequest(
-                "Failed to count points from qdrant".to_string(),
-            )
+            ServiceError::BadRequest("Failed to count points from qdrant".to_string())
         })?;
 
     Ok(data.result.expect("Failed to get result from qdrant").count)

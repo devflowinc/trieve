@@ -1,6 +1,7 @@
 use super::event_operator::create_event_query;
 use super::group_operator::{create_group_from_file_query, create_group_query};
 use super::parse_operator::{coarse_doc_chunker, convert_html_to_text};
+use crate::data::models::FileDTO;
 use crate::data::models::RedisPool;
 use crate::data::models::{
     ChunkMetadata, Dataset, DatasetAndOrgWithSubAndPlan, EventType, ServerDatasetConfiguration,
@@ -10,7 +11,6 @@ use crate::handlers::chunk_handler::{ChunkData, CreateSingleChunkData, SingleQue
 use crate::operators::chunk_operator::delete_chunk_metadata_query;
 use crate::{data::models::ChunkGroup, handlers::chunk_handler::ReturnQueuedChunk};
 use crate::{data::models::Event, get_env};
-use crate::data::models::FileDTO;
 use crate::{
     data::models::{File, Pool},
     errors::ServiceError,
@@ -60,9 +60,7 @@ pub fn get_aws_bucket() -> Result<Bucket, ServiceError> {
                 sentry::Level::Error,
             );
             log::error!("Could not create or get bucket {:?}", e);
-            ServiceError::BadRequest(
-                "Could not create or get bucket".to_string(),
-            )
+            ServiceError::BadRequest("Could not create or get bucket".to_string())
         })?
         .with_path_style();
 
@@ -84,9 +82,10 @@ pub async fn create_file_query(
 ) -> Result<File, ServiceError> {
     use crate::data::schema::files::dsl as files_columns;
 
-    let mut conn = pool.get().await.map_err(|_| ServiceError::BadRequest(
-        "Could not get database connection".to_string(),
-    ))?;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     let new_file = File::from_details(
         Some(file_id),
@@ -103,9 +102,7 @@ pub async fn create_file_query(
         .values(&new_file)
         .get_result(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Could not create file, try again".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::BadRequest("Could not create file, try again".to_string()))?;
 
     Ok(created_file)
 }
@@ -147,9 +144,7 @@ pub async fn convert_doc_to_html_query(
             .await
             .map_err(|err| {
                 log::error!("Could not send file to tika {:?}", err);
-                ServiceError::BadRequest(
-                    "Could not send file to tika".to_string(),
-                )
+                ServiceError::BadRequest("Could not send file to tika".to_string())
             })?;
 
         let tike_html_converted_file_bytes = tika_response
@@ -157,9 +152,7 @@ pub async fn convert_doc_to_html_query(
             .await
             .map_err(|err| {
                 log::error!("Could not get tika response bytes {:?}", err);
-                ServiceError::BadRequest(
-                    "Could not get tika response bytes".to_string(),
-                )
+                ServiceError::BadRequest("Could not get tika response bytes".to_string())
             })?
             .to_vec();
         let html_content = String::from_utf8_lossy(&tike_html_converted_file_bytes).to_string();
@@ -173,17 +166,13 @@ pub async fn convert_doc_to_html_query(
             .await
             .map_err(|err| {
                 log::error!("Could not send file to tika {:?}", err);
-                ServiceError::BadRequest(
-                    "Could not send file to tika".to_string(),
-                )
+                ServiceError::BadRequest("Could not send file to tika".to_string())
             })?;
 
         let mut tika_metadata_response_json: serde_json::Value =
             tika_metadata_response.json().await.map_err(|err| {
                 log::error!("Could not get tika metadata response json {:?}", err);
-                ServiceError::BadRequest(
-                    "Could not get tika metadata response json".to_string(),
-                )
+                ServiceError::BadRequest("Could not get tika metadata response json".to_string())
             })?;
 
         if let Some(metadata) = metadata {
@@ -220,9 +209,7 @@ pub async fn convert_doc_to_html_query(
             .await
             .map_err(|e| {
                 log::error!("Could not upload file to S3 {:?}", e);
-                ServiceError::BadRequest(
-                    "Could not upload file to S3".to_string(),
-                )
+                ServiceError::BadRequest("Could not upload file to S3".to_string())
             })?;
 
         if create_chunks.is_some_and(|create_chunks_bool| !create_chunks_bool) {
@@ -304,9 +291,7 @@ pub async fn create_chunks_with_handler(
         .await
         .map_err(|e| {
             log::error!("Could not create group {:?}", e);
-            ServiceError::BadRequest(
-                "Could not create group".to_string(),
-            )
+            ServiceError::BadRequest("Could not create group".to_string())
         })?;
 
     let group_id = chunk_group.id;
@@ -352,9 +337,11 @@ pub async fn create_chunks_with_handler(
                     let queued_chunk: ReturnQueuedChunk = serde_json::from_slice(
                         response.into_body().try_into_bytes().unwrap().as_ref(),
                     )
-                    .map_err(|_err| ServiceError::BadRequest(
-                        "Error creating chunk metadata's for file".to_string(),
-                    ))?;
+                    .map_err(|_err| {
+                        ServiceError::BadRequest(
+                            "Error creating chunk metadata's for file".to_string(),
+                        )
+                    })?;
                     match queued_chunk {
                         ReturnQueuedChunk::Single(SingleQueuedChunkResponse {
                             chunk_metadata,
@@ -381,9 +368,7 @@ pub async fn create_chunks_with_handler(
         pool,
     )
     .await
-    .map_err(|_| ServiceError::BadRequest(
-        "Thread error creating notification".to_string(),
-    ))?;
+    .map_err(|_| ServiceError::BadRequest("Thread error creating notification".to_string()))?;
 
     Ok(())
 }
@@ -571,8 +556,7 @@ pub async fn delete_file_query(
     if delete_chunks {
         for chunk_id in chunk_ids {
             delete_chunk_metadata_query(chunk_id, dataset.clone(), pool.clone(), config.clone())
-                .await
-            ?;
+                .await?;
         }
     }
 

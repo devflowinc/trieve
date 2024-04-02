@@ -1,8 +1,6 @@
 use super::email_operator::send_email;
+use crate::data::models::{Invitation, Pool};
 use crate::errors::ServiceError;
-use crate::{
-    data::models::{Invitation, Pool},
-};
 use actix_web::web;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
@@ -25,9 +23,7 @@ pub async fn create_invitation_query(
         .values(&new_invitation)
         .get_result(&mut conn)
         .await
-        .map_err(|_db_error| ServiceError::BadRequest(
-            "Error inserting invitation.".to_string(),
-        ))?;
+        .map_err(|_db_error| ServiceError::BadRequest("Error inserting invitation.".to_string()))?;
 
     Ok(inserted_invitation)
 }
@@ -45,9 +41,7 @@ pub async fn get_invitation_by_id_query(
         .filter(invitations_columns::id.eq(id))
         .first::<Invitation>(&mut conn)
         .await
-        .map_err(|_db_error| ServiceError::BadRequest(
-            "Error getting invitation.".to_string(),
-        ))?;
+        .map_err(|_db_error| ServiceError::BadRequest("Error getting invitation.".to_string()))?;
 
     Ok(invitation)
 }
@@ -80,9 +74,9 @@ pub async fn set_invitation_used(
         .set(invitations_columns::used.eq(true))
         .execute(&mut conn)
         .await
-        .map_err(|_db_error| ServiceError::BadRequest(
-            "Error setting invitation as used.".to_string(),
-        ))?;
+        .map_err(|_db_error| {
+            ServiceError::BadRequest("Error setting invitation as used.".to_string())
+        })?;
 
     Ok(())
 }

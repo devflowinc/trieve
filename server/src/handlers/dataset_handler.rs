@@ -87,13 +87,9 @@ pub async fn create_dataset(
     let org_id = data.organization_id;
 
     let organization_sub_plan =
-        get_organization_by_key_query(org_id.into(), redis_pool.clone(), pool.clone())
-            .await
-    ?;
+        get_organization_by_key_query(org_id.into(), redis_pool.clone(), pool.clone()).await?;
 
-    let dataset_count = get_org_dataset_count(org_id, pool.clone())
-        .await
-    ?;
+    let dataset_count = get_org_dataset_count(org_id, pool.clone()).await?;
 
     if dataset_count
         >= organization_sub_plan

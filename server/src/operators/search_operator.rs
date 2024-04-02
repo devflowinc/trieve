@@ -108,7 +108,7 @@ pub async fn assemble_qdrant_filter(
                 let qdrant_condition = should_condition.convert_to_qdrant_condition()?;
 
                 if let Some(condition) = qdrant_condition {
-                    filter.should.push(condition.into());
+                    filter.should.push(condition);
                 }
             }
         }
@@ -125,7 +125,7 @@ pub async fn assemble_qdrant_filter(
                 let qdrant_condition = must_condition.convert_to_qdrant_condition()?;
 
                 if let Some(condition) = qdrant_condition {
-                    filter.must.push(condition.into());
+                    filter.must.push(condition);
                 }
             }
         }
@@ -142,7 +142,7 @@ pub async fn assemble_qdrant_filter(
                 let qdrant_condition = must_not_condition.convert_to_qdrant_condition()?;
 
                 if let Some(condition) = qdrant_condition {
-                    filter.must_not.push(condition.into());
+                    filter.must_not.push(condition);
                 }
             }
         }
@@ -229,9 +229,7 @@ pub async fn retrieve_qdrant_points_query(
 
     let pages = (count.map_err(|e| {
         log::error!("Failed to get search count from Qdrant {:?}", e);
-        ServiceError::BadRequest(
-            "Failed to get point count from Qdrant".to_string(),
-        )
+        ServiceError::BadRequest("Failed to get point count from Qdrant".to_string())
     })? as f64
         / limit as f64)
         .ceil() as i64;
@@ -239,9 +237,7 @@ pub async fn retrieve_qdrant_points_query(
     Ok(SearchChunkQueryResult {
         search_results: point_ids.map_err(|e| {
             log::error!("Failed to get points from Qdrant {:?}", e);
-            ServiceError::BadRequest(
-                "Failed to get points from Qdrant".to_string(),
-            )
+            ServiceError::BadRequest("Failed to get points from Qdrant".to_string())
         })?,
         total_chunk_pages: pages,
     })
@@ -294,9 +290,7 @@ pub async fn retrieve_group_qdrant_points_query(
 
     let pages = (count.map_err(|e| {
         log::error!("Failed to get point count from Qdrant {:?}", e);
-        ServiceError::BadRequest(
-            "Failed to get point count from Qdrant".to_string(),
-        )
+        ServiceError::BadRequest("Failed to get point count from Qdrant".to_string())
     })? as f64
         / limit as f64)
         .ceil() as i64;
@@ -304,9 +298,7 @@ pub async fn retrieve_group_qdrant_points_query(
     Ok(SearchOverGroupsQueryResult {
         search_results: point_ids.map_err(|e| {
             log::error!("Failed to get points from Qdrant {:?}", e);
-            ServiceError::BadRequest(
-                "Failed to get points from Qdrant".to_string(),
-            )
+            ServiceError::BadRequest("Failed to get points from Qdrant".to_string())
         })?,
         total_chunk_pages: pages,
     })
@@ -354,9 +346,7 @@ pub async fn global_unfiltered_top_match_query(
         .await
         .map_err(|e| {
             log::error!("Failed to search points on Qdrant {:?}", e);
-            ServiceError::BadRequest(
-                "Failed to search points on Qdrant".to_string(),
-            )
+            ServiceError::BadRequest("Failed to search points on Qdrant".to_string())
         })?;
 
     let top_search_result: SearchResult = match data.result.first() {
@@ -364,26 +354,16 @@ pub async fn global_unfiltered_top_match_query(
             Some(point_id) => match point_id.point_id_options {
                 Some(PointIdOptions::Uuid(id)) => SearchResult {
                     score: point.score,
-                    point_id: uuid::Uuid::parse_str(&id).map_err(|_| ServiceError::BadRequest(
-                        "Failed to parse uuid".to_string(),
-                    ))?,
+                    point_id: uuid::Uuid::parse_str(&id).map_err(|_| {
+                        ServiceError::BadRequest("Failed to parse uuid".to_string())
+                    })?,
                 },
                 Some(PointIdOptions::Num(_)) => {
-                    return Err(ServiceError::BadRequest(
-                        "Failed to parse uuid".to_string(),
-                    ))
+                    return Err(ServiceError::BadRequest("Failed to parse uuid".to_string()))
                 }
-                None => {
-                    return Err(ServiceError::BadRequest(
-                        "Failed to parse uuid".to_string(),
-                    ))
-                }
+                None => return Err(ServiceError::BadRequest("Failed to parse uuid".to_string())),
             },
-            None => {
-                return Err(ServiceError::BadRequest(
-                    "Failed to parse uuid".to_string(),
-                ))
-            }
+            None => return Err(ServiceError::BadRequest("Failed to parse uuid".to_string())),
         },
         // This only happens when there are no chunks in the database
         None => SearchResult {
@@ -438,9 +418,7 @@ pub async fn search_within_chunk_group_query(
 
     let pages = (count.map_err(|e| {
         log::error!("Failed to get point count from Qdrant {:?}", e);
-        ServiceError::BadRequest(
-            "Failed to get point count from Qdrant".to_string(),
-        )
+        ServiceError::BadRequest("Failed to get point count from Qdrant".to_string())
     })? as f64
         / limit as f64)
         .ceil() as i64;
@@ -448,9 +426,7 @@ pub async fn search_within_chunk_group_query(
     Ok(SearchChunkQueryResult {
         search_results: point_ids.map_err(|e| {
             log::error!("Failed to get points from Qdrant {:?}", e);
-            ServiceError::BadRequest(
-                "Failed to get points from Qdrant".to_string(),
-            )
+            ServiceError::BadRequest("Failed to get points from Qdrant".to_string())
         })?,
         total_chunk_pages: pages,
     })
@@ -505,9 +481,7 @@ pub async fn get_metadata_query(
         ))
         .load::<(Option<ChunkFileWithName>, (uuid::Uuid, Option<uuid::Uuid>))>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Failed to load metadata".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
     #[allow(clippy::type_complexity)]
     let (file_ids, chunk_collisions): (
@@ -574,9 +548,7 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
-    let metadata_chunks = get_metadata_from_point_ids(point_ids, pool)
-        .await
-    ?;
+    let metadata_chunks = get_metadata_from_point_ids(point_ids, pool).await?;
 
     let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
         .search_results
@@ -700,8 +672,7 @@ pub async fn retrieve_chunks_for_groups(
         data.get_collisions.unwrap_or(false),
         pool.clone(),
     )
-    .await
-    ?;
+    .await?;
 
     let group_tracking_ids = get_group_tracking_ids_from_group_ids_query(
         search_over_groups_query_result
@@ -786,7 +757,7 @@ pub async fn retrieve_chunks_for_groups(
                 })
                 .collect_vec();
 
-            let group_tracking_id = group_tracking_ids.get(i).map(|x| x.clone()).flatten();
+            let group_tracking_id = group_tracking_ids.get(i).cloned().flatten();
 
             GroupScoreChunkDTO {
                 group_id: group.group_id,
@@ -818,8 +789,7 @@ pub async fn get_metadata_from_groups(
         get_collisions.unwrap_or(false),
         pool.clone(),
     )
-    .await
-    ?;
+    .await?;
 
     let group_tracking_ids = get_group_tracking_ids_from_group_ids_query(
         search_over_groups_query_result
@@ -888,7 +858,7 @@ pub async fn get_metadata_from_groups(
                 })
                 .collect_vec();
 
-            let group_tracking_id = group_tracking_ids.get(i).map(|x| x.clone()).flatten();
+            let group_tracking_id = group_tracking_ids.get(i).cloned().flatten();
 
             GroupScoreChunkDTO {
                 group_id: group.group_id,
@@ -937,8 +907,7 @@ pub async fn retrieve_chunks_from_point_ids(
         data.get_collisions.unwrap_or(false),
         pool,
     )
-    .await
-    ?;
+    .await?;
 
     let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
         .search_results
@@ -1108,8 +1077,7 @@ pub async fn search_semantic_chunks(
         pool.clone(),
         config,
     )
-    .await
-        ?;
+    .await?;
     timer.add("Fetch from qdrant");
 
     let mut result_chunks =
@@ -1168,8 +1136,7 @@ pub async fn search_full_text_chunks(
         pool.clone(),
         config,
     )
-    .await
-    ?;
+    .await?;
 
     let mut result_chunks =
         retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool).await?;
@@ -1251,8 +1218,7 @@ pub async fn search_hybrid_chunks(
     let (search_chunk_query_results, full_text_handler_results) =
         futures::join!(search_chunk_query_results, full_text_handler_results);
 
-    let search_chunk_query_results =
-        search_chunk_query_results?;
+    let search_chunk_query_results = search_chunk_query_results?;
 
     let full_text_handler_results =
         full_text_handler_results.map_err(|err| ServiceError::BadRequest(err.to_string()))?;
@@ -1268,8 +1234,7 @@ pub async fn search_hybrid_chunks(
         data.get_collisions.unwrap_or(false),
         pool,
     )
-    .await
-    ?;
+    .await?;
 
     let semantic_score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
         .search_results
@@ -1434,8 +1399,7 @@ pub async fn search_semantic_groups(
         parsed_query,
         config,
     )
-    .await
-    ?;
+    .await?;
 
     let mut result_chunks = retrieve_chunks_from_point_ids_without_collsions(
         search_semantic_chunk_query_results,
@@ -1480,8 +1444,7 @@ pub async fn search_full_text_groups(
         parsed_query,
         config,
     )
-    .await
-    ?;
+    .await?;
 
     let mut result_chunks = retrieve_chunks_from_point_ids_without_collsions(
         search_chunk_query_results,
@@ -1555,11 +1518,9 @@ pub async fn search_hybrid_groups(
 
     let (semantic_results, full_text_results) = futures::join!(semantic_future, full_text_future);
 
-    let semantic_results =
-        semantic_results?;
+    let semantic_results = semantic_results?;
 
-    let full_text_results =
-        full_text_results?;
+    let full_text_results = full_text_results?;
 
     let combined_results = semantic_results
         .clone()
@@ -1663,8 +1624,7 @@ pub async fn semantic_search_over_groups(
         pool.clone(),
         config,
     )
-    .await
-    ?;
+    .await?;
 
     let result_chunks =
         retrieve_chunks_for_groups(search_chunk_query_results, &data, pool.clone()).await?;
@@ -1699,8 +1659,7 @@ pub async fn full_text_search_over_groups(
         pool.clone(),
         config,
     )
-    .await
-    ?;
+    .await?;
 
     let result_chunks =
         retrieve_chunks_for_groups(search_chunk_query_results, &data, pool.clone()).await?;
@@ -1810,11 +1769,9 @@ pub async fn hybrid_search_over_groups(
 
     let (semantic_results, full_text_results) = futures::join!(semantic_future, full_text_future);
 
-    let semantic_results =
-        semantic_results?;
+    let semantic_results = semantic_results?;
 
-    let full_text_results =
-        full_text_results?;
+    let full_text_results = full_text_results?;
 
     let combined_results = semantic_results
         .clone()
@@ -1916,9 +1873,9 @@ pub async fn get_qdrant_point_ids_from_pg_for_quote_negated_words(
     }
 
     let matching_qdrant_point_ids: Vec<Option<uuid::Uuid>> =
-        query.load(&mut conn).await.map_err(|_| ServiceError::BadRequest(
-            "Failed to load full-text searched chunks".to_string(),
-        ))?;
+        query.load(&mut conn).await.map_err(|_| {
+            ServiceError::BadRequest("Failed to load full-text searched chunks".to_string())
+        })?;
 
     let matching_qdrant_point_ids = matching_qdrant_point_ids
         .into_iter()

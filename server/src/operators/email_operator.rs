@@ -34,9 +34,7 @@ pub fn send_email(html_email_body: String, to_address: String) -> Result<(), Ser
         Ok(_) => Ok(()),
         Err(e) => {
             log::error!("Error sending email: {:?}", e);
-            Err(ServiceError::BadRequest(
-                "Error sending email.".to_string(),
-            ))
+            Err(ServiceError::BadRequest("Error sending email.".to_string()))
         }
     }
 }

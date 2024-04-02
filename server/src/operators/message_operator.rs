@@ -32,9 +32,9 @@ pub async fn get_topic_messages(
         .order(sort_order.asc())
         .load::<Message>(&mut conn)
         .await
-        .map_err(|_db_error| ServiceError::BadRequest(
-            "Error getting topic messages".to_string(),
-        ))?;
+        .map_err(|_db_error| {
+            ServiceError::BadRequest("Error getting topic messages".to_string())
+        })?;
 
     Ok(topic_messages)
 }
@@ -56,9 +56,7 @@ pub async fn user_owns_topic_query(
         .filter(dataset_id.eq(given_dataset_id))
         .first::<crate::data::models::Topic>(&mut conn)
         .await
-        .map_err(|_db_error| ServiceError::BadRequest(
-            "Error getting topic".to_string(),
-        ))?;
+        .map_err(|_db_error| ServiceError::BadRequest("Error getting topic".to_string()))?;
 
     Ok(topic)
 }
@@ -75,9 +73,7 @@ pub async fn create_message_query(
 
     match get_topic_query(new_message.topic_id, new_message.dataset_id, pool).await {
         Ok(topic) if topic.user_id != given_user_id => {
-            return Err(ServiceError::BadRequest(
-                "Unauthorized".to_string(),
-            ))
+            return Err(ServiceError::BadRequest("Unauthorized".to_string()))
         }
         Ok(_topic) => {}
         Err(e) => return Err(e),
@@ -87,9 +83,9 @@ pub async fn create_message_query(
         .values(&new_message)
         .execute(&mut conn)
         .await
-        .map_err(|_db_error| ServiceError::BadRequest(
-            "Error creating message, try again".to_string(),
-        ))?;
+        .map_err(|_db_error| {
+            ServiceError::BadRequest("Error creating message, try again".to_string())
+        })?;
 
     Ok(())
 }
@@ -165,9 +161,11 @@ pub async fn get_message_by_sort_for_topic_query(
         .filter(dataset_id.eq(given_dataset_id))
         .first::<Message>(&mut conn)
         .await
-        .map_err(|_db_error| ServiceError::BadRequest(
-            "This message does not exist for the authenticated user".to_string(),
-        ))
+        .map_err(|_db_error| {
+            ServiceError::BadRequest(
+                "This message does not exist for the authenticated user".to_string(),
+            )
+        })
 }
 
 #[tracing::instrument(skip(pool))]
@@ -187,9 +185,11 @@ pub async fn get_messages_for_topic_query(
         .order_by(sort_order.asc())
         .load::<Message>(&mut conn)
         .await
-        .map_err(|_db_error| ServiceError::BadRequest(
-            "This topic does not exist for the authenticated user".to_string(),
-        ))
+        .map_err(|_db_error| {
+            ServiceError::BadRequest(
+                "This topic does not exist for the authenticated user".to_string(),
+            )
+        })
 }
 
 #[tracing::instrument(skip(pool))]
@@ -206,9 +206,7 @@ pub async fn delete_message_query(
 
     match get_topic_query(given_topic_id, given_dataset_id, pool).await {
         Ok(topic) if topic.user_id != *given_user_id => {
-            return Err(ServiceError::BadRequest(
-                "Unauthorized".to_string(),
-            ))
+            return Err(ServiceError::BadRequest("Unauthorized".to_string()))
         }
         Ok(_topic) => {}
         Err(e) => return Err(e),
@@ -218,9 +216,7 @@ pub async fn delete_message_query(
         .find(given_message_id)
         .first::<Message>(&mut conn)
         .await
-        .map_err(|_db_error| ServiceError::BadRequest(
-            "Error finding message".to_string(),
-        ))?;
+        .map_err(|_db_error| ServiceError::BadRequest("Error finding message".to_string()))?;
 
     diesel::update(
         messages
@@ -231,9 +227,7 @@ pub async fn delete_message_query(
     .set(deleted.eq(true))
     .execute(&mut conn)
     .await
-    .map_err(|_| ServiceError::BadRequest(
-        "Error deleting message".to_string(),
-    ))?;
+    .map_err(|_| ServiceError::BadRequest("Error deleting message".to_string()))?;
 
     Ok(())
 }

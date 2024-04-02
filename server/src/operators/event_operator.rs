@@ -20,9 +20,7 @@ pub async fn create_event_query(event: Event, pool: web::Data<Pool>) -> Result<(
         .await
         .map_err(|err| {
             log::error!("Failed to create event: {:?}", err);
-            ServiceError::BadRequest(
-                "Failed to create event".to_string(),
-            )
+            ServiceError::BadRequest("Failed to create event".to_string())
         })?;
 
     Ok(())
@@ -67,9 +65,7 @@ pub async fn get_events_query(
         .offset((page - 1) * page_size)
         .load::<(Event, Option<i32>)>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Failed to get events".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::BadRequest("Failed to get events".to_string()))?;
 
     let events: Vec<Event> = events_and_count
         .iter()

@@ -35,21 +35,16 @@ pub async fn get_metadata_from_point_ids(
         .select(ChunkMetadata::as_select())
         .load::<ChunkMetadata>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Failed to load metadata".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
     let converted_chunks: Vec<FullTextSearchResult> = chunk_metadata
         .iter()
         .map(|chunk| <ChunkMetadata as Into<FullTextSearchResult>>::into(chunk.clone()))
         .collect::<Vec<FullTextSearchResult>>();
 
-    let chunk_metadata_with_file_id =
-        get_metadata_query(converted_chunks, pool)
-            .await
-            .map_err(|_| ServiceError::BadRequest(
-                "Failed to load metadata".to_string(),
-            ))?;
+    let chunk_metadata_with_file_id = get_metadata_query(converted_chunks, pool)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
     Ok(chunk_metadata_with_file_id)
 }
@@ -75,9 +70,7 @@ pub async fn get_point_ids_from_unified_chunk_ids(
             .select(chunk_metadata_columns::qdrant_point_id)
             .load::<Option<uuid::Uuid>>(&mut conn)
             .await
-            .map_err(|_| ServiceError::BadRequest(
-                "Failed to load metadata".to_string(),
-            ))?
+            .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?
             .into_iter()
             .flatten()
             .collect(),
@@ -93,9 +86,7 @@ pub async fn get_point_ids_from_unified_chunk_ids(
             .select(chunk_metadata_columns::qdrant_point_id)
             .load::<Option<uuid::Uuid>>(&mut conn)
             .await
-            .map_err(|_| ServiceError::BadRequest(
-                "Failed to load metadata".to_string(),
-            ))?
+            .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?
             .into_iter()
             .flatten()
             .collect(),
@@ -177,9 +168,7 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
             .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
             .load::<(ChunkMetadata, Option<uuid::Uuid>, Option<ChunkFileWithName>)>(&mut conn)
             .await
-            .map_err(|_| ServiceError::BadRequest(
-                "Failed to load metadata".to_string(),
-            ))?;
+            .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
         chunk_metadata
             .iter()
@@ -242,9 +231,7 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
                 ))
                 .load::<(ChunkMetadata, uuid::Uuid, Option<ChunkFileWithName>)>(&mut conn)
                 .await
-                .map_err(|_| ServiceError::BadRequest(
-                    "Failed to load metadata".to_string(),
-                ))?;
+                .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
             // Convert the collided chunks into the appropriate format
             chunk_metadata
@@ -301,9 +288,7 @@ pub async fn get_metadata_from_id_query(
         .select(ChunkMetadata::as_select())
         .first::<ChunkMetadata>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Failed to load metadata".to_string(),
-        ))
+        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))
 }
 
 #[tracing::instrument(skip(pool))]
@@ -381,9 +366,7 @@ pub async fn get_metadata_from_ids_query(
         .select(ChunkMetadata::as_select())
         .load::<ChunkMetadata>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Failed to load metadata".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
     let full_text_metadatas = metadatas
         .iter()
         .map_into::<FullTextSearchResult>()
@@ -444,8 +427,7 @@ pub async fn insert_chunk_metadata_query(
             chunk_data.dataset_id,
             pool.clone(),
         )
-        .await
-        ?;
+        .await?;
 
         if existing_chunk.is_some() {
             log::info!("Avoided potential write conflict by pre-checking tracking_id");
@@ -533,9 +515,8 @@ pub async fn revert_insert_chunk_metadata_query(
                 sentry::Level::Error,
             );
             log::error!("Failed to revert insert transaction: {:?}", e);
-            match e {
-                _ => ServiceError::BadRequest("Failed to revert insert transaction".to_string()),
-            }
+
+            ServiceError::BadRequest("Failed to revert insert transaction".to_string())
         })?;
 
     if let Some(file_uuid) = file_uuid {
@@ -550,7 +531,7 @@ pub async fn revert_insert_chunk_metadata_query(
         })?;
     }
 
-    if let Some(_) = group_ids {
+    if group_ids.is_some() {
         diesel::delete(
             chunk_group_bookmarks_columns::chunk_group_bookmarks
                 .filter(chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_id)),
@@ -620,9 +601,7 @@ pub async fn insert_duplicate_chunk_metadata_query(
                 sentry::Level::Error,
             );
 
-            ServiceError::BadRequest(
-                "Failed to insert duplicate chunk metadata".to_string(),
-            )
+            ServiceError::BadRequest("Failed to insert duplicate chunk metadata".to_string())
         })?;
 
     if let Some(group_ids) = group_ids {
@@ -705,9 +684,7 @@ pub async fn update_chunk_metadata_query(
             .scope_boxed()
         })
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Failed to update chunk metadata".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::BadRequest("Failed to update chunk metadata".to_string()))?;
 
     if let Some(group_ids) = group_ids {
         let group_id1 = group_ids.clone();
@@ -721,9 +698,7 @@ pub async fn update_chunk_metadata_query(
             .on_conflict_do_nothing()
             .execute(&mut conn)
             .await
-            .map_err(|_| ServiceError::BadRequest(
-                "Failed to create bookmark".to_string(),
-            ))?;
+            .map_err(|_| ServiceError::BadRequest("Failed to create bookmark".to_string()))?;
 
         diesel::delete(
             chunk_group_bookmarks_columns::chunk_group_bookmarks
@@ -734,9 +709,7 @@ pub async fn update_chunk_metadata_query(
         )
         .execute(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Failed to delete chunk bookmarks".to_string(),
-        ))?;
+        .map_err(|_| ServiceError::BadRequest("Failed to delete chunk bookmarks".to_string()))?;
     }
 
     Ok(updated_chunk)
@@ -925,72 +898,74 @@ pub async fn delete_chunk_metadata_query(
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
     match transaction_result {
-        Ok(result) => match result {
-            TransactionResult::ChunkCollisionNotDetected => {
-                let _ = qdrant
-                    .delete_points(
-                        qdrant_collection,
-                        None,
-                        &vec![<String as Into<PointId>>::into(
-                            chunk_metadata
-                                .qdrant_point_id
-                                .unwrap_or_default()
-                                .to_string(),
-                        )]
-                        .into(),
-                        None,
+        Ok(result) => {
+            match result {
+                TransactionResult::ChunkCollisionNotDetected => {
+                    let _ = qdrant
+                        .delete_points(
+                            qdrant_collection,
+                            None,
+                            &vec![<String as Into<PointId>>::into(
+                                chunk_metadata
+                                    .qdrant_point_id
+                                    .unwrap_or_default()
+                                    .to_string(),
+                            )]
+                            .into(),
+                            None,
+                        )
+                        .await
+                        .map_err(|_e| {
+                            Err::<(), ServiceError>(ServiceError::BadRequest(
+                                "Failed to delete chunk from qdrant".to_string(),
+                            ))
+                        });
+                }
+                TransactionResult::ChunkCollisionDetected(latest_collision_metadata) => {
+                    let collision_content = latest_collision_metadata
+                        .chunk_html
+                        .clone()
+                        .unwrap_or(latest_collision_metadata.content.clone());
+
+                    let new_embedding_vectors = create_embeddings(
+                        vec![collision_content],
+                        "doc",
+                        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
                     )
                     .await
                     .map_err(|_e| {
-                        Err::<(), ServiceError>(ServiceError::BadRequest(
-                            "Failed to delete chunk from qdrant".to_string(),
-                        ))
-                    });
-            }
-            TransactionResult::ChunkCollisionDetected(latest_collision_metadata) => {
-                let collision_content = latest_collision_metadata
-                    .chunk_html
-                    .clone()
-                    .unwrap_or(latest_collision_metadata.content.clone());
+                        ServiceError::BadRequest("Failed to create embedding for chunk".to_string())
+                    })?;
 
-                let new_embedding_vectors = create_embeddings(
-                    vec![collision_content],
-                    "doc",
-                    ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
-                )
-                .await
-                .map_err(|_e| ServiceError::BadRequest(
-                    "Failed to create embedding for chunk".to_string(),
-                ))?;
-
-                let new_embedding_vector = new_embedding_vectors.get(0).ok_or(ServiceError::BadRequest(
+                    let new_embedding_vector = new_embedding_vectors.get(0).ok_or(ServiceError::BadRequest(
                     "Failed to get embedding vector due to empty result from create_embedding".to_string(),
                 ))?
                 .clone();
 
-                let _ = qdrant
-                    .update_vectors_blocking(
-                        qdrant_collection,
-                        None,
-                        &[PointVectors {
-                            id: Some(<String as Into<PointId>>::into(
-                                latest_collision_metadata
-                                    .qdrant_point_id
-                                    .unwrap_or_default()
-                                    .to_string(),
-                            )),
-                            vectors: Some(new_embedding_vector.into()),
-                        }],
-                        None,
-                    )
-                    .await
-                    .map_err(|_e| {
-                        Err::<(), ServiceError>(ServiceError::BadRequest(
-                            "Failed to update chunk in qdrant".to_string(),
-                        ))
-                    });
+                    let _ = qdrant
+                        .update_vectors_blocking(
+                            qdrant_collection,
+                            None,
+                            &[PointVectors {
+                                id: Some(<String as Into<PointId>>::into(
+                                    latest_collision_metadata
+                                        .qdrant_point_id
+                                        .unwrap_or_default()
+                                        .to_string(),
+                                )),
+                                vectors: Some(new_embedding_vector.into()),
+                            }],
+                            None,
+                        )
+                        .await
+                        .map_err(|_e| {
+                            Err::<(), ServiceError>(ServiceError::BadRequest(
+                                "Failed to update chunk in qdrant".to_string(),
+                            ))
+                        });
+                }
             }
-        },
+        }
 
         Err(_) => {
             return Err(ServiceError::BadRequest(
@@ -1025,9 +1000,11 @@ pub async fn get_qdrant_id_from_chunk_id_query(
             .filter(chunk_metadata_columns::id.eq(chunk_id))
             .load(&mut conn)
             .await
-            .map_err(|_err| ServiceError::BadRequest(
-                "Failed to get qdrant_point_id and collision_qdrant_id".to_string(),
-            ))?;
+            .map_err(|_err| {
+                ServiceError::BadRequest(
+                    "Failed to get qdrant_point_id and collision_qdrant_id".to_string(),
+                )
+            })?;
 
     match qdrant_point_ids.get(0) {
         Some(x) => match x.0 {
@@ -1102,9 +1079,9 @@ pub async fn get_row_count_for_dataset_id_query(
         .select(dataset_usage_counts_columns::chunk_count)
         .first::<i32>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest(
-            "Failed to get chunk count for dataset".to_string(),
-        ))?;
+        .map_err(|_| {
+            ServiceError::BadRequest("Failed to get chunk count for dataset".to_string())
+        })?;
 
     Ok(chunk_metadata_count as usize)
 }

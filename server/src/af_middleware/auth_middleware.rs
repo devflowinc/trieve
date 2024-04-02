@@ -79,8 +79,7 @@ where
                             redis_pool.clone(),
                             pool.clone(),
                         )
-                        .await
-                        ?;
+                        .await?;
 
                         let dataset_org_plan_sub =
                             DatasetAndOrgWithSubAndPlan::from_components(dataset, org_plan_sub);
@@ -136,8 +135,7 @@ where
                             redis_pool.clone(),
                             pool.clone(),
                         )
-                        .await
-                        ?;
+                        .await?;
                         let dataset_org_plan_sub =
                             DatasetAndOrgWithSubAndPlan::from_components(dataset, org_plan_sub);
 
