@@ -17,14 +17,8 @@ pub struct UpdateUserData {
     pub organization_id: uuid::Uuid,
     /// The id of the user to update, if not provided, the auth'ed user will be updated. If provided, the auth'ed user must be an admin (1) or owner (2) of the organization.
     pub user_id: Option<uuid::Uuid>,
-    /// The new username to assign to the user, if not provided, the current username will be used.
-    pub username: Option<String>,
     /// In the sense of a legal name, not a username. The new name to assign to the user, if not provided, the current name will be used.
     pub name: Option<String>,
-    /// The new website to assign to the user, if not provided, the current website will be used. Used for linking to the user's personal or company website.
-    pub website: Option<String>,
-    /// Determines if the user's email is visible to other users, if not provided, the current value will be used.
-    pub visible_email: Option<bool>,
     /// Either 0 (user), 1 (admin), or 2 (owner). If not provided, the current role will be used. The auth'ed user must have a role greater than or equal to the role being assigned.
     pub role: Option<i32>,
 }
@@ -108,23 +102,12 @@ pub async fn update_user(
         }));
     }
 
-    if update_user_data.username.clone().unwrap_or("".to_string()) == ""
-        && !update_user_data.visible_email.unwrap_or(user.visible_email)
-    {
-        return Ok(HttpResponse::BadRequest().json(DefaultError {
-            message: "You must provide a username or make your email visible",
-        }));
-    }
-
     let new_role = update_user_data.role.map(|role| role.into());
 
     let user_result = update_user_query(
         &user.clone(),
-        &update_user_data.username.clone().or(user.username),
         &update_user_data.name.clone().or(user.name),
-        &update_user_data.website.or(user.website),
         new_role,
-        update_user_data.visible_email.unwrap_or(user.visible_email),
         pool,
     )
     .await;

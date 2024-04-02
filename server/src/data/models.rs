@@ -22,9 +22,6 @@ pub type RedisPool = bb8_redis::bb8::Pool<bb8_redis::RedisConnectionManager>;
     "email": "developers@trieve.ai",
     "created_at": "2021-01-01T00:00:00",
     "updated_at": "2021-01-01T00:00:00",
-    "username": "trieve",
-    "website": "https://trieve.ai",
-    "visible_email": true,
     "name": "Trieve",
 }))]
 #[diesel(table_name = users)]
@@ -33,9 +30,6 @@ pub struct User {
     pub email: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub username: Option<String>,
-    pub website: Option<String>,
-    pub visible_email: bool,
     pub name: Option<String>,
 }
 
@@ -46,9 +40,6 @@ impl User {
             email: email.into(),
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
-            username: None,
-            website: None,
-            visible_email: true,
             name: name.map(|n| n.into()),
         }
     }
@@ -63,9 +54,6 @@ impl User {
             email: email.into(),
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
-            username: None,
-            website: None,
-            visible_email: true,
             name: name.map(|n| n.into()),
         }
     }
@@ -540,9 +528,6 @@ pub struct SearchOverGroupsSlimChunksResponseBody {
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "name": "Trieve",
     "email": "developers@trieve.ai",
-    "username": "trieve",
-    "website": "https://trieve.ai",
-    "visible_email": true,
     "user_orgs": [
         {
             "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
@@ -567,9 +552,6 @@ pub struct SlimUser {
     pub id: uuid::Uuid,
     pub name: Option<String>,
     pub email: String,
-    pub username: Option<String>,
-    pub website: Option<String>,
-    pub visible_email: bool,
     pub user_orgs: Vec<UserOrganization>,
     pub orgs: Vec<Organization>,
 }
@@ -584,9 +566,6 @@ impl SlimUser {
             id: user.id,
             name: user.name,
             email: user.email,
-            username: user.username,
-            website: user.website,
-            visible_email: user.visible_email,
             user_orgs,
             orgs,
         }
@@ -597,9 +576,6 @@ impl SlimUser {
 pub struct UserDTO {
     pub id: uuid::Uuid,
     pub email: Option<String>,
-    pub username: Option<String>,
-    pub website: Option<String>,
-    pub visible_email: bool,
     pub created_at: chrono::NaiveDateTime,
 }
 
@@ -774,9 +750,6 @@ impl FileGroup {
 pub struct UserDTOWithChunks {
     pub id: uuid::Uuid,
     pub email: Option<String>,
-    pub username: Option<String>,
-    pub website: Option<String>,
-    pub visible_email: bool,
     pub created_at: chrono::NaiveDateTime,
     pub total_chunks_created: i64,
     pub chunks: Vec<ChunkMetadataWithFileData>,

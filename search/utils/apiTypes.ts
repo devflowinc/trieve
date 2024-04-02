@@ -183,9 +183,6 @@ export interface SlimUser {
 export interface UserDTO {
   id: string;
   email: string | null;
-  username: string | null;
-  website: string | null;
-  visible_email: boolean;
   user_orgs: [UserOrganization];
   orgs: [OrganizationDTO];
 }
@@ -199,14 +196,6 @@ export const isUserDTO = (user: unknown): user is UserDTO => {
     indirectHasOwnProperty(user, "email") &&
     (typeof (user as UserDTO).email === "string" ||
       (user as UserDTO).email === null) &&
-    indirectHasOwnProperty(user, "username") &&
-    (typeof (user as UserDTO).username === "string" ||
-      (user as UserDTO).username === null) &&
-    indirectHasOwnProperty(user, "website") &&
-    (typeof (user as UserDTO).website === "string" ||
-      (user as UserDTO).website === null) &&
-    indirectHasOwnProperty(user, "visible_email") &&
-    typeof (user as UserDTO).visible_email === "boolean" &&
     indirectHasOwnProperty(user, "orgs") &&
     Array.isArray((user as UserDTO).orgs) &&
     (user as UserDTO).orgs.every((val) => isOrganizationDTO(val))

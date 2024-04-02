@@ -9,7 +9,6 @@ import { CreateChunk } from "./pages/CreateChunk";
 import { EditChunk } from "./pages/chunk/edit/EditChunk";
 import { ViewChunk } from "./pages/chunk/ViewChunk";
 import { ViewGroup } from "./pages/group/ViewGroup";
-import { Settings } from "./pages/user/Settings";
 import { OrgGroups } from "./pages/group/OrgGroups";
 import { OrgFiles } from "./pages/file/OrgFiles";
 
@@ -29,9 +28,6 @@ render(
       <Route path="/group" component={OrgGroups} />
       <Route path="/group/:id" component={ViewGroup} />
       <Route path="/files" component={OrgFiles} />
-      <Route path="/user">
-        <Route path="/settings" component={Settings} />
-      </Route>
     </Router>
   ),
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

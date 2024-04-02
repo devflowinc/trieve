@@ -2,9 +2,6 @@ export interface SlimUser {
   id: string;
   name?: string;
   email: string;
-  username?: string;
-  website?: string;
-  visible_email: boolean;
   user_orgs: UserOrganization[];
   orgs: Organization[];
 }
