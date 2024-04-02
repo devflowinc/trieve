@@ -95,7 +95,6 @@ pub async fn assemble_qdrant_filter(
     filter
         .must
         .push(Condition::matches("dataset_id", dataset_id.to_string()));
-    //TODO: fix this after new qdrant rust client gets released
 
     if let Some(filters) = filters {
         if let Some(should_filters) = filters.should {
