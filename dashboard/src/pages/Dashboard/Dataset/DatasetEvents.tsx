@@ -147,12 +147,8 @@ export const DatasetEvents = () => {
               </div>
             </div>
             <Show when={loading()}>
-              <div class="flex items-center justify-center">
-                <img
-                  src="https://media.tenor.com/17U_UB9LwVQAAAAi/loading-response.gif"
-                  alt="loading spinner"
-                  class="h-12 w-12"
-                />
+              <div class="flex w-full flex-col items-center justify-center">
+                <div class="h-5 w-5 animate-spin rounded-full border-b-2 border-t-2 border-fuchsia-300" />
               </div>
             </Show>
             <div class="mt-4 flex items-center justify-between">
