@@ -992,7 +992,11 @@ impl FieldCondition {
         }
 
         if self.field.starts_with("metadata.") {
-            get_metadata_filter_condition(&self, dataset_id, pool).await?;
+            return Ok(Some(
+                get_metadata_filter_condition(&self, dataset_id, pool)
+                    .await?
+                    .into(),
+            ));
         }
 
         if let Some(range) = self.range.clone() {
