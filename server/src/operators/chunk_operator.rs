@@ -176,7 +176,6 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
                     .nullable(),
             ))
             .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
-            .limit(500)
             .load::<(ChunkMetadata, Option<uuid::Uuid>, Option<ChunkFileWithName>)>(&mut conn)
             .await
             .map_err(|_| DefaultError {
@@ -242,8 +241,6 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
                     )
                         .nullable(),
                 ))
-                // TODO: Properly handle this and remove the arbitrary limit
-                .limit(500)
                 .load::<(ChunkMetadata, uuid::Uuid, Option<ChunkFileWithName>)>(&mut conn)
                 .await
                 .map_err(|_| DefaultError {

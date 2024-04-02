@@ -1010,8 +1010,6 @@ pub async fn get_recommended_groups(
         );
     }
 
-    log::info!("positive: {:?}", positive_qdrant_ids);
-
     let mut negative_qdrant_ids = vec![];
 
     if let Some(negative_group_ids) = negative_group_ids {
@@ -1051,8 +1049,6 @@ pub async fn get_recommended_groups(
             })?,
         );
     }
-
-    log::info!("negative: {:?}", negative_qdrant_ids);
 
     let recommended_qdrant_point_ids = recommend_qdrant_groups_query(
         positive_qdrant_ids,
