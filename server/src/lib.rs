@@ -1,6 +1,4 @@
-#![allow(
-    clippy::get_first
-)]
+#![allow(clippy::get_first)]
 
 #[macro_use]
 extern crate diesel;
@@ -132,7 +130,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.5.6",
+        version = "0.5.7",
     ),
     servers(
         (url = "https://api.trieve.ai",
@@ -272,7 +270,6 @@ impl Modify for SecurityAddon {
             operators::search_operator::GroupScoreChunkDTO,
             handlers::dataset_handler::CreateDatasetRequest,
             handlers::dataset_handler::UpdateDatasetRequest,
-            handlers::dataset_handler::DeleteDatasetRequest,
             data::models::ApiKeyDTO,
             data::models::SlimUser,
             data::models::UserOrganization,
@@ -487,9 +484,6 @@ pub async fn main() -> std::io::Result<()> {
                                         web::post().to(handlers::dataset_handler::create_dataset),
                                     )
                                     .route(web::put().to(handlers::dataset_handler::update_dataset))
-                                    .route(
-                                        web::delete().to(handlers::dataset_handler::delete_dataset),
-                                    ),
                             )
                             .service(
                                 web::resource("/organization/{organization_id}").route(
@@ -503,7 +497,10 @@ pub async fn main() -> std::io::Result<()> {
                             ))
                             .service(
                                 web::resource("/{dataset_id}")
-                                    .route(web::get().to(handlers::dataset_handler::get_dataset)),
+                                    .route(web::get().to(handlers::dataset_handler::get_dataset))
+                                    .route(
+                                        web::delete().to(handlers::dataset_handler::delete_dataset),
+                                    ),
                             )
                             .service(
                                 web::resource("/groups/{dataset_id}/{page}").route(web::get().to(
@@ -533,8 +530,11 @@ pub async fn main() -> std::io::Result<()> {
                     .service(
                         web::resource("/topic")
                             .route(web::post().to(handlers::topic_handler::create_topic))
-                            .route(web::delete().to(handlers::topic_handler::delete_topic))
                             .route(web::put().to(handlers::topic_handler::update_topic)),
+                    )
+                    .service(
+                        web::resource("/topic/{topic_id}")
+                            .route(web::delete().to(handlers::topic_handler::delete_topic)),
                     )
                     .service(
                         web::resource("/topic/user/{user_id}")
@@ -608,18 +608,16 @@ pub async fn main() -> std::io::Result<()> {
                                     .route(web::put().to(handlers::user_handler::update_user)),
                             )
                             .service(
-                                web::resource("/set_api_key").route(
-                                    web::post().to(handlers::user_handler::set_user_api_key),
-                                ),
+                                web::resource("/api_key")
+                                    .route(web::post().to(handlers::user_handler::set_user_api_key))
+                                    .route(web::get().to(handlers::user_handler::get_user_api_keys))
                             )
                             .service(
-                                web::resource("/get_api_key").route(
-                                    web::get().to(handlers::user_handler::get_user_api_keys),
-                                ),
+                                web::resource("/api_key/{api_key_id}")
+                                    .route(
+                                        web::delete().to(handlers::user_handler::delete_user_api_key),
+                                    ),
                             )
-                            .service(web::resource("/delete_api_key").route(
-                                web::delete().to(handlers::user_handler::delete_user_api_key),
-                            )),
                     )
                     .service(
                         web::scope("/chunk_group")

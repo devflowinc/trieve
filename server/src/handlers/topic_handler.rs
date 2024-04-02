@@ -99,16 +99,16 @@ pub struct DeleteTopicData {
 /// Delete an existing chat topic. When a topic is deleted, all associated chat messages are also deleted.
 #[utoipa::path(
     delete,
-    path = "/topic",
+    path = "/topic/{topic_id}",
     context_path = "/api",
     tag = "topic",
-    request_body(content = DeleteTopicData, description = "JSON request payload to delete a chat topic", content_type = "application/json"),
     responses(
         (status = 204, description = "Confirmation that the topic was deleted"),
         (status = 400, description = "Service error relating to topic deletion", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("topic_id" = uuid, Path, description = "The id of the topic you want to delete."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -116,13 +116,12 @@ pub struct DeleteTopicData {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn delete_topic(
-    data: web::Json<DeleteTopicData>,
+    data: web::Path<uuid::Uuid>,
     user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let data_inner = data.into_inner();
-    let topic_id = data_inner.topic_id;
+    let topic_id = data.into_inner();
     let pool_inner = pool.clone();
 
     let user_topic = get_topic_for_user_query(
