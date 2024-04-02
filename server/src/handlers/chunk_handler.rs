@@ -13,7 +13,8 @@ use crate::operators::group_operator::{
 };
 use crate::operators::qdrant_operator::recommend_qdrant_query;
 use crate::operators::search_operator::{
-    search_full_text_chunks, search_hybrid_chunks, search_semantic_chunks,
+    get_metadata_filter_condition, search_full_text_chunks, search_hybrid_chunks,
+    search_semantic_chunks,
 };
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
@@ -907,7 +908,7 @@ fn convert_to_date_time(time_stamp: String) -> Result<Option<f64>, ServiceError>
     ))
 }
 
-fn get_range(range: Range, field: String) -> Result<qdrant::Condition, ServiceError> {
+pub fn get_range(range: Range) -> Result<qdrant::Range, ServiceError> {
     #[derive(PartialEq)]
     enum RangeValueType {
         Float,
@@ -966,10 +967,7 @@ fn get_range(range: Range, field: String) -> Result<qdrant::Condition, ServiceEr
                 None => None,
             };
 
-            Ok(qdrant::Condition::range(
-                field,
-                qdrant::Range { gt, gte, lt, lte },
-            ))
+            Ok(qdrant::Range { gt, gte, lt, lte })
         }
         RangeValueType::None => Err(ServiceError::BadRequest(
             "No range conditions provided".to_string(),
@@ -978,7 +976,11 @@ fn get_range(range: Range, field: String) -> Result<qdrant::Condition, ServiceEr
 }
 
 impl FieldCondition {
-    pub fn convert_to_qdrant_condition(&self) -> Result<Option<qdrant::Condition>, ServiceError> {
+    pub async fn convert_to_qdrant_condition(
+        &self,
+        pool: web::Data<Pool>,
+        dataset_id: uuid::Uuid,
+    ) -> Result<Option<qdrant::Condition>, ServiceError> {
         if self.r#match.is_none() && self.range.is_none() {
             return Ok(None);
         }
@@ -989,8 +991,13 @@ impl FieldCondition {
             ));
         }
 
+        if self.field.starts_with("metadata.") {
+            get_metadata_filter_condition(&self, dataset_id, pool).await?;
+        }
+
         if let Some(range) = self.range.clone() {
-            return Ok(Some(get_range(range, self.field.clone())?));
+            let range = get_range(range)?;
+            return Ok(Some(qdrant::Condition::range(self.field.as_str(), range)));
         };
 
         let matches = match self.r#match.clone() {
