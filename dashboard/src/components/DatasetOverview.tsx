@@ -16,15 +16,12 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
   const deleteDataset = (datasetId: string) => {
     const api_host = import.meta.env.VITE_API_HOST as unknown as string;
     const currentDatasetsAndUsages = props.datasetAndUsages();
-    void fetch(`${api_host}/dataset`, {
+    void fetch(`${api_host}/dataset/${datasetId}`, {
       method: "DELETE",
       headers: {
         "TR-Dataset": datasetId,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        dataset_id: datasetId,
-      }),
       credentials: "include",
     }).then(() => {
       const newDatasetAndUsages = currentDatasetsAndUsages.filter(

@@ -26,7 +26,7 @@ export const ApiKeyGenerateModal = (props: {
 
   const generateApiKey = () => {
     if (role() !== 0 && !role()) return;
-    void fetch(`${api_host}/user/set_api_key`, {
+    void fetch(`${api_host}/user/api_key`, {
       credentials: "include",
       method: "POST",
       headers: {

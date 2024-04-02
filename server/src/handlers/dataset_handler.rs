@@ -183,27 +183,22 @@ pub async fn update_dataset(
     Ok(HttpResponse::Ok().json(d))
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
-pub struct DeleteDatasetRequest {
-    /// The id of the dataset you want to delete.
-    pub dataset_id: uuid::Uuid,
-}
-
 /// Delete Dataset
 ///
 /// Delete a dataset. The auth'ed user must be an owner of the organization to delete a dataset.
 #[utoipa::path(
     delete,
-    path = "/dataset",
+    path = "/dataset/{dataset_id}",
     context_path = "/api",
     tag = "dataset",
-    request_body(content = DeleteDatasetRequest, description = "JSON request payload to delete a dataset", content_type = "application/json"),
     responses(
         (status = 204, description = "Dataset deleted successfully"),
         (status = 400, description = "Service error relating to deleting the dataset", body = ErrorResponseBody),
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("dataset_id" = uuid, Path, description = "The id of the dataset you want to delete."),
+
     ),
     security(
         ("ApiKey" = ["owner"]),
@@ -211,7 +206,7 @@ pub struct DeleteDatasetRequest {
 )]
 #[tracing::instrument(skip(redis_pool, pool))]
 pub async fn delete_dataset(
-    data: web::Json<DeleteDatasetRequest>,
+    data: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -220,7 +215,7 @@ pub async fn delete_dataset(
     let server_dataset_config = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
-    delete_dataset_by_id_query(data.dataset_id, pool, redis_pool, server_dataset_config).await?;
+    delete_dataset_by_id_query(data.into_inner(), pool, redis_pool, server_dataset_config).await?;
     Ok(HttpResponse::NoContent().finish())
 }
 

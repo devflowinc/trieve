@@ -200,13 +200,15 @@ pub struct DeleteUserApiKeyRequest {
 /// Delete an api key for the auth'ed user.
 #[utoipa::path(
     delete,
-    path = "/user/delete_api_key",
+    path = "/user/delete_api_key/{api_key_id}",
     context_path = "/api",
     tag = "user",
-    request_body(content = DeleteUserApiKeyRequest, description = "JSON request payload to delete a user api key", content_type = "application/json"),
     responses(
         (status = 200, description = "JSON body representing the api_key for the user", body = Vec<ApiKeyDTO>),
         (status = 400, description = "Service error relating to creating api_key for the user", body = ErrorResponseBody),
+    ),
+    params(
+        ("api_key_id" = uuid::Uuid, Path, description = "The id of the api key to delete"),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -215,10 +217,10 @@ pub struct DeleteUserApiKeyRequest {
 #[tracing::instrument(skip(pool))]
 pub async fn delete_user_api_key(
     user: LoggedUser,
-    data: web::Json<DeleteUserApiKeyRequest>,
+    data: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    delete_user_api_keys_query(user.id, data.api_key_id, pool)
+    delete_user_api_keys_query(user.id, data.into_inner(), pool)
         .await
         .map_err(|_err| ServiceError::BadRequest("Failed to get API keys for user".into()))?;
 

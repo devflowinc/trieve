@@ -56,7 +56,7 @@ export const DatasetStart = () => {
   });
 
   const getApiKeys = (abortController: AbortController) => {
-    void fetch(`${api_host}/user/get_api_key`, {
+    void fetch(`${api_host}/user/api_key`, {
       method: "GET",
       credentials: "include",
       headers: {
@@ -71,15 +71,12 @@ export const DatasetStart = () => {
   };
 
   const deleteApiKey = (id: string) => {
-    void fetch(`${api_host}/user/delete_api_key`, {
+    void fetch(`${api_host}/user/api_key/${id}`, {
       method: "DELETE",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        api_key_id: id,
-      }),
     }).then((resp) => {
       if (resp.ok) {
         getApiKeys(new AbortController());
