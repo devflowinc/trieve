@@ -19,7 +19,7 @@ import CreateChunkRequest from "../../../components/CreateChunkRequest.md";
 import HybridSearchReqeust from "../../../components/HybridSearchRequest.md";
 import { DatasetContext } from "../../../contexts/DatasetContext";
 import { ApiKeyGenerateModal } from "../../../components/ApiKeyGenerateModal";
-import { FaRegularTrashCan } from "solid-icons/fa";
+import { FaRegularClipboard, FaRegularTrashCan } from "solid-icons/fa";
 import { formatDate } from "../../../formatters";
 
 export const DatasetStart = () => {
@@ -130,32 +130,68 @@ export const DatasetStart = () => {
             <div class="flex w-fit space-x-4 rounded-md bg-blue-50 px-6 py-4">
               <BiRegularInfoCircle class="h-5 w-5 text-blue-400" />
               <p class="text-sm text-blue-700">
-                Building something? Call and tell us about it at{" "}
-                <a class="underline" href="tel:6282224090">
-                  +1 628-222-4090
+                Building something? Share in our{" "}
+                <a class="underline" href="https://discord.gg/s4CX3vczyn">
+                  Discord
                 </a>{" "}
                 or{" "}
                 <a
                   class="underline"
                   href="https://matrix.to/#/#trieve-general:matrix.zerodao.gg"
                 >
-                  share in our Matrix
+                  Matrix
                 </a>
-                . We would love to hear about it and exchange tips!
+                ; we would love to hear about it!
               </p>
             </div>
             <div class="flex flex-col space-y-2">
               <div class="flex items-center space-x-3">
                 <p class="block text-sm font-medium">
-                  {selectedOrganization()?.name} org id:
+                  {curDataset()?.name} dataset id:{" "}
                 </p>
-                <p class="text-sm">{selectedOrganization()?.id}</p>
+                <p class="w-fit text-sm">{curDataset()?.id}</p>
+                <button
+                  class="text-sm underline"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(curDataset()?.id ?? "");
+                    window.dispatchEvent(
+                      new CustomEvent("show-toast", {
+                        detail: {
+                          type: "info",
+                          title: "Copied",
+                          message: "Dataset ID copied to clipboard",
+                        },
+                      }),
+                    );
+                  }}
+                >
+                  <FaRegularClipboard />
+                </button>
               </div>
               <div class="flex items-center space-x-3">
                 <p class="block text-sm font-medium">
-                  {curDataset()?.name} dataset id:{" "}
+                  {selectedOrganization()?.name} org id:
                 </p>
-                <p class="text-sm">{curDataset()?.id}</p>
+                <p class="w-fit text-sm">{selectedOrganization()?.id}</p>
+                <button
+                  class="text-sm underline"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(
+                      selectedOrganization()?.id ?? "",
+                    );
+                    window.dispatchEvent(
+                      new CustomEvent("show-toast", {
+                        detail: {
+                          type: "info",
+                          title: "Copied",
+                          message: "Organization ID copied to clipboard",
+                        },
+                      }),
+                    );
+                  }}
+                >
+                  <FaRegularClipboard />
+                </button>
               </div>
               <div class="mt-6">
                 <label
