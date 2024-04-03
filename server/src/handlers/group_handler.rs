@@ -948,6 +948,7 @@ pub async fn get_recommended_groups(
     let limit = data.limit.unwrap_or(10);
     let server_dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+    let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let mut positive_qdrant_ids = vec![];
 
@@ -958,6 +959,7 @@ pub async fn get_recommended_groups(
                     .into_iter()
                     .map(UnifiedId::TrieveUuid)
                     .collect(),
+                dataset_id,
                 pool.clone(),
             )
             .await
@@ -977,6 +979,7 @@ pub async fn get_recommended_groups(
                     .into_iter()
                     .map(UnifiedId::TrackingId)
                     .collect(),
+                dataset_id,
                 pool.clone(),
             )
             .await
@@ -998,6 +1001,7 @@ pub async fn get_recommended_groups(
                     .into_iter()
                     .map(UnifiedId::TrieveUuid)
                     .collect(),
+                dataset_id,
                 pool.clone(),
             )
             .await
@@ -1017,6 +1021,7 @@ pub async fn get_recommended_groups(
                     .into_iter()
                     .map(UnifiedId::TrackingId)
                     .collect(),
+                dataset_id,
                 pool.clone(),
             )
             .await

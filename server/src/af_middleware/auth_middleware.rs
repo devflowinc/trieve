@@ -230,7 +230,6 @@ async fn get_user(req: &HttpRequest, pl: &mut Payload) -> Option<LoggedUser> {
                                 )
                                 .await
                                 {
-                                    log::info!("User: {:?}", user);
                                     return Some(user);
                                 }
                             }

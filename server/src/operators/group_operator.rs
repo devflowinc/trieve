@@ -629,6 +629,7 @@ pub async fn create_group_from_file_query(
 
 pub async fn get_point_ids_from_unified_group_ids(
     group_ids: Vec<UnifiedId>,
+    dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Vec<uuid::Uuid>, ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
@@ -651,6 +652,7 @@ pub async fn get_point_ids_from_unified_group_ids(
                         .collect::<Vec<uuid::Uuid>>(),
                 ),
             )
+            .filter(chunk_group_columns::dataset_id.eq(dataset_id))
             .select(chunk_metadata_columns::qdrant_point_id)
             .load::<Option<uuid::Uuid>>(&mut conn)
             .await
