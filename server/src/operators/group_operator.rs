@@ -652,7 +652,7 @@ pub async fn get_point_ids_from_unified_group_ids(
                         .collect::<Vec<uuid::Uuid>>(),
                 ),
             )
-            .filter(chunk_group_columns::dataset_id.eq(dataset_id))
+            .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
             .select(chunk_metadata_columns::qdrant_point_id)
             .load::<Option<uuid::Uuid>>(&mut conn)
             .await
@@ -673,6 +673,7 @@ pub async fn get_point_ids_from_unified_group_ids(
                         .collect::<Vec<String>>(),
                 ),
             )
+            .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
             .select(chunk_metadata_columns::qdrant_point_id)
             .load::<Option<uuid::Uuid>>(&mut conn)
             .await
