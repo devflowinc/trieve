@@ -41,7 +41,7 @@ const ShowToasts = () => {
             (prevToastDetail) => prevToastDetail !== toastEvent.detail,
           ),
         );
-      }, 10000);
+      }, 1500);
     };
 
     window.addEventListener("show-toast", showToastEvent);

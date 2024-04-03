@@ -35,7 +35,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
   };
   return (
     <>
-      <div class="sm:flex sm:items-center">
+      <div class="flex items-center">
         <div class="flex w-full justify-between pt-2">
           <div>
             <h1 class="text-base font-semibold leading-6">Datasets</h1>
@@ -73,7 +73,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                 <tr>
                   <th
                     scope="col"
-                    class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold sm:pl-6"
+                    class="py-3.5 pl-6 pr-3 text-left text-sm font-semibold"
                   >
                     Name
                   </th>
@@ -98,7 +98,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                   {(datasetAndUsage) => (
                     <tr class="cursor-pointer hover:bg-neutral-100">
                       <td
-                        class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium sm:pl-6"
+                        class="whitespace-nowrap py-4 pl-6 pr-3 text-sm font-medium"
                         onClick={() => {
                           navigate(
                             `/dashboard/dataset/${datasetAndUsage.dataset.id}/start`,
@@ -127,7 +127,7 @@ export const DatasetOverview = (props: DatasetOverviewProps) => {
                       >
                         {datasetAndUsage.dataset.id}
                       </td>
-                      <td class=" whitespace-nowrap py-4 text-right text-sm font-medium">
+                      <td class="whitespace-nowrap py-4 text-right text-sm font-medium">
                         <button
                           class="text-lg text-neutral-500 hover:text-neutral-900"
                           onClick={() => {
