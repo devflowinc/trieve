@@ -30,5 +30,4 @@ rustc-ice*
 tr-cli/sample-data
 tr-cli/dist
 sample-data
-embedding-server/models/
 dashboard/.vite/*

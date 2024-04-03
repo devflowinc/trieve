@@ -5,6 +5,5 @@
 *.ipynb -linguist-detectable
 chat/** -linguist-detectable
 dashboard/** -linguist-detectable
-embedding-server/** -linguist-detectable
 keycloak/** -linguist-detectable
 search/** -linguist-detectable
