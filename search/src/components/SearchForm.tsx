@@ -464,6 +464,7 @@ const SearchForm = (props: {
                   ((e.ctrlKey || e.metaKey) && e.key === "Enter") ||
                   (!e.shiftKey && e.key === "Enter")
                 ) {
+                  setSearchHistoryList([]);
                   onSubmit(e);
                 }
               }}
