@@ -9,6 +9,7 @@ import {
   Match,
   Switch,
   useContext,
+  onCleanup,
 } from "solid-js";
 import {
   type ChunkGroupDTO,
@@ -67,6 +68,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
+  const [noResults, setNoResults] = createSignal(false);
 
   const fetchChunkCollections = () => {
     if (!$currentUser?.()) return;
@@ -180,12 +182,16 @@ const ResultsPage = (props: ResultsPageProps) => {
       searchRoute = "chunk_group/search_over_groups";
     }
 
+    props.setLoading(true);
+    const abortController = new AbortController();
+
     void fetch(`${apiHost}/${searchRoute}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "TR-Dataset": dataset.dataset.id,
       },
+      signal: abortController.signal,
       credentials: "include",
       body: JSON.stringify(requestBody),
     }).then((response) => {
@@ -212,6 +218,10 @@ const ResultsPage = (props: ResultsPageProps) => {
               resultingChunks.push(chunkToAdd);
             });
           }
+
+          if (resultingChunks.length === 0) {
+            setNoResults(true);
+          }
           setResultChunks(resultingChunks);
         });
       }
@@ -224,6 +234,10 @@ const ResultsPage = (props: ResultsPageProps) => {
     });
 
     fetchChunkCollections();
+
+    onCleanup(() => {
+      abortController.abort();
+    });
   });
 
   onMount(() => {
@@ -268,9 +282,7 @@ const ResultsPage = (props: ResultsPageProps) => {
               </span>
             </div>
           </Match>
-          <Match
-            when={resultChunks().length === 0 && clientSideRequestFinished()}
-          >
+          <Match when={noResults()}>
             <div class="text-2xl">No results found</div>
           </Match>
           <Match when={!props.loading()}>
