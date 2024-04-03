@@ -159,28 +159,20 @@ pub async fn assemble_qdrant_filter(
         }
     };
 
-    if quote_words.is_some() || negated_words.is_some() {
-        let available_qdrant_ids = get_qdrant_point_ids_from_pg_for_quote_negated_words(
-            quote_words,
-            negated_words,
-            dataset_id,
-            pool,
-        )
-        .await?;
+    if quote_words.is_some() {
+        for quote_word in quote_words.unwrap() {
+            filter
+                .must
+                .push(Condition::matches_text("content", quote_word));
+        }
+    }
 
-        let available_point_ids = available_qdrant_ids
-            .iter()
-            .map(|id| id.to_string())
-            .collect::<HashSet<String>>()
-            .iter()
-            .map(|id| (*id).clone().into())
-            .collect::<Vec<PointId>>();
-
-        filter.must.push(Condition {
-            condition_one_of: Some(HasId(HasIdCondition {
-                has_id: (available_point_ids).to_vec(),
-            })),
-        });
+    if negated_words.is_some() {
+        for negated_word in negated_words.unwrap() {
+            filter
+                .must_not
+                .push(Condition::matches_text("content", negated_word));
+        }
     }
 
     Ok(filter)

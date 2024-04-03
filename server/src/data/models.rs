@@ -8,6 +8,7 @@ use chrono::{DateTime, NaiveDateTime};
 use dateparser::DateTimeUtc;
 use diesel::expression::ValidGrouping;
 use openai_dive::v1::resources::chat::{ChatMessage, ChatMessageContent, Role};
+use qdrant_client::{prelude::Payload, qdrant::RetrievedPoint};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use utoipa::ToSchema;
@@ -1966,5 +1967,157 @@ impl From<uuid::Uuid> for UnifiedId {
 impl From<String> for UnifiedId {
     fn from(tracking_id: String) -> Self {
         UnifiedId::TrackingId(tracking_id)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct QdrantPayload {
+    pub tag_set: Vec<String>,
+    pub link: String,
+    pub metadata: serde_json::Value,
+    pub time_stamp: i64,
+    pub dataset_id: uuid::Uuid,
+    pub content: String,
+    pub group_ids: Vec<uuid::Uuid>,
+}
+
+impl Into<Payload> for QdrantPayload {
+    fn into(self) -> Payload {
+        let value = json!(self);
+        value
+            .try_into()
+            .expect("Failed to convert QdrantPayload to Payload")
+    }
+}
+
+impl QdrantPayload {
+    pub fn new(
+        chunk_metadata: ChunkMetadata,
+        group_ids: Option<Vec<uuid::Uuid>>,
+        dataset_id: Option<uuid::Uuid>,
+    ) -> Self {
+        QdrantPayload {
+            tag_set: chunk_metadata
+                .tag_set
+                .unwrap_or("".to_string())
+                .split(',')
+                .map(|tag| tag.to_string())
+                .collect(),
+            link: chunk_metadata.link.unwrap_or("".to_string()),
+            metadata: chunk_metadata.metadata.unwrap_or_default(),
+            time_stamp: chunk_metadata.time_stamp.unwrap_or_default().timestamp(),
+            dataset_id: dataset_id.unwrap_or(chunk_metadata.dataset_id),
+            content: chunk_metadata.content,
+            group_ids: group_ids.unwrap_or_default(),
+        }
+    }
+
+    pub fn new_from_point(point: RetrievedPoint, group_ids: Option<Vec<uuid::Uuid>>) -> Self {
+        QdrantPayload {
+            tag_set: point
+                .payload
+                .get("tag_set")
+                .cloned()
+                .unwrap_or_default()
+                .as_list()
+                .expect("tag_set should be a list")
+                .iter()
+                .map(|value| value.to_string())
+                .collect(),
+            link: point
+                .payload
+                .get("link")
+                .cloned()
+                .unwrap_or_default()
+                .to_string(),
+            metadata: point
+                .payload
+                .get("metadata")
+                .cloned()
+                .unwrap_or_default()
+                .into(),
+            time_stamp: point
+                .payload
+                .get("time_stamp")
+                .cloned()
+                .unwrap_or_default()
+                .as_integer()
+                .expect("time_stamp should be an integer"),
+            dataset_id: point
+                .payload
+                .get("dataset_id")
+                .cloned()
+                .unwrap_or_default()
+                .as_str()
+                .map(|s| uuid::Uuid::parse_str(s).unwrap())
+                .unwrap_or_default(),
+            group_ids: group_ids.unwrap_or_default(),
+            content: point
+                .payload
+                .get("content")
+                .cloned()
+                .unwrap_or_default()
+                .to_string(),
+        }
+    }
+}
+
+impl From<RetrievedPoint> for QdrantPayload {
+    fn from(current_point: RetrievedPoint) -> Self {
+        QdrantPayload {
+            tag_set: current_point
+                .payload
+                .get("tag_set")
+                .cloned()
+                .unwrap_or_default()
+                .as_list()
+                .expect("tag_set should be a list")
+                .iter()
+                .map(|value| value.to_string())
+                .collect(),
+            link: current_point
+                .payload
+                .get("link")
+                .cloned()
+                .unwrap_or_default()
+                .to_string(),
+            metadata: current_point
+                .payload
+                .get("metadata")
+                .cloned()
+                .unwrap_or_default()
+                .into(),
+            time_stamp: current_point
+                .payload
+                .get("time_stamp")
+                .cloned()
+                .unwrap_or_default()
+                .as_integer()
+                .expect("time_stamp should be an integer"),
+            dataset_id: current_point
+                .payload
+                .get("dataset_id")
+                .cloned()
+                .unwrap_or_default()
+                .as_str()
+                .map(|s| uuid::Uuid::parse_str(s).unwrap())
+                .unwrap_or_default(),
+            group_ids: current_point
+                .payload
+                .get("group_ids")
+                .cloned()
+                .unwrap_or_default()
+                .as_list()
+                .expect("group_ids should be a list")
+                .iter()
+                .map(|value| value.to_string().parse().expect("Failed to parse group_id"))
+                .collect(),
+            content: current_point
+                .payload
+                .get("content")
+                .cloned()
+                .unwrap_or_default()
+                .to_string(),
+        }
     }
 }
