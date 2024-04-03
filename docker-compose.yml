@@ -218,19 +218,6 @@ services:
     environment:
       - VITE_API_HOST=${VITE_API_HOST}
 
-  splade-embeddings:
-    image: trieve/splade-embeddings
-    container_name: splade-embeddings
-    build: ./embedding-server/
-    networks:
-      - app-network
-    ports:
-      - 7070:7070
-    environment:
-      - HF_TOKEN=${HF_TOKEN}
-      - API_KEY=${OPENAI_API_KEY}
-    profiles: [dev]
-
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.7
     container_name: keycloak
