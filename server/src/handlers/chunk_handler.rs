@@ -1506,6 +1506,8 @@ pub async fn get_recommended_chunks(
     let server_dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
+    let dataset_id = dataset_org_plan_sub.dataset.id;
+
     let mut positive_qdrant_ids = vec![];
 
     if let Some(positive_chunk_ids) = positive_chunk_ids {
@@ -1515,6 +1517,7 @@ pub async fn get_recommended_chunks(
                     .into_iter()
                     .map(UnifiedId::TrieveUuid)
                     .collect(),
+                dataset_id,
                 pool.clone(),
             )
             .await
@@ -1534,6 +1537,7 @@ pub async fn get_recommended_chunks(
                     .into_iter()
                     .map(UnifiedId::TrackingId)
                     .collect(),
+                dataset_id,
                 pool.clone(),
             )
             .await
@@ -1555,6 +1559,7 @@ pub async fn get_recommended_chunks(
                     .into_iter()
                     .map(UnifiedId::TrieveUuid)
                     .collect(),
+                dataset_id,
                 pool.clone(),
             )
             .await
@@ -1574,6 +1579,7 @@ pub async fn get_recommended_chunks(
                     .into_iter()
                     .map(UnifiedId::TrackingId)
                     .collect(),
+                dataset_id,
                 pool.clone(),
             )
             .await
