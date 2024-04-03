@@ -1,24 +1,23 @@
 use super::search_operator::{assemble_qdrant_filter, SearchResult};
 use crate::{
-    data::models::{ChunkMetadata, Pool, ServerDatasetConfiguration},
+    data::models::{ChunkMetadata, Pool, QdrantPayload, ServerDatasetConfiguration},
     errors::ServiceError,
     get_env,
     handlers::chunk_handler::ChunkFilter,
 };
 use actix_web::web;
-use itertools::Itertools;
 use qdrant_client::{
     client::{QdrantClient, QdrantClientConfig},
     qdrant::{
-        group_id::Kind, point_id::PointIdOptions, quantization_config::Quantization,
-        BinaryQuantization, CountPoints, CreateCollection, Distance, FieldType, Filter,
-        HnswConfigDiff, PointId, PointStruct, QuantizationConfig, RecommendPointGroups,
-        RecommendPoints, SearchPointGroups, SearchPoints, SparseIndexConfig, SparseVectorConfig,
-        SparseVectorParams, Value, Vector, VectorParams, VectorParamsMap, VectorsConfig,
+        group_id::Kind, payload_index_params::IndexParams, point_id::PointIdOptions,
+        quantization_config::Quantization, BinaryQuantization, CountPoints, CreateCollection,
+        Distance, FieldType, Filter, HnswConfigDiff, PayloadIndexParams, PointId, PointStruct,
+        QuantizationConfig, RecommendPointGroups, RecommendPoints, SearchPointGroups, SearchPoints,
+        SparseIndexConfig, SparseVectorConfig, SparseVectorParams, TextIndexParams, TokenizerType,
+        Value, Vector, VectorParams, VectorParamsMap, VectorsConfig,
     },
 };
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::{collections::HashMap, str::FromStr};
 
 #[tracing::instrument]
@@ -235,6 +234,24 @@ pub async fn create_new_qdrant_collection_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
 
+    qdrant_client
+        .create_field_index(
+            qdrant_collection.clone(),
+            "content",
+            FieldType::Text,
+            Some(&PayloadIndexParams {
+                index_params: Some(IndexParams::TextIndexParams(TextIndexParams {
+                    tokenizer: TokenizerType::Word as i32,
+                    min_token_len: Some(2),
+                    max_token_len: Some(10),
+                    lowercase: Some(true),
+                })),
+            }),
+            None,
+        )
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
+
     Ok(())
 }
 
@@ -252,16 +269,9 @@ pub async fn create_new_qdrant_point_query(
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
 
-    let payload = json!({
-        "tag_set": chunk_metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(),
-        "link": chunk_metadata.link.unwrap_or("".to_string()).split(',').collect_vec(),
-        "metadata": chunk_metadata.metadata.unwrap_or_default(),
-        "time_stamp": chunk_metadata.time_stamp.unwrap_or_default().timestamp(),
-        "dataset_id": chunk_metadata.dataset_id.to_string(),
-        "group_ids": group_ids.unwrap_or_default()
-    })
-    .try_into()
-    .expect("A json! Value must always be a valid Payload");
+    let payload = QdrantPayload::new(chunk_metadata, group_ids, None)
+        .try_into()
+        .expect("A json! Value must always be a valid Payload");
 
     let vector_name = match embedding_vector.len() {
         384 => "384_vectors",
@@ -329,39 +339,28 @@ pub async fn update_qdrant_point_query(
 
     let payload = if let Some(metadata) = metadata.clone() {
         let group_ids = if let Some(group_ids) = group_ids {
-            Value::from(
-                group_ids
-                    .iter()
-                    .map(|id| id.to_string())
-                    .collect::<Vec<String>>(),
-            )
+            group_ids
         } else if let Some(current_point) = current_point {
             current_point
                 .payload
                 .get("group_ids")
                 .unwrap_or(&Value::from(vec![] as Vec<String>))
                 .to_owned()
+                .iter_list()
+                .unwrap()
+                .map(|id| {
+                    id.to_string()
+                        .parse::<uuid::Uuid>()
+                        .expect("group_id must be a valid uuid")
+                })
+                .collect::<Vec<uuid::Uuid>>()
         } else {
-            Value::from(vec![] as Vec<String>)
+            vec![]
         };
 
-        json!({
-            "tag_set": metadata.tag_set.unwrap_or("".to_string()).split(',').collect_vec(),
-            "link": metadata.link.unwrap_or("".to_string()).split(',').collect_vec(),
-            "metadata": metadata.metadata.unwrap_or_default(),
-            "time_stamp": metadata.time_stamp.unwrap_or_default().timestamp(),
-            "dataset_id": dataset_id.to_string(),
-            "group_ids": group_ids
-        })
+        QdrantPayload::new(metadata, group_ids.into(), Some(dataset_id))
     } else if let Some(current_point) = current_point {
-        json!({
-            "tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")),
-            "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")),
-            "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")),
-            "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")),
-            "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from("")),
-            "group_ids": current_point.payload.get("group_ids").unwrap_or(&Value::from(vec![] as Vec<String>))
-        })
+        QdrantPayload::from(current_point.clone())
     } else {
         return Err(ServiceError::BadRequest("No metadata points found".into()).into());
     };
@@ -384,13 +383,7 @@ pub async fn update_qdrant_point_query(
             ("sparse_vectors".to_string(), Vector::from(splade_vector)),
         ]);
 
-        let point = PointStruct::new(
-            point_id.clone().to_string(),
-            vector_payload,
-            payload
-                .try_into()
-                .expect("A json! value must always be a valid Payload"),
-        );
+        let point = PointStruct::new(point_id.clone().to_string(), vector_payload, payload.into());
 
         qdrant
             .upsert_points(qdrant_collection, None, vec![point], None)
@@ -476,14 +469,7 @@ pub async fn add_bookmark_to_qdrant_query(
         vec![group_id]
     };
 
-    let payload = json!({
-        "tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")),
-        "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")),
-        "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")),
-        "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")),
-        "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from("")),
-        "group_ids": group_ids
-    });
+    let payload = QdrantPayload::new_from_point(current_point.clone(), Some(group_ids));
 
     let points_selector = qdrant_point_id.into();
 
@@ -563,14 +549,7 @@ pub async fn remove_bookmark_from_qdrant_query(
         vec![]
     };
 
-    let payload = json!({
-        "tag_set": current_point.payload.get("tag_set").unwrap_or(&qdrant_client::qdrant::Value::from("")),
-        "link": current_point.payload.get("link").unwrap_or(&qdrant_client::qdrant::Value::from("")),
-        "metadata": current_point.payload.get("metadata").unwrap_or(&qdrant_client::qdrant::Value::from("")),
-        "time_stamp": current_point.payload.get("time_stamp").unwrap_or(&qdrant_client::qdrant::Value::from("")),
-        "dataset_id": current_point.payload.get("dataset_id").unwrap_or(&qdrant_client::qdrant::Value::from("")),
-        "group_ids": group_ids
-    });
+    let payload = QdrantPayload::new_from_point(current_point.clone(), Some(group_ids));
 
     let points_selector = qdrant_point_id.into();
 
