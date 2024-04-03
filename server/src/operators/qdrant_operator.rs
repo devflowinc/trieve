@@ -923,8 +923,8 @@ pub async fn recommend_qdrant_groups_query(
 
     let recommend_points = RecommendPointGroups {
         collection_name: qdrant_collection,
-        positive: positive_point_ids,
-        negative: negative_point_ids,
+        positive: positive_point_ids.clone(),
+        negative: negative_point_ids.clone(),
         filter: Some(filters),
         limit: limit.try_into().unwrap(),
         with_payload: None,
@@ -949,6 +949,7 @@ pub async fn recommend_qdrant_groups_query(
         .await
         .map_err(|err| {
             log::info!("Failed to recommend points from qdrant: {:?}", err);
+            log::info!("Positive ids {:?} {:?}", positive_point_ids, negative_point_ids);
             ServiceError::BadRequest(
                 "Failed to recommend points from qdrant. Your are likely providing an invalid point id.".to_string(),
             )
