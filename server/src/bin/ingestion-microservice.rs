@@ -2,6 +2,8 @@ use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
 use sentry::{Hub, SentryFutureExt};
+use signal_hook::consts::SIGTERM;
+use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{self, ChunkMetadata, Event, ServerDatasetConfiguration};
 use trieve_server::errors::ServiceError;
@@ -136,17 +138,25 @@ fn main() {
 
                 let web_redis_pool = actix_web::web::Data::new(redis_pool);
 
+                let should_terminate = Arc::new(AtomicBool::new(false));
+                signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
+                    .expect("Failed to register shutdown hook");
                 let threads: Vec<_> = (0..thread_num)
                     .map(|i| {
                         let web_pool = web_pool.clone();
                         let web_redis_pool = web_redis_pool.clone();
+                        let should_terminate = Arc::clone(&should_terminate);
+
                         tokio::spawn(
-                            async move { ingestion_service(i, web_redis_pool, web_pool).await },
+                            async move { ingestion_service(i, should_terminate, web_redis_pool, web_pool).await },
                         )
                     })
                     .collect();
 
-                futures::future::join_all(threads).await;
+
+                while !should_terminate.load(Ordering::Relaxed) {}
+                log::info!("Shutdown signal received, killing all children...");
+                futures::future::join_all(threads).await
             }
             .bind_hub(Hub::new_from_top(Hub::current())),
         );
@@ -155,6 +165,7 @@ fn main() {
 #[tracing::instrument(skip(web_pool, redis_pool))]
 async fn ingestion_service(
     thread: usize,
+    should_terminate: Arc<AtomicBool>,
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
 ) {
@@ -169,6 +180,11 @@ async fn ingestion_service(
     };
 
     loop {
+        if should_terminate.load(Ordering::Relaxed) {
+            log::info!("Shutting down");
+            break
+        }
+
         let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpoplpush")
             .arg("ingestion")
             .arg("processing")
