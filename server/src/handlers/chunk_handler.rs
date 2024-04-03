@@ -1506,78 +1506,85 @@ pub async fn get_recommended_chunks(
     let server_dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
-    let positive_qdrant_ids = if positive_chunk_ids.is_some() {
-        get_point_ids_from_unified_chunk_ids(
-            positive_chunk_ids
-                .clone()
-                .unwrap()
-                .into_iter()
-                .map(UnifiedId::TrieveUuid)
-                .collect(),
-            pool.clone(),
-        )
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!("Could not get positive qdrant_point_ids: {}", err))
-        })?
-    } else if positive_chunk_ids.is_none() && positive_tracking_ids.is_some() {
-        get_point_ids_from_unified_chunk_ids(
-            positive_tracking_ids
-                .clone()
-                .unwrap()
-                .into_iter()
-                .map(UnifiedId::TrackingId)
-                .collect(),
-            pool.clone(),
-        )
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!(
-                "Could not get positive qdrant_point_ids from tracking_ids: {}",
-                err
-            ))
-        })?
-    } else {
-        return Err(ServiceError::BadRequest(
-            "You must provide either positive_chunk_ids or positive_tracking_ids".into(),
-        )
-        .into());
-    };
+    let mut positive_qdrant_ids = vec![];
 
-    let negative_qdrant_ids = if negative_chunk_ids.is_some() {
-        get_point_ids_from_unified_chunk_ids(
-            negative_chunk_ids
-                .clone()
-                .unwrap()
-                .into_iter()
-                .map(UnifiedId::TrieveUuid)
-                .collect(),
-            pool.clone(),
+    if let Some(positive_chunk_ids) = positive_chunk_ids {
+        positive_qdrant_ids.extend(
+            get_point_ids_from_unified_chunk_ids(
+                positive_chunk_ids
+                    .into_iter()
+                    .map(UnifiedId::TrieveUuid)
+                    .collect(),
+                pool.clone(),
+            )
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!(
+                    "Could not get positive qdrant_point_ids from positive_chunk_ids: {}",
+                    err
+                ))
+            })?,
         )
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!("Could not get negative qdrant_point_ids: {}", err))
-        })?
-    } else if negative_chunk_ids.is_none() && negative_tracking_ids.is_some() {
-        get_point_ids_from_unified_chunk_ids(
-            negative_tracking_ids
-                .clone()
-                .unwrap()
-                .into_iter()
-                .map(UnifiedId::TrackingId)
-                .collect(),
-            pool.clone(),
+    }
+
+    if let Some(positive_chunk_tracking_ids) = positive_tracking_ids {
+        positive_qdrant_ids.extend(
+            get_point_ids_from_unified_chunk_ids(
+                positive_chunk_tracking_ids
+                    .into_iter()
+                    .map(UnifiedId::TrackingId)
+                    .collect(),
+                pool.clone(),
+            )
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!(
+                    "Could not get positive qdrant_point_ids from positive_tracking_ids: {}",
+                    err
+                ))
+            })?,
         )
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!(
-                "Could not get negative qdrant_point_ids from tracking_ids: {}",
-                err
-            ))
-        })?
-    } else {
-        vec![]
-    };
+    }
+
+    let mut negative_qdrant_ids = vec![];
+
+    if let Some(negative_chunk_ids) = negative_chunk_ids {
+        negative_qdrant_ids.extend(
+            get_point_ids_from_unified_chunk_ids(
+                negative_chunk_ids
+                    .into_iter()
+                    .map(UnifiedId::TrieveUuid)
+                    .collect(),
+                pool.clone(),
+            )
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!(
+                    "Could not get negative qdrant_point_ids from negative_chunk_ids: {}",
+                    err
+                ))
+            })?,
+        )
+    }
+
+    if let Some(negative_chunk_tracking_ids) = negative_tracking_ids {
+        negative_qdrant_ids.extend(
+            get_point_ids_from_unified_chunk_ids(
+                negative_chunk_tracking_ids
+                    .into_iter()
+                    .map(UnifiedId::TrackingId)
+                    .collect(),
+                pool.clone(),
+            )
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!(
+                    "Could not get negative qdrant_point_ids from negative_tracking_ids: {}",
+                    err
+                ))
+            })?,
+        )
+    }
 
     let recommended_qdrant_point_ids = recommend_qdrant_query(
         positive_qdrant_ids,
