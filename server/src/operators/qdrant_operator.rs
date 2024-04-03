@@ -11,11 +11,10 @@ use qdrant_client::{
     client::{QdrantClient, QdrantClientConfig},
     qdrant::{
         group_id::Kind, point_id::PointIdOptions, quantization_config::Quantization,
-        with_payload_selector::SelectorOptions, BinaryQuantization, CountPoints, CreateCollection,
-        Distance, FieldType, Filter, HnswConfigDiff, PointId, PointStruct, QuantizationConfig,
-        RecommendPointGroups, RecommendPoints, SearchPointGroups, SearchPoints, SparseIndexConfig,
-        SparseVectorConfig, SparseVectorParams, Value, Vector, VectorParams, VectorParamsMap,
-        VectorsConfig, WithPayloadSelector,
+        BinaryQuantization, CountPoints, CreateCollection, Distance, FieldType, Filter,
+        HnswConfigDiff, PointId, PointStruct, QuantizationConfig, RecommendPointGroups,
+        RecommendPoints, SearchPointGroups, SearchPoints, SparseIndexConfig, SparseVectorConfig,
+        SparseVectorParams, Value, Vector, VectorParams, VectorParamsMap, VectorsConfig,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -270,7 +269,11 @@ pub async fn create_new_qdrant_point_query(
         768 => "768_vectors",
         1024 => "1024_vectors",
         1536 => "1536_vectors",
-        _ => return Err(ServiceError::BadRequest("Invalid embedding vector size".into())),
+        _ => {
+            return Err(ServiceError::BadRequest(
+                "Invalid embedding vector size".into(),
+            ))
+        }
     };
 
     let vector_payload = HashMap::from([
@@ -840,13 +843,11 @@ pub async fn recommend_qdrant_query(
 
     let recommend_points = RecommendPoints {
         collection_name: qdrant_collection,
-        positive: positive_point_ids,
-        negative: negative_point_ids,
+        positive: positive_point_ids.clone(),
+        negative: negative_point_ids.clone(),
         filter: Some(filter),
         limit,
-        with_payload: Some(WithPayloadSelector {
-            selector_options: Some(SelectorOptions::Enable(true)),
-        }),
+        with_payload: None,
         params: None,
         score_threshold: None,
         offset: None,
@@ -865,7 +866,8 @@ pub async fn recommend_qdrant_query(
         .recommend(&recommend_points)
         .await
         .map_err(|err| {
-            log::info!("Failed to recommend points from qdrant: {:?}", err);
+            log::error!("Failed to recommend points from qdrant: {:?}", err);
+            log::info!("Positive ids {:?} {:?}", positive_point_ids, negative_point_ids);
             ServiceError::BadRequest(
                 "Failed to recommend points from qdrant. Your are likely providing an invalid point id.".to_string(),
             )
@@ -948,10 +950,10 @@ pub async fn recommend_qdrant_groups_query(
         .recommend_groups(&recommend_points)
         .await
         .map_err(|err| {
-            log::info!("Failed to recommend points from qdrant: {:?}", err);
+            log::error!("Failed to recommend groups points from qdrant: {:?}", err);
             log::info!("Positive ids {:?} {:?}", positive_point_ids, negative_point_ids);
             ServiceError::BadRequest(
-                "Failed to recommend points from qdrant. Your are likely providing an invalid point id.".to_string(),
+                "Failed to recommend groups points from qdrant. Your are likely providing an invalid point id.".to_string(),
             )
         })?;
     let recommended_point_ids = data
