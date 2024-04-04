@@ -147,12 +147,11 @@ fn main() {
                         let web_redis_pool = web_redis_pool.clone();
                         let should_terminate = Arc::clone(&should_terminate);
 
-                        tokio::spawn(
-                            async move { ingestion_service(i, should_terminate, web_redis_pool, web_pool).await },
-                        )
+                        tokio::spawn(async move {
+                            ingestion_service(i, should_terminate, web_redis_pool, web_pool).await
+                        })
                     })
                     .collect();
-
 
                 while !should_terminate.load(Ordering::Relaxed) {}
                 log::info!("Shutdown signal received, killing all children...");
@@ -171,18 +170,36 @@ async fn ingestion_service(
 ) {
     log::info!("Starting ingestion service thread");
 
-    let mut redis_connection = match redis_pool.get().await {
-        Ok(redis_connection) => redis_connection,
-        Err(err) => {
-            log::error!("Failed to get redis connection outside of loop: {:?}", err);
-            return;
+    let mut sleep_time = std::time::Duration::from_secs(1);
+
+    #[allow(unused_assignments)]
+    let mut opt_redis_connection = None;
+
+    loop {
+        let borrowed_redis_connection = match redis_pool.get().await {
+            Ok(redis_connection) => Some(redis_connection),
+            Err(err) => {
+                log::error!("Failed to get redis connection outside of loop: {:?}", err);
+                None
+            }
+        };
+
+        if borrowed_redis_connection.is_some() {
+            opt_redis_connection = borrowed_redis_connection;
+            break;
         }
-    };
+
+        tokio::time::sleep(sleep_time).await;
+        sleep_time = std::cmp::min(sleep_time * 2, std::time::Duration::from_secs(60));
+    }
+
+    let mut redis_connection =
+        opt_redis_connection.expect("Failed to get redis connection outside of loop");
 
     loop {
         if should_terminate.load(Ordering::Relaxed) {
             log::info!("Shutting down");
-            break
+            break;
         }
 
         let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpoplpush")
