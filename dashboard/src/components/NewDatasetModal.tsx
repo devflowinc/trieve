@@ -43,6 +43,8 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
     const organizationId = userContext.selectedOrganizationId?.();
     if (!organizationId) return;
 
+    const curServerConfig = serverConfig();
+
     fetch(`${apiHost}/dataset`, {
       method: "POST",
       credentials: "include",
@@ -53,7 +55,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
       body: JSON.stringify({
         dataset_name: name(),
         organization_id: organizationId,
-        server_configuration: serverConfig(),
+        server_configuration: curServerConfig,
         client_configuration: "{}",
       }),
     })
@@ -209,7 +211,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                             )?.name ?? availableEmbeddingModels[0].name
                           }
-                          onSelect={(e) => {
+                          onChange={(e) => {
                             const selectedModel = availableEmbeddingModels.find(
                               (model) => model.name === e.currentTarget.value,
                             );
@@ -237,7 +239,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                   </div>
                 </div>
 
-                <div class="mt-3 flex items-center justify-between">
+                <div class="mt-4 flex items-center justify-between">
                   <button
                     type="button"
                     class="rounded-md border px-2 py-1 text-sm font-semibold leading-6 hover:bg-neutral-50 focus:outline-magenta-500"
