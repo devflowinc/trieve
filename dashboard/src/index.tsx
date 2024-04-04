@@ -14,6 +14,29 @@ import { UserManagement } from "./pages/Dashboard/UserManagment.tsx";
 import { ContextWrapper } from "./layouts/ContextWrapper.tsx";
 import { DatasetEvents } from "./pages/Dashboard/Dataset/DatasetEvents.tsx";
 
+import * as Sentry from "@sentry/browser";
+
+Sentry.init({
+  dsn: "https://54f4b04a7d6f500005ee5dededad749c@sentry1.internal.trieve.ai/7",
+  integrations: [
+    Sentry.browserTracingIntegration(),
+    Sentry.replayIntegration(),
+  ],
+
+  // Set tracesSampleRate to 1.0 to capture 100%
+  // of transactions for performance monitoring.
+  // We recommend adjusting this value in production
+  tracesSampleRate: 1.0,
+
+  // Set `tracePropagationTargets` to control for which URLs distributed tracing should be enabled
+  tracePropagationTargets: ["localhost", /^https:\/\/yourserver\.io\/api/],
+
+  // Capture Replay for 10% of all sessions,
+  // plus 100% of sessions with an error
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1.0,
+});
+
 const root = document.getElementById("root");
 
 render(

@@ -641,11 +641,6 @@
     lodash.merge "^4.6.2"
     postcss-selector-parser "6.0.10"
 
-"@thisbeyond/solid-select@^0.14.0":
-  version "0.14.0"
-  resolved "https://registry.yarnpkg.com/@thisbeyond/solid-select/-/solid-select-0.14.0.tgz#1f6ed9e2c54818a13943624f4a66e32d5c933062"
-  integrity sha512-ecq4U3Vnc/nJbU84ARuPg2scNuYt994ljF5AmBlzuZW87x43mWiGJ5hEWufIJJMpDT6CcnCIx/xbrdDkaDEHQw==
-
 "@types/acorn@^4.0.0":
   version "4.0.6"
   resolved "https://registry.yarnpkg.com/@types/acorn/-/acorn-4.0.6.tgz#d61ca5480300ac41a7d973dd5b84d0a591154a22"
