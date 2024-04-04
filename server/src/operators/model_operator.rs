@@ -62,7 +62,7 @@ pub async fn create_embeddings(
     };
 
     let client = Client {
-        http_client: None,
+        http_client: reqwest::Client::new(),
         api_key: open_ai_api_key,
         base_url,
         organization: None,

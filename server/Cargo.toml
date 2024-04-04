@@ -63,9 +63,7 @@ time = { version = "0.3" }
 uuid = { version = "1", features = ["v4", "serde"] }
 diesel_migrations = { version = "2.0" }
 regex = "1.7.3"
-openai_dive = { git = "https://github.com/devflowinc/openai-client", rev = "57fa1d2", features = [
-    "stream",
-] }
+openai_dive = { version = "0.4.6", features = ["stream"] }
 tokio = "1.27.0"
 tokio-stream = "0.1.12"
 futures-util = "0.3.28"
@@ -79,7 +77,7 @@ base64 = "0.22.0"
 glob = "0.3.1"
 itertools = "0.12.0"
 redis = { version = "0.25", features = ["tokio-rustls-comp", "aio"] }
-reqwest = { version = "0.11.18", features = ["json"] }
+reqwest = { version = "0.12.2", features = ["json"] }
 rand = "0.8.5"
 dotenvy = "0.15.7"
 simsearch = "0.2.4"
@@ -93,7 +91,7 @@ utoipa = { version = "4.2", features = [
 ] }
 utoipa-redoc = { version = "3.0", features = ["actix-web"] }
 magick_rust = { version = "0.20", optional = true }
-pyo3 = { version = "0.20.0", features = [
+pyo3 = { version = "0.21.1", features = [
     "full",
     "auto-initialize",
 ], optional = true }

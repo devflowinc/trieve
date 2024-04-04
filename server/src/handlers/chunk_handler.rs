@@ -1711,7 +1711,7 @@ pub async fn generate_off_chunks(
 
     let client = Client {
         api_key: llm_api_key,
-        http_client: Some(reqwest::Client::new()),
+        http_client: reqwest::Client::new(),
         base_url,
         organization: None,
     };
@@ -1810,7 +1810,6 @@ pub async fn generate_off_chunks(
         logprobs: None,
         top_logprobs: None,
         seed: None,
-        instance_id: None,
     };
 
     if !stream_response.unwrap_or(true) {
