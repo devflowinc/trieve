@@ -9,6 +9,7 @@ import {
 import { DatasetContext } from "../../../contexts/DatasetContext";
 import { Event, isEvent, isEventDTO } from "../../../types/apiTypes";
 import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
+import { MultiSelect } from "../../../components/MultiSelect";
 
 export const DatasetEvents = () => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
@@ -19,6 +20,12 @@ export const DatasetEvents = () => {
   const [page, setPage] = createSignal(1);
   const [pageCount, setPageCount] = createSignal(1);
   const [loading, setLoading] = createSignal(true);
+  const [selected, setSelected] = createSignal<
+    {
+      id: string;
+      name: string;
+    }[]
+  >([]);
 
   const getEvents = () => {
     const datasetId = datasetContext.dataset?.()?.id;
@@ -32,6 +39,7 @@ export const DatasetEvents = () => {
         "TR-Dataset": datasetId,
       },
       body: JSON.stringify({
+        event_types: selected().map((s) => s.id),
         page: page(),
       }),
       signal: eventsAbortController.signal,
@@ -76,6 +84,34 @@ export const DatasetEvents = () => {
                   Event Log from the server (Refreshes every 5 seconds)
                 </p>
               </div>
+              <MultiSelect
+                items={[
+                  {
+                    id: "file_uploaded",
+                    name: "File Uploaded",
+                  },
+                  {
+                    id: "card_action_failed",
+                    name: "Chunk Upload Failed",
+                  },
+                  {
+                    id: "card_uploaded",
+                    name: "Chunk Uploaded",
+                  },
+                  {
+                    id: "card_updated",
+                    name: "Chunk Updated",
+                  },
+                ]}
+                setSelected={(
+                  selected: {
+                    id: string;
+                    name: string;
+                  }[],
+                ) => {
+                  setSelected(selected);
+                }}
+              />
             </div>
             <div class="mt-8 flow-root">
               <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">

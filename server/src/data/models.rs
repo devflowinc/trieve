@@ -989,6 +989,7 @@ pub struct Event {
     pub event_data: serde_json::Value,
 }
 
+//TODO: change these to Chunk instead of cards but need to rescroll pg to fix ids in events
 #[derive(Debug, Deserialize, Clone)]
 pub enum EventType {
     FileUploaded {
