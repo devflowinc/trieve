@@ -400,7 +400,12 @@ pub async fn main() -> std::io::Result<()> {
 
     let oidc_client = build_oidc_client().await;
 
-    let _ = create_new_qdrant_collection_query(None, None, None, false)
+    let quantize_vectors = std::env::var("QUANTIZE_VECTORS")
+        .unwrap_or("false".to_string())
+        .parse()
+        .unwrap_or(false);
+
+    let _ = create_new_qdrant_collection_query(None, None, None, quantize_vectors)
         .await
         .map_err(|err| {
             log::error!("Failed to create qdrant group: {:?}", err);
