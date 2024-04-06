@@ -329,7 +329,7 @@ pub async fn create_user_query(
         .first::<User>(&mut conn)
         .await
         .optional()
-        .map_err(|_| ServiceError::InternalServerError("Error loading user".to_string()))?;
+        .map_err(|err| ServiceError::InternalServerError(format!("Error loading user {:?}", err)))?;
 
     if let Some(old_user) = old_user {
         let mut conn = pool.get().await.unwrap();
