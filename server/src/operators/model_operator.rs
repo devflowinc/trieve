@@ -3,7 +3,6 @@ use crate::{
     handlers::chunk_handler::ScoreChunkDTO,
 };
 use openai_dive::v1::{
-    api::Client,
     helpers::format_response,
     resources::embedding::{EmbeddingInput, EmbeddingOutput, EmbeddingResponse},
 };
@@ -40,7 +39,7 @@ pub async fn create_embeddings(
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
-    let open_ai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set").into();
+    let open_ai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set");
     let base_url = dataset_config.EMBEDDING_BASE_URL;
 
     let base_url = if base_url.is_empty() || base_url == "https://api.openai.com/v1" {
@@ -59,13 +58,6 @@ pub async fn create_embeddings(
         }
     } else {
         base_url
-    };
-
-    let client = Client {
-        http_client: reqwest::Client::new(),
-        api_key: open_ai_api_key,
-        base_url,
-        organization: None,
     };
 
     let mut all_vectors = vec![];
@@ -106,10 +98,10 @@ pub async fn create_embeddings(
 
         let embeddings_resp = ureq::post(&format!(
             "{}/embeddings?api-version=2023-05-15",
-            client.base_url
+            base_url
         ))
-        .set("Authorization", &format!("Bearer {}", client.api_key))
-        .set("api-key", &client.api_key)
+        .set("Authorization", &format!("Bearer {}", open_ai_api_key))
+        .set("api-key", &open_ai_api_key)
         .set("Content-Type", "application/json")
         .send_json(serde_json::to_value(parameters).unwrap())
         .map_err(|e| {
