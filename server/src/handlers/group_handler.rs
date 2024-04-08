@@ -863,6 +863,11 @@ pub struct ReccomendGroupChunksRequest {
     pub slim_chunks: Option<bool>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct RecommendGroupChunksDTO(pub Vec<GroupScoreChunkDTO>);
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct RecommendGroupSlimChunksDTO(pub Vec<GroupSlimChunksDTO>);
+
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 #[serde(untagged)]
 pub enum RecommendGroupChunkResponseTypes {
@@ -888,7 +893,7 @@ pub enum RecommendGroupChunkResponseTypes {
             }
         ]
     }]))]
-    GroupSlimChunksDTO(Vec<GroupSlimChunksDTO>),
+    GroupSlimChunksDTO(RecommendGroupSlimChunksDTO),
     #[schema(example = json!({
         "group_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
         "metadata": [
@@ -910,7 +915,7 @@ pub enum RecommendGroupChunkResponseTypes {
             }
         ]
     }))]
-    GroupScoreChunkDTO(Vec<GroupScoreChunkDTO>),
+    GroupScoreChunkDTO(RecommendGroupChunksDTO),
 }
 
 /// Get Recommended Groups
