@@ -1129,7 +1129,7 @@ pub struct SearchChunkData {
     pub search_type: String,
     /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
     pub query: String,
-    /// Page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon.
+    /// Page of chunks to fetch. Page is 1-indexed.
     pub page: Option<u64>,
     /// Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
     pub page_size: Option<u64>,

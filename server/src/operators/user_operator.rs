@@ -436,7 +436,7 @@ pub async fn add_user_to_organization(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, api_key))]
 pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result<(), ServiceError> {
     use crate::data::schema::organizations::dsl as organization_columns;
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
@@ -452,11 +452,28 @@ pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result
         None,
     );
 
-    let user = diesel::insert_into(users_columns::users)
+    let option_user = match diesel::insert_into(users_columns::users)
         .values(&user)
         .get_result::<User>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest("Failed to create default user".to_string()))?;
+    {
+        Ok(user) => Some(user),
+        Err(e) => {
+            if e.to_string()
+                .contains("duplicate key value violates unique constraint")
+            {
+                log::info!("Skipped creating default user as it already exists");
+            }
+
+            None
+        }
+    };
+
+    if option_user.is_none() {
+        return Ok(());
+    }
+
+    let user = option_user.expect("User must be present");
 
     let org = Organization::from_details("default".to_string());
 

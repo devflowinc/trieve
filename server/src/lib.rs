@@ -130,7 +130,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.5.7",
+        version = "0.5.8",
     ),
     servers(
         (url = "https://api.trieve.ai",
@@ -311,7 +311,7 @@ impl Modify for SecurityAddon {
         (name = "chunk", description = "Chunk endpoint. Think of chunks as individual searchable units of information. The majority of your integration will likely be with the Chunk endpoint."),
         (name = "chunk_group", description = "Chunk groups endpoint. Think of a chunk_group as a bookmark folder within the dataset."),
         (name = "file", description = "File endpoint. When files are uploaded, they are stored in S3 and broken up into chunks with text extraction from Apache Tika. You can upload files of pretty much any type up to 1GB in size. See chunking algorithm details at `docs.trieve.ai` for more information on how chunking works. Improved default chunking is on our roadmap."),
-        (name = "events", description = "Notifications endpoint. Files are uploaded asynchronously and events are sent to the user when the upload is complete. Soon, chunk creation will work in the same way."),
+        (name = "events", description = "Notifications endpoint. Files are uploaded asynchronously and events are sent to the user when the upload is complete."),
         (name = "topic", description = "Topic chat endpoint. Think of topics as the storage system for gen-ai chat memory. Gen AI messages belong to topics."),
         (name = "message", description = "Message chat endpoint. Messages are units belonging to a topic in the context of a chat with a LLM. There are system, user, and assistant messages."),
         (name = "stripe", description = "Stripe endpoint. Used for the managed SaaS version of this app. Eventually this will become a micro-service. Reach out to the team using contact info found at `docs.trieve.ai` for more information."),
@@ -408,7 +408,7 @@ pub async fn main() -> std::io::Result<()> {
     let _ = create_new_qdrant_collection_query(None, None, None, quantize_vectors)
         .await
         .map_err(|err| {
-            log::error!("Failed to create qdrant group: {:?}", err);
+            log::error!("Failed to create new qdrant collection: {:?}", err);
         });
 
     if std::env::var("ADMIN_API_KEY").is_ok() {

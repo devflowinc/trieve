@@ -20,7 +20,7 @@ use qdrant_client::{
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, str::FromStr};
 
-#[tracing::instrument]
+#[tracing::instrument(skip(qdrant_url, qdrant_api_key))]
 pub async fn get_qdrant_connection(
     qdrant_url: Option<&str>,
     qdrant_api_key: Option<&str>,
@@ -40,7 +40,7 @@ pub async fn get_qdrant_connection(
 }
 
 /// Create Qdrant collection and indexes needed
-#[tracing::instrument]
+#[tracing::instrument(skip(qdrant_url, qdrant_api_key))]
 pub async fn create_new_qdrant_collection_query(
     qdrant_url: Option<&str>,
     qdrant_api_key: Option<&str>,
@@ -62,9 +62,9 @@ pub async fn create_new_qdrant_collection_query(
         .await;
     if let Ok(collection) = collection {
         if collection.result.is_some() {
-            return Err(ServiceError::BadRequest(
-                "Collection already exists".to_string(),
-            ));
+            log::info!("Avoided creating collection as it already exists");
+
+            return Ok(());
         }
     }
 
