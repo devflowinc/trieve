@@ -1427,6 +1427,11 @@ pub struct RecommendChunksRequest {
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
+pub struct RecommendChunkMetadata(Vec<ChunkMetadata>);
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+pub struct RecommendSlimChunkMetadata(Vec<SlimChunkMetadata>);
+
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
 #[serde(untagged)]
 pub enum RecommendChunksResponseTypes {
     #[schema(example = json!([{
@@ -1444,7 +1449,7 @@ pub enum RecommendChunksResponseTypes {
         "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
         "weight": 0.5,
     }]))]
-    Chunks(Vec<ChunkMetadata>),
+    Chunks(RecommendChunkMetadata),
     #[schema(example = json!([{
         "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
         "link": "https://trieve.ai",
@@ -1458,7 +1463,8 @@ pub enum RecommendChunksResponseTypes {
         "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
         "weight": 0.5,
     }]))]
-    SlimChunks(Vec<SlimChunkMetadata>),
+    #[schema(title = "SlimChunkMetadata")]
+    SlimChunks(RecommendSlimChunkMetadata),
 }
 
 /// Get Recommended Chunks

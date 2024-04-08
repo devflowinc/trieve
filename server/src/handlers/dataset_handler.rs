@@ -196,7 +196,7 @@ pub async fn update_dataset(
         (status = 400, description = "Service error relating to deleting the dataset", body = ErrorResponseBody),
     ),
     params(
-        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
         ("dataset_id" = uuid, Path, description = "The id of the dataset you want to delete."),
 
     ),

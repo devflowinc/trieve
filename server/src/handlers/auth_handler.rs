@@ -27,7 +27,7 @@ use openidconnect::{AccessTokenHash, ClientId, IssuerUrl, Nonce};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::future::{ready, Ready};
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 
 #[derive(Deserialize, Debug)]
 pub struct OpCallback {
@@ -276,7 +276,7 @@ pub struct OpenIdConnectState {
 
 const OIDC_SESSION_KEY: &str = "oidc_state";
 
-#[derive(Deserialize, Debug, ToSchema)]
+#[derive(Deserialize, Debug, ToSchema, IntoParams)]
 #[schema(
     example = json!({"organization_id": "00000000-0000-0000-0000-000000000000", "redirect_uri": "https://api.trieve.ai", "inv_code": "00000000-0000-0000-0000-000000000000"}),
 )]
@@ -307,7 +307,7 @@ pub struct LoginState {
     path = "/auth",
     context_path = "/api",
     tag = "auth",
-    params(("content" = AuthQuery, Query, description = "Query parameters for login to be included as kv pairs after ? on the request URL." )),
+    params(AuthQuery),
     responses(
         (status = 303, description = "Response that redirects to OAuth provider through a Location header to be handled by browser."),
         (status = 400, description = "OAuth error likely with OIDC provider.", body = ErrorResponseBody),
