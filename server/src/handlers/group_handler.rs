@@ -131,7 +131,7 @@ pub struct DatasetGroupQuery {
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
         ("dataset_id" = uuid::Uuid, description = "The id of the dataset to fetch groups for."),
-        ("page" = i64, description = "The page of groups to fetch. Each page contains 10 groups. Support for custom page size is coming soon."),
+        ("page" = i64, description = "The page of groups to fetch. Page is 1-indexed."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -379,7 +379,7 @@ pub struct DeleteGroupData {
 
 /// Delete Group
 ///
-/// This will delete a chunk_group. This will not delete the chunks that are in the group. We will soon support deleting a chunk_group along with its member chunks.
+/// This will delete a chunk_group. If you set delete_chunks to true, it will also delete the chunks within the group.
 #[utoipa::path(
     delete,
     path = "/chunk_group/{group_id}",
@@ -639,7 +639,7 @@ pub struct GetAllBookmarksData {
 
 /// Get Chunks in Group
 ///
-/// Route to get all chunks for a group. The response is paginated, with each page containing 10 chunks. Support for custom page size is coming soon.
+/// Route to get all chunks for a group. The response is paginated, with each page containing 10 chunks. Page is 1-indexed.
 #[utoipa::path(
     get,
     path = "/chunk_group/{group_id}/{page}",
@@ -693,7 +693,7 @@ pub struct GetAllBookmarksByTrackingIdData {
 
 /// Get Chunks in Group by Tracking ID
 ///
-/// Route to get all chunks for a group. The response is paginated, with each page containing 10 chunks. Support for custom page size is coming soon.
+/// Route to get all chunks for a group. The response is paginated, with each page containing 10 chunks. Support for custom page size is coming soon. Page is 1-indexed.
 #[utoipa::path(
     get,
     path = "/chunk_group/tracking_id/{group_tracking_id}/{page}",
@@ -845,19 +845,19 @@ pub struct GenerateOffGroupData {
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct ReccomendGroupChunksRequest {
-    /// The  ids of the groups to be used as positive examples for the recommendation. The groups in this array will be used to find similar groups.
+    /// The ids of the groups to be used as positive examples for the recommendation. The groups in this array will be used to find similar groups.
     pub positive_group_ids: Option<Vec<uuid::Uuid>>,
-    /// The  ids of the groups to be used as negative examples for the recommendation. The groups in this array will be used to filter out similar groups.
+    /// The ids of the groups to be used as negative examples for the recommendation. The groups in this array will be used to filter out similar groups.
     pub negative_group_ids: Option<Vec<uuid::Uuid>>,
-    /// The  ids of the groups to be used as positive examples for the recommendation. The groups in this array will be used to find similar groups.
+    /// The ids of the groups to be used as positive examples for the recommendation. The groups in this array will be used to find similar groups.
     pub positive_group_tracking_ids: Option<Vec<String>>,
-    /// The  ids of the groups to be used as negative examples for the recommendation. The groups in this array will be used to filter out similar groups.
+    /// The ids of the groups to be used as negative examples for the recommendation. The groups in this array will be used to filter out similar groups.
     pub negative_group_tracking_ids: Option<Vec<String>>,
     /// Filters to apply to the chunks to be recommended. This is a JSON object which contains the filters to apply to the chunks to be recommended. The default is None.
     pub filters: Option<ChunkFilter>,
     /// The number of groups to return. This is the number of groups which will be returned in the response. The default is 10.
     pub limit: Option<u64>,
-    /// The number of chunks to fetch for each group. This is the number of chunks which will be returned in the response for each group. The default is 10.
+    /// The number of chunks to fetch for each group. This is the number of chunks which will be returned in the response for each group. The default is 3. If this is set to a large number, we recommend setting slim_chunks to true to avoid returning the content and chunk_html of the chunks so as to reduce latency due to content download and serialization.
     pub group_size: Option<u32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement. Default is false.
     pub slim_chunks: Option<bool>,
@@ -1081,7 +1081,7 @@ pub async fn get_recommended_groups(
 pub struct SearchWithinGroupData {
     /// The query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
     pub query: String,
-    /// The page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon.
+    /// The page of chunks to fetch. Page is 1-indexed.
     pub page: Option<u64>,
     /// The page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
     pub page_size: Option<u64>,
@@ -1264,9 +1264,9 @@ pub struct SearchOverGroupsData {
     pub search_type: String,
     /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
     pub query: String,
-    /// Page of chunks to fetch. Each page is 10 chunks. Support for custom page size is coming soon.
+    /// Page of group results to fetch. Page is 1-indexed.
     pub page: Option<u64>,
-    /// Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
+    /// Page size is the number of group results to fetch. The default is 10.
     pub page_size: Option<u32>,
     /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
@@ -1278,7 +1278,7 @@ pub struct SearchOverGroupsData {
     pub highlight_delimiters: Option<Vec<String>>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold.
     pub score_threshold: Option<f32>,
-    // Group_size is the number of chunks to fetch for each group.
+    /// Group_size is the number of chunks to fetch for each group. The default is 3. If a group has less than group_size chunks, all chunks will be returned. If this is set to a large number, we recommend setting slim_chunks to true to avoid returning the content and chunk_html of the chunks so as to lower the amount of time required for content download and serialization.
     pub group_size: Option<u32>,
     /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement. Default is false.
     pub slim_chunks: Option<bool>,
