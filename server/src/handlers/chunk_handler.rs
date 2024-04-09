@@ -1,6 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithFileData, DatasetAndOrgWithSubAndPlan,
+    ChatMessageProxy, ChunkMetadata, DatasetAndOrgWithSubAndPlan,
     IngestSpecificChunkMetadata, Pool, RedisPool, ScoreSlimChunks,
     SearchSlimChunkQueryResponseBody, ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
 };
@@ -1185,14 +1185,14 @@ pub struct SearchChunkData {
     "score": 0.5
 }))]
 pub struct ScoreChunkDTO {
-    pub metadata: Vec<ChunkMetadataWithFileData>,
+    pub metadata: Vec<ChunkMetadata>,
     pub score: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub enum ChunkMetadataTypes {
     IDs(Vec<SlimChunkMetadata>),
-    MetadataWithFileData(Vec<ChunkMetadataWithFileData>),
+    MetadataWithFileData(Vec<ChunkMetadata>),
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Debug)]

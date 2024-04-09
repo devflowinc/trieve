@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     data::models::{
-        ChunkGroup, ChunkGroupAndFile, ChunkGroupBookmark, ChunkMetadataWithFileData,
+        ChunkGroup, ChunkGroupAndFile, ChunkGroupBookmark, ChunkMetadata,
         DatasetAndOrgWithSubAndPlan, GroupSlimChunksDTO, Pool, ScoreSlimChunks,
         SearchGroupSlimChunksResult, SearchOverGroupsSlimChunksResponseBody,
         ServerDatasetConfiguration, UnifiedId,
@@ -656,7 +656,7 @@ pub async fn add_chunk_to_group_by_tracking_id(
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct BookmarkData {
-    pub chunks: Vec<ChunkMetadataWithFileData>,
+    pub chunks: Vec<ChunkMetadata>,
     pub group: ChunkGroup,
     pub total_pages: i64,
 }
