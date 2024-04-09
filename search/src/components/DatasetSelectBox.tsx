@@ -70,10 +70,8 @@ export const DatasetSelectBox = () => {
                             setState(false);
                           }}
                         >
-                          <div class="flex flex-row justify-start space-x-2">
-                            <span class="line-clamp-1 text-left text-sm">
-                              {datasetItem.dataset.name}
-                            </span>
+                          <div class="break-all px-1 text-left text-sm">
+                            {datasetItem.dataset.name}
                           </div>
                           <Show
                             when={
