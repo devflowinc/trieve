@@ -1258,7 +1258,8 @@ pub enum SearchChunkResponseTypes {
     tag = "chunk",
     request_body(content = SearchChunkData, description = "JSON request payload to semantically search for chunks (chunks)", content_type = "application/json"),
     responses(
-        (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body", body = SearchChunkResponseTypes),
+        (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body if slim_chunks is false or not specified in the request body", body = SearchChunkQueryResponseBody),
+        (status = 206, description = "Chunks with embedding vectors which are similar to those in the request body if slim_chunks is true in the request body", body = SearchSlimChunkQueryResponseBody),
 
         (status = 400, description = "Service error relating to searching", body = ErrorResponseBody),
     ),
@@ -1349,7 +1350,7 @@ pub async fn search_chunk(
             total_chunk_pages: result_chunks.total_chunk_pages,
         };
 
-        return Ok(HttpResponse::Ok()
+        return Ok(HttpResponse::PartialContent()
             .insert_header((Timer::header_key(), timer.header_value()))
             .json(res));
     }
@@ -1449,49 +1450,6 @@ pub struct RecommendChunksRequest {
     pub slim_chunks: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
-pub struct RecommendChunkMetadata(Vec<ChunkMetadataWithScore>);
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
-pub struct RecommendSlimChunkMetadata(Vec<SlimChunkMetadataWithScore>);
-
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
-#[serde(untagged)]
-pub enum RecommendChunksResponseTypes {
-    #[schema(example = json!([{
-        "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-        "content": "Hello, world!",
-        "link": "https://trieve.ai",
-        "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-        "created_at": "2021-01-01T00:00:00",
-        "updated_at": "2021-01-01T00:00:00",
-        "tag_set": "tag1,tag2",
-        "chunk_html": "<p>Hello, world!</p>",
-        "metadata": {"key": "value"},
-        "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-        "time_stamp": "2021-01-01T00:00:00",
-        "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-        "weight": 0.5,
-        "score": 0.9,
-    }]))]
-    Chunks(RecommendChunkMetadata),
-    #[schema(example = json!([{
-        "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-        "link": "https://trieve.ai",
-        "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-        "created_at": "2021-01-01T00:00:00",
-        "updated_at": "2021-01-01T00:00:00",
-        "tag_set": "tag1,tag2",
-        "metadata": {"key": "value"},
-        "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-        "time_stamp": "2021-01-01T00:00:00",
-        "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-        "weight": 0.5,
-        "score": 0.9,
-    }]))]
-    #[schema(title = "SlimChunkMetadata")]
-    SlimChunks(RecommendSlimChunkMetadata),
-}
-
 /// Get Recommended Chunks
 ///
 /// Get recommendations of chunks similar to the chunks in the request. Think about this as a feature similar to the "add to playlist" recommendation feature on Spotify. This request pairs especially well with our groups endpoint.
@@ -1503,7 +1461,8 @@ pub enum RecommendChunksResponseTypes {
     request_body(content = RecommendChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
 
-        (status = 200, description = "Chunks with embedding vectors which are similar to those in the request body", body = RecommendChunksResponseTypes),
+        (status = 200, description = "Chunks with embedding vectors which are similar to positives and dissimilar to negatives if slim_chunks is false in the request", body = Vec<ChunkMetadataWithScore>),
+        (status = 206, description = "Chunks with embedding vectors which are similar to positives and dissimilar to negatives if slim_chunks is true in the request", body = Vec<SlimChunkMetadataWithScore>),
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
     ),
     params(
@@ -1677,7 +1636,7 @@ pub async fn get_recommended_chunks(
             .map(|chunk| chunk.into())
             .collect::<Vec<SlimChunkMetadataWithScore>>();
 
-        return Ok(HttpResponse::Ok().json(res));
+        return Ok(HttpResponse::PartialContent().json(res));
     }
 
     Ok(HttpResponse::Ok()

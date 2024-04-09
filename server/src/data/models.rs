@@ -564,14 +564,14 @@ pub struct GroupScoreSlimChunks {
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
-pub struct SearchGroupSlimChunksResult {
+pub struct SearchWithinGroupSlimResults {
     pub bookmarks: Vec<ScoreSlimChunks>,
     pub group: ChunkGroup,
     pub total_pages: i64,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
-pub struct SearchOverGroupsSlimChunksResponseBody {
+pub struct SearchOverGroupsSlimResults {
     pub group_chunks: Vec<GroupScoreSlimChunks>,
     pub total_chunk_pages: i64,
 }
