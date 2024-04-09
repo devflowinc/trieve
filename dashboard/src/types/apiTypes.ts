@@ -253,6 +253,12 @@ export const availableEmbeddingModels = [
     url: "https://api.openai.com/v1",
     dimension: 1536,
   },
+  {
+    id: "text-embedding-3-large",
+    name: "text-embedding-3-large (hosted by OpenAI)",
+    url: "https://api.openai.com/v1",
+    dimension: 3072,
+  },
 ];
 
 export interface EventDTO {
