@@ -1,6 +1,6 @@
 import { JSX, Show, createEffect, createSignal, useContext } from "solid-js";
 import {
-  ChunkMetadataWithFileData,
+  ChunkMetadata,
   isActixChunkUpdateError,
 } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
@@ -143,7 +143,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
       credentials: "include",
     }).then((response) => {
       if (response.ok) {
-        void response.json().then((data: ChunkMetadataWithFileData) => {
+        void response.json().then((data: ChunkMetadata) => {
           setEvidenceLink(data.link ?? "");
           setTagSet(data.tag_set ?? "");
           setMetadata(data.metadata);

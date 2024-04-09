@@ -17,7 +17,7 @@ import {
 } from "solid-js";
 import {
   ChunkBookmarksDTO,
-  ChunkMetadataWithFileData,
+  ChunkMetadata,
   indirectHasOwnProperty,
   type ChunkGroupDTO,
 } from "../../utils/apiTypes";
@@ -63,7 +63,7 @@ export interface ScoreChunkProps {
   chunkGroups?: ChunkGroupDTO[];
   totalGroupPages?: number;
   group?: boolean;
-  chunk: ChunkMetadataWithFileData;
+  chunk: ChunkMetadata;
   score: number;
   setShowModal?: Setter<boolean>;
   setOnDelete?: Setter<() => void>;

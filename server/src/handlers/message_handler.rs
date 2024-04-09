@@ -1,7 +1,6 @@
 use super::{auth_handler::LoggedUser, chunk_handler::ParsedQuery};
 use crate::{
-    data::models::{self, DatasetAndOrgWithSubAndPlan, ServerDatasetConfiguration},
-    data::models::{ChunkMetadataWithFileData, Dataset, Pool},
+    data::models::{self, ChunkMetadata, Dataset, DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration},
     errors::ServiceError,
     get_env,
     operators::{
@@ -691,7 +690,7 @@ pub async fn stream_response(
     )
     .await?;
 
-    let citation_chunks: Vec<ChunkMetadataWithFileData> = metadata_chunks.to_vec();
+    let citation_chunks: Vec<ChunkMetadata> = metadata_chunks.to_vec();
 
     let highlighted_citation_chunks = if highlight_citations.unwrap_or(true) {
         citation_chunks
@@ -711,7 +710,7 @@ pub async fn stream_response(
                 )
                 .unwrap_or(chunk.clone())
             })
-            .collect::<Vec<ChunkMetadataWithFileData>>()
+            .collect::<Vec<ChunkMetadata>>()
     } else {
         citation_chunks.clone()
     };

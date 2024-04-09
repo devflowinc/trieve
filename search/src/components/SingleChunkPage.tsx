@@ -11,7 +11,7 @@ import {
   SingleChunkDTO,
   ChunkBookmarksDTO,
   isChunkGroupPageDTO,
-  ChunkMetadataWithFileData,
+  ChunkMetadata,
   ScoreChunkDTO,
 } from "../../utils/apiTypes";
 import ScoreChunk from "./ScoreChunk";
@@ -36,7 +36,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   const initialChunkMetadata = props.defaultResultChunk.metadata;
 
   const [chunkMetadata, setChunkMetadata] =
-    createSignal<ChunkMetadataWithFileData | null>(initialChunkMetadata);
+    createSignal<ChunkMetadata | null>(initialChunkMetadata);
   const [error, setError] = createSignal("");
   const [fetching, setFetching] = createSignal(true);
   const [chunkGroups, setChunkGroups] = createSignal<ChunkGroupDTO[]>([]);
@@ -52,7 +52,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   const [loadingRecommendations, setLoadingRecommendations] =
     createSignal(false);
   const [recommendedChunks, setRecommendedChunks] = createSignal<
-    ChunkMetadataWithFileData[]
+    ChunkMetadata[]
   >([]);
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
@@ -113,7 +113,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
 
   const fetchRecommendations = (
     ids: string[],
-    prev_recommendations: ChunkMetadataWithFileData[],
+    prev_recommendations: ChunkMetadata[],
   ) => {
     setLoadingRecommendations(true);
     const currentDataset = $dataset?.();
@@ -133,7 +133,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          const typed_data = data as ChunkMetadataWithFileData[];
+          const typed_data = data as ChunkMetadata[];
           const deduped_data = typed_data.filter((d) => {
             return !prev_recommendations.some((c) => c.id == d.id);
           });
@@ -166,7 +166,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
       },
     }).then((response) => {
       if (response.ok) {
-        void response.json().then((data: ChunkMetadataWithFileData) => {
+        void response.json().then((data: ChunkMetadata) => {
           setChunkMetadata(data);
           setScoreChunk([{ metadata: [data], score: 0 }]);
           setError("");

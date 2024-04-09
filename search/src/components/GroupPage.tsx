@@ -17,7 +17,7 @@ import {
   ChunkGroupSearchDTO,
   isScoreChunkDTO,
   isChunkGroupPageDTO,
-  ChunkMetadataWithFileData,
+  ChunkMetadata,
   ChunkBookmarksDTO,
 } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
@@ -55,7 +55,7 @@ export const GroupPage = (props: GroupPageProps) => {
   const [filters, setFilters] = createSignal<Filters | undefined>(undefined);
   const [searchLoading, setSearchLoading] = createSignal(false);
   const [chunkMetadatas, setChunkMetadatas] = createSignal<
-    ChunkMetadataWithFileData[]
+    ChunkMetadata[]
   >([]);
   const [searchMetadatasWithVotes, setSearchMetadatasWithVotes] = createSignal<
     ScoreChunkDTO[]
@@ -74,7 +74,7 @@ export const GroupPage = (props: GroupPageProps) => {
   const [loadingRecommendations, setLoadingRecommendations] =
     createSignal(false);
   const [recommendedChunks, setRecommendedChunks] = createSignal<
-    ChunkMetadataWithFileData[]
+    ChunkMetadata[]
   >([]);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
     createSignal(false);
@@ -328,7 +328,7 @@ export const GroupPage = (props: GroupPageProps) => {
 
   const fetchRecommendations = (
     ids: string[],
-    prev_recommendations: ChunkMetadataWithFileData[],
+    prev_recommendations: ChunkMetadata[],
   ) => {
     const currentDataset = $dataset?.();
     if (!currentDataset) return;
@@ -348,7 +348,7 @@ export const GroupPage = (props: GroupPageProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
-          const typed_data = data as ChunkMetadataWithFileData[];
+          const typed_data = data as ChunkMetadata[];
           const deduped_data = typed_data.filter((d) => {
             return !prev_recommendations.some((c) => c.id == d.id);
           });

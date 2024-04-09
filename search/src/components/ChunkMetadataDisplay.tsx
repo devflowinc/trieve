@@ -14,7 +14,7 @@ import {
   indirectHasOwnProperty,
   type ChunkBookmarksDTO,
   type ChunkGroupDTO,
-  ChunkMetadataWithFileData,
+  ChunkMetadata,
 } from "../../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import sanitizeHtml from "sanitize-html";
@@ -48,7 +48,7 @@ export interface ChunkMetadataDisplayProps {
   totalGroupPages: number;
   signedInUserId?: string;
   viewingUserId?: string;
-  chunk: ChunkMetadataWithFileData;
+  chunk: ChunkMetadata;
   chunkGroups: ChunkGroupDTO[];
   bookmarks: ChunkBookmarksDTO[];
   setShowConfirmModal: Setter<boolean>;
