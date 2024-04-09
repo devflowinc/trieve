@@ -1009,7 +1009,7 @@ impl FieldCondition {
             ));
         }
 
-        if self.field.starts_with("group_tag_set.") {
+        if self.field == "group_tag_set" {
             return Ok(Some(
                 get_group_tag_set_filter_condition(&self, dataset_id, pool)
                     .await?

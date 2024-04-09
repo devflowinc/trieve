@@ -607,7 +607,7 @@ pub struct ChunkGroup {
 impl ChunkGroup {
     pub fn from_details(
         name: String,
-        description: String,
+        description: Option<String>,
         dataset_id: uuid::Uuid,
         tracking_id: Option<String>,
         metadata: Option<serde_json::Value>,
@@ -616,7 +616,7 @@ impl ChunkGroup {
         ChunkGroup {
             id: uuid::Uuid::new_v4(),
             name,
-            description,
+            description: description.unwrap_or_default(),
             dataset_id,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),

@@ -282,7 +282,7 @@ pub async fn create_chunks_with_handler(
 
     let chunk_group = ChunkGroup::from_details(
         name.clone(),
-        converted_description,
+        Some(converted_description),
         dataset_org_plan_sub.dataset.id,
         None,
         None,
