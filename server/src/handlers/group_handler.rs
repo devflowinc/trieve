@@ -1,6 +1,8 @@
 use super::{
     auth_handler::{AdminOnly, LoggedUser},
-    chunk_handler::{parse_query, ChunkFilter, ScoreChunkDTO, SearchChunkData},
+    chunk_handler::{
+        parse_query, ChunkFilter, ScoreChunkDTO, SearchChunkData,
+    },
 };
 use crate::{
     data::models::{
@@ -11,6 +13,7 @@ use crate::{
     },
     errors::ServiceError,
     operators::{
+        chunk_operator::get_metadata_from_tracking_id_query,
         group_operator::*,
         qdrant_operator::{
             add_bookmark_to_qdrant_query, recommend_qdrant_groups_query,
@@ -59,6 +62,10 @@ pub struct CreateChunkGroupData {
     pub description: String,
     /// Optional tracking id to assign to the chunk_group. This is a unique identifier for the chunk_group.
     pub tracking_id: Option<String>,
+    /// Optional metadata to assign to the chunk_group. This is a JSON object that can store any additional information you want to associate with the chunks inside of the chunk_group.
+    pub metadata: Option<serde_json::Value>,
+    /// Optional tags to assign to the chunk_group. This is a list of strings that can be used to categorize the chunks inside the chunk_group.
+    pub tag_set: Option<Vec<String>>,
 }
 
 /// Create Chunk Group
@@ -96,6 +103,8 @@ pub async fn create_chunk_group(
         description,
         dataset_org_plan_sub.dataset.id,
         body.tracking_id.clone(),
+        body.metadata.clone(),
+        body.tag_set.clone().map(|tags| tags.join(",")),
     );
     {
         let group = group.clone();
@@ -266,6 +275,10 @@ pub struct UpdateGroupByTrackingIDData {
     pub name: Option<String>,
     /// Description to assign to the chunk_group. Convenience field for you to avoid having to remember what the group is for. If not provided, the description will not be updated.
     pub description: Option<String>,
+    /// Optional metadata to assign to the chunk_group. This is a JSON object that can store any additional information you want to associate with the chunks inside of the chunk_group.
+    pub metadata: Option<serde_json::Value>,
+    /// Optional tags to assign to the chunk_group. This is a list of strings that can be used to categorize the chunks inside the chunk_group.
+    pub tag_set: Option<Vec<String>>,
 }
 
 /// Update Group by Tracking ID
@@ -289,6 +302,7 @@ pub struct UpdateGroupByTrackingIDData {
         ("ApiKey" = ["admin"]),
     )
 )]
+#[deprecated]
 #[tracing::instrument(skip(pool))]
 pub async fn update_group_by_tracking_id(
     data: web::Json<UpdateGroupByTrackingIDData>,
@@ -307,6 +321,8 @@ pub async fn update_group_by_tracking_id(
         group,
         data.name.clone(),
         data.description.clone(),
+        data.metadata.clone(),
+        data.tag_set.clone().map(|tags| tags.join(",")),
         dataset_org_plan_sub.dataset.id,
         pool,
     )
@@ -443,6 +459,10 @@ pub struct UpdateChunkGroupData {
     pub name: Option<String>,
     /// Description to assign to the chunk_group. Convenience field for you to avoid having to remember what the group is for. If not provided, the description will not be updated.
     pub description: Option<String>,
+    /// Optional metadata to assign to the chunk_group. This is a JSON object that can store any additional information you want to associate with the chunks inside of the chunk_group.
+    pub metadata: Option<serde_json::Value>,
+    /// Optional tags to assign to the chunk_group. This is a list of strings that can be used to categorize the chunks inside the chunk_group.
+    pub tag_set: Option<Vec<String>>,
 }
 
 /// Update Group
@@ -498,6 +518,8 @@ pub async fn update_chunk_group(
         group,
         name,
         description,
+        body.metadata.clone(),
+        body.tag_set.clone().map(|tags| tags.join(",")),
         dataset_org_plan_sub.dataset.id,
         pool,
     )
@@ -509,7 +531,9 @@ pub async fn update_chunk_group(
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct AddChunkToGroupData {
     /// Id of the chunk to make a member of the group.
-    pub chunk_id: uuid::Uuid,
+    pub chunk_id: Option<uuid::Uuid>,
+    /// Tracking Id of the chunk to make a member of the group.
+    pub tracking_id: Option<String>,
 }
 
 /// Add Chunk to Group
@@ -517,7 +541,7 @@ pub struct AddChunkToGroupData {
 /// Route to add a chunk to a group.
 #[utoipa::path(
     post,
-    path = "/chunk_group/chunk/{group_id}",
+    path = "/chunk_group/chunk",
     context_path = "/api",
     tag = "chunk_group",
     request_body(content = AddChunkToGroupData, description = "JSON request payload to add a chunk to a group (bookmark it)", content_type = "application/json"),
@@ -541,7 +565,6 @@ pub async fn add_chunk_to_group(
     pool: web::Data<Pool>,
     _user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let chunk_metadata_id = body.chunk_id;
     let group_id = group_id.into_inner();
     let dataset_id = dataset_org_plan_sub.dataset.id;
     let server_dataset_config = ServerDatasetConfiguration::from_json(
@@ -550,11 +573,18 @@ pub async fn add_chunk_to_group(
 
     dataset_owns_group(UnifiedId::TrieveUuid(group_id), dataset_id, pool.clone()).await?;
 
-    let qdrant_point_id = create_chunk_bookmark_query(
-        pool,
-        ChunkGroupBookmark::from_details(group_id, chunk_metadata_id),
-    )
-    .await?;
+    let id = if body.chunk_id.is_some() {
+        body.chunk_id.unwrap()
+    } else if let Some(tracking_id) = body.tracking_id.clone() {
+        let chunk =
+            get_metadata_from_tracking_id_query(tracking_id, dataset_id, pool.clone()).await?;
+        chunk.id
+    } else {
+        return Err(ServiceError::BadRequest("No chunk id or tracking id provided".into()).into());
+    };
+
+    let qdrant_point_id =
+        create_chunk_bookmark_query(pool, ChunkGroupBookmark::from_details(group_id, id)).await?;
 
     if let Some(qdrant_point_id) = qdrant_point_id {
         add_bookmark_to_qdrant_query(qdrant_point_id, group_id, server_dataset_config).await?;
@@ -591,6 +621,7 @@ pub struct AddChunkToGroupByTrackingIdData {
     )
 )]
 #[tracing::instrument(skip(pool))]
+#[deprecated]
 pub async fn add_chunk_to_group_by_tracking_id(
     body: web::Json<AddChunkToGroupByTrackingIdData>,
     tracking_id: web::Path<String>,

@@ -657,10 +657,11 @@ pub async fn main() -> std::io::Result<()> {
                                 ),
                             )
                             .service(
+                                web::resource("/chunk")
+                                    .route(web::post().to(handlers::group_handler::add_chunk_to_group)),
+                            )
+                            .service(
                                 web::resource("/chunk/{chunk_group_id}")
-                                    .route(
-                                        web::post().to(handlers::group_handler::add_chunk_to_group),
-                                    )
                                     .route(
                                         web::delete()
                                             .to(handlers::group_handler::remove_chunk_from_group),

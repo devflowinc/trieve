@@ -13,6 +13,7 @@ use crate::operators::group_operator::{
 };
 use crate::operators::qdrant_operator::recommend_qdrant_query;
 use crate::operators::search_operator::{
+    get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
     get_metadata_filter_condition, search_full_text_chunks, search_hybrid_chunks,
     search_semantic_chunks,
 };
@@ -727,6 +728,7 @@ pub struct UpdateChunkByTrackingIdData {
         ("ApiKey" = ["admin"]),
     )
 )]
+#[deprecated]
 #[tracing::instrument(skip(pool, redis_pool))]
 pub async fn update_chunk_by_tracking_id(
     chunk: web::Json<UpdateChunkByTrackingIdData>,
@@ -994,6 +996,22 @@ impl FieldCondition {
         if self.field.starts_with("metadata.") {
             return Ok(Some(
                 get_metadata_filter_condition(&self, dataset_id, pool)
+                    .await?
+                    .into(),
+            ));
+        }
+
+        if self.field.starts_with("group_metadata.") {
+            return Ok(Some(
+                get_group_metadata_filter_condition(&self, dataset_id, pool)
+                    .await?
+                    .into(),
+            ));
+        }
+
+        if self.field.starts_with("group_tag_set.") {
+            return Ok(Some(
+                get_group_tag_set_filter_condition(&self, dataset_id, pool)
                     .await?
                     .into(),
             ));

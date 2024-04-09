@@ -600,6 +600,8 @@ pub struct ChunkGroup {
     pub updated_at: chrono::NaiveDateTime,
     pub dataset_id: uuid::Uuid,
     pub tracking_id: Option<String>,
+    pub metadata: Option<serde_json::Value>,
+    pub tag_set: Option<String>,
 }
 
 impl ChunkGroup {
@@ -608,6 +610,8 @@ impl ChunkGroup {
         description: String,
         dataset_id: uuid::Uuid,
         tracking_id: Option<String>,
+        metadata: Option<serde_json::Value>,
+        tag_set: Option<String>,
     ) -> Self {
         ChunkGroup {
             id: uuid::Uuid::new_v4(),
@@ -617,6 +621,8 @@ impl ChunkGroup {
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             tracking_id,
+            metadata,
+            tag_set,
         }
     }
 }
