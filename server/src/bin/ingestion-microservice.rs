@@ -202,12 +202,18 @@ async fn ingestion_service(
             break;
         }
 
+        let brpoplpush_ctx =
+            sentry::TransactionContext::new("brpoplpush read redis", "brpoplpush read redis");
+        let brpoplpush_transaction = sentry::start_transaction(brpoplpush_ctx);
+
         let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpoplpush")
             .arg("ingestion")
             .arg("processing")
             .arg(1.0)
             .query_async(&mut *redis_connection)
             .await;
+
+        brpoplpush_transaction.finish();
 
         let serialized_message = if let Ok(payload) = payload_result {
             if payload.is_empty() {
@@ -223,8 +229,11 @@ async fn ingestion_service(
             continue;
         };
 
-        let ctx = sentry::TransactionContext::new("Processing chunk", "Processing chunk");
-        let transaction = sentry::start_transaction(ctx);
+        let processing_chunk_ctx = sentry::TransactionContext::new(
+            "ingestion worker processing chunk",
+            "ingestion worker processing chunk",
+        );
+        let transaction = sentry::start_transaction(processing_chunk_ctx);
         let ingestion_message: IngestionMessage =
             serde_json::from_str(&serialized_message).expect("Failed to parse ingestion message");
         match ingestion_message.clone() {
@@ -232,10 +241,6 @@ async fn ingestion_service(
                 match upload_chunk(payload.clone(), web_pool.clone(), payload.dataset_config).await
                 {
                     Ok(_) => {
-                        log::info!(
-                            "Uploaded chunk: {:?}",
-                            payload.ingest_specific_chunk_metadata.id
-                        );
                         let _ = create_event_query(
                             Event::from_details(
                                 payload.ingest_specific_chunk_metadata.dataset_id,
@@ -282,7 +287,6 @@ async fn ingestion_service(
                 .await
                 {
                     Ok(_) => {
-                        log::info!("Updated chunk: {:?}", payload.chunk_metadata.id);
                         let _ = create_event_query(
                             Event::from_details(
                                 payload.dataset_id,
@@ -328,7 +332,7 @@ async fn upload_chunk(
     web_pool: actix_web::web::Data<models::Pool>,
     dataset_config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    let tx_ctx = sentry::TransactionContext::new("upload_chunk", "Uploading Chunk");
+    let tx_ctx = sentry::TransactionContext::new("ingestion worker upload_chunk", "ingestion worker upload_chunk");
     let transaction = sentry::start_transaction(tx_ctx);
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
 
