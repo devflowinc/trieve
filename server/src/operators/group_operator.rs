@@ -7,7 +7,7 @@ use crate::{
 use crate::{
     data::models::{
         ChunkGroupAndFileWithCount, ChunkGroupBookmark, ChunkMetadataWithCount,
-        ChunkMetadataWithFileData, FullTextSearchResult, SlimGroup,
+        FullTextSearchResult, SlimGroup,
     },
     errors::ServiceError,
     operators::search_operator::get_metadata_query,
@@ -381,7 +381,7 @@ pub async fn create_chunk_bookmark_query(
     Ok(qdrant_point_id)
 }
 pub struct GroupsBookmarkQueryResult {
-    pub metadata: Vec<ChunkMetadataWithFileData>,
+    pub metadata: Vec<ChunkMetadata>,
     pub group: ChunkGroup,
     pub total_pages: i64,
 }
@@ -441,6 +441,7 @@ pub async fn get_bookmarks_for_group_query(
                     chunk_metadata_columns::metadata,
                     chunk_metadata_columns::tracking_id,
                     chunk_metadata_columns::time_stamp,
+                    chunk_metadata_columns::dataset_id,
                     chunk_metadata_columns::weight,
                     sql::<Int8>("count(*) OVER() AS full_count"),
                 ),

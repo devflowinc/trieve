@@ -18,7 +18,7 @@ import {
   isChunkGroupPageDTO,
   type ChunkBookmarksDTO,
   type ChunkGroupDTO,
-  type ChunkMetadataWithFileData,
+  type ChunkMetadata,
 } from "../../utils/apiTypes";
 import InputRowsForm from "./Atoms/InputRowsForm";
 import { VsBookmark } from "solid-icons/vs";
@@ -27,7 +27,7 @@ import { A } from "@solidjs/router";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export interface BookmarkPopoverProps {
-  chunkMetadata: ChunkMetadataWithFileData;
+  chunkMetadata: ChunkMetadata;
   chunkGroups: ChunkGroupDTO[];
   totalGroupPages: number;
   setLoginModal?: Setter<boolean>;
