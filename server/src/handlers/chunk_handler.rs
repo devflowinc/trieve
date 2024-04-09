@@ -1,8 +1,9 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    ChatMessageProxy, ChunkMetadata, DatasetAndOrgWithSubAndPlan, IngestSpecificChunkMetadata,
-    Pool, RedisPool, ScoreSlimChunks, SearchSlimChunkQueryResponseBody, ServerDatasetConfiguration,
-    SlimChunkMetadata, UnifiedId,
+    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithScore, DatasetAndOrgWithSubAndPlan,
+    IngestSpecificChunkMetadata, Pool, RedisPool, ScoreSlimChunks,
+    SearchSlimChunkQueryResponseBody, ServerDatasetConfiguration, SlimChunkMetadata,
+    SlimChunkMetadataWithScore, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -1449,9 +1450,9 @@ pub struct RecommendChunksRequest {
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
-pub struct RecommendChunkMetadata(Vec<ChunkMetadata>);
+pub struct RecommendChunkMetadata(Vec<ChunkMetadataWithScore>);
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
-pub struct RecommendSlimChunkMetadata(Vec<SlimChunkMetadata>);
+pub struct RecommendSlimChunkMetadata(Vec<SlimChunkMetadataWithScore>);
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 #[serde(untagged)]
@@ -1470,6 +1471,7 @@ pub enum RecommendChunksResponseTypes {
         "time_stamp": "2021-01-01T00:00:00",
         "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
         "weight": 0.5,
+        "score": 0.9,
     }]))]
     Chunks(RecommendChunkMetadata),
     #[schema(example = json!([{
@@ -1484,6 +1486,7 @@ pub enum RecommendChunksResponseTypes {
         "time_stamp": "2021-01-01T00:00:00",
         "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
         "weight": 0.5,
+        "score": 0.9,
     }]))]
     #[schema(title = "SlimChunkMetadata")]
     SlimChunks(RecommendSlimChunkMetadata),
@@ -1617,7 +1620,7 @@ pub async fn get_recommended_chunks(
 
     timer.add("finish extending tracking_ids and chunk_ids to qdrant_point_ids; start recommend_qdrant_query");
 
-    let recommended_qdrant_point_ids = recommend_qdrant_query(
+    let recommended_qdrant_results = recommend_qdrant_query(
         positive_qdrant_ids,
         negative_qdrant_ids,
         data.strategy.clone(),
@@ -1634,30 +1637,52 @@ pub async fn get_recommended_chunks(
 
     timer.add("finish recommend_qdrant_query; start get_metadata_from_point_ids");
 
-    let recommended_chunk_metadatas =
-        get_metadata_from_point_ids(recommended_qdrant_point_ids, pool)
-            .await
-            .map_err(|err| {
-                ServiceError::BadRequest(format!(
-                    "Could not get recommended chunk_metadas from qdrant_point_ids: {}",
-                    err
-                ))
-            })?;
+    let recommended_chunk_metadatas = get_metadata_from_point_ids(
+        recommended_qdrant_results
+            .clone()
+            .into_iter()
+            .map(|recommend_qdrant_result| recommend_qdrant_result.point_id)
+            .collect(),
+        pool,
+    )
+    .await
+    .map_err(|err| {
+        ServiceError::BadRequest(format!(
+            "Could not get recommended chunk_metadas from qdrant_point_ids: {}",
+            err
+        ))
+    })?;
+
+    let recommended_chunk_metadatas_with_score = recommended_chunk_metadatas
+        .into_iter()
+        .map(|chunk_metadata| {
+            let score = recommended_qdrant_results
+                .iter()
+                .find(|recommend_qdrant_result| {
+                    recommend_qdrant_result.point_id
+                        == chunk_metadata.qdrant_point_id.unwrap_or_default()
+                })
+                .map(|recommend_qdrant_result| recommend_qdrant_result.score)
+                .unwrap_or(0.0);
+
+            ChunkMetadataWithScore::from((chunk_metadata, score))
+        })
+        .collect::<Vec<ChunkMetadataWithScore>>();
 
     timer.add("finish get_metadata_from_point_ids and return results");
 
     if data.slim_chunks.unwrap_or(false) {
-        let res = recommended_chunk_metadatas
+        let res = recommended_chunk_metadatas_with_score
             .into_iter()
             .map(|chunk| chunk.into())
-            .collect::<Vec<SlimChunkMetadata>>();
+            .collect::<Vec<SlimChunkMetadataWithScore>>();
 
         return Ok(HttpResponse::Ok().json(res));
     }
 
     Ok(HttpResponse::Ok()
         .insert_header((Timer::header_key(), timer.header_value()))
-        .json(recommended_chunk_metadatas))
+        .json(recommended_chunk_metadatas_with_score))
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
