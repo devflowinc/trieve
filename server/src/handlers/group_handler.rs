@@ -1,8 +1,6 @@
 use super::{
     auth_handler::{AdminOnly, LoggedUser},
-    chunk_handler::{
-        parse_query, ChunkFilter, ScoreChunkDTO, SearchChunkData,
-    },
+    chunk_handler::{parse_query, ChunkFilter, ScoreChunkDTO, SearchChunkData},
 };
 use crate::{
     data::models::{
@@ -876,7 +874,7 @@ pub struct GenerateOffGroupData {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct ReccomendGroupChunksRequest {
+pub struct RecommendGroupChunksRequest {
     /// The ids of the groups to be used as positive examples for the recommendation. The groups in this array will be used to find similar groups.
     pub positive_group_ids: Option<Vec<uuid::Uuid>>,
     /// The ids of the groups to be used as negative examples for the recommendation. The groups in this array will be used to filter out similar groups.
@@ -885,6 +883,8 @@ pub struct ReccomendGroupChunksRequest {
     pub positive_group_tracking_ids: Option<Vec<String>>,
     /// The ids of the groups to be used as negative examples for the recommendation. The groups in this array will be used to filter out similar groups.
     pub negative_group_tracking_ids: Option<Vec<String>>,
+    /// Strategy to use for recommendations, either "average_vector" or "best_score". The default is "average_vector". The "average_vector" strategy will construct a single average vector from the positive and negative samples then use it to perform a pseudo-search. The "best_score" strategy is more advanced and navigates the HNSW with a heuristic of picking edges where the point is closer to the positive samples than it is the negatives.
+    pub strategy: Option<String>,
     /// Filters to apply to the chunks to be recommended. This is a JSON object which contains the filters to apply to the chunks to be recommended. The default is None.
     pub filters: Option<ChunkFilter>,
     /// The number of groups to return. This is the number of groups which will be returned in the response. The default is 10.
@@ -958,7 +958,7 @@ pub enum RecommendGroupChunkResponseTypes {
     path = "/chunk_group/recommend",
     context_path = "/api",
     tag = "chunk_group",
-    request_body(content = ReccomendGroupChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
+    request_body(content = RecommendGroupChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
         (status = 200, description = "JSON body representing the groups which are similar to the groups in the request", body = RecommendGroupChunkResponseTypes),
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
@@ -972,7 +972,7 @@ pub enum RecommendGroupChunkResponseTypes {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn get_recommended_groups(
-    data: web::Json<ReccomendGroupChunksRequest>,
+    data: web::Json<RecommendGroupChunksRequest>,
     pool: web::Data<Pool>,
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -1080,6 +1080,7 @@ pub async fn get_recommended_groups(
     let recommended_qdrant_point_ids = recommend_qdrant_groups_query(
         positive_qdrant_ids,
         negative_qdrant_ids,
+        data.strategy.clone(),
         data.filters.clone(),
         limit,
         data.group_size.unwrap_or(10),
