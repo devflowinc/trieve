@@ -12,9 +12,10 @@ use qdrant_client::{
         group_id::Kind, payload_index_params::IndexParams, point_id::PointIdOptions,
         quantization_config::Quantization, BinaryQuantization, CountPoints, CreateCollection,
         Distance, FieldType, Filter, HnswConfigDiff, PayloadIndexParams, PointId, PointStruct,
-        QuantizationConfig, RecommendPointGroups, RecommendPoints, SearchPointGroups, SearchPoints,
-        SparseIndexConfig, SparseVectorConfig, SparseVectorParams, TextIndexParams, TokenizerType,
-        Value, Vector, VectorParams, VectorParamsMap, VectorsConfig,
+        QuantizationConfig, RecommendPointGroups, RecommendPoints, RecommendStrategy,
+        SearchPointGroups, SearchPoints, SparseIndexConfig, SparseVectorConfig, SparseVectorParams,
+        TextIndexParams, TokenizerType, Value, Vector, VectorParams, VectorParamsMap,
+        VectorsConfig,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -799,6 +800,7 @@ pub async fn search_qdrant_query(
 pub async fn recommend_qdrant_query(
     positive_ids: Vec<uuid::Uuid>,
     negative_ids: Vec<uuid::Uuid>,
+    strategy: Option<String>,
     filters: Option<ChunkFilter>,
     limit: u64,
     dataset_id: uuid::Uuid,
@@ -807,10 +809,15 @@ pub async fn recommend_qdrant_query(
 ) -> Result<Vec<uuid::Uuid>, ServiceError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
-    let filter = assemble_qdrant_filter(filters, None, None, dataset_id, pool).await?;
+    let recommend_strategy = match strategy {
+        Some(strategy) => match strategy.as_str() {
+            "best_score" => RecommendStrategy::BestScore,
+            _ => RecommendStrategy::AverageVector,
+        },
+        None => RecommendStrategy::AverageVector,
+    };
 
-    let qdrant =
-        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+    let filter = assemble_qdrant_filter(filters, None, None, dataset_id, pool).await?;
 
     let positive_point_ids: Vec<PointId> = positive_ids
         .iter()
@@ -851,10 +858,13 @@ pub async fn recommend_qdrant_query(
         read_consistency: None,
         positive_vectors: vec![],
         negative_vectors: vec![],
-        strategy: None,
+        strategy: Some(recommend_strategy.into()),
         timeout: None,
         shard_key_selector: None,
     };
+
+    let qdrant =
+        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
 
     let recommended_point_ids = qdrant
         .recommend(&recommend_points)
@@ -880,6 +890,7 @@ pub async fn recommend_qdrant_query(
 pub async fn recommend_qdrant_groups_query(
     positive_ids: Vec<uuid::Uuid>,
     negative_ids: Vec<uuid::Uuid>,
+    strategy: Option<String>,
     filter: Option<ChunkFilter>,
     limit: u64,
     group_size: u32,
@@ -889,8 +900,13 @@ pub async fn recommend_qdrant_groups_query(
 ) -> Result<Vec<GroupSearchResults>, ServiceError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
-    let qdrant =
-        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+    let recommend_strategy = match strategy {
+        Some(strategy) => match strategy.as_str() {
+            "best_score" => RecommendStrategy::BestScore,
+            _ => RecommendStrategy::AverageVector,
+        },
+        None => RecommendStrategy::AverageVector,
+    };
 
     let filters = assemble_qdrant_filter(filter, None, None, dataset_id, pool).await?;
 
@@ -932,13 +948,16 @@ pub async fn recommend_qdrant_groups_query(
         read_consistency: None,
         positive_vectors: vec![],
         negative_vectors: vec![],
-        strategy: None,
+        strategy: Some(recommend_strategy.into()),
         timeout: None,
         shard_key_selector: None,
         group_by: "group_ids".to_string(),
         group_size: if group_size == 0 { 1 } else { group_size },
         with_lookup: None,
     };
+
+    let qdrant =
+        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
 
     let data = qdrant
         .recommend_groups(&recommend_points)
