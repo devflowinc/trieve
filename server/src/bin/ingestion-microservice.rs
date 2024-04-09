@@ -248,7 +248,7 @@ async fn ingestion_service(
                         let _ = create_event_query(
                             Event::from_details(
                                 payload.ingest_specific_chunk_metadata.dataset_id,
-                                models::EventType::CardUploaded {
+                                models::EventType::ChunkUploaded {
                                     chunk_id: payload.ingest_specific_chunk_metadata.id,
                                 },
                             ),
@@ -295,7 +295,7 @@ async fn ingestion_service(
                         let _ = create_event_query(
                             Event::from_details(
                                 payload.dataset_id,
-                                models::EventType::CardUpdated {
+                                models::EventType::ChunkUpdated {
                                     chunk_id: payload.chunk_metadata.id,
                                 },
                             ),
@@ -696,7 +696,7 @@ pub async fn readd_error_to_queue(
         let _ = create_event_query(
             Event::from_details(
                 message.get_dataset_id(),
-                models::EventType::CardActionFailed {
+                models::EventType::ChunkActionFailed {
                     chunk_id: message.get_chunkmetadata_id(),
                     error: format!(
                         "Failed to upload chunk with tracking_id: {:?}: {:?}",

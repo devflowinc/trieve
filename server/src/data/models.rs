@@ -1002,14 +1002,14 @@ pub enum EventType {
         group_id: uuid::Uuid,
         file_name: String,
     },
-    CardUploaded {
+    ChunkUploaded {
         chunk_id: uuid::Uuid,
     },
-    CardActionFailed {
+    ChunkActionFailed {
         chunk_id: uuid::Uuid,
         error: String,
     },
-    CardUpdated {
+    ChunkUpdated {
         chunk_id: uuid::Uuid,
     },
 }
@@ -1018,18 +1018,18 @@ impl EventType {
     pub fn as_str(&self) -> String {
         match self {
             EventType::FileUploaded { .. } => "file_uploaded".to_string(),
-            EventType::CardUploaded { .. } => "card_uploaded".to_string(),
-            EventType::CardActionFailed { .. } => "card_action_failed".to_string(),
-            EventType::CardUpdated { .. } => "card_updated".to_string(),
+            EventType::ChunkUploaded { .. } => "chunk_uploaded".to_string(),
+            EventType::ChunkActionFailed { .. } => "chunk_action_failed".to_string(),
+            EventType::ChunkUpdated { .. } => "chunk_updated".to_string(),
         }
     }
 
     pub fn get_all_event_types() -> Vec<String> {
         vec![
             "file_uploaded".to_string(),
-            "card_uploaded".to_string(),
-            "card_action_failed".to_string(),
-            "card_updated".to_string(),
+            "chunk_uploaded".to_string(),
+            "chunk_action_failed".to_string(),
+            "chunk_updated".to_string(),
         ]
     }
 }
@@ -1043,11 +1043,11 @@ impl From<EventType> for serde_json::Value {
             } => {
                 json!({"group_id": group_id, "file_name": file_name})
             }
-            EventType::CardUploaded { chunk_id } => json!({"chunk_id": chunk_id}),
-            EventType::CardActionFailed { chunk_id, error } => {
+            EventType::ChunkUploaded { chunk_id } => json!({"chunk_id": chunk_id}),
+            EventType::ChunkActionFailed { chunk_id, error } => {
                 json!({"chunk_id": chunk_id, "error": error})
             }
-            EventType::CardUpdated { chunk_id } => json!({"chunk_id": chunk_id}),
+            EventType::ChunkUpdated { chunk_id } => json!({"chunk_id": chunk_id}),
         }
     }
 }

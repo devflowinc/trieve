@@ -12,14 +12,14 @@ use utoipa::{schema, ToSchema};
 #[schema(example = json!({
     "page": 1,
     "page_size": 10,
-    "type": ["card_action_failed"]
+    "type": ["chunk_action_failed"]
 }))]
 pub struct GetEventsData {
     /// The page number to get. Default is 1.
     pub page: Option<i64>,
     /// The number of items per page. Default is 10.
     pub page_size: Option<i64>,
-    /// The types of events to get. Any combination of file_uploaded, card_uploaded, card_action_failed, or card_updated. Leave undefined to get all events.
+    /// The types of events to get. Any combination of file_uploaded, chunk_uploaded, chunk_action_failed, or chunk_updated. Leave undefined to get all events.
     pub event_types: Option<Vec<String>>,
 }
 
