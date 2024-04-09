@@ -228,6 +228,8 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               return {
                                 ...prev,
                                 EMBEDDING_SIZE: embeddingSize,
+                                EMBEDDING_MODEL_NAME:
+                                  selectedModel?.id ?? "text-embedding-3-small",
                                 EMBEDDING_BASE_URL:
                                   selectedModel?.url ??
                                   "https://api.openai.com/v1",
