@@ -811,10 +811,10 @@ pub async fn recommend_qdrant_query(
 
     let recommend_strategy = match strategy {
         Some(strategy) => match strategy.as_str() {
-            "best_score" => RecommendStrategy::BestScore,
-            _ => RecommendStrategy::AverageVector,
+            "best_score" => Some(RecommendStrategy::BestScore.into()),
+            _ => None,
         },
-        None => RecommendStrategy::AverageVector,
+        None => None,
     };
 
     let filter = assemble_qdrant_filter(filters, None, None, dataset_id, pool).await?;
@@ -858,7 +858,7 @@ pub async fn recommend_qdrant_query(
         read_consistency: None,
         positive_vectors: vec![],
         negative_vectors: vec![],
-        strategy: Some(recommend_strategy.into()),
+        strategy: recommend_strategy,
         timeout: None,
         shard_key_selector: None,
     };
@@ -902,10 +902,10 @@ pub async fn recommend_qdrant_groups_query(
 
     let recommend_strategy = match strategy {
         Some(strategy) => match strategy.as_str() {
-            "best_score" => RecommendStrategy::BestScore,
-            _ => RecommendStrategy::AverageVector,
+            "best_score" => Some(RecommendStrategy::BestScore.into()),
+            _ => None,
         },
-        None => RecommendStrategy::AverageVector,
+        None => None,
     };
 
     let filters = assemble_qdrant_filter(filter, None, None, dataset_id, pool).await?;
@@ -948,7 +948,7 @@ pub async fn recommend_qdrant_groups_query(
         read_consistency: None,
         positive_vectors: vec![],
         negative_vectors: vec![],
-        strategy: Some(recommend_strategy.into()),
+        strategy: recommend_strategy,
         timeout: None,
         shard_key_selector: None,
         group_by: "group_ids".to_string(),
