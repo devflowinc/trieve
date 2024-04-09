@@ -541,7 +541,7 @@ pub struct AddChunkToGroupData {
 /// Route to add a chunk to a group.
 #[utoipa::path(
     post,
-    path = "/chunk_group/chunk",
+    path = "/chunk_group/chunk/{group_id}",
     context_path = "/api",
     tag = "chunk_group",
     request_body(content = AddChunkToGroupData, description = "JSON request payload to add a chunk to a group (bookmark it)", content_type = "application/json"),
