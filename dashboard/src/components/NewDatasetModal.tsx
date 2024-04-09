@@ -216,14 +216,22 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                               (model) => model.name === e.currentTarget.value,
                             );
 
+                            const embeddingSize =
+                              selectedModel?.dimension ?? 1536;
+                            let QDRANT_COLLECTION_NAME: string | null = null;
+
+                            if (embeddingSize == 3072) {
+                              QDRANT_COLLECTION_NAME = "3072-collection";
+                            }
+
                             setServerConfig((prev) => {
                               return {
                                 ...prev,
-                                EMBEDDING_SIZE:
-                                  selectedModel?.dimension ?? 1536,
+                                EMBEDDING_SIZE: embeddingSize,
                                 EMBEDDING_BASE_URL:
                                   selectedModel?.url ??
                                   "https://api.openai.com/v1",
+                                QDRANT_COLLECTION_NAME,
                               };
                             });
                           }}

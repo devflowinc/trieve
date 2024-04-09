@@ -438,6 +438,7 @@ pub async fn global_unfiltered_top_match_query(
         512 => "512_vectors",
         768 => "768_vectors",
         1024 => "1024_vectors",
+        3072 => "3072_vectors",
         1536 => "1536_vectors",
         _ => {
             return Err(ServiceError::BadRequest(

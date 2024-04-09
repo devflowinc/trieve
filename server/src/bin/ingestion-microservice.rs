@@ -241,6 +241,10 @@ async fn ingestion_service(
                 match upload_chunk(payload.clone(), web_pool.clone(), payload.dataset_config).await
                 {
                     Ok(_) => {
+                        log::info!(
+                            "Uploaded chunk: {:?}",
+                            payload.ingest_specific_chunk_metadata.id
+                        );
                         let _ = create_event_query(
                             Event::from_details(
                                 payload.ingest_specific_chunk_metadata.dataset_id,
@@ -287,6 +291,7 @@ async fn ingestion_service(
                 .await
                 {
                     Ok(_) => {
+                        log::info!("Updated chunk: {:?}", payload.chunk_metadata.id);
                         let _ = create_event_query(
                             Event::from_details(
                                 payload.dataset_id,

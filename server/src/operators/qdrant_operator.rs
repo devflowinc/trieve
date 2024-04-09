@@ -137,6 +137,16 @@ pub async fn create_new_qdrant_collection_query(
                                 },
                             ),
                             (
+                                "3072_vectors".to_string(),
+                                VectorParams {
+                                    size: 3072,
+                                    distance: Distance::Cosine.into(),
+                                    hnsw_config: None,
+                                    quantization_config: quantization_config.clone(),
+                                    on_disk: None,
+                                },
+                            ),
+                            (
                                 "1536_vectors".to_string(),
                                 VectorParams {
                                     size: 1536,
@@ -278,6 +288,7 @@ pub async fn create_new_qdrant_point_query(
         512 => "512_vectors",
         768 => "768_vectors",
         1024 => "1024_vectors",
+        3072 => "3072_vectors",
         1536 => "1536_vectors",
         _ => {
             return Err(ServiceError::BadRequest(
@@ -373,6 +384,7 @@ pub async fn update_qdrant_point_query(
             512 => "512_vectors",
             768 => "768_vectors",
             1024 => "1024_vectors",
+            3072 => "3072_vectors",
             1536 => "1536_vectors",
             _ => {
                 return Err(ServiceError::BadRequest("Invalid embedding vector size".into()).into())
@@ -606,6 +618,7 @@ pub async fn search_over_groups_query(
             512 => "512_vectors",
             768 => "768_vectors",
             1024 => "1024_vectors",
+            3072 => "3072_vectors",
             1536 => "1536_vectors",
             _ => {
                 return Err(ServiceError::BadRequest(
@@ -717,6 +730,7 @@ pub async fn search_qdrant_query(
             512 => "512_vectors",
             768 => "768_vectors",
             1024 => "1024_vectors",
+            3072 => "3072_vectors",
             1536 => "1536_vectors",
             _ => {
                 return Err(ServiceError::BadRequest(
@@ -812,6 +826,7 @@ pub async fn recommend_qdrant_query(
         512 => "512_vectors",
         768 => "768_vectors",
         1024 => "1024_vectors",
+        3072 => "3072_vectors",
         1536 => "1536_vectors",
         _ => {
             return Err(ServiceError::BadRequest(
@@ -893,6 +908,7 @@ pub async fn recommend_qdrant_groups_query(
         512 => "512_vectors",
         768 => "768_vectors",
         1024 => "1024_vectors",
+        3072 => "3072_vectors",
         1536 => "1536_vectors",
         _ => {
             return Err(ServiceError::BadRequest(

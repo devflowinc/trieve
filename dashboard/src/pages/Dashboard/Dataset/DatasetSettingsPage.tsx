@@ -38,6 +38,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   DOCUMENT_DOWNLOAD_FEATURE: true,
   COLLISIONS_ENABLED: false,
   FULLTEXT_ENABLED: true,
+  QDRANT_COLLECTION_NAME: null,
 };
 
 export const FrontendSettingsForm = () => {
