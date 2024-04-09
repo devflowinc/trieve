@@ -24,6 +24,20 @@
     {
       "type": "lldb",
       "request": "launch",
+      "name": "Debug executable 'ingestion-microservice'",
+      "cargo": {
+        "args": [
+          "build",
+          "--manifest-path=./server/Cargo.toml",
+          "--bin=ingestion-microservice"
+        ]
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}/server"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
       "name": "Debug unit tests in executable 'trieve-server'",
       "cargo": {
         "args": [
