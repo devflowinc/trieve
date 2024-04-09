@@ -280,7 +280,6 @@ impl Modify for SecurityAddon {
             data::models::Topic,
             data::models::Message,
             data::models::ChunkMetadata,
-            data::models::ChunkMetadataWithFileData,
             data::models::ChatMessageProxy,
             data::models::Event,
             data::models::SlimGroup,

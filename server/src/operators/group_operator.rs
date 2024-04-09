@@ -1,13 +1,13 @@
 use crate::{
     data::models::{
-        ChunkGroup, ChunkMetadata, Dataset, FileGroup, Pool, ServerDatasetConfiguration, UnifiedId,
+        ChunkGroup, Dataset, FileGroup, Pool, ServerDatasetConfiguration, UnifiedId,
     },
     operators::chunk_operator::delete_chunk_metadata_query,
 };
 use crate::{
     data::models::{
         ChunkGroupAndFileWithCount, ChunkGroupBookmark, ChunkMetadataWithCount,
-        ChunkMetadataWithFileData, FullTextSearchResult, SlimGroup,
+        ChunkMetadata, FullTextSearchResult, SlimGroup,
     },
     errors::ServiceError,
     operators::search_operator::get_metadata_query,
@@ -377,7 +377,7 @@ pub async fn create_chunk_bookmark_query(
     Ok(qdrant_point_id)
 }
 pub struct GroupsBookmarkQueryResult {
-    pub metadata: Vec<ChunkMetadataWithFileData>,
+    pub metadata: Vec<ChunkMetadata>,
     pub group: ChunkGroup,
     pub total_pages: i64,
 }

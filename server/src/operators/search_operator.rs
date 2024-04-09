@@ -10,7 +10,7 @@ use super::qdrant_operator::{
     get_point_count_qdrant_query, search_over_groups_query, GroupSearchResults, VectorType,
 };
 use crate::data::models::{
-    ChunkFileWithName, ChunkGroup, ChunkMetadataWithFileData, Dataset, FullTextSearchResult,
+    ChunkFileWithName, ChunkGroup, ChunkMetadata, Dataset, FullTextSearchResult,
     ServerDatasetConfiguration,
 };
 use crate::handlers::chunk_handler::{
@@ -549,7 +549,7 @@ pub async fn search_within_chunk_group_query(
 pub async fn get_metadata_query(
     chunk_metadata: Vec<FullTextSearchResult>,
     pool: web::Data<Pool>,
-) -> Result<Vec<ChunkMetadataWithFileData>, ServiceError> {
+) -> Result<Vec<ChunkMetadata>, ServiceError> {
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
     use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
@@ -602,7 +602,7 @@ pub async fn get_metadata_query(
         Vec<(uuid::Uuid, Option<uuid::Uuid>)>,
     ) = itertools::multiunzip(all_datas);
 
-    let chunk_metadata_with_file_id: Vec<ChunkMetadataWithFileData> = chunk_metadata
+    let chunk_metadata_with_file_id: Vec<ChunkMetadata> = chunk_metadata
         .into_iter()
         .map(|metadata| {
             let chunk_with_file_name = file_ids
@@ -622,17 +622,15 @@ pub async fn get_metadata_query(
                 },
             };
 
-            ChunkMetadataWithFileData {
+            ChunkMetadata {
                 id: metadata.id,
                 content: metadata.content,
                 link: metadata.link,
                 tag_set: metadata.tag_set,
-                qdrant_point_id,
+                qdrant_point_id: Some(qdrant_point_id),
                 created_at: metadata.created_at,
                 updated_at: metadata.updated_at,
                 chunk_html: metadata.chunk_html,
-                file_id: chunk_with_file_name.map(|file| file.file_id),
-                file_name: chunk_with_file_name.map(|file| file.file_name.to_string()),
                 metadata: metadata.metadata,
                 tracking_id: metadata.tracking_id,
                 time_stamp: metadata.time_stamp,
@@ -647,89 +645,6 @@ pub async fn get_metadata_query(
 pub struct FullTextDocIds {
     pub doc_ids: Option<uuid::Uuid>,
     pub total_count: i64,
-}
-
-#[tracing::instrument(skip(pool))]
-pub async fn retrieve_chunks_from_point_ids_without_collsions(
-    search_chunk_query_results: SearchChunkQueryResult,
-    data: &web::Json<SearchChunkData>,
-    pool: web::Data<Pool>,
-) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
-    let point_ids = search_chunk_query_results
-        .search_results
-        .iter()
-        .map(|point| point.point_id)
-        .collect::<Vec<_>>();
-
-    let metadata_chunks = get_metadata_from_point_ids(point_ids, pool).await?;
-
-    let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
-        .search_results
-        .iter()
-        .map(|search_result| {
-            let mut chunk: ChunkMetadataWithFileData = match metadata_chunks
-                .iter()
-                .find(|metadata_chunk| metadata_chunk.qdrant_point_id == search_result.point_id)
-            {
-                Some(metadata_chunk) => metadata_chunk.clone(),
-                None => {
-                    log::error!(
-                        "Failed to find metadata chunk for point id without collisions: {:?}",
-                        search_result.point_id
-                    );
-                    sentry::capture_message(
-                        &format!(
-                            "Failed to find metadata chunk for point id without collisions {:?}",
-                            search_result.point_id
-                        ),
-                        sentry::Level::Error,
-                    );
-
-                    ChunkMetadataWithFileData {
-                        id: uuid::Uuid::default(),
-                        qdrant_point_id: uuid::Uuid::default(),
-                        created_at: chrono::Utc::now().naive_local(),
-                        updated_at: chrono::Utc::now().naive_local(),
-                        file_id: None,
-                        file_name: None,
-                        content: "".to_string(),
-                        chunk_html: Some("".to_string()),
-                        link: Some("".to_string()),
-                        tag_set: Some("".to_string()),
-                        metadata: None,
-                        tracking_id: None,
-                        time_stamp: None,
-                        weight: 1.0,
-                    }
-                }
-            };
-            if data.highlight_results.unwrap_or(true) {
-                chunk = find_relevant_sentence(
-                    chunk.clone(),
-                    data.query.clone(),
-                    data.highlight_delimiters.clone().unwrap_or(vec![
-                        ".".to_string(),
-                        "!".to_string(),
-                        "?".to_string(),
-                        "\n".to_string(),
-                        "\t".to_string(),
-                        ",".to_string(),
-                    ]),
-                )
-                .unwrap_or(chunk);
-            }
-
-            ScoreChunkDTO {
-                metadata: vec![chunk],
-                score: search_result.score.into(),
-            }
-        })
-        .collect();
-
-    Ok(SearchChunkQueryResponseBody {
-        score_chunks,
-        total_chunk_pages: search_chunk_query_results.total_chunk_pages,
-    })
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
@@ -806,7 +721,7 @@ pub async fn retrieve_chunks_for_groups(
                 .hits
                 .iter()
                 .map(|search_result| {
-                    let mut chunk: ChunkMetadataWithFileData =
+                    let mut chunk: ChunkMetadata =
                         match metadata_chunks.iter().find(|metadata_chunk| {
                             metadata_chunk.qdrant_point_id == search_result.point_id
                         }) {
@@ -821,13 +736,11 @@ pub async fn retrieve_chunks_for_groups(
                                     sentry::Level::Error,
                                 );
 
-                                ChunkMetadataWithFileData {
+                                ChunkMetadata {
                                 id: uuid::Uuid::default(),
-                                qdrant_point_id: uuid::Uuid::default(),
+                                qdrant_point_id: None,
                                 created_at: chrono::Utc::now().naive_local(),
                                 updated_at: chrono::Utc::now().naive_local(),
-                                file_id: None,
-                                file_name: None,
                                 content: "".to_string(),
                                 chunk_html: Some("".to_string()),
                                 link: Some("".to_string()),
@@ -855,7 +768,7 @@ pub async fn retrieve_chunks_for_groups(
                         .unwrap_or(chunk);
                     }
 
-                    let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
+                    let mut collided_chunks: Vec<ChunkMetadata> = collided_chunks
                         .iter()
                         .filter(|chunk| chunk.qdrant_id == search_result.point_id)
                         .map(|chunk| chunk.metadata.clone())
@@ -923,7 +836,7 @@ pub async fn get_metadata_from_groups(
                 .hits
                 .iter()
                 .map(|search_result| {
-                    let chunk: ChunkMetadataWithFileData =
+                    let chunk: ChunkMetadata =
                         match metadata_chunks.iter().find(|metadata_chunk| {
                             metadata_chunk.qdrant_point_id == search_result.point_id
                         }) {
@@ -938,13 +851,11 @@ pub async fn get_metadata_from_groups(
                                     sentry::Level::Error,
                                 );
 
-                                ChunkMetadataWithFileData {
+                                ChunkMetadata {
                                 id: uuid::Uuid::default(),
-                                qdrant_point_id: uuid::Uuid::default(),
+                                qdrant_point_id: None,
                                 created_at: chrono::Utc::now().naive_local(),
                                 updated_at: chrono::Utc::now().naive_local(),
-                                file_id: None,
-                                file_name: None,
                                 content: "".to_string(),
                                 chunk_html: Some("".to_string()),
                                 link: Some("".to_string()),
@@ -956,7 +867,7 @@ pub async fn get_metadata_from_groups(
                             }},
                         };
 
-                    let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
+                    let mut collided_chunks: Vec<ChunkMetadata> = collided_chunks
                         .iter()
                         .filter(|chunk| chunk.qdrant_id == search_result.point_id)
                         .map(|chunk| chunk.metadata.clone())
@@ -1026,7 +937,7 @@ pub async fn retrieve_chunks_from_point_ids(
         .search_results
         .iter()
         .map(|search_result| {
-            let mut chunk: ChunkMetadataWithFileData = match metadata_chunks
+            let mut chunk: ChunkMetadata = match metadata_chunks
                 .iter()
                 .find(|metadata_chunk| metadata_chunk.qdrant_point_id == search_result.point_id)
             {
@@ -1044,13 +955,11 @@ pub async fn retrieve_chunks_from_point_ids(
                         sentry::Level::Error,
                     );
 
-                    ChunkMetadataWithFileData {
+                    ChunkMetadata {
                         id: uuid::Uuid::default(),
                         qdrant_point_id: uuid::Uuid::default(),
                         created_at: chrono::Utc::now().naive_local(),
                         updated_at: chrono::Utc::now().naive_local(),
-                        file_id: None,
-                        file_name: None,
                         content: "".to_string(),
                         chunk_html: Some("".to_string()),
                         link: Some("".to_string()),
@@ -1079,7 +988,7 @@ pub async fn retrieve_chunks_from_point_ids(
                 .unwrap_or(chunk);
             }
 
-            let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
+            let mut collided_chunks: Vec<ChunkMetadata> = collided_chunks
                 .iter()
                 .filter(|chunk| chunk.qdrant_id == search_result.point_id)
                 .map(|chunk| chunk.metadata.clone())
@@ -1347,7 +1256,7 @@ pub async fn search_hybrid_chunks(
         .search_results
         .iter()
         .map(|search_result| {
-            let mut chunk: ChunkMetadataWithFileData = match metadata_chunks
+            let mut chunk: ChunkMetadata = match metadata_chunks
                 .iter()
                 .find(|metadata_chunk| metadata_chunk.qdrant_point_id == search_result.point_id)
             {
@@ -1365,13 +1274,11 @@ pub async fn search_hybrid_chunks(
                         sentry::Level::Error,
                     );
 
-                    ChunkMetadataWithFileData {
+                    ChunkMetadata {
                         id: uuid::Uuid::default(),
                         qdrant_point_id: uuid::Uuid::default(),
                         created_at: chrono::Utc::now().naive_local(),
                         updated_at: chrono::Utc::now().naive_local(),
-                        file_id: None,
-                        file_name: None,
                         content: "".to_string(),
                         chunk_html: Some("".to_string()),
                         link: Some("".to_string()),
@@ -1400,7 +1307,7 @@ pub async fn search_hybrid_chunks(
                 .unwrap_or(chunk);
             }
 
-            let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
+            let mut collided_chunks: Vec<ChunkMetadata> = collided_chunks
                 .iter()
                 .filter(|chunk| chunk.qdrant_id == search_result.point_id)
                 .map(|chunk| chunk.metadata.clone())
@@ -1508,7 +1415,7 @@ pub async fn search_semantic_groups(
     )
     .await?;
 
-    let mut result_chunks = retrieve_chunks_from_point_ids_without_collsions(
+    let mut result_chunks = retrieve_chunks_from_point_ids(
         search_semantic_chunk_query_results,
         &web::Json(data.clone().into()),
         pool.clone(),
@@ -1553,7 +1460,7 @@ pub async fn search_full_text_groups(
     )
     .await?;
 
-    let mut result_chunks = retrieve_chunks_from_point_ids_without_collsions(
+    let mut result_chunks = retrieve_chunks_from_point_ids(
         search_chunk_query_results,
         &web::Json(data.clone().into()),
         pool.clone(),
@@ -1643,7 +1550,7 @@ pub async fn search_hybrid_groups(
         total_chunk_pages: semantic_results.total_chunk_pages,
     };
 
-    let combined_result_chunks = retrieve_chunks_from_point_ids_without_collsions(
+    let combined_result_chunks = retrieve_chunks_from_point_ids(
         combined_search_chunk_query_results,
         &web::Json(data.clone().into()),
         pool.clone(),

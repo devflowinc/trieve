@@ -1,5 +1,5 @@
 use crate::data::models::{
-    ChunkCollision, ChunkFile, ChunkFileWithName, ChunkGroupBookmark, ChunkMetadataWithFileData,
+    ChunkCollision, ChunkFile, ChunkFileWithName, ChunkGroupBookmark,
     Dataset, FullTextSearchResult, ServerDatasetConfiguration, UnifiedId,
 };
 use crate::operators::model_operator::create_embeddings;
@@ -22,7 +22,7 @@ use simsearch::SimSearch;
 pub async fn get_metadata_from_point_ids(
     point_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
-) -> Result<Vec<ChunkMetadataWithFileData>, ServiceError> {
+) -> Result<Vec<ChunkMetadata>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let mut conn = pool
@@ -99,7 +99,7 @@ pub async fn get_point_ids_from_unified_chunk_ids(
 }
 
 pub struct ChunkMetadataWithQdrantId {
-    pub metadata: ChunkMetadataWithFileData,
+    pub metadata: ChunkMetadata,
     pub qdrant_id: uuid::Uuid,
 }
 
@@ -110,7 +110,7 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
     pool: web::Data<Pool>,
 ) -> Result<
     (
-        Vec<ChunkMetadataWithFileData>,
+        Vec<ChunkMetadata>,
         Vec<ChunkMetadataWithQdrantId>,
     ),
     ServiceError,
@@ -161,21 +161,15 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
             .select((
                 ChunkMetadata::as_select(),
                 (chunk_collisions_columns::collision_qdrant_id).nullable(),
-                (
-                    chunk_files_columns::chunk_id,
-                    chunk_files_columns::file_id,
-                    files_columns::file_name,
-                )
-                    .nullable(),
             ))
             .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
-            .load::<(ChunkMetadata, Option<uuid::Uuid>, Option<ChunkFileWithName>)>(&mut conn)
+            .load::<(ChunkMetadata, Option<uuid::Uuid>)>(&mut conn)
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
         chunk_metadata
             .iter()
-            .map(|chunk| ChunkMetadataWithFileData {
+            .map(|chunk| ChunkMetadata {
                 id: chunk.0.id,
                 content: chunk.0.content.clone(),
                 link: chunk.0.link.clone(),
@@ -188,14 +182,12 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
                 created_at: chunk.0.created_at,
                 updated_at: chunk.0.updated_at,
                 chunk_html: chunk.0.chunk_html.clone(),
-                file_id: chunk.2.clone().map(|file| file.file_id),
-                file_name: chunk.2.clone().map(|file| file.file_name.to_string()),
                 metadata: chunk.0.metadata.clone(),
                 tracking_id: chunk.0.tracking_id.clone(),
                 time_stamp: chunk.0.time_stamp,
                 weight: chunk.0.weight,
             })
-            .collect::<Vec<ChunkMetadataWithFileData>>()
+            .collect::<Vec<ChunkMetadata>>()
     };
 
     chunk_search_span.finish();
@@ -240,7 +232,7 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
             chunk_metadata
                 .iter()
                 .map(|chunk| {
-                    let chunk_metadata = ChunkMetadataWithFileData {
+                    let chunk_metadata = ChunkMetadata {
                         id: chunk.0.id,
                         content: chunk.0.content.clone(),
                         link: chunk.0.link.clone(),
@@ -249,8 +241,6 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
                         created_at: chunk.0.created_at,
                         updated_at: chunk.0.updated_at,
                         chunk_html: chunk.0.chunk_html.clone(),
-                        file_id: chunk.2.clone().map(|file| file.file_id),
-                        file_name: chunk.2.clone().map(|file| file.file_name.to_string()),
                         metadata: chunk.0.metadata.clone(),
                         tracking_id: chunk.0.tracking_id.clone(),
                         time_stamp: chunk.0.time_stamp,
@@ -358,7 +348,7 @@ pub async fn get_metadata_from_ids_query(
     chunk_ids: Vec<uuid::Uuid>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<ChunkMetadataWithFileData>, ServiceError> {
+) -> Result<Vec<ChunkMetadata>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let mut conn = pool.get().await.unwrap();
@@ -1027,10 +1017,10 @@ pub async fn get_qdrant_id_from_chunk_id_query(
 
 #[tracing::instrument]
 pub fn find_relevant_sentence(
-    input: ChunkMetadataWithFileData,
+    input: ChunkMetadata,
     query: String,
     split_chars: Vec<String>,
-) -> Result<ChunkMetadataWithFileData, ServiceError> {
+) -> Result<ChunkMetadata, ServiceError> {
     let content = &input.chunk_html.clone().unwrap_or(input.content.clone());
     let mut engine: SimSearch<String> = SimSearch::new();
     let mut split_content = content

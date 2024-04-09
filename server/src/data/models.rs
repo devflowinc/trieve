@@ -317,6 +317,39 @@ impl ChunkMetadata {
     }
 }
 
+#[derive(
+    Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema, AsChangeset,
+)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "content": "Hello, world!",
+    "link": "https://trieve.ai",
+    "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "tag_set": "tag1,tag2",
+    "chunk_html": "<p>Hello, world!</p>",
+    "metadata": {"key": "value"},
+    "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "time_stamp": "2021-01-01T00:00:00",
+    "weight": 0.5,
+}))]
+#[diesel(table_name = chunk_metadata)]
+pub struct ChunkMetadataWithoutDatasetID {
+    pub id: uuid::Uuid,
+    pub content: String,
+    pub link: Option<String>,
+    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub tag_set: Option<String>,
+    pub chunk_html: Option<String>,
+    pub metadata: Option<serde_json::Value>,
+    pub tracking_id: Option<String>,
+    pub time_stamp: Option<NaiveDateTime>,
+    pub weight: f64,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IngestSpecificChunkMetadata {
     pub id: uuid::Uuid,
@@ -345,40 +378,6 @@ impl ChunkCollision {
             updated_at: chrono::Utc::now().naive_local(),
         }
     }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-#[schema(example=json!({
-    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "content": "Hello, world!",
-    "link": "https://trieve.ai",
-    "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
-    "tag_set": "tag1,tag2",
-    "chunk_html": "<p>Hello, world!</p>",
-    "metadata": {"key": "value"},
-    "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "time_stamp": "2021-01-01T00:00:00",
-    "weight": 0.5,
-    "file_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "file_name": "file.txt",
-}))]
-pub struct ChunkMetadataWithFileData {
-    pub id: uuid::Uuid,
-    pub content: String,
-    pub chunk_html: Option<String>,
-    pub link: Option<String>,
-    pub qdrant_point_id: uuid::Uuid,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-    pub tag_set: Option<String>,
-    pub file_id: Option<uuid::Uuid>,
-    pub file_name: Option<String>,
-    pub metadata: Option<serde_json::Value>,
-    pub tracking_id: Option<String>,
-    pub time_stamp: Option<NaiveDateTime>,
-    pub weight: f64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, ToSchema)]
@@ -414,23 +413,6 @@ impl From<ChunkMetadata> for SlimChunkMetadata {
             id: chunk.id,
             link: chunk.link,
             qdrant_point_id: chunk.qdrant_point_id,
-            created_at: chunk.created_at,
-            updated_at: chunk.updated_at,
-            tag_set: chunk.tag_set,
-            metadata: chunk.metadata,
-            tracking_id: chunk.tracking_id,
-            time_stamp: chunk.time_stamp,
-            weight: chunk.weight,
-        }
-    }
-}
-
-impl From<ChunkMetadataWithFileData> for SlimChunkMetadata {
-    fn from(chunk: ChunkMetadataWithFileData) -> Self {
-        SlimChunkMetadata {
-            id: chunk.id,
-            link: chunk.link,
-            qdrant_point_id: Some(chunk.qdrant_point_id),
             created_at: chunk.created_at,
             updated_at: chunk.updated_at,
             tag_set: chunk.tag_set,
@@ -753,7 +735,7 @@ pub struct UserDTOWithChunks {
     pub email: Option<String>,
     pub created_at: chrono::NaiveDateTime,
     pub total_chunks_created: i64,
-    pub chunks: Vec<ChunkMetadataWithFileData>,
+    pub chunks: Vec<ChunkMetadata>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, Default)]
