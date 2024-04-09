@@ -64,10 +64,8 @@ export const DatasetSelectBox = () => {
                           }}
                           onClick={onClick}
                         >
-                          <div class="flex flex-row justify-start space-x-2">
-                            <span class="line-clamp-1 text-left text-sm">
-                              {datasetItem.dataset.name}
-                            </span>
+                          <div class="break-all px-1 text-left text-sm">
+                            {datasetItem.dataset.name}
                           </div>
                           {datasetItem.dataset.id ==
                             userContext.currentDataset?.()?.dataset.id && (
