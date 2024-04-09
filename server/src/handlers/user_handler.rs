@@ -132,7 +132,7 @@ pub struct SetUserApiKeyResponse {
 /// Create a new api key for the auth'ed user. Successful response will contain the newly created api key. If a write role is assigned the api key will have permission level of the auth'ed user who calls this endpoint.
 #[utoipa::path(
     post,
-    path = "/user/set_api_key",
+    path = "/user/api_key",
     context_path = "/api",
     tag = "user",
     request_body(content = SetUserApiKeyRequest, description = "JSON request payload to create a new user api key", content_type = "application/json"),
@@ -166,7 +166,7 @@ pub async fn set_user_api_key(
 /// Get the api keys which belong to the auth'ed user. The actual api key values are not returned, only the ids, names, and creation dates.
 #[utoipa::path(
     post,
-    path = "/user/get_api_key",
+    path = "/user/api_key",
     context_path = "/api",
     tag = "user",
     responses(
@@ -200,7 +200,7 @@ pub struct DeleteUserApiKeyRequest {
 /// Delete an api key for the auth'ed user.
 #[utoipa::path(
     delete,
-    path = "/user/delete_api_key/{api_key_id}",
+    path = "/user/api_key/{api_key_id}",
     context_path = "/api",
     tag = "user",
     responses(
