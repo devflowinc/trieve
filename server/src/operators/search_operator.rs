@@ -17,7 +17,7 @@ use crate::handlers::chunk_handler::{
     SearchChunkData, SearchChunkQueryResponseBody,
 };
 use crate::handlers::group_handler::{
-    SearchGroupsResult, SearchOverGroupsData, SearchWithinGroupData,
+    SearchWithinGroupResults, SearchOverGroupsData, SearchWithinGroupData,
 };
 use crate::operators::model_operator::get_sparse_vector;
 use crate::operators::qdrant_operator::{get_qdrant_connection, search_qdrant_query};
@@ -937,7 +937,7 @@ pub struct GroupScoreChunk {
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
-pub struct SearchOverGroupsResponseBody {
+pub struct SearchOverGroupsResults {
     pub group_chunks: Vec<GroupScoreChunk>,
     pub total_chunk_pages: i64,
 }
@@ -947,7 +947,7 @@ pub async fn retrieve_chunks_for_groups(
     search_over_groups_query_result: SearchOverGroupsQueryResult,
     data: &SearchOverGroupsData,
     pool: web::Data<Pool>,
-) -> Result<SearchOverGroupsResponseBody, ServiceError> {
+) -> Result<SearchOverGroupsResults, ServiceError> {
     let point_ids = search_over_groups_query_result
         .search_results
         .clone()
@@ -1055,7 +1055,7 @@ pub async fn retrieve_chunks_for_groups(
         })
         .collect_vec();
 
-    Ok(SearchOverGroupsResponseBody {
+    Ok(SearchOverGroupsResults {
         group_chunks,
         total_chunk_pages: search_over_groups_query_result.total_chunk_pages,
     })
@@ -1580,7 +1580,7 @@ pub async fn search_semantic_groups(
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
-) -> Result<SearchGroupsResult, actix_web::Error> {
+) -> Result<SearchWithinGroupResults, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
@@ -1618,7 +1618,7 @@ pub async fn search_semantic_groups(
     result_chunks.score_chunks =
         rerank_chunks(result_chunks.score_chunks, data.date_bias, data.use_weights);
 
-    Ok(SearchGroupsResult {
+    Ok(SearchWithinGroupResults {
         bookmarks: result_chunks.score_chunks,
         group,
         total_pages: result_chunks.total_chunk_pages,
@@ -1635,7 +1635,7 @@ pub async fn search_full_text_groups(
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
-) -> Result<SearchGroupsResult, actix_web::Error> {
+) -> Result<SearchWithinGroupResults, actix_web::Error> {
     let data_inner = data.clone();
     let embedding_vector = get_sparse_vector(&data.query, "query").await?;
 
@@ -1663,7 +1663,7 @@ pub async fn search_full_text_groups(
     result_chunks.score_chunks =
         rerank_chunks(result_chunks.score_chunks, data.date_bias, data.use_weights);
 
-    Ok(SearchGroupsResult {
+    Ok(SearchWithinGroupResults {
         bookmarks: result_chunks.score_chunks,
         group,
         total_pages: result_chunks.total_chunk_pages,
@@ -1680,7 +1680,7 @@ pub async fn search_hybrid_groups(
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
-) -> Result<SearchGroupsResult, actix_web::Error> {
+) -> Result<SearchWithinGroupResults, actix_web::Error> {
     let data_inner = data.clone();
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
@@ -1792,7 +1792,7 @@ pub async fn search_hybrid_groups(
         }
     };
 
-    Ok(SearchGroupsResult {
+    Ok(SearchWithinGroupResults {
         bookmarks: result_chunks.score_chunks,
         group,
         total_pages: combined_result_chunks.total_chunk_pages,
@@ -1808,7 +1808,7 @@ pub async fn semantic_search_over_groups(
     dataset: Dataset,
     config: ServerDatasetConfiguration,
     timer: &mut Timer,
-) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
+) -> Result<SearchOverGroupsResults, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
@@ -1860,7 +1860,7 @@ pub async fn full_text_search_over_groups(
     dataset: Dataset,
     config: ServerDatasetConfiguration,
     timer: &mut Timer,
-) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
+) -> Result<SearchOverGroupsResults, actix_web::Error> {
     timer.add("start to get sparse vector");
 
     let sparse_vector = get_sparse_vector(&data.query, "query")
@@ -1951,7 +1951,7 @@ pub async fn hybrid_search_over_groups(
     dataset: Dataset,
     config: ServerDatasetConfiguration,
     timer: &mut Timer,
-) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
+) -> Result<SearchOverGroupsResults, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
@@ -2071,7 +2071,7 @@ pub async fn hybrid_search_over_groups(
 
     timer.add("finish reranking for groups and return results");
 
-    let result_chunks = SearchOverGroupsResponseBody {
+    let result_chunks = SearchOverGroupsResults {
         group_chunks: reranked_chunks,
         total_chunk_pages: combined_search_chunk_query_results.total_chunk_pages,
     };

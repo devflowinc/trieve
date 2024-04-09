@@ -6,8 +6,8 @@ use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFile, ChunkGroupBookmark, ChunkMetadata,
         DatasetAndOrgWithSubAndPlan, GroupScoreSlimChunks, Pool, ScoreSlimChunks,
-        SearchGroupSlimChunksResult, SearchOverGroupsSlimChunksResponseBody,
-        ServerDatasetConfiguration, UnifiedId,
+        SearchOverGroupsSlimResults, SearchWithinGroupSlimResults, ServerDatasetConfiguration,
+        UnifiedId,
     },
     errors::ServiceError,
     operators::{
@@ -20,8 +20,7 @@ use crate::{
         search_operator::{
             full_text_search_over_groups, get_metadata_from_groups, hybrid_search_over_groups,
             search_full_text_groups, search_hybrid_groups, search_semantic_groups,
-            semantic_search_over_groups, GroupScoreChunk, SearchOverGroupsQueryResult,
-            SearchOverGroupsResponseBody,
+            semantic_search_over_groups, SearchOverGroupsQueryResult,
         },
     },
 };
@@ -895,61 +894,6 @@ pub struct RecommendGroupChunksRequest {
     pub slim_chunks: Option<bool>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct RecommendGroupChunks(pub Vec<GroupScoreChunk>);
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct RecommendGroupSlimChunks(pub Vec<GroupScoreSlimChunks>);
-
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
-#[serde(untagged)]
-pub enum RecommendGroupChunkResponseTypes {
-    #[schema(example = json!([{
-        "group_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-        "metadata": [
-            {
-                "metadata": [
-                    {
-                        "id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-                        "content": "This is a test content",
-                        "link": "https://www.google.com",
-                        "tag_set": "test",
-                        "metadata": {
-                            "key": "value"
-                        },
-                        "tracking_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-                        "time_stamp": "2021-01-01T00:00:00Z",
-                        "weight": 1.0
-                    }
-                ],
-                "score": 0.5
-            }
-        ]
-    }]))]
-    GroupSlimChunksDTO(RecommendGroupSlimChunks),
-    #[schema(example = json!({
-        "group_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-        "metadata": [
-            {
-                "metadata": [
-                    {
-                        "id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-                        "link": "https://www.google.com",
-                        "tag_set": "test",
-                        "metadata": {
-                            "key": "value"
-                        },
-                        "tracking_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-                        "time_stamp": "2021-01-01T00:00:00Z",
-                        "weight": 1.0
-                    }
-                ],
-                "score": 0.5
-            }
-        ]
-    }))]
-    GroupScoreChunkDTO(RecommendGroupChunks),
-}
-
 /// Get Recommended Groups
 ///
 /// Route to get recommended groups. This route will return groups which are similar to the groups in the request body.
@@ -960,7 +904,8 @@ pub enum RecommendGroupChunkResponseTypes {
     tag = "chunk_group",
     request_body(content = RecommendGroupChunksRequest, description = "JSON request payload to get recommendations of chunks similar to the chunks in the request", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON body representing the groups which are similar to the groups in the request", body = RecommendGroupChunkResponseTypes),
+        (status = 200, description = "JSON body representing the groups which are similar to the positive groups and dissimilar to the negative ones if slim_chunks is false in the request", body = Vec<GroupScoreChunk>),
+        (status = 206, description = "JSON body representing the groups which are similar to the positive groups and dissimilar to the negative ones if slim_chunks is false in the request", body = Vec<GroupScoreSlimChunks>),
         (status = 400, description = "Service error relating to to getting similar chunks", body = ErrorResponseBody),
     ),
     params(
@@ -1179,17 +1124,10 @@ impl From<SearchWithinGroupData> for SearchChunkData {
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
-pub struct SearchGroupsResult {
+pub struct SearchWithinGroupResults {
     pub bookmarks: Vec<ScoreChunkDTO>,
     pub group: ChunkGroup,
     pub total_pages: i64,
-}
-
-#[derive(Serialize, Deserialize, ToSchema)]
-#[serde(untagged)]
-pub enum SearchWithinGroupResponseTypes {
-    SearchGroupsResult(SearchGroupsResult),
-    SearchGroupSlimChunksResult(SearchGroupSlimChunksResult),
 }
 
 /// Search Within Group
@@ -1202,7 +1140,8 @@ pub enum SearchWithinGroupResponseTypes {
     tag = "chunk_group",
     request_body(content = SearchWithinGroupData, description = "JSON request payload to semantically search a group", content_type = "application/json"),
     responses(
-        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchWithinGroupResponseTypes),
+        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query if slim_chunks is false in the request", body = SearchWithinGroupResults),
+        (status = 206, description = "Group chunks which are similar to the embedding vector of the search query if slim_chunks is true in the request", body = SearchWithinGroupSlimResults),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
     ),
     params(
@@ -1298,13 +1237,13 @@ pub async fn search_within_group(
             .map(|metadata| metadata.into())
             .collect::<Vec<ScoreSlimChunks>>();
 
-        let res = SearchGroupSlimChunksResult {
+        let res = SearchWithinGroupSlimResults {
             bookmarks: ids,
             group: result_chunks.group,
             total_pages: result_chunks.total_pages,
         };
 
-        return Ok(HttpResponse::Ok().json(res));
+        return Ok(HttpResponse::PartialContent().json(res));
     }
 
     Ok(HttpResponse::Ok().json(result_chunks))
@@ -1336,13 +1275,6 @@ pub struct SearchOverGroupsData {
     pub slim_chunks: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
-#[serde(untagged)]
-pub enum SearchOverGroupsResponseTypes {
-    SearchOverGroupsResponseBody(SearchOverGroupsResponseBody),
-    SearchOverGroupsSlimChunksResponseBody(SearchOverGroupsSlimChunksResponseBody),
-}
-
 /// Search Over Groups
 ///
 /// This route allows you to get groups as results instead of chunks. Each group returned will have the matching chunks sorted by similarity within the group. This is useful for when you want to get groups of chunks which are similar to the search query. If choosing hybrid search, the results will be re-ranked using BAAI/bge-reranker-large. Compatible with semantic, fulltext, or hybrid search modes.
@@ -1353,8 +1285,9 @@ pub enum SearchOverGroupsResponseTypes {
     tag = "chunk_group",
     request_body(content = SearchOverGroupsData, description = "JSON request payload to semantically search over groups", content_type = "application/json"),
     responses(
-        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query", body = SearchOverGroupsResponseTypes),
-        (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
+        (status = 200, description = "Group chunks which are similar to the embedding vector of the search query if slim_chunks is false or unspecified in the request body", body = SearchOverGroupsResults),
+        (status = 206, description = "Group chunks which are similar to the embedding vector of the search query if slim_chunks is true in the request body", body = SearchOverGroupsSlimResults),
+        (status = 400, description = "Service error relating to searching over groups", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -1441,12 +1374,12 @@ pub async fn search_over_groups(
             })
             .collect::<Vec<GroupScoreSlimChunks>>();
 
-        let res = SearchOverGroupsSlimChunksResponseBody {
+        let res = SearchOverGroupsSlimResults {
             group_chunks: ids,
             total_chunk_pages: result_chunks.total_chunk_pages,
         };
 
-        return Ok(HttpResponse::Ok()
+        return Ok(HttpResponse::PartialContent()
             .insert_header((Timer::header_key(), timer.header_value()))
             .json(res));
     }
