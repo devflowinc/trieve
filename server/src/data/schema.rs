@@ -29,6 +29,8 @@ diesel::table! {
         updated_at -> Timestamp,
         dataset_id -> Uuid,
         tracking_id -> Nullable<Text>,
+        metadata -> Nullable<Jsonb>,
+        tag_set -> Nullable<Text>,
     }
 }
 

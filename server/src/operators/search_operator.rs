@@ -26,7 +26,7 @@ use crate::{data::models::Pool, errors::ServiceError};
 use actix_web::web;
 use diesel::dsl::sql;
 use diesel::sql_types::Text;
-use diesel::{ExpressionMethods, PgTextExpressionMethods, QueryDsl};
+use diesel::{ExpressionMethods, JoinOnDsl, PgTextExpressionMethods, QueryDsl};
 use diesel_async::RunQueryDsl;
 
 use itertools::Itertools;
@@ -329,6 +329,211 @@ pub async fn get_metadata_filter_condition(
                 sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key)).le(lte.to_string()),
             );
         };
+    }
+
+    let qdrant_point_ids: Vec<uuid::Uuid> = query
+        .load::<Option<uuid::Uuid>>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?
+        .into_iter()
+        .filter_map(|point_id| point_id)
+        .collect();
+
+    let matching_point_ids: Vec<PointId> = qdrant_point_ids
+        .iter()
+        .map(|uuid| uuid.to_string())
+        .collect::<HashSet<String>>()
+        .iter()
+        .map(|uuid| (*uuid).clone().into())
+        .collect::<Vec<PointId>>();
+
+    metadata_filter.must.push(Condition {
+        condition_one_of: Some(HasId(HasIdCondition {
+            has_id: matching_point_ids,
+        })),
+    });
+
+    Ok(metadata_filter)
+}
+
+pub async fn get_group_metadata_filter_condition(
+    filter: &FieldCondition,
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Filter, ServiceError> {
+    let mut metadata_filter = Filter::default();
+
+    let key = filter
+        .field
+        .strip_prefix("group_metadata.")
+        .unwrap_or(&filter.field)
+        .to_string();
+
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
+    use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    let mut query =
+        chunk_metadata_columns::chunk_metadata
+            .left_outer_join(chunk_group_bookmarks_columns::chunk_group_bookmarks.on(
+                chunk_metadata_columns::id.eq(chunk_group_bookmarks_columns::chunk_metadata_id),
+            ))
+            .left_outer_join(
+                chunk_group_columns::chunk_group
+                    .on(chunk_group_bookmarks_columns::group_id.eq(chunk_group_columns::id)),
+            )
+            .select(chunk_metadata_columns::qdrant_point_id)
+            .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
+            .into_boxed();
+
+    if let Some(matches) = &filter.r#match {
+        if let Some(first_val) = matches.get(0) {
+            match first_val {
+                MatchCondition::Text(string_val) => {
+                    query = query.filter(
+                        sql::<Text>(&format!("chunk_group.metadata->>'{}'", key))
+                            .ilike(format!("%{}%", string_val)),
+                    );
+                }
+                MatchCondition::Integer(id_val) => {
+                    query = query.filter(
+                        sql::<Text>(&format!("chunk_group.metadata->>'{}'", key))
+                            .eq(id_val.to_string()),
+                    );
+                }
+            }
+        }
+
+        for match_condition in matches.iter().skip(1) {
+            match match_condition {
+                MatchCondition::Text(string_val) => {
+                    query = query.or_filter(
+                        sql::<Text>(&format!("chunk_group.metadata->>'{}'", key))
+                            .ilike(format!("%{}%", string_val)),
+                    );
+                }
+                MatchCondition::Integer(id_val) => {
+                    query = query.or_filter(
+                        sql::<Text>(&format!("chunk_group.metadata->>'{}'", key))
+                            .eq(id_val.to_string()),
+                    );
+                }
+            }
+        }
+    };
+
+    if let Some(range) = &filter.range {
+        let range_filter = get_range(range.clone())?;
+        if let Some(gt) = range_filter.gt {
+            query = query.filter(
+                sql::<Text>(&format!("chunk_group.metadata->>'{}'", key)).gt(gt.to_string()),
+            );
+        };
+
+        if let Some(gte) = range_filter.gte {
+            query = query.filter(
+                sql::<Text>(&format!("chunk_group.metadata->>'{}'", key)).ge(gte.to_string()),
+            );
+        };
+
+        if let Some(lt) = range_filter.lt {
+            query = query.filter(
+                sql::<Text>(&format!("chunk_group.metadata->>'{}'", key)).lt(lt.to_string()),
+            );
+        };
+
+        if let Some(lte) = range_filter.lte {
+            query = query.filter(
+                sql::<Text>(&format!("chunk_group.metadata->>'{}'", key)).le(lte.to_string()),
+            );
+        };
+    }
+
+    let qdrant_point_ids: Vec<uuid::Uuid> = query
+        .load::<Option<uuid::Uuid>>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?
+        .into_iter()
+        .filter_map(|point_id| point_id)
+        .collect();
+
+    let matching_point_ids: Vec<PointId> = qdrant_point_ids
+        .iter()
+        .map(|uuid| uuid.to_string())
+        .collect::<HashSet<String>>()
+        .iter()
+        .map(|uuid| (*uuid).clone().into())
+        .collect::<Vec<PointId>>();
+
+    metadata_filter.must.push(Condition {
+        condition_one_of: Some(HasId(HasIdCondition {
+            has_id: matching_point_ids,
+        })),
+    });
+
+    Ok(metadata_filter)
+}
+
+pub async fn get_group_tag_set_filter_condition(
+    filter: &FieldCondition,
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Filter, ServiceError> {
+    let mut metadata_filter = Filter::default();
+
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
+    use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    let mut query =
+        chunk_metadata_columns::chunk_metadata
+            .left_outer_join(chunk_group_bookmarks_columns::chunk_group_bookmarks.on(
+                chunk_metadata_columns::id.eq(chunk_group_bookmarks_columns::chunk_metadata_id),
+            ))
+            .left_outer_join(
+                chunk_group_columns::chunk_group
+                    .on(chunk_group_bookmarks_columns::group_id.eq(chunk_group_columns::id)),
+            )
+            .select(chunk_metadata_columns::qdrant_point_id)
+            .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
+            .into_boxed();
+
+    if let Some(matches) = &filter.r#match {
+        if let Some(first_val) = matches.get(0) {
+            match first_val {
+                MatchCondition::Text(string_val) => {
+                    query = query
+                        .filter(chunk_group_columns::tag_set.ilike(format!("%{}%", string_val)));
+                }
+                MatchCondition::Integer(id_val) => {
+                    query = query.filter(
+                        chunk_group_columns::tag_set.ilike(format!("%{}%", id_val.to_string())),
+                    );
+                }
+            }
+        }
+
+        for match_condition in matches.iter().skip(1) {
+            match match_condition {
+                MatchCondition::Text(string_val) => {
+                    query = query
+                        .or_filter(chunk_group_columns::tag_set.ilike(format!("%{}%", string_val)));
+                }
+                MatchCondition::Integer(id_val) => {
+                    query = query.or_filter(
+                        chunk_group_columns::tag_set.ilike(format!("%{}%", id_val.to_string())),
+                    );
+                }
+            }
+        }
+    };
+
+    if let Some(_) = &filter.range {
+        ServiceError::BadRequest("Range filter not supported for group_tag_set".to_string());
     }
 
     let qdrant_point_ids: Vec<uuid::Uuid> = query
