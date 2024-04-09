@@ -1286,6 +1286,7 @@ pub async fn search_chunk(
                 pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
+                &mut timer,
             )
             .await?
         }
@@ -1297,6 +1298,7 @@ pub async fn search_chunk(
                 pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
+                &mut timer,
             )
             .await?
         }
@@ -1307,8 +1309,8 @@ pub async fn search_chunk(
                 page,
                 pool,
                 dataset_org_plan_sub.dataset,
-                &mut timer,
                 server_dataset_config,
+                &mut timer,
             )
             .await?
         }
@@ -1507,6 +1509,10 @@ pub async fn get_recommended_chunks(
 
     let mut positive_qdrant_ids = vec![];
 
+    let mut timer = Timer::new();
+
+    timer.add("start extending tracking_ids and chunk_ids to qdrant_point_ids");
+
     if let Some(positive_chunk_ids) = positive_chunk_ids {
         positive_qdrant_ids.extend(
             get_point_ids_from_unified_chunk_ids(
@@ -1589,6 +1595,8 @@ pub async fn get_recommended_chunks(
         )
     }
 
+    timer.add("finish extending tracking_ids and chunk_ids to qdrant_point_ids; start recommend_qdrant_query");
+
     let recommended_qdrant_point_ids = recommend_qdrant_query(
         positive_qdrant_ids,
         negative_qdrant_ids,
@@ -1603,6 +1611,8 @@ pub async fn get_recommended_chunks(
         ServiceError::BadRequest(format!("Could not get recommended chunks: {}", err))
     })?;
 
+    timer.add("finish recommend_qdrant_query; start get_metadata_from_point_ids");
+
     let recommended_chunk_metadatas =
         get_metadata_from_point_ids(recommended_qdrant_point_ids, pool)
             .await
@@ -1613,6 +1623,8 @@ pub async fn get_recommended_chunks(
                 ))
             })?;
 
+    timer.add("finish get_metadata_from_point_ids and return results");
+
     if data.slim_chunks.unwrap_or(false) {
         let res = recommended_chunk_metadatas
             .into_iter()
@@ -1622,7 +1634,9 @@ pub async fn get_recommended_chunks(
         return Ok(HttpResponse::Ok().json(res));
     }
 
-    Ok(HttpResponse::Ok().json(recommended_chunk_metadatas))
+    Ok(HttpResponse::Ok()
+        .insert_header((Timer::header_key(), timer.header_value()))
+        .json(recommended_chunk_metadatas))
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

@@ -26,6 +26,7 @@ use crate::{
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
+use simple_server_timing_header::Timer;
 use utoipa::{IntoParams, ToSchema};
 
 #[tracing::instrument(skip(pool))]
@@ -955,6 +956,10 @@ pub async fn get_recommended_groups(
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
+    let mut timer = Timer::new();
+
+    timer.add("start to extend qdrant_point_ids for group_tracking_ids and group_ids");
+
     let mut positive_qdrant_ids = vec![];
 
     if let Some(positive_group_ids) = positive_group_ids {
@@ -1039,6 +1044,8 @@ pub async fn get_recommended_groups(
         );
     }
 
+    timer.add("finish to extend qdrant_point_ids for group_tracking_ids and group_ids; start to recommend_qdrant_groups_query from qdrant");
+
     let recommended_qdrant_point_ids = recommend_qdrant_groups_query(
         positive_qdrant_ids,
         negative_qdrant_ids,
@@ -1059,8 +1066,12 @@ pub async fn get_recommended_groups(
         total_chunk_pages: (recommended_qdrant_point_ids.len() as f64 / 10.0).ceil() as i64,
     };
 
+    timer.add("finish to recommend_qdrant_groups_query from qdrant; start to get_metadata_from_groups from postgres");
+
     let recommended_chunk_metadatas =
         get_metadata_from_groups(group_query_result, Some(false), pool).await?;
+
+    timer.add("finish to get_metadata_from_groups from postgres and return results");
 
     if data.slim_chunks.unwrap_or(false) {
         let res = recommended_chunk_metadatas
@@ -1075,10 +1086,14 @@ pub async fn get_recommended_groups(
             })
             .collect::<Vec<GroupSlimChunksDTO>>();
 
-        return Ok(HttpResponse::Ok().json(res));
+        return Ok(HttpResponse::Ok()
+            .insert_header((Timer::header_key(), timer.header_value()))
+            .json(res));
     }
 
-    Ok(HttpResponse::Ok().json(recommended_chunk_metadatas))
+    Ok(HttpResponse::Ok()
+        .insert_header((Timer::header_key(), timer.header_value()))
+        .json(recommended_chunk_metadatas))
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema, IntoParams)]
@@ -1332,6 +1347,8 @@ pub async fn search_over_groups(
 
     let parsed_query = parse_query(data.query.clone());
 
+    let mut timer = Timer::new();
+
     let result_chunks = match data.search_type.as_str() {
         "fulltext" => {
             if !server_dataset_config.FULLTEXT_ENABLED {
@@ -1348,6 +1365,7 @@ pub async fn search_over_groups(
                 pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
+                &mut timer,
             )
             .await?
         }
@@ -1359,6 +1377,7 @@ pub async fn search_over_groups(
                 pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
+                &mut timer,
             )
             .await?
         }
@@ -1370,6 +1389,7 @@ pub async fn search_over_groups(
                 pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
+                &mut timer,
             )
             .await?
         }
@@ -1394,8 +1414,12 @@ pub async fn search_over_groups(
             total_chunk_pages: result_chunks.total_chunk_pages,
         };
 
-        return Ok(HttpResponse::Ok().json(res));
+        return Ok(HttpResponse::Ok()
+            .insert_header((Timer::header_key(), timer.header_value()))
+            .json(res));
     }
 
-    Ok(HttpResponse::Ok().json(result_chunks))
+    Ok(HttpResponse::Ok()
+        .insert_header((Timer::header_key(), timer.header_value()))
+        .json(result_chunks))
 }

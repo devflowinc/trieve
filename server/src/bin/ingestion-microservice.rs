@@ -15,7 +15,7 @@ use trieve_server::operators::chunk_operator::{
     update_chunk_metadata_query,
 };
 use trieve_server::operators::event_operator::create_event_query;
-use trieve_server::operators::model_operator::{create_embeddings, get_splade_embedding};
+use trieve_server::operators::model_operator::{create_embeddings, get_sparse_vector};
 use trieve_server::operators::parse_operator::{
     average_embeddings, coarse_doc_chunker, convert_html_to_text,
 };
@@ -420,7 +420,7 @@ async fn upload_chunk(
     };
 
     let splade_vector = if dataset_config.FULLTEXT_ENABLED {
-        match get_splade_embedding(&content.clone(), "doc").await {
+        match get_sparse_vector(&content.clone(), "doc").await {
             Ok(v) => v,
             Err(_) => vec![(0, 0.0)],
         }
@@ -606,7 +606,7 @@ async fn update_chunk(
         .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
 
     let splade_vector = if server_dataset_config.FULLTEXT_ENABLED {
-        match get_splade_embedding(&content, "doc").await {
+        match get_sparse_vector(&content, "doc").await {
             Ok(v) => v,
             Err(_) => vec![(0, 0.0)],
         }

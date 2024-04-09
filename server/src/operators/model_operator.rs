@@ -164,7 +164,7 @@ pub struct CustomSparseEmbedData {
 }
 
 #[tracing::instrument]
-pub async fn get_splade_embedding(
+pub async fn get_sparse_vector(
     message: &str,
     embed_type: &str,
 ) -> Result<Vec<(u32, f32)>, ServiceError> {
