@@ -95,6 +95,7 @@ export interface ServerEnvsConfiguration {
   EMBEDDING_SIZE: number;
   COLLISIONS_ENABLED: boolean;
   FULLTEXT_ENABLED: boolean;
+  QDRANT_COLLECTION_NAME: string | null;
 }
 
 export interface ClientEnvsConfiguration {
