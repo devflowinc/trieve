@@ -20,7 +20,7 @@ use crate::handlers::chunk_handler::{
 use crate::handlers::group_handler::{
     SearchGroupsResult, SearchOverGroupsData, SearchWithinGroupData,
 };
-use crate::operators::model_operator::get_splade_embedding;
+use crate::operators::model_operator::get_sparse_vector;
 use crate::operators::qdrant_operator::{get_qdrant_connection, search_qdrant_query};
 use crate::{data::models::Pool, errors::ServiceError};
 use actix_web::web;
@@ -1149,10 +1149,9 @@ pub async fn search_semantic_chunks(
     page: u64,
     pool: web::Data<Pool>,
     dataset: Dataset,
-    timer: &mut Timer,
     config: ServerDatasetConfiguration,
+    timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
-    timer.add("Reached semantic_chunks");
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
         Some(parent) => parent
@@ -1168,6 +1167,8 @@ pub async fn search_semantic_chunks(
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
+    timer.add("start to create dense embedding vector");
+
     let embedding_vectors =
         create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
     let embedding_vector = embedding_vectors
@@ -1178,7 +1179,7 @@ pub async fn search_semantic_chunks(
         ))?
         .clone();
 
-    timer.add("Created Embedding vector");
+    timer.add("finish creating dense embedding vector; start to fetch from qdrant");
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
         VectorType::Dense(embedding_vector),
@@ -1192,22 +1193,24 @@ pub async fn search_semantic_chunks(
         config,
     )
     .await?;
-    timer.add("Fetch from qdrant");
+
+    timer.add("finish fetching from qdrant; start to fetch from postgres");
 
     let mut result_chunks =
         retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool.clone()).await?;
 
-    timer.add("Fetch from postgres");
+    timer.add("finish fetching from postgres; start to rerank");
 
     result_chunks.score_chunks =
         rerank_chunks(result_chunks.score_chunks, data.date_bias, data.use_weights);
-    timer.add("Rerank (algo)");
+
+    timer.add("finish reranking and return result");
     transaction.finish();
 
     Ok(result_chunks)
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(timer, pool))]
 pub async fn search_full_text_chunks(
     data: SearchChunkData,
     parsed_query: ParsedQuery,
@@ -1215,6 +1218,7 @@ pub async fn search_full_text_chunks(
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
+    timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
@@ -1229,12 +1233,16 @@ pub async fn search_full_text_chunks(
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
-    let embedding_vector = get_splade_embedding(&parsed_query.query, "query")
+    timer.add("start to get sparse vector");
+
+    let sparse_vector = get_sparse_vector(&parsed_query.query, "query")
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
 
+    timer.add("finish getting sparse vector; start to fetch from qdrant");
+
     let search_chunk_query_results = retrieve_qdrant_points_query(
-        VectorType::Sparse(embedding_vector),
+        VectorType::Sparse(sparse_vector),
         page,
         data.page_size.unwrap_or(10),
         data.score_threshold,
@@ -1246,11 +1254,17 @@ pub async fn search_full_text_chunks(
     )
     .await?;
 
+    timer.add("finish fetching from qdrant; start to fetch from postgres");
+
     let mut result_chunks =
         retrieve_chunks_from_point_ids(search_chunk_query_results, &data, pool).await?;
 
+    timer.add("finish fetching from postgres; start to rerank");
+
     result_chunks.score_chunks =
         rerank_chunks(result_chunks.score_chunks, data.date_bias, data.use_weights);
+
+    timer.add("finish reranking and return result");
 
     if data.slim_chunks.unwrap_or(false) {
         result_chunks.score_chunks = result_chunks
@@ -1268,7 +1282,7 @@ pub async fn search_full_text_chunks(
 }
 
 #[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(timer, pool))]
 pub async fn search_hybrid_chunks(
     data: SearchChunkData,
     parsed_query: ParsedQuery,
@@ -1276,6 +1290,7 @@ pub async fn search_hybrid_chunks(
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
+    timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
@@ -1289,29 +1304,17 @@ pub async fn search_hybrid_chunks(
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
-    let dataset_config =
-        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let mut semantic_timer = Timer::new();
+    let mut full_text_timer = Timer::new();
 
-    let embedding_vectors =
-        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
-    let embedding_vector = embedding_vectors
-        .get(0)
-        .ok_or(ServiceError::BadRequest(
-            "Failed to get embedding vector due to empty vec response from create_embedding"
-                .to_string(),
-        ))?
-        .clone();
-
-    let search_chunk_query_results = retrieve_qdrant_points_query(
-        VectorType::Dense(embedding_vector),
-        page,
-        data.page_size.unwrap_or(10),
-        data.score_threshold,
-        data.filters.clone(),
+    let semantic_handler_results = search_semantic_chunks(
+        data.clone(),
         parsed_query.clone(),
-        dataset.id,
+        page,
         pool.clone(),
+        dataset.clone(),
         config.clone(),
+        &mut semantic_timer,
     );
 
     let full_text_handler_results = search_full_text_chunks(
@@ -1321,103 +1324,25 @@ pub async fn search_hybrid_chunks(
         pool.clone(),
         dataset,
         config,
+        &mut full_text_timer,
     );
 
-    let (search_chunk_query_results, full_text_handler_results) =
-        futures::join!(search_chunk_query_results, full_text_handler_results);
+    timer.add("start to search semantic and full text chunks");
 
-    let search_chunk_query_results = search_chunk_query_results?;
+    let (semantic_handler_results, full_text_handler_results) =
+        futures::join!(semantic_handler_results, full_text_handler_results);
+
+    timer.add("finish searching semantic and full text chunks; start to rerank results");
+
+    let semantic_handler_results =
+        semantic_handler_results.map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     let full_text_handler_results =
         full_text_handler_results.map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    let point_ids = search_chunk_query_results
-        .search_results
-        .iter()
-        .map(|point| point.point_id)
-        .collect::<Vec<_>>();
-
-    let (metadata_chunks, collided_chunks) = get_metadata_and_collided_chunks_from_point_ids_query(
-        point_ids,
-        data.get_collisions.unwrap_or(false),
-        pool,
-    )
-    .await?;
-
-    let semantic_score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
-        .search_results
-        .iter()
-        .map(|search_result| {
-            let mut chunk: ChunkMetadataWithFileData = match metadata_chunks
-                .iter()
-                .find(|metadata_chunk| metadata_chunk.qdrant_point_id == search_result.point_id)
-            {
-                Some(metadata_chunk) => metadata_chunk.clone(),
-                None => {
-                    log::error!(
-                        "Failed to find metadata chunk for point id for hybrid chunks: {:?}",
-                        search_result.point_id
-                    );
-                    sentry::capture_message(
-                        &format!(
-                            "Failed to find metadata for point id for hybrid chunk: {:?}",
-                            search_result.point_id
-                        ),
-                        sentry::Level::Error,
-                    );
-
-                    ChunkMetadataWithFileData {
-                        id: uuid::Uuid::default(),
-                        qdrant_point_id: uuid::Uuid::default(),
-                        created_at: chrono::Utc::now().naive_local(),
-                        updated_at: chrono::Utc::now().naive_local(),
-                        file_id: None,
-                        file_name: None,
-                        content: "".to_string(),
-                        chunk_html: Some("".to_string()),
-                        link: Some("".to_string()),
-                        tag_set: Some("".to_string()),
-                        metadata: None,
-                        tracking_id: None,
-                        time_stamp: None,
-                        weight: 1.0,
-                    }
-                }
-            };
-
-            if data.highlight_results.unwrap_or(true) {
-                chunk = find_relevant_sentence(
-                    chunk.clone(),
-                    data.query.clone(),
-                    data.highlight_delimiters.clone().unwrap_or(vec![
-                        ".".to_string(),
-                        "!".to_string(),
-                        "?".to_string(),
-                        "\n".to_string(),
-                        "\t".to_string(),
-                        ",".to_string(),
-                    ]),
-                )
-                .unwrap_or(chunk);
-            }
-
-            let mut collided_chunks: Vec<ChunkMetadataWithFileData> = collided_chunks
-                .iter()
-                .filter(|chunk| chunk.qdrant_id == search_result.point_id)
-                .map(|chunk| chunk.metadata.clone())
-                .collect();
-
-            collided_chunks.insert(0, chunk);
-
-            ScoreChunkDTO {
-                metadata: collided_chunks,
-                score: search_result.score as f64 * 0.5,
-            }
-        })
-        .collect();
-
     let result_chunks = {
-        let combined_results = semantic_score_chunks
+        let combined_results = semantic_handler_results
+            .score_chunks
             .iter()
             .zip(full_text_handler_results.score_chunks.iter())
             .flat_map(|(x, y)| vec![x.clone(), y.clone()])
@@ -1461,9 +1386,11 @@ pub async fn search_hybrid_chunks(
 
         reranked_chunks.truncate(data.page_size.unwrap_or(10) as usize);
 
+        timer.add("finish reranking and return result");
+
         SearchChunkQueryResponseBody {
             score_chunks: reranked_chunks,
-            total_chunk_pages: search_chunk_query_results.total_chunk_pages,
+            total_chunk_pages: semantic_handler_results.total_chunk_pages,
         }
     };
 
@@ -1538,7 +1465,7 @@ pub async fn search_full_text_groups(
     config: ServerDatasetConfiguration,
 ) -> Result<SearchGroupsResult, actix_web::Error> {
     let data_inner = data.clone();
-    let embedding_vector = get_splade_embedding(&data.query, "query").await?;
+    let embedding_vector = get_sparse_vector(&data.query, "query").await?;
 
     let search_chunk_query_results = search_within_chunk_group_query(
         VectorType::Sparse(embedding_vector),
@@ -1596,7 +1523,7 @@ pub async fn search_hybrid_groups(
         ))?
         .clone();
 
-    let sparse_embedding_vector = get_splade_embedding(&data.query, "query").await?;
+    let sparse_embedding_vector = get_sparse_vector(&data.query, "query").await?;
 
     let semantic_future = search_within_chunk_group_query(
         VectorType::Dense(dense_embedding_vector),
@@ -1700,7 +1627,7 @@ pub async fn search_hybrid_groups(
     })
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(timer, pool))]
 pub async fn semantic_search_over_groups(
     data: SearchOverGroupsData,
     parsed_query: ParsedQuery,
@@ -1708,9 +1635,13 @@ pub async fn semantic_search_over_groups(
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
+    timer: &mut Timer,
 ) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
+
+    timer.add("start to create dense embedding vector");
+
     let embedding_vectors =
         create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
     let embedding_vector = embedding_vectors
@@ -1719,6 +1650,8 @@ pub async fn semantic_search_over_groups(
             "Failed to get embedding vector due to empty array from create_embedding".to_string(),
         ))?
         .clone();
+
+    timer.add("finish creating dense embedding vector; start to fetch from qdrant");
 
     let search_chunk_query_results = retrieve_group_qdrant_points_query(
         VectorType::Dense(embedding_vector),
@@ -1734,15 +1667,19 @@ pub async fn semantic_search_over_groups(
     )
     .await?;
 
+    timer.add("finish fetching from qdrant; start to fetch from postgres");
+
     let result_chunks =
         retrieve_chunks_for_groups(search_chunk_query_results, &data, pool.clone()).await?;
+
+    timer.add("finish fetching from postgres; return results");
 
     //TODO: rerank for groups
 
     Ok(result_chunks)
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(timer, pool))]
 pub async fn full_text_search_over_groups(
     data: SearchOverGroupsData,
     parsed_query: ParsedQuery,
@@ -1750,13 +1687,18 @@ pub async fn full_text_search_over_groups(
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
+    timer: &mut Timer,
 ) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
-    let embedding_vector = get_splade_embedding(&data.query, "query")
+    timer.add("start to get sparse vector");
+
+    let sparse_vector = get_sparse_vector(&data.query, "query")
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
 
+    timer.add("finish getting sparse vector; start to fetch from qdrant");
+
     let search_chunk_query_results = retrieve_group_qdrant_points_query(
-        VectorType::Sparse(embedding_vector),
+        VectorType::Sparse(sparse_vector),
         page,
         data.filters.clone(),
         data.page_size.unwrap_or(10),
@@ -1769,8 +1711,12 @@ pub async fn full_text_search_over_groups(
     )
     .await?;
 
+    timer.add("finish fetching from qdrant; start to fetch from postgres");
+
     let result_chunks =
         retrieve_chunks_for_groups(search_chunk_query_results, &data, pool.clone()).await?;
+
+    timer.add("finish fetching from postgres; return results");
 
     //TODO: rerank for groups
 
@@ -1824,7 +1770,7 @@ async fn cross_encoder_for_groups(
     Ok(group_results)
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(timer, pool))]
 pub async fn hybrid_search_over_groups(
     data: SearchOverGroupsData,
     parsed_query: ParsedQuery,
@@ -1832,12 +1778,26 @@ pub async fn hybrid_search_over_groups(
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
+    timer: &mut Timer,
 ) -> Result<SearchOverGroupsResponseBody, actix_web::Error> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
-    let dense_embedding_vectors =
-        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
+    timer.add("start to create dense embedding vector and sparse vector");
+
+    let dense_embedding_vectors_future =
+        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone());
+
+    let sparse_embedding_vector_future = get_sparse_vector(&data.query, "query");
+
+    let (dense_embedding_vectors, sparse_embedding_vector) = futures::join!(
+        dense_embedding_vectors_future,
+        sparse_embedding_vector_future
+    );
+
+    let dense_embedding_vectors = dense_embedding_vectors?;
+    let sparse_embedding_vector = sparse_embedding_vector?;
+
     let dense_embedding_vector = dense_embedding_vectors
         .get(0)
         .ok_or(ServiceError::BadRequest(
@@ -1845,9 +1805,9 @@ pub async fn hybrid_search_over_groups(
         ))?
         .clone();
 
-    let sparse_embedding_vector = get_splade_embedding(&data.query, "query")
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
+    timer.add(
+        "finish creating dense embedding vector and sparse vector; start to fetch from qdrant",
+    );
 
     let semantic_future = retrieve_group_qdrant_points_query(
         VectorType::Dense(dense_embedding_vector),
@@ -1895,12 +1855,16 @@ pub async fn hybrid_search_over_groups(
         total_chunk_pages: semantic_results.total_chunk_pages,
     };
 
+    timer.add("finish fetching from qdrant; start to retrieve_chunks_for_groups from postgres");
+
     let combined_result_chunks = retrieve_chunks_for_groups(
         combined_search_chunk_query_results.clone(),
         &data,
         pool.clone(),
     )
     .await?;
+
+    timer.add("finish retrieving_chunks_for_groups from postgres; start to rerank for groups");
 
     let reranked_chunks = if combined_result_chunks.group_chunks.len() > 20 {
         let split_results = combined_result_chunks
@@ -1932,6 +1896,8 @@ pub async fn hybrid_search_over_groups(
         )
         .await?
     };
+
+    timer.add("finish reranking for groups and return results");
 
     let result_chunks = SearchOverGroupsResponseBody {
         group_chunks: reranked_chunks,
