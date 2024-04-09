@@ -91,15 +91,15 @@ export const DatasetEvents = () => {
                     name: "File Uploaded",
                   },
                   {
-                    id: "card_action_failed",
+                    id: "chunk_action_failed",
                     name: "Chunk Upload Failed",
                   },
                   {
-                    id: "card_uploaded",
+                    id: "chunk_uploaded",
                     name: "Chunk Uploaded",
                   },
                   {
-                    id: "card_updated",
+                    id: "chunk_updated",
                     name: "Chunk Updated",
                   },
                 ]}
