@@ -796,6 +796,12 @@ pub async fn search_qdrant_query(
     Ok(point_ids)
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct QdrantRecommendResult {
+    pub point_id: uuid::Uuid,
+    pub score: f32,
+}
+
 #[tracing::instrument(skip(pool))]
 pub async fn recommend_qdrant_query(
     positive_ids: Vec<uuid::Uuid>,
@@ -806,7 +812,7 @@ pub async fn recommend_qdrant_query(
     dataset_id: uuid::Uuid,
     config: ServerDatasetConfiguration,
     pool: web::Data<Pool>,
-) -> Result<Vec<uuid::Uuid>, ServiceError> {
+) -> Result<Vec<QdrantRecommendResult>, ServiceError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
     let recommend_strategy = match strategy {
@@ -877,11 +883,20 @@ pub async fn recommend_qdrant_query(
         })?
         .result
         .into_iter()
-        .filter_map(|point| match point.id?.point_id_options? {
-            PointIdOptions::Uuid(id) => uuid::Uuid::from_str(&id).ok(),
-            PointIdOptions::Num(_) => None,
+        .filter_map(|point| {
+            let point_id = match point.id.clone()?.point_id_options? {
+                PointIdOptions::Uuid(id) => uuid::Uuid::parse_str(&id).ok()?,
+                PointIdOptions::Num(_) => {
+                    return None;
+                }
+            };
+
+            Some(QdrantRecommendResult {
+                point_id,
+                score: point.score,
+            })
         })
-        .collect::<Vec<uuid::Uuid>>();
+        .collect::<Vec<QdrantRecommendResult>>();
 
     Ok(recommended_point_ids)
 }
@@ -968,6 +983,7 @@ pub async fn recommend_qdrant_groups_query(
                 "Failed to recommend groups points from qdrant. Your are likely providing an invalid point id.".to_string(),
             )
         })?;
+
     let recommended_point_ids = data
         .result
         .unwrap()
@@ -1003,6 +1019,7 @@ pub async fn recommend_qdrant_groups_query(
             }
         })
         .collect();
+
     Ok(recommended_point_ids)
 }
 

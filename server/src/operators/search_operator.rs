@@ -930,7 +930,7 @@ pub async fn retrieve_chunks_from_point_ids_without_collsions(
         }
     ]
 }))]
-pub struct GroupScoreChunkDTO {
+pub struct GroupScoreChunk {
     pub group_id: uuid::Uuid,
     pub group_tracking_id: Option<String>,
     pub metadata: Vec<ScoreChunkDTO>,
@@ -938,7 +938,7 @@ pub struct GroupScoreChunkDTO {
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct SearchOverGroupsResponseBody {
-    pub group_chunks: Vec<GroupScoreChunkDTO>,
+    pub group_chunks: Vec<GroupScoreChunk>,
     pub total_chunk_pages: i64,
 }
 
@@ -972,7 +972,7 @@ pub async fn retrieve_chunks_for_groups(
     )
     .await?;
 
-    let group_chunks: Vec<GroupScoreChunkDTO> = search_over_groups_query_result
+    let group_chunks: Vec<GroupScoreChunk> = search_over_groups_query_result
         .search_results
         .iter()
         .enumerate()
@@ -1047,7 +1047,7 @@ pub async fn retrieve_chunks_for_groups(
 
             let group_tracking_id = group_tracking_ids.get(i).cloned().flatten();
 
-            GroupScoreChunkDTO {
+            GroupScoreChunk {
                 group_id: group.group_id,
                 group_tracking_id,
                 metadata: score_chunk,
@@ -1065,7 +1065,7 @@ pub async fn get_metadata_from_groups(
     search_over_groups_query_result: SearchOverGroupsQueryResult,
     get_collisions: Option<bool>,
     pool: web::Data<Pool>,
-) -> Result<Vec<GroupScoreChunkDTO>, actix_web::Error> {
+) -> Result<Vec<GroupScoreChunk>, actix_web::Error> {
     let point_ids = search_over_groups_query_result
         .search_results
         .iter()
@@ -1089,7 +1089,7 @@ pub async fn get_metadata_from_groups(
     )
     .await?;
 
-    let group_chunks: Vec<GroupScoreChunkDTO> = search_over_groups_query_result
+    let group_chunks: Vec<GroupScoreChunk> = search_over_groups_query_result
         .search_results
         .iter()
         .enumerate()
@@ -1148,7 +1148,7 @@ pub async fn get_metadata_from_groups(
 
             let group_tracking_id = group_tracking_ids.get(i).cloned().flatten();
 
-            GroupScoreChunkDTO {
+            GroupScoreChunk {
                 group_id: group.group_id,
                 group_tracking_id,
                 metadata: score_chunk,
@@ -1898,8 +1898,8 @@ pub async fn full_text_search_over_groups(
 async fn cross_encoder_for_groups(
     query: String,
     page_size: u64,
-    groups_chunks: Vec<GroupScoreChunkDTO>,
-) -> Result<Vec<GroupScoreChunkDTO>, actix_web::Error> {
+    groups_chunks: Vec<GroupScoreChunk>,
+) -> Result<Vec<GroupScoreChunk>, actix_web::Error> {
     let score_chunks = groups_chunks
         .iter()
         .map(|group| {
@@ -2043,7 +2043,7 @@ pub async fn hybrid_search_over_groups(
             .group_chunks
             .chunks(20)
             .map(|chunk| chunk.to_vec())
-            .collect::<Vec<Vec<GroupScoreChunkDTO>>>();
+            .collect::<Vec<Vec<GroupScoreChunk>>>();
 
         let cross_encoder_results = cross_encoder_for_groups(
             data.query.clone(),
@@ -2059,7 +2059,7 @@ pub async fn hybrid_search_over_groups(
             .iter()
             .chain(split_results.get(1).unwrap().iter())
             .cloned()
-            .collect::<Vec<GroupScoreChunkDTO>>()
+            .collect::<Vec<GroupScoreChunk>>()
     } else {
         cross_encoder_for_groups(
             data.query.clone(),

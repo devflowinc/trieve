@@ -5,7 +5,7 @@ use super::{
 use crate::{
     data::models::{
         ChunkGroup, ChunkGroupAndFile, ChunkGroupBookmark, ChunkMetadata,
-        DatasetAndOrgWithSubAndPlan, GroupSlimChunksDTO, Pool, ScoreSlimChunks,
+        DatasetAndOrgWithSubAndPlan, GroupScoreSlimChunks, Pool, ScoreSlimChunks,
         SearchGroupSlimChunksResult, SearchOverGroupsSlimChunksResponseBody,
         ServerDatasetConfiguration, UnifiedId,
     },
@@ -20,7 +20,7 @@ use crate::{
         search_operator::{
             full_text_search_over_groups, get_metadata_from_groups, hybrid_search_over_groups,
             search_full_text_groups, search_hybrid_groups, search_semantic_groups,
-            semantic_search_over_groups, GroupScoreChunkDTO, SearchOverGroupsQueryResult,
+            semantic_search_over_groups, GroupScoreChunk, SearchOverGroupsQueryResult,
             SearchOverGroupsResponseBody,
         },
     },
@@ -896,9 +896,9 @@ pub struct RecommendGroupChunksRequest {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct RecommendGroupChunksDTO(pub Vec<GroupScoreChunkDTO>);
+pub struct RecommendGroupChunks(pub Vec<GroupScoreChunk>);
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct RecommendGroupSlimChunksDTO(pub Vec<GroupSlimChunksDTO>);
+pub struct RecommendGroupSlimChunks(pub Vec<GroupScoreSlimChunks>);
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 #[serde(untagged)]
@@ -925,7 +925,7 @@ pub enum RecommendGroupChunkResponseTypes {
             }
         ]
     }]))]
-    GroupSlimChunksDTO(RecommendGroupSlimChunksDTO),
+    GroupSlimChunksDTO(RecommendGroupSlimChunks),
     #[schema(example = json!({
         "group_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
         "metadata": [
@@ -947,7 +947,7 @@ pub enum RecommendGroupChunkResponseTypes {
             }
         ]
     }))]
-    GroupScoreChunkDTO(RecommendGroupChunksDTO),
+    GroupScoreChunkDTO(RecommendGroupChunks),
 }
 
 /// Get Recommended Groups
@@ -1108,7 +1108,7 @@ pub async fn get_recommended_groups(
     if data.slim_chunks.unwrap_or(false) {
         let res = recommended_chunk_metadatas
             .into_iter()
-            .map(|metadata| GroupSlimChunksDTO {
+            .map(|metadata| GroupScoreSlimChunks {
                 group_id: metadata.group_id,
                 metadata: metadata
                     .metadata
@@ -1116,7 +1116,7 @@ pub async fn get_recommended_groups(
                     .map(|chunk| chunk.into())
                     .collect::<Vec<ScoreSlimChunks>>(),
             })
-            .collect::<Vec<GroupSlimChunksDTO>>();
+            .collect::<Vec<GroupScoreSlimChunks>>();
 
         return Ok(HttpResponse::Ok()
             .insert_header((Timer::header_key(), timer.header_value()))
@@ -1431,7 +1431,7 @@ pub async fn search_over_groups(
         let ids = result_chunks
             .group_chunks
             .into_iter()
-            .map(|metadata| GroupSlimChunksDTO {
+            .map(|metadata| GroupScoreSlimChunks {
                 group_id: metadata.group_id,
                 metadata: metadata
                     .metadata
@@ -1439,7 +1439,7 @@ pub async fn search_over_groups(
                     .map(|chunk| chunk.into())
                     .collect::<Vec<ScoreSlimChunks>>(),
             })
-            .collect::<Vec<GroupSlimChunksDTO>>();
+            .collect::<Vec<GroupScoreSlimChunks>>();
 
         let res = SearchOverGroupsSlimChunksResponseBody {
             group_chunks: ids,
