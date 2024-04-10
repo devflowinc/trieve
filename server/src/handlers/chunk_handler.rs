@@ -10,7 +10,7 @@ use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
 use crate::operators::group_operator::{
-    check_group_ids_exist_query, get_groups_from_tracking_ids_query,
+    check_group_ids_exist_query, get_group_ids_from_tracking_ids_query,
 };
 use crate::operators::qdrant_operator::recommend_qdrant_query;
 use crate::operators::search_operator::{
@@ -355,7 +355,7 @@ pub async fn create_chunk(
         let group_ids_from_group_tracking_ids = if let Some(group_tracking_ids) =
             chunk.group_tracking_ids.clone()
         {
-            get_groups_from_tracking_ids_query(group_tracking_ids, count_dataset_id, pool.clone())
+            get_group_ids_from_tracking_ids_query(group_tracking_ids, count_dataset_id, pool.clone())
                 .await
                 .ok()
                 .unwrap_or(vec![])

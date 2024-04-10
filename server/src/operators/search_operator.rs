@@ -1,9 +1,8 @@
 use super::chunk_operator::{
     find_relevant_sentence, get_metadata_and_collided_chunks_from_point_ids_query,
-    get_metadata_from_point_ids,
 };
 use super::group_operator::{
-    get_group_tracking_ids_from_group_ids_query, get_groups_from_tracking_ids_query,
+    get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query
 };
 use super::model_operator::{create_embeddings, cross_encoder};
 use super::qdrant_operator::{
@@ -68,7 +67,7 @@ async fn convert_group_tracking_ids_to_group_ids(
             .collect();
 
         let correct_matches: Vec<MatchCondition> =
-            get_groups_from_tracking_ids_query(matches, dataset_id, pool.clone())
+            get_group_ids_from_tracking_ids_query(matches, dataset_id, pool.clone())
                 .await?
                 .iter()
                 .map(|ids| MatchCondition::Text(ids.to_string()))
@@ -851,6 +850,7 @@ pub struct FullTextDocIds {
 pub struct GroupScoreChunk {
     pub group_id: uuid::Uuid,
     pub group_tracking_id: Option<String>,
+    pub group_name: Option<String>,
     pub metadata: Vec<ScoreChunkDTO>,
 }
 
@@ -880,7 +880,7 @@ pub async fn retrieve_chunks_for_groups(
     )
     .await?;
 
-    let group_tracking_ids = get_group_tracking_ids_from_group_ids_query(
+    let groups = get_groups_from_group_ids_query(
         search_over_groups_query_result
             .search_results
             .iter()
@@ -963,10 +963,13 @@ pub async fn retrieve_chunks_for_groups(
                 })
                 .collect_vec();
 
-            let group_tracking_id = group_tracking_ids.get(i).cloned().flatten();
+            let group_data = groups.get(i);
+            let group_tracking_id = group_data.map(|group| group.tracking_id.clone()).flatten();
+            let group_name = group_data.map(|group| group.name.clone());
 
             GroupScoreChunk {
                 group_id: group.group_id,
+                group_name,
                 group_tracking_id,
                 metadata: score_chunk,
             }
@@ -997,7 +1000,7 @@ pub async fn get_metadata_from_groups(
     )
     .await?;
 
-    let group_tracking_ids = get_group_tracking_ids_from_group_ids_query(
+    let groups = get_groups_from_group_ids_query(
         search_over_groups_query_result
             .search_results
             .iter()
@@ -1064,10 +1067,13 @@ pub async fn get_metadata_from_groups(
                 })
                 .collect_vec();
 
-            let group_tracking_id = group_tracking_ids.get(i).cloned().flatten();
+            let group_data = groups.get(i);
+            let group_tracking_id = group_data.map(|group| group.tracking_id.clone()).flatten();
+            let group_name = group_data.map(|group| group.name.clone());
 
             GroupScoreChunk {
                 group_id: group.group_id,
+                group_name,
                 group_tracking_id,
                 metadata: score_chunk,
             }
