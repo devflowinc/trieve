@@ -49,6 +49,7 @@ export interface ChunkMetadataDisplayProps {
   signedInUserId?: string;
   viewingUserId?: string;
   chunk: ChunkMetadata;
+  score?: number;
   chunkGroups: ChunkGroupDTO[];
   bookmarks: ChunkBookmarksDTO[];
   setShowConfirmModal: Setter<boolean>;
@@ -282,6 +283,12 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                   {props.chunk.link}
                 </a>
               </Show>
+              <div class="grid w-fit auto-cols-min grid-cols-[1fr,3fr] gap-x-2 text-magenta-500 dark:text-magenta-400">
+                <Show when={props.score}>
+                  <span class="font-semibold">Similarity: </span>
+                  <span>{props.score?.toPrecision(3)}</span>
+                </Show>
+              </div>
               <Show
                 when={
                   props.chunk.tag_set &&

@@ -17,7 +17,7 @@ use crate::handlers::chunk_handler::{
     SearchChunkData, SearchChunkQueryResponseBody,
 };
 use crate::handlers::group_handler::{
-    SearchWithinGroupResults, SearchOverGroupsData, SearchWithinGroupData,
+    SearchOverGroupsData, SearchWithinGroupData, SearchWithinGroupResults,
 };
 use crate::operators::model_operator::get_sparse_vector;
 use crate::operators::qdrant_operator::{get_qdrant_connection, search_qdrant_query};
@@ -1825,7 +1825,7 @@ pub async fn semantic_search_over_groups(
 
     timer.add("finish creating dense embedding vector; start to fetch from qdrant");
 
-    let search_chunk_query_results = retrieve_group_qdrant_points_query(
+    let search_over_groups_qdrant_result = retrieve_group_qdrant_points_query(
         VectorType::Dense(embedding_vector),
         page,
         data.filters.clone(),
@@ -1841,8 +1841,24 @@ pub async fn semantic_search_over_groups(
 
     timer.add("finish fetching from qdrant; start to fetch from postgres");
 
-    let result_chunks =
-        retrieve_chunks_for_groups(search_chunk_query_results, &data, pool.clone()).await?;
+    let mut result_chunks = retrieve_chunks_for_groups(
+        search_over_groups_qdrant_result.clone(),
+        &data,
+        pool.clone(),
+    )
+    .await?;
+
+    result_chunks.group_chunks = search_over_groups_qdrant_result
+        .search_results
+        .iter()
+        .filter_map(|search_result| {
+            result_chunks
+                .group_chunks
+                .iter()
+                .find(|group| group.group_id == search_result.group_id)
+                .cloned()
+        })
+        .collect();
 
     timer.add("finish fetching from postgres; return results");
 
@@ -1869,7 +1885,7 @@ pub async fn full_text_search_over_groups(
 
     timer.add("finish getting sparse vector; start to fetch from qdrant");
 
-    let search_chunk_query_results = retrieve_group_qdrant_points_query(
+    let search_over_groups_qdrant_result = retrieve_group_qdrant_points_query(
         VectorType::Sparse(sparse_vector),
         page,
         data.filters.clone(),
@@ -1885,14 +1901,30 @@ pub async fn full_text_search_over_groups(
 
     timer.add("finish fetching from qdrant; start to fetch from postgres");
 
-    let result_chunks =
-        retrieve_chunks_for_groups(search_chunk_query_results, &data, pool.clone()).await?;
+    let mut result_groups_with_chunk_hits = retrieve_chunks_for_groups(
+        search_over_groups_qdrant_result.clone(),
+        &data,
+        pool.clone(),
+    )
+    .await?;
+
+    result_groups_with_chunk_hits.group_chunks = search_over_groups_qdrant_result
+        .search_results
+        .iter()
+        .filter_map(|search_result| {
+            result_groups_with_chunk_hits
+                .group_chunks
+                .iter()
+                .find(|group| group.group_id == search_result.group_id)
+                .cloned()
+        })
+        .collect();
 
     timer.add("finish fetching from postgres; return results");
 
     //TODO: rerank for groups
 
-    Ok(result_chunks)
+    Ok(result_groups_with_chunk_hits)
 }
 
 async fn cross_encoder_for_groups(

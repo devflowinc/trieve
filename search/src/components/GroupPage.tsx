@@ -54,9 +54,7 @@ export const GroupPage = (props: GroupPageProps) => {
   const [searchType, setSearchType] = createSignal<string>("hybrid");
   const [filters, setFilters] = createSignal<Filters | undefined>(undefined);
   const [searchLoading, setSearchLoading] = createSignal(false);
-  const [chunkMetadatas, setChunkMetadatas] = createSignal<
-    ChunkMetadata[]
-  >([]);
+  const [chunkMetadatas, setChunkMetadatas] = createSignal<ChunkMetadata[]>([]);
   const [searchMetadatasWithVotes, setSearchMetadatasWithVotes] = createSignal<
     ScoreChunkDTO[]
   >(searchChunkMetadatasWithVotes);

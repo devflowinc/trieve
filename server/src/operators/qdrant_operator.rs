@@ -984,7 +984,7 @@ pub async fn recommend_qdrant_groups_query(
             )
         })?;
 
-    let recommended_point_ids = data
+    let group_recommendation_results = data
         .result
         .unwrap()
         .groups
@@ -1020,7 +1020,7 @@ pub async fn recommend_qdrant_groups_query(
         })
         .collect();
 
-    Ok(recommended_point_ids)
+    Ok(group_recommendation_results)
 }
 
 #[tracing::instrument]

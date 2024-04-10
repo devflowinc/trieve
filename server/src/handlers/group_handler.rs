@@ -20,7 +20,7 @@ use crate::{
         search_operator::{
             full_text_search_over_groups, get_metadata_from_groups, hybrid_search_over_groups,
             search_full_text_groups, search_hybrid_groups, search_semantic_groups,
-            semantic_search_over_groups, SearchOverGroupsQueryResult,
+            semantic_search_over_groups, GroupScoreChunk, SearchOverGroupsQueryResult,
         },
     },
 };
@@ -1022,7 +1022,7 @@ pub async fn get_recommended_groups(
 
     timer.add("finish to extend qdrant_point_ids for group_tracking_ids and group_ids; start to recommend_qdrant_groups_query from qdrant");
 
-    let recommended_qdrant_point_ids = recommend_qdrant_groups_query(
+    let recommended_groups_from_qdrant = recommend_qdrant_groups_query(
         positive_qdrant_ids,
         negative_qdrant_ids,
         data.strategy.clone(),
@@ -1038,15 +1038,25 @@ pub async fn get_recommended_groups(
         ServiceError::BadRequest(format!("Could not get recommended groups: {}", err))
     })?;
 
-    let group_query_result = SearchOverGroupsQueryResult {
-        search_results: recommended_qdrant_point_ids.clone(),
-        total_chunk_pages: (recommended_qdrant_point_ids.len() as f64 / 10.0).ceil() as i64,
+    let group_qdrant_query_result = SearchOverGroupsQueryResult {
+        search_results: recommended_groups_from_qdrant.clone(),
+        total_chunk_pages: (recommended_groups_from_qdrant.len() as f64 / 10.0).ceil() as i64,
     };
 
     timer.add("finish to recommend_qdrant_groups_query from qdrant; start to get_metadata_from_groups from postgres");
 
     let recommended_chunk_metadatas =
-        get_metadata_from_groups(group_query_result, Some(false), pool).await?;
+        get_metadata_from_groups(group_qdrant_query_result.clone(), Some(false), pool).await?;
+
+    let recommended_chunk_metadatas = recommended_groups_from_qdrant
+        .into_iter()
+        .filter_map(|group| {
+            recommended_chunk_metadatas
+                .iter()
+                .find(|metadata| metadata.group_id == group.group_id)
+                .cloned()
+        })
+        .collect::<Vec<GroupScoreChunk>>();
 
     timer.add("finish to get_metadata_from_groups from postgres and return results");
 

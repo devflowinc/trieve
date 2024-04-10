@@ -17,6 +17,23 @@ export interface ChunkMetadata {
   weight: number;
 }
 
+export interface ChunkMetadataWithScore {
+  id: string;
+  content: string;
+  chunk_html?: string;
+  link: string | null;
+  qdrant_point_id: string;
+  created_at: string;
+  updated_at: string;
+  tag_set: string | null;
+  tracking_id: string | null;
+  time_stamp: string | null;
+  metadata: Record<string, never> | null;
+  dataset_id: string;
+  weight: number;
+  score: number;
+}
+
 export const indirectHasOwnProperty = (obj: unknown, prop: string): boolean => {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 };

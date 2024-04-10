@@ -1628,6 +1628,15 @@ pub async fn get_recommended_chunks(
         })
         .collect::<Vec<ChunkMetadataWithScore>>();
 
+    let recommended_chunk_metadatas_with_score = recommended_chunk_metadatas_with_score
+        .into_iter()
+        .sorted_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
+        .collect::<Vec<ChunkMetadataWithScore>>();
+
     timer.add("finish get_metadata_from_point_ids and return results");
 
     if data.slim_chunks.unwrap_or(false) {
