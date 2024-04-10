@@ -28,6 +28,7 @@ import { AiOutlineRobot } from "solid-icons/ai";
 import ChatPopup from "./ChatPopup";
 import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
+import { FaSolidChevronDown, FaSolidChevronUp } from "solid-icons/fa";
 
 export interface Filters {
   tagSet: string[];
@@ -377,28 +378,51 @@ const ResultsPage = (props: ResultsPageProps) => {
           <Match when={!props.loading() && groupResultChunks().length > 0}>
             <For each={groupResultChunks()}>
               {(group) => {
+                const [groupExpanded, setGroupExpanded] = createSignal(true);
+
+                const toggle = () => {
+                  setGroupExpanded(!groupExpanded());
+                };
+
                 return (
                   <div class="flex w-full max-w-6xl flex-col space-y-4 px-1 min-[360px]:px-4 sm:px-8 md:px-20">
-                    <div> Group Id {group.group_id} </div>
-                    <For each={group.metadata}>
-                      {(chunk) => (
-                        <div class="flex space-y-4 ">
-                          <ScoreChunkArray
-                            totalGroupPages={totalCollectionPages()}
-                            chunkGroups={chunkCollections()}
-                            chunks={chunk.metadata}
-                            score={chunk.score}
-                            bookmarks={bookmarks()}
-                            setOnDelete={setOnDelete}
-                            setShowConfirmModal={setShowConfirmDeleteModal}
-                            showExpand={clientSideRequestFinished()}
-                            setChunkGroups={setChunkCollections}
-                            setSelectedIds={setSelectedIds}
-                            selectedIds={selectedIds}
-                          />
-                        </div>
-                      )}
-                    </For>
+                    <div
+                      onClick={toggle}
+                      classList={{
+                        "mx-8 flex items-center space-x-2 rounded bg-neutral-100 px-4 py-4 dark:bg-neutral-800":
+                          true,
+                        "-mb-2": groupExpanded(),
+                      }}
+                    >
+                      <Show when={groupExpanded()}>
+                        <FaSolidChevronUp />
+                      </Show>
+                      <Show when={!groupExpanded()}>
+                        <FaSolidChevronDown />
+                      </Show>
+                      <div>{group.group_name}</div>
+                    </div>
+                    <Show when={groupExpanded()}>
+                      <For each={group.metadata}>
+                        {(chunk) => (
+                          <div class="ml-5 flex space-y-4">
+                            <ScoreChunkArray
+                              totalGroupPages={totalCollectionPages()}
+                              chunkGroups={chunkCollections()}
+                              chunks={chunk.metadata}
+                              score={chunk.score}
+                              bookmarks={bookmarks()}
+                              setOnDelete={setOnDelete}
+                              setShowConfirmModal={setShowConfirmDeleteModal}
+                              showExpand={clientSideRequestFinished()}
+                              setChunkGroups={setChunkCollections}
+                              setSelectedIds={setSelectedIds}
+                              selectedIds={selectedIds}
+                            />
+                          </div>
+                        )}
+                      </For>
+                    </Show>
                   </div>
                 );
               }}
