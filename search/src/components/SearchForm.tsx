@@ -65,7 +65,7 @@ const SearchForm = (props: {
     end: props.filters.end,
   });
   const [usingPanel, setUsingPanel] = createSignal("");
-  const [groupUniqueSearch] = createSignal(
+  const [groupUniqueSearch, setGroupUniqueSearch] = createSignal(
     // eslint-disable-next-line solid/reactivity
     props.groupUniqueSearch ?? false,
   );
@@ -608,19 +608,13 @@ const SearchForm = (props: {
               </>
             )}
           </Popover>
-          {/* <Show when={!props.groupID}>
-            <div class="flex items-center space-x-2">
-              <div class="flex items-center space-x-1">
-                <label class="text-sm">Group Unique</label>
-                <Tooltip
-                  body={<FiInfo class="h-4 w-4" />}
-                  tooltipText="Only show one result per group. Group is determined by how chunks are placed into groups."
-                />
-              </div>
+          <Show when={!props.groupID}>
+            <div class="flex-1" />
+            <div class="flex items-center space-x-1 justify-self-center">
               <input
                 class="h-4 w-4"
                 type="checkbox"
-                checked={props.groupID ? true : false}
+                checked={props.groupUniqueSearch}
                 onChange={(e) => {
                   if (e.target.checked) {
                     setGroupUniqueSearch(true);
@@ -629,8 +623,11 @@ const SearchForm = (props: {
                   }
                 }}
               />
+              <div class="flex items-center space-x-1">
+                <label class="text-sm">Group Search</label>
+              </div>
             </div>
-          </Show> */}
+          </Show>
         </div>
         <Show when={showFilters()}>
           <div class="flex gap-x-2">

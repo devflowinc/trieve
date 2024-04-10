@@ -58,6 +58,9 @@ const ResultsPage = (props: ResultsPageProps) => {
   );
   const $currentUser = datasetAndUserContext.user;
   const [resultChunks, setResultChunks] = createSignal<ScoreChunkDTO[]>([]);
+  const [groupResultChunks, setGroupResultChunks] = createSignal<
+    GroupScoreChunkDTO[]
+  >([]);
   const [clientSideRequestFinished, setClientSideRequestFinished] =
     createSignal(false);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] =
@@ -179,7 +182,7 @@ const ResultsPage = (props: ResultsPageProps) => {
     let searchRoute = "chunk/search";
     const groupUnique = props.groupUnique;
     if (groupUnique) {
-      searchRoute = "chunk_group/search_over_groups";
+      searchRoute = "chunk_group/group_oriented_search";
     }
 
     props.setLoading(true);
@@ -203,19 +206,11 @@ const ResultsPage = (props: ResultsPageProps) => {
             resultingChunks = data.score_chunks as ScoreChunkDTO[];
           } else {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            const result = data.group_chunks as GroupScoreChunkDTO[];
-            result.forEach((group) => {
-              let chunkToAdd = group.metadata[0];
-              let i = 1;
-              while (
-                resultingChunks.some(
-                  (c) => c.metadata[0].id === chunkToAdd.metadata[0].id,
-                )
-              ) {
-                chunkToAdd = group.metadata[i];
-                i++;
-              }
-              resultingChunks.push(chunkToAdd);
+            const groupResult = data.group_chunks as GroupScoreChunkDTO[];
+
+            setGroupResultChunks(groupResult);
+            resultingChunks = groupResult.flatMap((groupChunkDTO) => {
+              return groupChunkDTO.metadata;
             });
           }
 
@@ -285,7 +280,7 @@ const ResultsPage = (props: ResultsPageProps) => {
           <Match when={noResults()}>
             <div class="text-2xl">No results found</div>
           </Match>
-          <Match when={!props.loading()}>
+          <Match when={!props.loading() && groupResultChunks().length == 0}>
             <div class="flex w-full max-w-6xl flex-col space-y-4 px-1 min-[360px]:px-4 sm:px-8 md:px-20">
               <For each={resultChunks()}>
                 {(chunk) => (
@@ -307,6 +302,107 @@ const ResultsPage = (props: ResultsPageProps) => {
                 )}
               </For>
             </div>
+            <Show when={resultChunks().length > 0}>
+              <div class="mx-auto my-12 flex items-center space-x-2">
+                <PaginationController page={props.page} totalPages={100} />
+              </div>
+            </Show>
+            <div>
+              <div
+                data-dial-init
+                class="group fixed bottom-6 right-6"
+                onMouseEnter={() => {
+                  document
+                    .getElementById("speed-dial-menu-text-outside-button")
+                    ?.classList.remove("hidden");
+                  document
+                    .getElementById("speed-dial-menu-text-outside-button")
+                    ?.classList.add("flex");
+                }}
+                onMouseLeave={() => {
+                  document
+                    .getElementById("speed-dial-menu-text-outside-button")
+                    ?.classList.add("hidden");
+                  document
+                    .getElementById("speed-dial-menu-text-outside-button")
+                    ?.classList.remove("flex");
+                }}
+              >
+                <div
+                  id="speed-dial-menu-text-outside-button"
+                  class="mb-4 hidden flex-col items-center space-y-2"
+                >
+                  <button
+                    type="button"
+                    class="relative h-[52px] w-[52px] items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
+                    onClick={() => {
+                      setSelectedIds(
+                        resultChunks()
+                          .flatMap((c) => {
+                            return c.metadata.map((m) => m.id);
+                          })
+                          .slice(0, 10),
+                      );
+                      setOpenChat(true);
+                    }}
+                  >
+                    <IoDocumentsOutline class="mx-auto h-7 w-7" />
+                    <span class="font-sm absolute -left-[8.5rem] top-1/2 mb-px block -translate-y-1/2 break-words bg-white/30 text-sm backdrop-blur-xl dark:bg-black/30">
+                      Chat with all results
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    class="relative h-[52px] w-[52px] items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white dark:focus:ring-gray-400"
+                    onClick={() => {
+                      setOpenChat(true);
+                    }}
+                  >
+                    <IoDocumentOutline class="mx-auto h-7 w-7" />
+                    <span class="font-sm absolute -left-[10.85rem] top-1/2 mb-px block -translate-y-1/2 bg-white/30 text-sm backdrop-blur-xl dark:bg-black/30">
+                      Chat with selected results
+                    </span>
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  class="flex h-14 w-14 items-center justify-center rounded-lg bg-magenta-500 text-white hover:bg-magenta-400 focus:outline-none focus:ring-4 focus:ring-magenta-300 dark:bg-magenta-500 dark:hover:bg-magenta-400 dark:focus:ring-magenta-600"
+                >
+                  <AiOutlineRobot class="h-7 w-7 fill-current text-white" />
+                  <span class="sr-only">Open actions menu</span>
+                </button>
+              </div>
+            </div>
+          </Match>
+          <Match when={!props.loading() && groupResultChunks().length > 0}>
+            <For each={groupResultChunks()}>
+              {(group) => {
+                return (
+                  <div class="flex w-full max-w-6xl flex-col space-y-4 px-1 min-[360px]:px-4 sm:px-8 md:px-20">
+                    <div> Group Id {group.group_id} </div>
+                    <For each={group.metadata}>
+                      {(chunk) => (
+                        <div class="flex space-y-4 ">
+                          <ScoreChunkArray
+                            totalGroupPages={totalCollectionPages()}
+                            chunkGroups={chunkCollections()}
+                            chunks={chunk.metadata}
+                            score={chunk.score}
+                            bookmarks={bookmarks()}
+                            setOnDelete={setOnDelete}
+                            setShowConfirmModal={setShowConfirmDeleteModal}
+                            showExpand={clientSideRequestFinished()}
+                            setChunkGroups={setChunkCollections}
+                            setSelectedIds={setSelectedIds}
+                            selectedIds={selectedIds}
+                          />
+                        </div>
+                      )}
+                    </For>
+                  </div>
+                );
+              }}
+            </For>
             <Show when={resultChunks().length > 0}>
               <div class="mx-auto my-12 flex items-center space-x-2">
                 <PaginationController page={props.page} totalPages={100} />
