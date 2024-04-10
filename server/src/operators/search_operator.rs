@@ -825,88 +825,6 @@ pub struct FullTextDocIds {
     pub total_count: i64,
 }
 
-#[tracing::instrument(skip(pool))]
-pub async fn retrieve_chunks_from_point_ids_without_collsions(
-    search_chunk_query_results: SearchChunkQueryResult,
-    data: &web::Json<SearchChunkData>,
-    pool: web::Data<Pool>,
-) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
-    let point_ids = search_chunk_query_results
-        .search_results
-        .iter()
-        .map(|point| point.point_id)
-        .collect::<Vec<_>>();
-
-    let metadata_chunks = get_metadata_from_point_ids(point_ids, pool).await?;
-
-    let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
-        .search_results
-        .iter()
-        .map(|search_result| {
-            let mut chunk: ChunkMetadata = match metadata_chunks.iter().find(|metadata_chunk| {
-                metadata_chunk.qdrant_point_id.unwrap_or_default() == search_result.point_id
-            }) {
-                Some(metadata_chunk) => metadata_chunk.clone(),
-                None => {
-                    log::error!(
-                        "Failed to find metadata chunk for point id without collisions: {:?}",
-                        search_result.point_id
-                    );
-                    sentry::capture_message(
-                        &format!(
-                            "Failed to find metadata chunk for point id without collisions {:?}",
-                            search_result.point_id
-                        ),
-                        sentry::Level::Error,
-                    );
-
-                    ChunkMetadata {
-                        id: uuid::Uuid::default(),
-                        qdrant_point_id: Some(uuid::Uuid::default()),
-                        created_at: chrono::Utc::now().naive_local(),
-                        updated_at: chrono::Utc::now().naive_local(),
-                        content: "".to_string(),
-                        chunk_html: Some("".to_string()),
-                        link: Some("".to_string()),
-                        tag_set: Some("".to_string()),
-                        metadata: None,
-                        tracking_id: None,
-                        time_stamp: None,
-                        dataset_id: uuid::Uuid::default(),
-                        weight: 1.0,
-                    }
-                }
-            };
-
-            if data.highlight_results.unwrap_or(true) {
-                chunk = find_relevant_sentence(
-                    chunk.clone(),
-                    data.query.clone(),
-                    data.highlight_delimiters.clone().unwrap_or(vec![
-                        ".".to_string(),
-                        "!".to_string(),
-                        "?".to_string(),
-                        "\n".to_string(),
-                        "\t".to_string(),
-                        ",".to_string(),
-                    ]),
-                )
-                .unwrap_or(chunk);
-            }
-
-            ScoreChunkDTO {
-                metadata: vec![chunk],
-                score: search_result.score.into(),
-            }
-        })
-        .collect();
-
-    Ok(SearchChunkQueryResponseBody {
-        score_chunks,
-        total_chunk_pages: search_chunk_query_results.total_chunk_pages,
-    })
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[schema(example = json!({
     "group_id": "e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
@@ -1608,7 +1526,7 @@ pub async fn search_semantic_groups(
     )
     .await?;
 
-    let mut result_chunks = retrieve_chunks_from_point_ids_without_collsions(
+    let mut result_chunks = retrieve_chunks_from_point_ids(
         search_semantic_chunk_query_results,
         &web::Json(data.clone().into()),
         pool.clone(),
@@ -1653,7 +1571,7 @@ pub async fn search_full_text_groups(
     )
     .await?;
 
-    let mut result_chunks = retrieve_chunks_from_point_ids_without_collsions(
+    let mut result_chunks = retrieve_chunks_from_point_ids(
         search_chunk_query_results,
         &web::Json(data.clone().into()),
         pool.clone(),
@@ -1743,7 +1661,7 @@ pub async fn search_hybrid_groups(
         total_chunk_pages: semantic_results.total_chunk_pages,
     };
 
-    let combined_result_chunks = retrieve_chunks_from_point_ids_without_collsions(
+    let combined_result_chunks = retrieve_chunks_from_point_ids(
         combined_search_chunk_query_results,
         &web::Json(data.clone().into()),
         pool.clone(),
