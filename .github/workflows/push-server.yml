@@ -1,5 +1,6 @@
 name: Create Docker Images
 on:
+  pull_request:
   workflow_call:
     secrets:
       DOCKER_USERNAME:
