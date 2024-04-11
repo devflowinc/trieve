@@ -38,8 +38,6 @@ pub async fn create_organization_query(
 
     let mut number: usize = diesel::insert_into(organizations_columns::organizations)
         .values(new_organization.clone())
-        .on_conflict(on_constraint("organizations_name_key"))
-        .do_nothing()
         .execute(&mut conn)
         .await
         .map_err(|_| {
@@ -52,8 +50,6 @@ pub async fn create_organization_query(
 
         number = diesel::insert_into(organizations_columns::organizations)
             .values(new_organization.clone())
-            .on_conflict(on_constraint("organizations_name_key"))
-            .do_nothing()
             .execute(&mut conn)
             .await
             .map_err(|_| {
