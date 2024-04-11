@@ -31,8 +31,8 @@ path = "src/bin/create-new-qdrant.rs"
 
 
 [dependencies]
-actix-identity = { version = "0.6.0" }
-actix-session = { version = "0.8.0", features = [
+actix-identity = { version = "0.7.1" }
+actix-session = { version = "0.9.0", features = [
     "redis-rs-session",
     "redis-rs-tls-session",
 ] }
