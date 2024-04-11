@@ -1920,33 +1920,36 @@ impl From<ApiKeyRole> for i32 {
     "created_at": "2021-01-01T00:00:00",
     "updated_at": "2021-01-01T00:00:00",
     "role": 1,
+    "blake3_hash": "hash",
 }))]
 #[diesel(table_name = user_api_key)]
 pub struct UserApiKey {
     pub id: uuid::Uuid,
     pub user_id: uuid::Uuid,
-    pub api_key_hash: String,
+    pub api_key_hash: Option<String>,
     pub name: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub role: i32,
+    pub blake3_hash: Option<String>,
 }
 
 impl UserApiKey {
     pub fn from_details(
         user_id: uuid::Uuid,
-        api_key_hash: String,
+        blake3_hash: String,
         name: String,
         role: ApiKeyRole,
     ) -> Self {
         UserApiKey {
             id: uuid::Uuid::new_v4(),
             user_id,
-            api_key_hash,
+            api_key_hash: None,
             name,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             role: role.into(),
+            blake3_hash: Some(blake3_hash),
         }
     }
 }
