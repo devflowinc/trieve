@@ -1,8 +1,5 @@
 name: Create Docker Images
 on:
-  pull_request:
-    paths:
-    - '.github/workflows/**'
   push:
 jobs:
   build_server:
@@ -42,6 +39,6 @@ jobs:
           cache-to: type=gha,mode=max
           context: server/
           file: ./server/Dockerfile.no-ocr
-          push: false
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
