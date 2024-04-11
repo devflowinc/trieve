@@ -16,6 +16,7 @@ use actix_web::{
     web, Error, FromRequest, HttpMessage, HttpRequest,
 };
 use futures_util::future::LocalBoxFuture;
+use sentry::Transaction;
 use std::{
     future::{ready, Ready},
     rc::Rc,
@@ -48,7 +49,7 @@ where
             let get_user_span = transaction.start_child("get_user", "Getting user");
 
             let (http_req, pl) = req.parts_mut();
-            let user = get_user(http_req, pl).await;
+            let user = get_user(http_req, pl, transaction.clone()).await;
             if let Some(ref user) = user {
                 req.extensions_mut().insert(user.clone());
             };
@@ -138,7 +139,9 @@ where
     }
 }
 
-async fn get_user(req: &HttpRequest, pl: &mut Payload) -> Option<LoggedUser> {
+async fn get_user(req: &HttpRequest, pl: &mut Payload, tx: Transaction) -> Option<LoggedUser> {
+    let get_user_from_identity_span =
+        tx.start_child("get_user_from_identity", "Getting user from identity");
     if let Ok(identity) = Identity::from_request(req, pl).into_inner() {
         if let Ok(user_json) = identity.id() {
             if let Ok(user) = serde_json::from_str::<LoggedUser>(&user_json) {
@@ -146,6 +149,7 @@ async fn get_user(req: &HttpRequest, pl: &mut Payload) -> Option<LoggedUser> {
             }
         }
     }
+    get_user_from_identity_span.finish();
 
     if let Some(authen_header) = req.headers().get("Authorization") {
         if let Ok(authen_header) = authen_header.to_str() {
@@ -182,12 +186,15 @@ async fn get_user(req: &HttpRequest, pl: &mut Payload) -> Option<LoggedUser> {
                 }
             }
 
+            let get_user_from_api_key_span =
+                tx.start_child("get_user_from_api_key", "Getting user from api key");
             //TODO: Cache the api key in redis
             if let Some(pool) = req.app_data::<web::Data<Pool>>() {
                 if let Ok(user) = get_user_from_api_key_query(authen_header, pool).await {
                     return Some(user);
                 }
             }
+            get_user_from_api_key_span.finish();
         }
     }
 
