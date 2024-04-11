@@ -1,10 +1,10 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
-    data::models::{Pool, RedisPool, UserOrganization, UserRole},
+    data::models::{Pool, UserOrganization, UserRole},
     operators::{
         organization_operator::{
-            create_organization_query, delete_organization_query, get_org_usage_by_id_query,
-            get_org_users_by_id_query, get_organization_by_key_query, update_organization_query,
+            create_organization_query, delete_organization_query, get_org_from_id_query,
+            get_org_usage_by_id_query, get_org_users_by_id_query, update_organization_query,
         },
         user_operator::add_user_to_organization,
     },
@@ -33,17 +33,15 @@ use utoipa::ToSchema;
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool, redis_pool))]
+#[tracing::instrument(skip(pool))]
 pub async fn get_organization_by_id(
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-    redis_pool: web::Data<RedisPool>,
     _user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_id = organization_id.into_inner();
 
-    let org_plan_sub =
-        get_organization_by_key_query(organization_id.into(), redis_pool, pool).await?;
+    let org_plan_sub = get_org_from_id_query(organization_id, pool).await?;
 
     Ok(HttpResponse::Ok().json(org_plan_sub.with_defaults()))
 }
@@ -68,24 +66,16 @@ pub async fn get_organization_by_id(
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(redis_pool, pool))]
+#[tracing::instrument(skip(pool))]
 pub async fn delete_organization_by_id(
     req: HttpRequest,
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-    redis_pool: web::Data<RedisPool>,
     user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_id = organization_id.into_inner();
 
-    let org = delete_organization_query(
-        Some(&req),
-        Some(user.0.id),
-        organization_id,
-        redis_pool,
-        pool,
-    )
-    .await?;
+    let org = delete_organization_query(Some(&req), Some(user.0.id), organization_id, pool).await?;
 
     Ok(HttpResponse::Ok().json(org))
 }
@@ -118,17 +108,15 @@ pub struct UpdateOrganizationData {
         ("ApiKey" = ["owner"]),
     )
 )]
-#[tracing::instrument(skip(redis_pool, pool))]
+#[tracing::instrument(skip(pool))]
 pub async fn update_organization(
     organization: web::Json<UpdateOrganizationData>,
     pool: web::Data<Pool>,
-    redis_pool: web::Data<RedisPool>,
     _user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_update_data = organization.into_inner();
-    let old_organization = get_organization_by_key_query(
+    let old_organization = get_org_from_id_query(
         organization_update_data.organization_id.into(),
-        redis_pool.clone(),
         pool.clone(),
     )
     .await?;
@@ -137,9 +125,8 @@ pub async fn update_organization(
         organization_update_data.organization_id,
         organization_update_data
             .name
-            .unwrap_or(old_organization.name)
+            .unwrap_or(old_organization.organization.name)
             .as_str(),
-        redis_pool,
         pool,
     )
     .await?;
@@ -170,28 +157,22 @@ pub struct CreateOrganizationData {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(redis_pool, pool))]
+#[tracing::instrument(skip(pool))]
 pub async fn create_organization(
     req: HttpRequest,
     organization: web::Json<CreateOrganizationData>,
-    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
     user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_create_data = organization.into_inner();
 
-    let created_organization = create_organization_query(
-        organization_create_data.name.as_str(),
-        redis_pool.clone(),
-        pool.clone(),
-    )
-    .await?;
+    let created_organization =
+        create_organization_query(organization_create_data.name.as_str(), pool.clone()).await?;
 
     add_user_to_organization(
         Some(&req),
         Some(user.id),
         UserOrganization::from_details(user.id, created_organization.id, UserRole::Owner),
-        redis_pool,
         pool,
     )
     .await?;

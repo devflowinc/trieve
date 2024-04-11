@@ -125,10 +125,12 @@ pub async fn upload_file_handler(
     }
 
     let file_size_sum_pool = pool.clone();
-    let file_size_sum =
-        get_file_size_sum_org(dataset_org_plan_sub.organization.id, file_size_sum_pool)
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    let file_size_sum = get_file_size_sum_org(
+        dataset_org_plan_sub.organization.organization.id,
+        file_size_sum_pool,
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
     if file_size_sum
         >= dataset_org_plan_sub
             .clone()
@@ -351,8 +353,16 @@ pub async fn get_signed_url(
     let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
     let s3_path = match unlimited.as_str() {
         "true" => "files".to_string(),
-        "false" => dataset_org_plan_sub.organization.id.to_string(),
-        _ => dataset_org_plan_sub.organization.id.to_string(),
+        "false" => dataset_org_plan_sub
+            .organization
+            .organization
+            .id
+            .to_string(),
+        _ => dataset_org_plan_sub
+            .organization
+            .organization
+            .id
+            .to_string(),
     };
 
     let signed_url = bucket

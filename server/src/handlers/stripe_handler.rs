@@ -1,16 +1,15 @@
 use crate::{
-    data::models::{Pool, RedisPool},
+    data::models::Pool,
     errors::ServiceError,
     get_env,
     operators::{
-        organization_operator::get_organization_by_key_query,
+        organization_operator::get_org_from_id_query,
         stripe_operator::{
             cancel_stripe_subscription, create_stripe_payment_link, create_stripe_plan_query,
             create_stripe_subscription_query, delete_subscription_by_id_query, get_all_plans_query,
             get_option_subscription_by_organization_id_query, get_plan_by_id_query,
-            get_subscription_by_id_query, refresh_redis_org_plan_sub,
-            set_stripe_subscription_current_period_end, update_stripe_subscription,
-            update_stripe_subscription_plan_query,
+            get_subscription_by_id_query, set_stripe_subscription_current_period_end,
+            update_stripe_subscription, update_stripe_subscription_plan_query,
         },
     },
 };
@@ -20,11 +19,10 @@ use stripe::{EventObject, EventType, Webhook};
 
 use super::auth_handler::OwnerOnly;
 
-#[tracing::instrument(skip(redis_pool, pool))]
+#[tracing::instrument(skip(pool))]
 pub async fn webhook(
     req: HttpRequest,
     payload: web::Bytes,
-    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let payload_str = String::from_utf8(payload.to_vec())
@@ -97,7 +95,6 @@ pub async fn webhook(
 
                         delete_subscription_by_id_query(
                             existing_subscription.id,
-                            redis_pool.clone(),
                             delete_subscription_pool,
                         )
                         .await?;
@@ -107,7 +104,6 @@ pub async fn webhook(
                         subscription_stripe_id,
                         plan_id,
                         organization_id,
-                        redis_pool,
                         pool,
                     )
                     .await?;
@@ -138,7 +134,6 @@ pub async fn webhook(
                     set_stripe_subscription_current_period_end(
                         subscription_stripe_id,
                         current_period_end,
-                        redis_pool,
                         pool,
                     )
                     .await?;
@@ -175,10 +170,9 @@ pub struct GetDirectPaymentLinkData {
         ("organization_id" = uuid::Uuid, Path, description = "id of the organization you want to subscribe to the plan"),
     ),
 )]
-#[tracing::instrument(skip(pool, redis_pool))]
+#[tracing::instrument(skip(pool))]
 pub async fn direct_to_payment_link(
     path_data: web::Path<GetDirectPaymentLinkData>,
-    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_pool = pool.clone();
@@ -197,8 +191,7 @@ pub async fn direct_to_payment_link(
     let organization_id = path_data.organization_id;
     let organization_id_clone = path_data.organization_id;
     let _org_plan_sub =
-        get_organization_by_key_query(organization_id_clone.into(), redis_pool, organization_pool)
-            .await?;
+        get_org_from_id_query(organization_id_clone.into(), organization_pool).await?;
 
     let plan = get_plan_by_id_query(plan_id, pool).await?;
 
@@ -229,11 +222,10 @@ pub async fn direct_to_payment_link(
         ("ApiKey" = ["owner"]),
     )
 )]
-#[tracing::instrument(skip(redis_pool, pool))]
+#[tracing::instrument(skip(pool))]
 pub async fn cancel_subscription(
     subscription_id: web::Path<uuid::Uuid>,
     _user: OwnerOnly,
-    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let get_sub_pool = pool.clone();
@@ -241,9 +233,6 @@ pub async fn cancel_subscription(
         get_subscription_by_id_query(subscription_id.into_inner(), get_sub_pool).await?;
 
     cancel_stripe_subscription(subscription.stripe_id).await?;
-
-    let _ =
-        refresh_redis_org_plan_sub(subscription.organization_id, redis_pool, pool.clone()).await;
 
     Ok(HttpResponse::Ok().finish())
 }
@@ -275,11 +264,10 @@ pub struct UpdateSubscriptionData {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, redis_pool))]
+#[tracing::instrument(skip(pool))]
 pub async fn update_subscription_plan(
     path_data: web::Path<UpdateSubscriptionData>,
     _user: OwnerOnly,
-    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let get_subscription_pool = pool.clone();
@@ -294,13 +282,8 @@ pub async fn update_subscription_plan(
 
     update_stripe_subscription(subscription.stripe_id, plan.stripe_id).await?;
 
-    update_stripe_subscription_plan_query(
-        subscription.id,
-        plan.id,
-        redis_pool,
-        update_subscription_plan_pool,
-    )
-    .await?;
+    update_stripe_subscription_plan_query(subscription.id, plan.id, update_subscription_plan_pool)
+        .await?;
 
     Ok(HttpResponse::Ok().finish())
 }

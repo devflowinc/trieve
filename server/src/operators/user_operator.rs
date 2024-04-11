@@ -2,9 +2,8 @@ use crate::data::models::{
     ApiKeyDTO, ApiKeyRole, Organization, SlimUser, UserApiKey, UserOrganization, UserRole,
 };
 use crate::handlers::auth_handler::LoggedUser;
-use crate::operators::stripe_operator::refresh_redis_org_plan_sub;
 use crate::{
-    data::models::{Pool, RedisPool, User},
+    data::models::{Pool, User},
     errors::ServiceError,
 };
 use actix_identity::Identity;
@@ -78,12 +77,11 @@ pub async fn get_user_by_id_query(
     }
 }
 
-#[tracing::instrument(skip(pool, redis_pool))]
+#[tracing::instrument(skip(pool))]
 pub async fn add_existing_user_to_org(
     email: String,
     organization_id: uuid::Uuid,
     user_role: UserRole,
-    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<bool, ServiceError> {
     use crate::data::schema::users::dsl as users_columns;
@@ -105,7 +103,6 @@ pub async fn add_existing_user_to_org(
             None,
             None,
             UserOrganization::from_details(user.id, organization_id, user_role),
-            redis_pool,
             pool,
         )
         .await
@@ -329,7 +326,9 @@ pub async fn create_user_query(
         .first::<User>(&mut conn)
         .await
         .optional()
-        .map_err(|err| ServiceError::InternalServerError(format!("Error loading user {:?}", err)))?;
+        .map_err(|err| {
+            ServiceError::InternalServerError(format!("Error loading user {:?}", err))
+        })?;
 
     if let Some(old_user) = old_user {
         let mut conn = pool.get().await.unwrap();
@@ -381,17 +380,15 @@ pub async fn create_user_query(
     Ok(user_org)
 }
 
-#[tracing::instrument(skip(redis_pool, pool))]
+#[tracing::instrument(skip(pool))]
 pub async fn add_user_to_organization(
     req: Option<&HttpRequest>,
     calling_user_id: Option<uuid::Uuid>,
     user_org: UserOrganization,
-    redis_pool: actix_web::web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
 
-    let org_id_refresh = user_org.organization_id;
     let user_id_refresh = user_org.user_id;
     let user_id_refresh_pool = pool.clone();
 
@@ -403,13 +400,6 @@ pub async fn add_user_to_organization(
         .await
         .map_err(|_| {
             ServiceError::InternalServerError("Failed to add user to organization".to_string())
-        })?;
-
-    refresh_redis_org_plan_sub(org_id_refresh, redis_pool, pool)
-        .await
-        .map_err(|e| {
-            log::error!("Error refreshing redis org plan sub: {:?}", e);
-            ServiceError::InternalServerError("Failed to refresh redis org plan sub".to_string())
         })?;
 
     if req.is_some() && calling_user_id.is_some_and(|id| id == user_id_refresh) {

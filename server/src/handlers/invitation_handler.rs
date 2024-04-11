@@ -1,6 +1,6 @@
 use super::auth_handler::AdminOnly;
 use crate::{
-    data::models::{Invitation, Pool, RedisPool},
+    data::models::{Invitation, Pool},
     errors::ServiceError,
     operators::{
         invitation_operator::{create_invitation_query, send_invitation},
@@ -56,10 +56,9 @@ pub struct InvitationData {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool, redis_pool))]
+#[tracing::instrument(skip(pool))]
 pub async fn post_invitation(
     invitation_data: web::Json<InvitationData>,
-    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
     user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
@@ -88,7 +87,6 @@ pub async fn post_invitation(
         email.clone(),
         existing_user_org_id,
         existing_user_role.into(),
-        redis_pool,
         pool.clone(),
     )
     .await?;
