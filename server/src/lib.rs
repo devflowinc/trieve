@@ -474,6 +474,10 @@ pub async fn main() -> std::io::Result<()> {
             .service(
                 web::redirect("/swagger-ui", "/swagger-ui/")
             )
+            .service(
+                web::resource("/auth/cli")
+                    .route(web::get().to(handlers::auth_handler::login_cli))
+            )
             // everything under '/api/' route
             .service(
                 web::scope("/api")

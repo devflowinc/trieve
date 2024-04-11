@@ -24,6 +24,7 @@ use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetada
 use openidconnect::{AccessTokenHash, ClientId, IssuerUrl, Nonce};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::fs::read_to_string;
 use std::future::{ready, Ready};
 use utoipa::{IntoParams, ToSchema};
 
@@ -557,4 +558,12 @@ pub async fn get_me(
 #[tracing::instrument]
 pub async fn health_check() -> Result<HttpResponse, actix_web::Error> {
     Ok(HttpResponse::Ok().finish())
+}
+
+/// Local login page for cli
+pub async fn login_cli() -> Result<HttpResponse, ServiceError> {
+    let html_page = read_to_string("src/public/login.html").map_err(|e| {
+        ServiceError::InternalServerError(format!("Could not read login page {}", e.to_string()))
+    })?;
+    Ok(HttpResponse::Ok().content_type("text/html").body(html_page))
 }
