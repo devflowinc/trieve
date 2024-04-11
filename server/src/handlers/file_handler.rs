@@ -64,8 +64,6 @@ pub struct UploadFileData {
     pub base64_file: String,
     /// Name of the file being uploaded, including the extension.
     pub file_name: String,
-    /// MIME type of the file being uploaded.
-    pub file_mime_type: String,
     /// Tag set is a comma separated list of tags which will be passed down to the chunks made from the file. Tags are used to filter chunks when searching. HNSW indices are created for each tag such that there is no performance loss when filtering on them.
     pub tag_set: Option<Vec<String>>,
     /// Description is an optional convience field so you do not have to remember what the file contains or is about. It will be included on the group resulting from the file which will hold its chunk.
