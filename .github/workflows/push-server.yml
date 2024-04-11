@@ -3,7 +3,7 @@ on:
   pull_request:
     paths:
     - '.github/workflows/**'
-  workflow_dispatch:
+  push:
 jobs:
   build_server:
     name: Building Server Docker Image
