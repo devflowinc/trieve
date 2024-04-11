@@ -36,7 +36,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=registry,ref=trieve/server:buildcache,mode=max
           context: server/
           file: ./server/Dockerfile.no-ocr
           push: true
