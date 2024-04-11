@@ -56,13 +56,11 @@ export const UploadFile = () => {
       .replace(/=+$/, ""); // Remove ending '='
 
     const file_name = file()?.name;
-    const file_mime_type = file()?.type;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const requestBody: any = {
       base64_file: base64File,
       file_name: file_name,
-      file_mime_type: file_mime_type,
       link: link(),
       tag_set: tagSet().split(","),
     };
