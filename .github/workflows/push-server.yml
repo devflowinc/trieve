@@ -1,13 +1,24 @@
 name: Create Docker Images
 on:
   pull_request:
-    paths:
-    - '.github/workflows/**'
-  push:
+  workflow_call:
+    secrets:
+      DOCKER_USERNAME:
+        required: true
+      DOCKER_PASSWORD:
+        required: true
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+  workflow_dispatch:
+
 jobs:
   build_server:
     name: Building Server Docker Image
-    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
