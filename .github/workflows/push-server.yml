@@ -49,10 +49,10 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          cache-from: type=s3,region=us-east-2,bucket=docker-caching
-          cache-to: type=s3,region=us-east-2,bucket=docker-caching,mode=max
+          cache-from: type=s3,region=us-east-2,bucket=docker-caching,access_key_id=${secrets.AWS_ACCESS_KEY_ID},secret_access_key=${secrets.AWS_SECRET_ACCESS_KEY}
+          cache-to: type=s3,region=us-east-2,bucket=docker-caching,mode=max,access_key_id=${secrets.AWS_ACCESS_KEY_ID},secret_access_key=${secrets.AWS_SECRET_ACCESS_KEY}
           context: server/
           file: ./server/Dockerfile.no-ocr
-          push: true
+          push: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
