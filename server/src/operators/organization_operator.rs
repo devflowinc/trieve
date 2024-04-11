@@ -14,8 +14,8 @@ use actix_identity::Identity;
 use actix_web::{web, HttpMessage, HttpRequest};
 use diesel::prelude::*;
 use diesel::{
-    result::DatabaseErrorKind, upsert::on_constraint, ExpressionMethods, JoinOnDsl,
-    NullableExpressionMethods, SelectableHelper, Table,
+    result::DatabaseErrorKind, ExpressionMethods, JoinOnDsl, NullableExpressionMethods,
+    SelectableHelper, Table,
 };
 use diesel_async::RunQueryDsl;
 use itertools::Itertools;
