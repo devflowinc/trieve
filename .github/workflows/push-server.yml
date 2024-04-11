@@ -9,8 +9,6 @@ on:
         required: true
   workflow_dispatch:
   push:
-    branches:
-      - 'main'
 
 jobs:
   build_server:
