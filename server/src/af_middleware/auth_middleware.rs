@@ -43,12 +43,17 @@ where
             let tx_ctx =
                 sentry::TransactionContext::new("middleware", "get dataset, org, and/or user");
             let transaction = sentry::start_transaction(tx_ctx);
-            let org_id_span = transaction.start_child("orgid", "Getting organization id");
-
             let pool = req.app_data::<web::Data<Pool>>().unwrap().to_owned();
+
+            let get_user_span = transaction.start_child("get_user", "Getting user");
 
             let (http_req, pl) = req.parts_mut();
             let user = get_user(http_req, pl).await;
+            if let Some(ref user) = user {
+                req.extensions_mut().insert(user.clone());
+            };
+
+            get_user_span.finish();
 
             let org_id = match req.headers().get("TR-Dataset") {
                 Some(dataset_header) => {
@@ -62,48 +67,46 @@ where
                             ServiceError::BadRequest("Dataset must be valid UUID".to_string())
                         })?;
 
+                    let get_dataset_and_org_span = transaction
+                        .start_child("get_dataset_and_org", "Getting dataset and organization");
+
                     let dataset_org_plan_sub = get_dataset_and_organization_from_dataset_id_query(
                         dataset_id,
                         pool.clone(),
                     )
                     .await?;
 
+                    get_dataset_and_org_span.finish();
+
                     req.extensions_mut().insert(dataset_org_plan_sub.clone());
 
                     dataset_org_plan_sub.organization.organization.id
                 }
-                None => match req.headers().get("TR-Organization") {
-                    Some(org_header) => org_header
-                        .to_str()
-                        .map_err(|_| {
-                            Into::<Error>::into(ServiceError::BadRequest(
-                                "Could not convert Organization to str".to_string(),
-                            ))
-                        })?
-                        .parse::<uuid::Uuid>()
-                        .map_err(|_| {
-                            Into::<Error>::into(ServiceError::BadRequest(
-                                "Could not convert Organization to UUID".to_string(),
-                            ))
-                        })?,
-                    None => {
-                        let (http_req, pl) = req.parts_mut();
-                        let user = get_user(http_req, pl).await;
-                        if let Some(user) = user {
-                            req.extensions_mut().insert(user.clone());
-                        }
+                None => {
+                    if let Some(org_header) = req.headers().get("TR-Organization") {
+                        org_header
+                            .to_str()
+                            .map_err(|_| {
+                                Into::<Error>::into(ServiceError::BadRequest(
+                                    "Could not convert Organization to str".to_string(),
+                                ))
+                            })?
+                            .parse::<uuid::Uuid>()
+                            .map_err(|_| {
+                                Into::<Error>::into(ServiceError::BadRequest(
+                                    "Could not convert Organization to UUID".to_string(),
+                                ))
+                            })?
+                    } else {
                         let res = srv.call(req).await?;
-
-                        org_id_span.finish();
-                        transaction.finish();
-
                         return Ok(res);
                     }
-                },
+                }
             };
 
             if let Some(user) = user {
-                req.extensions_mut().insert(user.clone());
+                let find_user_org_span =
+                    transaction.start_child("find_user_org_role", "Finding user org role");
 
                 let user_org = user
                     .user_orgs
@@ -122,12 +125,13 @@ where
                 }?;
 
                 req.extensions_mut().insert(role);
+
+                find_user_org_span.finish();
             }
 
-            let res = srv.call(req).await?;
-
-            org_id_span.finish();
             transaction.finish();
+
+            let res = srv.call(req).await?;
 
             Ok(res)
         })

@@ -163,7 +163,7 @@ pub static SALT: Lazy<String> =
     Lazy::new(|| std::env::var("SALT").unwrap_or_else(|_| "supersecuresalt".to_string()));
 
 #[tracing::instrument]
-pub fn hash_password(password: &str) -> Result<String, ServiceError> {
+pub fn hash_argon2_api_key(password: &str) -> Result<String, ServiceError> {
     let config = Config {
         secret: SECRET_KEY.as_bytes(),
         ..Config::original()
@@ -171,6 +171,11 @@ pub fn hash_password(password: &str) -> Result<String, ServiceError> {
     argon2::hash_encoded(password.as_bytes(), SALT.as_bytes(), &config).map_err(|_err| {
         ServiceError::BadRequest("Error processing password, try again".to_string())
     })
+}
+
+#[tracing::instrument]
+pub fn hash_api_key(password: &str) -> String {
+    blake3::hash(password.as_bytes()).to_string()
 }
 
 #[tracing::instrument(skip(pool))]
@@ -181,7 +186,7 @@ pub async fn set_user_api_key_query(
     pool: web::Data<Pool>,
 ) -> Result<String, ServiceError> {
     let raw_api_key = generate_api_key();
-    let hashed_api_key = hash_password(&raw_api_key)?;
+    let hashed_api_key = hash_api_key(&raw_api_key);
 
     let mut conn = pool.get().await.unwrap();
 
@@ -206,7 +211,7 @@ pub async fn get_user_from_api_key_query(
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
 
-    let api_key_hash = hash_password(api_key)?;
+    let api_key_hash = hash_api_key(api_key);
 
     let mut conn = pool.get().await.unwrap();
 
@@ -218,7 +223,7 @@ pub async fn get_user_from_api_key_query(
                     .on(organization_columns::id.eq(user_organizations_columns::organization_id)),
             )
             .inner_join(user_api_key_columns::user_api_key)
-            .filter(user_api_key_columns::api_key_hash.eq(api_key_hash))
+            .filter(user_api_key_columns::blake3_hash.eq(api_key_hash.clone()))
             .select((
                 User::as_select(),
                 UserOrganization::as_select(),
@@ -257,7 +262,67 @@ pub async fn get_user_from_api_key_query(
                 .collect::<Vec<Organization>>();
             Ok(SlimUser::from_details(user, user_orgs, orgs))
         }
-        None => Err(ServiceError::BadRequest("User not found".to_string())),
+        None => {
+            let argon2_hash = hash_argon2_api_key(api_key)?;
+
+            let user_orgs_orgs: Vec<(User, UserOrganization, Organization, UserApiKey)> =
+                users_columns::users
+                    .inner_join(user_organizations_columns::user_organizations)
+                    .inner_join(organization_columns::organizations.on(
+                        organization_columns::id.eq(user_organizations_columns::organization_id),
+                    ))
+                    .inner_join(user_api_key_columns::user_api_key)
+                    .filter(user_api_key_columns::api_key_hash.eq(argon2_hash.clone()))
+                    .select((
+                        User::as_select(),
+                        UserOrganization::as_select(),
+                        Organization::as_select(),
+                        UserApiKey::as_select(),
+                    ))
+                    .load::<(User, UserOrganization, Organization, UserApiKey)>(&mut conn)
+                    .await
+                    .map_err(|_| ServiceError::BadRequest("API Key Incorrect".to_string()))?;
+
+            match user_orgs_orgs.get(0) {
+                Some(first_user_org) => {
+                    let user = first_user_org.0.clone();
+                    let mut user_orgs = user_orgs_orgs
+                        .iter()
+                        .map(|user_org| user_org.1.clone())
+                        .collect::<Vec<UserOrganization>>();
+
+                    user_orgs.iter_mut().for_each(|user_org| {
+                        if user_orgs_orgs
+                            .iter()
+                            .find(|user_org_org| user_org_org.1.id == user_org.id)
+                            .unwrap()
+                            .3
+                            .role
+                            == 0
+                        {
+                            user_org.role = 0;
+                        }
+                    });
+
+                    let orgs = user_orgs_orgs
+                        .iter()
+                        .map(|user_org_org| user_org_org.2.clone())
+                        .collect::<Vec<Organization>>();
+
+                    diesel::update(
+                        user_api_key_columns::user_api_key
+                            .filter(user_api_key_columns::api_key_hash.eq(argon2_hash)),
+                    )
+                    .set(user_api_key_columns::blake3_hash.eq(api_key_hash))
+                    .execute(&mut conn)
+                    .await
+                    .map_err(|_| ServiceError::BadRequest("Error updating api key".to_string()))?;
+
+                    Ok(SlimUser::from_details(user, user_orgs, orgs))
+                }
+                None => Err(ServiceError::BadRequest("API Key Incorrect".to_string())),
+            }
+        }
     }
 }
 
@@ -432,7 +497,7 @@ pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
     use crate::data::schema::users::dsl as users_columns;
 
-    let api_key_hash = hash_password(api_key)?;
+    let api_key_hash = hash_api_key(api_key);
 
     let mut conn = pool.get_ref().get().await.unwrap();
 

@@ -231,11 +231,12 @@ diesel::table! {
     user_api_key (id) {
         id -> Uuid,
         user_id -> Uuid,
-        api_key_hash -> Text,
+        api_key_hash -> Nullable<Text>,
         name -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,
         role -> Int4,
+        blake3_hash -> Nullable<Text>,
     }
 }
 
