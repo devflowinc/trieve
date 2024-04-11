@@ -1,15 +1,9 @@
 name: Create Docker Images
 on:
   pull_request:
-  workflow_call:
-    secrets:
-      DOCKER_USERNAME:
-        required: true
-      DOCKER_PASSWORD:
-        required: true
+    paths:
+    - '.github/workflows/**'
   workflow_dispatch:
-  push:
-
 jobs:
   build_server:
     name: Building Server Docker Image
