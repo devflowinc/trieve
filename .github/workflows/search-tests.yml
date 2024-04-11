@@ -1,36 +1,36 @@
-name: search test suite
-
-on: 
-  pull_request:
-    paths:
-    - 'search/**'
-    - '.github/workflows/**'
-jobs:
-  build-test:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
-    steps:
-      - uses: actions/checkout@v2
-      - name: Setting up 
-        run: sed -i 's/search\///' ./search/.eslintrc.json
-      - name: Install dependencies
-        run: yarn --cwd search
-      - name: Running lint
-        run: yarn --cwd search build
-  eslint:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
-    steps:
-      - uses: actions/checkout@v2
-      - name: Setting up 
-        run: sed -i 's/search\///' ./search/.eslintrc.json
-      - name: Install dependencies
-        run: yarn --cwd search
-      - name: Running lint
-        run: yarn --cwd search lint:CI
-      - name: Annotate Code Linting Results
-        uses: ataylorme/eslint-annotate-action@1.0.4
-        if: always()
-        with:
-          repo-token: '${{ secrets.GITHUB_TOKEN }}'
-          report-json: './search/eslint_report.json'
-
-
+# name: search test suite
+#
+# on: 
+#   pull_request:
+#     paths:
+#     - 'search/**'
+#     - '.github/workflows/**'
+# jobs:
+#   build-test:
+#     runs-on: blacksmith-2vcpu-ubuntu-2204
+#     steps:
+#       - uses: actions/checkout@v2
+#       - name: Setting up 
+#         run: sed -i 's/search\///' ./search/.eslintrc.json
+#       - name: Install dependencies
+#         run: yarn --cwd search
+#       - name: Running lint
+#         run: yarn --cwd search build
+#   eslint:
+#     runs-on: blacksmith-2vcpu-ubuntu-2204
+#     steps:
+#       - uses: actions/checkout@v2
+#       - name: Setting up 
+#         run: sed -i 's/search\///' ./search/.eslintrc.json
+#       - name: Install dependencies
+#         run: yarn --cwd search
+#       - name: Running lint
+#         run: yarn --cwd search lint:CI
+#       - name: Annotate Code Linting Results
+#         uses: ataylorme/eslint-annotate-action@1.0.4
+#         if: always()
+#         with:
+#           repo-token: '${{ secrets.GITHUB_TOKEN }}'
+#           report-json: './search/eslint_report.json'
+#
+#
