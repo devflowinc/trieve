@@ -1578,13 +1578,7 @@ impl Organization {
     }
 
     pub fn from_org_with_plan_sub(org_plan_sub: OrganizationWithSubAndPlan) -> Self {
-        Organization {
-            id: org_plan_sub.id,
-            name: org_plan_sub.name,
-            created_at: org_plan_sub.created_at,
-            updated_at: org_plan_sub.updated_at,
-            registerable: org_plan_sub.registerable,
-        }
+        org_plan_sub.organization.clone()
     }
 }
 
@@ -1757,11 +1751,13 @@ impl StripeSubscription {
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[schema(example = json!({
-    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "name": "Trieve",
-    "created_at": "2021-01-01T00:00:00",
-    "updated_at": "2021-01-01T00:00:00",
-    "registerable": true,
+    "organization": {
+        "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+        "name": "Trieve",
+        "created_at": "2021-01-01T00:00:00",
+        "updated_at": "2021-01-01T00:00:00",
+        "registerable": true,
+    },
     "plan": {
         "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
         "stripe_id": "plan_123",
@@ -1786,11 +1782,7 @@ impl StripeSubscription {
     }
 }))]
 pub struct OrganizationWithSubAndPlan {
-    pub id: uuid::Uuid,
-    pub name: String,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-    pub registerable: Option<bool>,
+    pub organization: Organization,
     pub plan: Option<StripePlan>,
     pub subscription: Option<StripeSubscription>,
 }
@@ -1802,11 +1794,7 @@ impl OrganizationWithSubAndPlan {
         subscription: Option<StripeSubscription>,
     ) -> Self {
         OrganizationWithSubAndPlan {
-            id: organization.id,
-            name: organization.name,
-            registerable: organization.registerable,
-            created_at: organization.created_at,
-            updated_at: organization.updated_at,
+            organization: organization.clone(),
             plan,
             subscription,
         }
@@ -1814,11 +1802,7 @@ impl OrganizationWithSubAndPlan {
 
     pub fn with_defaults(&self) -> Self {
         OrganizationWithSubAndPlan {
-            id: self.id,
-            name: self.name.clone(),
-            registerable: self.registerable,
-            created_at: self.created_at,
-            updated_at: self.updated_at,
+            organization: self.organization.clone(),
             plan: Some(self.plan.clone().unwrap_or_default()),
             subscription: self.subscription.clone(),
         }

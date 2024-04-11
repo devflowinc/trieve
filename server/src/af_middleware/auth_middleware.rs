@@ -1,12 +1,11 @@
 use crate::{
-    data::models::{DatasetAndOrgWithSubAndPlan, Pool, RedisPool, UserRole},
+    data::models::{Pool, UserRole},
     errors::ServiceError,
     handlers::auth_handler::{LoggedUser, OrganizationRole},
     operators::{
-        dataset_operator::get_dataset_by_id_query,
+        dataset_operator::get_dataset_and_organization_from_dataset_id_query,
         organization_operator::{
             get_arbitrary_org_owner_from_dataset_id, get_arbitrary_org_owner_from_org_id,
-            get_organization_by_key_query,
         },
         user_operator::get_user_from_api_key_query,
     },
@@ -47,102 +46,46 @@ where
             let org_id_span = transaction.start_child("orgid", "Getting organization id");
 
             let pool = req.app_data::<web::Data<Pool>>().unwrap().to_owned();
-            let redis_pool = req.app_data::<web::Data<RedisPool>>().unwrap().to_owned();
 
-            let org_id = match req.headers().get("TR-Organization") {
-                Some(org_header) => {
-                    let orgid_result = org_header
+            let (http_req, pl) = req.parts_mut();
+            let user = get_user(http_req, pl).await;
+
+            let org_id = match req.headers().get("TR-Dataset") {
+                Some(dataset_header) => {
+                    let dataset_id = dataset_header
+                        .to_str()
+                        .map_err(|_| {
+                            ServiceError::BadRequest("Dataset must be valid string".to_string())
+                        })?
+                        .parse::<uuid::Uuid>()
+                        .map_err(|_| {
+                            ServiceError::BadRequest("Dataset must be valid UUID".to_string())
+                        })?;
+
+                    let dataset_org_plan_sub = get_dataset_and_organization_from_dataset_id_query(
+                        dataset_id,
+                        pool.clone(),
+                    )
+                    .await?;
+
+                    req.extensions_mut().insert(dataset_org_plan_sub.clone());
+
+                    dataset_org_plan_sub.organization.organization.id
+                }
+                None => match req.headers().get("TR-Organization") {
+                    Some(org_header) => org_header
                         .to_str()
                         .map_err(|_| {
                             Into::<Error>::into(ServiceError::BadRequest(
                                 "Could not convert Organization to str".to_string(),
                             ))
                         })?
-                        .parse::<uuid::Uuid>();
-
-                    if let Some(dataset_header) = req.headers().get("TR-Dataset") {
-                        let dataset_id = dataset_header
-                            .to_str()
-                            .map_err(|_| {
-                                ServiceError::BadRequest("Dataset must be valid string".to_string())
-                            })?
-                            .parse::<uuid::Uuid>()
-                            .map_err(|_| {
-                                ServiceError::BadRequest("Dataset must be valid UUID".to_string())
-                            })?;
-
-                        let dataset =
-                            get_dataset_by_id_query(dataset_id, redis_pool.clone(), pool.clone())
-                                .await?;
-                        let org_plan_sub = get_organization_by_key_query(
-                            dataset.organization_id.into(),
-                            redis_pool.clone(),
-                            pool.clone(),
-                        )
-                        .await?;
-
-                        let dataset_org_plan_sub =
-                            DatasetAndOrgWithSubAndPlan::from_components(dataset, org_plan_sub);
-
-                        req.extensions_mut().insert(dataset_org_plan_sub.clone());
-                    }
-
-                    match orgid_result {
-                        Ok(org_id) => org_id,
-                        Err(_) => {
-                            let pool = req.app_data::<web::Data<Pool>>().unwrap().to_owned();
-                            let organization = get_organization_by_key_query(
-                                org_header
-                                    .to_str()
-                                    .map_err(|_| {
-                                        Into::<Error>::into(ServiceError::InternalServerError(
-                                            "Could not convert Organization to str".to_string(),
-                                        ))
-                                    })?
-                                    .to_string()
-                                    .into(),
-                                redis_pool,
-                                pool,
-                            )
-                            .await
-                            .map_err(|_| {
-                                Into::<Error>::into(ServiceError::InternalServerError(
-                                    "Could not get org id".into(),
-                                ))
-                            })?;
-                            organization.id
-                        }
-                    }
-                }
-
-                None => match req.headers().get("TR-Dataset") {
-                    Some(dataset_header) => {
-                        let dataset_id = dataset_header
-                            .to_str()
-                            .map_err(|_| {
-                                ServiceError::BadRequest("Dataset must be valid string".to_string())
-                            })?
-                            .parse::<uuid::Uuid>()
-                            .map_err(|_| {
-                                ServiceError::BadRequest("Dataset must be valid UUID".to_string())
-                            })?;
-
-                        let dataset =
-                            get_dataset_by_id_query(dataset_id, redis_pool.clone(), pool.clone())
-                                .await?;
-                        let org_plan_sub = get_organization_by_key_query(
-                            dataset.organization_id.into(),
-                            redis_pool.clone(),
-                            pool.clone(),
-                        )
-                        .await?;
-                        let dataset_org_plan_sub =
-                            DatasetAndOrgWithSubAndPlan::from_components(dataset, org_plan_sub);
-
-                        req.extensions_mut().insert(dataset_org_plan_sub.clone());
-
-                        dataset_org_plan_sub.organization.id
-                    }
+                        .parse::<uuid::Uuid>()
+                        .map_err(|_| {
+                            Into::<Error>::into(ServiceError::BadRequest(
+                                "Could not convert Organization to UUID".to_string(),
+                            ))
+                        })?,
                     None => {
                         let (http_req, pl) = req.parts_mut();
                         let user = get_user(http_req, pl).await;
@@ -158,9 +101,6 @@ where
                     }
                 },
             };
-
-            let (http_req, pl) = req.parts_mut();
-            let user = get_user(http_req, pl).await;
 
             if let Some(user) = user {
                 req.extensions_mut().insert(user.clone());
@@ -238,6 +178,7 @@ async fn get_user(req: &HttpRequest, pl: &mut Payload) -> Option<LoggedUser> {
                 }
             }
 
+            //TODO: Cache the api key in redis
             if let Some(pool) = req.app_data::<web::Data<Pool>>() {
                 if let Ok(user) = get_user_from_api_key_query(authen_header, pool).await {
                     return Some(user);

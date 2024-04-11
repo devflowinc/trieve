@@ -1,5 +1,6 @@
 use crate::data::models::{
-    DatasetAndUsage, DatasetUsageCount, RedisPool, ServerDatasetConfiguration,
+    DatasetAndOrgWithSubAndPlan, DatasetAndUsage, DatasetUsageCount, Organization,
+    OrganizationWithSubAndPlan, ServerDatasetConfiguration, StripePlan, StripeSubscription,
 };
 use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::{
@@ -11,10 +12,9 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use qdrant_client::qdrant::{Condition, Filter};
 
-#[tracing::instrument(skip(redis_pool, pool))]
+#[tracing::instrument(skip(pool))]
 pub async fn create_dataset_query(
     new_dataset: Dataset,
-    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<Dataset, ServiceError> {
     use crate::data::schema::datasets::dsl::*;
@@ -30,104 +30,86 @@ pub async fn create_dataset_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to create dataset".to_string()))?;
 
-    let mut redis_conn = redis_pool
-        .get()
-        .await
-        .map_err(|_| ServiceError::BadRequest("Could not fetch redis connection".to_string()))?;
-
-    redis::cmd("SET")
-        .arg(format!("dataset:{}", new_dataset.id))
-        .arg(serde_json::to_string(&new_dataset).map_err(|err| {
-            ServiceError::BadRequest(format!("Could not stringify dataset: {}", err))
-        })?)
-        .query_async(&mut *redis_conn)
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!("Could not set dataset in redis: {}", err))
-        })?;
-
     Ok(new_dataset)
 }
 
-#[tracing::instrument(skip(redis_pool, pool))]
+#[tracing::instrument(skip(pool))]
 pub async fn get_dataset_by_id_query(
     id: uuid::Uuid,
-    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<Dataset, ServiceError> {
-    // Check cache first
-    let mut redis_conn = redis_pool
+    use crate::data::schema::datasets::dsl as datasets_columns;
+    let mut conn = pool
         .get()
         .await
-        .map_err(|_| ServiceError::BadRequest("Could not fetch redis connection".to_string()))?;
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let redis_dataset: Result<String, ServiceError> = redis::cmd("GET")
-        .arg(format!("dataset:{}", id))
-        .query_async(&mut *redis_conn)
+    let dataset: Dataset = datasets_columns::datasets
+        .filter(datasets_columns::id.eq(id))
+        .select(Dataset::as_select())
+        .first(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest("Could not get dataset from redis".to_string()));
+        .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?;
 
-    match redis_dataset {
-        Ok(dataset) => Ok(serde_json::from_str::<Dataset>(&dataset).map_err(|_| {
-            ServiceError::BadRequest("Could not parse dataset from redis".to_string())
-        })?),
-        Err(_) => {
-            use crate::data::schema::datasets::dsl as datasets_columns;
-            let mut conn = pool.get().await.map_err(|_| {
-                ServiceError::BadRequest("Could not get database connection".to_string())
-            })?;
-
-            let dataset: Dataset = datasets_columns::datasets
-                .filter(datasets_columns::id.eq(id))
-                .select(Dataset::as_select())
-                .first(&mut conn)
-                .await
-                .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?;
-
-            let dataset_stringified = serde_json::to_string(&dataset)
-                .map_err(|_| ServiceError::BadRequest("Could not stringify dataset".to_string()))?;
-
-            let mut redis_conn = redis_pool.get().await.map_err(|_| {
-                ServiceError::BadRequest("Could not get redis connection".to_string())
-            })?;
-
-            redis::cmd("SET")
-                .arg(format!("dataset:{}", dataset.id))
-                .arg(dataset_stringified)
-                .query_async(&mut *redis_conn)
-                .await
-                .map_err(|_| {
-                    ServiceError::BadRequest("Could not set dataset in redis".to_string())
-                })?;
-
-            Ok(dataset)
-        }
-    }
+    Ok(dataset)
 }
 
-#[tracing::instrument(skip(redis_pool, pool))]
+pub async fn get_dataset_and_organization_from_dataset_id_query(
+    id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<DatasetAndOrgWithSubAndPlan, ServiceError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+    use crate::data::schema::organizations::dsl as organizations_columns;
+    use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
+    use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let (dataset, organization, stripe_plan, stripe_subscription) = datasets_columns::datasets
+        .inner_join(organizations_columns::organizations)
+        .left_outer_join(
+            stripe_subscriptions_columns::stripe_subscriptions
+                .on(stripe_subscriptions_columns::organization_id.eq(organizations_columns::id)),
+        )
+        .left_outer_join(
+            stripe_plans_columns::stripe_plans
+                .on(stripe_plans_columns::id.eq(stripe_subscriptions_columns::plan_id)),
+        )
+        .filter(datasets_columns::id.eq(id))
+        .select((
+            Dataset::as_select(),
+            organizations_columns::organizations::all_columns(),
+            stripe_plans_columns::stripe_plans::all_columns().nullable(),
+            stripe_subscriptions_columns::stripe_subscriptions::all_columns().nullable(),
+        ))
+        .first::<(
+            Dataset,
+            Organization,
+            Option<StripePlan>,
+            Option<StripeSubscription>,
+        )>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?;
+
+    let org_with_plan_sub: OrganizationWithSubAndPlan =
+        OrganizationWithSubAndPlan::from_components(organization, stripe_plan, stripe_subscription);
+
+    Ok(DatasetAndOrgWithSubAndPlan::from_components(
+        dataset,
+        org_with_plan_sub,
+    ))
+}
+
+#[tracing::instrument(skip(pool))]
 pub async fn delete_dataset_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
-    redis_pool: web::Data<RedisPool>,
     config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
-
-    let dataset = get_dataset_by_id_query(id, redis_pool.clone(), pool.clone()).await?;
-
-    let mut redis_conn = redis_pool
-        .get()
-        .await
-        .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
-
-    redis::cmd("DEL")
-        .arg(format!("dataset:{}", dataset.id))
-        .query_async(&mut *redis_conn)
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!("Could not delete dataset in redis: {}", err))
-        })?;
 
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
@@ -160,13 +142,12 @@ pub async fn delete_dataset_by_id_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(redis_pool, pool))]
+#[tracing::instrument(skip(pool))]
 pub async fn update_dataset_query(
     id: uuid::Uuid,
     name: String,
     server_configuration: serde_json::Value,
     client_configuration: serde_json::Value,
-    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<Dataset, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
@@ -188,22 +169,6 @@ pub async fn update_dataset_query(
             .get_result(&mut conn)
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to update dataset".to_string()))?;
-
-    let mut redis_conn = redis_pool
-        .get()
-        .await
-        .map_err(|err| ServiceError::BadRequest(format!("Could not connect to redis: {}", err)))?;
-
-    redis::cmd("SET")
-        .arg(format!("dataset:{}", id))
-        .arg(serde_json::to_string(&new_dataset).map_err(|err| {
-            ServiceError::BadRequest(format!("Could not stringify dataset: {}", err))
-        })?)
-        .query_async(&mut *redis_conn)
-        .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!("Could not set dataset in redis: {}", err))
-        })?;
 
     Ok(new_dataset)
 }

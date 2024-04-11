@@ -224,12 +224,12 @@ pub async fn get_all_topics_for_user(
     if user
         .user_orgs
         .iter()
-        .any(|o| o.id == dataset_org_plan_sub.organization.id)
+        .any(|o| o.id == dataset_org_plan_sub.organization.organization.id)
         && user.id != *req_user_id
         && user
             .user_orgs
             .iter()
-            .find(|o| o.id == dataset_org_plan_sub.organization.id)
+            .find(|o| o.id == dataset_org_plan_sub.organization.organization.id)
             .unwrap()
             .role
             < 1

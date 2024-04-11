@@ -1,13 +1,12 @@
 use crate::{
     data::models::{
-        Dataset, Organization, OrganizationUsageCount, OrganizationWithSubAndPlan, Pool, RedisPool,
+        Dataset, Organization, OrganizationUsageCount, OrganizationWithSubAndPlan, Pool,
         ServerDatasetConfiguration, SlimUser, StripePlan, StripeSubscription, User,
         UserOrganization,
     },
     errors::ServiceError,
     operators::{
-        dataset_operator::delete_dataset_by_id_query, stripe_operator::refresh_redis_org_plan_sub,
-        user_operator::get_user_by_id_query,
+        dataset_operator::delete_dataset_by_id_query, user_operator::get_user_by_id_query,
     },
     randutil,
 };
@@ -23,10 +22,9 @@ use itertools::Itertools;
 
 /// Creates a dataset from Name if it doesn't conflict. If it does, then it creates a random name
 /// for the user
-#[tracing::instrument(skip(pool, redis_pool))]
+#[tracing::instrument(skip(pool))]
 pub async fn create_organization_query(
     name: &str,
-    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<Organization, ServiceError> {
     use crate::data::schema::organizations::dsl as organizations_columns;
@@ -63,16 +61,13 @@ pub async fn create_organization_query(
             })?;
     }
 
-    refresh_redis_org_plan_sub(new_organization.id, redis_pool, pool).await?;
-
     Ok(new_organization)
 }
 
-#[tracing::instrument(skip(pool, redis_pool))]
+#[tracing::instrument(skip(pool))]
 pub async fn update_organization_query(
     id: uuid::Uuid,
     name: &str,
-    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<Organization, ServiceError> {
     use crate::data::schema::organizations::dsl as organizations_columns;
@@ -97,17 +92,14 @@ pub async fn update_organization_query(
             _ => ServiceError::BadRequest("Failed to update organization, try again".to_string()),
         })?;
 
-    refresh_redis_org_plan_sub(updated_organization.id, redis_pool, pool).await?;
-
     Ok(updated_organization)
 }
 
-#[tracing::instrument(skip(redis_pool, pool))]
+#[tracing::instrument(skip(pool))]
 pub async fn delete_organization_query(
     req: Option<&HttpRequest>,
     calling_user_id: Option<uuid::Uuid>,
     org_id: uuid::Uuid,
-    redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
 ) -> Result<Organization, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
@@ -164,7 +156,7 @@ pub async fn delete_organization_query(
     for dataset in datasets {
         let config = ServerDatasetConfiguration::from_json(dataset.server_configuration);
 
-        delete_dataset_by_id_query(dataset.id, pool.clone(), redis_pool.clone(), config.clone())
+        delete_dataset_by_id_query(dataset.id, pool.clone(), config.clone())
             .await
             .map_err(|e| {
                 log::error!(
@@ -215,164 +207,43 @@ pub async fn delete_organization_query(
     Ok(deleted_organization)
 }
 
-#[derive(Debug)]
-pub enum OrganizationKey {
-    Id(uuid::Uuid),
-    Name(String),
-}
-
-impl OrganizationKey {
-    pub fn display(&self) -> String {
-        match self {
-            OrganizationKey::Id(id) => id.to_string(),
-            OrganizationKey::Name(name) => name.to_string(),
-        }
-    }
-}
-
-impl From<uuid::Uuid> for OrganizationKey {
-    fn from(id: uuid::Uuid) -> Self {
-        OrganizationKey::Id(id)
-    }
-}
-
-impl From<String> for OrganizationKey {
-    fn from(name: String) -> Self {
-        OrganizationKey::Name(name)
-    }
-}
-
-/// Gets organization by id or name
-#[tracing::instrument(skip(redis_pool, pool))]
-pub async fn get_organization_by_key_query(
-    key: OrganizationKey,
-    redis_pool: web::Data<RedisPool>,
-    pool: web::Data<Pool>,
-) -> Result<OrganizationWithSubAndPlan, ServiceError> {
-    let mut redis_conn = redis_pool
-        .get()
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to parse error".to_string()))?;
-
-    let redis_organization: Result<String, ServiceError> = redis::cmd("GET")
-        .arg(format!("organization:{}", key.display()))
-        .query_async(&mut *redis_conn)
-        .await
-        .map_err(|_| ServiceError::BadRequest("Could not get dataset from redis".to_string()));
-
-    let org_plan_sub = match redis_organization {
-        Ok(organization_str) => {
-            serde_json::from_str::<OrganizationWithSubAndPlan>(&organization_str)
-                .expect("Could not deserialize org with sub and plan from redis")
-        }
-        Err(_) => {
-            use crate::data::schema::organizations::dsl as organizations_columns;
-            use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
-            use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
-
-            let mut conn = pool.get().await.map_err(|_| {
-                ServiceError::BadRequest("Could not get database connection".to_string())
-            })?;
-
-            let query = organizations_columns::organizations
-                .left_outer_join(stripe_subscriptions_columns::stripe_subscriptions)
-                .left_outer_join(
-                    stripe_plans_columns::stripe_plans
-                        .on(stripe_plans_columns::id.eq(stripe_subscriptions_columns::plan_id)),
-                )
-                .select((
-                    organizations_columns::organizations::all_columns(),
-                    stripe_plans_columns::stripe_plans::all_columns().nullable(),
-                    stripe_subscriptions_columns::stripe_subscriptions::all_columns().nullable(),
-                ))
-                .into_boxed();
-
-            let org_plan_sub: (Organization, Option<StripePlan>, Option<StripeSubscription>) =
-                match key {
-                    OrganizationKey::Id(id) => query
-                        .filter(organizations_columns::id.eq(id))
-                        .first::<(Organization, Option<StripePlan>, Option<StripeSubscription>)>(
-                            &mut conn,
-                        )
-                        .await
-                        .map_err(|_| {
-                            ServiceError::BadRequest("Could not find organizations".to_string())
-                        })?,
-                    OrganizationKey::Name(name) => query
-                        .filter(organizations_columns::name.eq(name))
-                        .first::<(Organization, Option<StripePlan>, Option<StripeSubscription>)>(
-                            &mut conn,
-                        )
-                        .await
-                        .map_err(|_| {
-                            ServiceError::BadRequest("Could not find organizations".to_string())
-                        })?,
-                };
-
-            let org_with_plan_sub: OrganizationWithSubAndPlan =
-                OrganizationWithSubAndPlan::from_components(
-                    org_plan_sub.0,
-                    org_plan_sub.1,
-                    org_plan_sub.2,
-                );
-
-            let mut redis_conn = redis_pool.get().await.map_err(|_| {
-                ServiceError::BadRequest("Could not create redis client".to_string())
-            })?;
-
-            redis::cmd("SET")
-                .arg(format!("organization:{}", org_with_plan_sub.id))
-                .arg(serde_json::to_string(&org_with_plan_sub).map_err(|_| {
-                    ServiceError::BadRequest("Could not stringify organization".to_string())
-                })?)
-                .query_async(&mut *redis_conn)
-                .await
-                .map_err(|_| {
-                    ServiceError::BadRequest("Could not set organization in redis".to_string())
-                })?;
-
-            redis::cmd("SET")
-                .arg(format!("organization:{}", org_with_plan_sub.name))
-                .arg(serde_json::to_string(&org_with_plan_sub).map_err(|_| {
-                    ServiceError::BadRequest("Could not stringify organization".to_string())
-                })?)
-                .query_async(&mut *redis_conn)
-                .await
-                .map_err(|_| {
-                    ServiceError::BadRequest("Could not set organization in redis".to_string())
-                })?;
-
-            org_with_plan_sub
-        }
-    };
-
-    Ok(org_plan_sub)
-}
-
 #[tracing::instrument(skip(pool))]
 pub async fn get_org_from_id_query(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Organization, ServiceError> {
+) -> Result<OrganizationWithSubAndPlan, ServiceError> {
     use crate::data::schema::organizations::dsl as organizations_columns;
+    use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
+    use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
     let mut conn = pool
         .get()
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let organization: Organization = organizations_columns::organizations
-        .filter(organizations_columns::id.eq(organization_id))
-        .select(Organization::as_select())
-        .first(&mut conn)
-        .await
-        .map_err(|_| {
-            ServiceError::BadRequest(
-                "Could not find organization, try again with a different id".to_string(),
-            )
-        })?;
+    let query = organizations_columns::organizations
+        .left_outer_join(stripe_subscriptions_columns::stripe_subscriptions)
+        .left_outer_join(
+            stripe_plans_columns::stripe_plans
+                .on(stripe_plans_columns::id.eq(stripe_subscriptions_columns::plan_id)),
+        )
+        .select((
+            organizations_columns::organizations::all_columns(),
+            stripe_plans_columns::stripe_plans::all_columns().nullable(),
+            stripe_subscriptions_columns::stripe_subscriptions::all_columns().nullable(),
+        ))
+        .into_boxed();
 
-    Ok(organization)
+    let org_plan_sub: (Organization, Option<StripePlan>, Option<StripeSubscription>) = query
+        .filter(organizations_columns::id.eq(organization_id))
+        .first::<(Organization, Option<StripePlan>, Option<StripeSubscription>)>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not find organizations".to_string()))?;
+
+    let org_with_plan_sub: OrganizationWithSubAndPlan =
+        OrganizationWithSubAndPlan::from_components(org_plan_sub.0, org_plan_sub.1, org_plan_sub.2);
+
+    Ok(org_with_plan_sub)
 }
 
 #[tracing::instrument(skip(pool))]

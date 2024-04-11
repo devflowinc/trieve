@@ -1,6 +1,8 @@
 use super::{auth_handler::LoggedUser, chunk_handler::ParsedQuery};
 use crate::{
-    data::models::{self, ChunkMetadata, Dataset, DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration},
+    data::models::{
+        self, ChunkMetadata, Dataset, DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration,
+    },
     errors::ServiceError,
     get_env,
     operators::{
@@ -79,7 +81,7 @@ pub async fn create_message_completion_handler(
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let message_count_pool = pool.clone();
-    let message_count_org_id = dataset_org_plan_sub.organization.id;
+    let message_count_org_id = dataset_org_plan_sub.organization.organization.id;
     let server_dataset_configuration = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
