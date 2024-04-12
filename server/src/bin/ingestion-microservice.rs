@@ -142,13 +142,13 @@ fn main() {
                 signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
                     .expect("Failed to register shutdown hook");
                 let threads: Vec<_> = (0..thread_num)
-                    .map(|i| {
+                    .map(|_| {
                         let web_pool = web_pool.clone();
                         let web_redis_pool = web_redis_pool.clone();
                         let should_terminate = Arc::clone(&should_terminate);
 
                         tokio::spawn(async move {
-                            ingestion_service(i, should_terminate, web_redis_pool, web_pool).await
+                            ingestion_service(should_terminate, web_redis_pool, web_pool).await
                         })
                     })
                     .collect();
@@ -161,9 +161,7 @@ fn main() {
         );
 }
 
-#[tracing::instrument(skip(web_pool, redis_pool))]
 async fn ingestion_service(
-    thread: usize,
     should_terminate: Arc<AtomicBool>,
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
@@ -204,18 +202,12 @@ async fn ingestion_service(
             break;
         }
 
-        let brpoplpush_ctx =
-            sentry::TransactionContext::new("brpoplpush read redis", "brpoplpush read redis");
-        let brpoplpush_transaction = sentry::start_transaction(brpoplpush_ctx);
-
         let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpoplpush")
             .arg("ingestion")
             .arg("processing")
             .arg(1.0)
             .query_async(&mut *redis_connection)
             .await;
-
-        brpoplpush_transaction.finish();
 
         let serialized_message = if let Ok(payload) = payload_result {
             broken_pipe_sleep = std::time::Duration::from_secs(10);
@@ -233,7 +225,8 @@ async fn ingestion_service(
 
             if payload_result.is_err_and(|err| err.is_io_error()) {
                 tokio::time::sleep(broken_pipe_sleep).await;
-                broken_pipe_sleep = std::cmp::min(broken_pipe_sleep * 2, std::time::Duration::from_secs(300));
+                broken_pipe_sleep =
+                    std::cmp::min(broken_pipe_sleep * 2, std::time::Duration::from_secs(300));
             }
 
             continue;
@@ -347,7 +340,10 @@ async fn upload_chunk(
     web_pool: actix_web::web::Data<models::Pool>,
     dataset_config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    let tx_ctx = sentry::TransactionContext::new("ingestion worker upload_chunk", "ingestion worker upload_chunk");
+    let tx_ctx = sentry::TransactionContext::new(
+        "ingestion worker upload_chunk",
+        "ingestion worker upload_chunk",
+    );
     let transaction = sentry::start_transaction(tx_ctx);
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
 
