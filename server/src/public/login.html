@@ -29,67 +29,16 @@
         border: 1px solid #ddd;
         border-radius: 5px;
       }
-      .api-key-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        margin-top: 10px;
-      }
-      #apiKey {
-        font-weight: bold;
-        color: #a33eb5;
-      }
-      #copyButton {
-        background-color: #ffffff;
-        border: none;
-        padding: 5px;
-        border-radius: 5px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        width: 30px;
-        height: 30px;
-      }
-      #copyButton:hover {
-        background-color: #e2e2e2;
-      }
-      .copy-icon .check-icon {
-        fill: #000000;
-        width: 10px;
-        height: 10px;
-      }
     </style>
   </head>
   <body>
     <div class="container">
+      <h2>Authenicate Trieve CLI</h2>
       <form id="apiKeyForm">
-        <input type="text" id="name" placeholder="Name" required />
-        <select id="role" required>
-          <option value="" disabled selected>Select Role</option>
-          <option value="0">Read Only</option>
-          <option value="1">Read and Write</option>
-        </select>
-        <button type="submit">Create API Key</button>
+        <input type="text" id="name" placeholder="API Key Name" required />
+        <button type="submit">Authenicate</button>
       </form>
-      <div id="result" style="display: none">
-        <p>Paste this into your terminal:</p>
-        <div class="api-key-container">
-          <span id="apiKey"></span>
-          <button id="copyButton" aria-label="Copy API Key">
-            <svg class="copy-icon" viewBox="0 0 24 24">
-              <!-- Clipboard Icon -->
-              <path
-                d="M19,21H9V7H19M19,5H9A2,2 0 0,0 7,7V21A2,2 0 0,0 9,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path>
-            </svg>
-            <svg class="check-icon" viewBox="0 0 24 24" style="display: none">
-              <!-- Check Icon -->
-              <path
-                d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
+    </div>
     </div>
 
     <script>
@@ -98,46 +47,20 @@
         .addEventListener("submit", function (e) {
           e.preventDefault();
           const name = document.getElementById("name").value;
-          const role = document.getElementById("role").value;
           const params = new URLSearchParams(window.location.search);
           const host = params.get("host");
 
           fetch(`${host}/api/user/api_key`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, role: parseInt(role) }),
+            body: JSON.stringify({ name, role: 1 }),
+            credentials: "include"
           })
             .then((response) => response.json())
             .then((data) => {
-              document.getElementById("apiKeyForm").style.display = "none";
-              document.getElementById("result").style.display = "block";
-              document.getElementById("apiKey").textContent = data.api_key;
+              window.location.href = `http://localhost:8888?apiKey=${data.api_key}`;
             })
             .catch((error) => console.error("Error:", error));
-
-          document
-            .getElementById("copyButton")
-            .addEventListener("click", function () {
-              const apiKey = document.getElementById("apiKey").textContent;
-              navigator.clipboard
-                .writeText(apiKey)
-                .then(() => {
-                  // Hide the clipboard icon and show the check icon
-                  const copyIcon = document.querySelector(".copy-icon");
-                  const checkIcon = document.querySelector(".check-icon");
-                  copyIcon.style.display = "none";
-                  checkIcon.style.display = "inline";
-
-                  // After 1 second, revert the icons
-                  setTimeout(() => {
-                    copyIcon.style.display = "inline";
-                    checkIcon.style.display = "none";
-                  }, 1000);
-                })
-                .catch((err) => {
-                  console.error("Error in copying text: ", err);
-                });
-            });
         });
     </script>
   </body>
