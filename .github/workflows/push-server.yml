@@ -9,6 +9,9 @@ on:
   push:
     branches:
       - 'main'
+    paths:
+    - 'server/**'
+    - '.github/workflows'
 
 jobs:
   build_server:
@@ -71,6 +74,8 @@ jobs:
           # list of Docker images to use as base name for tags
           images: |
             trieve/ingest
+          tags: |
+            type=raw,latest
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -84,7 +89,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   file_worker:
-    name: Push Ingest image
+    name: Push File Worker image
     runs-on: blacksmith-8vcpu-ubuntu-2204
     steps:
       - name: Checkout the repo
@@ -106,6 +111,8 @@ jobs:
           # list of Docker images to use as base name for tags
           images: |
             trieve/file_worker
+          tags: |
+            type=raw,ocr
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
