@@ -4,7 +4,6 @@ on:
   pull_request:
     paths:
     - 'server/**'
-    - '.github/workflows/**'
 
 jobs:
   clippy_check_ingestion:
@@ -74,5 +73,5 @@ jobs:
       - name: Generating OpenAPI spec
         run: cargo run --features runtime-env --manifest-path server/Cargo.toml --bin redoc_ci > openapi.json
       - name: Vaccum lint
-        run: vacuum lint openapi.json -r '.github/workflows/rules.yaml' -d
+        run: vacuum lint openapi.json -r '.github/rules.yaml' -d
 

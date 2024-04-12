@@ -5,6 +5,7 @@ on:
     paths:
     - 'chat/**'
     - '.github/workflows/**'
+
 jobs:
   build-test:
     runs-on: blacksmith-2vcpu-ubuntu-2204
