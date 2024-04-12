@@ -129,9 +129,10 @@ pub async fn create_stripe_payment_link(
     let admin_dashboard_url = get_env!("ADMIN_DASHBOARD_URL", "ADMIN_DASHBOARD_URL must be set");
 
     let stripe_secret = get_env!("STRIPE_SECRET", "STRIPE_SECRET must be set");
-    let payment_link_create_request = reqwest::Client::new()
-        .post("https://api.stripe.com/v1/payment_links")
-        .header("Authorization", format!("Bearer {}", stripe_secret));
+    let payment_link_create_request = ureq::post("https://api.stripe.com/v1/payment_links").set(
+        "Authorization",
+        format!("Bearer {}", stripe_secret).as_str(),
+    );
 
     let payment_link_form_url_encoded = json!({
         "line_items[0][price]": plan.stripe_id,
@@ -143,10 +144,26 @@ pub async fn create_stripe_payment_link(
         "metadata[plan_id]": plan.id.to_string()
     });
 
+    let payment_link_form_url_encoded: Vec<(&str, &str)> = payment_link_form_url_encoded
+        .as_object()
+        .ok_or(ServiceError::BadRequest(
+            "Failed to convert payment link form to object".to_string(),
+        ))?
+        .iter()
+        .map(|(k, v)| {
+            (
+                k.as_str(),
+                v.as_str().unwrap_or_else(|| {
+                    log::error!("Failed to convert payment link form to string");
+                    ""
+                }),
+            )
+        })
+        .collect();
+
     let payment_link_response = payment_link_create_request
-        .header("Content-Type", "application/x-www-form-urlencoded")
-        .form(&payment_link_form_url_encoded)
-        .send()
+        .set("Content-Type", "application/x-www-form-urlencoded")
+        .send_form(&payment_link_form_url_encoded)
         .await
         .map_err(|e| {
             log::error!("Failed to create stripe payment link: {}", e);
