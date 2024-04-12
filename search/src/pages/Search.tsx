@@ -37,7 +37,8 @@ export const Search = () => {
         key === "start" ||
         key === "end" ||
         key === "dataset" ||
-        key === "groupUnique"
+        key === "groupUnique" ||
+        key === "organization"
       ) {
         return;
       }
@@ -63,7 +64,7 @@ export const Search = () => {
       <Show when={filters()}>
         {(nonUndefinedFilters) => (
           <>
-            <div class="mx-auto w-full max-w-6xl">
+            <div class="mx-auto w-full max-w-7xl">
               <div class="mx-auto mt-8 w-full max-w-[calc(100%-32px)] px-4 min-[360px]:max-w-[calc(100%-64px)] sm:px-8 md:px-20">
                 <SearchForm
                   query={query()}

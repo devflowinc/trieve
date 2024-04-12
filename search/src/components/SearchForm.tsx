@@ -45,9 +45,9 @@ const SearchForm = (props: {
   const customComboBoxFilterVals: ComboboxSection[] = comboboxSections;
 
   const [searchTypes, setSearchTypes] = createSignal([
-    { name: "Full Text", isSelected: false, route: "fulltext" },
+    { name: "FullText", isSelected: false, route: "fulltext" },
     { name: "Semantic", isSelected: true, route: "semantic" },
-    { name: "Hybrid Search", isSelected: false, route: "hybrid" },
+    { name: "Hybrid", isSelected: false, route: "hybrid" },
   ]);
   const [textareaInput, setTextareaInput] = createSignal("");
   const [typewriterEffect, setTypewriterEffect] = createSignal("");
@@ -539,7 +539,9 @@ const SearchForm = (props: {
                   type="button"
                   class="flex items-center space-x-1 pb-1 text-sm"
                 >
-                  <span class="p-1">Search Type</span>{" "}
+                  <span class="p-1">
+                    Type: {searchTypes().find((type) => type.isSelected)?.name}
+                  </span>{" "}
                   <svg
                     fill="currentColor"
                     stroke-width="0"

@@ -1253,7 +1253,7 @@ pub enum SearchChunkResponseTypes {
 
 /// Search
 ///
-/// This route provides the primary search functionality for the API. It can be used to search for chunks by semantic similarity, full-text similarity, or a combination of both. Results' `chunk_html` values will be modified with `<b>` tags for sub-sentence highlighting.
+/// This route provides the primary search functionality for the API. It can be used to search for chunks by semantic similarity, full-text similarity, or a combination of both. Results' `chunk_html` values will be modified with `<b><mark>` tags for sub-sentence highlighting.
 #[utoipa::path(
     post,
     path = "/chunk/search",

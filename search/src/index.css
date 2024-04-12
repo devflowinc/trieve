@@ -5,3 +5,13 @@
 div.tox.tox-tinymce {
   min-height: 200px;
 }
+
+mark > div > * {
+  background-color: #ff0;
+  width: fit-content;
+}
+
+mark > p {
+  background-color: #ff0;
+  width: fit-content;
+}
