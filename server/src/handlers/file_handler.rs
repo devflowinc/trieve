@@ -76,6 +76,8 @@ pub struct UploadFileData {
     pub metadata: Option<serde_json::Value>,
     /// Create chunks is a boolean which determines whether or not to create chunks from the file. If false, you can manually chunk the file and send the chunks to the create_chunk endpoint with the file_id to associate chunks with the file. Meant mostly for advanced users.
     pub create_chunks: Option<bool>,
+    /// Group tracking id is an optional field which allows you to specify the tracking id of the group that is created from the file. Chunks created will be created with the tracking id of `group_tracking_id|<index of chunk>`
+    pub group_tracking_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -177,6 +179,7 @@ pub async fn upload_file_handler(
         upload_file_data.metadata,
         upload_file_data.create_chunks,
         upload_file_data.time_stamp,
+        upload_file_data.group_tracking_id,
         user.0,
         dataset_org_plan_sub.clone(),
         pool_inner,

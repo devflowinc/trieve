@@ -118,6 +118,7 @@ pub async fn convert_doc_to_html_query(
     metadata: Option<serde_json::Value>,
     create_chunks: Option<bool>,
     time_stamp: Option<String>,
+    group_tracking_id: Option<String>,
     user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
@@ -226,6 +227,7 @@ pub async fn convert_doc_to_html_query(
             link.clone(),
             user,
             html_content,
+            group_tracking_id,
             dataset_org_plan_sub1,
             pool,
             redis_pool,
@@ -265,6 +267,7 @@ pub async fn create_chunks_with_handler(
     link: Option<String>,
     user: LoggedUser,
     html_content: String,
+    group_tracking_id: Option<String>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
@@ -284,7 +287,7 @@ pub async fn create_chunks_with_handler(
         name.clone(),
         Some(converted_description),
         dataset_org_plan_sub.dataset.id,
-        None,
+        group_tracking_id.clone(),
         None,
         None,
     );
@@ -305,7 +308,7 @@ pub async fn create_chunks_with_handler(
             e
         })?;
 
-    for chunk_html in chunk_htmls {
+    for (i, chunk_html) in chunk_htmls.iter().enumerate() {
         let create_chunk_data = ChunkData {
             chunk_html: Some(chunk_html.clone()),
             link: link.clone(),
@@ -314,7 +317,9 @@ pub async fn create_chunks_with_handler(
             metadata: metadata.clone(),
             group_ids: Some(vec![group_id]),
             group_tracking_ids: None,
-            tracking_id: None,
+            tracking_id: group_tracking_id
+                .clone()
+                .map(|tracking_id| format!("{}|{}", tracking_id, i.to_string())),
             upsert_by_tracking_id: None,
             time_stamp: time_stamp.clone(),
             chunk_vector: None,
