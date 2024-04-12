@@ -40,7 +40,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          cache-from: type=registry,ref=trieve/build-cache:no-ocr
+          cache-from: type=registry,ref=trieve/buildcache:no-ocr
           cache-to: type=registry,ref=trieve/buildcache:no-ocr,mode=max
           context: server/
           file: ./server/Dockerfile.no-ocr
