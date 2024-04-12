@@ -34,7 +34,9 @@ export const Home = () => {
       key === "link" ||
       key === "start" ||
       key === "end" ||
-      key === "dataset"
+      key === "dataset" ||
+      key === "groupUnique" ||
+      key === "organization"
     ) {
       return;
     }

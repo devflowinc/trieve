@@ -231,7 +231,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
         </Portal>
       </Show>
       <div class="mt-2 flex w-full flex-col items-center justify-center">
-        <div class="flex w-full max-w-6xl flex-col justify-center px-4 sm:px-8 md:px-20">
+        <div class="flex w-full max-w-7xl flex-col justify-center px-4 sm:px-8 md:px-20">
           <Show when={error().length > 0 && !fetching()}>
             <div class="flex w-full flex-col items-center rounded-md p-2">
               <div class="text-xl font-bold text-red-500">{error()}</div>

@@ -115,7 +115,9 @@ export const GroupPage = (props: GroupPageProps) => {
         key === "link" ||
         key === "start" ||
         key === "end" ||
-        key === "dataset"
+        key === "dataset" ||
+        key === "groupUnique" ||
+        key === "organization"
       ) {
         return;
       }
@@ -408,7 +410,7 @@ export const GroupPage = (props: GroupPageProps) => {
       </Show>
       <div class="flex w-full flex-col items-center space-y-2">
         <Show when={error().length == 0}>
-          <div class="flex w-full max-w-6xl items-center justify-end space-x-2 px-4 sm:px-8 md:px-20">
+          <div class="flex w-full max-w-7xl items-center justify-end space-x-2 px-4 sm:px-8 md:px-20">
             <Show
               when={chunkGroups().some((group) => group.id == groupInfo()?.id)}
             >
@@ -428,21 +430,21 @@ export const GroupPage = (props: GroupPageProps) => {
           </div>
           <Show when={!editing()}>
             <div class="flex w-full items-center justify-center">
-              <h1 class="max-w-6xl break-all text-center text-lg min-[320px]:text-xl sm:text-3xl">
+              <h1 class="max-w-7xl break-all text-center text-lg min-[320px]:text-xl sm:text-3xl">
                 {groupInfo()?.name}
               </h1>
             </div>
             <Show
               when={groupInfo()?.description.length ?? (0 > 0 && !editing())}
             >
-              <div class="mx-auto flex max-w-6xl justify-items-center gap-x-2 text-center">
+              <div class="mx-auto flex max-w-7xl justify-items-center gap-x-2 text-center">
                 {groupInfo()?.description}
               </div>
             </Show>
           </Show>
 
           <Show when={editing()}>
-            <div class="vertical-align-left mt-8 grid w-full max-w-6xl auto-rows-max grid-cols-[1fr,3fr] gap-y-2 px-4 sm:px-8 md:px-20">
+            <div class="vertical-align-left mt-8 grid w-full max-w-7xl auto-rows-max grid-cols-[1fr,3fr] gap-y-2 px-4 sm:px-8 md:px-20">
               <h1 class="text-md min-[320px]:text-md sm:text-md mt-10 text-left font-bold">
                 Name:
               </h1>
@@ -474,7 +476,7 @@ export const GroupPage = (props: GroupPageProps) => {
                 }}
               />
             </div>
-            <div class="mt-4 flex w-full max-w-6xl justify-end px-4 sm:px-8 md:px-20">
+            <div class="mt-4 flex w-full max-w-7xl justify-end px-4 sm:px-8 md:px-20">
               <button
                 classList={{
                   "!pointer-events-auto relative max-h-10 mt-2 mr-2 items-end justify-end rounded-md p-2 text-center bg-red-500":
@@ -498,7 +500,7 @@ export const GroupPage = (props: GroupPageProps) => {
             </div>
           </Show>
         </Show>
-        <div class="flex w-full max-w-6xl flex-col space-y-4 border-t border-neutral-500 px-4 sm:px-8 md:px-20">
+        <div class="flex w-full max-w-7xl flex-col space-y-4 border-t border-neutral-500 px-4 sm:px-8 md:px-20">
           <Show when={query() != ""}>
             <button
               class="relative mx-auto ml-8 mt-8 h-fit max-h-[240px] rounded-md bg-neutral-100 p-2 dark:bg-neutral-700"
@@ -508,7 +510,7 @@ export const GroupPage = (props: GroupPageProps) => {
             </button>
           </Show>
           <Show when={chunkMetadatas().length > 0}>
-            <div class="mx-auto w-full max-w-6xl">
+            <div class="mx-auto w-full max-w-7xl">
               <div
                 classList={{
                   "mx-auto w-full max-w-[calc(100%-32px)] min-[360px]:max-w-[calc(100%-64px)]":

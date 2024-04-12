@@ -187,6 +187,11 @@ const ResultsPage = (props: ResultsPageProps) => {
     }
 
     props.setLoading(true);
+
+    setGroupResultChunks([]);
+    setResultChunks([]);
+    setNoResults(false);
+
     const abortController = new AbortController();
 
     void fetch(`${apiHost}/${searchRoute}`, {
@@ -202,23 +207,25 @@ const ResultsPage = (props: ResultsPageProps) => {
       if (response.ok) {
         void response.json().then((data) => {
           let resultingChunks: ScoreChunkDTO[] = [];
-          if (!groupUnique) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            resultingChunks = data.score_chunks as ScoreChunkDTO[];
-          } else {
+          if (groupUnique) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             const groupResult = data.group_chunks as GroupScoreChunkDTO[];
 
             setGroupResultChunks(groupResult);
+
             resultingChunks = groupResult.flatMap((groupChunkDTO) => {
               return groupChunkDTO.metadata;
             });
+          } else {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            resultingChunks = data.score_chunks as ScoreChunkDTO[];
+
+            setResultChunks(resultingChunks);
           }
 
           if (resultingChunks.length === 0) {
             setNoResults(true);
           }
-          setResultChunks(resultingChunks);
         });
       }
 
@@ -282,7 +289,7 @@ const ResultsPage = (props: ResultsPageProps) => {
             <div class="text-2xl">No results found</div>
           </Match>
           <Match when={!props.loading() && groupResultChunks().length == 0}>
-            <div class="flex w-full max-w-6xl flex-col space-y-4 px-1 min-[360px]:px-4 sm:px-8 md:px-20">
+            <div class="flex w-full max-w-7xl flex-col space-y-4 px-1 min-[360px]:px-4 sm:px-8 md:px-20">
               <For each={resultChunks()}>
                 {(chunk) => (
                   <div>
@@ -385,7 +392,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                 };
 
                 return (
-                  <div class="flex w-full max-w-6xl flex-col space-y-4 px-1 min-[360px]:px-4 sm:px-8 md:px-20">
+                  <div class="flex w-full max-w-7xl flex-col space-y-4 px-1 min-[360px]:px-4 sm:px-8 md:px-20">
                     <div
                       onClick={toggle}
                       classList={{

@@ -1024,7 +1024,7 @@ pub fn find_relevant_sentence(
             continue;
         }
         let sentence_index = split_x[0].parse::<usize>().unwrap();
-        let highlighted_sentence = format!("{}{}{}", "<b>", split_x[1], "</b>");
+        let highlighted_sentence = format!("{}{}{}", "<b><mark>", split_x[1], "</mark></b>");
         split_content[sentence_index] = highlighted_sentence;
     }
 
