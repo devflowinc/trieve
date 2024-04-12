@@ -40,8 +40,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          cache-from: type=registry,ref=trieve/server:buildcache
-          cache-to: type=registry,ref=trieve/server:buildcache,mode=max
+          cache-from: type=registry,ref=trieve/server:buildcache-no-ocr
+          cache-to: type=registry,ref=trieve/server:buildcache-no-ocr,mode=max
           context: server/
           file: ./server/Dockerfile.no-ocr
           push: true
@@ -112,8 +112,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          cache-from: type=registry,ref=trieve/server:buildcache
-          cache-to: type=registry,ref=trieve/server:buildcache,mode=max
+          cache-from: type=registry,ref=trieve/server:buildcache-ocr
+          cache-to: type=registry,ref=trieve/server:buildcache-ocr,mode=max
           context: server/
           file: ./server/Dockerfile.ocr
           push: true
