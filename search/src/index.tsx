@@ -2,6 +2,8 @@
 import "./index.css";
 import { render } from "solid-js/web";
 import { Route, Router } from "@solidjs/router";
+import * as Sentry from "@sentry/browser";
+import { DEV } from "solid-js";
 import { Home } from "./pages/Home";
 import { Search } from "./pages/Search";
 import { Upload } from "./pages/Upload";
@@ -11,6 +13,23 @@ import { ViewChunk } from "./pages/chunk/ViewChunk";
 import { ViewGroup } from "./pages/group/ViewGroup";
 import { OrgGroups } from "./pages/group/OrgGroups";
 import { OrgFiles } from "./pages/file/OrgFiles";
+
+if (!DEV) {
+  Sentry.init({
+    dsn: `${import.meta.env.VITE_SENTRY_SEARCH_DSN as string}`,
+    integrations: [
+      Sentry.browserTracingIntegration(),
+      Sentry.replayIntegration(),
+    ],
+
+    tracesSampleRate: 1.0,
+
+    tracePropagationTargets: ["localhost", /^https:\/\/trieve\.ai\/api/],
+
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
+  });
+}
 
 const root = document.getElementById("root");
 

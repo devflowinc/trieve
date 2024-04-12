@@ -1,6 +1,8 @@
 /* @refresh reload */
 import "./index.css";
 import { render } from "solid-js/web";
+import * as Sentry from "@sentry/browser";
+import { DEV } from "solid-js";
 import { Router, Route } from "@solidjs/router";
 import { DashboardLayout } from "./layouts/DashboardLayout.tsx";
 import { DatasetLayout } from "./layouts/DatasetLayout.tsx";
@@ -13,6 +15,23 @@ import { Billing } from "./pages/Dashboard/Billing.tsx";
 import { UserManagement } from "./pages/Dashboard/UserManagment.tsx";
 import { ContextWrapper } from "./layouts/ContextWrapper.tsx";
 import { DatasetEvents } from "./pages/Dashboard/Dataset/DatasetEvents.tsx";
+
+if (!DEV) {
+  Sentry.init({
+    dsn: `${import.meta.env.VITE_SENTRY_DASHBOARD_DSN as string}`,
+    integrations: [
+      Sentry.browserTracingIntegration(),
+      Sentry.replayIntegration(),
+    ],
+
+    tracesSampleRate: 1.0,
+
+    tracePropagationTargets: ["localhost", /^https:\/\/trieve\.ai\/api/],
+
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
+  });
+}
 
 const root = document.getElementById("root");
 

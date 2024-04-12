@@ -12,6 +12,7 @@
     "lint:CI": "eslint --fix --output-file eslint_report.json --format json \"src/**/*.{js,ts,jsx,tsx,}\""
   },
   "dependencies": {
+    "@sentry/browser": "^7.110.0",
     "@solidjs/router": "^0.10.1",
     "solid-icons": "^1.1.0",
     "solid-js": "^1.8.11",
