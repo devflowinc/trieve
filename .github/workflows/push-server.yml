@@ -1,12 +1,12 @@
 name: Create Docker Images
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
   push:
-    branches:
-      - 'main'
-  pull_request:
-    paths:
-    - 'server/**'
     branches:
       - 'main'
 

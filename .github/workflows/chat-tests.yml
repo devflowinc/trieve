@@ -1,5 +1,9 @@
 name: chat test suite
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
 on: 
   pull_request:
     paths:
