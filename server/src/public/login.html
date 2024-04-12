@@ -58,7 +58,7 @@
           })
             .then((response) => response.json())
             .then((data) => {
-              window.location.href = `http://localhost:8888?apiKey=${data.api_key}`;
+              window.location.href = `http://localhost:65535?apiKey=${data.api_key}`;
             })
             .catch((error) => console.error("Error:", error));
         });
