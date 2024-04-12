@@ -12,6 +12,7 @@
     "lint:CI": "eslint --fix --output-file eslint_report.json --format json \"src/**/*.{js,ts,jsx,tsx,}\""
   },
   "dependencies": {
+    "@sentry/browser": "^7.110.0",
     "@solid-aria/focus": "^0.1.4",
     "@solid-aria/switch": "^0.1.2",
     "@solid-aria/visually-hidden": "^0.1.3",
