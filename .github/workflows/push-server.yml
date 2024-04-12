@@ -110,8 +110,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          cache-from: type=registry,ref=trieve/file_worker:buildcache
-          cache-to: type=registry,ref=trieve/file_worker:buildcache,mode=max
+          cache-from: type=registry,ref=trieve/buildcache:file_worker
+          cache-to: type=registry,ref=trieve/buildcache:file_worker,mode=max
           context: server/
           file: ./server/Dockerfile.file-worker
           push: true
