@@ -22,15 +22,16 @@ WORKDIR /app
 
 RUN apt-get update -y; \
     apt-get install -y \
-        pkg-config \
-        build-essential\
-        libssl-dev \
-        libpq-dev \
-        ca-certificates \
-        ; \
-        mkdir -p /app/tmp
+    pkg-config \
+    build-essential\
+    libssl-dev \
+    libpq-dev \
+    ca-certificates \
+    ; \
+    mkdir -p /app/tmp
 
 COPY ./migrations/ /app/migrations
+COPY ./src/public/ /app/src/public
 COPY --from=builder /app/target/release/trieve-server /app/trieve-server
 
 EXPOSE 8090

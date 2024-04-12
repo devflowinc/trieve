@@ -66,34 +66,35 @@ WORKDIR /app
 
 RUN apt-get update; \
     apt-get install -y \
-        libpq-dev \
-        build-essential\
-        python3 \
-        python3-pip \
-        libpng16-16 \
-        libpng-dev \
-        libjpeg62-turbo \
-        libjpeg62-turbo-dev \
-        libgomp1 \
-        ghostscript \
-        libxml2-dev \
-        libxml2-utils \
-        libtiff-dev \
-        libfontconfig1-dev \
-        libfreetype6-dev \
-        fonts-dejavu \
-        liblcms2-2 \
-        liblcms2-dev \
-        libtcmalloc-minimal4 \
-        python-is-python3 \
-        tesseract-ocr \
-        ca-certificates \
-        libtesseract-dev \
+    libpq-dev \
+    build-essential\
+    python3 \
+    python3-pip \
+    libpng16-16 \
+    libpng-dev \
+    libjpeg62-turbo \
+    libjpeg62-turbo-dev \
+    libgomp1 \
+    ghostscript \
+    libxml2-dev \
+    libxml2-utils \
+    libtiff-dev \
+    libfontconfig1-dev \
+    libfreetype6-dev \
+    fonts-dejavu \
+    liblcms2-2 \
+    liblcms2-dev \
+    libtcmalloc-minimal4 \
+    python-is-python3 \
+    tesseract-ocr \
+    ca-certificates \
+    libtesseract-dev \
     ; \
     pip install --break-system-packages ocrmypdf; \
     mkdir -p /app/tmp
 
 COPY ./migrations/ /app/migrations
+COPY ./src/public/ /app/src/public
 COPY --from=builder /imgs/app/target/release/trieve-server /app/trieve-server
 
 
