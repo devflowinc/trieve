@@ -148,7 +148,7 @@ fn main() {
                         let should_terminate = Arc::clone(&should_terminate);
 
                         tokio::spawn(async move {
-                            ingestion_service(should_terminate, web_redis_pool, web_pool).await
+                            ingestion_worker(should_terminate, web_redis_pool, web_pool).await
                         })
                     })
                     .collect();
@@ -161,7 +161,7 @@ fn main() {
         );
 }
 
-async fn ingestion_service(
+async fn ingestion_worker(
     should_terminate: Arc<AtomicBool>,
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,

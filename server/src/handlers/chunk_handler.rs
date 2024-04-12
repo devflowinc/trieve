@@ -9,9 +9,6 @@ use crate::errors::ServiceError;
 use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
-use crate::operators::group_operator::{
-    check_group_ids_exist_query, get_group_ids_from_tracking_ids_query,
-};
 use crate::operators::qdrant_operator::recommend_qdrant_query;
 use crate::operators::search_operator::{
     get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
@@ -216,6 +213,8 @@ pub enum CreateChunkData {
     Batch(CreateBatchChunkData),
 }
 
+
+
 /// Create or Upsert Chunk or Chunks
 ///
 /// Create a new chunk. If the chunk has the same tracking_id as an existing chunk, the request will fail. Once a chunk is created, it can be searched for using the search endpoint.
@@ -271,135 +270,23 @@ pub async fn create_chunk(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    let mut ingestion_messages = vec![];
-
-    let mut chunk_metadatas = vec![];
-
-    for chunk in chunks {
-        let chunk_tag_set = chunk.tag_set.clone().map(|tag_set| tag_set.join(","));
-
-        let chunk_tracking_id = chunk
-            .tracking_id
-            .clone()
-            .filter(|chunk_tracking| !chunk_tracking.is_empty());
-
-        if !chunk.upsert_by_tracking_id.unwrap_or(false) && chunk_tracking_id.is_some() {
-            let existing_chunk = get_optional_metadata_from_tracking_id_query(
-                chunk_tracking_id
-                    .clone()
-                    .expect("tracking_id must exist at this point"),
-                count_dataset_id,
-                pool.clone(),
-            )
-            .await?;
-
-            if existing_chunk.is_some() {
-                return Err(ServiceError::BadRequest(
-                    "Need to call with upsert_by_tracking_id set to true in request payload because a chunk with this tracking_id already exists".to_string(),
-                )
-                .into());
-            }
-        }
-
-        let timestamp = {
-            chunk
-                .time_stamp
-                .clone()
-                .map(|ts| -> Result<NaiveDateTime, ServiceError> {
-                    Ok(ts
-                        .parse::<DateTimeUtc>()
-                        .map_err(|_| {
-                            ServiceError::BadRequest("Invalid timestamp format".to_string())
-                        })?
-                        .0
-                        .with_timezone(&chrono::Local)
-                        .naive_local())
-                })
-                .transpose()?
-        };
-
-        let chunk_metadata = ChunkMetadata::from_details(
-            "".to_string(),
-            &chunk.chunk_html,
-            &chunk.link,
-            &chunk_tag_set,
-            None,
-            chunk.metadata.clone(),
-            chunk_tracking_id,
-            timestamp,
-            dataset_org_plan_sub.dataset.id,
-            chunk.weight.unwrap_or(0.0),
-        );
-        chunk_metadatas.push(chunk_metadata.clone());
-
-        // check if a group_id is not in existent_group_ids and return an error if it is not
-        if let Some(group_ids) = chunk.group_ids.clone() {
-            let existent_group_ids = check_group_ids_exist_query(
-                chunk.group_ids.clone().unwrap_or_default(),
-                count_dataset_id,
-                pool.clone(),
-            )
-            .await?;
-
-            for group_id in group_ids {
-                if !existent_group_ids.contains(&group_id) {
-                    return Err(ServiceError::BadRequest(format!(
-                        "Group with id {} does not exist",
-                        group_id
-                    ))
-                    .into());
-                }
-            }
-        }
-
-        let group_ids_from_group_tracking_ids =
-            if let Some(group_tracking_ids) = chunk.group_tracking_ids.clone() {
-                get_group_ids_from_tracking_ids_query(
-                    group_tracking_ids,
-                    count_dataset_id,
-                    pool.clone(),
-                )
-                .await
-                .ok()
-                .unwrap_or(vec![])
-            } else {
-                vec![]
-            };
-
-        let initial_group_ids = chunk.group_ids.clone().unwrap_or_default();
-        let mut chunk_only_group_ids = chunk.clone();
-        let deduped_group_ids = group_ids_from_group_tracking_ids
-            .into_iter()
-            .chain(initial_group_ids.into_iter())
-            .unique()
-            .collect::<Vec<uuid::Uuid>>();
-
-        chunk_only_group_ids.group_ids = Some(deduped_group_ids);
-        chunk_only_group_ids.group_tracking_ids = None;
-
-        let upload_message = UploadIngestionMessage {
-            ingest_specific_chunk_metadata: IngestSpecificChunkMetadata {
-                id: chunk_metadata.id,
-                qdrant_point_id: chunk_metadata.qdrant_point_id,
-                dataset_id: count_dataset_id,
-                attempt_number: 0,
-            },
-            chunk: chunk_only_group_ids.clone(),
-            dataset_id: count_dataset_id,
-            dataset_config: server_dataset_configuration.clone(),
-            upsert_by_tracking_id: chunk.upsert_by_tracking_id.unwrap_or(false),
-        };
-
-        ingestion_messages.push(upload_message);
-    }
-
     let mut redis_conn = redis_pool
         .get()
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
     timer.add("got redis connection");
 
+    let ingestion_messages = create_chunk_metadata(
+        chunks,
+        dataset_org_plan_sub.dataset.id,
+        server_dataset_configuration,
+        pool,
+    )
+    .await?;
+
     let serialized_messages: Vec<String> = ingestion_messages
+        .0
         .iter()
         .filter_map(|msg| serde_json::to_string(&msg).ok())
         .collect();
@@ -413,7 +300,8 @@ pub async fn create_chunk(
 
     let response = match create_chunk_data.into_inner() {
         CreateChunkData::Single(_) => ReturnQueuedChunk::Single(SingleQueuedChunkResponse {
-            chunk_metadata: chunk_metadatas
+            chunk_metadata: ingestion_messages
+            .1
                 .get(0)
                 .ok_or(ServiceError::BadRequest(
                     "Failed to queue a single chunk due to deriving 0 ingestion_messages from the request data".to_string(),
@@ -422,7 +310,7 @@ pub async fn create_chunk(
             pos_in_queue,
         }),
         CreateChunkData::Batch(_) => ReturnQueuedChunk::Batch(BatchQueuedChunkResponse {
-            chunk_metadata: chunk_metadatas,
+            chunk_metadata: ingestion_messages.1,
             pos_in_queue,
         }),
     };

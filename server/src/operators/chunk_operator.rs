@@ -1,6 +1,11 @@
 use crate::data::models::{
-    ChunkCollision, ChunkFile, ChunkGroupBookmark,
-    Dataset, FullTextSearchResult, ServerDatasetConfiguration, UnifiedId,
+    ChunkCollision, ChunkFile, ChunkGroupBookmark, Dataset, FullTextSearchResult,
+    IngestSpecificChunkMetadata, ServerDatasetConfiguration, UnifiedId,
+};
+use crate::handlers::chunk_handler::ChunkData;
+use crate::handlers::chunk_handler::UploadIngestionMessage;
+use crate::operators::group_operator::{
+    check_group_ids_exist_query, get_group_ids_from_tracking_ids_query,
 };
 use crate::operators::model_operator::create_embeddings;
 use crate::operators::qdrant_operator::get_qdrant_connection;
@@ -10,6 +15,8 @@ use crate::{
     errors::ServiceError,
 };
 use actix_web::web;
+use chrono::NaiveDateTime;
+use dateparser::DateTimeUtc;
 use diesel::dsl::not;
 use diesel::prelude::*;
 use diesel_async::scoped_futures::ScopedFutureExt;
@@ -1051,4 +1058,131 @@ pub async fn get_row_count_for_dataset_id_query(
         })?;
 
     Ok(chunk_metadata_count as usize)
+}
+
+pub async fn create_chunk_metadata(
+    chunks: Vec<ChunkData>,
+    dataset_uuid: uuid::Uuid,
+    dataset_config: ServerDatasetConfiguration,
+    pool: web::Data<Pool>,
+) -> Result<(Vec<UploadIngestionMessage>, Vec<ChunkMetadata>), ServiceError> {
+    let mut ingestion_messages = vec![];
+
+    let mut chunk_metadatas = vec![];
+
+    for chunk in chunks {
+        let chunk_tag_set = chunk.tag_set.clone().map(|tag_set| tag_set.join(","));
+
+        let chunk_tracking_id = chunk
+            .tracking_id
+            .clone()
+            .filter(|chunk_tracking| !chunk_tracking.is_empty());
+
+        if !chunk.upsert_by_tracking_id.unwrap_or(false) && chunk_tracking_id.is_some() {
+            let existing_chunk = get_optional_metadata_from_tracking_id_query(
+                chunk_tracking_id
+                    .clone()
+                    .expect("tracking_id must exist at this point"),
+                dataset_uuid,
+                pool.clone(),
+            )
+            .await?;
+
+            if existing_chunk.is_some() {
+                return Err(ServiceError::BadRequest(
+                    "Need to call with upsert_by_tracking_id set to true in request payload because a chunk with this tracking_id already exists".to_string(),
+                )
+                .into());
+            }
+        }
+
+        let timestamp = {
+            chunk
+                .time_stamp
+                .clone()
+                .map(|ts| -> Result<NaiveDateTime, ServiceError> {
+                    Ok(ts
+                        .parse::<DateTimeUtc>()
+                        .map_err(|_| {
+                            ServiceError::BadRequest("Invalid timestamp format".to_string())
+                        })?
+                        .0
+                        .with_timezone(&chrono::Local)
+                        .naive_local())
+                })
+                .transpose()?
+        };
+
+        let chunk_metadata = ChunkMetadata::from_details(
+            "".to_string(),
+            &chunk.chunk_html,
+            &chunk.link,
+            &chunk_tag_set,
+            None,
+            chunk.metadata.clone(),
+            chunk_tracking_id,
+            timestamp,
+            dataset_uuid,
+            chunk.weight.unwrap_or(0.0),
+        );
+        chunk_metadatas.push(chunk_metadata.clone());
+
+        // check if a group_id is not in existent_group_ids and return an error if it is not
+        if let Some(group_ids) = chunk.group_ids.clone() {
+            let existent_group_ids = check_group_ids_exist_query(
+                chunk.group_ids.clone().unwrap_or_default(),
+                dataset_uuid,
+                pool.clone(),
+            )
+            .await?;
+
+            for group_id in group_ids {
+                if !existent_group_ids.contains(&group_id) {
+                    return Err(ServiceError::BadRequest(format!(
+                        "Group with id {} does not exist",
+                        group_id
+                    ))
+                    .into());
+                }
+            }
+        }
+
+        let group_ids_from_group_tracking_ids = if let Some(group_tracking_ids) =
+            chunk.group_tracking_ids.clone()
+        {
+            get_group_ids_from_tracking_ids_query(group_tracking_ids, dataset_uuid, pool.clone())
+                .await
+                .ok()
+                .unwrap_or(vec![])
+        } else {
+            vec![]
+        };
+
+        let initial_group_ids = chunk.group_ids.clone().unwrap_or_default();
+        let mut chunk_only_group_ids = chunk.clone();
+        let deduped_group_ids = group_ids_from_group_tracking_ids
+            .into_iter()
+            .chain(initial_group_ids.into_iter())
+            .unique()
+            .collect::<Vec<uuid::Uuid>>();
+
+        chunk_only_group_ids.group_ids = Some(deduped_group_ids);
+        chunk_only_group_ids.group_tracking_ids = None;
+
+        let upload_message = UploadIngestionMessage {
+            ingest_specific_chunk_metadata: IngestSpecificChunkMetadata {
+                id: chunk_metadata.id,
+                qdrant_point_id: chunk_metadata.qdrant_point_id,
+                dataset_id: dataset_uuid,
+                attempt_number: 0,
+            },
+            chunk: chunk_only_group_ids.clone(),
+            dataset_id: dataset_uuid,
+            upsert_by_tracking_id: chunk.upsert_by_tracking_id.unwrap_or(false),
+            dataset_config: dataset_config.clone(),
+        };
+
+        ingestion_messages.push(upload_message);
+    }
+    Ok((ingestion_messages, chunk_metadatas))
 }

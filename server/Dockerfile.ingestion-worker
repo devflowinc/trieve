@@ -15,14 +15,14 @@ COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 # Build application
 COPY . .
-RUN cargo build --release --features "runtime-env" --bin "ingestion-microservice"
+RUN cargo build --release --features "runtime-env" --bin "ingestion-worker"
 
 FROM debian:bookworm-slim as runtime
 RUN apt-get update -y && apt-get -y install pkg-config libssl-dev libpq-dev ca-certificates 
 WORKDIR /app
 COPY ./migrations/ /app/migrations
-COPY --from=builder /app/target/release/ingestion-microservice /app/ingestion-microservice
+COPY --from=builder /app/target/release/ingestion-worker /app/ingestion-worker
 
 
 EXPOSE 8090
-ENTRYPOINT ["/app/ingestion-microservice"]
+ENTRYPOINT ["/app/ingestion-worker"]

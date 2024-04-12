@@ -1,14 +1,13 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::{
     data::models::{
-        DatasetAndOrgWithSubAndPlan, File, FileAndGroupId, Pool, RedisPool,
-        ServerDatasetConfiguration,
+        DatasetAndOrgWithSubAndPlan, File, FileAndGroupId, FileDataDTO, FileWorkerMessage, Pool,
+        RedisPool, ServerDatasetConfiguration,
     },
     errors::ServiceError,
     operators::{
         file_operator::{
-            convert_doc_to_html_query, delete_file_query, get_aws_bucket, get_dataset_file_query,
-            get_file_query,
+            delete_file_query, get_aws_bucket, get_dataset_file_query, get_file_query,
         },
         organization_operator::get_file_size_sum_org,
     },
@@ -105,7 +104,7 @@ pub struct UploadFileResult {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool, redis_pool))]
+#[tracing::instrument(skip(pool))]
 pub async fn upload_file_handler(
     data: web::Json<UploadFileData>,
     pool: web::Data<Pool>,
@@ -123,6 +122,11 @@ pub async fn upload_file_handler(
             ServiceError::BadRequest("Document upload feature is disabled".to_string()).into(),
         );
     }
+
+    let mut redis_conn = redis_pool
+        .get()
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     let file_size_sum_pool = pool.clone();
     let file_size_sum = get_file_size_sum_org(
@@ -143,51 +147,58 @@ pub async fn upload_file_handler(
     }
 
     let upload_file_data = data.into_inner();
-    let pool_inner = pool.clone();
 
     let base64_engine = engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
 
     let decoded_file_data = base64_engine
-        .decode(upload_file_data.base64_file)
+        .decode(upload_file_data.base64_file.clone())
         .map_err(|_e| ServiceError::BadRequest("Could not decode base64 file".to_string()))?;
-    let decoded_description_file_data = if upload_file_data.description.is_some() {
-        Some(
-            String::from_utf8(
-                base64_engine
-                    .decode(upload_file_data.description.unwrap_or_default())
-                    .map_err(|_e| {
-                        ServiceError::BadRequest("Could not decode base64 file".to_string())
-                    })?,
-            )
-            .map_err(|_e| ServiceError::BadRequest("Could not decode base64 file".to_string()))?,
-        )
-    } else {
-        None
+
+    let file_id = uuid::Uuid::new_v4();
+
+    let bucket = get_aws_bucket()?;
+    bucket
+        .put_object(file_id.to_string(), decoded_file_data.as_slice())
+        .await
+        .map_err(|e| {
+            log::error!("Could not upload file to S3 {:?}", e);
+            ServiceError::BadRequest("Could not upload file to S3".to_string())
+        })?;
+
+    let file_data: FileDataDTO = upload_file_data.clone().into();
+    let message = FileWorkerMessage {
+        file_id,
+        dataset_org_plan_sub: dataset_org_plan_sub.clone(),
+        upload_file_data: file_data,
+        attempt_number: 0,
     };
 
-    let file_tag_set = upload_file_data
-        .tag_set
-        .clone()
-        .map(|tag_set| tag_set.join(","));
+    let serialized_message = serde_json::to_string(&message).map_err(|e| {
+        log::error!("Could not serialize message: {:?}", e);
+        ServiceError::BadRequest("Could not serialize message".to_string())
+    })?;
 
-    let conversion_result = convert_doc_to_html_query(
-        upload_file_data.file_name,
-        decoded_file_data,
-        file_tag_set,
-        decoded_description_file_data,
-        upload_file_data.link,
-        upload_file_data.metadata,
-        upload_file_data.create_chunks,
-        upload_file_data.time_stamp,
-        upload_file_data.group_tracking_id,
-        user.0,
-        dataset_org_plan_sub.clone(),
-        pool_inner,
-        redis_pool,
-    )
-    .await?;
+    redis::cmd("rpush")
+        .arg("file_ingestion")
+        .arg(&serialized_message)
+        .query_async(&mut *redis_conn)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    Ok(HttpResponse::Ok().json(conversion_result))
+    let result = UploadFileResult {
+        file_metadata: File::from_details(
+            Some(file_id),
+            &upload_file_data.file_name,
+            decoded_file_data.len().try_into().unwrap(),
+            upload_file_data.tag_set.map(|tags| tags.join(",")),
+            None,
+            None,
+            None,
+            dataset_org_plan_sub.dataset.id,
+        ),
+    };
+
+    Ok(HttpResponse::Ok().json(result))
 }
 
 /// Get File
