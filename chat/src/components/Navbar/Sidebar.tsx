@@ -66,7 +66,13 @@ export const Sidebar = (props: SidebarProps) => {
     });
 
     if (!res.ok) {
-      console.log("Error changing topic name (need toast)");
+      const newEvent = new CustomEvent("show-toast", {
+        detail: {
+          type: "error",
+          message: "Error changing topic name",
+        },
+      });
+      window.dispatchEvent(newEvent);
       return;
     }
 
@@ -93,6 +99,15 @@ export const Sidebar = (props: SidebarProps) => {
     if (res.ok) {
       props.setCurrentTopic(undefined);
       void props.refetchTopics();
+    }else{
+        const newEvent = new CustomEvent("show-toast", {
+          detail: {
+            type: "error",
+            message: "Error deleting topic",
+          },
+        });
+        window.dispatchEvent(newEvent);
+        return;
     }
   };
 

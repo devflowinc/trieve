@@ -85,6 +85,13 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
       })
       .catch((err) => {
         console.error(err);
+        const newEvent = new CustomEvent("show-toast", {
+          detail: {
+            type: "error",
+            message: "Error logging in",
+          },
+        });
+        window.dispatchEvent(newEvent);
       });
   };
 
