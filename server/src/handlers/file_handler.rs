@@ -215,6 +215,8 @@ pub async fn upload_file_handler(
         ),
     };
 
+    transaction.finish();
+
     Ok(HttpResponse::Ok().json(result))
 }
 
