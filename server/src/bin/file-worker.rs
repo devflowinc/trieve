@@ -319,6 +319,11 @@ async fn upload_file(
     }
 
     let create_chunks_span = transaction.start_child("create_chunks", "Create chunks");
+    if html_content.is_empty() {
+        return Err(ServiceError::BadRequest(
+            "Could not parse file with tika".to_string(),
+        ));
+    }
     create_chunks_with_handler(
         created_file.id,
         file_worker_message.upload_file_data,

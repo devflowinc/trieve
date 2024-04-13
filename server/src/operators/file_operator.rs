@@ -194,6 +194,12 @@ pub async fn create_chunks_with_handler(
         .filter_map(|msg| serde_json::to_string(&msg).ok())
         .collect();
 
+    if serialized_messages.is_empty() {
+        return Err(ServiceError::BadRequest(
+            "Could not create chunks".to_string(),
+        ));
+    }
+
     redis::cmd("rpush")
         .arg("ingestion")
         .arg(&serialized_messages)
