@@ -353,7 +353,10 @@ async fn upload_chunk(
         .qdrant_point_id
         .unwrap_or(uuid::Uuid::new_v4());
 
-    let content = convert_html_to_text(&payload.chunk.chunk_html.clone().unwrap_or_default());
+    let content = match payload.chunk.convert_html_to_text.unwrap_or(true) {
+        true => convert_html_to_text(&payload.chunk.chunk_html.clone().unwrap_or_default()),
+        false => payload.chunk.chunk_html.clone().unwrap_or_default(),
+    };
 
     let chunk_tag_set = payload
         .chunk
@@ -588,14 +591,21 @@ async fn update_chunk(
     web_pool: actix_web::web::Data<models::Pool>,
     server_dataset_config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    let content = convert_html_to_text(
-        &payload
+    let content = match payload.convert_html_to_text.unwrap_or(true) {
+        true => convert_html_to_text(
+            &payload
+                .chunk_metadata
+                .chunk_html
+                .clone()
+                .unwrap_or_default(),
+        ),
+        false => payload
             .chunk_metadata
-            .clone()
             .chunk_html
-            .unwrap_or("".to_string())
-            .clone(),
-    );
+            .clone()
+            .unwrap_or_default(),
+    };
+
     let mut chunk_metadata = payload.chunk_metadata.clone();
     chunk_metadata.content = content.clone();
 
