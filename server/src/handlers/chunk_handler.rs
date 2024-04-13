@@ -75,6 +75,8 @@ pub struct ChunkData {
     pub weight: Option<f64>,
     /// Split avg is a boolean which tells the server to split the text in the chunk_html into smaller chunks and average their resulting vectors. This is useful for when you want to create a chunk from a large piece of text and want to split it into smaller chunks to create a more fuzzy average dense vector. The sparse vector will be generated normally with no averaging. By default this is false.
     pub split_avg: Option<bool>,
+    /// Convert HTML to raw text before processing to avoid adding noise to the vector embeddings. By default this is true. If you are using HTML content that you want to be included in the vector embeddings, set this to false.
+    pub convert_html_to_text: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
@@ -212,8 +214,6 @@ pub enum CreateChunkData {
     Single(CreateSingleChunkData),
     Batch(CreateBatchChunkData),
 }
-
-
 
 /// Create or Upsert Chunk or Chunks
 ///
@@ -442,6 +442,8 @@ pub struct UpdateChunkData {
     group_ids: Option<Vec<uuid::Uuid>>,
     /// Group tracking_ids are the tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to update a chunk and add it to a group or multiple groups in one request.
     group_tracking_ids: Option<Vec<String>>,
+    /// Convert HTML to raw text before processing to avoid adding noise to the vector embeddings. By default this is true. If you are using HTML content that you want to be included in the vector embeddings, set this to false.
+    pub convert_html_to_text: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -450,6 +452,7 @@ pub struct UpdateIngestionMessage {
     pub server_dataset_config: ServerDatasetConfiguration,
     pub dataset_id: uuid::Uuid,
     pub group_ids: Option<Vec<UnifiedId>>,
+    pub convert_html_to_text: Option<bool>,
 }
 
 /// Update Chunk
@@ -474,7 +477,7 @@ pub struct UpdateIngestionMessage {
 )]
 #[tracing::instrument(skip(pool, redis_pool))]
 pub async fn update_chunk(
-    chunk: web::Json<UpdateChunkData>,
+    update_chunk_data: web::Json<UpdateChunkData>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     _user: AdminOnly,
@@ -485,11 +488,11 @@ pub async fn update_chunk(
     );
 
     let dataset_id = dataset_org_plan_sub.dataset.id;
-    let chunk_id = chunk.chunk_id;
+    let chunk_id = update_chunk_data.chunk_id;
 
     let chunk_metadata = if let Some(chunk_id) = chunk_id {
         get_metadata_from_id_query(chunk_id, dataset_id, pool).await?
-    } else if let Some(tracking_id) = chunk.tracking_id.clone() {
+    } else if let Some(tracking_id) = update_chunk_data.tracking_id.clone() {
         get_metadata_from_tracking_id_query(tracking_id.clone(), dataset_id, pool).await?
     } else {
         return Err(ServiceError::BadRequest(
@@ -498,18 +501,21 @@ pub async fn update_chunk(
         .into());
     };
 
-    let link = chunk
+    let link = update_chunk_data
         .link
         .clone()
         .unwrap_or_else(|| chunk_metadata.link.clone().unwrap_or_default());
-    let chunk_tracking_id = chunk
+    let chunk_tracking_id = update_chunk_data
         .tracking_id
         .clone()
         .filter(|chunk_tracking| !chunk_tracking.is_empty());
 
-    let chunk_tag_set = chunk.tag_set.clone().map(|tag_set| tag_set.join(","));
+    let chunk_tag_set = update_chunk_data
+        .tag_set
+        .clone()
+        .map(|tag_set| tag_set.join(","));
 
-    let chunk_html = match chunk.chunk_html.clone() {
+    let chunk_html = match update_chunk_data.chunk_html.clone() {
         Some(chunk_html) => Some(chunk_html),
         None => chunk_metadata.chunk_html,
     };
@@ -521,10 +527,10 @@ pub async fn update_chunk(
         &Some(link),
         &chunk_tag_set.or(chunk_metadata.tag_set),
         chunk_metadata.qdrant_point_id,
-        <std::option::Option<serde_json::Value> as Clone>::clone(&chunk.metadata)
+        <std::option::Option<serde_json::Value> as Clone>::clone(&update_chunk_data.metadata)
             .or(chunk_metadata.metadata),
         chunk_tracking_id,
-        chunk
+        update_chunk_data
             .time_stamp
             .clone()
             .map(|ts| -> Result<NaiveDateTime, ServiceError> {
@@ -539,10 +545,10 @@ pub async fn update_chunk(
             .transpose()?
             .or(chunk_metadata.time_stamp),
         dataset_id,
-        chunk.weight.unwrap_or(1.0),
+        update_chunk_data.weight.unwrap_or(1.0),
     );
 
-    let group_ids = if let Some(group_ids) = chunk.group_ids.clone() {
+    let group_ids = if let Some(group_ids) = update_chunk_data.group_ids.clone() {
         Some(
             group_ids
                 .into_iter()
@@ -550,12 +556,15 @@ pub async fn update_chunk(
                 .collect::<Vec<UnifiedId>>(),
         )
     } else {
-        chunk.group_tracking_ids.clone().map(|group_tracking_ids| {
-            group_tracking_ids
-                .into_iter()
-                .map(UnifiedId::from)
-                .collect::<Vec<UnifiedId>>()
-        })
+        update_chunk_data
+            .group_tracking_ids
+            .clone()
+            .map(|group_tracking_ids| {
+                group_tracking_ids
+                    .into_iter()
+                    .map(UnifiedId::from)
+                    .collect::<Vec<UnifiedId>>()
+            })
     };
 
     let message = UpdateIngestionMessage {
@@ -563,6 +572,7 @@ pub async fn update_chunk(
         server_dataset_config,
         dataset_id,
         group_ids,
+        convert_html_to_text: update_chunk_data.convert_html_to_text,
     };
 
     let mut redis_conn = redis_pool
@@ -598,6 +608,8 @@ pub struct UpdateChunkByTrackingIdData {
     group_ids: Option<Vec<uuid::Uuid>>,
     /// Group tracking_ids are the tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to update a chunk and add it to a group or multiple groups in one request.
     group_tracking_ids: Option<Vec<String>>,
+    /// Convert HTML to raw text before processing to avoid adding noise to the vector embeddings. By default this is true. If you are using HTML content that you want to be included in the vector embeddings, set this to false.
+    pub convert_html_to_text: Option<bool>,
 }
 
 /// Update Chunk By Tracking Id
@@ -623,19 +635,19 @@ pub struct UpdateChunkByTrackingIdData {
 #[deprecated]
 #[tracing::instrument(skip(pool, redis_pool))]
 pub async fn update_chunk_by_tracking_id(
-    chunk: web::Json<UpdateChunkByTrackingIdData>,
+    update_chunk_data: web::Json<UpdateChunkByTrackingIdData>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if chunk.tracking_id.is_empty() {
+    if update_chunk_data.tracking_id.is_empty() {
         return Err(ServiceError::BadRequest(
             "Tracking id must be provided to update by tracking_id".into(),
         )
         .into());
     }
-    let tracking_id = chunk.tracking_id.clone();
+    let tracking_id = update_chunk_data.tracking_id.clone();
 
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
@@ -646,12 +658,12 @@ pub async fn update_chunk_by_tracking_id(
     let chunk_metadata =
         get_metadata_from_tracking_id_query(tracking_id, dataset_id, pool.clone()).await?;
 
-    let link = chunk
+    let link = update_chunk_data
         .link
         .clone()
         .unwrap_or_else(|| chunk_metadata.link.clone().unwrap_or_default());
 
-    let chunk_html = match chunk.chunk_html.clone() {
+    let chunk_html = match update_chunk_data.chunk_html.clone() {
         Some(chunk_html) => Some(chunk_html),
         None => chunk_metadata.chunk_html,
     };
@@ -663,10 +675,10 @@ pub async fn update_chunk_by_tracking_id(
         &Some(link),
         &chunk_metadata.tag_set,
         chunk_metadata.qdrant_point_id,
-        <std::option::Option<serde_json::Value> as Clone>::clone(&chunk.metadata)
+        <std::option::Option<serde_json::Value> as Clone>::clone(&update_chunk_data.metadata)
             .or(chunk_metadata.metadata),
-        Some(chunk.tracking_id.clone()),
-        chunk
+        Some(update_chunk_data.tracking_id.clone()),
+        update_chunk_data
             .time_stamp
             .clone()
             .map(|ts| -> Result<NaiveDateTime, ServiceError> {
@@ -681,9 +693,9 @@ pub async fn update_chunk_by_tracking_id(
             .transpose()?
             .or(chunk_metadata.time_stamp),
         dataset_org_plan_sub.dataset.id,
-        chunk.weight.unwrap_or(1.0),
+        update_chunk_data.weight.unwrap_or(1.0),
     );
-    let group_ids = if let Some(group_ids) = chunk.group_ids.clone() {
+    let group_ids = if let Some(group_ids) = update_chunk_data.group_ids.clone() {
         Some(
             group_ids
                 .into_iter()
@@ -691,7 +703,7 @@ pub async fn update_chunk_by_tracking_id(
                 .collect::<Vec<UnifiedId>>(),
         )
     } else {
-        chunk.group_tracking_ids.clone().map(|group_tracking_ids| {
+        update_chunk_data.group_tracking_ids.clone().map(|group_tracking_ids| {
             group_tracking_ids
                 .into_iter()
                 .map(UnifiedId::from)
@@ -704,6 +716,7 @@ pub async fn update_chunk_by_tracking_id(
         server_dataset_config,
         dataset_id,
         group_ids,
+        convert_html_to_text: update_chunk_data.convert_html_to_text,
     };
 
     let mut redis_conn = redis_pool
