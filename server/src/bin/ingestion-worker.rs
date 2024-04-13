@@ -1,6 +1,7 @@
 use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
+use qdrant_client::client::QdrantClient;
 use sentry::{Hub, SentryFutureExt};
 use signal_hook::consts::SIGTERM;
 use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
@@ -20,7 +21,7 @@ use trieve_server::operators::parse_operator::{
     average_embeddings, coarse_doc_chunker, convert_html_to_text,
 };
 use trieve_server::operators::qdrant_operator::{
-    create_new_qdrant_point_query, update_qdrant_point_query,
+    create_new_qdrant_point_query, get_qdrant_connection, update_qdrant_point_query,
 };
 use trieve_server::operators::search_operator::global_unfiltered_top_match_query;
 use trieve_server::{establish_connection, get_env};
@@ -169,6 +170,8 @@ async fn ingestion_worker(
 ) {
     log::info!("Starting ingestion service thread {:?}", thread_num);
 
+    let mut qdrant_conn_hash = std::collections::HashMap::<String, QdrantClient>::new();
+
     let mut redis_conn_sleep = std::time::Duration::from_secs(1);
 
     #[allow(unused_assignments)]
@@ -242,13 +245,60 @@ async fn ingestion_worker(
             serde_json::from_str(&serialized_message).expect("Failed to parse ingestion message");
         match ingestion_message.clone() {
             IngestionMessage::Upload(payload) => {
-                match upload_chunk(payload.clone(), web_pool.clone(), payload.dataset_config).await
+                let qdrant_conn_hashmap_key = format!(
+                    "{}|{}",
+                    payload.dataset_config.QDRANT_URL,
+                    payload.dataset_config.QDRANT_COLLECTION_NAME
+                );
+
+                let qdrant_conn =
+                    match qdrant_conn_hash.get(&qdrant_conn_hashmap_key) {
+                        Some(qdrant_conn) => qdrant_conn.to_owned(),
+                        None => {
+                            let qdrant_conn = match get_qdrant_connection(
+                                Some(&payload.dataset_config.QDRANT_URL.clone()),
+                                Some(&payload.dataset_config.QDRANT_API_KEY.clone()),
+                            )
+                            .await
+                            {
+                                Ok(qdrant_conn) => qdrant_conn,
+                                Err(err) => {
+                                    log::error!("Failed to get qdrant connection: {:?}", err);
+                                    let _ = readd_error_to_queue(
+                                        ingestion_message,
+                                        ServiceError::InternalServerError(
+                                            "Failed to get qdrant connection".to_string(),
+                                        ),
+                                        web_pool.clone(),
+                                        redis_pool.clone(),
+                                    )
+                                    .await;
+                                    continue;
+                                }
+                            };
+
+                            qdrant_conn_hash.insert(qdrant_conn_hashmap_key.clone(), qdrant_conn);
+
+                            qdrant_conn_hash.get(&qdrant_conn_hashmap_key).expect(
+                                "Qdrant connection should always exist in hashmap at this point",
+                            ).to_owned()
+                        }
+                    };
+
+                match upload_chunk(
+                    payload.clone(),
+                    web_pool.clone(),
+                    payload.dataset_config,
+                    qdrant_conn,
+                )
+                .await
                 {
                     Ok(_) => {
                         log::info!(
                             "Uploaded chunk: {:?}",
                             payload.ingest_specific_chunk_metadata.id
                         );
+
                         let _ = create_event_query(
                             Event::from_details(
                                 payload.ingest_specific_chunk_metadata.dataset_id,
@@ -335,11 +385,12 @@ async fn ingestion_worker(
     }
 }
 
-#[tracing::instrument(skip(payload, web_pool, dataset_config))]
+#[tracing::instrument(skip(qdrant_client, payload, web_pool, dataset_config))]
 async fn upload_chunk(
     mut payload: UploadIngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
     dataset_config: ServerDatasetConfiguration,
+    qdrant_client: &QdrantClient,
 ) -> Result<(), ServiceError> {
     let tx_ctx = sentry::TransactionContext::new(
         "ingestion worker upload_chunk",
@@ -559,6 +610,7 @@ async fn upload_chunk(
             splade_vector,
             payload.chunk.group_ids.clone(),
             dataset_config.clone(),
+            qdrant_client,
         )
         .await;
 
