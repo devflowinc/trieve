@@ -24,7 +24,8 @@ export interface Organization {
   registerable?: boolean;
 }
 
-export interface OrganizationWithSubAndPlan extends Organization {
+export interface OrganizationAndSubAndPlan {
+  organization: Organization;
   plan?: StripePlan | null;
   subscription?: StripeSubscription | null;
 }

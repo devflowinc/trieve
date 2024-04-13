@@ -1,7 +1,7 @@
 import { For, Match, Show, Switch, createMemo } from "solid-js";
 import { createEffect, createSignal, onCleanup } from "solid-js";
 import {
-  OrganizationWithSubAndPlan,
+  OrganizationAndSubAndPlan,
   StripePlan,
   StripeSubscription,
 } from "../types/apiTypes";
@@ -15,7 +15,7 @@ import { AiOutlineWarning } from "solid-icons/ai";
 import { createToast } from "./ShowToasts";
 
 export interface PlansTableProps {
-  currentOrgSubPlan: OrganizationWithSubAndPlan | null;
+  currentOrgSubPlan: OrganizationAndSubAndPlan | null;
 }
 
 const activeTag = (text: string) => {
@@ -39,6 +39,8 @@ export const PlansTable = (props: PlansTableProps) => {
   const [canceling, setCanceling] = createSignal(false);
 
   createEffect(() => {
+    console.log("props.currentOrgSubPlan", props.currentOrgSubPlan);
+
     setCurrentPlan(props.currentOrgSubPlan?.plan ?? null);
     setCurrentSubscription(props.currentOrgSubPlan?.subscription ?? null);
   });
@@ -48,7 +50,7 @@ export const PlansTable = (props: PlansTableProps) => {
     void fetch(`${api_host}/stripe/plans`, {
       credentials: "include",
       headers: {
-        "TR-Organization": props.currentOrgSubPlan?.id ?? "",
+        "TR-Organization": props.currentOrgSubPlan?.organization.id ?? "",
       },
       signal: availablePlansAbortController.signal,
     })
@@ -81,7 +83,7 @@ export const PlansTable = (props: PlansTableProps) => {
   });
 
   const refetchOrgSubPlan = async () => {
-    const selectedOrgId = props.currentOrgSubPlan?.id ?? "";
+    const selectedOrgId = props.currentOrgSubPlan?.organization.id ?? "";
 
     const resp = await fetch(`${api_host}/organization/${selectedOrgId}`, {
       credentials: "include",
@@ -91,7 +93,7 @@ export const PlansTable = (props: PlansTableProps) => {
     });
 
     if (resp.ok) {
-      const data = (await resp.json()) as OrganizationWithSubAndPlan;
+      const data = (await resp.json()) as OrganizationAndSubAndPlan;
       setCurrentSubscription(data.subscription ?? null);
       setCurrentPlan(data.plan ?? null);
     }
@@ -107,7 +109,7 @@ export const PlansTable = (props: PlansTableProps) => {
         credentials: "include",
         method: "DELETE",
         headers: {
-          "TR-Organization": props.currentOrgSubPlan?.id ?? "",
+          "TR-Organization": props.currentOrgSubPlan?.organization.id ?? "",
         },
       },
     );
@@ -130,7 +132,7 @@ export const PlansTable = (props: PlansTableProps) => {
         credentials: "include",
         method: "PATCH",
         headers: {
-          "TR-Organization": props.currentOrgSubPlan?.id ?? "",
+          "TR-Organization": props.currentOrgSubPlan?.organization.id ?? "",
         },
       },
     );
@@ -197,8 +199,8 @@ export const PlansTable = (props: PlansTableProps) => {
       </div>
       <div class="mt-10 space-y-4">
         <h3 class="text-lg font-semibold text-neutral-800">
-          Change subscription plan for {props.currentOrgSubPlan?.name}{" "}
-          Organization
+          Change subscription plan for{" "}
+          {props.currentOrgSubPlan?.organization.name} Organization
         </h3>
         <Show when={currentSubscription()?.current_period_end}>
           {(end_date_str) => (
@@ -362,7 +364,7 @@ export const PlansTable = (props: PlansTableProps) => {
                     } else {
                       actionButton = (
                         <a
-                          href={`${api_host}/stripe/payment_link/${plan.id}/${props.currentOrgSubPlan?.id}`}
+                          href={`${api_host}/stripe/payment_link/${plan.id}/${props.currentOrgSubPlan?.organization.id}`}
                           class="w-fit rounded-lg bg-magenta-500 px-4 py-2 font-semibold text-white shadow-sm shadow-magenta-100/40"
                         >
                           Subscribe

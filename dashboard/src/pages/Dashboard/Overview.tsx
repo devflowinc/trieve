@@ -9,7 +9,7 @@ import { UserContext } from "../../contexts/UserContext";
 import {
   DatasetAndUsage,
   OrganizationUsageCount,
-  OrganizationWithSubAndPlan,
+  OrganizationAndSubAndPlan,
 } from "../../types/apiTypes";
 import NewDatasetModal from "../../components/NewDatasetModal";
 import { DatasetOverview } from "../../components/DatasetOverview";
@@ -24,8 +24,7 @@ export const Overview = () => {
   const [datasetAndUsages, setDatasetsAndUsages] = createSignal<
     DatasetAndUsage[]
   >([]);
-  const [orgSubPlan, setOrgSubPlan] =
-    createSignal<OrganizationWithSubAndPlan>();
+  const [orgSubPlan, setOrgSubPlan] = createSignal<OrganizationAndSubAndPlan>();
   const [orgUsage, setOrgUsage] = createSignal<OrganizationUsageCount>();
   const [newDatasetModalOpen, setNewDatasetModalOpen] =
     createSignal<boolean>(false);
