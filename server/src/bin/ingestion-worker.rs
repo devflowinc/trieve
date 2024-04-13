@@ -142,13 +142,13 @@ fn main() {
                 signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
                     .expect("Failed to register shutdown hook");
                 let threads: Vec<_> = (0..thread_num)
-                    .map(|_| {
+                    .map(|i| {
                         let web_pool = web_pool.clone();
                         let web_redis_pool = web_redis_pool.clone();
                         let should_terminate = Arc::clone(&should_terminate);
 
                         tokio::spawn(async move {
-                            ingestion_worker(should_terminate, web_redis_pool, web_pool).await
+                            ingestion_worker(should_terminate, i, web_redis_pool, web_pool).await
                         })
                     })
                     .collect();
@@ -163,10 +163,11 @@ fn main() {
 
 async fn ingestion_worker(
     should_terminate: Arc<AtomicBool>,
+    thread_num: usize,
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
 ) {
-    log::info!("Starting ingestion service thread");
+    log::info!("Starting ingestion service thread {:?}", thread_num);
 
     let mut redis_conn_sleep = std::time::Duration::from_secs(1);
 
