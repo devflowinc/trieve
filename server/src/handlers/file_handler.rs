@@ -112,6 +112,10 @@ pub async fn upload_file_handler(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let tx_ctx = sentry::TransactionContext::new("upload_file_handler", "upload_file");
+    let transaction = sentry::start_transaction(tx_ctx);
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
+
     let document_upload_feature = ServerDatasetConfiguration::from_json(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     )
@@ -128,6 +132,7 @@ pub async fn upload_file_handler(
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
+    let get_file_size_span = transaction.start_child("get_file_size_sum", "get_file_size_sum");
     let file_size_sum_pool = pool.clone();
     let file_size_sum = get_file_size_sum_org(
         dataset_org_plan_sub.organization.organization.id,
@@ -135,6 +140,7 @@ pub async fn upload_file_handler(
     )
     .await
     .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
     if file_size_sum
         >= dataset_org_plan_sub
             .clone()
@@ -146,15 +152,22 @@ pub async fn upload_file_handler(
         return Err(ServiceError::BadRequest("File size limit reached".to_string()).into());
     }
 
+    get_file_size_span.finish();
+
     let upload_file_data = data.into_inner();
 
+    let base64_decode_span = transaction.start_child("base64_decode", "base64_decode");
     let base64_engine = engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
 
     let decoded_file_data = base64_engine
         .decode(upload_file_data.base64_file.clone())
         .map_err(|_e| ServiceError::BadRequest("Could not decode base64 file".to_string()))?;
 
+    base64_decode_span.finish();
+
     let file_id = uuid::Uuid::new_v4();
+
+    let bucket_upload_span = transaction.start_child("bucket_upload", "bucket_upload");
 
     let bucket = get_aws_bucket()?;
     bucket
@@ -164,6 +177,8 @@ pub async fn upload_file_handler(
             log::error!("Could not upload file to S3 {:?}", e);
             ServiceError::BadRequest("Could not upload file to S3".to_string())
         })?;
+
+    bucket_upload_span.finish();
 
     let file_data: FileDataDTO = upload_file_data.clone().into();
     let message = FileWorkerMessage {
@@ -178,12 +193,14 @@ pub async fn upload_file_handler(
         ServiceError::BadRequest("Could not serialize message".to_string())
     })?;
 
+    let push_to_redis_span = transaction.start_child("push_to_redis", "push_to_redis");
     redis::cmd("rpush")
         .arg("file_ingestion")
         .arg(&serialized_message)
         .query_async(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    push_to_redis_span.finish();
 
     let result = UploadFileResult {
         file_metadata: File::from_details(
