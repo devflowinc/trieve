@@ -434,7 +434,6 @@ pub async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(oidc_client.clone()))
             .app_data(web::Data::new(redis_pool.clone()))
             .wrap(af_middleware::auth_middleware::AuthMiddlewareFactory)
-            .wrap(sentry_actix::Sentry::new())
             .wrap(
                 IdentityMiddleware::builder()
                     .login_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
@@ -464,6 +463,7 @@ pub async fn main() -> std::io::Result<()> {
                 .cookie_path("/".to_owned())
                 .build(),
             )
+            .wrap(sentry_actix::Sentry::new())
             // enable logger
             .wrap(middleware::Logger::default())
             .service(Redoc::with_url("/redoc", ApiDoc::openapi()))
