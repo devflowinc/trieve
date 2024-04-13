@@ -87,8 +87,12 @@ export const FrontendSettingsForm = () => {
           setSaved(false),
         );
       })
-      .catch((err) => {
-        console.log(err);
+      .catch(() => {
+        createToast({
+          title: "Error",
+          type: "error",
+          message: "Error Saving Dataset",
+        });
       });
   };
 

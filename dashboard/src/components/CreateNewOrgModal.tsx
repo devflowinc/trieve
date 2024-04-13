@@ -39,6 +39,7 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
     })
       .then((res) => {
         if (!res.ok) {
+          createToast({ type: "error", title: "Error creating new organization" });
           throw new Error("Error creating new organization");
         }
 

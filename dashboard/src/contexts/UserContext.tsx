@@ -6,6 +6,7 @@ import {
   createSignal,
 } from "solid-js";
 import { SlimUser } from "../types/apiTypes";
+import { createToast } from "../components/ShowToasts";
 
 export interface UserStoreContextProps {
   children: JSX.Element;
@@ -58,6 +59,11 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
       })
       .catch((err) => {
         console.error(err);
+        createToast({
+          title: "Error",
+          type: "error",
+          message: "Error logging in",
+        });
       });
   };
 

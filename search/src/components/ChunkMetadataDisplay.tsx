@@ -92,7 +92,14 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
             setDeleted(true);
             return;
           }
-          alert("Failed to delete chunk");
+          const newEvent = new CustomEvent("show-toast", {
+            detail: {
+              type: "error",
+              message:
+                "Failed to delete the chunk",
+            },
+          });
+          window.dispatchEvent(newEvent);
         });
       };
     });

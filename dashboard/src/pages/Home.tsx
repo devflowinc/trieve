@@ -1,4 +1,5 @@
 import { createEffect } from "solid-js";
+import { createToast } from "../components/ShowToasts";
 
 export const Home = () => {
   const api_host: string = import.meta.env.VITE_API_HOST as string;
@@ -18,6 +19,11 @@ export const Home = () => {
       })
       .catch((err) => {
         console.error(err);
+        createToast({
+          title: "Error",
+          type: "error",
+          message: "Error logging in",
+        });
       });
   };
 

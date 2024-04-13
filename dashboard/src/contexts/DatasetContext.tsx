@@ -9,6 +9,7 @@ import {
 import { Dataset } from "../types/apiTypes";
 import { UserContext } from "./UserContext";
 import { useParams } from "@solidjs/router";
+import { createToast } from "../components/ShowToasts";
 
 export interface DatasetStoreContextProps {
   children: JSX.Element;
@@ -44,8 +45,12 @@ export const DatasetContextWrapper = (props: DatasetStoreContextProps) => {
         .then((data) => {
           setDataset(data);
         })
-        .catch((err) => {
-          console.log(err);
+        .catch(() => {
+          createToast({
+            title: "Error",
+            type: "error",
+            message: "Failed to fetch the dataset",
+          });
         });
     }
   });
