@@ -6,7 +6,7 @@ import {
   useContext,
 } from "solid-js";
 import { UserContext } from "../../contexts/UserContext";
-import { OrganizationWithSubAndPlan } from "../../types/apiTypes";
+import { OrganizationAndSubAndPlan } from "../../types/apiTypes";
 import { PlansTable } from "../../components/PlansTable";
 
 export const Billing = () => {
@@ -14,7 +14,7 @@ export const Billing = () => {
 
   const userContext = useContext(UserContext);
   const [orgSubPlan, setOrgSubPlan] =
-    createSignal<OrganizationWithSubAndPlan | null>(null);
+    createSignal<OrganizationAndSubAndPlan | null>(null);
 
   const selectedOrganization = createMemo(() => {
     const selectedOrgId = userContext.selectedOrganizationId?.();

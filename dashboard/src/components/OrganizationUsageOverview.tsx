@@ -1,11 +1,11 @@
 import { Accessor } from "solid-js";
 import {
   OrganizationUsageCount,
-  OrganizationWithSubAndPlan,
+  OrganizationAndSubAndPlan,
 } from "../types/apiTypes";
 
 export interface OrganizationUsageOverviewProps {
-  organization: Accessor<OrganizationWithSubAndPlan | undefined>;
+  organization: Accessor<OrganizationAndSubAndPlan | undefined>;
   orgUsage: Accessor<OrganizationUsageCount | undefined>;
 }
 
