@@ -266,7 +266,7 @@ pub async fn create_new_qdrant_collection_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(qdrant_client, embedding_vector))]
+#[tracing::instrument(skip(embedding_vector))]
 pub async fn create_new_qdrant_point_query(
     point_id: uuid::Uuid,
     embedding_vector: Vec<f32>,
@@ -274,7 +274,6 @@ pub async fn create_new_qdrant_point_query(
     splade_vector: Vec<(u32, f32)>,
     group_ids: Option<Vec<uuid::Uuid>>,
     config: ServerDatasetConfiguration,
-    qdrant_client: &QdrantClient,
 ) -> Result<(), ServiceError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
@@ -302,6 +301,13 @@ pub async fn create_new_qdrant_point_query(
     ]);
 
     let point = PointStruct::new(point_id.clone().to_string(), vector_payload, payload);
+
+    let qdrant_client =
+        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY))
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!("Failed connecting to qdrant {:?}", err))
+            })?;
 
     qdrant_client
         .upsert_points_blocking(qdrant_collection, None, vec![point], None)
