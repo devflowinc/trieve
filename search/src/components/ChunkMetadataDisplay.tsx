@@ -31,6 +31,7 @@ import {
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { RiOthersCharacterRecognitionLine } from "solid-icons/ri";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
+import { createToast } from "./ShowToasts";
 
 export const getLocalTime = (strDate: string | Date) => {
   const utcDate = new Date(strDate);
@@ -92,14 +93,11 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
             setDeleted(true);
             return;
           }
-          const newEvent = new CustomEvent("show-toast", {
-            detail: {
-              type: "error",
-              message:
-                "Failed to delete the chunk",
-            },
+          createToast({
+            type: "error",
+            message:
+              "Failed to delete the chunk",
           });
-          window.dispatchEvent(newEvent);
         });
       };
     });

@@ -15,6 +15,7 @@ import {
   isDatasetAndUsageDTO,
   isUserDTO,
 } from "../../../utils/apiTypes";
+import { createToast } from "../ShowToasts";
 
 export interface DatasetAndUserStoreContextProps {
   children: JSX.Element;
@@ -101,14 +102,11 @@ export const DatasetAndUserContextWrapper = (
       })
       .catch((err) => {
         console.error(err);
-        const newEvent = new CustomEvent("show-toast", {
-          detail: {
-            type: "error",
-            message:
-              "Error logging in",
-          },
+        createToast({
+          type: "error",
+          message:
+            "Error logging in",
         });
-        window.dispatchEvent(newEvent);
       });
   };
 
