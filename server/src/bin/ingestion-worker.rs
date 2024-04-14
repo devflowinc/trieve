@@ -206,12 +206,20 @@ async fn ingestion_worker(
             break;
         }
 
+        let brpoplpush_ctx = sentry::TransactionContext::new(
+            "ingestion worker brpoplpush",
+            "ingestion worker brpoplpush",
+        );
+        let brpoplpush_transaction = sentry::start_transaction(brpoplpush_ctx);
+
         let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpoplpush")
             .arg("ingestion")
             .arg("processing")
             .arg(1.0)
             .query_async(&mut *redis_connection)
             .await;
+
+        brpoplpush_transaction.finish();
 
         let serialized_message = if let Ok(payload) = payload_result {
             broken_pipe_sleep = std::time::Duration::from_secs(10);
