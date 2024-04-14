@@ -24,6 +24,7 @@ import { DatasetSelectBox } from "../Atoms/DatasetSelectBox";
 import { OrganizationSelectBox } from "../Atoms/OrganizationSelectBox";
 import { UserContext } from "../contexts/UserContext";
 import { Topic } from "../../utils/apiTypes";
+import { createToast } from "../ShowToast";
 
 export interface SidebarProps {
   topics: Accessor<Topic[]>;
@@ -66,13 +67,11 @@ export const Sidebar = (props: SidebarProps) => {
     });
 
     if (!res.ok) {
-      const newEvent = new CustomEvent("show-toast", {
-        detail: {
-          type: "error",
-          message: "Error changing topic name",
-        },
+      createToast({
+        type: "error",
+        message:
+          "Error changing topic name",
       });
-      window.dispatchEvent(newEvent);
       return;
     }
 
@@ -100,14 +99,12 @@ export const Sidebar = (props: SidebarProps) => {
       props.setCurrentTopic(undefined);
       void props.refetchTopics();
     }else{
-        const newEvent = new CustomEvent("show-toast", {
-          detail: {
-            type: "error",
-            message: "Error deleting topic",
-          },
-        });
-        window.dispatchEvent(newEvent);
-        return;
+      createToast({
+        type: "error",
+        message:
+          "Error deleting topic",
+      });
+      return;
     }
   };
 
