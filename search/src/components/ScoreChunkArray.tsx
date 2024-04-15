@@ -57,7 +57,7 @@ export const ScoreChunkArray = (props: ScoreChunkAraryProps) => {
     });
   });
   return (
-    <div class="mx-auto flex w-[calc(100vw-32px)] items-center">
+    <div class="mx-auto flex w-full max-w-[calc(100vw-32px)] items-center">
       <div class="w-[16px] min-[360px]:w-[32px]">
         <Show when={curChunk() > 0}>
           <button onClick={() => setCurChunk((prev) => prev - 1)}>
