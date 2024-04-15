@@ -2,7 +2,7 @@ use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
     data::models::{
         ClientDatasetConfiguration, Dataset, DatasetAndOrgWithSubAndPlan, Pool,
-        ServerDatasetConfiguration, StripePlan,
+        ServerDatasetConfiguration, StripePlan, UnifiedId,
     },
     errors::ServiceError,
     operators::{
@@ -121,7 +121,9 @@ pub async fn create_dataset(
 }))]
 pub struct UpdateDatasetRequest {
     /// The id of the dataset you want to update.
-    pub dataset_id: uuid::Uuid,
+    pub dataset_id: Option<uuid::Uuid>,
+    /// tracking ID for the dataset. Can be used to track the dataset in external systems.
+    pub tracking_id: Option<String>,
     /// The new name of the dataset. Must be unique within the organization. If not provided, the name will not be updated.
     pub dataset_name: Option<String>,
     /// The new server configuration of the dataset, can be arbitrary JSON. See docs.trieve.ai for more information. If not provided, the server configuration will not be updated.
@@ -156,10 +158,18 @@ pub async fn update_dataset(
     pool: web::Data<Pool>,
     _user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let curr_dataset = get_dataset_by_id_query(data.dataset_id, pool.clone()).await?;
+    let curr_dataset = if let Some(dataset_id) = data.dataset_id {
+        get_dataset_by_id_query(UnifiedId::TrieveUuid(dataset_id), pool.clone()).await?
+    } else if let Some(tracking_id) = &data.tracking_id {
+        get_dataset_by_id_query(UnifiedId::TrackingId(tracking_id.clone()), pool.clone()).await?
+    } else {
+        return Err(ServiceError::BadRequest(
+            "You must provide a dataset_id or tracking_id to update a dataset".to_string(),
+        ));
+    };
 
     let d = update_dataset_query(
-        data.dataset_id,
+        curr_dataset.id,
         data.dataset_name.clone().unwrap_or(curr_dataset.name),
         data.server_configuration
             .clone()
@@ -209,6 +219,38 @@ pub async fn delete_dataset(
     Ok(HttpResponse::NoContent().finish())
 }
 
+/// Delete Dataset by Tracking ID
+///
+/// Delete a dataset by its tracking id. The auth'ed user must be an owner of the organization to delete a dataset.
+#[utoipa::path(
+    delete,
+    path = "/dataset/tracking_id/{tracking_id}",
+    context_path = "/api",
+    tag = "dataset",
+    responses(
+        (status = 204, description = "Dataset deleted successfully"),
+        (status = 400, description = "Service error relating to deleting the dataset", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("tracking_id" = String, Path, description = "The tracking id of the dataset you want to delete."),
+    ),
+    security(
+        ("ApiKey" = ["owner"]),
+    )
+)]
+#[tracing::instrument(skip(pool))]
+pub async fn delete_dataset_by_tracking_id(
+    tracking_id: String,
+    pool: web::Data<Pool>,
+    _user: OwnerOnly,
+) -> Result<HttpResponse, ServiceError> {
+    let dataset = get_dataset_by_id_query(UnifiedId::TrackingId(tracking_id), pool.clone()).await?;
+    let server_dataset_config = ServerDatasetConfiguration::from_json(dataset.server_configuration);
+    delete_dataset_by_id_query(dataset.id, pool, server_dataset_config).await?;
+    Ok(HttpResponse::NoContent().finish())
+}
+
 /// Get Dataset
 ///
 /// Get a dataset by id. The auth'ed user must be an admin or owner of the organization to get a dataset.
@@ -236,7 +278,47 @@ pub async fn get_dataset(
     dataset_id: web::Path<uuid::Uuid>,
     _user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let mut d = get_dataset_by_id_query(dataset_id.into_inner(), pool).await?;
+    let mut d =
+        get_dataset_by_id_query(UnifiedId::TrieveUuid(dataset_id.into_inner()), pool).await?;
+    d.server_configuration = json!(ServerDatasetConfiguration::from_json(
+        d.server_configuration
+    ));
+    d.client_configuration = json!(ClientDatasetConfiguration::from_json(
+        d.client_configuration
+    ));
+    Ok(HttpResponse::Ok().json(d))
+}
+
+/// Get Dataset by Tracking ID
+///
+/// Get a dataset by its tracking id. The auth'ed user must be an admin or owner of the organization to get a dataset.
+#[utoipa::path(
+    get,
+    path = "/dataset/tracking_id/{tracking_id}",
+    context_path = "/api",
+    tag = "dataset",
+    responses(
+        (status = 200, description = "Dataset retrieved successfully", body = Dataset),
+        (status = 400, description = "Service error relating to retrieving the dataset", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Organization" = String, Header, description = "The organization id to use for the request"),
+        ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
+        ("tracking_id" = String, Path, description = "The tracking id of the dataset you want to retrieve."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+#[tracing::instrument(skip(pool))]
+pub async fn get_dataset_by_tracking_id(
+    tracking_id: web::Path<String>,
+    pool: web::Data<Pool>,
+    _user: AdminOnly,
+) -> Result<HttpResponse, ServiceError> {
+    let mut d = get_dataset_by_id_query(UnifiedId::TrackingId(tracking_id.into_inner()), pool)
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
     d.server_configuration = json!(ServerDatasetConfiguration::from_json(
         d.server_configuration
     ));

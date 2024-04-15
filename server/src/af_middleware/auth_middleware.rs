@@ -1,5 +1,5 @@
 use crate::{
-    data::models::{Pool, UserRole},
+    data::models::{Pool, UnifiedId, UserRole},
     errors::ServiceError,
     handlers::auth_handler::{LoggedUser, OrganizationRole},
     operators::{
@@ -63,19 +63,27 @@ where
                         .map_err(|_| {
                             ServiceError::BadRequest("Dataset must be valid string".to_string())
                         })?
-                        .parse::<uuid::Uuid>()
-                        .map_err(|_| {
-                            ServiceError::BadRequest("Dataset must be valid UUID".to_string())
-                        })?;
+                        .to_string();
 
                     let get_dataset_and_org_span = transaction
                         .start_child("get_dataset_and_org", "Getting dataset and organization");
 
-                    let dataset_org_plan_sub = get_dataset_and_organization_from_dataset_id_query(
-                        dataset_id,
-                        pool.clone(),
-                    )
-                    .await?;
+                    let dataset_org_plan_sub = match dataset_id.parse::<uuid::Uuid>() {
+                        Ok(dataset_id) => {
+                            get_dataset_and_organization_from_dataset_id_query(
+                                UnifiedId::TrieveUuid(dataset_id),
+                                pool.clone(),
+                            )
+                            .await?
+                        }
+                        Err(_) => {
+                            get_dataset_and_organization_from_dataset_id_query(
+                                UnifiedId::TrackingId(dataset_id),
+                                pool.clone(),
+                            )
+                            .await?
+                        }
+                    };
 
                     get_dataset_and_org_span.finish();
 
