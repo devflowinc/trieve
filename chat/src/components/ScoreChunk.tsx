@@ -207,7 +207,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
       <div
         classList={{
           "line-clamp-4 gradient-mask-b-0": useExpand() && !expanded(),
-          "text-ellipsis max-w-[100%] break-words space-y-5 leading-normal !text-black dark:!text-white":
+          "text-ellipsis max-w-[100%] w-full break-words space-y-5 leading-normal !text-black dark:!text-white":
             true,
         }}
         style={
