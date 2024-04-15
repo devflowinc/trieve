@@ -96,21 +96,19 @@ pub async fn create_embeddings(
             input,
         };
 
-        let embeddings_resp = ureq::post(&format!(
-            "{}/embeddings?api-version=2023-05-15",
-            base_url
-        ))
-        .set("Authorization", &format!("Bearer {}", open_ai_api_key))
-        .set("api-key", &open_ai_api_key)
-        .set("Content-Type", "application/json")
-        .send_json(serde_json::to_value(parameters).unwrap())
-        .map_err(|e| {
-            ServiceError::InternalServerError(format!(
-                "Could not get embeddings from server: {:?}, {:?}",
-                e,
-                e.to_string()
-            ))
-        })?;
+        let embeddings_resp =
+            ureq::post(&format!("{}/embeddings?api-version=2023-05-15", base_url))
+                .set("Authorization", &format!("Bearer {}", open_ai_api_key))
+                .set("api-key", &open_ai_api_key)
+                .set("Content-Type", "application/json")
+                .send_json(serde_json::to_value(parameters).unwrap())
+                .map_err(|e| {
+                    ServiceError::InternalServerError(format!(
+                        "Could not get embeddings from server: {:?}, {:?}",
+                        e,
+                        e.to_string()
+                    ))
+                })?;
 
         let embeddings: EmbeddingResponse = format_response(embeddings_resp.into_string().unwrap())
             .map_err(|e| {
@@ -156,21 +154,27 @@ struct SpladeIndicies {
     value: f32,
 }
 
+impl SpladeIndicies {
+    pub fn into_tuple(&self) -> (u32, f32) {
+        return (self.index, self.value);
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CustomSparseEmbedData {
-    pub inputs: String,
+    pub inputs: Vec<String>,
     pub encode_type: String,
     pub truncate: bool,
 }
 
 #[tracing::instrument]
-pub async fn get_sparse_vector(
-    message: &str,
+pub async fn get_sparse_vectors(
+    messages: Vec<String>,
     embed_type: &str,
-) -> Result<Vec<(u32, f32)>, ServiceError> {
-    if message.is_empty() {
+) -> Result<Vec<Vec<(u32, f32)>>, ServiceError> {
+    if messages.is_empty() {
         return Err(ServiceError::BadRequest(
-            "Cannot encode empty query".to_string(),
+            "No messages to encode".to_string(),
         ));
     }
 
@@ -190,45 +194,53 @@ pub async fn get_sparse_vector(
     };
     let embedding_server_call = format!("{}/embed_sparse", server_origin);
 
-    let resp = ureq::post(&embedding_server_call)
-        .set("Content-Type", "application/json")
-        .set(
-            "Authorization",
-            &format!(
-                "Bearer {}",
-                get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
-            ),
-        )
-        .send_json(CustomSparseEmbedData {
-            inputs: message.to_string(),
-            encode_type: embed_type.to_string(),
-            truncate: true,
-        })
-        .map_err(|err| {
-            log::error!(
-                "Failed parsing response from custom embedding server {:?}",
-                err
-            );
-            ServiceError::BadRequest(format!("Failed making call to server {:?}", err))
-        })?
-        .into_json::<Vec<Vec<SpladeIndicies>>>()
-        .map_err(|_e| {
-            log::error!(
-                "Failed parsing response from custom embedding server {:?}",
-                _e
-            );
-            ServiceError::BadRequest(
-                "Failed parsing response from custom embedding server".to_string(),
+    let mut all_vectors = vec![];
+    let thirty_message_groups = messages.chunks(30).collect::<Vec<_>>();
+
+    for thirty_messages in thirty_message_groups {
+        let sparse_vectors = ureq::post(&embedding_server_call)
+            .set("Content-Type", "application/json")
+            .set(
+                "Authorization",
+                &format!(
+                    "Bearer {}",
+                    get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
+                ),
             )
-        })?;
+            .send_json(CustomSparseEmbedData {
+                inputs: thirty_messages.to_vec(),
+                encode_type: embed_type.to_string(),
+                truncate: true,
+            })
+            .map_err(|err| {
+                log::error!(
+                    "Failed parsing response from custom embedding server {:?}",
+                    err
+                );
+                ServiceError::BadRequest(format!("Failed making call to server {:?}", err))
+            })?
+            .into_json::<Vec<Vec<SpladeIndicies>>>()
+            .map_err(|_e| {
+                log::error!(
+                    "Failed parsing response from custom embedding server {:?}",
+                    _e
+                );
+                ServiceError::BadRequest(
+                    "Failed parsing response from custom embedding server".to_string(),
+                )
+            })?;
 
-    let first_vector = resp.get(0).ok_or(ServiceError::BadRequest(
-        "Failed getting sparse vector from embedding server".to_string(),
-    ))?;
+        all_vectors.extend(sparse_vectors);
+    }
 
-    Ok(first_vector
+    Ok(all_vectors
         .iter()
-        .map(|splade_idx| (splade_idx.index, splade_idx.value))
+        .map(|sparse_vector| {
+            sparse_vector
+                .iter()
+                .map(|splade_idx| splade_idx.into_tuple())
+                .collect()
+        })
         .collect())
 }
 

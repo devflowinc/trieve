@@ -1,9 +1,10 @@
+use diesel::upsert::excluded;
 use crate::data::models::{
     ChunkCollision, ChunkFile, ChunkGroupBookmark, Dataset, FullTextSearchResult,
     IngestSpecificChunkMetadata, ServerDatasetConfiguration, UnifiedId,
 };
-use crate::handlers::chunk_handler::ChunkData;
 use crate::handlers::chunk_handler::UploadIngestionMessage;
+use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkData};
 use crate::operators::group_operator::{
     check_group_ids_exist_query, get_group_ids_from_tracking_ids_query,
 };
@@ -294,37 +295,6 @@ pub async fn get_metadata_from_tracking_id_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn get_optional_metadata_from_tracking_id_query(
-    tracking_id: String,
-    dataset_uuid: uuid::Uuid,
-    pool: web::Data<Pool>,
-) -> Result<Option<ChunkMetadata>, ServiceError> {
-    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
-
-    let mut conn = pool.get().await.unwrap();
-
-    let optional_chunk: Option<ChunkMetadata> = chunk_metadata_columns::chunk_metadata
-        .filter(chunk_metadata_columns::tracking_id.eq(tracking_id))
-        .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid))
-        .select(ChunkMetadata::as_select())
-        .load::<ChunkMetadata>(&mut conn)
-        .await
-        .map_err(|e| {
-            log::error!(
-                "Failed to execute get_optional_metadata_from_tracking_id_query: {:?}",
-                e
-            );
-
-            ServiceError::BadRequest(
-                "Failed to execute get_optional_metadata_from_tracking_id_query".to_string(),
-            )
-        })?
-        .pop();
-
-    Ok(optional_chunk)
-}
-
-#[tracing::instrument(skip(pool))]
 pub async fn get_metadata_from_ids_query(
     chunk_ids: Vec<uuid::Uuid>,
     dataset_uuid: uuid::Uuid,
@@ -352,6 +322,228 @@ pub async fn get_metadata_from_ids_query(
 }
 
 #[tracing::instrument(skip(pool))]
+pub async fn bulk_insert_chunk_metadata_query(
+    // ChunkMetadata, FileUUID, group_ids, upsert_by_tracking_id
+    insertion_data: Vec<(
+        ChunkMetadata,
+        Option<uuid::Uuid>,
+        Option<Vec<uuid::Uuid>>,
+        bool,
+    )>,
+    dataset_uuid: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Vec<(ChunkMetadata, )>, ServiceError> {
+    use crate::data::schema::chunk_files::dsl as chunk_files_columns;
+    use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
+    let mut conn = pool.get().await.expect("Failed to get connection to db");
+
+    let all_tracking_ids: Vec<String> = insertion_data
+        .iter()
+        .filter_map(|(chunk_metadata, _, _, _)| chunk_metadata.clone().tracking_id)
+        .collect();
+
+    let existing_chunks: Vec<(
+        uuid::Uuid,
+        Option<String>,
+        Option<uuid::Uuid>,
+        chrono::NaiveDateTime,
+    )> = chunk_metadata_columns::chunk_metadata
+        .filter(chunk_metadata_columns::tracking_id.eq_any(all_tracking_ids))
+        .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid))
+        .select((
+            chunk_metadata_columns::id,
+            chunk_metadata_columns::tracking_id,
+            chunk_metadata_columns::qdrant_point_id,
+            chunk_metadata_columns::created_at,
+        ))
+        .load::<(
+            uuid::Uuid,
+            Option<String>,
+            Option<uuid::Uuid>,
+            chrono::NaiveDateTime,
+        )>(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!(
+                "Failed to execute get_optional_metadata_from_tracking_id_query: {:?}",
+                e
+            );
+
+            ServiceError::BadRequest(
+                "Failed to execute get_optional_metadata_from_tracking_id_query".to_string(),
+            )
+        })?;
+
+    // An attempt from an older time
+    // let conflicting_upserts: Vec<(
+    //     ChunkMetadata,
+    //     Option<uuid::Uuid>,
+    //     Option<Vec<uuid::Uuid>>,
+    //     bool,
+    // )> = conflicting_filter
+    //     .filter(|(_, _, _, upsert_by_tracking_id)| *upsert_by_tracking_id)
+    //     .filter_map(
+    //         |(mut chunk_metadata, file_uuid, group_ids, upsert_by_tracking_id)| {
+    //             let (existing_chunk_id, _, existing_qdrant_point, existing_created_at) =
+    //                 existing_chunks
+    //                     .iter()
+    //                     .find(|(_, existing_tracking_id, _, _)| {
+    //                         *existing_tracking_id == chunk_metadata.tracking_id
+    //                     })?;
+    //
+    //             chunk_metadata.id = *existing_chunk_id;
+    //             chunk_metadata.qdrant_point_id = *existing_qdrant_point;
+    //             chunk_metadata.created_at = *existing_created_at;
+    //
+    //             Some((
+    //                 chunk_metadata,
+    //                 *file_uuid,
+    //                 *group_ids,
+    //                 *upsert_by_tracking_id,
+    //             ))
+    //         },
+    //     );
+
+    // for (chunk_data, file_uuid, group_ids, _) in conflicting_upserts {
+    //     let _ = update_chunk_metadata_query(
+    //         chunk_data,
+    //         file_uuid,
+    //         group_ids,
+    //         dataset_uuid,
+    //         pool.clone(),
+    //     )
+    //     .await;
+    //     todo!("Deal with update errors / propogate updated chunks");
+    // }
+
+    let insertion_data1 = insertion_data.clone();
+
+    let mut conflicting_filter = insertion_data1.iter().filter(|(chunk_metadata, _, _, _)| {
+        if let Some(tracking_id) = chunk_metadata.tracking_id.clone() {
+            existing_chunks
+                .iter()
+                .any(|(_, existing_tracking_id, _, _)| {
+                    if let Some(existing_tracking_id) = existing_tracking_id {
+                        tracking_id == existing_tracking_id.clone()
+                    } else {
+                        // No conflict found
+                        false
+                    }
+                })
+        } else {
+            // No conflict found
+            false
+        }
+    });
+
+    // Filter Any conflicting things that don't have upsert_by_tracking_id
+    let filtered_data_to_insert: Vec<(
+        ChunkMetadata,
+        Option<uuid::Uuid>,
+        Option<Vec<uuid::Uuid>>,
+        bool,
+    )> = insertion_data
+        .iter()
+        .filter(|(chunk_metadata, _, _, upsert_by_tracking_id)| {
+            conflicting_filter.any(|(conflicting_chunk_metadata, _, _, _)| {
+                conflicting_chunk_metadata.id == chunk_metadata.id
+            }) && !*upsert_by_tracking_id
+        })
+        .cloned()
+        .collect();
+
+    let filtered_chunkmetadata_to_insert: Vec<ChunkMetadata> = filtered_data_to_insert
+        .clone()
+        .iter()
+        .map(|(chunk_metadata, _, _, _)| chunk_metadata.clone())
+        .collect();
+
+    let filtered_chunkfiles_to_insert: Vec<ChunkFile> = filtered_data_to_insert
+        .clone()
+        .iter()
+        .filter_map(|(chunk_metadata, file_uuid, _, _)| {
+            file_uuid.map(|file_uuid| ChunkFile::from_details(chunk_metadata.id, file_uuid))
+        })
+        .collect();
+
+    let filtered_chunk_group_bookmarks_to_insert: Vec<ChunkGroupBookmark> = filtered_data_to_insert
+        .clone()
+        .iter()
+        .filter_map(|(chunk_metadata, _, group_ids, _)| {
+            if let Some(group_ids) = group_ids {
+                Some(
+                    group_ids
+                        .clone()
+                        .iter()
+                        .map(|group_id| {
+                            ChunkGroupBookmark::from_details(*group_id, chunk_metadata.id)
+                        })
+                        .collect::<Vec<ChunkGroupBookmark>>(),
+                )
+            } else {
+                None
+            }
+        })
+        .flatten()
+        .collect();
+
+    let inserted_chunks = diesel::insert_into(chunk_metadata_columns::chunk_metadata)
+        .values(&filtered_chunkmetadata_to_insert)
+        .on_conflict((chunk_metadata_columns::dataset_id, chunk_metadata_columns::tracking_id))
+        .do_update()
+        .set((
+            chunk_metadata_columns::content.eq(excluded(chunk_metadata_columns::content)),
+            chunk_metadata_columns::link.eq(excluded(chunk_metadata_columns::link)),
+            chunk_metadata_columns::updated_at.eq(excluded(chunk_metadata_columns::updated_at)),
+            chunk_metadata_columns::tag_set.eq(excluded(chunk_metadata_columns::tag_set)),
+            chunk_metadata_columns::chunk_html.eq(excluded(chunk_metadata_columns::chunk_html)),
+            chunk_metadata_columns::metadata.eq(excluded(chunk_metadata_columns::metadata)),
+            chunk_metadata_columns::tracking_id.eq(excluded(chunk_metadata_columns::tracking_id)),
+            chunk_metadata_columns::weight.eq(excluded(chunk_metadata_columns::weight)),
+        ))
+        .get_results::<ChunkMetadata>(&mut conn)
+        .await
+        .map_err(|e| {
+            sentry::capture_message(
+                &format!("Failed to insert chunk_metadata: {:?}", e),
+                sentry::Level::Error,
+            );
+            log::error!("Failed to insert chunk_metadata: {:?}", e);
+
+            ServiceError::BadRequest("Failed to insert chunk_metadata".to_string())
+        })?;
+
+    diesel::insert_into(chunk_files_columns::chunk_files)
+        .values(filtered_chunkfiles_to_insert)
+        .execute(&mut conn)
+        .await
+        .map_err(|e| {
+            sentry::capture_message(
+                &format!("Failed to insert chunk file: {:?}", e),
+                sentry::Level::Error,
+            );
+            log::error!("Failed to insert chunk file: {:?}", e);
+            ServiceError::BadRequest("Failed to insert chunk file".to_string())
+        })?;
+
+    diesel::insert_into(chunk_group_bookmarks_columns::chunk_group_bookmarks)
+        .values(filtered_chunk_group_bookmarks_to_insert)
+        .execute(&mut conn)
+        .await
+        .map_err(|e| {
+            sentry::capture_message(
+                &format!("Failed to insert chunk into gropus: {:?}", e),
+                sentry::Level::Error,
+            );
+            ServiceError::BadRequest("Failed to insert chunk into groups".to_string())
+        })?;
+
+    Ok(inserted_chunks)
+}
+
+#[tracing::instrument(skip(pool))]
 pub async fn insert_chunk_metadata_query(
     chunk_data: ChunkMetadata,
     file_uuid: Option<uuid::Uuid>,
@@ -362,19 +554,34 @@ pub async fn insert_chunk_metadata_query(
 ) -> Result<ChunkMetadata, ServiceError> {
     use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
-    use crate::data::schema::chunk_metadata::dsl::*;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    if upsert_by_tracking_id && chunk_data.tracking_id.is_some() {
-        if let Some(existing_chunk) = get_optional_metadata_from_tracking_id_query(
-            chunk_data
-                .tracking_id
-                .clone()
-                .expect("tracking_id must be Some at this point"),
-            chunk_data.dataset_id,
-            pool.clone(),
-        )
-        .await?
-        {
+    let mut conn = pool.get().await.expect("Failed to get connection to db");
+
+    if let Some(other_tracking_id) = chunk_data.tracking_id.clone() {
+        let existing_chunk: Option<ChunkMetadata> = chunk_metadata_columns::chunk_metadata
+            .filter(chunk_metadata_columns::tracking_id.eq(other_tracking_id.clone()))
+            .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid))
+            .select(ChunkMetadata::as_select())
+            .load::<ChunkMetadata>(&mut conn)
+            .await
+            .map_err(|e| {
+                log::error!(
+                    "Failed to execute get_optional_metadata_from_tracking_id_query: {:?}",
+                    e
+                );
+
+                ServiceError::BadRequest(
+                    "Failed to execute get_optional_metadata_from_tracking_id_query".to_string(),
+                )
+            })?
+            .pop();
+
+        if existing_chunk.is_some() && !upsert_by_tracking_id {
+            log::info!("Avoided potential write conflict by pre-checking tracking_id");
+            return Err(ServiceError::DuplicateTrackingId(other_tracking_id));
+        }
+        if let Some(existing_chunk) = existing_chunk {
             let mut update_chunk = chunk_data.clone();
             update_chunk.id = existing_chunk.id;
             update_chunk.created_at = existing_chunk.created_at;
@@ -392,24 +599,7 @@ pub async fn insert_chunk_metadata_query(
             return Ok(updated_chunk);
         }
     }
-
-    let mut conn = pool.get().await.expect("Failed to get connection to db");
-
-    if let Some(other_tracking_id) = chunk_data.tracking_id.clone() {
-        let existing_chunk = get_optional_metadata_from_tracking_id_query(
-            other_tracking_id.clone(),
-            chunk_data.dataset_id,
-            pool.clone(),
-        )
-        .await?;
-
-        if existing_chunk.is_some() {
-            log::info!("Avoided potential write conflict by pre-checking tracking_id");
-            return Err(ServiceError::DuplicateTrackingId(other_tracking_id));
-        }
-    }
-
-    let inserted_chunk = diesel::insert_into(chunk_metadata)
+    let inserted_chunk = diesel::insert_into(chunk_metadata_columns::chunk_metadata)
         .values(&chunk_data)
         .get_result::<ChunkMetadata>(&mut conn)
         .await
@@ -1063,9 +1253,9 @@ pub async fn get_row_count_for_dataset_id_query(
 pub async fn create_chunk_metadata(
     chunks: Vec<ChunkData>,
     dataset_uuid: uuid::Uuid,
-    dataset_config: ServerDatasetConfiguration,
+    dataset_configuration: ServerDatasetConfiguration,
     pool: web::Data<Pool>,
-) -> Result<(Vec<UploadIngestionMessage>, Vec<ChunkMetadata>), ServiceError> {
+) -> Result<(BulkUploadIngestionMessage, Vec<ChunkMetadata>), ServiceError> {
     let mut ingestion_messages = vec![];
 
     let mut chunk_metadatas = vec![];
@@ -1079,14 +1269,31 @@ pub async fn create_chunk_metadata(
             .filter(|chunk_tracking| !chunk_tracking.is_empty());
 
         if !chunk.upsert_by_tracking_id.unwrap_or(false) && chunk_tracking_id.is_some() {
-            let existing_chunk = get_optional_metadata_from_tracking_id_query(
-                chunk_tracking_id
-                    .clone()
-                    .expect("tracking_id must exist at this point"),
-                dataset_uuid,
-                pool.clone(),
-            )
-            .await?;
+            let mut conn = pool.get().await.unwrap();
+
+            use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+            let existing_chunk: Option<ChunkMetadata> = chunk_metadata_columns::chunk_metadata
+                .filter(
+                    chunk_metadata_columns::tracking_id.eq(chunk_tracking_id
+                        .clone()
+                        .expect("Tracking id must be exist")),
+                )
+                .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid))
+                .select(ChunkMetadata::as_select())
+                .load::<ChunkMetadata>(&mut conn)
+                .await
+                .map_err(|e| {
+                    log::error!(
+                        "Failed to execute get_optional_metadata_from_tracking_id_query: {:?}",
+                        e
+                    );
+
+                    ServiceError::BadRequest(
+                        "Failed to execute get_optional_metadata_from_tracking_id_query"
+                            .to_string(),
+                    )
+                })?
+                .pop();
 
             if existing_chunk.is_some() {
                 return Err(ServiceError::BadRequest(
@@ -1174,15 +1381,24 @@ pub async fn create_chunk_metadata(
                 id: chunk_metadata.id,
                 qdrant_point_id: chunk_metadata.qdrant_point_id,
                 dataset_id: dataset_uuid,
-                attempt_number: 0,
+                dataset_config: dataset_configuration.clone(),
             },
-            chunk: chunk_only_group_ids.clone(),
             dataset_id: dataset_uuid,
+            dataset_config: dataset_configuration.clone(),
+            chunk: chunk_only_group_ids.clone(),
             upsert_by_tracking_id: chunk.upsert_by_tracking_id.unwrap_or(false),
-            dataset_config: dataset_config.clone(),
         };
 
         ingestion_messages.push(upload_message);
     }
-    Ok((ingestion_messages, chunk_metadatas))
+
+    Ok((
+        BulkUploadIngestionMessage {
+            attempt_number: 0,
+            dataset_id: dataset_uuid,
+            dataset_configuration,
+            ingestion_messages,
+        },
+        chunk_metadatas,
+    ))
 }

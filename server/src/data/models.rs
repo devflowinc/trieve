@@ -322,9 +322,9 @@ impl ChunkMetadata {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IngestSpecificChunkMetadata {
     pub id: uuid::Uuid,
-    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub dataset_config: ServerDatasetConfiguration,
     pub dataset_id: uuid::Uuid,
-    pub attempt_number: usize,
+    pub qdrant_point_id: Option<uuid::Uuid>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Selectable, Insertable, Clone)]
@@ -1063,8 +1063,8 @@ pub enum EventType {
         file_id: uuid::Uuid,
         error: String,
     },
-    ChunkUploaded {
-        chunk_id: uuid::Uuid,
+    ChunksUploaded {
+        chunk_ids: Vec<uuid::Uuid>,
     },
     ChunkActionFailed {
         chunk_id: uuid::Uuid,
@@ -1080,7 +1080,7 @@ impl EventType {
         match self {
             EventType::FileUploaded { .. } => "file_uploaded".to_string(),
             EventType::FileUploadFailed { .. } => "file_upload_failed".to_string(),
-            EventType::ChunkUploaded { .. } => "chunk_uploaded".to_string(),
+            EventType::ChunksUploaded { .. } => "chunks_uploaded".to_string(),
             EventType::ChunkActionFailed { .. } => "chunk_action_failed".to_string(),
             EventType::ChunkUpdated { .. } => "chunk_updated".to_string(),
         }
@@ -1105,7 +1105,7 @@ impl From<EventType> for serde_json::Value {
             EventType::FileUploadFailed { file_id, error } => {
                 json!({"file_id": file_id, "error": error})
             }
-            EventType::ChunkUploaded { chunk_id } => json!({"chunk_id": chunk_id}),
+            EventType::ChunksUploaded { chunk_ids } => json!({"chunk_ids": chunk_ids}),
             EventType::ChunkActionFailed { chunk_id, error } => {
                 json!({"chunk_id": chunk_id, "error": error})
             }

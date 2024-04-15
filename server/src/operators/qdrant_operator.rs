@@ -6,6 +6,7 @@ use crate::{
     handlers::chunk_handler::ChunkFilter,
 };
 use actix_web::web;
+use itertools::izip;
 use qdrant_client::{
     client::{QdrantClient, QdrantClientConfig},
     qdrant::{
@@ -262,6 +263,91 @@ pub async fn create_new_qdrant_collection_query(
         )
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to create index".into()))?;
+
+    Ok(())
+}
+
+#[tracing::instrument(skip(embedding_vectors, splade_vectors, chunk_metadatas, payload_group_ids))]
+pub async fn bulk_create_new_qdrant_point_query(
+    point_ids: Vec<uuid::Uuid>,
+    embedding_vectors: Vec<Vec<f32>>,
+    chunk_metadatas: Vec<ChunkMetadata>,
+    splade_vectors: Vec<Vec<(u32, f32)>>,
+    payload_group_ids: Vec<Option<Vec<uuid::Uuid>>>,
+    config: ServerDatasetConfiguration,
+) -> Result<(), ServiceError> {
+    if point_ids.is_empty() {
+        return Err(ServiceError::BadRequest("Cannot insert empty point_ids vector".to_string()))
+    }
+
+    if !((point_ids.len() == embedding_vectors.len())
+        && (embedding_vectors.len() == splade_vectors.len())
+        && (splade_vectors.len() == payload_group_ids.len()))
+    {
+        return Err(ServiceError::BadRequest(format!("The vector sizes of point_ids {}, embedding_vectors {}, splade_vectors {}, group_ids {} Do not match cannot insert qdrant point", 
+            point_ids.len(),
+            embedding_vectors.len(),
+            splade_vectors.len(),
+            payload_group_ids.len()
+        )));
+    }
+
+    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+
+    let qdrant =
+        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+
+    let points: Vec<PointStruct> = izip!(
+        point_ids.into_iter(),
+        chunk_metadatas.into_iter(),
+        payload_group_ids.into_iter(),
+        embedding_vectors.into_iter(),
+        splade_vectors.into_iter(),
+    )
+    .filter_map(
+        |(point_id, chunk_metadata, group_ids, embedding_vector, splade_vector)| {
+            let payload = QdrantPayload::new(chunk_metadata, group_ids, None)
+                .try_into()
+                .expect("A json! Value must always be a valid Payload");
+
+            let vector_name = match embedding_vector.len() {
+                384 => "384_vectors",
+                512 => "512_vectors",
+                768 => "768_vectors",
+                1024 => "1024_vectors",
+                3072 => "3072_vectors",
+                1536 => "1536_vectors",
+                _ => return None,
+            };
+
+            let vector_payload = HashMap::from([
+                (vector_name.to_string(), Vector::from(embedding_vector)),
+                ("sparse_vectors".to_string(), Vector::from(splade_vector)),
+            ]);
+
+            Some(PointStruct::new(
+                point_id.clone().to_string(),
+                vector_payload,
+                payload,
+            ))
+        },
+    )
+    .collect();
+
+    if points.is_empty() {
+        return Err(ServiceError::BadRequest(
+            "No points were created for QDRANT, this is due to the incorrect embedding vector size".into(),
+        ))
+    }
+
+    qdrant
+        .upsert_points_blocking(qdrant_collection, None, points, None)
+        .await
+        .map_err(|err| {
+            sentry::capture_message(&format!("Error {:?}", err), sentry::Level::Error);
+            log::error!("Failed inserting chunk to qdrant {:?}", err);
+            ServiceError::BadRequest(format!("Failed inserting chunk to qdrant {:?}", err))
+        })?;
 
     Ok(())
 }
