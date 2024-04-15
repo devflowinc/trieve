@@ -508,6 +508,15 @@ pub async fn main() -> std::io::Result<()> {
                                     ),
                             )
                             .service(
+                                web::resource("/tracking_id/{tracking_id}")
+                                    .route(
+                                        web::get().to(handlers::dataset_handler::get_dataset_by_tracking_id),
+                                    )
+                                    .route(
+                                        web::delete().to(handlers::dataset_handler::delete_dataset_by_tracking_id),
+                                    ),
+                            )
+                            .service(
                                 web::resource("/groups/{dataset_id}/{page}").route(web::get().to(
                                     handlers::group_handler::get_specific_dataset_chunk_groups,
                                 )),

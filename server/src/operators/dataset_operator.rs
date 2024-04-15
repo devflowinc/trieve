@@ -1,6 +1,7 @@
 use crate::data::models::{
     DatasetAndOrgWithSubAndPlan, DatasetAndUsage, DatasetUsageCount, Organization,
     OrganizationWithSubAndPlan, ServerDatasetConfiguration, StripePlan, StripeSubscription,
+    UnifiedId,
 };
 use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::{
@@ -35,7 +36,7 @@ pub async fn create_dataset_query(
 
 #[tracing::instrument(skip(pool))]
 pub async fn get_dataset_by_id_query(
-    id: uuid::Uuid,
+    id: UnifiedId,
     pool: web::Data<Pool>,
 ) -> Result<Dataset, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
@@ -44,18 +45,26 @@ pub async fn get_dataset_by_id_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let dataset: Dataset = datasets_columns::datasets
-        .filter(datasets_columns::id.eq(id))
-        .select(Dataset::as_select())
-        .first(&mut conn)
-        .await
-        .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?;
+    let dataset = match id {
+        UnifiedId::TrieveUuid(id) => datasets_columns::datasets
+            .filter(datasets_columns::id.eq(id))
+            .select(Dataset::as_select())
+            .first(&mut conn)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?,
+        UnifiedId::TrackingId(id) => datasets_columns::datasets
+            .filter(datasets_columns::tracking_id.eq(id))
+            .select(Dataset::as_select())
+            .first(&mut conn)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?,
+    };
 
     Ok(dataset)
 }
 
 pub async fn get_dataset_and_organization_from_dataset_id_query(
-    id: uuid::Uuid,
+    id: UnifiedId,
     pool: web::Data<Pool>,
 ) -> Result<DatasetAndOrgWithSubAndPlan, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
@@ -68,7 +77,7 @@ pub async fn get_dataset_and_organization_from_dataset_id_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let (dataset, organization, stripe_plan, stripe_subscription) = datasets_columns::datasets
+    let query = datasets_columns::datasets
         .inner_join(organizations_columns::organizations)
         .left_outer_join(
             stripe_subscriptions_columns::stripe_subscriptions
@@ -78,21 +87,42 @@ pub async fn get_dataset_and_organization_from_dataset_id_query(
             stripe_plans_columns::stripe_plans
                 .on(stripe_plans_columns::id.eq(stripe_subscriptions_columns::plan_id)),
         )
-        .filter(datasets_columns::id.eq(id))
-        .select((
-            Dataset::as_select(),
-            organizations_columns::organizations::all_columns(),
-            stripe_plans_columns::stripe_plans::all_columns().nullable(),
-            stripe_subscriptions_columns::stripe_subscriptions::all_columns().nullable(),
-        ))
-        .first::<(
-            Dataset,
-            Organization,
-            Option<StripePlan>,
-            Option<StripeSubscription>,
-        )>(&mut conn)
-        .await
-        .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?;
+        .into_boxed();
+
+    let (dataset, organization, stripe_plan, stripe_subscription) = match id {
+        UnifiedId::TrieveUuid(id) => query
+            .filter(datasets_columns::id.eq(id))
+            .select((
+                Dataset::as_select(),
+                organizations_columns::organizations::all_columns(),
+                stripe_plans_columns::stripe_plans::all_columns().nullable(),
+                stripe_subscriptions_columns::stripe_subscriptions::all_columns().nullable(),
+            ))
+            .first::<(
+                Dataset,
+                Organization,
+                Option<StripePlan>,
+                Option<StripeSubscription>,
+            )>(&mut conn)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?,
+        UnifiedId::TrackingId(id) => query
+            .filter(datasets_columns::tracking_id.eq(id))
+            .select((
+                Dataset::as_select(),
+                organizations_columns::organizations::all_columns(),
+                stripe_plans_columns::stripe_plans::all_columns().nullable(),
+                stripe_subscriptions_columns::stripe_subscriptions::all_columns().nullable(),
+            ))
+            .first::<(
+                Dataset,
+                Organization,
+                Option<StripePlan>,
+                Option<StripeSubscription>,
+            )>(&mut conn)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Could not find dataset".to_string()))?,
+    };
 
     let org_with_plan_sub: OrganizationWithSubAndPlan =
         OrganizationWithSubAndPlan::from_components(organization, stripe_plan, stripe_subscription);
