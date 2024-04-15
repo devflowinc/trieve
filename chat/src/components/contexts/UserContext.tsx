@@ -88,8 +88,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
         console.error(err);
         createToast({
           type: "error",
-          message:
-            "Error logging in",
+          message: "Error logging in",
         });
       });
   };

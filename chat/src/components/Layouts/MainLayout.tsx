@@ -391,7 +391,7 @@ const MainLayout = (props: LayoutProps) => {
             <form class="relative flex h-fit max-h-[calc(100vh-32rem)] w-full flex-col items-center overflow-y-auto rounded-xl bg-neutral-50 py-1 pl-4 pr-6 text-neutral-800 dark:bg-neutral-700 dark:text-white">
               <textarea
                 id="new-message-content-textarea"
-                class="scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600 w-full resize-none whitespace-pre-wrap bg-transparent py-1 focus:outline-none dark:bg-neutral-700 dark:text-white"
+                class="w-full resize-none whitespace-pre-wrap bg-transparent py-1 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md focus:outline-none dark:bg-neutral-700 dark:text-white dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-600"
                 placeholder="Write a question or prompt for the assistant..."
                 value={newMessageContent()}
                 disabled={streamingCompletion()}
