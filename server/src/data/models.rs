@@ -1150,6 +1150,7 @@ pub struct DatasetEventCount {
     "created_at": "2021-01-01T00:00:00",
     "updated_at": "2021-01-01T00:00:00",
     "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "tracking_id": "3",
     "server_configuration": {"key": "value"},
     "client_configuration": {"key": "value"},
 }))]
@@ -1162,12 +1163,14 @@ pub struct Dataset {
     pub organization_id: uuid::Uuid,
     pub server_configuration: serde_json::Value,
     pub client_configuration: serde_json::Value,
+    pub tracking_id: Option<String>,
 }
 
 impl Dataset {
     pub fn from_details(
         name: String,
         organization_id: uuid::Uuid,
+        tracking_id: Option<String>,
         server_configuration: serde_json::Value,
         client_configuration: serde_json::Value,
     ) -> Self {
@@ -1175,6 +1178,7 @@ impl Dataset {
             id: uuid::Uuid::new_v4(),
             name,
             organization_id,
+            tracking_id,
             server_configuration,
             client_configuration,
             created_at: chrono::Utc::now().naive_local(),
@@ -1189,12 +1193,14 @@ impl Dataset {
     "name": "Trieve",
     "created_at": "2021-01-01T00:00:00",
     "updated_at": "2021-01-01T00:00:00",
+    "tracking_id": "3",
     "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "client_configuration": {"key": "value"},
 }))]
 pub struct DatasetDTO {
     pub id: uuid::Uuid,
     pub name: String,
+    pub tracking_id: Option<String>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub organization_id: uuid::Uuid,
@@ -1208,6 +1214,7 @@ impl From<Dataset> for DatasetDTO {
             name: dataset.name,
             created_at: dataset.created_at,
             updated_at: dataset.updated_at,
+            tracking_id: dataset.tracking_id,
             organization_id: dataset.organization_id,
             client_configuration: dataset.client_configuration,
         }

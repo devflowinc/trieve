@@ -157,7 +157,6 @@ pub async fn update_dataset_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    // TODO update columns that are not listed
     let new_dataset: Dataset =
         diesel::update(datasets_columns::datasets.filter(datasets_columns::id.eq(id)))
             .set((

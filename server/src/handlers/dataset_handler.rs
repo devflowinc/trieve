@@ -50,6 +50,8 @@ pub struct CreateDatasetRequest {
     pub dataset_name: String,
     /// Organization ID that the dataset will belong to.
     pub organization_id: uuid::Uuid,
+    /// Optional tracking ID for the dataset. Can be used to track the dataset in external systems.
+    pub tracking_id: Option<String>,
     /// Server configuration for the dataset, can be arbitrary JSON. We recommend setting to `{}` to start. See docs.trieve.ai for more information or adjust with the admin dashboard.
     pub server_configuration: serde_json::Value,
     /// Client configuration for the dataset, can be arbitrary JSON. We recommend setting to `{}` to start. See docs.trieve.ai for more information or adjust with the admin dashboard.
@@ -101,6 +103,7 @@ pub async fn create_dataset(
     let dataset = Dataset::from_details(
         data.dataset_name.clone(),
         data.organization_id,
+        data.tracking_id.clone(),
         data.server_configuration.clone(),
         data.client_configuration.clone(),
     );
