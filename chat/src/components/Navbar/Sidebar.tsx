@@ -69,8 +69,7 @@ export const Sidebar = (props: SidebarProps) => {
     if (!res.ok) {
       createToast({
         type: "error",
-        message:
-          "Error changing topic name",
+        message: "Error changing topic name",
       });
       return;
     }
@@ -98,11 +97,10 @@ export const Sidebar = (props: SidebarProps) => {
     if (res.ok) {
       props.setCurrentTopic(undefined);
       void props.refetchTopics();
-    }else{
+    } else {
       createToast({
         type: "error",
-        message:
-          "Error deleting topic",
+        message: "Error deleting topic",
       });
       return;
     }
@@ -150,7 +148,7 @@ export const Sidebar = (props: SidebarProps) => {
             </div>
           </button>
         </div>
-        <div class="scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600 flex w-full flex-col space-y-2 overflow-y-auto overflow-x-hidden px-2">
+        <div class="flex w-full flex-col space-y-2 overflow-y-auto overflow-x-hidden px-2 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600">
           <For each={props.topics()}>
             {(topic, index) => (
               <button

@@ -22,6 +22,7 @@ export function MultiSelect(props: {
     }[],
   ) => void;
 }): JSX.Element {
+  // eslint-disable-next-line solid/reactivity
   const [selected, setSelectedItems] = createSignal(props.items);
   const setSelected = (
     selected: {

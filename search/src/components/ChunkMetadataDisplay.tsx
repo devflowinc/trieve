@@ -95,8 +95,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
           }
           createToast({
             type: "error",
-            message:
-              "Failed to delete the chunk",
+            message: "Failed to delete the chunk",
           });
         });
       };
