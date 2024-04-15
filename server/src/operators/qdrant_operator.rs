@@ -811,6 +811,7 @@ pub async fn recommend_qdrant_query(
     positive_ids: Vec<uuid::Uuid>,
     negative_ids: Vec<uuid::Uuid>,
     strategy: Option<String>,
+    recommend_type: Option<String>,
     filters: Option<ChunkFilter>,
     limit: u64,
     dataset_id: uuid::Uuid,
@@ -838,17 +839,41 @@ pub async fn recommend_qdrant_query(
         .map(|id| id.to_string().into())
         .collect();
 
-    let vector_name = match config.EMBEDDING_SIZE {
-        384 => "384_vectors",
-        512 => "512_vectors",
-        768 => "768_vectors",
-        1024 => "1024_vectors",
-        3072 => "3072_vectors",
-        1536 => "1536_vectors",
-        _ => {
+    let vector_name = if let Some(recommend_type) = recommend_type {
+        if recommend_type == "fulltext" {
+            "sparse_vectors"
+        } else if recommend_type == "semantic" {
+            match config.EMBEDDING_SIZE {
+                384 => "384_vectors",
+                512 => "512_vectors",
+                768 => "768_vectors",
+                1024 => "1024_vectors",
+                3072 => "3072_vectors",
+                1536 => "1536_vectors",
+                _ => {
+                    return Err(ServiceError::BadRequest(
+                        "Invalid embedding vector size".to_string(),
+                    ))
+                }
+            }
+        } else {
             return Err(ServiceError::BadRequest(
-                "Invalid embedding vector size".to_string(),
-            ))
+                "Invalid recommend type".to_string(),
+            ));
+        }
+    } else {
+        match config.EMBEDDING_SIZE {
+            384 => "384_vectors",
+            512 => "512_vectors",
+            768 => "768_vectors",
+            1024 => "1024_vectors",
+            3072 => "3072_vectors",
+            1536 => "1536_vectors",
+            _ => {
+                return Err(ServiceError::BadRequest(
+                    "Invalid embedding vector size".to_string(),
+                ))
+            }
         }
     };
 
@@ -910,6 +935,7 @@ pub async fn recommend_qdrant_groups_query(
     positive_ids: Vec<uuid::Uuid>,
     negative_ids: Vec<uuid::Uuid>,
     strategy: Option<String>,
+    recommend_type: Option<String>,
     filter: Option<ChunkFilter>,
     limit: u64,
     group_size: u32,
@@ -938,17 +964,41 @@ pub async fn recommend_qdrant_groups_query(
         .map(|id| id.to_string().into())
         .collect();
 
-    let vector_name = match config.EMBEDDING_SIZE {
-        384 => "384_vectors",
-        512 => "512_vectors",
-        768 => "768_vectors",
-        1024 => "1024_vectors",
-        3072 => "3072_vectors",
-        1536 => "1536_vectors",
-        _ => {
+    let vector_name = if let Some(recommend_type) = recommend_type {
+        if recommend_type == "fulltext" {
+            "sparse_vectors"
+        } else if recommend_type == "semantic" {
+            match config.EMBEDDING_SIZE {
+                384 => "384_vectors",
+                512 => "512_vectors",
+                768 => "768_vectors",
+                1024 => "1024_vectors",
+                3072 => "3072_vectors",
+                1536 => "1536_vectors",
+                _ => {
+                    return Err(ServiceError::BadRequest(
+                        "Invalid embedding vector size".to_string(),
+                    ))
+                }
+            }
+        } else {
             return Err(ServiceError::BadRequest(
-                "Invalid embedding vector size".to_string(),
-            ))
+                "Invalid recommend type".to_string(),
+            ));
+        }
+    } else {
+        match config.EMBEDDING_SIZE {
+            384 => "384_vectors",
+            512 => "512_vectors",
+            768 => "768_vectors",
+            1024 => "1024_vectors",
+            3072 => "3072_vectors",
+            1536 => "1536_vectors",
+            _ => {
+                return Err(ServiceError::BadRequest(
+                    "Invalid embedding vector size".to_string(),
+                ))
+            }
         }
     };
 
