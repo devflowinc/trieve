@@ -248,7 +248,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
     <>
       <Show when={!deleted()}>
         <div
-          class="mx-auto flex w-full max-w-[calc(100%-32px)] flex-col items-center rounded-md bg-neutral-100 p-2 dark:!bg-neutral-800 min-[360px]:max-w-[calc(100%-64px)]"
+          class="mx-auto flex w-full max-w-[calc(100%-32px)] flex-col items-center rounded-md bg-neutral-100 p-2 dark:!bg-neutral-800 min-[360px]:w-[calc(100%-64px)]"
           id={
             "doc_" +
             (props.chat ? (props.order ?? "") + props.counter : props.chunk.id)
@@ -551,7 +551,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
           <div
             classList={{
               "line-clamp-4 gradient-mask-b-0": useExpand() && !expanded(),
-              "text-ellipsis max-w-[100%] break-words space-y-5 leading-normal !text-black dark:!text-white":
+              "text-ellipsis max-w-[100%] w-full break-words space-y-5 leading-normal !text-black dark:!text-white":
                 true,
             }}
             style={
