@@ -703,12 +703,15 @@ pub async fn update_chunk_by_tracking_id(
                 .collect::<Vec<UnifiedId>>(),
         )
     } else {
-        update_chunk_data.group_tracking_ids.clone().map(|group_tracking_ids| {
-            group_tracking_ids
-                .into_iter()
-                .map(UnifiedId::from)
-                .collect::<Vec<UnifiedId>>()
-        })
+        update_chunk_data
+            .group_tracking_ids
+            .clone()
+            .map(|group_tracking_ids| {
+                group_tracking_ids
+                    .into_iter()
+                    .map(UnifiedId::from)
+                    .collect::<Vec<UnifiedId>>()
+            })
     };
 
     let message = UpdateIngestionMessage {
@@ -1346,6 +1349,8 @@ pub struct RecommendChunksRequest {
     pub negative_tracking_ids: Option<Vec<String>>,
     /// Strategy to use for recommendations, either "average_vector" or "best_score". The default is "average_vector". The "average_vector" strategy will construct a single average vector from the positive and negative samples then use it to perform a pseudo-search. The "best_score" strategy is more advanced and navigates the HNSW with a heuristic of picking edges where the point is closer to the positive samples than it is the negatives.
     pub strategy: Option<String>,
+    /// The type of recommendation to make. This lets you choose whether to recommend based off of `semantic` or `fulltext` similarity. The default is `semantic`.
+    pub recommend_type: Option<String>,
     /// Filters to apply to the chunks to be recommended. This is a JSON object which contains the filters to apply to the chunks to be recommended. The default is None.
     pub filters: Option<ChunkFilter>,
     /// The number of chunks to return. This is the number of chunks which will be returned in the response. The default is 10.
@@ -1487,6 +1492,7 @@ pub async fn get_recommended_chunks(
         positive_qdrant_ids,
         negative_qdrant_ids,
         data.strategy.clone(),
+        data.recommend_type.clone(),
         data.filters.clone(),
         limit,
         dataset_org_plan_sub.dataset.id,
