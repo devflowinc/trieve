@@ -102,6 +102,10 @@ export const DatasetEvents = () => {
                     id: "chunk_updated",
                     name: "Chunk Updated",
                   },
+                  {
+                    id: "qdrant_index_failed",
+                    name: "Qdrant Index Failed",
+                  },
                 ]}
                 setSelected={(
                   selected: {

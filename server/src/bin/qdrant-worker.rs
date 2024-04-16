@@ -2,10 +2,10 @@ use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfi
 use qdrant_client::qdrant::{PointStruct, Vector};
 use sentry::{Hub, SentryFutureExt};
 use signal_hook::consts::SIGTERM;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
 use std::collections::HashMap;
 use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
 use trieve_server::data::models::{self, Event};
 use trieve_server::errors::ServiceError;
@@ -51,17 +51,6 @@ fn main() {
         None
     };
 
-    let thread_num = if let Ok(thread_num) = std::env::var("THREAD_NUM") {
-        thread_num
-            .parse::<usize>()
-            .expect("THREAD_NUM must be a number")
-    } else {
-        std::thread::available_parallelism()
-            .expect("Failed to get available parallelism")
-            .get()
-            * 2
-    };
-
     let mut config = ManagerConfig::default();
     config.custom_setup = Box::new(establish_connection);
 
@@ -104,22 +93,12 @@ fn main() {
                 let should_terminate = Arc::new(AtomicBool::new(false));
                 signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
                     .expect("Failed to register shutdown hook");
-                let threads: Vec<_> = (0..thread_num)
-                    .map(|i| {
-                        let web_redis_pool = web_redis_pool.clone();
-                        let web_pool = actix_web::web::Data::new(pool.clone());
-                        let should_terminate = Arc::clone(&should_terminate);
 
-                        tokio::spawn(async move {
-                            qdrant_ingestion_worker(should_terminate, i, web_redis_pool, web_pool)
-                                .await
-                        })
-                    })
-                    .collect();
+                let web_redis_pool = web_redis_pool.clone();
+                let web_pool = actix_web::web::Data::new(pool.clone());
 
-                while !should_terminate.load(Ordering::Relaxed) {}
+                qdrant_ingestion_worker(should_terminate, web_redis_pool, web_pool).await;
                 log::info!("Shutdown signal received, killing all children...");
-                futures::future::join_all(threads).await
             }
             .bind_hub(Hub::new_from_top(Hub::current())),
         );
@@ -127,11 +106,10 @@ fn main() {
 
 async fn qdrant_ingestion_worker(
     should_terminate: Arc<AtomicBool>,
-    thread_num: usize,
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
 ) {
-    log::info!("Starting qdrant service thread {:?}", thread_num);
+    log::info!("Starting qdrant service thread");
 
     let mut redis_conn_sleep = std::time::Duration::from_secs(1);
 
@@ -188,6 +166,7 @@ async fn qdrant_ingestion_worker(
             broken_pipe_sleep = std::time::Duration::from_secs(10);
 
             if payload.is_empty() {
+                tokio::time::sleep(std::time::Duration::from_secs(3)).await;
                 continue;
             }
 
@@ -261,21 +240,31 @@ async fn qdrant_ingestion_worker(
 
         if let Err(error) = upsert_result {
             for message in qdrant_ingestion_messages {
+                log::error!(
+                    "Failed to upload to qdrant chunk_id {:} qdrant_point_id {:}",
+                    message.chunk_id,
+                    message.point_struct_data.point_id
+                );
                 let _ = create_event_query(
                     Event::from_details(
                         message.dataset_id,
-                        models::EventType::ChunkActionFailed {
+                        models::EventType::QdrantUploadFailed {
                             chunk_id: message.chunk_id,
-                            error: format!(
-                                "Failed to upload chunk with  {:?}",
-                                error
-                            ),
+                            qdrant_point_id: message.point_struct_data.point_id,
+                            error: error.to_string(),
                         },
                     ),
                     web_pool.clone(),
                 )
                 .await;
             }
+
+            let _ : Result<(), ServiceError> = redis::cmd("lpush")
+                .arg(&format!("{:}-failed", redis_key))
+                .arg(serialized_messages)
+                .query_async(&mut *redis_connection)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.to_string()));
         } else {
             log::info!("Bulk inserted {} points", qdrant_ingestion_messages.len());
         }
