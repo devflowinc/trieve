@@ -266,61 +266,6 @@ pub async fn create_new_qdrant_collection_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(embedding_vector))]
-pub async fn create_new_qdrant_point_query(
-    point_id: uuid::Uuid,
-    embedding_vector: Vec<f32>,
-    chunk_metadata: ChunkMetadata,
-    splade_vector: Vec<(u32, f32)>,
-    group_ids: Option<Vec<uuid::Uuid>>,
-    config: ServerDatasetConfiguration,
-) -> Result<(), ServiceError> {
-    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
-
-    let payload = QdrantPayload::new(chunk_metadata, group_ids, None)
-        .try_into()
-        .expect("A json! Value must always be a valid Payload");
-
-    let vector_name = match embedding_vector.len() {
-        384 => "384_vectors",
-        512 => "512_vectors",
-        768 => "768_vectors",
-        1024 => "1024_vectors",
-        3072 => "3072_vectors",
-        1536 => "1536_vectors",
-        _ => {
-            return Err(ServiceError::BadRequest(
-                "Invalid embedding vector size".into(),
-            ))
-        }
-    };
-
-    let vector_payload = HashMap::from([
-        (vector_name.to_string(), Vector::from(embedding_vector)),
-        ("sparse_vectors".to_string(), Vector::from(splade_vector)),
-    ]);
-
-    let point = PointStruct::new(point_id.clone().to_string(), vector_payload, payload);
-
-    let qdrant_client =
-        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY))
-            .await
-            .map_err(|err| {
-                ServiceError::BadRequest(format!("Failed connecting to qdrant {:?}", err))
-            })?;
-
-    qdrant_client
-        .upsert_points_blocking(qdrant_collection, None, vec![point], None)
-        .await
-        .map_err(|err| {
-            sentry::capture_message(&format!("Error {:?}", err), sentry::Level::Error);
-            log::error!("Failed inserting chunk to qdrant {:?}", err);
-            ServiceError::BadRequest(format!("Failed inserting chunk to qdrant {:?}", err))
-        })?;
-
-    Ok(())
-}
-
 #[tracing::instrument(skip(updated_vector))]
 pub async fn update_qdrant_point_query(
     metadata: Option<ChunkMetadata>,

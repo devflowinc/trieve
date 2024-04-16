@@ -2226,3 +2226,19 @@ impl From<UploadFileData> for FileDataDTO {
         }
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PointStructData {
+    pub point_id: uuid::Uuid,
+    pub splade_vector: Vec<(u32, f32)>,
+    pub dense_vector: Vec<f32>,
+    pub payload: QdrantPayload,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QdrantMessage {
+    pub point_struct_data: PointStructData,
+    pub chunk_id: uuid::Uuid,
+    pub upsert_by_tracking_id: bool,
+    pub dataset_id: uuid::Uuid
+}

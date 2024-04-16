@@ -5,23 +5,20 @@ use sentry::{Hub, SentryFutureExt};
 use signal_hook::consts::SIGTERM;
 use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
-use trieve_server::data::models::{self, ChunkMetadata, Event, ServerDatasetConfiguration};
+use trieve_server::data::models::{self, ChunkMetadata, Event, QdrantMessage, PointStructData,  QdrantPayload, ServerDatasetConfiguration};
 use trieve_server::errors::ServiceError;
 use trieve_server::handlers::chunk_handler::{UpdateIngestionMessage, UploadIngestionMessage};
 use trieve_server::handlers::group_handler::dataset_owns_group;
 use trieve_server::operators::chunk_operator::{
     get_metadata_from_point_ids, get_qdrant_id_from_chunk_id_query, insert_chunk_metadata_query,
-    insert_duplicate_chunk_metadata_query, revert_insert_chunk_metadata_query,
-    update_chunk_metadata_query,
+    insert_duplicate_chunk_metadata_query, update_chunk_metadata_query,
 };
 use trieve_server::operators::event_operator::create_event_query;
 use trieve_server::operators::model_operator::{create_embeddings, get_sparse_vector};
 use trieve_server::operators::parse_operator::{
     average_embeddings, coarse_doc_chunker, convert_html_to_text,
 };
-use trieve_server::operators::qdrant_operator::{
-    create_new_qdrant_point_query, update_qdrant_point_query,
-};
+use trieve_server::operators::qdrant_operator::{get_qdrant_connection, update_qdrant_point_query};
 use trieve_server::operators::search_operator::global_unfiltered_top_match_query;
 use trieve_server::{establish_connection, get_env};
 
@@ -242,7 +239,7 @@ async fn ingestion_worker(
             serde_json::from_str(&serialized_message).expect("Failed to parse ingestion message");
         match ingestion_message.clone() {
             IngestionMessage::Upload(payload) => {
-                match upload_chunk(payload.clone(), web_pool.clone(), payload.dataset_config).await
+                match upload_chunk(payload.clone(), web_pool.clone(), payload.dataset_config, redis_pool.clone()).await
                 {
                     Ok(_) => {
                         log::info!(
@@ -341,6 +338,7 @@ async fn upload_chunk(
     mut payload: UploadIngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
     dataset_config: ServerDatasetConfiguration,
+    redis_pool: actix_web::web::Data<models::RedisPool>
 ) -> Result<(), ServiceError> {
     let tx_ctx = sentry::TransactionContext::new(
         "ingestion worker upload_chunk",
@@ -550,36 +548,37 @@ async fn upload_chunk(
 
         qdrant_point_id = inserted_chunk.qdrant_point_id.unwrap_or(qdrant_point_id);
 
-        let insert_tx =
-            transaction.start_child("calling_create_qdrant_point", "calling_create_qdrant_point");
+        let qdrant_collection = dataset_config.QDRANT_COLLECTION_NAME;
+        let qdrant_url = &dataset_config.QDRANT_URL;
 
-        let create_point_result = create_new_qdrant_point_query(
-            qdrant_point_id,
-            embedding_vector,
-            chunk_metadata.clone(),
-            splade_vector,
-            payload.chunk.group_ids.clone(),
-            dataset_config.clone(),
-        )
-        .await;
+        let redis_key = format!("{};{}", qdrant_url, qdrant_collection);
+        let qdrant_message = QdrantMessage {
+            point_struct_data: PointStructData {
+                point_id: qdrant_point_id,
+                splade_vector,
+                dense_vector: embedding_vector.clone(),
+                payload: QdrantPayload::new(chunk_metadata.clone(), payload.chunk.group_ids.clone(), Some(payload.dataset_id)),
+            },
+            chunk_id: inserted_chunk.id,
+            upsert_by_tracking_id : payload.upsert_by_tracking_id,
+            dataset_id: payload.dataset_id
+        };
 
-        if let Err(err) = create_point_result {
-            if !payload.upsert_by_tracking_id {
-                // remove added chunk_id
-                revert_insert_chunk_metadata_query(
-                    inserted_chunk.id,
-                    payload.chunk.file_id,
-                    payload.chunk.group_ids.clone(),
-                    payload.dataset_id,
-                    payload.upsert_by_tracking_id,
-                    web_pool.clone(),
-                )
-                .await?;
-            }
-            return Err(err);
-        }
+        let qdrant_payload_message = serde_json::to_string(&qdrant_message).map_err(|_| {
+            ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
+        })?;
 
-        insert_tx.finish();
+        let mut redis_conn = redis_pool
+            .get()
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+        let _ = redis::cmd("lpush")
+            .arg(&redis_key)
+            .arg(&qdrant_payload_message)
+            .query_async(&mut *redis_conn)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
     }
 
     transaction.finish();
