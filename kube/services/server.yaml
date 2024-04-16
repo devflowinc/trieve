@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-server-deployment
+spec:
+  selector:
+    matchLabels:
+      app: web-server
+  template:
+    metadata:
+      labels:
+        app: web-server
+    spec:
+      containers:
+      - name: server-container
+        image: trieve/server:latest
+        ports:
+        - containerPort: 8090
+        envFrom:
+        - configMapRef:
+            name: app-config
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8090
+          initialDelaySeconds: 15
+          timeoutSeconds: 2
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 8090
+          initialDelaySeconds: 5
+          timeoutSeconds: 2
+          periodSeconds: 10
+          successThreshold: 1
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingest-service-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ingest-service
+  template:
+    metadata:
+      labels:
+        app: ingest-service
+    spec:
+      containers:
+      - name: ingest-container
+        image: trieve/ingest:latest
+        envFrom:
+        - configMapRef:
+            name: app-config
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: file-worker-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: file-worker
+  template:
+    metadata:
+      labels:
+        app: file-worker
+    spec:
+      containers:
+      - name: file-worker-container
+        image: trieve/file_worker:main
+        envFrom:
+        - configMapRef:
+            name: app-config
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-server-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: web-server
+  ports:
+    - protocol: TCP
+      port: 8090
+      targetPort: 8090
+
+
+

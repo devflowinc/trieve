@@ -1,0 +1,181 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shared-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jina-embeddings-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jina-embeddings-server
+  template:
+    metadata:
+      labels:
+        app: jina-embeddings-server
+    spec:
+      containers:
+      - name: jina-embeddings-container
+        image: ghcr.io/huggingface/text-embeddings-inference:86-1.1
+        args: ["--model-id", "jinaai/jina-embeddings-v2-small-en", "--revision", "main"]
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: data-volume
+          mountPath: /data
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: shared-data-pvc
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hybrid-reranker-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hybrid-reranker-server
+  template:
+    metadata:
+      labels:
+        app: hybrid-reranker-server
+    spec:
+      containers:
+      - name: reranker
+        image: ghcr.io/huggingface/text-embeddings-inference:86-1.1
+        args: ["--model-id", "BAAI/bge-reranker-large", "--revision", "refs/pr/4"]
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - mountPath: "/data"
+          name: data-volume
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: shared-data-pvc
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: splade-doc-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: splade-doc-server
+  template:
+    metadata:
+      labels:
+        app: splade-doc-server
+    spec:
+      containers:
+      - name: splade-doc-container
+        image: arguflow/text-embeddings
+        args: ["--model-id", "naver/efficient-splade-VI-BT-large-doc", "--revision", "main", "--pooling", "splade"]
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - mountPath: "/data"
+          name: data-volume
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: shared-data-pvc
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: splade-query-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: splade-query-server
+  template:
+    metadata:
+      labels:
+        app: splade-query-server
+    spec:
+      containers:
+      - name: splade-query-container
+        image: arguflow/text-embeddings
+        args: ["--model-id", "naver/efficient-splade-VI-BT-large-query", "--revision", "main", "--pooling", "splade"]
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - mountPath: "/data"
+          name: data-volume
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: shared-data-pvc
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: jina-embeddings
+spec:
+  ports:
+    - port: 9999
+      targetPort: 80
+  selector:
+    app: jina-embeddings-server
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: reranker
+spec:
+  ports:
+    - port: 7777
+      targetPort: 80
+  selector:
+    app: hybrid-reranker-server
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: splade-doc
+spec:
+  ports:
+    - port: 7070
+      targetPort: 80
+  selector:
+    app: splade-doc-server
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: splade-query
+spec:
+  ports:
+    - port: 7071
+      targetPort: 80
+  selector:
+    app: splade-query-server
+

@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: qdrant-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qdrant-database
+spec:
+  selector:
+    matchLabels:
+      app: qdrant-database
+  template:
+    metadata:
+      labels:
+        app: qdrant-database
+    spec:
+      containers:
+      - name: qdrant-database
+        image: qdrant/qdrant:v1.8.0
+        env:
+        - name: QDRANT__SERVICE__API_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: QDRANT_API_KEY
+        ports:
+        - containerPort: 6333
+          name: tcp
+        - containerPort: 6334
+          name: grpc
+        volumeMounts:
+        - name: qdrant-data
+          mountPath: /qdrant/storage
+      volumes:
+      - name: qdrant-data
+        persistentVolumeClaim:
+          claimName: qdrant-data-pvc
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: qdrant-database
+spec:
+  ports:
+  - name: tcp 
+    port: 6333
+    targetPort: 6333
+  - name: grpc
+    port: 6334
+    targetPort: 6334
+  selector:
+    app: qdrant-database
