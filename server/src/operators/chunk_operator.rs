@@ -460,27 +460,19 @@ pub async fn insert_chunk_metadata_query(
     Ok(chunk_data)
 }
 
+// Reverts insertion event, DO NOT USE IF UPSERT == TRUE
 #[tracing::instrument(skip(pool))]
-pub async fn revert_insert_chunk_metadata_query(
-    chunk_id: uuid::Uuid,
-    file_uuid: Option<uuid::Uuid>,
-    group_ids: Option<Vec<uuid::Uuid>>,
-    dataset_uuid: uuid::Uuid,
-    upsert_by_tracking_id: bool,
+pub async fn bulk_revert_insert_chunk_metadata_query(
+    chunk_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl::*;
 
-    if upsert_by_tracking_id {
-        // TODO Properly revert here
-        return Ok(());
-    }
-
     let mut conn = pool.get().await.expect("Failed to get connection to db");
 
-    diesel::delete(chunk_metadata.filter(id.eq(chunk_id)))
+    diesel::delete(chunk_metadata.filter(id.eq_any(chunk_ids.clone())))
         .execute(&mut conn)
         .await
         .map_err(|e| {
@@ -493,30 +485,26 @@ pub async fn revert_insert_chunk_metadata_query(
             ServiceError::BadRequest("Failed to revert insert transaction".to_string())
         })?;
 
-    if let Some(file_uuid) = file_uuid {
-        diesel::delete(
-            chunk_files_columns::chunk_files.filter(chunk_files_columns::chunk_id.eq(file_uuid)),
-        )
-        .execute(&mut conn)
-        .await
-        .map_err(|e| {
-            log::error!("Failed to revert chunk file action: {:?}", e);
-            ServiceError::BadRequest("Failed to revert chunk file action".to_string())
-        })?;
-    }
+    diesel::delete(
+        chunk_files_columns::chunk_files.filter(chunk_files_columns::chunk_id.eq_any(chunk_ids.clone())),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(|e| {
+        log::error!("Failed to revert chunk file action: {:?}", e);
+        ServiceError::BadRequest("Failed to revert chunk file action".to_string())
+    })?;
 
-    if group_ids.is_some() {
-        diesel::delete(
-            chunk_group_bookmarks_columns::chunk_group_bookmarks
-                .filter(chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_id)),
-        )
-        .execute(&mut conn)
-        .await
-        .map_err(|e| {
-            log::error!("Failed to revert chunk into groups action {:?}", e);
-            ServiceError::BadRequest("Failed to revert chunk into groups action".to_string())
-        })?;
-    }
+    diesel::delete(
+        chunk_group_bookmarks_columns::chunk_group_bookmarks
+            .filter(chunk_group_bookmarks_columns::chunk_metadata_id.eq_any(chunk_ids.clone())),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(|e| {
+        log::error!("Failed to revert chunk into groups action {:?}", e);
+        ServiceError::BadRequest("Failed to revert chunk into groups action".to_string())
+    })?;
 
     Ok(())
 }
