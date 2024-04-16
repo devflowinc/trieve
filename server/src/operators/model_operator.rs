@@ -40,24 +40,35 @@ pub async fn create_embeddings(
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
     let open_ai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set");
-    let base_url = dataset_config.EMBEDDING_BASE_URL;
+    let config_embedding_base_url = dataset_config.EMBEDDING_BASE_URL;
 
-    let base_url = if base_url.is_empty() || base_url == "https://api.openai.com/v1" {
-        get_env!("OPENAI_BASE_URL", "OPENAI_BASE_URL must be set").to_string()
-    } else if base_url.contains("https://embedding.trieve.ai") {
-        match std::env::var("EMBEDDING_SERVER_ORIGIN")
+    let embedding_base_url = match config_embedding_base_url.as_str() {
+        "" => get_env!("OPENAI_BASE_URL", "OPENAI_BASE_URL must be set").to_string(),
+        "https://api.openai.com/v1" => {
+            get_env!("OPENAI_BASE_URL", "OPENAI_BASE_URL must be set").to_string()
+        }
+        "https://embedding.trieve.ai" => std::env::var("EMBEDDING_SERVER_ORIGIN")
             .ok()
             .filter(|s| !s.is_empty())
-        {
-            Some(origin) => origin,
-            None => get_env!(
-                "GPU_SERVER_ORIGIN",
-                "GPU_SERVER_ORIGIN should be set if this is called"
+            .unwrap_or(
+                get_env!(
+                    "GPU_SERVER_ORIGIN",
+                    "GPU_SERVER_ORIGIN should be set if this is called"
+                )
+                .to_string(),
+            ),
+        "https://embedding.trieve.ai/bge-m3" => std::env::var("EMBEDDING_SERVER_ORIGIN_BGEM3")
+            .ok()
+            .filter(|s| !s.is_empty())
+            .unwrap_or(
+                get_env!(
+                    "GPU_SERVER_ORIGIN",
+                    "GPU_SERVER_ORIGIN should be set if this is called"
+                )
+                .to_string(),
             )
             .to_string(),
-        }
-    } else {
-        base_url
+        _ => config_embedding_base_url,
     };
 
     let mut all_vectors = vec![];
@@ -96,21 +107,19 @@ pub async fn create_embeddings(
             input,
         };
 
-        let embeddings_resp = ureq::post(&format!(
-            "{}/embeddings?api-version=2023-05-15",
-            base_url
-        ))
-        .set("Authorization", &format!("Bearer {}", open_ai_api_key))
-        .set("api-key", &open_ai_api_key)
-        .set("Content-Type", "application/json")
-        .send_json(serde_json::to_value(parameters).unwrap())
-        .map_err(|e| {
-            ServiceError::InternalServerError(format!(
-                "Could not get embeddings from server: {:?}, {:?}",
-                e,
-                e.to_string()
-            ))
-        })?;
+        let embeddings_resp =
+            ureq::post(&format!("{}/embeddings?api-version=2023-05-15", embedding_base_url))
+                .set("Authorization", &format!("Bearer {}", open_ai_api_key))
+                .set("api-key", &open_ai_api_key)
+                .set("Content-Type", "application/json")
+                .send_json(serde_json::to_value(parameters).unwrap())
+                .map_err(|e| {
+                    ServiceError::InternalServerError(format!(
+                        "Could not get embeddings from server: {:?}, {:?}",
+                        e,
+                        e.to_string()
+                    ))
+                })?;
 
         let embeddings: EmbeddingResponse = format_response(embeddings_resp.into_string().unwrap())
             .map_err(|e| {
