@@ -1073,6 +1073,11 @@ pub enum EventType {
     ChunkUpdated {
         chunk_id: uuid::Uuid,
     },
+    QdrantUploadFailed {
+        chunk_id: uuid::Uuid,
+        qdrant_point_id: uuid::Uuid,
+        error: String
+    }
 }
 
 impl EventType {
@@ -1083,6 +1088,7 @@ impl EventType {
             EventType::ChunkUploaded { .. } => "chunk_uploaded".to_string(),
             EventType::ChunkActionFailed { .. } => "chunk_action_failed".to_string(),
             EventType::ChunkUpdated { .. } => "chunk_updated".to_string(),
+            EventType::QdrantUploadFailed { .. } => "qdrant_index_failed".to_string(),
         }
     }
 
@@ -1092,6 +1098,7 @@ impl EventType {
             "chunk_uploaded".to_string(),
             "chunk_action_failed".to_string(),
             "chunk_updated".to_string(),
+            "qdrant_index_failed".to_string()
         ]
     }
 }
@@ -1108,8 +1115,9 @@ impl From<EventType> for serde_json::Value {
             EventType::ChunkUploaded { chunk_id } => json!({"chunk_id": chunk_id}),
             EventType::ChunkActionFailed { chunk_id, error } => {
                 json!({"chunk_id": chunk_id, "error": error})
-            }
+            },
             EventType::ChunkUpdated { chunk_id } => json!({"chunk_id": chunk_id}),
+            EventType::QdrantUploadFailed { chunk_id, error, .. } => json!({"chunk_id": chunk_id, "error": error}),
         }
     }
 }

@@ -426,7 +426,7 @@ pub async fn insert_chunk_metadata_query(
                 ) => ServiceError::DuplicateTrackingId(
                     chunk_data.tracking_id.clone().unwrap_or("".to_string()),
                 ),
-                _ => ServiceError::BadRequest("Failed to insert chunk_metadata".to_string()),
+                _ => ServiceError::BadRequest(format!("Failed to insert chunk_metadata {:}", e)),
             }
         })?;
 
