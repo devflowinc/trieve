@@ -6,6 +6,8 @@ import { A } from "@solidjs/router";
 import { DatasetAndUserContext } from "../Contexts/DatasetAndUserContext";
 
 export const HomeNavbar = () => {
+  const dashboardUrl = import.meta.env.VITE_DASHBOARD_URL as string;
+
   const datasetAndUserContext = useContext(DatasetAndUserContext);
 
   const $envs = datasetAndUserContext.clientConfig;
@@ -26,24 +28,24 @@ export const HomeNavbar = () => {
               </div>
             </Show>
             <div class="flex w-full items-center justify-end space-x-1 sm:space-x-4">
+              <a
+                href={dashboardUrl}
+                class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+              >
+                Dashboard
+              </a>
               <A
                 href="/group"
                 class="hidden text-center min-[420px]:text-lg min-[920px]:block"
               >
                 Groups
               </A>
-              <A
-                href="/files"
-                class="hidden text-center min-[420px]:text-lg min-[920px]:block"
-              >
-                Files
-              </A>
               <Show when={$envs().CREATE_CHUNK_FEATURE}>
                 <A
                   href="/create"
                   class="hidden text-center min-[420px]:text-lg min-[920px]:block"
                 >
-                  Create Doc Chunk
+                  Create Chunk
                 </A>
               </Show>
               <Show when={$envs().DOCUMENT_UPLOAD_FEATURE}>

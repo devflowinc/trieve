@@ -130,14 +130,26 @@ export const DatasetAndUserContextWrapper = (
   });
 
   createEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
     let organization = selectedOrganization();
 
     if (!organization) {
+      const paramsOrg = params.get("organization");
       const storedOrganization = localStorage.getItem("currentOrganization");
+
       const user_orgs = user()?.orgs;
+
       if (user_orgs && user_orgs.length > 0) {
         organization = user_orgs[0];
-        if (storedOrganization) {
+        if (paramsOrg) {
+          const foundParamsOrg = user_orgs.find((org) => org.id === paramsOrg);
+          if (foundParamsOrg) {
+            organization = foundParamsOrg;
+          } else {
+            window.history.pushState({}, "", `${window.location.pathname}`);
+          }
+        } else if (storedOrganization) {
           const storedOrgJson = JSON.parse(
             storedOrganization,
           ) as OrganizationDTO;
@@ -157,7 +169,7 @@ export const DatasetAndUserContextWrapper = (
       const params = new URLSearchParams(window.location.search);
 
       params.set("organization", organization.id);
-      window.history.replaceState(
+      window.history.pushState(
         {},
         "",
         `${window.location.pathname}?${params.toString()}`,
@@ -199,7 +211,14 @@ export const DatasetAndUserContextWrapper = (
           const paramsDataset = params.get("dataset");
           const storedDataset = localStorage.getItem("currentDataset");
 
-          if (storedDataset !== null) {
+          if (paramsDataset !== null) {
+            const foundParamsDataset = data.find(
+              (d) => d.dataset.id === paramsDataset,
+            );
+            if (foundParamsDataset) {
+              newDataset = foundParamsDataset;
+            }
+          } else if (storedDataset !== null) {
             const storedDatasetJson = JSON.parse(
               storedDataset,
             ) as DatasetAndUsageDTO;
@@ -207,13 +226,6 @@ export const DatasetAndUserContextWrapper = (
               data.find((d) => d.dataset.id === storedDatasetJson.dataset.id)
             ) {
               newDataset = storedDatasetJson;
-            }
-          } else if (paramsDataset !== null) {
-            const foundParamsDataset = data.find(
-              (d) => d.dataset.id === paramsDataset,
-            );
-            if (foundParamsDataset) {
-              newDataset = foundParamsDataset;
             }
           }
 

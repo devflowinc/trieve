@@ -4,17 +4,30 @@ import { useNavigate } from "@solidjs/router";
 import { IoLogOutOutline, IoOpenOutline } from "solid-icons/io";
 import { AiOutlinePlus, AiOutlineUser } from "solid-icons/ai";
 import CreateNewOrgModal from "./CreateNewOrgModal";
+import { DatasetContext } from "../contexts/DatasetContext";
 
 export const Sidebar = () => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
   const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
   const chatUiURL = import.meta.env.VITE_CHAT_UI_URL as string;
+
   const navigate = useNavigate();
+
   const userContext = useContext(UserContext);
+  const datasetContext = useContext(DatasetContext);
 
   const [showNewOrgModal, setShowNewOrgModal] = createSignal(false);
 
   const organizations = createMemo(() => userContext?.user?.()?.orgs ?? []);
+
+  // Construct ?organization=7136f468-fedb-4b50-a689-cbf94e01d629&dataset=674c7d49-132e-4d94-8b0e-3c8f898eda49 URL
+  const orgDatasetParams = createMemo(() => {
+    const orgId = userContext.selectedOrganizationId?.();
+    const datasetId = datasetContext.dataset?.()?.id;
+    return orgId && datasetId
+      ? `?organization=${orgId}&dataset=${datasetId}`
+      : "";
+  });
 
   return (
     <>
@@ -55,12 +68,18 @@ export const Sidebar = () => {
             <h5 class="my-2 font-semibold text-neutral-600">Admin Tools</h5>
             <div class="flex flex-col items-start space-y-1">
               <div class="flex items-center text-neutral-800 hover:text-fuchsia-800">
-                <a href={searchUiURL} class="flex items-center">
+                <a
+                  href={`${searchUiURL}${orgDatasetParams()}`}
+                  class="flex items-center"
+                >
                   Search <IoOpenOutline class="ml-1 inline-block h-4 w-4" />
                 </a>
               </div>
               <div class="flex items-center text-neutral-800 hover:text-fuchsia-800">
-                <a href={chatUiURL} class="flex items-center">
+                <a
+                  href={`${chatUiURL}${orgDatasetParams()}`}
+                  class="flex items-center"
+                >
                   <span>RAG chat</span>{" "}
                   <IoOpenOutline class="ml-1 inline-block h-4 w-4" />
                 </a>
