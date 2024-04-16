@@ -3,6 +3,8 @@ import { Show, createSignal, useContext } from "solid-js";
 import { DatasetAndUserContext } from "../Contexts/DatasetAndUserContext";
 
 export const Navbar = () => {
+  const dashboardUrl = import.meta.env.VITE_DASHBOARD_URL as string;
+
   const datasetAndUserContext = useContext(DatasetAndUserContext);
 
   const $envs = datasetAndUserContext.clientConfig;
@@ -32,24 +34,24 @@ export const Navbar = () => {
               </div>
             </a>
             <div class="flex w-full items-center justify-end space-x-1 sm:space-x-4">
+              <a
+                href={dashboardUrl}
+                class="hidden text-center min-[420px]:text-lg min-[920px]:block"
+              >
+                Dashboard
+              </a>
               <A
                 href="/group"
                 class="hidden text-center min-[420px]:text-lg min-[920px]:block"
               >
                 Groups
               </A>
-              <A
-                href="/files"
-                class="hidden text-center min-[420px]:text-lg min-[920px]:block"
-              >
-                Files
-              </A>
               <Show when={$envs().CREATE_CHUNK_FEATURE}>
                 <A
                   href="/create"
                   class="hidden text-center min-[420px]:text-lg min-[920px]:block"
                 >
-                  Create Doc Chunk
+                  Create Chunk
                 </A>
               </Show>
               <Show when={$envs().DOCUMENT_UPLOAD_FEATURE}>
@@ -118,7 +120,7 @@ export const Navbar = () => {
               href="/create"
               class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
             >
-              Create Doc Chunk
+              Create Chunk
             </a>
           </Show>
           <Show when={$envs().DOCUMENT_UPLOAD_FEATURE}>

@@ -15,7 +15,7 @@ import {
   Show,
   useContext,
 } from "solid-js";
-import { FiSettings } from "solid-icons/fi";
+import { FiLink, FiSettings } from "solid-icons/fi";
 import { FullScreenModal } from "../Atoms/FullScreenModal";
 import { OnScreenThemeModeController } from "../Atoms/OnScreenThemeModeController";
 import { AiFillGithub } from "solid-icons/ai";
@@ -37,6 +37,7 @@ export interface SidebarProps {
 }
 
 export const Sidebar = (props: SidebarProps) => {
+  const dashboardUrl = import.meta.env.VITE_DASHBOARD_URL as string;
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
   const [editingIndex, setEditingIndex] = createSignal(-1);
@@ -233,6 +234,13 @@ export const Sidebar = (props: SidebarProps) => {
             <p class="text-2xl">/</p>
             <DatasetSelectBox />
           </div>
+          <a
+            href={dashboardUrl}
+            class="flex w-full items-center space-x-4 rounded-md px-3 py-2 hover:bg-neutral-200 disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-400 dark:hover:bg-neutral-700"
+          >
+            <FiLink class="h-6 w-6" />
+            <div>Dashboard</div>
+          </a>
           <button
             disabled={userContext.user?.() === null}
             class="flex w-full items-center space-x-4 rounded-md px-3 py-2 hover:bg-neutral-200 disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-400 dark:hover:bg-neutral-700"
