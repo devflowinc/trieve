@@ -249,6 +249,12 @@ export const availableEmbeddingModels = [
     dimension: 768,
   },
   {
+    id: "bge-m3",
+    name: "bge-m3 (securely hosted by Trieve)",
+    url: "https://embedding.trieve.ai/bge-m3",
+    dimension: 1024,
+  },
+  {
     id: "text-embedding-3-small",
     name: "text-embedding-3-small (hosted by OpenAI)",
     url: "https://api.openai.com/v1",
