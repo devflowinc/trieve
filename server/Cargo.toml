@@ -26,10 +26,6 @@ name = "file-worker"
 path = "src/bin/file-worker.rs"
 
 [[bin]]
-name = "qdrant-worker"
-path = "src/bin/qdrant-worker.rs"
-
-[[bin]]
 name = "redoc_ci"
 path = "src/bin/redoc_ci.rs"
 

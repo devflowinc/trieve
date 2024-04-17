@@ -1,48 +1,42 @@
 use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
+use itertools::izip;
+use qdrant_client::qdrant::{PointStruct, Vector};
 use sentry::{Hub, SentryFutureExt};
 use signal_hook::consts::SIGTERM;
+use std::collections::HashMap;
 use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
-use trieve_server::data::models::{self, ChunkMetadata, Event, QdrantMessage, PointStructData,  QdrantPayload, ServerDatasetConfiguration};
+use trieve_server::data::models::{
+    self, ChunkMetadata, Event, QdrantPayload, ServerDatasetConfiguration,
+};
 use trieve_server::errors::ServiceError;
-use trieve_server::handlers::chunk_handler::{UpdateIngestionMessage, UploadIngestionMessage};
+use trieve_server::handlers::chunk_handler::{
+    BulkUploadIngestionMessage, UpdateIngestionMessage, UploadIngestionMessage,
+};
 use trieve_server::handlers::group_handler::dataset_owns_group;
 use trieve_server::operators::chunk_operator::{
+    bulk_insert_chunk_metadata_query, bulk_revert_insert_chunk_metadata_query,
     get_metadata_from_point_ids, get_qdrant_id_from_chunk_id_query, insert_chunk_metadata_query,
     insert_duplicate_chunk_metadata_query, update_chunk_metadata_query,
 };
 use trieve_server::operators::event_operator::create_event_query;
-use trieve_server::operators::model_operator::{create_embeddings, get_sparse_vector};
+use trieve_server::operators::model_operator::{create_embeddings, get_sparse_vectors};
 use trieve_server::operators::parse_operator::{
     average_embeddings, coarse_doc_chunker, convert_html_to_text,
 };
-use trieve_server::operators::qdrant_operator::{get_qdrant_connection, update_qdrant_point_query};
+use trieve_server::operators::qdrant_operator::{
+    bulk_create_new_qdrant_points_query, update_qdrant_point_query,
+};
 use trieve_server::operators::search_operator::global_unfiltered_top_match_query;
 use trieve_server::{establish_connection, get_env};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(untagged)]
 pub enum IngestionMessage {
-    Upload(UploadIngestionMessage),
+    BulkUpload(BulkUploadIngestionMessage),
     Update(UpdateIngestionMessage),
-}
-
-impl IngestionMessage {
-    fn get_dataset_id(&self) -> uuid::Uuid {
-        match self {
-            IngestionMessage::Update(message) => message.dataset_id,
-            IngestionMessage::Upload(message) => message.dataset_id,
-        }
-    }
-
-    fn get_chunkmetadata_id(&self) -> uuid::Uuid {
-        match self {
-            IngestionMessage::Update(message) => message.chunk_metadata.id,
-            IngestionMessage::Upload(message) => message.ingest_specific_chunk_metadata.id,
-        }
-    }
 }
 
 fn main() {
@@ -238,21 +232,15 @@ async fn ingestion_worker(
         let ingestion_message: IngestionMessage =
             serde_json::from_str(&serialized_message).expect("Failed to parse ingestion message");
         match ingestion_message.clone() {
-            IngestionMessage::Upload(payload) => {
-                match upload_chunk(payload.clone(), web_pool.clone(), payload.dataset_config, redis_pool.clone()).await
-                {
-                    Ok(_) => {
-                        log::info!(
-                            "Uploaded chunk: {:?}",
-                            payload.ingest_specific_chunk_metadata.id
-                        );
+            IngestionMessage::BulkUpload(payload) => {
+                match bulk_upload_chunks(payload.clone(), web_pool.clone()).await {
+                    Ok(chunk_ids) => {
+                        log::info!("Uploaded {:} chunks", chunk_ids.len());
 
                         let _ = create_event_query(
                             Event::from_details(
-                                payload.ingest_specific_chunk_metadata.dataset_id,
-                                models::EventType::ChunkUploaded {
-                                    chunk_id: payload.ingest_specific_chunk_metadata.id,
-                                },
+                                payload.dataset_id,
+                                models::EventType::ChunksUploaded { chunk_ids },
                             ),
                             web_pool.clone(),
                         )
@@ -333,13 +321,225 @@ async fn ingestion_worker(
     }
 }
 
-#[tracing::instrument(skip(payload, web_pool, dataset_config))]
+pub async fn bulk_upload_chunks(
+    payload: BulkUploadIngestionMessage,
+    web_pool: actix_web::web::Data<models::Pool>,
+) -> Result<Vec<uuid::Uuid>, ServiceError> {
+    let dataset_config = payload.dataset_configuration;
+
+    // Being blocked out because it is difficult to create multiple split_avg embeddings in batch
+    let split_average_being_used = payload
+        .ingestion_messages
+        .iter()
+        .any(|message| message.chunk.split_avg.unwrap_or(false));
+
+    // Being blocked out because it adds complications with
+    // Duplicates being filtered out and trying to relate
+    // them back to the original messages, especially dangerous
+    // since chunk_id/tracking_id might change if there is some duplicate update logic
+    let raw_vectors_being_used = payload
+        .ingestion_messages
+        .iter()
+        .any(|message| message.chunk.chunk_vector.is_some());
+
+    let upsert_by_tracking_id_being_used = payload
+        .ingestion_messages
+        .iter()
+        .any(|message| message.upsert_by_tracking_id);
+
+    if raw_vectors_being_used
+        && split_average_being_used
+        && dataset_config.DUPLICATE_DISTANCE_THRESHOLD < 1.0
+        && dataset_config.COLLISIONS_ENABLED
+        && upsert_by_tracking_id_being_used
+    {
+        let mut chunk_ids = vec![];
+        // Split average or Collisions
+        for message in payload.ingestion_messages {
+            let upload_chunk_result = upload_chunk(message, web_pool.clone()).await;
+
+            if let Ok(chunk_uuid) = upload_chunk_result {
+                chunk_ids.push(chunk_uuid);
+            }
+        }
+        return Ok(chunk_ids);
+    }
+
+    let ingestion_data: Vec<(
+        ChunkMetadata,
+        Option<uuid::Uuid>,
+        Option<Vec<uuid::Uuid>>,
+        bool,
+    )> = payload
+        .ingestion_messages
+        .iter()
+        .map(|message| {
+            let content = if message.chunk.convert_html_to_text.unwrap_or(true) {
+                convert_html_to_text(&message.chunk.chunk_html.clone().unwrap_or_default())
+            } else {
+                message.chunk.chunk_html.clone().unwrap_or_default()
+            };
+
+            let qdrant_point_id = message
+                .ingest_specific_chunk_metadata
+                .qdrant_point_id
+                .unwrap_or(uuid::Uuid::new_v4());
+
+            let chunk_tag_set = message
+                .chunk
+                .tag_set
+                .clone()
+                .map(|tag_set| tag_set.join(","));
+
+            let timestamp = {
+                message
+                    .chunk
+                    .time_stamp
+                    .clone()
+                    .map(|ts| -> Option<NaiveDateTime> {
+                        ts.parse::<DateTimeUtc>()
+                            .ok()
+                            .map(|date| date.0.with_timezone(&chrono::Local).naive_local())
+                    })
+                    .flatten()
+            };
+
+            let chunk_tracking_id = message
+                .chunk
+                .tracking_id
+                .clone()
+                .filter(|chunk_tracking| !chunk_tracking.is_empty());
+
+            let chunk_metadata = ChunkMetadata {
+                id: message.ingest_specific_chunk_metadata.id,
+                content: content.clone(),
+                link: message.chunk.link.clone(),
+                qdrant_point_id: Some(qdrant_point_id),
+                created_at: chrono::Utc::now().naive_local(),
+                updated_at: chrono::Utc::now().naive_local(),
+                tag_set: chunk_tag_set,
+                chunk_html: message.chunk.chunk_html.clone(),
+                metadata: message.chunk.metadata.clone(),
+                tracking_id: chunk_tracking_id,
+                time_stamp: timestamp,
+                dataset_id: payload.dataset_id,
+                weight: message.chunk.weight.unwrap_or(0.0),
+            };
+
+            (
+                chunk_metadata,
+                message.chunk.file_id,
+                message.chunk.group_ids.clone(),
+                message.upsert_by_tracking_id,
+            )
+        })
+        .collect();
+
+    let inserted_chunk_metadatas =
+        bulk_insert_chunk_metadata_query(ingestion_data, payload.dataset_id, web_pool.clone())
+            .await?;
+
+    if inserted_chunk_metadatas.is_empty() {
+        // All collisions
+        return Ok(vec![]);
+    }
+
+    // Only embed the things we get returned from here, this reduces the number of times we embed
+    // data that are just duplicates
+    let all_content: Vec<String> = inserted_chunk_metadatas
+        .iter()
+        .map(|(chunk_metadata, _, _, _)| {
+            // handle
+            convert_html_to_text(
+                &chunk_metadata
+                    .chunk_html
+                    .clone()
+                    .unwrap_or(chunk_metadata.content.clone()),
+            )
+        })
+        .collect();
+
+    // Assuming split average is false, Assume Explicit Vectors don't exist
+    let embedding_vectors = create_embeddings(all_content.clone(), "doc", dataset_config.clone())
+        .await
+        .map_err(|err| {
+            ServiceError::InternalServerError(format!("Failed to create embeddings: {:?}", err))
+        })?;
+
+    let splade_vectors = if dataset_config.FULLTEXT_ENABLED {
+        get_sparse_vectors(all_content, "doc").await
+    } else {
+        let content_size = all_content.len();
+
+        Ok(std::iter::repeat(vec![(0, 0.0)])
+            .take(content_size)
+            .collect())
+    }?;
+
+    let qdrant_points = izip!(
+        inserted_chunk_metadatas.clone(),
+        embedding_vectors.iter(),
+        splade_vectors.iter(),
+    )
+    .filter_map(
+        |((chunk_metadata, _, group_ids, _), embedding_vector, splade_vector)| {
+            let qdrant_point_id = chunk_metadata.qdrant_point_id.clone();
+
+            let payload = QdrantPayload::new(chunk_metadata, group_ids, None)
+                .try_into()
+                .expect("A json! Value must always be a valid Payload");
+
+            let vector_name = match embedding_vector.len() {
+                384 => "384_vectors",
+                512 => "512_vectors",
+                768 => "768_vectors",
+                1024 => "1024_vectors",
+                3072 => "3072_vectors",
+                1536 => "1536_vectors",
+                _ => return None,
+            };
+
+            let vector_payload = HashMap::from([
+                (
+                    vector_name.to_string(),
+                    Vector::from(embedding_vector.clone()),
+                ),
+                (
+                    "sparse_vectors".to_string(),
+                    Vector::from(splade_vector.clone()),
+                ),
+            ]);
+
+            // If qdrant_point_id does not exist, does not get written to qdrant
+            qdrant_point_id
+                .map(|point_id| PointStruct::new(point_id.to_string(), vector_payload, payload))
+        },
+    )
+    .collect();
+
+    let create_point_result =
+        bulk_create_new_qdrant_points_query(qdrant_points, dataset_config.clone()).await;
+
+    let inserted_chunk_metadata_ids = inserted_chunk_metadatas
+        .iter()
+        .map(|(chunk_metadata, _, _, _)| chunk_metadata.id)
+        .collect();
+
+    if let Err(err) = create_point_result {
+        bulk_revert_insert_chunk_metadata_query(inserted_chunk_metadata_ids, web_pool.clone())
+            .await?;
+
+        return Err(err);
+    }
+
+    Ok(inserted_chunk_metadata_ids)
+}
+
+#[tracing::instrument(skip(payload, web_pool))]
 async fn upload_chunk(
     mut payload: UploadIngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
-    dataset_config: ServerDatasetConfiguration,
-    redis_pool: actix_web::web::Data<models::RedisPool>
-) -> Result<(), ServiceError> {
+) -> Result<uuid::Uuid, ServiceError> {
     let tx_ctx = sentry::TransactionContext::new(
         "ingestion worker upload_chunk",
         "ingestion worker upload_chunk",
@@ -347,11 +547,9 @@ async fn upload_chunk(
     let transaction = sentry::start_transaction(tx_ctx);
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
 
-    let mut qdrant_point_id = payload
-        .ingest_specific_chunk_metadata
-        .qdrant_point_id
-        .unwrap_or(uuid::Uuid::new_v4());
+    let dataset_config = payload.dataset_config;
 
+    let mut qdrant_point_id = uuid::Uuid::new_v4();
     let content = match payload.chunk.convert_html_to_text.unwrap_or(true) {
         true => convert_html_to_text(&payload.chunk.chunk_html.clone().unwrap_or_default()),
         false => payload.chunk.chunk_html.clone().unwrap_or_default(),
@@ -434,14 +632,13 @@ async fn upload_chunk(
     };
 
     let splade_vector = if dataset_config.FULLTEXT_ENABLED {
-        match get_sparse_vector(&content.clone(), "doc").await {
-            Ok(v) => v,
+        match get_sparse_vectors(vec![content], "doc").await {
+            Ok(v) => v.first().expect("First vector should exist").clone(),
             Err(_) => vec![(0, 0.0)],
         }
     } else {
         vec![(0, 0.0)]
     };
-    // let splade_vector = vec![(0, 0.0)];
 
     let mut collision: Option<uuid::Uuid> = None;
 
@@ -488,7 +685,7 @@ async fn upload_chunk(
     }
 
     //if collision is not nil, insert chunk with collision
-    if collision.is_some() {
+    let chunk_metadata_id = if collision.is_some() {
         let update_collision_span = transaction.start_child(
             "update_collision",
             "update_qdrant_point_query and insert_duplicate_chunk_metadata_query",
@@ -524,6 +721,7 @@ async fn upload_chunk(
         })?;
 
         update_collision_span.finish();
+        chunk_metadata.id
     }
     //if collision is nil and embedding vector is some, insert chunk with no collision
     else {
@@ -548,41 +746,50 @@ async fn upload_chunk(
 
         qdrant_point_id = inserted_chunk.qdrant_point_id.unwrap_or(qdrant_point_id);
 
-        let qdrant_collection = dataset_config.QDRANT_COLLECTION_NAME;
-        let qdrant_url = &dataset_config.QDRANT_URL;
+        let payload = QdrantPayload::new(chunk_metadata, payload.chunk.group_ids, None)
+            .try_into()
+            .expect("A json! Value must always be a valid Payload");
 
-        let redis_key = format!("{};{}", qdrant_url, qdrant_collection);
-        let qdrant_message = QdrantMessage {
-            point_struct_data: PointStructData {
-                point_id: qdrant_point_id,
-                splade_vector,
-                dense_vector: embedding_vector.clone(),
-                payload: QdrantPayload::new(chunk_metadata.clone(), payload.chunk.group_ids.clone(), Some(payload.dataset_id)),
-            },
-            chunk_id: inserted_chunk.id,
-            upsert_by_tracking_id : payload.upsert_by_tracking_id,
-            dataset_id: payload.dataset_id
+        let vector_name = match embedding_vector.len() {
+            384 => "384_vectors",
+            512 => "512_vectors",
+            768 => "768_vectors",
+            1024 => "1024_vectors",
+            3072 => "3072_vectors",
+            1536 => "1536_vectors",
+            _ => {
+                return Err(ServiceError::BadRequest(
+                    "Invalid embedding vector size".into(),
+                ))
+            }
         };
 
-        let qdrant_payload_message = serde_json::to_string(&qdrant_message).map_err(|_| {
-            ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
-        })?;
+        let vector_payload = HashMap::from([
+            (vector_name.to_string(), Vector::from(embedding_vector)),
+            ("sparse_vectors".to_string(), Vector::from(splade_vector)),
+        ]);
 
-        let mut redis_conn = redis_pool
-            .get()
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        let point = PointStruct::new(qdrant_point_id.clone().to_string(), vector_payload, payload);
+        let insert_tx = transaction.start_child(
+            "calling_create_new_qdrant_point_query",
+            "calling_create_new_qdrant_point_query",
+        );
 
-        let _ = redis::cmd("lpush")
-            .arg(&redis_key)
-            .arg(&qdrant_payload_message)
-            .query_async(&mut *redis_conn)
+        if let Err(e) = bulk_create_new_qdrant_points_query(vec![point], dataset_config)
             .await
-            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-    }
+        {
+            bulk_revert_insert_chunk_metadata_query(vec![inserted_chunk.id], web_pool.clone()).await?;
+
+            return Err(e);
+        };
+
+        insert_tx.finish();
+
+        inserted_chunk.id
+    };
 
     transaction.finish();
-    Ok(())
+    Ok(chunk_metadata_id)
 }
 
 #[tracing::instrument(skip(web_pool))]
@@ -628,8 +835,8 @@ async fn update_chunk(
         .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
 
     let splade_vector = if server_dataset_config.FULLTEXT_ENABLED {
-        match get_sparse_vector(&content, "doc").await {
-            Ok(v) => v,
+        match get_sparse_vectors(vec![content], "doc").await {
+            Ok(v) => v.first().expect("First vector should exist").clone(),
             Err(_) => vec![(0, 0.0)],
         }
     } else {
@@ -709,37 +916,61 @@ pub async fn readd_error_to_queue(
     web_pool: actix_web::web::Data<models::Pool>,
     redis_pool: actix_web::web::Data<models::RedisPool>,
 ) -> Result<(), ServiceError> {
-    if let ServiceError::DuplicateTrackingId(tracking_id) = error.clone() {
-        let _ = create_event_query(
-            Event::from_details(
-                message.get_dataset_id(),
-                models::EventType::ChunkActionFailed {
-                    chunk_id: message.get_chunkmetadata_id(),
-                    error: format!(
-                        "Failed to upload chunk with tracking_id: {:?}: {:?}",
-                        tracking_id, error
-                    ),
-                },
-            ),
-            web_pool.clone(),
-        )
-        .await
-        .map_err(|err| {
-            log::error!("Failed to create event: {:?}", err);
-        });
-
+    if let ServiceError::DuplicateTrackingId(_) = error {
+        // Should No longer be triggered
+        // let _ = create_event_query(
+        //     Event::from_details(
+        //         message.get_dataset_id(),
+        //         models::EventType::ChunkActionFailed {
+        //             chunk_id: message.get_chunkmetadata_id(),
+        //             error: format!(
+        //                 "Failed to upload chunk with tracking_id: {:?}: {:?}",
+        //                 tracking_id, error
+        //             ),
+        //         },
+        //     ),
+        //     web_pool.clone(),
+        // )
+        // .await
+        // .map_err(|err| {
+        //     log::error!("Failed to create event: {:?}", err);
+        // });
+        log::info!("Duplicate");
         return Ok(());
     }
 
-    if let IngestionMessage::Upload(mut payload) = message {
+    if let IngestionMessage::BulkUpload(mut payload) = message {
         let old_paylaod_message = serde_json::to_string(&payload).map_err(|_| {
             ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
         })?;
 
-        payload.ingest_specific_chunk_metadata.attempt_number += 1;
+        payload.attempt_number += 1;
 
-        if payload.ingest_specific_chunk_metadata.attempt_number == 3 {
+        if payload.attempt_number == 3 {
             log::error!("Failed to insert data 3 times quitting {:?}", error);
+            let count = payload.ingestion_messages.len();
+            let chunk_ids = payload.ingestion_messages.iter().map(|m| {
+                m.ingest_specific_chunk_metadata.id
+            }).collect();
+
+            let _ = create_event_query(
+                Event::from_details(
+                    payload.dataset_id,
+                    models::EventType::BulkChunkActionFailed {
+                        chunk_ids,
+                        error: format!(
+                            "Failed to upload {:} chunks: {:?}",
+                            count, error
+                        ),
+                    },
+                ),
+                web_pool.clone(),
+            )
+            .await
+            .map_err(|err| {
+                log::error!("Failed to create event: {:?}", err);
+            });
+
             return Err(ServiceError::InternalServerError(format!(
                 "Failed to create new qdrant point: {:?}",
                 error
@@ -758,7 +989,7 @@ pub async fn readd_error_to_queue(
         log::error!(
             "Failed to insert data, re-adding {:?} retry: {:?}",
             error,
-            payload.ingest_specific_chunk_metadata.attempt_number
+            payload.attempt_number
         );
 
         let _ = redis::cmd("LREM")

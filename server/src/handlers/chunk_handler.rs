@@ -157,6 +157,14 @@ pub struct UploadIngestionMessage {
     pub upsert_by_tracking_id: bool,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BulkUploadIngestionMessage {
+    pub attempt_number: usize,
+    pub dataset_id: uuid::Uuid,
+    pub dataset_configuration: ServerDatasetConfiguration,
+    pub ingestion_messages: Vec<UploadIngestionMessage>,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[schema(example = json!({
     "chunk_html": "<p>Some HTML content</p>",
@@ -277,7 +285,7 @@ pub async fn create_chunk(
 
     timer.add("got redis connection");
 
-    let ingestion_messages = create_chunk_metadata(
+    let (ingestion_message, chunk_metadatas) = create_chunk_metadata(
         chunks,
         dataset_org_plan_sub.dataset.id,
         server_dataset_configuration,
@@ -285,23 +293,20 @@ pub async fn create_chunk(
     )
     .await?;
 
-    let serialized_messages: Vec<String> = ingestion_messages
-        .0
-        .iter()
-        .filter_map(|msg| serde_json::to_string(&msg).ok())
-        .collect();
+    let serialized_message: String = serde_json::to_string(&ingestion_message).map_err(|_| {
+        ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
+    })?;
 
     let pos_in_queue = redis::cmd("rpush")
         .arg("ingestion")
-        .arg(&serialized_messages)
+        .arg(&serialized_message)
         .query_async(&mut *redis_conn)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     let response = match create_chunk_data.into_inner() {
         CreateChunkData::Single(_) => ReturnQueuedChunk::Single(SingleQueuedChunkResponse {
-            chunk_metadata: ingestion_messages
-            .1
+            chunk_metadata: chunk_metadatas
                 .get(0)
                 .ok_or(ServiceError::BadRequest(
                     "Failed to queue a single chunk due to deriving 0 ingestion_messages from the request data".to_string(),
@@ -310,7 +315,7 @@ pub async fn create_chunk(
             pos_in_queue,
         }),
         CreateChunkData::Batch(_) => ReturnQueuedChunk::Batch(BatchQueuedChunkResponse {
-            chunk_metadata: ingestion_messages.1,
+            chunk_metadata: chunk_metadatas,
             pos_in_queue,
         }),
     };
