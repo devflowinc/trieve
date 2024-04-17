@@ -364,61 +364,46 @@ pub async fn insert_chunk_metadata_query(
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl::*;
 
-    if upsert_by_tracking_id && chunk_data.tracking_id.is_some() {
-        if let Some(existing_chunk) = get_optional_metadata_from_tracking_id_query(
-            chunk_data
-                .tracking_id
-                .clone()
-                .expect("tracking_id must be Some at this point"),
-            chunk_data.dataset_id,
-            pool.clone(),
-        )
-        .await?
-        {
-            let mut update_chunk = chunk_data.clone();
-            update_chunk.id = existing_chunk.id;
-            update_chunk.created_at = existing_chunk.created_at;
-            update_chunk.qdrant_point_id = existing_chunk.qdrant_point_id;
-
-            let updated_chunk = update_chunk_metadata_query(
-                update_chunk,
-                file_uuid,
-                group_ids,
-                dataset_uuid,
+    if let Some(other_tracking_id) = chunk_data.tracking_id.clone() {
+        if upsert_by_tracking_id {
+            if let Some(existing_chunk) = get_optional_metadata_from_tracking_id_query(
+                other_tracking_id.clone(),
+                chunk_data.dataset_id,
                 pool.clone(),
             )
-            .await?;
+            .await?
+            {
+                let mut update_chunk = chunk_data.clone();
+                update_chunk.id = existing_chunk.id;
+                update_chunk.created_at = existing_chunk.created_at;
+                update_chunk.qdrant_point_id = existing_chunk.qdrant_point_id;
 
-            return Ok(updated_chunk);
+                let updated_chunk = update_chunk_metadata_query(
+                    update_chunk,
+                    file_uuid,
+                    group_ids,
+                    dataset_uuid,
+                    pool.clone(),
+                )
+                .await?;
+
+                return Ok(updated_chunk);
+            }
         }
     }
 
     let mut conn = pool.get().await.expect("Failed to get connection to db");
 
-    if let Some(other_tracking_id) = chunk_data.tracking_id.clone() {
-        let existing_chunk = get_optional_metadata_from_tracking_id_query(
-            other_tracking_id.clone(),
-            chunk_data.dataset_id,
-            pool.clone(),
-        )
-        .await?;
-
-        if existing_chunk.is_some() {
-            log::info!("Avoided potential write conflict by pre-checking tracking_id");
-            return Err(ServiceError::DuplicateTrackingId(other_tracking_id));
-        }
-    }
-
-    let inserted_chunk = diesel::insert_into(chunk_metadata)
+    let data_updated = diesel::insert_into(chunk_metadata)
         .values(&chunk_data)
-        .get_result::<ChunkMetadata>(&mut conn)
+        .on_conflict_do_nothing()
+        .execute(&mut conn)
         .await
         .map_err(|e| {
             sentry::capture_message(
                 &format!("Failed to insert chunk_metadata: {:?}", e),
                 sentry::Level::Error,
             );
-            log::error!("Failed to insert chunk_metadata: {:?}", e);
             match e {
                 diesel::result::Error::DatabaseError(
                     diesel::result::DatabaseErrorKind::UniqueViolation,
@@ -426,13 +411,24 @@ pub async fn insert_chunk_metadata_query(
                 ) => ServiceError::DuplicateTrackingId(
                     chunk_data.tracking_id.clone().unwrap_or("".to_string()),
                 ),
-                _ => ServiceError::BadRequest(format!("Failed to insert chunk_metadata {:}", e)),
+                diesel::result::Error::NotFound => ServiceError::DuplicateTrackingId(
+                    chunk_data.tracking_id.clone().unwrap_or("".to_string()),
+                ),
+                _ => {
+                    log::error!("Failed to insert chunk_metadata: {:?}", e);
+                    ServiceError::BadRequest(format!("Failed to insert chunk_metadata {:}", e))
+                }
             }
         })?;
 
+    if data_updated == 0 {
+        return Err(ServiceError::DuplicateTrackingId(chunk_data.tracking_id.clone().unwrap_or("".to_string())));
+    }
+
     if let Some(file_uuid) = file_uuid {
         diesel::insert_into(chunk_files_columns::chunk_files)
-            .values(&ChunkFile::from_details(inserted_chunk.id, file_uuid))
+            .values(&ChunkFile::from_details(chunk_data.id, file_uuid))
+            .on_conflict_do_nothing()
             .execute(&mut conn)
             .await
             .map_err(|e| {
@@ -446,9 +442,10 @@ pub async fn insert_chunk_metadata_query(
             .values(
                 &group_ids
                     .into_iter()
-                    .map(|group_id| ChunkGroupBookmark::from_details(group_id, inserted_chunk.id))
+                    .map(|group_id| ChunkGroupBookmark::from_details(group_id, chunk_data.id))
                     .collect::<Vec<ChunkGroupBookmark>>(),
             )
+            .on_conflict_do_nothing()
             .execute(&mut conn)
             .await
             .map_err(|e| {
@@ -486,7 +483,8 @@ pub async fn bulk_revert_insert_chunk_metadata_query(
         })?;
 
     diesel::delete(
-        chunk_files_columns::chunk_files.filter(chunk_files_columns::chunk_id.eq_any(chunk_ids.clone())),
+        chunk_files_columns::chunk_files
+            .filter(chunk_files_columns::chunk_id.eq_any(chunk_ids.clone())),
     )
     .execute(&mut conn)
     .await
