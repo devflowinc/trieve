@@ -180,7 +180,7 @@ pub async fn create_chunks_with_handler(
     let server_dataset_configuration =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
-    let ingestion_messages = create_chunk_metadata(
+    let (ingestion_message, _) = create_chunk_metadata(
         chunks,
         dataset_org_plan_sub.dataset.id,
         server_dataset_configuration,
@@ -188,11 +188,9 @@ pub async fn create_chunks_with_handler(
     )
     .await?;
 
-    let serialized_messages: Vec<String> = ingestion_messages
-        .0
-        .iter()
-        .filter_map(|msg| serde_json::to_string(&msg).ok())
-        .collect();
+    let serialized_messages: String = serde_json::to_string(&ingestion_message).map_err(|_| {
+        ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
+    })?;
 
     if serialized_messages.is_empty() {
         return Err(ServiceError::BadRequest(

@@ -2,7 +2,7 @@ use super::chunk_operator::{
     find_relevant_sentence, get_metadata_and_collided_chunks_from_point_ids_query,
 };
 use super::group_operator::{
-    get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query
+    get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query,
 };
 use super::model_operator::{create_embeddings, cross_encoder};
 use super::qdrant_operator::{
@@ -18,7 +18,7 @@ use crate::handlers::chunk_handler::{
 use crate::handlers::group_handler::{
     SearchOverGroupsData, SearchWithinGroupData, SearchWithinGroupResults,
 };
-use crate::operators::model_operator::get_sparse_vector;
+use crate::operators::model_operator::get_sparse_vectors;
 use crate::operators::qdrant_operator::{get_qdrant_connection, search_qdrant_query};
 use crate::{data::models::Pool, errors::ServiceError};
 use actix_web::web;
@@ -1331,9 +1331,16 @@ pub async fn search_full_text_chunks(
 
     timer.add("start to get sparse vector");
 
-    let sparse_vector = get_sparse_vector(&parsed_query.query, "query")
+    let sparse_vectors = get_sparse_vectors(vec![parsed_query.query.clone()], "query")
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
+
+    let sparse_vector = sparse_vectors
+        .get(0)
+        .ok_or(ServiceError::BadRequest(
+            "Failed to get first vector for sparse query".to_string(),
+        ))?
+        .clone();
 
     timer.add("finish getting sparse vector; start to fetch from qdrant");
 
@@ -1561,10 +1568,19 @@ pub async fn search_full_text_groups(
     config: ServerDatasetConfiguration,
 ) -> Result<SearchWithinGroupResults, actix_web::Error> {
     let data_inner = data.clone();
-    let embedding_vector = get_sparse_vector(&data.query, "query").await?;
+    let sparse_vectors = get_sparse_vectors(vec![data.query.clone()], "query")
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
+
+    let sparse_vector = sparse_vectors
+        .get(0)
+        .ok_or(ServiceError::BadRequest(
+            "Failed to get first vector for sparse query".to_string(),
+        ))?
+        .clone();
 
     let search_chunk_query_results = search_within_chunk_group_query(
-        VectorType::Sparse(embedding_vector),
+        VectorType::Sparse(sparse_vector),
         page,
         pool.clone(),
         data_inner.filters.clone(),
@@ -1619,7 +1635,16 @@ pub async fn search_hybrid_groups(
         ))?
         .clone();
 
-    let sparse_embedding_vector = get_sparse_vector(&data.query, "query").await?;
+    let sparse_vectors = get_sparse_vectors(vec![parsed_query.query.clone()], "query")
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
+
+    let sparse_embedding_vector = sparse_vectors
+        .get(0)
+        .ok_or(ServiceError::BadRequest(
+            "Failed to get first vector for sparse query".to_string(),
+        ))?
+        .clone();
 
     let semantic_future = search_within_chunk_group_query(
         VectorType::Dense(dense_embedding_vector),
@@ -1803,9 +1828,16 @@ pub async fn full_text_search_over_groups(
 ) -> Result<SearchOverGroupsResults, actix_web::Error> {
     timer.add("start to get sparse vector");
 
-    let sparse_vector = get_sparse_vector(&data.query, "query")
+    let sparse_vectors = get_sparse_vectors(vec![parsed_query.query.clone()], "query")
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
+
+    let sparse_vector = sparse_vectors
+        .get(0)
+        .ok_or(ServiceError::BadRequest(
+            "Failed to get first vector for sparse query".to_string(),
+        ))?
+        .clone();
 
     timer.add("finish getting sparse vector; start to fetch from qdrant");
 
@@ -1916,15 +1948,22 @@ pub async fn hybrid_search_over_groups(
     let dense_embedding_vectors_future =
         create_embeddings(vec![data.query.clone()], "query", dataset_config.clone());
 
-    let sparse_embedding_vector_future = get_sparse_vector(&data.query, "query");
+    let sparse_embedding_vector_future = get_sparse_vectors(vec![data.query.clone()], "query");
 
-    let (dense_embedding_vectors, sparse_embedding_vector) = futures::join!(
+    let (dense_embedding_vectors, sparse_embedding_vectors) = futures::join!(
         dense_embedding_vectors_future,
         sparse_embedding_vector_future
     );
 
     let dense_embedding_vectors = dense_embedding_vectors?;
-    let sparse_embedding_vector = sparse_embedding_vector?;
+    let sparse_embedding_vectors = sparse_embedding_vectors?;
+
+    let sparse_embedding_vector = sparse_embedding_vectors
+        .get(0)
+        .ok_or(ServiceError::BadRequest(
+            "Failed to get first vector for sparse query".to_string(),
+        ))?
+        .clone();
 
     let dense_embedding_vector = dense_embedding_vectors
         .get(0)

@@ -322,9 +322,9 @@ impl ChunkMetadata {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IngestSpecificChunkMetadata {
     pub id: uuid::Uuid,
-    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub dataset_config: ServerDatasetConfiguration,
     pub dataset_id: uuid::Uuid,
-    pub attempt_number: usize,
+    pub qdrant_point_id: Option<uuid::Uuid>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Selectable, Insertable, Clone)]
@@ -1063,8 +1063,8 @@ pub enum EventType {
         file_id: uuid::Uuid,
         error: String,
     },
-    ChunkUploaded {
-        chunk_id: uuid::Uuid,
+    ChunksUploaded {
+        chunk_ids: Vec<uuid::Uuid>,
     },
     ChunkActionFailed {
         chunk_id: uuid::Uuid,
@@ -1077,6 +1077,10 @@ pub enum EventType {
         chunk_id: uuid::Uuid,
         qdrant_point_id: uuid::Uuid,
         error: String
+    },
+    BulkChunkActionFailed {
+        chunk_ids: Vec<uuid::Uuid>,
+        error: String,
     }
 }
 
@@ -1085,10 +1089,11 @@ impl EventType {
         match self {
             EventType::FileUploaded { .. } => "file_uploaded".to_string(),
             EventType::FileUploadFailed { .. } => "file_upload_failed".to_string(),
-            EventType::ChunkUploaded { .. } => "chunk_uploaded".to_string(),
+            EventType::ChunksUploaded { .. } => "chunks_uploaded".to_string(),
             EventType::ChunkActionFailed { .. } => "chunk_action_failed".to_string(),
             EventType::ChunkUpdated { .. } => "chunk_updated".to_string(),
             EventType::QdrantUploadFailed { .. } => "qdrant_index_failed".to_string(),
+            EventType::BulkChunkActionFailed { .. } => "bulk_chunk_action_failed".to_string(),
         }
     }
 
@@ -1098,7 +1103,8 @@ impl EventType {
             "chunk_uploaded".to_string(),
             "chunk_action_failed".to_string(),
             "chunk_updated".to_string(),
-            "qdrant_index_failed".to_string()
+            "qdrant_index_failed".to_string(),
+            "bulk_chunk_action_failed".to_string()
         ]
     }
 }
@@ -1112,12 +1118,13 @@ impl From<EventType> for serde_json::Value {
             EventType::FileUploadFailed { file_id, error } => {
                 json!({"file_id": file_id, "error": error})
             }
-            EventType::ChunkUploaded { chunk_id } => json!({"chunk_id": chunk_id}),
+            EventType::ChunksUploaded { chunk_ids } => json!({"chunk_ids": chunk_ids}),
             EventType::ChunkActionFailed { chunk_id, error } => {
                 json!({"chunk_id": chunk_id, "error": error})
             },
             EventType::ChunkUpdated { chunk_id } => json!({"chunk_id": chunk_id}),
             EventType::QdrantUploadFailed { chunk_id, error, .. } => json!({"chunk_id": chunk_id, "error": error}),
+            EventType::BulkChunkActionFailed { chunk_ids, error, .. } => json!({"chunk_ids": chunk_ids, "error": error}),
         }
     }
 }
@@ -2233,20 +2240,4 @@ impl From<UploadFileData> for FileDataDTO {
             group_tracking_id: upload_file_data.group_tracking_id,
         }
     }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PointStructData {
-    pub point_id: uuid::Uuid,
-    pub splade_vector: Vec<(u32, f32)>,
-    pub dense_vector: Vec<f32>,
-    pub payload: QdrantPayload,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct QdrantMessage {
-    pub point_struct_data: PointStructData,
-    pub chunk_id: uuid::Uuid,
-    pub upsert_by_tracking_id: bool,
-    pub dataset_id: uuid::Uuid
 }
