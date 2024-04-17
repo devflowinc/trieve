@@ -83,16 +83,13 @@ export const Sidebar = (props: SidebarProps) => {
     const dataset = userContext.currentDataset?.();
     if (!dataset) return;
 
-    const res = await fetch(`${apiHost}/topic`, {
+    const res = await fetch(`${apiHost}/topic/${props.currentTopic()?.id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
         "TR-Dataset": dataset.dataset.id,
       },
-      credentials: "include",
-      body: JSON.stringify({
-        topic_id: props.currentTopic()?.id,
-      }),
+      credentials: "include"
     });
 
     if (res.ok) {
