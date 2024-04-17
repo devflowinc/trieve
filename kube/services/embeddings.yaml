@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
       - name: jina-embeddings-container
-        image: ghcr.io/huggingface/text-embeddings-inference:86-1.1
+        image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.2
         args: ["--model-id", "jinaai/jina-embeddings-v2-small-en", "--revision", "main"]
         ports:
         - containerPort: 80
@@ -57,7 +57,7 @@ spec:
     spec:
       containers:
       - name: reranker
-        image: ghcr.io/huggingface/text-embeddings-inference:86-1.1
+        image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.2
         args: ["--model-id", "BAAI/bge-reranker-large", "--revision", "refs/pr/4"]
         ports:
         - containerPort: 80
@@ -86,7 +86,7 @@ spec:
     spec:
       containers:
       - name: splade-doc-container
-        image: arguflow/text-embeddings
+        image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.2
         args: ["--model-id", "naver/efficient-splade-VI-BT-large-doc", "--revision", "main", "--pooling", "splade"]
         ports:
         - containerPort: 80
@@ -115,7 +115,7 @@ spec:
     spec:
       containers:
       - name: splade-query-container
-        image: arguflow/text-embeddings
+        image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.2
         args: ["--model-id", "naver/efficient-splade-VI-BT-large-query", "--revision", "main", "--pooling", "splade"]
         ports:
         - containerPort: 80
