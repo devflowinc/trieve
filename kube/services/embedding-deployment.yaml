@@ -13,21 +13,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: bgem3-embeddings-deployment
+  name: jina-embeddings-deployment
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: bgem3-embeddings-server
+      app: jina-embeddings-server
   template:
     metadata:
       labels:
-        app: bgem3-embeddings-server
+        app: jina-embeddings-server
     spec:
       containers:
-      - name: bgem3-embeddings-container
+      - name: jina-embeddings-container
         image: ghcr.io/huggingface/text-embeddings-inference:86-1.1
-        args: ["--model-id", "BAAI/bge-m3", "--revision", "main"]
+        args: ["--model-id", "jinaai/jina-embeddings-v2-small-en", "--revision", "main"]
         ports:
         - containerPort: 80
         volumeMounts:
@@ -43,11 +43,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: bgem3-server
+  name: jina-server
 spec:
   type: LoadBalancer
   ports:
     - port: 5556
       targetPort: 80
   selector:
-    app: bgem3-embeddings-server
+    app: jina-embeddings-server
