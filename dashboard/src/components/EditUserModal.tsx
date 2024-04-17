@@ -1,4 +1,4 @@
-import { Accessor, Show, createEffect, createMemo, useContext } from "solid-js";
+import { Show, createEffect, createMemo, useContext } from "solid-js";
 import { createSignal } from "solid-js";
 import { Dialog, DialogOverlay, DialogPanel, DialogTitle } from "terracotta";
 import { UserContext } from "../contexts/UserContext";
@@ -11,15 +11,15 @@ import {
 import { createToast } from "./ShowToasts";
 
 export interface InviteUserModalProps {
-  editingUser: Accessor<SlimUser | null>;
+  editingUser: SlimUser | null;
   closeModal: () => void;
 }
 
 export const EditUserModal = (props: InviteUserModalProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
-  const [role, setRole] = createSignal<UserRole>(UserRole.User);
   const userContext = useContext(UserContext);
+  const [role, setRole] = createSignal<UserRole>(UserRole.User);
 
   createEffect(() => {
     setRole(fromI32ToUserRole(editingUserRole() ?? 0));
@@ -32,7 +32,7 @@ export const EditUserModal = (props: InviteUserModalProps) => {
   });
 
   const editingUserRole = createMemo(() => {
-    return props.editingUser()?.user_orgs.find((val) => {
+    return props.editingUser?.user_orgs.find((val) => {
       return val.organization_id === userContext.selectedOrganizationId?.();
     })?.role;
   });
@@ -46,7 +46,7 @@ export const EditUserModal = (props: InviteUserModalProps) => {
       },
       body: JSON.stringify({
         organization_id: userContext.selectedOrganizationId?.(),
-        user_id: props.editingUser()?.id,
+        user_id: props.editingUser?.id,
         role: fromUserRoleToI32(role()),
       }),
     }).then((res) => {
@@ -67,7 +67,7 @@ export const EditUserModal = (props: InviteUserModalProps) => {
   };
 
   return (
-    <Show when={props.editingUser()}>
+    <Show when={props.editingUser}>
       <Dialog
         isOpen
         class="fixed inset-0 z-10 overflow-y-auto"

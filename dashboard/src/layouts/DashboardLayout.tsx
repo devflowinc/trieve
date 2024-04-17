@@ -1,4 +1,11 @@
-import { JSX, createEffect, useContext, Switch, Match } from "solid-js";
+import {
+  JSX,
+  createEffect,
+  useContext,
+  Switch,
+  Match,
+  createMemo,
+} from "solid-js";
 import NavBar from "../components/Navbar";
 import { Sidebar } from "../components/Sidebar";
 import { OrgName } from "../components/OrgName";
@@ -25,6 +32,14 @@ export const DashboardLayout = (props: DashboardLayoutProps) => {
     }
   });
 
+  const currentUserRole = createMemo(() => {
+    return (
+      userContext.user?.()?.user_orgs.find((val) => {
+        return val.organization_id === userContext.selectedOrganizationId?.();
+      })?.role ?? 0
+    );
+  });
+
   return (
     <>
       <ShowToasts />
@@ -47,7 +62,27 @@ export const DashboardLayout = (props: DashboardLayoutProps) => {
                 </div>
               </div>
             </Match>
-            <Match when={(userContext.user?.()?.orgs.length ?? 0) > 0}>
+            <Match when={currentUserRole() < 1}>
+              <div class="mt-4 flex h-full w-full items-center justify-center">
+                <div class="text-center">
+                  <h1 class="text-3xl font-semibold text-neutral-800">
+                    You do not have access to this page
+                  </h1>
+                  <p class="mt-4 max-w-7xl text-neutral-700">
+                    You must be an admin or owner to access this page. If you
+                    believe this is an error, please contact one of your
+                    organization's users with a role of admin or owner and ask
+                    them to grant you access.
+                  </p>
+                </div>
+              </div>
+            </Match>
+            <Match
+              when={
+                currentUserRole() >= 1 &&
+                (userContext.user?.()?.orgs.length ?? 0) > 0
+              }
+            >
               <div class="w-full px-12">
                 <div class="my-4 flex flex-col space-y-3 border-b">
                   <OrgName />

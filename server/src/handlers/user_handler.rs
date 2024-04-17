@@ -1,10 +1,10 @@
 use super::auth_handler::LoggedUser;
 use crate::{
-    data::models::{Pool, SlimUser},
+    data::models::{Pool, UserRole},
     errors::ServiceError,
     operators::user_operator::{
         delete_user_api_keys_query, get_user_api_keys_query, get_user_by_id_query,
-        set_user_api_key_query, update_user_query,
+        set_user_api_key_query, update_user_org_role_query,
     },
 };
 use actix_web::{web, HttpResponse};
@@ -12,15 +12,13 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
-pub struct UpdateUserData {
+pub struct UpdateUserOrgRoleData {
     /// The id of the organization to update the user for.
     pub organization_id: uuid::Uuid,
     /// The id of the user to update, if not provided, the auth'ed user will be updated. If provided, the auth'ed user must be an admin (1) or owner (2) of the organization.
     pub user_id: Option<uuid::Uuid>,
-    /// In the sense of a legal name, not a username. The new name to assign to the user, if not provided, the current name will be used.
-    pub name: Option<String>,
     /// Either 0 (user), 1 (admin), or 2 (owner). If not provided, the current role will be used. The auth'ed user must have a role greater than or equal to the role being assigned.
-    pub role: Option<i32>,
+    pub role: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -39,9 +37,9 @@ pub struct GetUserWithChunksData {
     path = "/user",
     context_path = "/api",
     tag = "user",
-    request_body(content = UpdateUserData, description = "JSON request payload to update user information for the auth'ed user", content_type = "application/json"),
+    request_body(content = UpdateUserOrgRoleData, description = "JSON request payload to update user information for the auth'ed user", content_type = "application/json"),
     responses(
-        (status = 200, description = "JSON body representing the updated user information", body = SlimUser),
+        (status = 204, description = "Confirmation that the user's role was updated"),
         (status = 400, description = "Service error relating to updating the user", body = ErrorResponseBody),
     ),
     security(
@@ -50,8 +48,8 @@ pub struct GetUserWithChunksData {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn update_user(
-    data: web::Json<UpdateUserData>,
-    mut user: LoggedUser,
+    data: web::Json<UpdateUserOrgRoleData>,
+    user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, ServiceError> {
     let update_user_data = data.into_inner();
@@ -65,52 +63,44 @@ pub async fn update_user(
         ))?
         .role;
 
-    if let Some(user_id) = update_user_data.user_id {
-        if org_role < 1 {
-            return Err(ServiceError::BadRequest(
-                "You must be an admin to update other users".to_string(),
-            ));
-        }
-        let user_info = get_user_by_id_query(&user_id, pool.clone()).await?;
-
-        let authorized = user_info
-            .1
-            .iter()
-            .zip(user.user_orgs.iter())
-            .any(|(org, user_org)| {
-                org.organization_id == user_org.organization_id && user_org.role >= 1
-            });
-        if authorized {
-            user = SlimUser::from_details(user_info.0, user_info.1, user_info.2);
-        } else {
-            return Err(ServiceError::BadRequest(
-                "You must be in this organization to update other users".to_string(),
-            ));
-        }
-    }
-
-    if update_user_data.role.is_some()
-        && update_user_data
-            .role
-            .expect("Role must not be null after the &&")
-            > org_role
-    {
+    if update_user_data.role > org_role {
         return Err(ServiceError::BadRequest(
-            "Can not grant a user a higher role than yours".to_string(),
+            "Can not grant a user a higher role than that of the requesting user's".to_string(),
         ));
     }
 
-    let new_role = update_user_data.role.map(|role| role.into());
+    if let Some(user_id) = update_user_data.user_id {
+        if org_role < 1 {
+            return Err(ServiceError::BadRequest(
+                "You must have an admin or owner role to update other users".to_string(),
+            ));
+        }
 
-    let slim_user = update_user_query(
-        &user.clone(),
-        &update_user_data.name.clone().or(user.name),
-        new_role,
+        let user_info = get_user_by_id_query(&user_id, pool.clone()).await?;
+
+        let already_in_org = user_info
+            .1
+            .iter()
+            .any(|org| org.organization_id == update_user_data.organization_id);
+
+        if !already_in_org {
+            return Err(ServiceError::BadRequest(
+                "The user who you would like to update the role of must be added to the specified org first before their role can be updated".to_string(),
+            ));
+        }
+    }
+
+    let user_role = UserRole::from(update_user_data.role);
+
+    update_user_org_role_query(
+        update_user_data.user_id.unwrap_or(user.id),
+        update_user_data.organization_id,
+        user_role,
         pool,
     )
     .await?;
 
-    Ok(HttpResponse::Ok().json(slim_user))
+    Ok(HttpResponse::NoContent().finish())
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

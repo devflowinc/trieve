@@ -7,19 +7,21 @@ export interface ToastDetail {
   type: "success" | "error" | "info";
   title: string;
   message?: string;
+  timeout?: number;
 }
 
 export interface ToastEvent {
   detail: ToastDetail;
 }
 
-export const createToast = ({ type, message, title }: ToastDetail) => {
+export const createToast = ({ type, message, title, timeout }: ToastDetail) => {
   window.dispatchEvent(
     new CustomEvent("show-toast", {
       detail: {
         type,
         title,
         message,
+        timeout,
       },
     }),
   );
@@ -33,7 +35,19 @@ const ShowToasts = () => {
 
     const showToastEvent = (event: Event) => {
       const toastEvent = event as unknown as ToastEvent;
-      setToastDetails((prev) => prev.concat(toastEvent.detail));
+      setToastDetails((prev) => {
+        if (
+          prev.find(
+            (prevToastDetail) =>
+              prevToastDetail.message === toastEvent.detail.message,
+          )
+        ) {
+          return prev;
+        }
+        return prev.concat(toastEvent.detail);
+      });
+
+      const timeoutMs = toastEvent.detail.timeout ?? 1500;
 
       timeOutId = setTimeout(() => {
         setToastDetails((prev) =>
@@ -41,7 +55,7 @@ const ShowToasts = () => {
             (prevToastDetail) => prevToastDetail !== toastEvent.detail,
           ),
         );
-      }, 1500);
+      }, timeoutMs);
     };
 
     window.addEventListener("show-toast", showToastEvent);
