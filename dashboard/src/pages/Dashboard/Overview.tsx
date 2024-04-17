@@ -16,6 +16,7 @@ import { DatasetOverview } from "../../components/DatasetOverview";
 import { OrganizationUsageOverview } from "../../components/OrganizationUsageOverview";
 import { BiRegularInfoCircle, BiRegularLinkExternal } from "solid-icons/bi";
 import { FaRegularClipboard } from "solid-icons/fa";
+import { createToast } from "../../components/ShowToasts";
 
 export const Overview = () => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
@@ -73,9 +74,34 @@ export const Overview = () => {
       },
       signal: orgUsageAbortController.signal,
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (res.status === 403) {
+          createToast({
+            title: "Error",
+            type: "error",
+            message:
+              "It is likely that an admin or owner recently increased your role to admin or owner. Please sign out and sign back in to see the changes.",
+            timeout: 10000,
+          });
+
+          setOrgUsage({
+            id: "",
+            org_id: "",
+            dataset_count: 0,
+            user_count: 0,
+            file_storage: 0,
+            message_count: 0,
+          });
+          return;
+        }
+
+        return res.json();
+      })
       .then((data) => {
         setOrgUsage(data);
+      })
+      .catch((err) => {
+        console.error(err);
       });
 
     onCleanup(() => {

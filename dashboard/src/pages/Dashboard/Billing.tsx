@@ -8,6 +8,7 @@ import {
 import { UserContext } from "../../contexts/UserContext";
 import { OrganizationAndSubAndPlan } from "../../types/apiTypes";
 import { PlansTable } from "../../components/PlansTable";
+import { createToast } from "../../components/ShowToasts";
 
 export const Billing = () => {
   const api_host = import.meta.env.VITE_API_HOST as unknown as string;
@@ -36,7 +37,20 @@ export const Billing = () => {
       },
       signal: orgSubPlanAbortController.signal,
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (res.status === 403) {
+          createToast({
+            title: "Error",
+            type: "error",
+            message:
+              "It is likely that an admin or owner recently increased your role to admin or owner. Please sign out and sign back in to see the changes.",
+            timeout: 10000,
+          });
+          return null;
+        }
+
+        return res.json();
+      })
       .then((data) => {
         setOrgSubPlan(data);
       });

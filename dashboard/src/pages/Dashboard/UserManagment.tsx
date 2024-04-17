@@ -3,6 +3,7 @@ import { UserContext } from "../../contexts/UserContext";
 import { SlimUser, fromI32ToUserRole } from "../../types/apiTypes";
 import { InviteUserModal } from "../../components/InviteUserModal";
 import { EditUserModal } from "../../components/EditUserModal";
+import { createToast } from "../../components/ShowToasts";
 
 export const UserManagement = () => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
@@ -25,6 +26,17 @@ export const UserManagement = () => {
       },
     )
       .then((res) => {
+        if (res.status === 403) {
+          createToast({
+            title: "Error",
+            type: "error",
+            message:
+              "It is likely that an admin or owner recently increased your role to admin or owner. Please sign out and sign back in to see the changes.",
+            timeout: 10000,
+          });
+          return null;
+        }
+
         return res.json();
       })
       .then((data) => {
@@ -61,10 +73,10 @@ export const UserManagement = () => {
             <h3 class="text-sm font-medium text-yellow-800">Warning</h3>
             <div class="mt-2 text-sm text-yellow-700">
               <p>
-                When you add a user to your organization, if they are already
-                signed into their account, they will need to sign out and sign
-                back in to see the changes. We are working on resolving this
-                very soon.
+                When you add a user to your organization or edit their role, if
+                they are already signed into their account, they will need to
+                sign out and sign back in to see the changes. We are working on
+                resolving this very soon.
               </p>
             </div>
           </div>
@@ -179,7 +191,7 @@ export const UserManagement = () => {
         }}
       />
       <EditUserModal
-        editingUser={editingUser}
+        editingUser={editingUser()}
         closeModal={() => {
           setEditingUser(null);
           getUsers();

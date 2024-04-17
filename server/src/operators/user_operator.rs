@@ -1,7 +1,6 @@
 use crate::data::models::{
     ApiKeyDTO, ApiKeyRole, Organization, SlimUser, UserApiKey, UserOrganization, UserRole,
 };
-use crate::handlers::auth_handler::LoggedUser;
 use crate::{
     data::models::{Pool, User},
     errors::ServiceError,
@@ -112,34 +111,27 @@ pub async fn add_existing_user_to_org(
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn update_user_query(
-    user: &LoggedUser,
-    name: &Option<String>,
-    role: Option<UserRole>,
+pub async fn update_user_org_role_query(
+    user_id: uuid::Uuid,
+    organization_id: uuid::Uuid,
+    role: UserRole,
     pool: web::Data<Pool>,
-) -> Result<User, ServiceError> {
-    use crate::data::schema::users::dsl as user_columns;
+) -> Result<(), ServiceError> {
+    use crate::data::schema::user_organizations::dsl as user_organizations_columns;
 
     let mut conn = pool.get().await.unwrap();
 
-    let user: User = diesel::update(user_columns::users.filter(user_columns::id.eq(user.id)))
-        .set((user_columns::name.eq(name),))
-        .get_result(&mut conn)
-        .await
-        .map_err(|_| ServiceError::BadRequest("Error updating user".to_string()))?;
+    diesel::update(
+        user_organizations_columns::user_organizations
+            .filter(user_organizations_columns::user_id.eq(user_id))
+            .filter(user_organizations_columns::organization_id.eq(organization_id)),
+    )
+    .set(user_organizations_columns::role.eq(Into::<i32>::into(role)))
+    .execute(&mut conn)
+    .await
+    .map_err(|_| ServiceError::BadRequest("Error updating user".to_string()))?;
 
-    if let Some(role) = role {
-        diesel::update(
-            crate::data::schema::user_organizations::dsl::user_organizations
-                .filter(crate::data::schema::user_organizations::dsl::user_id.eq(user.id)),
-        )
-        .set(crate::data::schema::user_organizations::dsl::role.eq(Into::<i32>::into(role)))
-        .execute(&mut conn)
-        .await
-        .map_err(|_| ServiceError::BadRequest("Error updating user".to_string()))?;
-    }
-
-    Ok(user)
+    Ok(())
 }
 
 #[tracing::instrument]

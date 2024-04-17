@@ -130,7 +130,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.7.0",
+        version = "0.7.1",
     ),
     servers(
         (url = "https://api.trieve.ai",
@@ -241,7 +241,7 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::FieldCondition,
             handlers::chunk_handler::Range,
             handlers::chunk_handler::MatchCondition,
-            handlers::user_handler::UpdateUserData,
+            handlers::user_handler::UpdateUserOrgRoleData,
             handlers::user_handler::SetUserApiKeyRequest,
             handlers::user_handler::SetUserApiKeyResponse,
             handlers::user_handler::DeleteUserApiKeyRequest,
