@@ -520,7 +520,9 @@ pub async fn get_topic_string(
     let topic = match &query
         .choices
         .first()
-        .ok_or(ServiceError::BadRequest("No response for OpenAI completion".to_string()))?
+        .ok_or(ServiceError::BadRequest(
+            "No response for OpenAI completion".to_string(),
+        ))?
         .message
         .content
     {

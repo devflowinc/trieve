@@ -321,6 +321,7 @@ pub async fn get_metadata_from_ids_query(
 }
 
 /// Only inserts, does not try to upsert data
+#[allow(clippy::type_complexity)]
 #[tracing::instrument(skip(pool))]
 pub async fn bulk_insert_chunk_metadata_query(
     // ChunkMetadata, FileUUID, group_ids, upsert_by_tracking_id
@@ -332,12 +333,15 @@ pub async fn bulk_insert_chunk_metadata_query(
     )>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<(
+) -> Result<
+    Vec<(
         ChunkMetadata,
         Option<uuid::Uuid>,
         Option<Vec<uuid::Uuid>>,
         bool,
-    )>, ServiceError> {
+    )>,
+    ServiceError,
+> {
     use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
@@ -366,9 +370,11 @@ pub async fn bulk_insert_chunk_metadata_query(
         })?;
 
     // mutates in place
-    insertion_data.retain(|(chunk_metadata, _, _, _)|
-        inserted_chunks.iter().find(|inserted_chunk| inserted_chunk.id == chunk_metadata.id).is_some()
-    );
+    insertion_data.retain(|(chunk_metadata, _, _, _)| {
+        inserted_chunks
+            .iter()
+            .any(|inserted_chunk| inserted_chunk.id == chunk_metadata.id)
+    });
 
     let chunkfiles_to_insert: Vec<ChunkFile> = insertion_data
         .clone()
@@ -382,23 +388,16 @@ pub async fn bulk_insert_chunk_metadata_query(
         .clone()
         .iter()
         .filter_map(|(chunk_metadata, _, group_ids, _)| {
-            if let Some(group_ids) = group_ids {
-                Some(
-                    group_ids
-                        .clone()
-                        .iter()
-                        .map(|group_id| {
-                            ChunkGroupBookmark::from_details(*group_id, chunk_metadata.id)
-                        })
-                        .collect::<Vec<ChunkGroupBookmark>>(),
-                )
-            } else {
-                None
-            }
+            group_ids.as_ref().map(|group_ids| {
+                group_ids
+                    .clone()
+                    .iter()
+                    .map(|group_id| ChunkGroupBookmark::from_details(*group_id, chunk_metadata.id))
+                    .collect::<Vec<ChunkGroupBookmark>>()
+            })
         })
         .flatten()
         .collect();
-
 
     diesel::insert_into(chunk_files_columns::chunk_files)
         .values(chunkfiles_to_insert)
@@ -458,7 +457,6 @@ pub async fn get_optional_metadata_from_tracking_id_query(
 
     Ok(optional_chunk)
 }
-
 
 #[tracing::instrument(skip(pool))]
 pub async fn insert_chunk_metadata_query(
@@ -531,7 +529,9 @@ pub async fn insert_chunk_metadata_query(
         })?;
 
     if data_updated == 0 {
-        return Err(ServiceError::DuplicateTrackingId(chunk_data.tracking_id.clone().unwrap_or("".to_string())));
+        return Err(ServiceError::DuplicateTrackingId(
+            chunk_data.tracking_id.clone().unwrap_or("".to_string()),
+        ));
     }
 
     if let Some(file_uuid) = file_uuid {
@@ -1217,8 +1217,7 @@ pub async fn create_chunk_metadata(
                     return Err(ServiceError::BadRequest(format!(
                         "Group with id {} does not exist",
                         group_id
-                    ))
-                    .into());
+                    )));
                 }
             }
         }

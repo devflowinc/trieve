@@ -365,6 +365,7 @@ pub async fn bulk_upload_chunks(
         return Ok(chunk_ids);
     }
 
+    #[allow(clippy::type_complexity)]
     let ingestion_data: Vec<(
         ChunkMetadata,
         Option<uuid::Uuid>,
@@ -396,12 +397,11 @@ pub async fn bulk_upload_chunks(
                     .chunk
                     .time_stamp
                     .clone()
-                    .map(|ts| -> Option<NaiveDateTime> {
+                    .and_then(|ts| -> Option<NaiveDateTime> {
                         ts.parse::<DateTimeUtc>()
                             .ok()
                             .map(|date| date.0.with_timezone(&chrono::Local).naive_local())
                     })
-                    .flatten()
             };
 
             let chunk_tracking_id = message
@@ -483,11 +483,9 @@ pub async fn bulk_upload_chunks(
     )
     .filter_map(
         |((chunk_metadata, _, group_ids, _), embedding_vector, splade_vector)| {
-            let qdrant_point_id = chunk_metadata.qdrant_point_id.clone();
+            let qdrant_point_id = chunk_metadata.qdrant_point_id;
 
-            let payload = QdrantPayload::new(chunk_metadata, group_ids, None)
-                .try_into()
-                .expect("A json! Value must always be a valid Payload");
+            let payload = QdrantPayload::new(chunk_metadata, group_ids, None).into();
 
             let vector_name = match embedding_vector.len() {
                 384 => "384_vectors",
@@ -746,9 +744,7 @@ async fn upload_chunk(
 
         qdrant_point_id = inserted_chunk.qdrant_point_id.unwrap_or(qdrant_point_id);
 
-        let payload = QdrantPayload::new(chunk_metadata, payload.chunk.group_ids, None)
-            .try_into()
-            .expect("A json! Value must always be a valid Payload");
+        let payload = QdrantPayload::new(chunk_metadata, payload.chunk.group_ids, None).into();
 
         let vector_name = match embedding_vector.len() {
             384 => "384_vectors",
@@ -775,10 +771,9 @@ async fn upload_chunk(
             "calling_create_new_qdrant_point_query",
         );
 
-        if let Err(e) = bulk_create_new_qdrant_points_query(vec![point], dataset_config)
-            .await
-        {
-            bulk_revert_insert_chunk_metadata_query(vec![inserted_chunk.id], web_pool.clone()).await?;
+        if let Err(e) = bulk_create_new_qdrant_points_query(vec![point], dataset_config).await {
+            bulk_revert_insert_chunk_metadata_query(vec![inserted_chunk.id], web_pool.clone())
+                .await?;
 
             return Err(e);
         };
@@ -949,19 +944,18 @@ pub async fn readd_error_to_queue(
         if payload.attempt_number == 3 {
             log::error!("Failed to insert data 3 times quitting {:?}", error);
             let count = payload.ingestion_messages.len();
-            let chunk_ids = payload.ingestion_messages.iter().map(|m| {
-                m.ingest_specific_chunk_metadata.id
-            }).collect();
+            let chunk_ids = payload
+                .ingestion_messages
+                .iter()
+                .map(|m| m.ingest_specific_chunk_metadata.id)
+                .collect();
 
             let _ = create_event_query(
                 Event::from_details(
                     payload.dataset_id,
                     models::EventType::BulkChunkActionFailed {
                         chunk_ids,
-                        error: format!(
-                            "Failed to upload {:} chunks: {:?}",
-                            count, error
-                        ),
+                        error: format!("Failed to upload {:} chunks: {:?}", count, error),
                     },
                 ),
                 web_pool.clone(),

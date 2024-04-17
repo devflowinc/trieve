@@ -190,8 +190,7 @@ pub async fn direct_to_payment_link(
     let plan_id = path_data.plan_id;
     let organization_id = path_data.organization_id;
     let organization_id_clone = path_data.organization_id;
-    let _org_plan_sub =
-        get_org_from_id_query(organization_id_clone.into(), organization_pool).await?;
+    let _org_plan_sub = get_org_from_id_query(organization_id_clone, organization_pool).await?;
 
     let plan = get_plan_by_id_query(plan_id, pool).await?;
 

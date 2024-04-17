@@ -151,7 +151,7 @@ pub async fn create_chunks_with_handler(
             tracking_id: upload_file_data
                 .group_tracking_id
                 .clone()
-                .map(|tracking_id| format!("{}|{}", tracking_id, i.to_string())),
+                .map(|tracking_id| format!("{}|{}", tracking_id, i)),
             upsert_by_tracking_id: None,
             time_stamp: upload_file_data.time_stamp.clone(),
             chunk_vector: None,
