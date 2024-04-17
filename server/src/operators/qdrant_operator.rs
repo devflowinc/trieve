@@ -273,8 +273,9 @@ pub async fn bulk_create_new_qdrant_points_query(
 ) -> Result<(), ServiceError> {
     if points.is_empty() {
         return Err(ServiceError::BadRequest(
-            "No points were created for QDRANT, this is due to the incorrect embedding vector size".into(),
-        ))
+            "No points were created for QDRANT, this is due to the incorrect embedding vector size"
+                .into(),
+        ));
     }
 
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
@@ -305,9 +306,7 @@ pub async fn create_new_qdrant_point_query(
 ) -> Result<(), ServiceError> {
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
-    let payload = QdrantPayload::new(chunk_metadata, group_ids, None)
-        .try_into()
-        .expect("A json! Value must always be a valid Payload");
+    let payload = QdrantPayload::new(chunk_metadata, group_ids, None).into();
 
     let vector_name = match embedding_vector.len() {
         384 => "384_vectors",
@@ -443,9 +442,7 @@ pub async fn update_qdrant_point_query(
             qdrant_collection,
             None,
             &points_selector,
-            payload
-                .try_into()
-                .expect("A json! value must always be a valid Payload"),
+            payload.into(),
             None,
             None,
         )
@@ -523,9 +520,7 @@ pub async fn add_bookmark_to_qdrant_query(
             qdrant_collection,
             None,
             &points_selector,
-            payload
-                .try_into()
-                .expect("A json! value must always be a valid Payload"),
+            payload.into(),
             None,
             None,
         )
@@ -603,9 +598,7 @@ pub async fn remove_bookmark_from_qdrant_query(
             qdrant_collection,
             None,
             &points_selector,
-            payload
-                .try_into()
-                .expect("A json! value must always be a valid Payload"),
+            payload.into(),
             None,
             None,
         )
@@ -834,6 +827,7 @@ pub struct QdrantRecommendResult {
     pub score: f32,
 }
 
+#[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(pool))]
 pub async fn recommend_qdrant_query(
     positive_ids: Vec<uuid::Uuid>,

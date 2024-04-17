@@ -115,11 +115,8 @@ pub async fn update_organization(
     _user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_update_data = organization.into_inner();
-    let old_organization = get_org_from_id_query(
-        organization_update_data.organization_id.into(),
-        pool.clone(),
-    )
-    .await?;
+    let old_organization =
+        get_org_from_id_query(organization_update_data.organization_id, pool.clone()).await?;
 
     let updated_organization = update_organization_query(
         organization_update_data.organization_id,

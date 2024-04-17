@@ -1076,12 +1076,12 @@ pub enum EventType {
     QdrantUploadFailed {
         chunk_id: uuid::Uuid,
         qdrant_point_id: uuid::Uuid,
-        error: String
+        error: String,
     },
     BulkChunkActionFailed {
         chunk_ids: Vec<uuid::Uuid>,
         error: String,
-    }
+    },
 }
 
 impl EventType {
@@ -1104,7 +1104,7 @@ impl EventType {
             "chunk_action_failed".to_string(),
             "chunk_updated".to_string(),
             "qdrant_index_failed".to_string(),
-            "bulk_chunk_action_failed".to_string()
+            "bulk_chunk_action_failed".to_string(),
         ]
     }
 }
@@ -1121,10 +1121,14 @@ impl From<EventType> for serde_json::Value {
             EventType::ChunksUploaded { chunk_ids } => json!({"chunk_ids": chunk_ids}),
             EventType::ChunkActionFailed { chunk_id, error } => {
                 json!({"chunk_id": chunk_id, "error": error})
-            },
+            }
             EventType::ChunkUpdated { chunk_id } => json!({"chunk_id": chunk_id}),
-            EventType::QdrantUploadFailed { chunk_id, error, .. } => json!({"chunk_id": chunk_id, "error": error}),
-            EventType::BulkChunkActionFailed { chunk_ids, error, .. } => json!({"chunk_ids": chunk_ids, "error": error}),
+            EventType::QdrantUploadFailed {
+                chunk_id, error, ..
+            } => json!({"chunk_id": chunk_id, "error": error}),
+            EventType::BulkChunkActionFailed {
+                chunk_ids, error, ..
+            } => json!({"chunk_ids": chunk_ids, "error": error}),
         }
     }
 }
@@ -2058,9 +2062,9 @@ pub struct QdrantPayload {
     pub group_ids: Vec<uuid::Uuid>,
 }
 
-impl Into<Payload> for QdrantPayload {
-    fn into(self) -> Payload {
-        let value = json!(self);
+impl From<QdrantPayload> for Payload {
+    fn from(val: QdrantPayload) -> Self {
+        let value = json!(val);
         value
             .try_into()
             .expect("Failed to convert QdrantPayload to Payload")

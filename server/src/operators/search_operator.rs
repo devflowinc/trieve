@@ -334,7 +334,7 @@ pub async fn get_metadata_filter_condition(
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?
         .into_iter()
-        .filter_map(|point_id| point_id)
+        .flatten()
         .collect();
 
     let matching_point_ids: Vec<PointId> = qdrant_point_ids
@@ -454,7 +454,7 @@ pub async fn get_group_metadata_filter_condition(
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?
         .into_iter()
-        .filter_map(|point_id| point_id)
+        .flatten()
         .collect();
 
     let matching_point_ids: Vec<PointId> = qdrant_point_ids
@@ -508,9 +508,8 @@ pub async fn get_group_tag_set_filter_condition(
                         .filter(chunk_group_columns::tag_set.ilike(format!("%{}%", string_val)));
                 }
                 MatchCondition::Integer(id_val) => {
-                    query = query.filter(
-                        chunk_group_columns::tag_set.ilike(format!("%{}%", id_val.to_string())),
-                    );
+                    query =
+                        query.filter(chunk_group_columns::tag_set.ilike(format!("%{}%", id_val)));
                 }
             }
         }
@@ -522,16 +521,15 @@ pub async fn get_group_tag_set_filter_condition(
                         .or_filter(chunk_group_columns::tag_set.ilike(format!("%{}%", string_val)));
                 }
                 MatchCondition::Integer(id_val) => {
-                    query = query.or_filter(
-                        chunk_group_columns::tag_set.ilike(format!("%{}%", id_val.to_string())),
-                    );
+                    query = query
+                        .or_filter(chunk_group_columns::tag_set.ilike(format!("%{}%", id_val)));
                 }
             }
         }
     };
 
-    if let Some(_) = &filter.range {
-        ServiceError::BadRequest("Range filter not supported for group_tag_set".to_string());
+    if filter.range.is_some() {
+        "Range filter not supported for group_tag_set".to_string();
     }
 
     let qdrant_point_ids: Vec<uuid::Uuid> = query
@@ -539,7 +537,7 @@ pub async fn get_group_tag_set_filter_condition(
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?
         .into_iter()
-        .filter_map(|point_id| point_id)
+        .flatten()
         .collect();
 
     let matching_point_ids: Vec<PointId> = qdrant_point_ids
@@ -964,7 +962,7 @@ pub async fn retrieve_chunks_for_groups(
                 .collect_vec();
 
             let group_data = groups.get(i);
-            let group_tracking_id = group_data.map(|group| group.tracking_id.clone()).flatten();
+            let group_tracking_id = group_data.and_then(|group| group.tracking_id.clone());
             let group_name = group_data.map(|group| group.name.clone());
 
             GroupScoreChunk {
@@ -1068,7 +1066,7 @@ pub async fn get_metadata_from_groups(
                 .collect_vec();
 
             let group_data = groups.get(i);
-            let group_tracking_id = group_data.map(|group| group.tracking_id.clone()).flatten();
+            let group_tracking_id = group_data.and_then(|group| group.tracking_id.clone());
             let group_name = group_data.map(|group| group.name.clone());
 
             GroupScoreChunk {

@@ -908,7 +908,7 @@ impl FieldCondition {
 
         if self.field.starts_with("metadata.") {
             return Ok(Some(
-                get_metadata_filter_condition(&self, dataset_id, pool)
+                get_metadata_filter_condition(self, dataset_id, pool)
                     .await?
                     .into(),
             ));
@@ -916,7 +916,7 @@ impl FieldCondition {
 
         if self.field.starts_with("group_metadata.") {
             return Ok(Some(
-                get_group_metadata_filter_condition(&self, dataset_id, pool)
+                get_group_metadata_filter_condition(self, dataset_id, pool)
                     .await?
                     .into(),
             ));
@@ -924,7 +924,7 @@ impl FieldCondition {
 
         if self.field == "group_tag_set" {
             return Ok(Some(
-                get_group_tag_set_filter_condition(&self, dataset_id, pool)
+                get_group_tag_set_filter_condition(self, dataset_id, pool)
                     .await?
                     .into(),
             ));

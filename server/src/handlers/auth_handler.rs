@@ -189,7 +189,7 @@ pub async fn create_account(
     };
     let org_id = org.id;
 
-    let org_plan_sub = get_org_from_id_query(org_id.into(), pool.clone()).await?;
+    let org_plan_sub = get_org_from_id_query(org_id, pool.clone()).await?;
     let user_org_count_pool = pool.clone();
     let user_org_count = get_user_org_count(org_id, user_org_count_pool).await?;
     if user_org_count
@@ -563,7 +563,7 @@ pub async fn health_check() -> Result<HttpResponse, actix_web::Error> {
 /// Local login page for cli
 pub async fn login_cli() -> Result<HttpResponse, ServiceError> {
     let html_page = read_to_string("src/public/login.html").map_err(|e| {
-        ServiceError::InternalServerError(format!("Could not read login page {}", e.to_string()))
+        ServiceError::InternalServerError(format!("Could not read login page {}", e))
     })?;
     Ok(HttpResponse::Ok().content_type("text/html").body(html_page))
 }

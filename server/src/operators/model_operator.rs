@@ -107,19 +107,21 @@ pub async fn create_embeddings(
             input,
         };
 
-        let embeddings_resp =
-            ureq::post(&format!("{}/embeddings?api-version=2023-05-15", embedding_base_url))
-                .set("Authorization", &format!("Bearer {}", open_ai_api_key))
-                .set("api-key", &open_ai_api_key)
-                .set("Content-Type", "application/json")
-                .send_json(serde_json::to_value(parameters).unwrap())
-                .map_err(|e| {
-                    ServiceError::InternalServerError(format!(
-                        "Could not get embeddings from server: {:?}, {:?}",
-                        e,
-                        e.to_string()
-                    ))
-                })?;
+        let embeddings_resp = ureq::post(&format!(
+            "{}/embeddings?api-version=2023-05-15",
+            embedding_base_url
+        ))
+        .set("Authorization", &format!("Bearer {}", open_ai_api_key))
+        .set("api-key", open_ai_api_key)
+        .set("Content-Type", "application/json")
+        .send_json(serde_json::to_value(parameters).unwrap())
+        .map_err(|e| {
+            ServiceError::InternalServerError(format!(
+                "Could not get embeddings from server: {:?}, {:?}",
+                e,
+                e.to_string()
+            ))
+        })?;
 
         let embeddings: EmbeddingResponse = format_response(embeddings_resp.into_string().unwrap())
             .map_err(|e| {
@@ -159,15 +161,15 @@ pub struct SpladeEmbedding {
     pub embeddings: Vec<(u32, f32)>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Copy, Clone, Debug, Deserialize)]
 struct SpladeIndicies {
     index: u32,
     value: f32,
 }
 
 impl SpladeIndicies {
-    pub fn into_tuple(&self) -> (u32, f32) {
-        return (self.index, self.value);
+    pub fn into_tuple(self) -> (u32, f32) {
+        (self.index, self.value)
     }
 }
 
@@ -249,7 +251,7 @@ pub async fn get_sparse_vectors(
         .map(|sparse_vector| {
             sparse_vector
                 .iter()
-                .map(|splade_idx| splade_idx.into_tuple())
+                .map(|splade_idx| (*splade_idx).into_tuple())
                 .collect()
         })
         .collect())
