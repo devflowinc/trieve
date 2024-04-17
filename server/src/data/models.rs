@@ -1100,7 +1100,7 @@ impl EventType {
     pub fn get_all_event_types() -> Vec<String> {
         vec![
             "file_uploaded".to_string(),
-            "chunk_uploaded".to_string(),
+            "chunks_uploaded".to_string(),
             "chunk_action_failed".to_string(),
             "chunk_updated".to_string(),
             "qdrant_index_failed".to_string(),

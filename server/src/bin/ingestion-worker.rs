@@ -447,20 +447,43 @@ pub async fn bulk_upload_chunks(
     // Only embed the things we get returned from here, this reduces the number of times we embed data that are just duplicates
     let all_content: Vec<String> = inserted_chunk_metadatas
         .iter()
-        .map(|(chunk_metadata, _, _, _)| {
-            chunk_metadata.content.clone()
-        })
+        .map(|(chunk_metadata, _, _, _)| chunk_metadata.content.clone())
+        .collect();
+
+    let inserted_chunk_metadata_ids: Vec<uuid::Uuid> = inserted_chunk_metadatas
+        .iter()
+        .map(|(chunk_metadata, _, _, _)| chunk_metadata.id)
         .collect();
 
     // Assuming split average is false, Assume Explicit Vectors don't exist
-    let embedding_vectors = create_embeddings(all_content.clone(), "doc", dataset_config.clone())
-        .await
-        .map_err(|err| {
-            ServiceError::InternalServerError(format!("Failed to create embeddings: {:?}", err))
-        })?;
+    let embedding_vectors =
+        match create_embeddings(all_content.clone(), "doc", dataset_config.clone()).await {
+            Ok(vectors) => Ok(vectors),
+            Err(err) => {
+                bulk_revert_insert_chunk_metadata_query(
+                    inserted_chunk_metadata_ids.clone(),
+                    web_pool.clone(),
+                )
+                .await?;
+                Err(ServiceError::InternalServerError(format!(
+                    "Failed to create embeddings: {:?}",
+                    err
+                )))
+            }
+        }?;
 
     let splade_vectors = if dataset_config.FULLTEXT_ENABLED {
-        get_sparse_vectors(all_content, "doc").await
+        match get_sparse_vectors(all_content, "doc").await {
+            Ok(vectors) => Ok(vectors),
+            Err(err) => {
+                bulk_revert_insert_chunk_metadata_query(
+                    inserted_chunk_metadata_ids.clone(),
+                    web_pool.clone(),
+                )
+                .await?;
+                Err(err)
+            }
+        }
     } else {
         let content_size = all_content.len();
 
@@ -510,11 +533,6 @@ pub async fn bulk_upload_chunks(
 
     let create_point_result =
         bulk_create_new_qdrant_points_query(qdrant_points, dataset_config.clone()).await;
-
-    let inserted_chunk_metadata_ids = inserted_chunk_metadatas
-        .iter()
-        .map(|(chunk_metadata, _, _, _)| chunk_metadata.id)
-        .collect();
 
     if let Err(err) = create_point_result {
         bulk_revert_insert_chunk_metadata_query(inserted_chunk_metadata_ids, web_pool.clone())
