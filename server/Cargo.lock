@@ -2772,8 +2772,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 [[package]]
 name = "openai_dive"
 version = "0.4.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20efff02fadcb20a40332c59506f5ee55d082aabf6f441f127b0a2882494caae"
+source = "git+https://github.com/devflowinc/openai-client?branch=openrouter-end_turn-compat#64d0bd4a8beda8b0dbb0080d603f5157b96b2694"
 dependencies = [
  "bytes",
  "futures",
