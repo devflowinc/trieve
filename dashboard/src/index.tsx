@@ -40,18 +40,19 @@ render(
     <Router>
       <Route path="/" component={ContextWrapper}>
         <Route path="/" component={Home} />
-        <Route path="/dashboard" component={DashboardLayout}>
-          <Route path="/" component={Overview} />
-          <Route path="/overview" component={Overview} />
-          <Route path="/users" component={UserManagement} />
-          <Route path="/billing" component={Billing} />
-          <Route path="/settings" component={Settings} />
-        </Route>
         <Route path="/dashboard/dataset/:id" component={DatasetLayout}>
           <Route path="/" component={DatasetStart} />
           <Route path="/start" component={DatasetStart} />
           <Route path="/settings" component={DatasetSettingsPage} />
           <Route path="/events" component={DatasetEvents} />
+        </Route>
+        <Route path="/dashboard" component={DashboardLayout} />
+        <Route path="/dashboard/:id" component={DashboardLayout}>
+          <Route path="/" component={Overview} />
+          <Route path="/overview" component={Overview} />
+          <Route path="/users" component={UserManagement} />
+          <Route path="/billing" component={Billing} />
+          <Route path="/settings" component={Settings} />
         </Route>
       </Route>
     </Router>

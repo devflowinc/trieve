@@ -1,10 +1,7 @@
-import { HomeNavbar } from "../components/Atoms/HomeNavbar";
-import type { JSX } from "solid-js";
 import { DatasetAndUserContextWrapper } from "../components/Contexts/DatasetAndUserContext";
+import { HomeSearch } from "../HomeSearch";
 
-export const HomeLayout = (props: { children: JSX.Element }) => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-
+export const Home = () => {
   const theme = (() => {
     if (typeof localStorage !== "undefined" && localStorage.getItem("theme")) {
       return localStorage.getItem("theme");
@@ -39,10 +36,7 @@ export const HomeLayout = (props: { children: JSX.Element }) => {
 
   return (
     <DatasetAndUserContextWrapper>
-      <div class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white">
-        <HomeNavbar />
-        {props.children}
-      </div>
+      <HomeSearch />
     </DatasetAndUserContextWrapper>
   );
 };

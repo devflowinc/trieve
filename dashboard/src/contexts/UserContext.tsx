@@ -50,7 +50,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     })
       .then((res) => {
         if (res.status === 401) {
-          window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}/dashboard`;
+          window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}/dashboard/foo`;
         }
         return res.json();
       })
@@ -71,10 +71,25 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     let organizationId = selectedOrganizationId();
 
     if (organizationId == null) {
-      const user_orgs = user()?.user_orgs;
-      if (user_orgs && user_orgs.length > 0) {
-        organizationId = user_orgs[0].organization_id;
-        setSelectedOrganizationId(organizationId);
+      const path = window.location.pathname;
+      const pathParts = path.split("/");
+      const orgId = pathParts[2];
+      if (user()?.user_orgs) {
+        const org = user()?.user_orgs.find(
+          (org) => org.organization_id === orgId,
+        );
+        if (org) {
+          organizationId = orgId;
+          setSelectedOrganizationId(orgId);
+        }
+      }
+
+      if (organizationId == null) {
+        const user_orgs = user()?.user_orgs;
+        if (user_orgs && user_orgs.length > 0) {
+          organizationId = user_orgs[0].organization_id;
+          setSelectedOrganizationId(organizationId);
+        }
       }
     }
 

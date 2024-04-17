@@ -1,12 +1,12 @@
-import SearchForm from "../components/SearchForm";
-import { Footer } from "../components/Footer";
-import type { Filters } from "../components/ResultsPage";
-import { HomeLayout } from "../layouts/HomeLayout";
-import { DefaultQueries } from "../components/DefaultQueries";
+import { HomeNavbar } from "./components/Atoms/HomeNavbar";
 import { useContext } from "solid-js";
-import { DatasetAndUserContext } from "../components/Contexts/DatasetAndUserContext";
+import { DatasetAndUserContext } from "./components/Contexts/DatasetAndUserContext";
+import SearchForm from "./components/SearchForm";
+import { DefaultQueries } from "./components/DefaultQueries";
+import { Footer } from "./components/Footer";
+import { Filters } from "./components/ResultsPage";
 
-export const Home = () => {
+export const HomeSearch = () => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
 
   const $dataset = datasetAndUserContext.currentDataset;
@@ -56,7 +56,8 @@ export const Home = () => {
   };
 
   return (
-    <HomeLayout>
+    <div class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white">
+      <HomeNavbar />
       <div class="space-y mt-12 flex w-full flex-col items-center">
         <div class="flex w-full items-center justify-center">
           <a class="flex items-center justify-center" href="/">
@@ -66,7 +67,7 @@ export const Home = () => {
               alt="Logo"
             />
             <div>
-              <div class="mb-[-4px] w-full text-end align-bottom text-lg leading-3 text-turquoise">
+              <div class="mb-[-1px] ml-1 w-full text-end align-bottom text-lg leading-3 text-turquoise">
                 {$dataset?.()?.dataset.name ?? "Dataset"}
               </div>
               <div class="text-4xl">
@@ -87,6 +88,6 @@ export const Home = () => {
       <DefaultQueries suggestedQueries={suggestedQueries ?? []} />
       <div class="flex-1" />
       <Footer />
-    </HomeLayout>
+    </div>
   );
 };

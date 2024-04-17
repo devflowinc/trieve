@@ -27,8 +27,26 @@ export const DashboardLayout = (props: DashboardLayoutProps) => {
 
   createEffect(() => {
     const pathname = location.pathname;
+
     if (pathname === "/dashboard") {
-      navigate("/dashboard/overview", { replace: true });
+      navigate(
+        `/dashboard/${userContext.selectedOrganizationId?.()}/overview`,
+        {
+          replace: true,
+        },
+      );
+    }
+
+    const dashboardUuidRegex = /^\/dashboard\/[a-f0-9-]+$/;
+    if (dashboardUuidRegex.test(pathname)) {
+      navigate(pathname + "/overview", { replace: true });
+    }
+
+    const slashParts = pathname.split("/");
+    if (slashParts.length >= 3 && !slashParts[2].match(/^[a-f0-9-]+$/)) {
+      navigate(
+        `/dashboard/${userContext.selectedOrganizationId?.()}/${slashParts[3]}`,
+      );
     }
   });
 

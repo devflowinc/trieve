@@ -43,7 +43,7 @@ export const Sidebar = () => {
                   <button
                     onClick={() => {
                       userContext.setSelectedOrganizationId(org.id);
-                      navigate(`/dashboard/overview`);
+                      navigate(`/dashboard/${org.id}/overview`);
                     }}
                     classList={{
                       "block hover:text-fuchsia-800": true,

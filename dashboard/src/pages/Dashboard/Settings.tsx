@@ -168,9 +168,9 @@ export const OrgDangerZoneForm = () => {
           userContext.setSelectedOrganizationId(newSelectedOrgId);
 
           if (newSelectedOrgId !== "") {
-            navigate("/dashboard/overview");
+            navigate(`/dashboard/${newSelectedOrgId}/overview`);
           } else {
-            navigate("/dashboard");
+            navigate(`/dashboard/${newSelectedOrgId}`);
           }
 
           createToast({
