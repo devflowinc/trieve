@@ -348,10 +348,10 @@ pub async fn bulk_upload_chunks(
         .any(|message| message.upsert_by_tracking_id);
 
     if raw_vectors_being_used
-        && split_average_being_used
-        && dataset_config.DUPLICATE_DISTANCE_THRESHOLD < 1.0
-        && dataset_config.COLLISIONS_ENABLED
-        && upsert_by_tracking_id_being_used
+        || split_average_being_used
+        || dataset_config.DUPLICATE_DISTANCE_THRESHOLD < 1.0
+        || dataset_config.COLLISIONS_ENABLED
+        || upsert_by_tracking_id_being_used
     {
         let mut chunk_ids = vec![];
         // Split average or Collisions
@@ -444,18 +444,11 @@ pub async fn bulk_upload_chunks(
         return Ok(vec![]);
     }
 
-    // Only embed the things we get returned from here, this reduces the number of times we embed
-    // data that are just duplicates
+    // Only embed the things we get returned from here, this reduces the number of times we embed data that are just duplicates
     let all_content: Vec<String> = inserted_chunk_metadatas
         .iter()
         .map(|(chunk_metadata, _, _, _)| {
-            // handle
-            convert_html_to_text(
-                &chunk_metadata
-                    .chunk_html
-                    .clone()
-                    .unwrap_or(chunk_metadata.content.clone()),
-            )
+            chunk_metadata.content.clone()
         })
         .collect();
 
