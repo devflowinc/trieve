@@ -515,11 +515,12 @@ pub async fn get_topic_string(
         .chat()
         .create(parameters)
         .await
-        .expect("No OpenAI Completion for topic");
+        .map_err(|_| ServiceError::BadRequest("No OpenAI Completion for topic".to_string()))?;
+
     let topic = match &query
         .choices
         .first()
-        .expect("No response for OpenAI completion")
+        .ok_or(ServiceError::BadRequest("No response for OpenAI completion".to_string()))?
         .message
         .content
     {
