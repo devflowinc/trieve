@@ -47,7 +47,7 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-    - port: 5556
+    - port: 9999
       targetPort: 80
   selector:
     app: jina-embeddings-server
