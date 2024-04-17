@@ -38,7 +38,9 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
         email: email(),
         user_role: fromUserRoleToI32(role()),
         app_url: apiHost,
-        redirect_uri: `${window.location.origin}/dashboard`,
+        redirect_uri: `${
+          window.location.origin
+        }/dashboard/${userContext.selectedOrganizationId?.()}`,
       }),
     }).then((res) => {
       setSendingEmail(false);

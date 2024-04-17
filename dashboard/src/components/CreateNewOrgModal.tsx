@@ -49,7 +49,7 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
         void res.json().then((data) => {
           userContext.setSelectedOrganizationId((data as Organization).id);
 
-          navigate("/dashboard/overview");
+          navigate(`/dashboard/${(data as Organization).id}/overview`);
 
           createToast({
             title: "Success",

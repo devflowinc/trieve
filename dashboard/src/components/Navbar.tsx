@@ -1,32 +1,41 @@
-import { Show } from "solid-js";
+import { Show, useContext } from "solid-js";
 import {
-  BsBook,
   BsDiscord,
   BsEnvelope,
   BsGithub,
   BsQuestionCircle,
-  BsSignal,
   BsSunglasses,
 } from "solid-icons/bs";
 import { Popover, PopoverButton, PopoverPanel } from "terracotta";
-import { useNavigate } from "@solidjs/router";
+import { A, useNavigate } from "@solidjs/router";
+import { UserContext } from "../contexts/UserContext";
 
 export const NavBar = () => {
+  const userContext = useContext(UserContext);
   const navigator = useNavigate();
 
   return (
     <div class="flex justify-between space-x-3">
-      <a href="/dashboard/overview" class="flex items-center space-x-1">
+      <A
+        href={`/dashboard/${
+          userContext.selectedOrganizationId?.() ?? ""
+        }/overview`}
+        class="flex items-center space-x-1"
+      >
         <img
           class="h-12 w-12 cursor-pointer"
           src="https://cdn.trieve.ai/trieve-logo.png"
           alt="Logo"
           onClick={() => {
-            navigator("/dashboard/overview");
+            navigator(
+              `/dashboard/${
+                userContext.selectedOrganizationId?.() ?? ""
+              }/overview`,
+            );
           }}
         />
         <span class="text-2xl font-semibold">Trieve</span>
-      </a>
+      </A>
       <div class="flex items-center justify-end space-x-3">
         <Popover
           id="help-or-contact-popover"
@@ -48,27 +57,6 @@ export const NavBar = () => {
                     <h5 class="my-3 text-lg font-semibold">
                       Need help or just want to chat?
                     </h5>
-                    <p class="my-2 text-sm font-semibold text-neutral-800">
-                      Call a dev or see docs for assistance with your hosted
-                      search platform or other inquiries.{" "}
-                      <span class="underline">Signal</span>, WhatsApp, or
-                      Telegram all work.
-                    </p>
-                    <div class="my-2 flex items-center space-x-2 text-sm">
-                      <a
-                        href="tel:6282224090"
-                        class="flex items-center space-x-1 rounded-md border-[0.5px] border-magenta-200 bg-magenta-50 px-2 py-1 font-medium"
-                      >
-                        <BsSignal class="h-3 w-3" />
-                        <p>+1 628-222-4090</p>
-                      </a>
-                      <a
-                        href="https://docs.trieve.ai/"
-                        class="flex items-center space-x-1 px-2 py-1 font-medium"
-                      >
-                        <BsBook class="h-3 w-3" /> <p>Docs</p>
-                      </a>
-                    </div>
                     <p class="my-2 text-sm font-semibold text-neutral-800">
                       Expected performance is based on your billing plan. Paid
                       projects are prioritized.

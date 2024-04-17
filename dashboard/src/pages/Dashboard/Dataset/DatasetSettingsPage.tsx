@@ -756,7 +756,7 @@ export const DangerZoneForm = () => {
     })
       .then((res) => {
         if (res.ok) {
-          navigate("/dashboard/overview");
+          navigate(`/dashboard/${organization_id}/overview`);
           createToast({
             title: "Success",
             message: "Dataset deleted successfully!",

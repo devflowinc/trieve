@@ -4,7 +4,7 @@ import { render } from "solid-js/web";
 import { Route, Router } from "@solidjs/router";
 import * as Sentry from "@sentry/browser";
 import { DEV } from "solid-js";
-import { Home } from "./pages/Home";
+import { Home } from "./layouts/HomeLayout";
 import { Search } from "./pages/Search";
 import { Upload } from "./pages/Upload";
 import { CreateChunk } from "./pages/CreateChunk";
