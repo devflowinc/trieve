@@ -4,8 +4,8 @@ use crate::{
     errors::ServiceError,
     handlers::auth_handler::LoggedUser,
     operators::topic_operator::{
-        create_topic_query, delete_topic_query, get_all_topics_for_user_query,
-        get_topic_for_user_query, update_topic_query,
+        create_topic_query, delete_topic_query, get_all_topics_for_owner_id_query,
+        update_topic_query,
     },
 };
 use actix_web::{web, HttpResponse};
@@ -20,11 +20,13 @@ pub struct CreateTopicData {
     pub first_user_message: Option<String>,
     /// The name of the topic. If this is not provided, the topic name is generated from the first_user_message.
     pub name: Option<String>,
+    /// The owner_id of the topic. This is typically a browser fingerprint or your user's id. It is used to group topics together for a user.
+    pub owner_id: String,
 }
 
 /// Create Topic
 ///
-/// Create a new chat topic. Topics are attached to a user and act as a coordinator for memory of gen-AI chat sessions. We are considering refactoring this resource of the API soon.
+/// Create a new chat topic. Topics are attached to a owner_id's and act as a coordinator for conversation message history of gen-AI chat sessions.
 #[utoipa::path(
     post,
     path = "/topic",
@@ -80,7 +82,11 @@ pub async fn create_topic(
         data_inner.name.unwrap_or_default()
     };
 
-    let new_topic = Topic::from_details(topic_name, user.id, dataset_org_plan_sub.dataset.id);
+    let new_topic = Topic::from_details(
+        topic_name,
+        data_inner.owner_id,
+        dataset_org_plan_sub.dataset.id,
+    );
     let new_topic1 = new_topic.clone();
 
     create_topic_query(new_topic, &pool).await?;
@@ -116,23 +122,14 @@ pub struct DeleteTopicData {
 )]
 #[tracing::instrument(skip(pool))]
 pub async fn delete_topic(
-    data: web::Path<uuid::Uuid>,
+    topic_id: web::Path<uuid::Uuid>,
     user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let topic_id = data.into_inner();
-    let pool_inner = pool.clone();
+    let topic_id = topic_id.into_inner();
 
-    let user_topic = get_topic_for_user_query(
-        user.id,
-        topic_id,
-        dataset_org_plan_sub.dataset.id,
-        &pool_inner,
-    )
-    .await?;
-
-    delete_topic_query(user_topic.id, dataset_org_plan_sub.dataset.id, &pool).await?;
+    delete_topic_query(topic_id, dataset_org_plan_sub.dataset.id, &pool).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -175,39 +172,30 @@ pub async fn update_topic(
     let data_inner = data.into_inner();
     let topic_id = data_inner.topic_id;
     let name = data_inner.name;
-    let pool_inner = pool.clone();
 
     if name.is_empty() {
-        return Err(ServiceError::BadRequest("Resolution must not be empty".to_string()).into());
+        return Err(ServiceError::BadRequest("Topic name must not be empty".to_string()).into());
     }
 
-    let user_topic = get_topic_for_user_query(
-        user.id,
-        topic_id,
-        dataset_org_plan_sub.dataset.id,
-        &pool_inner,
-    )
-    .await?;
-
-    update_topic_query(user_topic.id, name, dataset_org_plan_sub.dataset.id, &pool).await?;
+    update_topic_query(topic_id, name, dataset_org_plan_sub.dataset.id, &pool).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
 
-/// Get All Topics for User
+/// Get All Topics for Owner ID
 ///
-/// Get all topics belonging to a the auth'ed user. Soon, we plan to allow specification of the user for this route and include pagination.
+/// Get all topics belonging to an arbitary owner_id. This is useful for managing message history and chat sessions. It is common to use a browser fingerprint or your user's id as the owner_id.
 #[utoipa::path(
     get,
-    path = "/topic/user/{user_id}",
+    path = "/topic/owner/{owner_id}",
     context_path = "/api",
     tag = "topic",
     responses(
-        (status = 200, description = "All topics belonging to a given user", body = Vec<Topic>),
-        (status = 400, description = "Service error relating to topic get", body = ErrorResponseBody),
+        (status = 200, description = "All topics belonging to a given owner_id", body = Vec<Topic>),
+        (status = 400, description = "Service error relating to getting topics for the owner_id", body = ErrorResponseBody),
     ),
     params (
-        ("user_id", description="The id of the user to get topics for"),
+        ("owner_id", description="The owner_id to get topics of; A common approach is to use a browser fingerprint or your user's id"),
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
     ),
     security(
@@ -215,32 +203,18 @@ pub async fn update_topic(
     )
 )]
 #[tracing::instrument(skip(pool))]
-pub async fn get_all_topics_for_user(
+pub async fn get_all_topics_for_owner_id(
     user: LoggedUser,
-    req_user_id: web::Path<uuid::Uuid>,
+    owner_id: web::Path<String>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, ServiceError> {
-    if user
-        .user_orgs
-        .iter()
-        .any(|o| o.id == dataset_org_plan_sub.organization.organization.id)
-        && user.id != *req_user_id
-        && user
-            .user_orgs
-            .iter()
-            .find(|o| o.id == dataset_org_plan_sub.organization.organization.id)
-            .unwrap()
-            .role
-            < 1
-    {
-        return Err(ServiceError::BadRequest(
-            "User does not have enough permissions to get topics for another user".to_string(),
-        ));
-    }
-
-    let topics =
-        get_all_topics_for_user_query(*req_user_id, dataset_org_plan_sub.dataset.id, &pool).await?;
+    let topics = get_all_topics_for_owner_id_query(
+        owner_id.to_string(),
+        dataset_org_plan_sub.dataset.id,
+        &pool,
+    )
+    .await?;
 
     Ok(HttpResponse::Ok().json(topics))
 }

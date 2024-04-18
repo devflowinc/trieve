@@ -219,12 +219,12 @@ diesel::table! {
 diesel::table! {
     topics (id) {
         id -> Uuid,
-        user_id -> Uuid,
         name -> Text,
         deleted -> Bool,
         created_at -> Timestamp,
         updated_at -> Timestamp,
         dataset_id -> Uuid,
+        owner_id -> Text,
     }
 }
 
@@ -281,7 +281,6 @@ diesel::joinable!(organization_usage_counts -> organizations (org_id));
 diesel::joinable!(stripe_subscriptions -> organizations (organization_id));
 diesel::joinable!(stripe_subscriptions -> stripe_plans (plan_id));
 diesel::joinable!(topics -> datasets (dataset_id));
-diesel::joinable!(topics -> users (user_id));
 diesel::joinable!(user_api_key -> users (user_id));
 diesel::joinable!(user_organizations -> organizations (organization_id));
 diesel::joinable!(user_organizations -> users (user_id));

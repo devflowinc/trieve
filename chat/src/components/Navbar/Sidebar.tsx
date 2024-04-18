@@ -64,6 +64,7 @@ export const Sidebar = (props: SidebarProps) => {
       body: JSON.stringify({
         topic_id: topic.id,
         name: editingTopic(),
+        owner_id: userContext.user?.()?.id,
       }),
     });
 

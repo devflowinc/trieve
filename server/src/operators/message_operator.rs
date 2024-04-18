@@ -1,6 +1,5 @@
 use crate::data::models::Topic;
 use crate::diesel::prelude::*;
-use crate::operators::topic_operator::get_topic_query;
 use crate::{
     data::models::{Message, Pool},
     errors::ServiceError,
@@ -46,17 +45,23 @@ pub async fn user_owns_topic_query(
     given_dataset_id: uuid::Uuid,
     pool: &web::Data<Pool>,
 ) -> Result<Topic, ServiceError> {
-    use crate::data::schema::topics::dsl::*;
+    use crate::data::schema::topics::dsl as topics_columns;
 
     let mut conn = pool.get().await.unwrap();
 
-    let topic: Topic = topics
-        .filter(id.eq(topic_id))
-        .filter(user_id.eq(user_given_id))
-        .filter(dataset_id.eq(given_dataset_id))
-        .first::<crate::data::models::Topic>(&mut conn)
+    let topic: Topic = topics_columns::topics
+        .filter(topics_columns::id.eq(topic_id))
+        .filter(topics_columns::owner_id.eq(user_given_id.to_string()))
+        .filter(topics_columns::dataset_id.eq(given_dataset_id))
+        .first::<Topic>(&mut conn)
         .await
-        .map_err(|_db_error| ServiceError::BadRequest("Error getting topic".to_string()))?;
+        .map_err(|db_error| {
+            log::error!(
+                "Error getting topic for user_owns_topic_check: {:?}",
+                db_error
+            );
+            ServiceError::BadRequest("Error getting topic for user_owns_topic_check".to_string())
+        })?;
 
     Ok(topic)
 }
@@ -70,14 +75,6 @@ pub async fn create_message_query(
     use crate::data::schema::messages::dsl::messages;
 
     let mut conn = pool.get().await.unwrap();
-
-    match get_topic_query(new_message.topic_id, new_message.dataset_id, pool).await {
-        Ok(topic) if topic.user_id != given_user_id => {
-            return Err(ServiceError::BadRequest("Unauthorized".to_string()))
-        }
-        Ok(_topic) => {}
-        Err(e) => return Err(e),
-    };
 
     diesel::insert_into(messages)
         .values(&new_message)
@@ -203,14 +200,6 @@ pub async fn delete_message_query(
     use crate::data::schema::messages::dsl::*;
 
     let mut conn = pool.get().await.unwrap();
-
-    match get_topic_query(given_topic_id, given_dataset_id, pool).await {
-        Ok(topic) if topic.user_id != *given_user_id => {
-            return Err(ServiceError::BadRequest("Unauthorized".to_string()))
-        }
-        Ok(_topic) => {}
-        Err(e) => return Err(e),
-    };
 
     let target_message: Message = messages
         .find(given_message_id)
