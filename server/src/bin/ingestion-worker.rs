@@ -325,6 +325,17 @@ pub async fn bulk_upload_chunks(
     payload: BulkUploadIngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
 ) -> Result<Vec<uuid::Uuid>, ServiceError> {
+    let tx_ctx = sentry::TransactionContext::new(
+        "ingestion worker bulk_upload_chunk",
+        "ingestion worker bulk_upload_chunk",
+    );
+    let transaction = sentry::start_transaction(tx_ctx);
+
+    let precompute_transaction = transaction.start_child(
+        "precomputing_data_before_insert",
+        "precomputing some important data before insert",
+    );
+
     let dataset_config = payload.dataset_configuration;
 
     // Being blocked out because it is difficult to create multiple split_avg embeddings in batch
@@ -362,8 +373,10 @@ pub async fn bulk_upload_chunks(
                 chunk_ids.push(chunk_uuid);
             }
         }
+        transaction.finish();
         return Ok(chunk_ids);
     }
+
 
     #[allow(clippy::type_complexity)]
     let ingestion_data: Vec<(
@@ -435,9 +448,18 @@ pub async fn bulk_upload_chunks(
         })
         .collect();
 
+    precompute_transaction.finish();
+
+    let insert_tx = transaction.start_child(
+        "calling_BULK_insert_chunk_metadata_query",
+        "calling_BULK_insert_chunk_metadata_query",
+    );
+
     let inserted_chunk_metadatas =
         bulk_insert_chunk_metadata_query(ingestion_data, payload.dataset_id, web_pool.clone())
             .await?;
+
+    insert_tx.finish();
 
     if inserted_chunk_metadatas.is_empty() {
         // All collisions
@@ -455,6 +477,11 @@ pub async fn bulk_upload_chunks(
         .map(|(chunk_metadata, _, _, _)| chunk_metadata.id)
         .collect();
 
+    let embedding_transaction = transaction.start_child(
+        "calling_create_all_embeddings",
+        "calling_create_all_embeddings",
+    );
+
     // Assuming split average is false, Assume Explicit Vectors don't exist
     let embedding_vectors =
         match create_embeddings(all_content.clone(), "doc", dataset_config.clone()).await {
@@ -471,6 +498,13 @@ pub async fn bulk_upload_chunks(
                 )))
             }
         }?;
+
+    embedding_transaction.finish();
+
+    let embedding_transaction = transaction.start_child(
+        "calling_create_SPLADE_embeddings",
+        "calling_create_SPLADE_embeddings",
+    );
 
     let splade_vectors = if dataset_config.FULLTEXT_ENABLED {
         match get_sparse_vectors(all_content, "doc").await {
@@ -491,6 +525,8 @@ pub async fn bulk_upload_chunks(
             .take(content_size)
             .collect())
     }?;
+
+    embedding_transaction.finish();
 
     let qdrant_points = izip!(
         inserted_chunk_metadatas.clone(),
@@ -531,8 +567,15 @@ pub async fn bulk_upload_chunks(
     )
     .collect();
 
+    let insert_tx = transaction.start_child(
+        "calling_BULK_create_new_qdrant_points_query",
+        "calling_BULK_create_new_qdrant_points_query",
+    );
+
     let create_point_result =
         bulk_create_new_qdrant_points_query(qdrant_points, dataset_config.clone()).await;
+
+    insert_tx.finish();
 
     if let Err(err) = create_point_result {
         bulk_revert_insert_chunk_metadata_query(inserted_chunk_metadata_ids, web_pool.clone())
