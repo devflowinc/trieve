@@ -150,6 +150,7 @@ const MainLayout = (props: LayoutProps) => {
         body: JSON.stringify({
           first_user_message: new_message_content,
           model: modelName(),
+          owner_id: userContext.user?.()?.id,
         }),
       });
 

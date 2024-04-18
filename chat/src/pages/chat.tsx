@@ -23,7 +23,7 @@ export const Chat = () => {
     const dataset = userContext.currentDataset?.();
     if (!dataset) return [];
     const response = await fetch(
-      `${api_host}/topic/user/${userContext.user?.()?.id ?? ""}`,
+      `${api_host}/topic/owner/${userContext.user?.()?.id ?? ""}`,
       {
         method: "GET",
         headers: {

@@ -87,46 +87,46 @@ pub async fn get_topic_query(
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn get_topic_for_user_query(
-    topic_user_id: uuid::Uuid,
+pub async fn get_topic_for_owner_id_query(
+    owner_id: String,
     topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
     pool: &web::Data<Pool>,
 ) -> Result<Topic, ServiceError> {
-    use crate::data::schema::topics::dsl::*;
+    use crate::data::schema::topics::dsl as topics_columns;
 
     let mut conn = pool.get().await.unwrap();
 
-    topics
-        .filter(id.eq(topic_id))
-        .filter(user_id.eq(topic_user_id))
-        .filter(deleted.eq(false))
-        .filter(dataset_id.eq(given_dataset_id))
+    topics_columns::topics
+        .filter(topics_columns::id.eq(topic_id))
+        .filter(topics_columns::owner_id.eq(owner_id))
+        .filter(topics_columns::deleted.eq(false))
+        .filter(topics_columns::dataset_id.eq(given_dataset_id))
         .first::<Topic>(&mut conn)
         .await
         .map_err(|_db_error| {
             ServiceError::BadRequest(
-                "This topic does not exist for the authenticated user".to_string(),
+                "This topic does not exist for the specified owner_id".to_string(),
             )
         })
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn get_all_topics_for_user_query(
-    topic_user_id: uuid::Uuid,
+pub async fn get_all_topics_for_owner_id_query(
+    topic_owner_id: String,
     given_dataset_id: uuid::Uuid,
     pool: &web::Data<Pool>,
 ) -> Result<Vec<Topic>, ServiceError> {
-    use crate::data::schema::topics::dsl::*;
+    use crate::data::schema::topics::dsl as topics_columns;
 
     let mut conn = pool.get().await.unwrap();
 
-    topics
-        .filter(user_id.eq(topic_user_id))
-        .filter(dataset_id.eq(given_dataset_id))
-        .filter(deleted.eq(false))
-        .order(updated_at.desc())
+    topics_columns::topics
+        .filter(topics_columns::owner_id.eq(topic_owner_id))
+        .filter(topics_columns::dataset_id.eq(given_dataset_id))
+        .filter(topics_columns::deleted.eq(false))
+        .order(topics_columns::updated_at.desc())
         .load::<Topic>(&mut conn)
         .await
-        .map_err(|_db_error| ServiceError::BadRequest("Error getting topics for user".to_string()))
+        .map_err(|_db_error| ServiceError::BadRequest("Error getting topics for the specified owner_id".to_string()))
 }

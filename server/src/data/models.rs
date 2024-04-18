@@ -61,10 +61,12 @@ impl User {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, ValidGrouping, Clone, ToSchema)]
+#[derive(
+    Debug, Serialize, Deserialize, Queryable, Selectable, Insertable, ValidGrouping, Clone, ToSchema,
+)]
 #[schema(example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "user_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "owner_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "name": "Trieve",
     "deleted": false,
     "created_at": "2021-01-01T00:00:00",
@@ -74,28 +76,24 @@ impl User {
 #[diesel(table_name = topics)]
 pub struct Topic {
     pub id: uuid::Uuid,
-    pub user_id: uuid::Uuid,
     pub name: String,
     pub deleted: bool,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub dataset_id: uuid::Uuid,
+    pub owner_id: String,
 }
 
 impl Topic {
-    pub fn from_details<S: Into<String>, T: Into<uuid::Uuid>>(
-        name: S,
-        user_id: T,
-        dataset_id: uuid::Uuid,
-    ) -> Self {
+    pub fn from_details<S: Into<String>>(name: S, owner_id: S, dataset_id: uuid::Uuid) -> Self {
         Topic {
             id: uuid::Uuid::new_v4(),
-            user_id: user_id.into(),
             name: name.into(),
             deleted: false,
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             dataset_id,
+            owner_id: owner_id.into(),
         }
     }
 }
