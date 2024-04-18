@@ -28,7 +28,11 @@ export const DashboardLayout = (props: DashboardLayoutProps) => {
   createEffect(() => {
     const pathname = location.pathname;
 
-    if (pathname === "/dashboard") {
+    if (
+      pathname === "/dashboard" ||
+      pathname === "/dashboard/null" ||
+      pathname === "/dashboard/null/undefined"
+    ) {
       navigate(
         `/dashboard/${userContext.selectedOrganizationId?.()}/overview`,
         {

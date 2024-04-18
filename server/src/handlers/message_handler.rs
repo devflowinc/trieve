@@ -585,6 +585,7 @@ pub async fn stream_response(
     let mut citation_chunks_stringified;
     let mut citation_chunks_stringified1;
 
+    let message_to_query_prompt = dataset_config.MESSAGE_TO_QUERY_PROMPT.clone();
     let rag_prompt = dataset_config.RAG_PROMPT.clone();
     let default_model = dataset_config.LLM_DEFAULT_MODEL.clone();
 
@@ -605,7 +606,7 @@ pub async fn stream_response(
             role: Role::User,
             content: ChatMessageContent::Text(format!(
                 "{}{}",
-                rag_prompt,
+                message_to_query_prompt,
                 match openai_messages
                     .clone()
                     .last()
@@ -639,12 +640,12 @@ pub async fn stream_response(
         seed: None,
     };
 
-    let search_query_from_rag_prompt = client
+    let search_query_from_message_to_query_prompt = client
         .chat()
         .create(gen_inference_parameters)
         .await
-        .expect("No OpenAI Completion for evidence search");
-    let query = match &search_query_from_rag_prompt
+        .expect("No OpenAI Completion for chunk search");
+    let query = match &search_query_from_message_to_query_prompt
         .choices
         .first()
         .expect("No response for OpenAI completion")
@@ -732,13 +733,18 @@ pub async fn stream_response(
         .join("\n\n");
 
     let last_message = ChatMessageContent::Text(format!(
-            "Here's my prompt: {} \n\n Use the following retrieved documents as the basis of your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [Doc n] where n is the doc number. Thesea are the docs: {}",
-            match &openai_messages.last().expect("There needs to be at least 1 prior message").content {
-                ChatMessageContent::Text(text) => text.clone(),
-                _ => "".to_string(),
-            },
-            rag_content,
-        ));
+        "Here's my prompt: {} \n\n {} {}",
+        match &openai_messages
+            .last()
+            .expect("There needs to be at least 1 prior message")
+            .content
+        {
+            ChatMessageContent::Text(text) => text.clone(),
+            _ => "".to_string(),
+        },
+        rag_prompt,
+        rag_content,
+    ));
 
     // replace the last message with the last message with evidence
     let open_ai_messages = openai_messages
