@@ -330,6 +330,7 @@ pub async fn bulk_upload_chunks(
         "ingestion worker bulk_upload_chunk",
     );
     let transaction = sentry::start_transaction(tx_ctx);
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
 
     let precompute_transaction = transaction.start_child(
         "precomputing_data_before_insert",
@@ -364,6 +365,10 @@ pub async fn bulk_upload_chunks(
         || dataset_config.COLLISIONS_ENABLED
         || upsert_by_tracking_id_being_used
     {
+        let insert_tx = transaction.start_child(
+            "calling_upload_individually",
+            "calling_upload_individually",
+        );
         let mut chunk_ids = vec![];
         // Split average or Collisions
         for message in payload.ingestion_messages {
@@ -373,6 +378,8 @@ pub async fn bulk_upload_chunks(
                 chunk_ids.push(chunk_uuid);
             }
         }
+        insert_tx.finish();
+
         transaction.finish();
         return Ok(chunk_ids);
     }
