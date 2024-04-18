@@ -1291,7 +1291,7 @@ impl DatasetAndUsage {
     "QDRANT_URL": "http://localhost:6333",
     "QDRANT_API_KEY": "api_key",
     "QDRANT_COLLECTION_NAME": "collection",
-    "RAG_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
+    "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
     "N_RETRIEVALS_TO_INCLUDE": 5,
     "DUPLICATE_DISTANCE_THRESHOLD": 1.1,
     "COLLISIONS_ENABLED": false,
@@ -1310,6 +1310,7 @@ pub struct ServerDatasetConfiguration {
     pub QDRANT_URL: String,
     pub QDRANT_API_KEY: String,
     pub QDRANT_COLLECTION_NAME: String,
+    pub MESSAGE_TO_QUERY_PROMPT: String,
     pub RAG_PROMPT: String,
     pub N_RETRIEVALS_TO_INCLUDE: usize,
     pub DUPLICATE_DISTANCE_THRESHOLD: f64,
@@ -1361,8 +1362,8 @@ impl ServerDatasetConfiguration {
                         s.to_string()
                     }
                 }).expect("EMBEDDING_BASE_URL should exist"),
-            RAG_PROMPT: configuration
-                .get("RAG_PROMPT")
+            MESSAGE_TO_QUERY_PROMPT: configuration
+                .get("MESSAGE_TO_QUERY_PROMPT")
                 .unwrap_or(&json!("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string()))
                 .as_str()
                 .map(|s| {
@@ -1372,6 +1373,18 @@ impl ServerDatasetConfiguration {
                         s.to_string()
                     }
                 }).unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string()),
+            RAG_PROMPT: configuration
+                .get("RAG_PROMPT")
+                .unwrap_or(&json!("Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:".to_string()))
+                .as_str()
+                .map(|s| 
+                    if s.is_empty() {
+                        "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:".to_string()
+                    } else {
+                        s.to_string()
+                    }
+                )
+                .unwrap_or("Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:".to_string()),
             N_RETRIEVALS_TO_INCLUDE: configuration
                 .get("N_RETRIEVALS_TO_INCLUDE")
                 .unwrap_or(&json!(5))

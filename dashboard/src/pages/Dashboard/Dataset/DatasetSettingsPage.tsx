@@ -30,6 +30,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   LLM_BASE_URL: "",
   LLM_DEFAULT_MODEL: "",
   EMBEDDING_BASE_URL: "https://embedding.trieve.ai",
+  MESSAGE_TO_QUERY_PROMPT: "",
   RAG_PROMPT: "",
   EMBEDDING_SIZE: 768,
   N_RETRIEVALS_TO_INCLUDE: 8,
@@ -443,7 +444,21 @@ export const ServerSettingsForm = () => {
         server_configuration: serverConfig(),
       }),
     })
-      .then(() => {
+      .then((resp) => {
+        if (!resp.ok) {
+          let message = "Error Saving Dataset Server Configuration";
+          if (resp.status === 403) {
+            message =
+              "You must have owner permissions to modify dataset settings";
+          }
+
+          createToast({
+            title: "Error",
+            type: "error",
+            message: message,
+          });
+        }
+
         setSaved(true);
         void new Promise((r) => setTimeout(r, 1000)).then(() =>
           setSaved(false),
@@ -563,6 +578,30 @@ export const ServerSettingsForm = () => {
                     };
                   })
                 }
+              />
+            </div>
+
+            <div class="col-span-4 sm:col-span-2">
+              <label
+                for="messageToQueryPrompt"
+                class="block text-sm font-medium leading-6"
+              >
+                Message to Query Prompt
+              </label>
+              <textarea
+                value={serverConfig().MESSAGE_TO_QUERY_PROMPT}
+                onInput={(e) =>
+                  setServerConfig((prev) => {
+                    return {
+                      ...prev,
+                      MESSAGE_TO_QUERY_PROMPT: e.currentTarget.value,
+                    };
+                  })
+                }
+                rows="4"
+                name="messageToQueryPrompt"
+                id="messageToQueryPrompt"
+                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
             </div>
 

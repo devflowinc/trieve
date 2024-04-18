@@ -54,6 +54,7 @@ render(
           <Route path="/billing" component={Billing} />
           <Route path="/settings" component={Settings} />
         </Route>
+        <Route path="/dashboard/:id/:id" component={DashboardLayout} />
       </Route>
     </Router>
   ),
