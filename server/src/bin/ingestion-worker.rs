@@ -321,6 +321,7 @@ async fn ingestion_worker(
     }
 }
 
+#[tracing::instrument(skip(payload, web_pool))]
 pub async fn bulk_upload_chunks(
     payload: BulkUploadIngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
@@ -364,6 +365,10 @@ pub async fn bulk_upload_chunks(
         || dataset_config.COLLISIONS_ENABLED
         || upsert_by_tracking_id_being_used
     {
+        let insert_tx = transaction.start_child(
+            "calling_upload_individually",
+            "calling_upload_individually",
+        );
         let mut chunk_ids = vec![];
         // Split average or Collisions
         for message in payload.ingestion_messages {
@@ -373,9 +378,12 @@ pub async fn bulk_upload_chunks(
                 chunk_ids.push(chunk_uuid);
             }
         }
+
+        insert_tx.finish();
         transaction.finish();
         return Ok(chunk_ids);
     }
+
 
     #[allow(clippy::type_complexity)]
     let ingestion_data: Vec<(ChunkMetadata, Option<Vec<uuid::Uuid>>, bool)> = payload
