@@ -435,6 +435,7 @@ export interface ClientEnvsConfiguration {
   IMAGE_RANGE_END_KEY?: string;
   DOCUMENT_UPLOAD_FEATURE?: boolean;
   FILE_NAME_KEY?: string;
+  IMAGE_METADATA_KEY?: string;
 }
 
 export const defaultClientEnvsConfiguration: ClientEnvsConfiguration = {

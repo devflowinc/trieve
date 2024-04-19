@@ -99,6 +99,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const [showMetadata, setShowMetadata] = createSignal(false);
   const [expandMetadata, setExpandMetadata] = createSignal(false);
   const [fileLink, setFileLink] = createSignal<string | null>(null);
+  const [imageLink, setImageLink] = createSignal<string | null>(null);
 
   createEffect(() => {
     const fileNameKey = $envs().FILE_NAME_KEY;
@@ -124,6 +125,21 @@ const ScoreChunk = (props: ScoreChunkProps) => {
         setFileLink(signedUrl);
       });
     });
+  });
+
+  createEffect(() => {
+    const imageMetadataKey = $envs().IMAGE_METADATA_KEY;
+
+    if (
+      !imageMetadataKey ||
+      !props.chunk.metadata ||
+      !indirectHasOwnProperty(props.chunk.metadata, imageMetadataKey)
+    ) {
+      return null;
+    }
+
+    const imageMetadata = props.chunk.metadata[imageMetadataKey] as string;
+    setImageLink(imageMetadata);
   });
 
   const imgInformation = createMemo(() => {
@@ -491,6 +507,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                     {formatDate(new Date(props.chunk.time_stamp ?? ""))}
                   </span>
                 </div>
+              </Show>
+              <Show when={imageLink() != null}>
+                <img class="w-40" src={imageLink() ?? ""} alt="" />
               </Show>
               <Show when={Object.keys(props.chunk.metadata ?? {}).length > 0}>
                 <button
