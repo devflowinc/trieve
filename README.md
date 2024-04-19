@@ -283,7 +283,7 @@ Install Stripe CLI.
 2. `stripe listen --forward-to localhost:8090/api/stripe/webhook`
 3. `stripe plans create --amount=1200 --currency=usd --interval=month --product=prod_PCHehsNBCcVN9i`
 
-## Deploying to kubernetes
+## Deploying to Kubernetes
 
 Ensure that the values.yaml contains the value
 
