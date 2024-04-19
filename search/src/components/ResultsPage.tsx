@@ -434,7 +434,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                 );
               }}
             </For>
-            <Show when={resultChunks().length > 0}>
+            <Show when={groupResultChunks().length > 0}>
               <div class="mx-auto my-12 flex items-center space-x-2">
                 <PaginationController page={props.page} totalPages={100} />
               </div>
