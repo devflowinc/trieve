@@ -23,6 +23,7 @@ export const defaultClientEnvsConfiguration: ClientEnvsConfiguration = {
   SHOW_GITHUB_STARS: false,
   IMAGE_RANGE_START_KEY: "",
   IMAGE_RANGE_END_KEY: "",
+  IMAGE_METADATA_KEY: "",
   FILE_NAME_KEY: "",
 };
 
