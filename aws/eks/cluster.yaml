@@ -1,0 +1,16 @@
+# An example of ClusterConfig object using Managed Nodes
+---
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: trieve
+  region: us-east-2
+
+managedNodeGroups:
+  - name: trieve-nodegroup
+    instanceType: m5a.2xlarge
+    minSize: 3
+    desiredCapacity: 4
+    maxSize: 5
+    volumeSize: 30
