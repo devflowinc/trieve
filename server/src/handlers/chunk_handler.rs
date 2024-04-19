@@ -9,7 +9,7 @@ use crate::errors::ServiceError;
 use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
-use crate::operators::qdrant_operator::recommend_qdrant_query;
+use crate::operators::qdrant_operator::{point_id_exists_in_qdrant, recommend_qdrant_query};
 use crate::operators::search_operator::{
     get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
     get_metadata_filter_condition, search_full_text_chunks, search_hybrid_chunks,
@@ -1298,11 +1298,28 @@ pub async fn get_chunk_by_id(
     _user: LoggedUser,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-) -> Result<HttpResponse, actix_web::Error> {
+) -> Result<HttpResponse, ServiceError> {
     let chunk_id = chunk_id.into_inner();
+
+    let dataset_configuration = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    );
+
     let chunk = get_metadata_from_id_query(chunk_id, dataset_org_plan_sub.dataset.id, pool).await?;
 
-    Ok(HttpResponse::Ok().json(chunk))
+    let point_id = chunk.qdrant_point_id;
+    let pointid_exists = if let Some(point_id) = point_id {
+        point_id_exists_in_qdrant(point_id, dataset_configuration).await?
+    } else {
+        // This is a collision, assume collisions always exist in qdrant
+        true
+    };
+
+    if pointid_exists {
+        Ok(HttpResponse::Ok().json(chunk))
+    } else {
+        Err(ServiceError::NotFound)
+    }
 }
 
 /// Get Chunk By Tracking Id
@@ -1331,7 +1348,11 @@ pub async fn get_chunk_by_tracking_id(
     _user: LoggedUser,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-) -> Result<HttpResponse, actix_web::Error> {
+) -> Result<HttpResponse, ServiceError> {
+    let dataset_configuration = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.server_configuration.clone(),
+    );
+
     let chunk = get_metadata_from_tracking_id_query(
         tracking_id.into_inner(),
         dataset_org_plan_sub.dataset.id,
@@ -1339,7 +1360,20 @@ pub async fn get_chunk_by_tracking_id(
     )
     .await?;
 
-    Ok(HttpResponse::Ok().json(chunk))
+    let point_id = chunk.qdrant_point_id;
+
+    let pointid_exists = if let Some(point_id) = point_id {
+        point_id_exists_in_qdrant(point_id, dataset_configuration).await?
+    } else {
+        // This is a collision, assume collisions always exist in qdrant
+        true
+    };
+
+    if pointid_exists {
+        Ok(HttpResponse::Ok().json(chunk))
+    } else {
+        Err(ServiceError::NotFound)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
