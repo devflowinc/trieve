@@ -113,6 +113,7 @@ export interface ClientEnvsConfiguration {
   IMAGE_RANGE_START_KEY: string;
   IMAGE_RANGE_END_KEY: string;
   FILE_NAME_KEY: string;
+  IMAGE_METADATA_KEY: string;
 }
 
 export interface DefaultError {

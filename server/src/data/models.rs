@@ -1495,6 +1495,7 @@ impl ServerDatasetConfiguration {
     "IMAGE_RANGE_END_KEY": "image range end key",
     "DOCUMENT_UPLOAD_FEATURE": true,
     "FILE_NAME_KEY": "file_name_key",
+    "IMAGE_METADATA_KEY": ".image_url"
 }))]
 #[allow(non_snake_case)]
 pub struct ClientDatasetConfiguration {
@@ -1509,6 +1510,7 @@ pub struct ClientDatasetConfiguration {
     pub IMAGE_RANGE_END_KEY: Option<String>,
     pub DOCUMENT_UPLOAD_FEATURE: Option<bool>,
     pub FILE_NAME_KEY: String,
+    pub IMAGE_METADATA_KEY: String
 }
 
 impl ClientDatasetConfiguration {
@@ -1573,6 +1575,12 @@ impl ClientDatasetConfiguration {
                 .as_str()
                 .expect("FILE_NAME_KEY should exist")
                 .to_string(),
+            IMAGE_METADATA_KEY: configuration
+                .get("IMAGE_METADATA_KEY")
+                .unwrap_or(&json!(""))
+                .as_str()
+                .unwrap_or("")
+                .to_string()
         }
     }
 }
