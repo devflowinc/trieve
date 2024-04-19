@@ -472,12 +472,6 @@ Now check your deployment!
 kubectl describe pods
 ```
 
-## Setting up ELB with Ingress on AWS
-
-```sh
-cd aws/elb
-
-
 ## Building images and publishing to ECR
 
 Use the steps in the above section to configure your AWS CLI tool, and ensure you have docker installed.
