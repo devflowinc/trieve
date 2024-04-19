@@ -626,6 +626,8 @@ const SearchForm = (props: {
                   } else {
                     setGroupUniqueSearch(false);
                   }
+
+                  onSubmit(e);
                 }}
               />
               <div class="flex items-center space-x-1">
