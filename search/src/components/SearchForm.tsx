@@ -1,5 +1,4 @@
 import { BiRegularSearch, BiRegularX } from "solid-icons/bi";
-import { AiOutlineClockCircle } from "solid-icons/ai";
 import { A, useNavigate } from "@solidjs/router";
 import {
   For,
@@ -55,10 +54,6 @@ const SearchForm = (props: {
   const [comboBoxSections, setComboBoxSections] = createSignal<
     ComboboxSection[]
   >(customComboBoxFilterVals);
-  const [searchQueriesFromStorage, setSearchQueriesFromStorage] = createSignal<
-    string[]
-  >([]);
-  const [searchHistoryList, setSearchHistoryList] = createSignal<string[]>([]);
   const [showFilters, setShowFilters] = createSignal(false);
   const [timeRange, setTimeRange] = createSignal({
     start: props.filters.start,
@@ -70,54 +65,6 @@ const SearchForm = (props: {
     props.groupUniqueSearch ?? false,
   );
 
-  createEffect(() => {
-    // get the previous searched queries from localStorage and set them into the state;
-    const searchQueriesFromStorage = localStorage.getItem("searchQueries");
-
-    if (searchQueriesFromStorage) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const parsedQueries: string[] = JSON.parse(searchQueriesFromStorage);
-      setSearchQueriesFromStorage(parsedQueries);
-    }
-  });
-
-  const updateSearchQueriesInStorage = (
-    query: string,
-    searchQueriesFromStorage: (string | null)[],
-  ) => {
-    if (searchQueriesFromStorage.includes(query)) {
-      return;
-    }
-    const queriesArray = [
-      ...searchQueriesFromStorage,
-      query,
-    ] as unknown as string[];
-    setSearchQueriesFromStorage(queriesArray);
-    localStorage.setItem("searchQueries", JSON.stringify(queriesArray));
-  };
-
-  const updateSearchHistory = (query: string, searchQueries: string[]) => {
-    const storedQueries = searchQueries;
-    if (!query) {
-      return;
-    }
-
-    const filteredQueries = storedQueries.filter((storedQuery: string) => {
-      return storedQuery.toLowerCase().startsWith(query.toLowerCase());
-    });
-
-    filteredQueries.sort((a: string, b: string) => {
-      const aLower = a.toLowerCase();
-      const bLower = b.toLowerCase();
-
-      if (aLower < bLower) return -1;
-      if (aLower > bLower) return 1;
-      return 0;
-    });
-
-    setSearchHistoryList(filteredQueries.slice(0, 5));
-  };
-
   const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
     if (!textarea) return;
 
@@ -128,9 +75,6 @@ const SearchForm = (props: {
     e.preventDefault();
     const textAreaValue = textareaInput();
     if (!textAreaValue) return;
-
-    //set the search query in localStorage;
-    updateSearchQueriesInStorage(textAreaValue, searchQueriesFromStorage());
 
     const searchQuery = encodeURIComponent(
       textAreaValue.length > 3800
@@ -426,12 +370,6 @@ const SearchForm = (props: {
     return textareaVal;
   });
 
-  const handleHistoryClick = (e: Event, title: string) => {
-    setTextareaInput(title);
-    onSubmit(e);
-    setSearchHistoryList([]);
-  };
-
   return (
     <div class="w-full">
       <form class="w-full space-y-4 dark:text-white" onSubmit={onSubmit}>
@@ -440,8 +378,6 @@ const SearchForm = (props: {
             classList={{
               "flex w-full justify-center space-x-2 rounded-md bg-neutral-100 px-4 py-1 pr-[10px] dark:bg-neutral-700":
                 true,
-              "rounded-bl-none rounded-br-none":
-                textareaInput().length > 0 && searchHistoryList().length > 0,
             }}
           >
             <BiRegularSearch class="mt-1 h-6 w-6 fill-current" />
@@ -457,14 +393,12 @@ const SearchForm = (props: {
               value={textareaVal()}
               onInput={(e) => {
                 setTextareaInput(e.target.value);
-                updateSearchHistory(e.target.value, searchQueriesFromStorage());
               }}
               onKeyDown={(e) => {
                 if (
                   ((e.ctrlKey || e.metaKey) && e.key === "Enter") ||
                   (!e.shiftKey && e.key === "Enter")
                 ) {
-                  setSearchHistoryList([]);
                   onSubmit(e);
                 }
               }}
@@ -495,22 +429,6 @@ const SearchForm = (props: {
               </button>
             </Show>
           </div>
-          <Show when={textareaInput().length && searchHistoryList().length}>
-            <div class="absolute left-0 top-[99%] z-50 ml-0 w-full rounded-md rounded-tl-none rounded-tr-none bg-neutral-100 pb-1 dark:bg-neutral-700">
-              <div class="mx-4 my-1 h-px bg-[#808080]" />
-              <For each={searchHistoryList()}>
-                {(title) => (
-                  <div
-                    class="flex w-full cursor-pointer items-center justify-start space-x-2 rounded px-4 py-[6px] pr-[10px] font-bold text-magenta-500 hover:bg-neutral-200 dark:hover:bg-neutral-800"
-                    onClick={(e) => handleHistoryClick(e, title)}
-                  >
-                    <AiOutlineClockCircle class="mr-3 h-5 w-5 fill-black dark:fill-white" />
-                    {title}
-                  </div>
-                )}
-              </For>
-            </div>
-          </Show>
         </div>
         <div class="flex space-x-2">
           <Show
