@@ -1003,35 +1003,6 @@ impl From<File> for FileDTO {
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone)]
-#[diesel(table_name = chunk_files)]
-pub struct ChunkFile {
-    pub id: uuid::Uuid,
-    pub chunk_id: uuid::Uuid,
-    pub file_id: uuid::Uuid,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-}
-
-impl ChunkFile {
-    pub fn from_details(chunk_id: uuid::Uuid, file_id: uuid::Uuid) -> Self {
-        ChunkFile {
-            id: uuid::Uuid::new_v4(),
-            chunk_id,
-            file_id,
-            created_at: chrono::Utc::now().naive_local(),
-            updated_at: chrono::Utc::now().naive_local(),
-        }
-    }
-}
-
-#[derive(Debug, Default, Serialize, Deserialize, Queryable, Clone)]
-pub struct ChunkFileWithName {
-    pub chunk_id: uuid::Uuid,
-    pub file_id: uuid::Uuid,
-    pub file_name: String,
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, Insertable, Selectable, ToSchema)]
 #[schema(example=json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
@@ -2222,7 +2193,7 @@ impl From<RetrievedPoint> for QdrantPayload {
     }
 }
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct FileWorkerMessage {
     pub file_id: uuid::Uuid,
     pub dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { For, Show, createEffect, createSignal, useContext } from "solid-js";
 import { DatasetContext } from "../../../contexts/DatasetContext";
 import {
@@ -333,7 +334,7 @@ export const FrontendSettingsForm = () => {
                 name="imageMetadataKey"
                 id="imageMetadataKey"
                 class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                value={clientConfig().IMAGE_METADATA_KEY}
+                value={clientConfig().IMAGE_METADATA_KEY ?? ""}
                 onInput={(e) =>
                   setClientConfig((prev) => {
                     return {

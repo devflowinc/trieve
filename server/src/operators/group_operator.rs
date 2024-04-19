@@ -187,14 +187,12 @@ pub async fn delete_group_by_id_query(
     pool: web::Data<Pool>,
     config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
+    use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::events::dsl as events_columns;
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
-    use crate::data::schema::{
-        chunk_collisions::dsl as chunk_collisions_columns, chunk_files::dsl as chunk_files_columns,
-        chunk_metadata::dsl as chunk_metadata_columns,
-    };
 
     let mut conn = pool.get().await.unwrap();
 
@@ -249,13 +247,6 @@ pub async fn delete_group_by_id_query(
                 .await?;
 
                 if delete_chunks {
-                    diesel::delete(
-                        chunk_files_columns::chunk_files
-                            .filter(chunk_files_columns::chunk_id.eq_any(collisions.clone())),
-                    )
-                    .execute(conn)
-                    .await?;
-
                     diesel::delete(
                         chunk_collisions_columns::chunk_collisions
                             .filter(chunk_collisions_columns::chunk_id.eq_any(collisions.clone())),

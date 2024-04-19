@@ -11,16 +11,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    chunk_files (id) {
-        id -> Uuid,
-        chunk_id -> Uuid,
-        file_id -> Uuid,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
-    }
-}
-
-diesel::table! {
     chunk_group (id) {
         id -> Uuid,
         name -> Text,
@@ -262,8 +252,6 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(chunk_files -> chunk_metadata (chunk_id));
-diesel::joinable!(chunk_files -> files (file_id));
 diesel::joinable!(chunk_group -> datasets (dataset_id));
 diesel::joinable!(chunk_group_bookmarks -> chunk_group (group_id));
 diesel::joinable!(chunk_group_bookmarks -> chunk_metadata (chunk_metadata_id));
@@ -287,7 +275,6 @@ diesel::joinable!(user_organizations -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     chunk_collisions,
-    chunk_files,
     chunk_group,
     chunk_group_bookmarks,
     chunk_metadata,
