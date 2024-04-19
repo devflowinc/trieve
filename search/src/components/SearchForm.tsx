@@ -160,7 +160,7 @@ const SearchForm = (props: {
     const filters = filterStrings.join("&");
 
     const searchTypeRoute =
-      searchTypes().find((type) => type.isSelected)?.route ?? "";
+      searchTypes().find((type) => type.isSelected)?.route ?? "hybrid";
     const searchTypeUrlParam = searchTypeRoute
       ? `&searchType=${searchTypeRoute}`
       : "";
@@ -540,7 +540,9 @@ const SearchForm = (props: {
                   class="flex items-center space-x-1 pb-1 text-sm"
                 >
                   <span class="p-1">
-                    Type: {searchTypes().find((type) => type.isSelected)?.name}
+                    Type:{" "}
+                    {searchTypes().find((type) => type.isSelected)?.name ??
+                      "Hybrid"}
                   </span>{" "}
                   <svg
                     fill="currentColor"
@@ -580,6 +582,7 @@ const SearchForm = (props: {
                               });
                             });
                             setState(true);
+                            onSubmit(e);
                           };
                           return (
                             <MenuItem
