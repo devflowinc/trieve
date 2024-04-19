@@ -37,8 +37,8 @@ function build_images() {
   cd $startpath/../docker/mc
   docker_build -t trieve/mc .
   cd $startpath/../server
-  docker-build -t trieve/server -f Dockerfile.no-ocr . 
-  docker-build -t trieve/ingest -f Dockerfile.microservice .
+  docker_build -t trieve/server -f Dockerfile.no-ocr . 
+  docker_build -t trieve/ingest -f Dockerfile.microservice .
 }
 
 function tag_images() {
