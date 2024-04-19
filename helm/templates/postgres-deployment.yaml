@@ -26,6 +26,13 @@ spec:
         volumeMounts:
         - name: postgres-data
           mountPath: /var/lib/postgres/data
+        env:
+          - name: POSTGRES_USER
+            value: postgres
+          - name: POSTGRES_PASSWORD
+            value: password
+          - name: POSTGRES_DB
+            value: trieve
       volumes:
       - name: postgres-data
         persistentVolumeClaim:

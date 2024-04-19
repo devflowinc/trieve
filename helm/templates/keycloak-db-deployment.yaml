@@ -19,13 +19,20 @@ spec:
         app.kubernetes.io/managed-by: Helm
     spec:
       containers:
-      - name: postgres
-        image: postgres
-        ports:
-        - containerPort: 5432
-        volumeMounts:
-        - name: keycloak-db-data
-          mountPath: /var/lib/postgresql/data
+        - name: postgres
+          image: postgres:15
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: keycloak-db-data
+              mountPath: /var/lib/postgresql/data
+          env:
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              value: password
+            - name: POSTGRES_DB
+              value: keycloak
       volumes:
       - name: keycloak-db-data
         persistentVolumeClaim:
