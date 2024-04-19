@@ -1,3 +1,5 @@
+# unused
+{{- if eq 0 1 }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -21,3 +23,4 @@ spec:
       containers:
       - name: ingest
         image: {{ printf "%s%s:%s" (ternary (printf "%s.dkr.ecr.%s.amazonaws.com/" .Values.accountId .Values.region) "localhost:5000/" (eq .Values.environment "aws")) "ingest" .Values.containers.ingest.tag }}
+{{- end }}
