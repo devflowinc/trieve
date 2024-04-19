@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: s3
+  labels:
+    app.kubernetes.io/name: s3
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: Helm
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: s3
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: s3
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      containers:
+      - name: s3
+        image: {{ printf "%s%s:%s" (ternary (printf "%s.dkr.ecr.%s.amazonaws.com/" .Values.accountId .Values.region) "localhost:5000/" (eq .Values.environment "aws")) "s3" .Values.containers.s3.tag }}
+      ports:
+        - containerPort: 9000
+        - containerPort: 42625
+      volumeMounts:
+        - name: s3-data
+          mountPath: /data
+      env:
+        - name: MINIO_ROOT_USER
+          value: {{ .Values.config.minio.rootUser }}
+        - name: MINIO_ROOT_PASSWORD
+          value: {{ .Values.config.minio.rootPassword }}
+      volumes:
+      - name: s3-data
+        persistentVolumeClaim:
+          claimName: s3-pvc

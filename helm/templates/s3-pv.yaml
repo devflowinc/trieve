@@ -1,0 +1,18 @@
+{{- if eq $.Values.environment "local" }}
+{{- $name := "s3-pv" }}
+{{- $storage := ternary "10Gi" "500Gi" (eq .Values.environment "local") }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+    name: {{ $name }}
+spec:
+    capacity:
+        storage: {{ $storage }}
+    accessModes:
+        - ReadWriteOnce
+    persistentVolumeReclaimPolicy: Retain
+    storageClassName: ""
+    hostPath:
+      path: "/{{ $name }}"
+{{- end }}
+
