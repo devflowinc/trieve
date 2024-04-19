@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: trieve-ingress
+  namespace: default
+  labels:
+    app: trieve
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    external-dns.alpha.kubernetes.io/hostname: "trieve-aws.ai"
+spec:
+  ingressClassName: alb
+  rules:
+    - host: "trieve.ai"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: trieve-service
+                port:
+                  number: 8080
