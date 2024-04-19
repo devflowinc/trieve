@@ -1,6 +1,6 @@
 use crate::data::models::{
-    ChunkCollision, ChunkFile, ChunkGroupBookmark, Dataset, FullTextSearchResult,
-    IngestSpecificChunkMetadata, ServerDatasetConfiguration, UnifiedId,
+    ChunkCollision, ChunkGroupBookmark, Dataset, FullTextSearchResult, IngestSpecificChunkMetadata,
+    ServerDatasetConfiguration, UnifiedId,
 };
 use crate::handlers::chunk_handler::UploadIngestionMessage;
 use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkData};
@@ -324,25 +324,11 @@ pub async fn get_metadata_from_ids_query(
 #[allow(clippy::type_complexity)]
 #[tracing::instrument(skip(pool))]
 pub async fn bulk_insert_chunk_metadata_query(
-    // ChunkMetadata, FileUUID, group_ids, upsert_by_tracking_id
-    mut insertion_data: Vec<(
-        ChunkMetadata,
-        Option<uuid::Uuid>,
-        Option<Vec<uuid::Uuid>>,
-        bool,
-    )>,
+    // ChunkMetadata, group_ids, upsert_by_tracking_id
+    mut insertion_data: Vec<(ChunkMetadata, Option<Vec<uuid::Uuid>>, bool)>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<
-    Vec<(
-        ChunkMetadata,
-        Option<uuid::Uuid>,
-        Option<Vec<uuid::Uuid>>,
-        bool,
-    )>,
-    ServiceError,
-> {
-    use crate::data::schema::chunk_files::dsl as chunk_files_columns;
+) -> Result<Vec<(ChunkMetadata, Option<Vec<uuid::Uuid>>, bool)>, ServiceError> {
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
@@ -351,7 +337,7 @@ pub async fn bulk_insert_chunk_metadata_query(
     let chunkmetadata_to_insert: Vec<ChunkMetadata> = insertion_data
         .clone()
         .iter()
-        .map(|(chunk_metadata, _, _, _)| chunk_metadata.clone())
+        .map(|(chunk_metadata, _, _)| chunk_metadata.clone())
         .collect();
 
     let inserted_chunks = diesel::insert_into(chunk_metadata_columns::chunk_metadata)
@@ -370,24 +356,16 @@ pub async fn bulk_insert_chunk_metadata_query(
         })?;
 
     // mutates in place
-    insertion_data.retain(|(chunk_metadata, _, _, _)| {
+    insertion_data.retain(|(chunk_metadata, _, _)| {
         inserted_chunks
             .iter()
             .any(|inserted_chunk| inserted_chunk.id == chunk_metadata.id)
     });
 
-    let chunkfiles_to_insert: Vec<ChunkFile> = insertion_data
-        .clone()
-        .iter()
-        .filter_map(|(chunk_metadata, file_uuid, _, _)| {
-            file_uuid.map(|file_uuid| ChunkFile::from_details(chunk_metadata.id, file_uuid))
-        })
-        .collect();
-
     let chunk_group_bookmarks_to_insert: Vec<ChunkGroupBookmark> = insertion_data
         .clone()
         .iter()
-        .filter_map(|(chunk_metadata, _, group_ids, _)| {
+        .filter_map(|(chunk_metadata, group_ids, _)| {
             group_ids.as_ref().map(|group_ids| {
                 group_ids
                     .clone()
@@ -398,19 +376,6 @@ pub async fn bulk_insert_chunk_metadata_query(
         })
         .flatten()
         .collect();
-
-    diesel::insert_into(chunk_files_columns::chunk_files)
-        .values(chunkfiles_to_insert)
-        .execute(&mut conn)
-        .await
-        .map_err(|e| {
-            sentry::capture_message(
-                &format!("Failed to insert chunk file: {:?}", e),
-                sentry::Level::Error,
-            );
-            log::error!("Failed to insert chunk file: {:?}", e);
-            ServiceError::BadRequest("Failed to insert chunk file".to_string())
-        })?;
 
     diesel::insert_into(chunk_group_bookmarks_columns::chunk_group_bookmarks)
         .values(chunk_group_bookmarks_to_insert)
@@ -461,13 +426,11 @@ pub async fn get_optional_metadata_from_tracking_id_query(
 #[tracing::instrument(skip(pool))]
 pub async fn insert_chunk_metadata_query(
     chunk_data: ChunkMetadata,
-    file_uuid: Option<uuid::Uuid>,
     group_ids: Option<Vec<uuid::Uuid>>,
     dataset_uuid: uuid::Uuid,
     upsert_by_tracking_id: bool,
     pool: web::Data<Pool>,
 ) -> Result<ChunkMetadata, ServiceError> {
-    use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
@@ -487,7 +450,6 @@ pub async fn insert_chunk_metadata_query(
 
                 let updated_chunk = update_chunk_metadata_query(
                     update_chunk,
-                    file_uuid,
                     group_ids,
                     dataset_uuid,
                     pool.clone(),
@@ -534,18 +496,6 @@ pub async fn insert_chunk_metadata_query(
         ));
     }
 
-    if let Some(file_uuid) = file_uuid {
-        diesel::insert_into(chunk_files_columns::chunk_files)
-            .values(&ChunkFile::from_details(chunk_data.id, file_uuid))
-            .on_conflict_do_nothing()
-            .execute(&mut conn)
-            .await
-            .map_err(|e| {
-                log::error!("Failed to insert chunk file: {:?}", e);
-                ServiceError::BadRequest("Failed to insert chunk file".to_string())
-            })?;
-    }
-
     if let Some(group_ids) = group_ids {
         diesel::insert_into(chunk_group_bookmarks_columns::chunk_group_bookmarks)
             .values(
@@ -572,7 +522,6 @@ pub async fn bulk_revert_insert_chunk_metadata_query(
     chunk_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
-    use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl::*;
 
@@ -592,16 +541,6 @@ pub async fn bulk_revert_insert_chunk_metadata_query(
         })?;
 
     diesel::delete(
-        chunk_files_columns::chunk_files.filter(chunk_files_columns::chunk_id.eq_any(&chunk_ids)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(|e| {
-        log::error!("Failed to revert chunk file action: {:?}", e);
-        ServiceError::BadRequest("Failed to revert chunk file action".to_string())
-    })?;
-
-    diesel::delete(
         chunk_group_bookmarks_columns::chunk_group_bookmarks
             .filter(chunk_group_bookmarks_columns::chunk_metadata_id.eq_any(&chunk_ids)),
     )
@@ -619,12 +558,10 @@ pub async fn bulk_revert_insert_chunk_metadata_query(
 pub async fn insert_duplicate_chunk_metadata_query(
     chunk_data: ChunkMetadata,
     duplicate_chunk: uuid::Uuid,
-    file_uuid: Option<uuid::Uuid>,
     group_ids: Option<Vec<uuid::Uuid>>,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::chunk_collisions::dsl::*;
-    use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl::*;
 
@@ -646,16 +583,6 @@ pub async fn insert_duplicate_chunk_metadata_query(
                     ))
                     .execute(conn)
                     .await?;
-
-                if file_uuid.is_some() {
-                    diesel::insert_into(chunk_files_columns::chunk_files)
-                        .values(&ChunkFile::from_details(
-                            chunk_data.id,
-                            file_uuid.expect("file_uuid should be some"),
-                        ))
-                        .execute(conn)
-                        .await?;
-                }
 
                 Ok(inserted_chunk)
             }
@@ -707,12 +634,10 @@ pub async fn insert_duplicate_chunk_metadata_query(
 #[tracing::instrument(skip(pool))]
 pub async fn update_chunk_metadata_query(
     chunk_data: ChunkMetadata,
-    file_uuid: Option<uuid::Uuid>,
     group_ids: Option<Vec<uuid::Uuid>>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<ChunkMetadata, ServiceError> {
-    use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
@@ -736,16 +661,6 @@ pub async fn update_chunk_metadata_query(
                 ))
                 .get_result::<ChunkMetadata>(conn)
                 .await?;
-
-                if file_uuid.is_some() {
-                    diesel::insert_into(chunk_files_columns::chunk_files)
-                        .values(ChunkFile::from_details(
-                            chunk_data.id,
-                            file_uuid.expect("file_uuid should be some"),
-                        ))
-                        .execute(conn)
-                        .await?;
-                }
 
                 Ok(updated_chunk)
             }
@@ -803,7 +718,6 @@ pub async fn delete_chunk_metadata_query(
     }
 
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
-    use crate::data::schema::chunk_files::dsl as chunk_files_columns;
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     let mut conn = pool.get().await.unwrap();
@@ -812,13 +726,6 @@ pub async fn delete_chunk_metadata_query(
         .transaction::<_, diesel::result::Error, _>(|conn| {
             async move {
                 {
-                    diesel::delete(
-                        chunk_files_columns::chunk_files
-                            .filter(chunk_files_columns::chunk_id.eq(chunk_uuid)),
-                    )
-                    .execute(conn)
-                    .await?;
-
                     diesel::delete(
                         chunk_group_bookmarks_columns::chunk_group_bookmarks.filter(
                             chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_uuid),

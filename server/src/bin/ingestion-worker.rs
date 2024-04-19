@@ -377,14 +377,8 @@ pub async fn bulk_upload_chunks(
         return Ok(chunk_ids);
     }
 
-
     #[allow(clippy::type_complexity)]
-    let ingestion_data: Vec<(
-        ChunkMetadata,
-        Option<uuid::Uuid>,
-        Option<Vec<uuid::Uuid>>,
-        bool,
-    )> = payload
+    let ingestion_data: Vec<(ChunkMetadata, Option<Vec<uuid::Uuid>>, bool)> = payload
         .ingestion_messages
         .iter()
         .map(|message| {
@@ -441,7 +435,6 @@ pub async fn bulk_upload_chunks(
 
             (
                 chunk_metadata,
-                message.chunk.file_id,
                 message.chunk.group_ids.clone(),
                 message.upsert_by_tracking_id,
             )
@@ -469,12 +462,12 @@ pub async fn bulk_upload_chunks(
     // Only embed the things we get returned from here, this reduces the number of times we embed data that are just duplicates
     let all_content: Vec<String> = inserted_chunk_metadatas
         .iter()
-        .map(|(chunk_metadata, _, _, _)| chunk_metadata.content.clone())
+        .map(|(chunk_metadata, _, _)| chunk_metadata.content.clone())
         .collect();
 
     let inserted_chunk_metadata_ids: Vec<uuid::Uuid> = inserted_chunk_metadatas
         .iter()
-        .map(|(chunk_metadata, _, _, _)| chunk_metadata.id)
+        .map(|(chunk_metadata, _, _)| chunk_metadata.id)
         .collect();
 
     let embedding_transaction = transaction.start_child(
@@ -534,7 +527,7 @@ pub async fn bulk_upload_chunks(
         splade_vectors.iter(),
     )
     .filter_map(
-        |((chunk_metadata, _, group_ids, _), embedding_vector, splade_vector)| {
+        |((chunk_metadata, group_ids, _), embedding_vector, splade_vector)| {
             let qdrant_point_id = chunk_metadata.qdrant_point_id;
 
             let payload = QdrantPayload::new(chunk_metadata, group_ids, None).into();
@@ -760,7 +753,6 @@ async fn upload_chunk(
         insert_duplicate_chunk_metadata_query(
             chunk_metadata.clone(),
             collision.expect("Collision should must be some"),
-            payload.chunk.file_id,
             payload.chunk.group_ids,
             web_pool.clone(),
         )
@@ -786,7 +778,6 @@ async fn upload_chunk(
 
         let inserted_chunk = insert_chunk_metadata_query(
             chunk_metadata.clone(),
-            payload.chunk.file_id,
             payload.chunk.group_ids.clone(),
             payload.dataset_id,
             payload.upsert_by_tracking_id,
@@ -903,7 +894,6 @@ async fn update_chunk(
 
         let chunk = update_chunk_metadata_query(
             chunk_metadata.clone(),
-            None,
             Some(chunk_group_ids.clone()),
             payload.dataset_id,
             web_pool.clone(),
@@ -931,7 +921,6 @@ async fn update_chunk(
     } else {
         update_chunk_metadata_query(
             chunk_metadata.clone(),
-            None,
             None,
             payload.dataset_id,
             web_pool.clone(),

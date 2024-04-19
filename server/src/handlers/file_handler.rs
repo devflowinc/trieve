@@ -318,12 +318,6 @@ pub async fn get_dataset_files_handler(
             .unwrap_or(1),
     }))
 }
-
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct DeleteFileQueryParams {
-    pub delete_chunks: Option<bool>,
-}
-
 /// Delete File
 ///
 /// Delete a file from S3 attached to the server based on its id. This will disassociate chunks from the file, but only delete them all together if you specify delete_chunks to be true. Auth'ed user must be an admin or owner of the dataset's organization to delete a file.
@@ -339,7 +333,6 @@ pub struct DeleteFileQueryParams {
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
         ("file_id" = uuid::Uuid, description = "The id of the file to delete"),
-        ("delete_chunks" = bool, Query, description = "Whether or not to delete the chunks associated with the file"),
     ),
     security(
         ("ApiKey" = ["admin"]),
@@ -348,7 +341,6 @@ pub struct DeleteFileQueryParams {
 #[tracing::instrument(skip(pool))]
 pub async fn delete_file_handler(
     file_id: web::Path<uuid::Uuid>,
-    query_params: web::Query<DeleteFileQueryParams>,
     pool: web::Data<Pool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -359,7 +351,6 @@ pub async fn delete_file_handler(
     delete_file_query(
         file_id.into_inner(),
         dataset_org_plan_sub.dataset,
-        query_params.delete_chunks,
         pool,
         server_dataset_config,
     )
