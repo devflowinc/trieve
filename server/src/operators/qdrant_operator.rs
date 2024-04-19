@@ -1125,3 +1125,30 @@ pub async fn get_point_count_qdrant_query(
 
     Ok(data.result.expect("Failed to get result from qdrant").count)
 }
+
+pub async fn point_id_exists_in_qdrant(
+    point_id: uuid::Uuid,
+    config: ServerDatasetConfiguration,
+) -> Result<bool, ServiceError> {
+    let qdrant_collection = config.QDRANT_COLLECTION_NAME;
+
+    let qdrant =
+        get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
+
+    let data = qdrant
+        .get_points(
+            qdrant_collection,
+            None,
+            &[point_id.to_string().into()],
+            false.into(),
+            false.into(),
+            None,
+        )
+        .await
+        .map_err(|err| {
+            log::info!("Failed to fetch points from qdrant {:?}", err);
+            ServiceError::BadRequest("Failed to fetch points from qdrant".to_string())
+        })?;
+
+    Ok(data.result.len() > 0)
+}

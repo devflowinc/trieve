@@ -52,9 +52,15 @@ impl ResponseError for ServiceError {
                     message: format!("Stoped overwriting data, Duplicate Tracking Id {:?}", id),
                 })
             }
-            ServiceError::Unauthorized => HttpResponse::Unauthorized().json("Unauthorized"),
-            ServiceError::Forbidden => HttpResponse::Forbidden().json("Forbidden"),
-            ServiceError::NotFound => HttpResponse::NotFound().json("Record not found"),
+            ServiceError::Unauthorized => HttpResponse::Unauthorized().json(ErrorResponseBody {
+                message: "Unauthorized".to_string()
+            }),
+            ServiceError::Forbidden => HttpResponse::Forbidden().json(ErrorResponseBody {
+                message: "Forbidden".to_string()
+            }),
+            ServiceError::NotFound => HttpResponse::NotFound().json(ErrorResponseBody {
+                message: "Record not found".to_string()
+            }),
         }
     }
 }
