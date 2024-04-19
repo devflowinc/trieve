@@ -1,5 +1,5 @@
-{{- $name := "s3-service" }}
-{{- $selector := "s3" }}
+{{- $name := "chat-service" }}
+{{- $selector := "chat" }}
 kind: Service
 apiVersion: v1
 metadata:
@@ -15,14 +15,10 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: 9000
-      targetPort: 9000
+    - port: 3000
+      targetPort: 80
       protocol: TCP
-      name: s3
-    - port: 42625
-      targetPort: 42625
-      protocol: TCP
-      name: s3-secondary
+      name: chat
   selector:
     app.kubernetes.io/name: {{ $selector }}
     app.kubernetes.io/instance: trieve

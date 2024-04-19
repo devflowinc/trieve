@@ -1,5 +1,5 @@
 {{- if eq $.Values.environment "local" }}
-{{- $name := "s3-pv" }}
+{{- $name := "keycloak-db-pv" }}
 {{- $storage := ternary "10Gi" "500Gi" (eq .Values.environment "local") }}
 apiVersion: v1
 kind: PersistentVolume

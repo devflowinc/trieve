@@ -34,6 +34,11 @@ function build_images() {
   docker_build -t trieve/qdrant .
   cd $startpath/../docker/tika
   docker_build -t trieve/tika .
+  cd $startpath/../docker/mc
+  docker_build -t trieve/mc .
+  cd $startpath/../server
+  docker-build -t trieve/server -f Dockerfile.no-ocr . 
+  docker-build -t trieve/ingest -f Dockerfile.microservice .
 }
 
 function tag_images() {
@@ -42,6 +47,9 @@ function tag_images() {
   tag_and_push postgres
   tag_and_push qdrant
   tag_and_push tika
+  tag_and_push mc
+  tag_and_push server
+  tag_and_push ingest
 }
 
 build_images

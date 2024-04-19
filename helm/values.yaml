@@ -11,6 +11,12 @@ containers:
     tag: 0.1.0
   tika:
     tag: 0.1.0
+  mc:
+    tag: 0.1.0
+  server:
+    tag: 0.1.0
+  ingest:
+    tag: 0.1.0
 config:
   vite:
     apiHost: http://localhost:8090/api

@@ -1,10 +1,10 @@
-{{ $storage := (ternary "10Gi" "500Gi" (eq .Values.environment  "local")) }}
+{{ $${p}storage := (ternary "10Gi" "500Gi" (eq .Values.environment  "local")) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: s3-pvc
+  name: $NAME-pvc
   labels:
-    app.kubernetes.io/name: s3
+    app.kubernetes.io/name: $NAME
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   accessModes:
@@ -16,4 +16,4 @@ spec:
 {{- end }}
   resources:
     requests:
-      storage: {{ $storage }}
+      storage: {{ $${p}storage }}
