@@ -325,6 +325,7 @@ async fn ingestion_worker(
 pub async fn bulk_upload_chunks(
     payload: BulkUploadIngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
+    reqwest_client: Req
 ) -> Result<Vec<uuid::Uuid>, ServiceError> {
     let tx_ctx = sentry::TransactionContext::new(
         "ingestion worker bulk_upload_chunk",

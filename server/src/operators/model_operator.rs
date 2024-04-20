@@ -19,10 +19,204 @@ pub struct EmbeddingParameters {
 }
 
 #[tracing::instrument]
+pub async fn create_embedding(
+    message: String,
+    embed_type: &str,
+    dataset_config: ServerDatasetConfiguration,
+) -> Result<Vec<f32>, ServiceError> {
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child("create_embedding", "Create semantic dense embedding")
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new(
+                "create_embedding",
+                "Create semantic dense embedding",
+            );
+            sentry::start_transaction(ctx).into()
+        }
+    };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
+
+    let open_ai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set");
+    let config_embedding_base_url = dataset_config.EMBEDDING_BASE_URL;
+
+    let embedding_base_url = match config_embedding_base_url.as_str() {
+        "" => get_env!("OPENAI_BASE_URL", "OPENAI_BASE_URL must be set").to_string(),
+        "https://api.openai.com/v1" => {
+            get_env!("OPENAI_BASE_URL", "OPENAI_BASE_URL must be set").to_string()
+        }
+        "https://embedding.trieve.ai" => std::env::var("EMBEDDING_SERVER_ORIGIN")
+            .ok()
+            .filter(|s| !s.is_empty())
+            .unwrap_or(
+                get_env!(
+                    "GPU_SERVER_ORIGIN",
+                    "GPU_SERVER_ORIGIN should be set if this is called"
+                )
+                .to_string(),
+            ),
+        "https://embedding.trieve.ai/bge-m3" => std::env::var("EMBEDDING_SERVER_ORIGIN_BGEM3")
+            .ok()
+            .filter(|s| !s.is_empty())
+            .unwrap_or(
+                get_env!(
+                    "GPU_SERVER_ORIGIN",
+                    "GPU_SERVER_ORIGIN should be set if this is called"
+                )
+                .to_string(),
+            )
+            .to_string(),
+        _ => config_embedding_base_url,
+    };
+
+    let clipped_message = if message.len() > 7000 {
+        message.chars().take(20000).collect()
+    } else {
+        message.clone()
+    };
+
+    let input = match embed_type {
+        "doc" => EmbeddingInput::StringArray(vec![clipped_message]),
+        "query" => EmbeddingInput::String(
+            format!(
+                "{}{}",
+                dataset_config.EMBEDDING_QUERY_PREFIX, &clipped_message
+            )
+            .to_string(),
+        ),
+        _ => EmbeddingInput::StringArray(vec![clipped_message]),
+    };
+
+    let parameters = EmbeddingParameters {
+        model: dataset_config.EMBEDDING_MODEL_NAME.to_string(),
+        input,
+    };
+
+    let embeddings_resp = ureq::post(&format!(
+        "{}/embeddings?api-version=2023-05-15",
+        embedding_base_url
+    ))
+    .set("Authorization", &format!("Bearer {}", open_ai_api_key))
+    .set("api-key", open_ai_api_key)
+    .set("Content-Type", "application/json")
+    .send_json(serde_json::to_value(parameters).unwrap())
+    .map_err(|e| {
+        ServiceError::InternalServerError(format!(
+            "Could not get embeddings from server: {:?}, {:?}",
+            e,
+            e.to_string()
+        ))
+    })?;
+
+    let embeddings: EmbeddingResponse = format_response(embeddings_resp.into_string().unwrap())
+        .map_err(|e| {
+            log::error!("Failed to format response from embeddings server {:?}", e);
+            ServiceError::InternalServerError(
+                "Failed to format response from embeddings server".to_owned(),
+            )
+        })?;
+
+    let vectors: Vec<Vec<f32>> = embeddings
+    .data
+    .into_iter()
+    .map(|x| match x.embedding {
+        EmbeddingOutput::Float(v) => v.iter().map(|x| *x as f32).collect(),
+        EmbeddingOutput::Base64(_) => {
+            log::error!("Embedding server responded with Base64 and that is not currently supported for embeddings");
+            vec![]
+        }
+    })
+    .collect();
+
+    if vectors.iter().any(|x| x.is_empty()) {
+        return Err(ServiceError::InternalServerError(
+            "Embedding server responded with Base64 and that is not currently supported for embeddings".to_owned(),
+        ));
+    }
+
+    transaction.finish();
+
+    match vectors.first() {
+        Some(v) => Ok(v.clone()),
+        None => Err(ServiceError::InternalServerError(
+            "No dense embeddings returned from server".to_owned(),
+        )),
+    }
+}
+
+#[tracing::instrument]
+pub async fn get_sparse_vector(
+    message: String,
+    embed_type: &str,
+) -> Result<Vec<(u32, f32)>, ServiceError> {
+    let origin_key = match embed_type {
+        "doc" => "SPARSE_SERVER_DOC_ORIGIN",
+        "query" => "SPARSE_SERVER_QUERY_ORIGIN",
+        _ => unreachable!("Invalid embed_type passed"),
+    };
+
+    let server_origin = match std::env::var(origin_key).ok().filter(|s| !s.is_empty()) {
+        Some(origin) => origin,
+        None => get_env!(
+            "GPU_SERVER_ORIGIN",
+            "GPU_SERVER_ORIGIN should be set if this is called"
+        )
+        .to_string(),
+    };
+
+    let embedding_server_call = format!("{}/embed_sparse", server_origin);
+
+    let sparse_vectors = ureq::post(&embedding_server_call)
+        .set("Content-Type", "application/json")
+        .set(
+            "Authorization",
+            &format!(
+                "Bearer {}",
+                get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
+            ),
+        )
+        .send_json(CustomSparseEmbedData {
+            inputs: vec![message],
+            encode_type: embed_type.to_string(),
+            truncate: true,
+        })
+        .map_err(|err| {
+            log::error!(
+                "Failed parsing response from custom embedding server {:?}",
+                err
+            );
+            ServiceError::BadRequest(format!("Failed making call to server {:?}", err))
+        })?
+        .into_json::<Vec<Vec<SpladeIndicies>>>()
+        .map_err(|_e| {
+            log::error!(
+                "Failed parsing response from custom embedding server {:?}",
+                _e
+            );
+            ServiceError::BadRequest(
+                "Failed parsing response from custom embedding server".to_string(),
+            )
+        })?;
+
+    match sparse_vectors.first() {
+        Some(v) => Ok(v
+            .iter()
+            .map(|splade_idx| (*splade_idx).into_tuple())
+            .collect()),
+        None => Err(ServiceError::InternalServerError(
+            "No sparse embeddings returned from server".to_owned(),
+        )),
+    }
+}
+
+#[tracing::instrument]
 pub async fn create_embeddings(
     messages: Vec<String>,
     embed_type: &str,
     dataset_config: ServerDatasetConfiguration,
+    reqwest_client: reqwest::Client,
 ) -> Result<Vec<Vec<f32>>, ServiceError> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
     let transaction: sentry::TransactionOrSpan = match &parent_span {
@@ -107,21 +301,22 @@ pub async fn create_embeddings(
             input,
         };
 
-        let embeddings_resp = ureq::post(&format!(
-            "{}/embeddings?api-version=2023-05-15",
-            embedding_base_url
-        ))
-        .set("Authorization", &format!("Bearer {}", open_ai_api_key))
-        .set("api-key", open_ai_api_key)
-        .set("Content-Type", "application/json")
-        .send_json(serde_json::to_value(parameters).unwrap())
-        .map_err(|e| {
-            ServiceError::InternalServerError(format!(
-                "Could not get embeddings from server: {:?}, {:?}",
-                e,
-                e.to_string()
+        reqwest_client
+            .post(&format!(
+                "{}/embeddings?api-version=2023-05-15",
+                embedding_base_url
             ))
-        })?;
+            .set("Authorization", &format!("Bearer {}", open_ai_api_key))
+            .set("api-key", open_ai_api_key)
+            .set("Content-Type", "application/json")
+            .send_json(serde_json::to_value(parameters).unwrap())
+            .map_err(|e| {
+                ServiceError::InternalServerError(format!(
+                    "Could not get embeddings from server: {:?}, {:?}",
+                    e,
+                    e.to_string()
+                ))
+            })?;
 
         let embeddings: EmbeddingResponse = format_response(embeddings_resp.into_string().unwrap())
             .map_err(|e| {
