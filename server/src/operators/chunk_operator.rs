@@ -7,7 +7,7 @@ use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkData};
 use crate::operators::group_operator::{
     check_group_ids_exist_query, get_group_ids_from_tracking_ids_query,
 };
-use crate::operators::model_operator::create_embeddings;
+use crate::operators::model_operator::create_embedding;
 use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::operators::search_operator::get_metadata_query;
 use crate::{
@@ -873,74 +873,70 @@ pub async fn delete_chunk_metadata_query(
     let qdrant =
         get_qdrant_connection(Some(&config.QDRANT_URL), Some(&config.QDRANT_API_KEY)).await?;
     match transaction_result {
-        Ok(result) => {
-            match result {
-                TransactionResult::ChunkCollisionNotDetected => {
-                    let _ = qdrant
-                        .delete_points(
-                            qdrant_collection,
-                            None,
-                            &vec![<String as Into<PointId>>::into(
-                                chunk_metadata
-                                    .qdrant_point_id
-                                    .unwrap_or_default()
-                                    .to_string(),
-                            )]
-                            .into(),
-                            None,
-                        )
-                        .await
-                        .map_err(|_e| {
-                            Err::<(), ServiceError>(ServiceError::BadRequest(
-                                "Failed to delete chunk from qdrant".to_string(),
-                            ))
-                        });
-                }
-                TransactionResult::ChunkCollisionDetected(latest_collision_metadata) => {
-                    let collision_content = latest_collision_metadata
-                        .chunk_html
-                        .clone()
-                        .unwrap_or(latest_collision_metadata.content.clone());
-
-                    let new_embedding_vectors = create_embeddings(
-                        vec![collision_content],
-                        "doc",
-                        ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
+        Ok(result) => match result {
+            TransactionResult::ChunkCollisionNotDetected => {
+                let _ = qdrant
+                    .delete_points(
+                        qdrant_collection,
+                        None,
+                        &vec![<String as Into<PointId>>::into(
+                            chunk_metadata
+                                .qdrant_point_id
+                                .unwrap_or_default()
+                                .to_string(),
+                        )]
+                        .into(),
+                        None,
                     )
                     .await
                     .map_err(|_e| {
-                        ServiceError::BadRequest("Failed to create embedding for chunk".to_string())
-                    })?;
+                        Err::<(), ServiceError>(ServiceError::BadRequest(
+                            "Failed to delete chunk from qdrant".to_string(),
+                        ))
+                    });
+            }
+            TransactionResult::ChunkCollisionDetected(latest_collision_metadata) => {
+                let collision_content = latest_collision_metadata
+                    .chunk_html
+                    .clone()
+                    .unwrap_or(latest_collision_metadata.content.clone());
 
-                    let new_embedding_vector = new_embedding_vectors.get(0).ok_or(ServiceError::BadRequest(
-                    "Failed to get embedding vector due to empty result from create_embedding".to_string(),
-                ))?
+                let new_embedding_vector = create_embedding(
+                    collision_content,
+                    "doc",
+                    ServerDatasetConfiguration::from_json(dataset.server_configuration.clone()),
+                )
+                .await
+                .map_err(|_e| {
+                    ServiceError::BadRequest(
+                        "Failed to create embedding for collision content".to_string(),
+                    )
+                })?
                 .clone();
 
-                    let _ = qdrant
-                        .update_vectors_blocking(
-                            qdrant_collection,
-                            None,
-                            &[PointVectors {
-                                id: Some(<String as Into<PointId>>::into(
-                                    latest_collision_metadata
-                                        .qdrant_point_id
-                                        .unwrap_or_default()
-                                        .to_string(),
-                                )),
-                                vectors: Some(new_embedding_vector.into()),
-                            }],
-                            None,
-                        )
-                        .await
-                        .map_err(|_e| {
-                            Err::<(), ServiceError>(ServiceError::BadRequest(
-                                "Failed to update chunk in qdrant".to_string(),
-                            ))
-                        });
-                }
+                let _ = qdrant
+                    .update_vectors_blocking(
+                        qdrant_collection,
+                        None,
+                        &[PointVectors {
+                            id: Some(<String as Into<PointId>>::into(
+                                latest_collision_metadata
+                                    .qdrant_point_id
+                                    .unwrap_or_default()
+                                    .to_string(),
+                            )),
+                            vectors: Some(new_embedding_vector.into()),
+                        }],
+                        None,
+                    )
+                    .await
+                    .map_err(|_e| {
+                        Err::<(), ServiceError>(ServiceError::BadRequest(
+                            "Failed to update chunk in qdrant".to_string(),
+                        ))
+                    });
             }
-        }
+        },
 
         Err(_) => {
             return Err(ServiceError::BadRequest(

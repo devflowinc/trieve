@@ -4,7 +4,7 @@ use super::chunk_operator::{
 use super::group_operator::{
     get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query,
 };
-use super::model_operator::{create_embeddings, cross_encoder};
+use super::model_operator::{create_embedding, cross_encoder, get_sparse_vector};
 use super::qdrant_operator::{
     get_point_count_qdrant_query, search_over_groups_query, GroupSearchResults, VectorType,
 };
@@ -1263,15 +1263,8 @@ pub async fn search_semantic_chunks(
 
     timer.add("start to create dense embedding vector");
 
-    let embedding_vectors =
-        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
-    let embedding_vector = embedding_vectors
-        .get(0)
-        .ok_or(ServiceError::BadRequest(
-            "Failed to get embedding vector due to empty vec response from create_embedding"
-                .to_string(),
-        ))?
-        .clone();
+    let embedding_vector =
+        create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
 
     timer.add("finish creating dense embedding vector; start to fetch from qdrant");
 
@@ -1513,15 +1506,8 @@ pub async fn search_semantic_groups(
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
-    let embedding_vectors =
-        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
-    let embedding_vector = embedding_vectors
-        .get(0)
-        .ok_or(ServiceError::BadRequest(
-            "Failed to get embedding vector due to empty vec response from create_embedding"
-                .to_string(),
-        ))?
-        .clone();
+    let embedding_vector =
+        create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
 
     let search_semantic_chunk_query_results = search_within_chunk_group_query(
         VectorType::Dense(embedding_vector),
@@ -1623,26 +1609,12 @@ pub async fn search_hybrid_groups(
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
-    let dense_embedding_vectors =
-        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
-    let dense_embedding_vector = dense_embedding_vectors
-        .get(0)
-        .ok_or(ServiceError::BadRequest(
-            "Failed to get embedding vector due to empty vec response from create_embedding"
-                .to_string(),
-        ))?
-        .clone();
+    let dense_embedding_vector =
+        create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
 
-    let sparse_vectors = get_sparse_vectors(vec![parsed_query.query.clone()], "query")
+    let sparse_vector = get_sparse_vector(parsed_query.query.clone(), "query")
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
-
-    let sparse_embedding_vector = sparse_vectors
-        .get(0)
-        .ok_or(ServiceError::BadRequest(
-            "Failed to get first vector for sparse query".to_string(),
-        ))?
-        .clone();
 
     let semantic_future = search_within_chunk_group_query(
         VectorType::Dense(dense_embedding_vector),
@@ -1658,7 +1630,7 @@ pub async fn search_hybrid_groups(
     );
 
     let full_text_future = search_within_chunk_group_query(
-        VectorType::Sparse(sparse_embedding_vector),
+        VectorType::Sparse(sparse_vector),
         page,
         pool.clone(),
         data_inner.filters.clone(),
@@ -1761,14 +1733,8 @@ pub async fn semantic_search_over_groups(
 
     timer.add("start to create dense embedding vector");
 
-    let embedding_vectors =
-        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone()).await?;
-    let embedding_vector = embedding_vectors
-        .get(0)
-        .ok_or(ServiceError::BadRequest(
-            "Failed to get embedding vector due to empty array from create_embedding".to_string(),
-        ))?
-        .clone();
+    let embedding_vector =
+        create_embedding(data.query.clone(), "query", dataset_config.clone()).await?;
 
     timer.add("finish creating dense embedding vector; start to fetch from qdrant");
 
@@ -1944,9 +1910,9 @@ pub async fn hybrid_search_over_groups(
     timer.add("start to create dense embedding vector and sparse vector");
 
     let dense_embedding_vectors_future =
-        create_embeddings(vec![data.query.clone()], "query", dataset_config.clone());
+        create_embedding(data.query.clone(), "query", dataset_config.clone());
 
-    let sparse_embedding_vector_future = get_sparse_vectors(vec![data.query.clone()], "query");
+    let sparse_embedding_vector_future = get_sparse_vector(data.query.clone(), "query");
 
     let (dense_embedding_vectors, sparse_embedding_vectors) = futures::join!(
         dense_embedding_vectors_future,
