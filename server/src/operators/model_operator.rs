@@ -2,6 +2,7 @@ use crate::{
     data::models::ServerDatasetConfiguration, errors::ServiceError, get_env,
     handlers::chunk_handler::ScoreChunkDTO,
 };
+use futures::StreamExt;
 use openai_dive::v1::{
     helpers::format_response,
     resources::embedding::{EmbeddingInput, EmbeddingOutput, EmbeddingResponse},
@@ -211,6 +212,8 @@ pub async fn get_sparse_vector(
     }
 }
 
+// create_thirty_embeddings
+
 #[tracing::instrument]
 pub async fn create_embeddings(
     messages: Vec<String>,
@@ -265,90 +268,67 @@ pub async fn create_embeddings(
         _ => config_embedding_base_url,
     };
 
-    let mut all_vectors = vec![];
     let thirty_message_groups = messages.chunks(30).collect::<Vec<_>>();
+    let range_iter = 0..thirty_message_groups.len().try_into().unwrap();
 
-    for thirty_messages in thirty_message_groups {
-        let clipped_messages = thirty_messages
-            .iter()
-            .map(|msg| {
-                if msg.len() > 7000 {
-                    msg.chars().take(20000).collect()
-                } else {
-                    msg.clone()
-                }
-            })
-            .collect::<Vec<String>>();
+    let resp_bodies = range_iter
+        .map(|i| {
+            // TODO: move below code to a embed_thirty_messages function
 
-        let input = match embed_type {
-            "doc" => EmbeddingInput::StringArray(clipped_messages),
-            "query" => EmbeddingInput::String(
-                format!(
-                    "{}{}",
-                    dataset_config.EMBEDDING_QUERY_PREFIX,
-                    clipped_messages
-                        .first()
-                        .unwrap_or(&"Arbitrary because query is empty".to_string())
-                )
-                .to_string(),
-            ),
-            _ => EmbeddingInput::StringArray(clipped_messages),
-        };
+            // return a tuple of the Future from embed_thirty_messages and the index
+            // join_all will wait for all futures to complete and return a Vec of the results
+            
+            
+            // let messages = thirty_message_groups[i].to_vec();
+            // let clipped_messages = messages
+            //     .iter()
+            //     .map(|message| {
+            //         if message.len() > 7000 {
+            //             message.chars().take(20000).collect()
+            //         } else {
+            //             message.clone()
+            //         }
+            //     })
+            //     .collect::<Vec<String>>();
 
-        // Vectorize
-        let parameters = EmbeddingParameters {
-            model: dataset_config.EMBEDDING_MODEL_NAME.to_string(),
-            input,
-        };
+            // let input = match embed_type {
+            //     "doc" => EmbeddingInput::StringArray(clipped_messages),
+            //     "query" => EmbeddingInput::String(
+            //         format!(
+            //             "{}{}",
+            //             dataset_config.EMBEDDING_QUERY_PREFIX, &clipped_messages[0]
+            //         )
+            //         .to_string(),
+            //     ),
+            //     _ => EmbeddingInput::StringArray(clipped_messages),
+            // };
 
-        reqwest_client
-            .post(&format!(
-                "{}/embeddings?api-version=2023-05-15",
-                embedding_base_url
-            ))
-            .set("Authorization", &format!("Bearer {}", open_ai_api_key))
-            .set("api-key", open_ai_api_key)
-            .set("Content-Type", "application/json")
-            .send_json(serde_json::to_value(parameters).unwrap())
-            .map_err(|e| {
-                ServiceError::InternalServerError(format!(
-                    "Could not get embeddings from server: {:?}, {:?}",
-                    e,
-                    e.to_string()
-                ))
-            })?;
+            // let parameters = EmbeddingParameters {
+            //     model: dataset_config.EMBEDDING_MODEL_NAME.to_string(),
+            //     input,
+            // };
 
-        let embeddings: EmbeddingResponse = format_response(embeddings_resp.into_string().unwrap())
-            .map_err(|e| {
-                log::error!("Failed to format response from embeddings server {:?}", e);
-                ServiceError::InternalServerError(
-                    "Failed to format response from embeddings server".to_owned(),
-                )
-            })?;
+            // let cur_client = reqwest_client.clone();
+            // let url = embedding_base_url.clone();
+            // let temp_open_ai_api_key = open_ai_api_key.clone();
 
-        let vectors: Vec<Vec<f32>> = embeddings
-        .data
-        .into_iter()
-        .map(|x| match x.embedding {
-            EmbeddingOutput::Float(v) => v.iter().map(|x| *x as f32).collect(),
-            EmbeddingOutput::Base64(_) => {
-                log::error!("Embedding server responded with Base64 and that is not currently supported for embeddings");
-                vec![]
-            }
+            // let embeddings_resp = cur_client
+            //     .post(&format!("{}/embeddings?api-version=2023-05-15", url))
+            //     .header("Authorization", &format!("Bearer {}", temp_open_ai_api_key))
+            //     .header("api-key", temp_open_ai_api_key)
+            //     .header("Content-Type", "application/json")
+            //     .json(&parameters)
+            //     .send()
+            //     .await?;
+
+            // Ok::<(Result<std::string::String, reqwest::Error>, usize), anyhow::Error>((
+            //     embeddings_resp.text().await,
+            //     i,
+            // ))
         })
-        .collect();
-
-        if vectors.iter().any(|x| x.is_empty()) {
-            return Err(ServiceError::InternalServerError(
-                "Embedding server responded with Base64 and that is not currently supported for embeddings".to_owned(),
-            ));
-        }
-
-        all_vectors.extend(vectors);
-    }
 
     transaction.finish();
-    Ok(all_vectors)
+    Ok(vec![])
 }
 
 #[derive(Debug, Serialize, Deserialize)]

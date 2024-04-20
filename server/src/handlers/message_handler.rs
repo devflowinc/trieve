@@ -14,7 +14,7 @@ use crate::{
             get_message_by_sort_for_topic_query, get_messages_for_topic_query, get_topic_messages,
             user_owns_topic_query,
         },
-        model_operator::create_embeddings,
+        model_operator::create_embedding,
         organization_operator::get_message_org_count,
         qdrant_operator::VectorType,
         search_operator::retrieve_qdrant_points_query,
@@ -655,14 +655,7 @@ pub async fn stream_response(
         ChatMessageContent::Text(query) => query.clone(),
         _ => "".to_string(),
     };
-    let embedding_vectors =
-        create_embeddings(vec![query.clone()], "query", dataset_config.clone()).await?;
-    let embedding_vector = embedding_vectors
-        .first()
-        .ok_or(ServiceError::BadRequest(
-            "Empty set of dense vectors returned from call to create_embedding".to_string(),
-        ))?
-        .clone();
+    let embedding_vector = create_embedding(query.clone(), "query", dataset_config.clone()).await?;
 
     let n_retrievals_to_include = dataset_config.N_RETRIEVALS_TO_INCLUDE;
 

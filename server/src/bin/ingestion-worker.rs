@@ -325,7 +325,7 @@ async fn ingestion_worker(
 pub async fn bulk_upload_chunks(
     payload: BulkUploadIngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
-    reqwest_client: Req
+    reqwest_client: Req,
 ) -> Result<Vec<uuid::Uuid>, ServiceError> {
     let tx_ctx = sentry::TransactionContext::new(
         "ingestion worker bulk_upload_chunk",
@@ -366,10 +366,8 @@ pub async fn bulk_upload_chunks(
         || dataset_config.COLLISIONS_ENABLED
         || upsert_by_tracking_id_being_used
     {
-        let insert_tx = transaction.start_child(
-            "calling_upload_individually",
-            "calling_upload_individually",
-        );
+        let insert_tx =
+            transaction.start_child("calling_upload_individually", "calling_upload_individually");
         let mut chunk_ids = vec![];
         // Split average or Collisions
         for message in payload.ingestion_messages {
@@ -384,7 +382,6 @@ pub async fn bulk_upload_chunks(
         transaction.finish();
         return Ok(chunk_ids);
     }
-
 
     #[allow(clippy::type_complexity)]
     let ingestion_data: Vec<(ChunkMetadata, Option<Vec<uuid::Uuid>>, bool)> = payload
@@ -865,19 +862,10 @@ async fn update_chunk(
     let mut chunk_metadata = payload.chunk_metadata.clone();
     chunk_metadata.content = content.clone();
 
-    let embedding_vectors = create_embeddings(
-        vec![content.to_string()],
-        "doc",
-        server_dataset_config.clone(),
-    )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-    let embedding_vector = embedding_vectors
-        .first()
-        .ok_or(ServiceError::BadRequest(
-            "Failed to get first embedding due to empty response from create_embedding".into(),
-        ))?
-        .clone();
+    let embedding_vector =
+        create_embedding(content.to_string(), "doc", server_dataset_config.clone())
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     let qdrant_point_id = get_qdrant_id_from_chunk_id_query(chunk_metadata.id, web_pool.clone())
         .await
