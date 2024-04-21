@@ -30,8 +30,6 @@ function build_images() {
   docker_build -t trieve/minio .
   cd $startpath/../docker/postgres
   docker_build -t trieve/postgres .
-  cd $startpath/../docker/qdrant
-  docker_build -t trieve/qdrant .
   cd $startpath/../docker/tika
   docker_build -t trieve/tika .
   cd $startpath/../docker/mc
@@ -51,7 +49,6 @@ function tag_images() {
   tag_and_push keycloak
   tag_and_push minio
   tag_and_push postgres
-  tag_and_push qdrant
   tag_and_push tika
   tag_and_push mc
   tag_and_push server

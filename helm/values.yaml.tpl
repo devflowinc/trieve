@@ -7,8 +7,6 @@ containers:
     tag: 0.1.0
   postgres:
     tag: 0.1.0
-  qdrant:
-    tag: 0.1.0
   redis:
     tag: 0.1.0
   tika:
