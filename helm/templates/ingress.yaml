@@ -20,6 +20,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: trieve-service
+                name: dashbaord-service
                 port:
-                  number: 8080
+                  number: 80
