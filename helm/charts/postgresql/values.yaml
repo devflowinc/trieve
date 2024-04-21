@@ -343,7 +343,7 @@ primary:
     ##      echo "Do something."
     ##
     scripts: {
-      trieve.sh: "#!/bin/sh\npsql -c 'create database trieve;\npsql -c 'create database keycloak;'"
+      trieve.sh: "#!/bin/sh\nexport PGPASSWORD=${POSTGRESQL_PASSWORD}\npsql -U ${POSTGRESQL_USERNAME} -c 'create database trieve;'\npsql -U ${POSTGRESQL_USERNAME} -c 'create database keycloak;'"
     }
     ## @param primary.initdb.scriptsConfigMap ConfigMap with scripts to be run at first boot
     ## NOTE: This will override `primary.initdb.scripts`
