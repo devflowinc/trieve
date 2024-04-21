@@ -43,7 +43,7 @@ config:
   qdrant:
     collection: collection
   trieve:
-    unlimited: true
+    unlimited: "true"
     cookieSecure: false
     baseServerUrl: http://server-service.default.svc.cluster.local:8090
     gpuServerOrigin: http://localhost:7070
