@@ -21,17 +21,17 @@ spec:
       containers:
       - name: minio
         image: {{ printf "%s%s:%s" (ternary (printf "%s.dkr.ecr.%s.amazonaws.com/" .Values.accountId .Values.region) "localhost:5000/" (eq .Values.environment "aws")) "minio" .Values.containers.minio.tag }}
-      ports:
-        - containerPort: 9000
-        - containerPort: 42625
-      volumeMounts:
-        - name: minio-data
-          mountPath: /data
-      env:
-        - name: MINIO_ROOT_USER
-          value: {{ .Values.config.minio.rootUser }}
-        - name: MINIO_ROOT_PASSWORD
-          value: {{ .Values.config.minio.rootPassword }}
+        ports:
+          - containerPort: 9000
+          - containerPort: 42625
+        volumeMounts:
+          - name: minio-data
+            mountPath: /data
+        env:
+          - name: MINIO_ROOT_USER
+            value: {{ .Values.config.minio.rootUser }}
+          - name: MINIO_ROOT_PASSWORD
+            value: {{ .Values.config.minio.rootPassword }}
       volumes:
       - name: minio-data
         persistentVolumeClaim:

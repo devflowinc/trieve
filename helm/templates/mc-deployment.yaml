@@ -21,16 +21,16 @@ spec:
       containers:
         - name: mc
           image: {{ printf "%s%s:%s" (ternary (printf "%s.dkr.ecr.%s.amazonaws.com/" .Values.accountId .Values.region) "localhost:5000/" (eq .Values.environment "aws")) "mc" .Values.containers.mc.tag }}
-      env:
-        - name: MINIO_ROOT_USER
-          value: {{ .Values.config.minio.rootUser }}
-        - name: MINIO_ROOT_PASSWORD
-          value: {{ .Values.config.minio.rootPassword }}
-        - name: S3_ACCESS_KEY
-          value: {{ .Values.config.s3.accessKey }}
-        - name: S3_SECRET_KEY
-          value: {{ .Values.config.s3.secretKey }}
-        - name: S3_BUCKET
-          value: {{ .Values.config.s3.bucket }}
-        - name: S3_URI
-          value: "http://s3.default.svc.cluster.local:9000"
+          env:
+            - name: MINIO_ROOT_USER
+              value: {{ .Values.config.minio.rootUser }}
+            - name: MINIO_ROOT_PASSWORD
+              value: {{ .Values.config.minio.rootPassword }}
+            - name: S3_ACCESS_KEY
+              value: {{ .Values.config.s3.accessKey }}
+            - name: S3_SECRET_KEY
+              value: {{ .Values.config.s3.secretKey }}
+            - name: S3_BUCKET
+              value: {{ .Values.config.s3.bucket }}
+            - name: S3_URI
+              value: "http://s3.default.svc.cluster.local:9000"
