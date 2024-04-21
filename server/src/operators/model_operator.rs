@@ -2,7 +2,6 @@ use crate::{
     data::models::ServerDatasetConfiguration, errors::ServiceError, get_env,
     handlers::chunk_handler::ScoreChunkDTO,
 };
-use futures::StreamExt;
 use openai_dive::v1::{
     helpers::format_response,
     resources::embedding::{EmbeddingInput, EmbeddingOutput, EmbeddingResponse},
@@ -268,67 +267,110 @@ pub async fn create_embeddings(
         _ => config_embedding_base_url,
     };
 
-    let thirty_message_groups = messages.chunks(30).collect::<Vec<_>>();
-    let range_iter = 0..thirty_message_groups.len().try_into().unwrap();
+    let thirty_message_groups = messages.chunks(30);
 
-    let resp_bodies = range_iter
-        .map(|i| {
-            // TODO: move below code to a embed_thirty_messages function
+    let vec_futures: Vec<_> = thirty_message_groups
+        .enumerate()
+        .map(|(i, messages)| {
+            let clipped_messages = messages
+                .iter()
+                .map(|message| {
+                    if message.len() > 7000 {
+                        message.chars().take(20000).collect()
+                    } else {
+                        message.clone()
+                    }
+                })
+                .collect::<Vec<String>>();
 
-            // return a tuple of the Future from embed_thirty_messages and the index
-            // join_all will wait for all futures to complete and return a Vec of the results
-            
-            
-            // let messages = thirty_message_groups[i].to_vec();
-            // let clipped_messages = messages
-            //     .iter()
-            //     .map(|message| {
-            //         if message.len() > 7000 {
-            //             message.chars().take(20000).collect()
-            //         } else {
-            //             message.clone()
-            //         }
-            //     })
-            //     .collect::<Vec<String>>();
+            let input = match embed_type {
+                "doc" => EmbeddingInput::StringArray(clipped_messages),
+                "query" => EmbeddingInput::String(
+                    format!(
+                        "{}{}",
+                        dataset_config.EMBEDDING_QUERY_PREFIX, &clipped_messages[0]
+                    )
+                    .to_string(),
+                ),
+                _ => EmbeddingInput::StringArray(clipped_messages),
+            };
 
-            // let input = match embed_type {
-            //     "doc" => EmbeddingInput::StringArray(clipped_messages),
-            //     "query" => EmbeddingInput::String(
-            //         format!(
-            //             "{}{}",
-            //             dataset_config.EMBEDDING_QUERY_PREFIX, &clipped_messages[0]
-            //         )
-            //         .to_string(),
-            //     ),
-            //     _ => EmbeddingInput::StringArray(clipped_messages),
-            // };
+            let parameters = EmbeddingParameters {
+                model: dataset_config.EMBEDDING_MODEL_NAME.to_string(),
+                input,
+            };
 
-            // let parameters = EmbeddingParameters {
-            //     model: dataset_config.EMBEDDING_MODEL_NAME.to_string(),
-            //     input,
-            // };
+            let cur_client = reqwest_client.clone();
+            let url = embedding_base_url.clone();
 
-            // let cur_client = reqwest_client.clone();
-            // let url = embedding_base_url.clone();
-            // let temp_open_ai_api_key = open_ai_api_key.clone();
+            let vectors_resp = async move {
+                let embeddings_resp = cur_client
+                .post(&format!("{}/embeddings?api-version=2023-05-15", url))
+                .header("Authorization", &format!("Bearer {}", open_ai_api_key))
+                .header("api-key", open_ai_api_key)
+                .header("Content-Type", "application/json")
+                .json(&parameters)
+                .send()
+                .await
+                .map_err(|_| {
+                    ServiceError::BadRequest("Failed to send message to embedding server".to_string())
+                })?
+                .text()
+                .await
+                .map_err(|_| {
+                    ServiceError::BadRequest("Failed to get text from embeddings".to_string())
+                })?;
 
-            // let embeddings_resp = cur_client
-            //     .post(&format!("{}/embeddings?api-version=2023-05-15", url))
-            //     .header("Authorization", &format!("Bearer {}", temp_open_ai_api_key))
-            //     .header("api-key", temp_open_ai_api_key)
-            //     .header("Content-Type", "application/json")
-            //     .json(&parameters)
-            //     .send()
-            //     .await?;
+                let embeddings: EmbeddingResponse = format_response(embeddings_resp)
+                    .map_err(|e| {
+                        log::error!("Failed to format response from embeddings server {:?}", e);
+                        ServiceError::InternalServerError(
+                            "Failed to format response from embeddings server".to_owned(),
+                        )
+                    })?;
 
-            // Ok::<(Result<std::string::String, reqwest::Error>, usize), anyhow::Error>((
-            //     embeddings_resp.text().await,
-            //     i,
-            // ))
+                let vectors: Vec<Vec<f32>> = embeddings
+                .data
+                .into_iter()
+                .map(|x| match x.embedding {
+                    EmbeddingOutput::Float(v) => v.iter().map(|x| *x as f32).collect(),
+                    EmbeddingOutput::Base64(_) => {
+                        log::error!("Embedding server responded with Base64 and that is not currently supported for embeddings");
+                        vec![]
+                    }
+                })
+                .collect();
+
+                if vectors.iter().any(|x| x.is_empty()) {
+                    return Err(ServiceError::InternalServerError(
+                        "Embedding server responded with Base64 and that is not currently supported for embeddings".to_owned(),
+                    ));
+                }
+                Ok((i, vectors))
+            };
+
+            vectors_resp
         })
+        .collect();
+
+    let all_chunk_vectors: Vec<(usize, Vec<Vec<f32>>)> = futures::future::join_all(vec_futures)
+        .await
+        .into_iter()
+        .collect::<Result<Vec<(usize, Vec<Vec<f32>>)>, ServiceError>>()?;
+
+    let mut vectors_sorted = vec![];
+    for index in 0..all_chunk_vectors.len() {
+        let (_, vectors_i) = all_chunk_vectors.iter().find(|(i, _)| *i == index).ok_or(
+            ServiceError::InternalServerError(
+                "Failed to get index i (this should never happen)".to_string(),
+            ),
+        )?;
+
+        vectors_sorted.extend(vectors_i.clone());
+    }
 
     transaction.finish();
-    Ok(vec![])
+    Ok(vectors_sorted)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -359,6 +401,7 @@ pub struct CustomSparseEmbedData {
 pub async fn get_sparse_vectors(
     messages: Vec<String>,
     embed_type: &str,
+    reqwest_client: reqwest::Client,
 ) -> Result<Vec<Vec<(u32, f32)>>, ServiceError> {
     if messages.is_empty() {
         return Err(ServiceError::BadRequest(
@@ -366,62 +409,91 @@ pub async fn get_sparse_vectors(
         ));
     }
 
-    let origin_key = match embed_type {
-        "doc" => "SPARSE_SERVER_DOC_ORIGIN",
-        "query" => "SPARSE_SERVER_QUERY_ORIGIN",
-        _ => unreachable!("Invalid embed_type passed"),
-    };
+    let thirty_message_groups = messages.chunks(30);
 
-    let server_origin = match std::env::var(origin_key).ok().filter(|s| !s.is_empty()) {
-        Some(origin) => origin,
-        None => get_env!(
-            "GPU_SERVER_ORIGIN",
-            "GPU_SERVER_ORIGIN should be set if this is called"
-        )
-        .to_string(),
-    };
-    let embedding_server_call = format!("{}/embed_sparse", server_origin);
+    let vec_futures: Vec<_> = thirty_message_groups
+        .enumerate()
+        .map(|(i, thirty_messages)| {
+            let cur_client = reqwest_client.clone();
 
-    let mut all_vectors = vec![];
-    let thirty_message_groups = messages.chunks(30).collect::<Vec<_>>();
+            let origin_key = match embed_type {
+                "doc" => "SPARSE_SERVER_DOC_ORIGIN",
+                "query" => "SPARSE_SERVER_QUERY_ORIGIN",
+                _ => unreachable!("Invalid embed_type passed"),
+            };
 
-    for thirty_messages in thirty_message_groups {
-        let sparse_vectors = ureq::post(&embedding_server_call)
-            .set("Content-Type", "application/json")
-            .set(
-                "Authorization",
-                &format!(
-                    "Bearer {}",
-                    get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
-                ),
-            )
-            .send_json(CustomSparseEmbedData {
-                inputs: thirty_messages.to_vec(),
-                encode_type: embed_type.to_string(),
-                truncate: true,
-            })
-            .map_err(|err| {
-                log::error!(
-                    "Failed parsing response from custom embedding server {:?}",
-                    err
-                );
-                ServiceError::BadRequest(format!("Failed making call to server {:?}", err))
-            })?
-            .into_json::<Vec<Vec<SpladeIndicies>>>()
-            .map_err(|_e| {
-                log::error!(
-                    "Failed parsing response from custom embedding server {:?}",
-                    _e
-                );
-                ServiceError::BadRequest(
-                    "Failed parsing response from custom embedding server".to_string(),
+            let server_origin = match std::env::var(origin_key).ok().filter(|s| !s.is_empty()) {
+                Some(origin) => origin,
+                None => get_env!(
+                    "GPU_SERVER_ORIGIN",
+                    "GPU_SERVER_ORIGIN should be set if this is called"
                 )
-            })?;
+                .to_string(),
+            };
+            let embedding_server_call = format!("{}/embed_sparse", server_origin);
 
-        all_vectors.extend(sparse_vectors);
+            async move {
+                let sparse_embed_req = CustomSparseEmbedData {
+                    inputs: thirty_messages.to_vec(),
+                    encode_type: embed_type.to_string(),
+                    truncate: true,
+                };
+
+                let sparse_vectors = cur_client
+                    .post(&embedding_server_call)
+                    .header("Content-Type", "application/json")
+                    .header(
+                        "Authorization",
+                        &format!(
+                            "Bearer {}",
+                            get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
+                        ),
+                    )
+                    .json(&sparse_embed_req)
+                    .send()
+                    .await
+                    .map_err(|err| {
+                        log::error!(
+                            "Failed parsing response from custom embedding server {:?}",
+                            err
+                        );
+                        ServiceError::BadRequest(format!("Failed making call to server {:?}", err))
+                    })?
+                    .json::<Vec<Vec<SpladeIndicies>>>()
+                    .await
+                    .map_err(|_e| {
+                        log::error!(
+                            "Failed parsing response from custom embedding server {:?}",
+                            _e
+                        );
+                        ServiceError::BadRequest(
+                            "Failed parsing response from custom embedding server".to_string(),
+                        )
+                    })?;
+
+                Ok((i, sparse_vectors))
+            }
+        })
+        .collect();
+
+    let all_chunk_vectors: Vec<(usize, Vec<Vec<SpladeIndicies>>)> =
+        futures::future::join_all(vec_futures)
+            .await
+            .into_iter()
+            .collect::<Result<Vec<(usize, Vec<Vec<SpladeIndicies>>)>, ServiceError>>()?;
+
+    let mut vectors_sorted = vec![];
+    for index in 0..all_chunk_vectors.len() {
+        let (_, vectors_i) = all_chunk_vectors.iter().find(|(i, _)| *i == index).ok_or(
+            ServiceError::InternalServerError(
+                "Failed to get index i (this should never happen)".to_string(),
+            ),
+        )?;
+
+        vectors_sorted.extend(vectors_i.clone());
     }
 
-    Ok(all_vectors
+    Ok(vectors_sorted
         .iter()
         .map(|sparse_vector| {
             sparse_vector
