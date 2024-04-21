@@ -12,3 +12,6 @@ dependencies:
   - name: postgresql
     repository: https://charts.bitnami.com/bitnami
     version: 15.2.5
+  - name: qdrant
+    repository: https://qdrant.github.io/qdrant-helm
+    version: 0.8.4
