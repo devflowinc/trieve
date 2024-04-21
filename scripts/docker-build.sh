@@ -38,6 +38,8 @@ function build_images() {
   docker_build -t trieve/mc .
   cd $startpath/../chat
   docker_build -t trieve/chat .
+  cd $startpath/../search
+  docker_build -t trieve/search .
   cd $startpath/../server
   docker_build -t trieve/server -f Dockerfile.no-ocr . 
   docker_build -t trieve/ingest -f Dockerfile.microservice .
