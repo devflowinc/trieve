@@ -61,7 +61,7 @@ spec:
           - name: S3_BUCKET
             value: {{ .Values.config.s3.bucket }}
           - name: COOKIE_SECURE
-            value: {{ .Values.config.trieve.cookieSecure }}
+            value: {{ .Values.config.trieve.cookieSecure | quote }}
           - name: AWS_REGION
             value: {{ .Values.region }}
           - name: QDRANT_COLLECTION
@@ -97,6 +97,6 @@ spec:
           - name: RERANKER_SERVER_ORIGIN
             value: {{ .Values.config.trieve.rerankerServerOrigin }}
           - name: UNLIMITED
-            value: {{ .Values.config.trieve.unlimited }}
+            value: {{ .Values.config.trieve.unlimited | quote }}
           - name: REDIS_CONNECTIONS
-            value: {{ .Values.config.redis.connections }}
+            value: {{ .Values.config.redis.connections | quote }}

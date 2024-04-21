@@ -41,7 +41,7 @@ spec:
           - name: KC_DB_PASSWORD
             value: {{ default "password" .Values.config.keycloak.dbPassword }}
           - name: KC_HEALTH_ENABLED
-            value: "true"
+            value: 1
       volumes:
       - name: keycloak-data
         persistentVolumeClaim:
