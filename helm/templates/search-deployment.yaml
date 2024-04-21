@@ -20,11 +20,11 @@ spec:
     spec:
       containers:
       - name: search
-        image: {{ printf "%s%s:%s" (ternary (printf "%s.dkr.ecr.%s.amazonaws.com/" .Values.accountId .Values.region) "localhost:5000/" (eq .Values.environment "aws")) "search" .Values.containers.search.tag }}
+        image: {{ printf "%s%s:%s" (ternary (printf "%s.dkr.ecr.%s.amazonaws.com/" $.Values.accountId $.Values.region) "localhost:5000/" (eq $.Values.environment "aws")) "search" $.Values.containers.search.tag }}
       ports:
         - containerPort: 80
       env:
         - name: VITE_API_HOST
-          value: {{ .Values.vite.apiHost }}
+          value: {{ $.Values.config.vite.apiHost }}
         - name: VITE_SEARCH_UI_URL
-          value: {{ .Values.vite.searchUiUrl }}
+          value: {{ $.Values.config.vite.searchUiUrl }}

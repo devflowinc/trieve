@@ -1,6 +1,6 @@
 {{- range $index, $service := .Values.embeddings }}
 {{- $port := (get $service "port") }}
-{{- $name := (get $name "name") }}
+{{- $name := (get $service "name") }}
 {{- if ne $index 0 }}
 ---
 {{- end }}

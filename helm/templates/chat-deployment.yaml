@@ -25,6 +25,6 @@ spec:
         - containerPort: 80
       env:
         - name: VITE_API_HOST
-          value: {{ .Values.vite.apiHost }}
+          value: {{ .Values.config.vite.apiHost }}
         - name: VITE_SEARCH_UI_URL
-          value: {{ .Values.vite.searchUiUrl }}
+          value: {{ .Values.config.vite.searchUiUrl }}

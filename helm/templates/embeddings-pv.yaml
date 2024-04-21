@@ -1,7 +1,7 @@
 {{- if eq $.Values.environment "local" }}
 {{ $storage := (ternary "10Gi" "500Gi" (eq .Values.environment  "local")) }}
 {{- range $index, $service := .Values.embeddings }}
-{{- $name := (get $name "name") }}
+{{- $name := (get $service "name") }}
 {{- if ne $index 0 }}
 ---
 {{- end }}

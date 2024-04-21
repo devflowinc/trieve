@@ -35,7 +35,7 @@ spec:
         - name: KC_DB
           value: postgres
         - name: KC_DB_URL
-          value: jdbc:postgresql://keycloak-db.default.svc.cluster.local:5432/keycloak
+          value: jdbc:postgresql://trieve-postgres.default.svc.cluster.local:5432/keycloak
         - name: KC_DB_USERNAME
           value: {{ default "postgres" .Values.config.keycloak.dbUsername }}
         - name: KC_DB_PASSWORD

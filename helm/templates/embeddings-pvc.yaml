@@ -1,6 +1,6 @@
 {{ $storage := (ternary "10Gi" "500Gi" (eq .Values.environment  "local")) }}
 {{- range $index, $service := .Values.embeddings }}
-{{- $name := (get $name "name") }}
+{{- $name := (get $service "name") }}
 {{- if ne $index 0 }}
 ---
 {{- end }}
@@ -10,11 +10,11 @@ metadata:
   name: embedding-{{ $name }}-pvc
   labels:
     app.kubernetes.io/name: embedding-{{ $name }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
 spec:
   accessModes:
     - ReadWriteOnce  
-{{- if eq .Values.environment "aws" }}
+{{- if eq $.Values.environment "aws" }}
   storageClassName: gp2
 {{- else }}
   storageClassName: ""  
