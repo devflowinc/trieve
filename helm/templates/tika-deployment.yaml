@@ -21,5 +21,5 @@ spec:
       containers:
       - name: tika
         image: {{ printf "%s%s:%s" (ternary (printf "%s.dkr.ecr.%s.amazonaws.com/" .Values.accountId .Values.region) "localhost:5000/" (eq .Values.environment "aws")) "tika" .Values.containers.tika.tag }}
-      ports:
-        - containerPort: 9998
+        ports:
+          - containerPort: 9998
