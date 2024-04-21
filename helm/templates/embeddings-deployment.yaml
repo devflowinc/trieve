@@ -34,6 +34,9 @@ spec:
           volumeMounts:
             - name: embedding-data
               mountPath: /data
+          resources:
+            limits:
+              nvidia.com/gpu: 1
       volumes:
         - name: embedding-data
           persistentVolumeClaim:
