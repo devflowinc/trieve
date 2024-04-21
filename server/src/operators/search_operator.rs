@@ -18,7 +18,6 @@ use crate::handlers::chunk_handler::{
 use crate::handlers::group_handler::{
     SearchOverGroupsData, SearchWithinGroupData, SearchWithinGroupResults,
 };
-use crate::operators::model_operator::get_sparse_vectors;
 use crate::operators::qdrant_operator::{get_qdrant_connection, search_qdrant_query};
 use crate::{data::models::Pool, errors::ServiceError};
 use actix_web::web;
@@ -1322,16 +1321,9 @@ pub async fn search_full_text_chunks(
 
     timer.add("start to get sparse vector");
 
-    let sparse_vectors = get_sparse_vectors(vec![parsed_query.query.clone()], "query")
+    let sparse_vector = get_sparse_vector(parsed_query.query.clone(), "query")
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
-
-    let sparse_vector = sparse_vectors
-        .get(0)
-        .ok_or(ServiceError::BadRequest(
-            "Failed to get first vector for sparse query".to_string(),
-        ))?
-        .clone();
 
     timer.add("finish getting sparse vector; start to fetch from qdrant");
 
@@ -1552,16 +1544,9 @@ pub async fn search_full_text_groups(
     config: ServerDatasetConfiguration,
 ) -> Result<SearchWithinGroupResults, actix_web::Error> {
     let data_inner = data.clone();
-    let sparse_vectors = get_sparse_vectors(vec![data.query.clone()], "query")
+    let sparse_vector = get_sparse_vector(data.query.clone(), "query")
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
-
-    let sparse_vector = sparse_vectors
-        .get(0)
-        .ok_or(ServiceError::BadRequest(
-            "Failed to get first vector for sparse query".to_string(),
-        ))?
-        .clone();
 
     let search_chunk_query_results = search_within_chunk_group_query(
         VectorType::Sparse(sparse_vector),
@@ -1792,16 +1777,9 @@ pub async fn full_text_search_over_groups(
 ) -> Result<SearchOverGroupsResults, actix_web::Error> {
     timer.add("start to get sparse vector");
 
-    let sparse_vectors = get_sparse_vectors(vec![parsed_query.query.clone()], "query")
+    let sparse_vector = get_sparse_vector(parsed_query.query.clone(), "query")
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to get splade query embedding".into()))?;
-
-    let sparse_vector = sparse_vectors
-        .get(0)
-        .ok_or(ServiceError::BadRequest(
-            "Failed to get first vector for sparse query".to_string(),
-        ))?
-        .clone();
 
     timer.add("finish getting sparse vector; start to fetch from qdrant");
 
@@ -1919,22 +1897,8 @@ pub async fn hybrid_search_over_groups(
         sparse_embedding_vector_future
     );
 
-    let dense_embedding_vectors = dense_embedding_vectors?;
-    let sparse_embedding_vectors = sparse_embedding_vectors?;
-
-    let sparse_embedding_vector = sparse_embedding_vectors
-        .get(0)
-        .ok_or(ServiceError::BadRequest(
-            "Failed to get first vector for sparse query".to_string(),
-        ))?
-        .clone();
-
-    let dense_embedding_vector = dense_embedding_vectors
-        .get(0)
-        .ok_or(ServiceError::BadRequest(
-            "Failed to get embedding vector due to empty array from create_embedding".to_string(),
-        ))?
-        .clone();
+    let dense_embedding_vector = dense_embedding_vectors?;
+    let sparse_embedding_vector = sparse_embedding_vectors?;
 
     timer.add(
         "finish creating dense embedding vector and sparse vector; start to fetch from qdrant",

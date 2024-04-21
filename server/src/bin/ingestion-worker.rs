@@ -22,7 +22,9 @@ use trieve_server::operators::chunk_operator::{
     insert_duplicate_chunk_metadata_query, update_chunk_metadata_query,
 };
 use trieve_server::operators::event_operator::create_event_query;
-use trieve_server::operators::model_operator::{create_embeddings, get_sparse_vectors};
+use trieve_server::operators::model_operator::{
+    create_embedding, create_embeddings, get_sparse_vector, get_sparse_vectors,
+};
 use trieve_server::operators::parse_operator::{
     average_embeddings, coarse_doc_chunker, convert_html_to_text,
 };
@@ -187,6 +189,7 @@ async fn ingestion_worker(
         opt_redis_connection.expect("Failed to get redis connection outside of loop");
 
     let mut broken_pipe_sleep = std::time::Duration::from_secs(10);
+    let reqwest_client = reqwest::Client::new();
 
     loop {
         if should_terminate.load(Ordering::Relaxed) {
@@ -233,7 +236,9 @@ async fn ingestion_worker(
             serde_json::from_str(&serialized_message).expect("Failed to parse ingestion message");
         match ingestion_message.clone() {
             IngestionMessage::BulkUpload(payload) => {
-                match bulk_upload_chunks(payload.clone(), web_pool.clone()).await {
+                match bulk_upload_chunks(payload.clone(), web_pool.clone(), reqwest_client.clone())
+                    .await
+                {
                     Ok(chunk_ids) => {
                         log::info!("Uploaded {:} chunks", chunk_ids.len());
 
@@ -325,7 +330,7 @@ async fn ingestion_worker(
 pub async fn bulk_upload_chunks(
     payload: BulkUploadIngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
-    reqwest_client: Req,
+    reqwest_client: reqwest::Client,
 ) -> Result<Vec<uuid::Uuid>, ServiceError> {
     let tx_ctx = sentry::TransactionContext::new(
         "ingestion worker bulk_upload_chunk",
@@ -371,7 +376,8 @@ pub async fn bulk_upload_chunks(
         let mut chunk_ids = vec![];
         // Split average or Collisions
         for message in payload.ingestion_messages {
-            let upload_chunk_result = upload_chunk(message, web_pool.clone()).await;
+            let upload_chunk_result =
+                upload_chunk(message, web_pool.clone(), reqwest_client.clone()).await;
 
             if let Ok(chunk_uuid) = upload_chunk_result {
                 chunk_ids.push(chunk_uuid);
@@ -482,21 +488,27 @@ pub async fn bulk_upload_chunks(
     );
 
     // Assuming split average is false, Assume Explicit Vectors don't exist
-    let embedding_vectors =
-        match create_embeddings(all_content.clone(), "doc", dataset_config.clone()).await {
-            Ok(vectors) => Ok(vectors),
-            Err(err) => {
-                bulk_revert_insert_chunk_metadata_query(
-                    inserted_chunk_metadata_ids.clone(),
-                    web_pool.clone(),
-                )
-                .await?;
-                Err(ServiceError::InternalServerError(format!(
-                    "Failed to create embeddings: {:?}",
-                    err
-                )))
-            }
-        }?;
+    let embedding_vectors = match create_embeddings(
+        all_content.clone(),
+        "doc",
+        dataset_config.clone(),
+        reqwest_client.clone(),
+    )
+    .await
+    {
+        Ok(vectors) => Ok(vectors),
+        Err(err) => {
+            bulk_revert_insert_chunk_metadata_query(
+                inserted_chunk_metadata_ids.clone(),
+                web_pool.clone(),
+            )
+            .await?;
+            Err(ServiceError::InternalServerError(format!(
+                "Failed to create embeddings: {:?}",
+                err
+            )))
+        }
+    }?;
 
     embedding_transaction.finish();
 
@@ -506,7 +518,7 @@ pub async fn bulk_upload_chunks(
     );
 
     let splade_vectors = if dataset_config.FULLTEXT_ENABLED {
-        match get_sparse_vectors(all_content, "doc").await {
+        match get_sparse_vectors(all_content, "doc", reqwest_client).await {
             Ok(vectors) => Ok(vectors),
             Err(err) => {
                 bulk_revert_insert_chunk_metadata_query(
@@ -590,6 +602,7 @@ pub async fn bulk_upload_chunks(
 async fn upload_chunk(
     mut payload: UploadIngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
+    reqwest_client: reqwest::Client,
 ) -> Result<uuid::Uuid, ServiceError> {
     let tx_ctx = sentry::TransactionContext::new(
         "ingestion worker upload_chunk",
@@ -657,20 +670,30 @@ async fn upload_chunk(
             true => {
                 let chunks = coarse_doc_chunker(content.clone());
 
-                let embeddings = create_embeddings(chunks, "doc", dataset_config.clone()).await?;
+                let embeddings = create_embeddings(
+                    chunks,
+                    "doc",
+                    dataset_config.clone(),
+                    reqwest_client.clone(),
+                )
+                .await?;
 
                 average_embeddings(embeddings)?
             }
             false => {
-                let embedding_vectors =
-                    create_embeddings(vec![content.clone()], "doc", dataset_config.clone())
-                        .await
-                        .map_err(|err| {
-                            ServiceError::InternalServerError(format!(
-                                "Failed to create embedding: {:?}",
-                                err
-                            ))
-                        })?;
+                let embedding_vectors = create_embeddings(
+                    vec![content.clone()],
+                    "doc",
+                    dataset_config.clone(),
+                    reqwest_client.clone(),
+                )
+                .await
+                .map_err(|err| {
+                    ServiceError::InternalServerError(format!(
+                        "Failed to create embedding: {:?}",
+                        err
+                    ))
+                })?;
 
                 embedding_vectors
                     .first()
@@ -683,7 +706,7 @@ async fn upload_chunk(
     };
 
     let splade_vector = if dataset_config.FULLTEXT_ENABLED {
-        match get_sparse_vectors(vec![content], "doc").await {
+        match get_sparse_vectors(vec![content], "doc", reqwest_client).await {
             Ok(v) => v.first().expect("First vector should exist").clone(),
             Err(_) => vec![(0, 0.0)],
         }
@@ -872,8 +895,8 @@ async fn update_chunk(
         .map_err(|_| ServiceError::BadRequest("chunk not found".into()))?;
 
     let splade_vector = if server_dataset_config.FULLTEXT_ENABLED {
-        match get_sparse_vectors(vec![content], "doc").await {
-            Ok(v) => v.first().expect("First vector should exist").clone(),
+        match get_sparse_vector(content, "doc").await {
+            Ok(v) => v,
             Err(_) => vec![(0, 0.0)],
         }
     } else {

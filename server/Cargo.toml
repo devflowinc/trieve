@@ -128,7 +128,6 @@ utoipa-swagger-ui = { version = "6.0.0", features = ["actix-web"] }
 bb8-redis = "0.15.0"
 signal-hook = "0.3.17"
 blake3 = "1.5.1"
-anyhow = "1.0.82"
 
 
 [build-dependencies]
