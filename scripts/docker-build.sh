@@ -55,6 +55,7 @@ function tag_images() {
   tag_and_push server
   tag_and_push ingest
   tag_and_push chat
+  tag_and_push search
 }
 
 build_images
