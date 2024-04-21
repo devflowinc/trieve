@@ -1,0 +1,31 @@
+{{- range $index, $service := .Values.embeddings }}
+{{- $port := (get $service "port") }}
+{{- $name := (get $name "name") }}
+{{- if ne $index 0 }}
+---
+{{- end }}
+{{- $serviceName := (printf "embedding-%s-service" $name) }}
+{{- $selector := (printf "embedding-%s" $name) }}
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ $serviceName }}
+  labels:
+    app.kubernetes.io/instance: trieve
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: {{ $serviceName }}
+    app.kubernetes.io/version: 1.16.0
+    helm.sh/chart: trieve-0.1.0
+    meta.helm.sh/release-name: trieve
+    meta.helm.sh/release-namespace: default
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ $port }}
+      targetPort: 80
+      protocol: TCP
+      name: svc
+  selector:
+    app.kubernetes.io/name: {{ $selector }}
+    app.kubernetes.io/instance: trieve
+{{- end }}

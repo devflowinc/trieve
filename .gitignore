@@ -33,3 +33,4 @@ sample-data
 dashboard/.vite/*
 *.swp
 *.swo
+helm/values.yaml

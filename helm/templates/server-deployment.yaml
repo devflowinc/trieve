@@ -62,6 +62,8 @@ spec:
           value: {{ .Values.config.s3.bucket }}
         - name: COOKIE_SECURE
           value: {{ .Values.config.trieve.cookieSecure }}
+        - name: AWS_REGION
+          value: {{ .Values.region }}
         - name: QDRANT_COLLECTION
           value: {{ .Values.config.qdrant.collection }}
         - name: TIKA_URL
