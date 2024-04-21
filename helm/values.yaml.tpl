@@ -1,4 +1,5 @@
 region: $AWS_REGION
+environment: local
 containers:
   keycloak:
     tag: 0.1.0
@@ -18,14 +19,23 @@ containers:
     tag: 0.1.0
   ingest:
     tag: 0.1.0
+  search:
+    tag: 0.1.0
+  chat:
+    tag: 0.1.0
+  dashboard:
+    tag: 0.1.0
 config:
   quantizeVectors: false
   vite:
-    apiHost: http://localhost:8090/api
+    apiHost: http://server.default.svc.cluster.local:8090/api
     searchUiUrl: https://search.trieve.ai
     frontmatterVals: "link,tag_set,time_stamp"
     sentryChatDsn: ""
     dashboardUrl: http://localhost:5173
+  keycloak:
+    admin: $KEYCLOAK_ADMIN
+    password: $KEYCLOAK_PASSWORD
   minio:
     rootUser: $MINIO_ROOT_USER
     rootPassword: $MINIO_ROOT_PASSWORD
