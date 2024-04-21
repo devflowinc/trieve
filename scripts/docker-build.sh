@@ -40,6 +40,8 @@ function build_images() {
   docker_build -t trieve/chat .
   cd $startpath/../search
   docker_build -t trieve/search .
+  cd $startpath/../dashboard
+  docker_build -t trieve/dashboard .
   cd $startpath/../server
   docker_build -t trieve/server -f Dockerfile.no-ocr . 
   docker_build -t trieve/ingest -f Dockerfile.microservice .
@@ -56,6 +58,7 @@ function tag_images() {
   tag_and_push ingest
   tag_and_push chat
   tag_and_push search
+  tag_and_push dashboard
 }
 
 build_images
