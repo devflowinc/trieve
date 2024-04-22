@@ -1,12 +1,11 @@
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
-};
-
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
 use redis::aio::MultiplexedConnection;
 use sentry::{Hub, SentryFutureExt};
 use signal_hook::consts::SIGTERM;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use trieve_server::{
     data::models::{self, FileWorkerMessage},
@@ -201,12 +200,12 @@ async fn file_worker(
         };
 
         let processing_chunk_ctx = sentry::TransactionContext::new(
-            "ingestion worker processing chunk",
-            "ingestion worker processing chunk",
+            "file worker processing file",
+            "file worker processing file",
         );
         let transaction = sentry::start_transaction(processing_chunk_ctx);
         let file_worker_message: FileWorkerMessage =
-            serde_json::from_str(&serialized_message).expect("Failed to parse ingestion message");
+            serde_json::from_str(&serialized_message).expect("Failed to parse file message");
 
         match upload_file(
             file_worker_message.clone(),
@@ -227,12 +226,12 @@ async fn file_worker(
             }
             Ok(None) => {
                 log::info!(
-                    "File was uploaded but no chunks were created: {:?}",
+                    "File was uploaded with specification to not create chunks for it: {:?}",
                     file_worker_message.file_id
                 );
             }
             Err(err) => {
-                log::error!("Failed to upload chunk: {:?}", err);
+                log::error!("Failed to upload file: {:?}", err);
 
                 let _ = readd_error_to_queue(file_worker_message, err, redis_pool.clone()).await;
             }
@@ -295,9 +294,14 @@ async fn upload_file(
             ServiceError::BadRequest("Could not get tika response bytes".to_string())
         })?
         .to_vec();
+    tika_html_parse_span.finish();
 
     let html_content = String::from_utf8_lossy(&tike_html_converted_file_bytes).to_string();
-    tika_html_parse_span.finish();
+    if html_content.is_empty() {
+        return Err(ServiceError::BadRequest(
+            "Could not parse file with tika".to_string(),
+        ));
+    }
 
     let file_size_mb = (file_data.len() as f64 / 1024.0 / 1024.0).round() as i64;
 
@@ -318,12 +322,8 @@ async fn upload_file(
         return Ok(None);
     }
 
-    let create_chunks_span = transaction.start_child("create_chunks", "Create chunks");
-    if html_content.is_empty() {
-        return Err(ServiceError::BadRequest(
-            "Could not parse file with tika".to_string(),
-        ));
-    }
+    let create_file_chunks_span = transaction.start_child("Queue chunks for creation for file", "Queue chunks for creation for file");
+
     create_chunks_with_handler(
         created_file.id,
         file_worker_message.upload_file_data,
@@ -333,7 +333,8 @@ async fn upload_file(
         redis_conn,
     )
     .await?;
-    create_chunks_span.finish();
+
+    create_file_chunks_span.finish();
 
     Ok(Some(file_id))
 }
