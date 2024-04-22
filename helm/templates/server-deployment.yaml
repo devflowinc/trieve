@@ -35,7 +35,7 @@ spec:
           - name: QDRANT_API_KEY
             value: {{ .Values.config.qdrant.apiKey }}
           - name: DATABASE_URL
-            value: postgres://postgres:password@trieve-postgres.default.svc.cluster.local:5678
+            value: postgres://postgres:password@trieve-postgresql.default.svc.cluster.local:5432
           - name: SMTP_RELAY
             value: {{ .Values.config.smtp.relay }}
           - name: SMTP_USERNAME
