@@ -1,5 +1,5 @@
-{{- $name := "keycloak-db-service" }}
-{{- $selector := "keycloak-db" }}
+{{- $name := "keycloak-service" }}
+{{- $selector := "keycloak" }}
 kind: Service
 apiVersion: v1
 metadata:
