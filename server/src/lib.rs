@@ -130,7 +130,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.7.2",
+        version = "0.7.3",
     ),
     servers(
         (url = "https://api.trieve.ai",
@@ -163,8 +163,10 @@ impl Modify for SecurityAddon {
         handlers::chunk_handler::search_chunk,
         handlers::chunk_handler::generate_off_chunks,
         handlers::chunk_handler::get_chunk_by_tracking_id,
+        handlers::chunk_handler::get_chunks_by_tracking_ids,
         handlers::chunk_handler::delete_chunk_by_tracking_id,
         handlers::chunk_handler::get_chunk_by_id,
+        handlers::chunk_handler::get_chunks_by_ids,
         handlers::user_handler::update_user,
         handlers::user_handler::set_user_api_key,
         handlers::user_handler::delete_user_api_key,
@@ -240,6 +242,8 @@ impl Modify for SecurityAddon {
             handlers::chunk_handler::ChunkFilter,
             handlers::chunk_handler::FieldCondition,
             handlers::chunk_handler::Range,
+            handlers::chunk_handler::GetChunksData,
+            handlers::chunk_handler::GetTrackingChunksData,
             handlers::chunk_handler::MatchCondition,
             handlers::user_handler::UpdateUserOrgRoleData,
             handlers::user_handler::SetUserApiKeyRequest,
@@ -481,6 +485,16 @@ pub async fn main() -> std::io::Result<()> {
             // everything under '/api/' route
             .service(
                 web::scope("/api")
+                    .service(
+                        web::scope("/chunks")
+                            .service(
+                                web::resource("")
+                                    .route(web::post().to(handlers::chunk_handler::get_chunks_by_ids))
+                            ).service(
+                                web::resource("/tracking")
+                                    .route(web::post().to(handlers::chunk_handler::get_chunks_by_tracking_ids))
+                            )
+                    )
                     .service(
                         web::scope("/dataset")
                             .service(
