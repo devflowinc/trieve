@@ -44,16 +44,7 @@ pub async fn get_metadata_from_point_ids(
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
-    let converted_chunks: Vec<FullTextSearchResult> = chunk_metadata
-        .iter()
-        .map(|chunk| <ChunkMetadata as Into<FullTextSearchResult>>::into(chunk.clone()))
-        .collect::<Vec<FullTextSearchResult>>();
-
-    let chunk_metadata_with_file_id = get_metadata_query(converted_chunks, pool)
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
-
-    Ok(chunk_metadata_with_file_id)
+    Ok(chunk_metadata)
 }
 
 pub async fn get_point_ids_from_unified_chunk_ids(
@@ -305,6 +296,27 @@ pub async fn get_metadata_from_ids_query(
 
     let metadatas: Vec<ChunkMetadata> = chunk_metadata_columns::chunk_metadata
         .filter(chunk_metadata_columns::id.eq_any(chunk_ids))
+        .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid))
+        .select(ChunkMetadata::as_select())
+        .load::<ChunkMetadata>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
+
+    Ok(metadatas)
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn get_metadata_from_tracking_ids_query(
+    tracking_ids: Vec<String>,
+    dataset_uuid: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Vec<ChunkMetadata>, ServiceError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
+    let mut conn = pool.get().await.unwrap();
+
+    let metadatas: Vec<ChunkMetadata> = chunk_metadata_columns::chunk_metadata
+        .filter(chunk_metadata_columns::tracking_id.eq_any(tracking_ids))
         .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid))
         .select(ChunkMetadata::as_select())
         .load::<ChunkMetadata>(&mut conn)
