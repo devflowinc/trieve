@@ -15,10 +15,18 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: 5432
-      targetPort: 5432
+    - port: 8080
+      targetPort: 8080
       protocol: TCP
-      name: http
+      name: keycloak-a
+    - port: 9000
+      targetPort: 9000
+      protocol: TCP
+      name: keycloak-b
+    - port: 42625
+      targetPort: 42625
+      protocol: TCP
+      name: keycloak-c
   selector:
     app.kubernetes.io/name: {{ $selector }}
     app.kubernetes.io/instance: trieve
