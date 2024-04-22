@@ -389,6 +389,7 @@ pub async fn bulk_upload_chunks(
         return Ok(chunk_ids);
     }
 
+
     #[allow(clippy::type_complexity)]
     let ingestion_data: Vec<(ChunkMetadata, Option<Vec<uuid::Uuid>>, bool)> = payload
         .ingestion_messages
@@ -509,6 +510,13 @@ pub async fn bulk_upload_chunks(
             )))
         }
     }?;
+
+    embedding_transaction.finish();
+
+    let embedding_transaction = transaction.start_child(
+        "calling_create_SPLADE_embeddings",
+        "calling_create_SPLADE_embeddings",
+    );
 
     embedding_transaction.finish();
 

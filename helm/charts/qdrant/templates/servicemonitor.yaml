@@ -1,0 +1,43 @@
+{{- if .Values.metrics.serviceMonitor.enabled }}
+kind: ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+metadata:
+  labels:
+    {{- include "qdrant.labels" . | nindent 4 }}
+{{- with .Values.metrics.serviceMonitor.additionalLabels }}
+{{- toYaml . | nindent 4 }}
+{{- end }}
+  name: {{ include "qdrant.fullname" . }}
+spec:
+  endpoints:
+    - honorLabels: true
+      interval: {{ .Values.metrics.serviceMonitor.scrapeInterval }}
+      path: {{ .Values.metrics.serviceMonitor.targetPath }}
+      port: {{ .Values.metrics.serviceMonitor.targetPort }}
+      scheme: http
+      scrapeTimeout: {{ .Values.metrics.serviceMonitor.scrapeTimeout }}
+{{- if .Values.metrics.serviceMonitor.metricRelabelings }}
+      metricRelabelings:
+{{ tpl (toYaml .Values.metrics.serviceMonitor.metricRelabelings | indent 8) . }}
+{{- end }}
+{{- if .Values.metrics.serviceMonitor.relabelings }}
+      relabelings:
+{{ tpl (toYaml .Values.metrics.serviceMonitor.relabelings | indent 8) . }}
+{{- end }}
+{{- if .Values.apiKey }}
+      authorization:
+        type: Bearer
+        credentials:
+          name: {{ include "qdrant.fullname" . }}-apikey
+          key: api-key
+{{- else if .Values.readOnlyApiKey }}
+      authorization:
+        type: Bearer
+        credentials:
+          name: {{ include "qdrant.fullname" . }}-apikey
+          key: read-only-api-key
+{{- end }}
+  selector:
+    matchLabels:
+      {{- include "qdrant.labels" . | nindent 6 }}
+{{- end }}

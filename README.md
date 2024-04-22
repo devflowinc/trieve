@@ -282,3 +282,217 @@ Install Stripe CLI.
 1. `stripe login`
 2. `stripe listen --forward-to localhost:8090/api/stripe/webhook`
 3. `stripe plans create --amount=1200 --currency=usd --interval=month --product=prod_PCHehsNBCcVN9i`
+
+## Deploying to Kubernetes
+
+Ensure that the values.yaml contains the value
+
+```yaml
+environment: local
+```
+
+Install docker-ce on your system. Use the following link to find the instructions:
+
+[https://docs.docker.com/engine/install/](https://docs.docker.com/engine/install/)
+
+Install kubectl on your system. Use the following link to get the binary:
+
+[https://kubernetes.io/releases/download/](https://kubernetes.io/releases/download/)
+
+Install virtualbox on your system. Downloads are accessible via the page below:
+
+[https://www.virtualbox.org/wiki/Downloads](https://www.virtualbox.org/wiki/Downloads)
+
+Install minikube using the following resource:
+
+[https://minikube.sigs.k8s.io/docs/start/](https://minikube.sigs.k8s.io/docs/start/)
+
+Use the command:
+
+```sh
+minikube config set driver virtualbox
+```
+
+Now you can deploy a local kubernetes cluster to minikube:
+
+```sh
+minikube start --disk-size=50g
+```
+
+Deploy the registry addon using the include scripts
+
+```sh
+cd trieve
+bash minikube/enable-registry.sh
+```
+
+Run the included script to launch socat to port forward the registry
+
+```sh
+cd trieve
+bash minikube/launch-socat.sh
+```
+
+Now you can build the entire set of images in the project and deploy them to the local registry at localhost:5000
+
+```sh
+cd trieve
+bash scripts/docker-build.sh
+```
+
+This may take a bit, but after the first build it becomes very quick to iterate on the docker images.
+
+Once you have the docker images, you can now deploy the helm chart:
+
+```sh
+cd trieve/
+helm install -f values.yaml trieve .
+```
+
+This deploys everything.
+
+To make API calls to `trieve/server`, you can expose it as such:
+
+```sh
+minikube addons enable ingress
+kubectl expose deployment server --type=NodePort --port=8080
+```
+
+Get the URL endpoint with:
+
+```sh
+minikube service server --url
+```
+
+## Deploy to AWS
+
+Get the AWS CLI tool using the instructions here:
+
+[https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+
+Ensure you have a kubectl binary. Instructions to install are here:
+
+[https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html)
+
+Get a helm binary. Instructions to install are here:
+
+[https://docs.aws.amazon.com/eks/latest/userguide/helm.html](https://docs.aws.amazon.com/eks/latest/userguide/helm.html)
+
+Run the command:
+
+```sh
+aws configure
+```
+
+Enter your account ID and region. Then, run the following command:
+
+Get a eksctl binary using these instructions:
+
+[https://docs.aws.amazon.com/eks/latest/userguide/getting-started-eksctl.html](https://docs.aws.amazon.com/eks/latest/userguide/getting-started-eksctl.html)
+
+
+### Add AWS Load Balancer Controller
+
+Do this first:
+
+```sh
+cd aws/elb
+bash create-policy.sh
+bash create-iamserviceaccount.sh
+cd ../../
+helm repo add eks https://aws.github.io/eks-charts
+helm repo update eks
+cd aws/elb
+bash install-chart.sh
+```
+
+### Deploy cluster
+
+Configure trieve/aws/eks/cluster.yaml to your needs, then ensure that you rename any references to the name included in the source tree for the cluster (it may be trieve-10 for example) to anything that is not taken. We can assume we are renaming trieve-10 to trieve for the relevant files. You can call the script to do this as so:
+
+```sh
+cd trieve/aws/eks
+bash rename-cluster.sh trieve-10 trieve
+```
+
+Then you can create the cluster:
+
+```sh
+cd trieve/aws/eks
+eksctl create-cluster -f cluster.yaml
+```
+
+This may take a while. Once finished, you can target this deployment with kubectl:
+
+```sh
+aws eks update-kubeconfig --name trieve
+```
+
+To actually deploy the chart to AWS, first you must do the necessary set up to ensure gp2 volume provisioning from EBS will work for the filesystem deployments.
+
+The following commands only have to be run on an AWS account once. After these commands run you can destroy the cluster and make a new one but do not need to re-run them:
+
+```sh
+cd trieve/aws/eks
+bash create-identity-provider.sh
+cd ..
+bash make-service-account.sh
+bash make-trust-policy-file.sh
+bash create-role.sh
+bash attach-role.sh
+bash annotate-service-account.sh
+cd eks
+```
+
+After this set-up is complete, for any cluster you create you can run the command:
+```sh
+cd trieve/aws/eks
+bash create-identity-provider.sh
+bash add-driver.sh
+```
+
+Configure values.yaml and, assuming you want a mainnet deployment and are using us-east-2 for example, use the values:
+
+```yaml
+environment: aws
+accountId: <aws-account-id>
+region: us-east-2
+```
+
+Now you can deploy the chart:
+
+```sh
+cd trieve/
+helm install -f values.yaml trieve .
+```
+
+Now check your deployment!
+
+```sh
+kubectl describe pods
+```
+
+## Building images and publishing to ECR
+
+Use the steps in the above section to configure your AWS CLI tool, and ensure you have docker installed.
+
+Run the script:
+
+```sh
+cd aws/dkr
+bash login-docker.sh
+```
+
+Bump versions, if necessary, of any docker images that have been updated in values.yaml, specifically the `tag` property of each docker image referenced in the yaml file. The publish script included with trieve will attempt to build and publish every docker image used in the deployments using the tag from this yaml file (parsed with shyaml).
+
+Now you can publish the images:
+
+```sh
+bash scripts/docker-build-eks.sh
+```
+
+Now you can upgrade the chart with the new images:
+
+```sh
+helm upgrade -f values.yaml trieve .
+```

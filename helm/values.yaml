@@ -1,0 +1,104 @@
+region: 
+environment: local
+containers:
+  keycloak:
+    tag: 0.1.0
+  minio:
+    tag: 0.1.0
+  postgres:
+    tag: 0.1.0
+  redis:
+    tag: 0.1.0
+  tika:
+    tag: 0.1.0
+  mc:
+    tag: 0.1.0
+  server:
+    tag: 0.1.0
+  ingest:
+    tag: 0.1.0
+  search:
+    tag: 0.1.0
+  chat:
+    tag: 0.1.0
+  dashboard:
+    tag: 0.1.0
+config:
+  quantizeVectors: false
+  vite:
+    apiHost: http://server.default.svc.cluster.local:8090/api
+    searchUiUrl: https://search.trieve.ai
+    frontmatterVals: "link,tag_set,time_stamp"
+    sentryChatDsn: ""
+    dashboardUrl: http://localhost:5173
+  keycloak:
+    admin: 
+    password: 
+  minio:
+    rootUser: 
+    rootPassword: 
+  redis:
+    connections: 30
+    password: redis
+  qdrant:
+    collection: collection
+  trieve:
+    unlimited: true
+    cookieSecure: false
+    baseServerUrl: http://server-service.default.svc.cluster.local:80
+    embeddingServerOrigin: http://embedding-jina-service.default.cluster.local:80
+    sparseServerQueryOrigin: http://embedding-splade-query-service.default.cluster.local:80
+    sparseServerDocOrigin: http://embedding-splade-doc-service.default.cluster.local:80
+    embeddingServerOriginBGEM3: http://embedding-bgem3-service.default.cluster.local:80
+    rerankerServerOrigin: http://embedding-reranker-service.default.cluster.local:80
+    salt: 
+    secretKey: 
+    apiAdminKey: 
+  oidc:
+    clientSecret: 
+    clientId: vault
+    issuerUrl: http://keycloak-service.default.svc.cluster.local:8080/realms/trieve
+    authRedirectUrl: http://keycloak-service.default.svc.cluster.local:8080/realms/trieve/protocol/openid-connect/auth
+    redirectUrl: http://keycloak-service.default.svc.cluster.local:8080/realms/trieve/protocol/openid-connect/auth
+  
+  smtp:
+    relay: 
+    username: 
+    passworD: 
+    emailAddress: 
+  llm:
+    apiKey: 
+  openai:
+    apiKey: 
+    baseUrl: 
+  s3:
+    region: 
+    endpoint: http://minio.default.svc.cluster.local:9000
+    accessKey: 
+    secretKey: 
+    bucket: 
+  stripe:
+    secret: 
+    webhookSecret: 
+    adminDashboardUrl: http://keycloak.default.svc.cluster.local:8080/admin
+embeddings:
+  - name: jina
+    revision: main
+    port: 80
+    model: jinaai/jina-embeddings-v2-small-en
+    revision: main
+  - name: reranker
+    model: BAAI/bge-reranker-large
+    revision: refs/pr/4
+    port: 80
+  - name: splade-doc
+    model: naver/efficient-splade-VI-BT-large-doc
+    revision: main
+    port: 80
+  - name: splade-query
+    model: naver/efficient-splade-VI-BT-large-query
+    revision: main
+    port: 80
+redis:
+  enabled: true
+
