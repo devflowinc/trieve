@@ -1,5 +1,6 @@
 region: $AWS_REGION
 environment: local
+useGpu: false
 containers:
   keycloak:
     tag: 0.1.0

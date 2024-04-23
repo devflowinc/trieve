@@ -27,16 +27,18 @@ spec:
     spec:
       containers:
         - name: embedding-{{ $name }}
-          image: ghcr.io/huggingface/text-embeddings-inference:86-1.1
+          image: {{ ternary "ghcr.io/huggingface/text-embeddings-inference:86-1.1" "ghcr.io/huggingface/text-embeddings-inference:cpu-1.2" $.Values.useGpu }}
           args: ["--model-id", "{{ $model }}", "--revision", "{{ $revision }}"]
           ports:
             - containerPort: 80
           volumeMounts:
             - name: embedding-data
               mountPath: /data
+{{- if $.Values.useGpu }}
           resources:
             limits:
               nvidia.com/gpu: 1
+{{- end }}
       volumes:
         - name: embedding-data
           persistentVolumeClaim:
