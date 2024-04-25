@@ -870,13 +870,24 @@ pub async fn retrieve_chunks_for_groups(
         .flat_map(|hit| hit.hits.iter().map(|point| point.point_id).collect_vec())
         .collect_vec();
 
-    let (metadata_chunks, collided_chunks) =
-        get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
-            point_ids,
-            data.get_collisions.unwrap_or(false),
-            pool.clone(),
-        )
-        .await?;
+    let (metadata_chunks, collided_chunks) = match data.slim_chunks {
+        Some(true) => {
+            let slim_chunks = get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?;
+            let chunk_metadatas = slim_chunks
+                .iter()
+                .map(|slim_chunk| ChunkMetadata::from(slim_chunk.clone()))
+                .collect_vec();
+            (chunk_metadatas, vec![])
+        }
+        _ => {
+            get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
+                point_ids,
+                data.get_collisions.unwrap_or(false),
+                pool.clone(),
+            )
+            .await?
+        }
+    };
 
     let groups = get_groups_from_group_ids_query(
         search_over_groups_query_result
@@ -1125,13 +1136,24 @@ pub async fn retrieve_chunks_from_point_ids(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
-    let (metadata_chunks, collided_chunks) =
-        get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
-            point_ids,
-            data.get_collisions.unwrap_or(false),
-            pool,
-        )
-        .await?;
+    let (metadata_chunks, collided_chunks) = match data.slim_chunks {
+        Some(true) => {
+            let slim_chunks = get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?;
+            let chunk_metadatas = slim_chunks
+                .iter()
+                .map(|slim_chunk| ChunkMetadata::from(slim_chunk.clone()))
+                .collect_vec();
+            (chunk_metadatas, vec![])
+        }
+        _ => {
+            get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
+                point_ids,
+                data.get_collisions.unwrap_or(false),
+                pool.clone(),
+            )
+            .await?
+        }
+    };
 
     let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
         .search_results
