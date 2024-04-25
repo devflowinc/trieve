@@ -29,7 +29,9 @@ use crossbeam_channel::unbounded;
 use futures_util::stream;
 use openai_dive::v1::{
     api::Client,
-    resources::chat::{ChatCompletionParameters, ChatMessage, ChatMessageContent, Role},
+    resources::chat::{
+        ChatCompletionChoice, ChatCompletionParameters, ChatMessage, ChatMessageContent, Role,
+    },
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -38,8 +40,6 @@ use utoipa::ToSchema;
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct CreateMessageData {
-    /// The model to use for the assistant's messages. This can be any model from the openrouter model list. If no model is provided, gpt-3.5-turbo will be used.
-    pub model: Option<String>,
     /// The content of the user message to attach to the topic and then generate an assistant message in response to.
     pub new_message_content: String,
     /// The ID of the topic to attach the message to.
@@ -165,7 +165,6 @@ pub async fn create_message_completion_handler(
         previous_messages,
         user.id,
         topic_id,
-        create_message_data.model,
         create_message_data.stream_response,
         create_message_data.highlight_citations,
         create_message_data.highlight_delimiters,
@@ -223,10 +222,8 @@ pub async fn get_all_topic_messages(
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct RegenerateMessageData {
-    /// The model to use for the assistant generative inferences. This can be any model from the openrouter model list. If no model is provided, the gpt-3.5-turbo will be used.~
-    model: Option<String>,
     /// The id of the topic to regenerate the last message for.
-    topic_id: uuid::Uuid,
+    pub topic_id: uuid::Uuid,
     /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
     pub stream_response: Option<bool>,
     /// Whether or not to highlight the citations in the response. If this is set to true or not included, the citations will be highlighted. If this is set to false, the citations will not be highlighted. Default is true.
@@ -237,12 +234,10 @@ pub struct RegenerateMessageData {
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct EditMessageData {
-    /// The model to use for the assistant generative inferences. This can be any model from the openrouter model list. If no model is provided, the gpt-3.5-turbo will be used.~
-    model: Option<String>,
     /// The id of the topic to edit the message at the given sort order for.
-    topic_id: uuid::Uuid,
+    pub topic_id: uuid::Uuid,
     /// The sort order of the message to edit.
-    message_sort_order: i32,
+    pub message_sort_order: i32,
     /// The new content of the message to replace the old content with.
     new_message_content: String,
     /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
@@ -307,7 +302,6 @@ pub async fn edit_message_handler(
 
     create_message_completion_handler(
         actix_web::web::Json(CreateMessageData {
-            model: data.model.clone(),
             new_message_content: new_message_content.to_string(),
             topic_id,
             stream_response,
@@ -378,7 +372,6 @@ pub async fn regenerate_message_handler(
             previous_messages,
             user.id,
             topic_id,
-            data.model.clone(),
             should_stream,
             data.highlight_citations,
             data.highlight_delimiters.clone(),
@@ -435,7 +428,6 @@ pub async fn regenerate_message_handler(
         previous_messages_to_regenerate,
         user.id,
         topic_id,
-        data.model.clone(),
         should_stream,
         data.highlight_citations,
         data.highlight_delimiters.clone(),
@@ -462,10 +454,9 @@ pub async fn get_topic_string(
         name: None,
         tool_call_id: None,
     };
-    let openai_messages = vec![prompt_topic_message];
     let parameters = ChatCompletionParameters {
         model,
-        messages: openai_messages,
+        messages: vec![prompt_topic_message],
         stream: Some(false),
         temperature: None,
         top_p: None,
@@ -539,7 +530,6 @@ pub async fn stream_response(
     messages: Vec<models::Message>,
     user_id: uuid::Uuid,
     topic_id: uuid::Uuid,
-    model: Option<String>,
     should_stream: Option<bool>,
     highlight_citations: Option<bool>,
     highlight_delimiters: Option<Vec<String>>,
@@ -587,19 +577,8 @@ pub async fn stream_response(
 
     let message_to_query_prompt = dataset_config.MESSAGE_TO_QUERY_PROMPT.clone();
     let rag_prompt = dataset_config.RAG_PROMPT.clone();
-    let default_model = dataset_config.LLM_DEFAULT_MODEL.clone();
+    let chosen_model = dataset_config.LLM_DEFAULT_MODEL.clone();
 
-    let chosen_model = if let Some(model) = model.clone() {
-        if model.is_empty() {
-            default_model
-        } else {
-            model
-        }
-    } else {
-        default_model
-    };
-
-    // find evidence for the counter-argument
     let gen_inference_parameters = ChatCompletionParameters {
         model: chosen_model.clone(),
         messages: vec![ChatMessage {
@@ -908,8 +887,10 @@ pub async fn create_suggested_queries_handler(
 ) -> Result<HttpResponse, ServiceError> {
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+
     let base_url = dataset_config.LLM_BASE_URL;
     let default_model = dataset_config.LLM_DEFAULT_MODEL;
+
     let base_url = if base_url.is_empty() {
         "https://api.openai.com/api/v1".into()
     } else {
@@ -926,24 +907,21 @@ pub async fn create_suggested_queries_handler(
         .into()
     };
 
-    let client = Client {
-        api_key: llm_api_key,
-        http_client: reqwest::Client::new(),
-        base_url,
-        organization: None,
-    };
-    let query = format!("generate 3 suggested queries based off this query a user made. Your only response should be the 3 queries which are comma seperated and are just text and you do not add any other context or information about the queries.  Here is the query: {}", data.query);
     let message = ChatMessage {
         role: Role::User,
-        content: ChatMessageContent::Text(query),
+        content: ChatMessageContent::Text(format!(
+            "Generate 3 suggested queries based off this query a user made. Your only response should be the 3 queries which are comma seperated and are just text and you do not add any other context or information about the queries.  Here is the query: {}",
+            data.query
+        )),
         tool_calls: None,
         name: None,
         tool_call_id: None,
     };
+
     let parameters = ChatCompletionParameters {
         model: default_model,
-        stream: Some(true),
         messages: vec![message],
+        stream: Some(false),
         temperature: None,
         top_p: None,
         n: None,
@@ -961,15 +939,33 @@ pub async fn create_suggested_queries_handler(
         seed: None,
     };
 
+    let client = Client {
+        api_key: llm_api_key,
+        http_client: reqwest::Client::new(),
+        base_url,
+        organization: None,
+    };
+
     let mut query = client
         .chat()
         .create(parameters.clone())
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
     let mut queries: Vec<String> = match &query
         .choices
         .first()
-        .expect("No response for OpenAI completion")
+        .unwrap_or(&ChatCompletionChoice {
+            index: None,
+            message: ChatMessage {
+                role: Role::User,
+                content: ChatMessageContent::Text("".to_string()),
+                tool_calls: None,
+                name: None,
+                tool_call_id: None,
+            },
+            finish_reason: None,
+        })
         .message
         .content
     {
@@ -979,6 +975,7 @@ pub async fn create_suggested_queries_handler(
     .split(',')
     .map(|query| query.to_string().trim().trim_matches('\n').to_string())
     .collect();
+
     while queries.len() < 3 {
         query = client
             .chat()

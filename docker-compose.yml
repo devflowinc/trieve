@@ -20,6 +20,7 @@ services:
       - "5432:5432"
     networks:
       - app-network
+
   redis:
     image: redis:7.2.2
     container_name: redis
@@ -131,6 +132,7 @@ services:
       - app-network
     ports:
       - 8090:8090
+    restart: always
     environment:
       - ADMIN_API_KEY=${ADMIN_API_KEY}
       - BASE_SERVER_URL=${BASE_SERVER_URL}
@@ -172,10 +174,11 @@ services:
 
   ingestion-service:
     image: trieve/ingest
-    container_name: ingestion-service 
+    container_name: ingestion-service
     build:
       context: ./server/
       dockerfile: Dockerfile.microservice
+    restart: always
     depends_on:
       tika:
         condition: service_healthy
@@ -185,8 +188,7 @@ services:
         condition: service_started
       redis:
         condition: service_healthy
-    env_file:
-      .env
+    env_file: .env
 
   chat:
     image: trieve/chat
