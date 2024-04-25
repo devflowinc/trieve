@@ -1048,8 +1048,13 @@ pub async fn get_recommended_groups(
 
     timer.add("finish to recommend_qdrant_groups_query from qdrant; start to get_metadata_from_groups from postgres");
 
-    let recommended_chunk_metadatas =
-        get_metadata_from_groups(group_qdrant_query_result.clone(), Some(false), pool).await?;
+    let recommended_chunk_metadatas = get_metadata_from_groups(
+        group_qdrant_query_result.clone(),
+        Some(false),
+        data.slim_chunks,
+        pool,
+    )
+    .await?;
 
     let recommended_chunk_metadatas = recommended_groups_from_qdrant
         .into_iter()

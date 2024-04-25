@@ -9,7 +9,9 @@ use crate::errors::ServiceError;
 use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
-use crate::operators::qdrant_operator::{point_id_exists_in_qdrant, point_ids_exists_in_qdrant, recommend_qdrant_query};
+use crate::operators::qdrant_operator::{
+    point_id_exists_in_qdrant, point_ids_exists_in_qdrant, recommend_qdrant_query,
+};
 use crate::operators::search_operator::{
     get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
     get_metadata_filter_condition, search_full_text_chunks, search_hybrid_chunks,
@@ -1181,7 +1183,7 @@ pub enum SearchChunkResponseTypes {
     )
 )]
 #[tracing::instrument(skip(pool))]
-pub async fn search_chunk(
+pub async fn search_chunks(
     data: web::Json<SearchChunkData>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
@@ -1376,7 +1378,7 @@ pub async fn get_chunk_by_tracking_id(
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct GetChunksData {
-    pub ids: Vec<uuid::Uuid>
+    pub ids: Vec<uuid::Uuid>,
 }
 
 /// Get Chunks By Ids
@@ -1410,11 +1412,14 @@ pub async fn get_chunks_by_ids(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    let chunks = get_metadata_from_ids_query(chunk_payload.ids.clone(), dataset_org_plan_sub.dataset.id, pool).await?;
+    let chunks = get_metadata_from_ids_query(
+        chunk_payload.ids.clone(),
+        dataset_org_plan_sub.dataset.id,
+        pool,
+    )
+    .await?;
 
-    let point_ids = chunks.iter().filter_map(|x| {
-        x.qdrant_point_id
-    }).collect();
+    let point_ids = chunks.iter().filter_map(|x| x.qdrant_point_id).collect();
 
     let pointids_exists = point_ids_exists_in_qdrant(point_ids, dataset_configuration).await?;
 
@@ -1427,7 +1432,7 @@ pub async fn get_chunks_by_ids(
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct GetTrackingChunksData {
-    pub tracking_ids: Vec<String>
+    pub tracking_ids: Vec<String>,
 }
 
 /// Get Chunks By TrackingIds
@@ -1461,11 +1466,14 @@ pub async fn get_chunks_by_tracking_ids(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    let chunks = get_metadata_from_tracking_ids_query(chunk_payload.tracking_ids.clone(), dataset_org_plan_sub.dataset.id, pool).await?;
+    let chunks = get_metadata_from_tracking_ids_query(
+        chunk_payload.tracking_ids.clone(),
+        dataset_org_plan_sub.dataset.id,
+        pool,
+    )
+    .await?;
 
-    let point_ids = chunks.iter().filter_map(|x| {
-        x.qdrant_point_id
-    }).collect();
+    let point_ids = chunks.iter().filter_map(|x| x.qdrant_point_id).collect();
 
     let pointids_exists = point_ids_exists_in_qdrant(point_ids, dataset_configuration).await?;
 
@@ -1645,21 +1653,45 @@ pub async fn get_recommended_chunks(
 
     timer.add("finish recommend_qdrant_query; start get_metadata_from_point_ids");
 
-    let recommended_chunk_metadatas = get_metadata_from_point_ids(
-        recommended_qdrant_results
-            .clone()
-            .into_iter()
-            .map(|recommend_qdrant_result| recommend_qdrant_result.point_id)
-            .collect(),
-        pool,
-    )
-    .await
-    .map_err(|err| {
-        ServiceError::BadRequest(format!(
-            "Could not get recommended chunk_metadas from qdrant_point_ids: {}",
-            err
-        ))
-    })?;
+    let recommended_chunk_metadatas = match data.slim_chunks {
+        Some(true) => {
+            let slim_chunks = get_slim_chunk_metadatas_from_point_ids(
+                recommended_qdrant_results
+                    .clone()
+                    .into_iter()
+                    .map(|recommend_qdrant_result| recommend_qdrant_result.point_id)
+                    .collect(),
+                pool,
+            )
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!(
+                    "Could not get recommended slim chunk_metadatas from qdrant_point_ids: {}",
+                    err
+                ))
+            })?;
+
+            slim_chunks
+                .into_iter()
+                .map(|chunk| ChunkMetadata::from(chunk))
+                .collect::<Vec<ChunkMetadata>>()
+        }
+        _ => get_chunk_metadatas_from_point_ids(
+            recommended_qdrant_results
+                .clone()
+                .into_iter()
+                .map(|recommend_qdrant_result| recommend_qdrant_result.point_id)
+                .collect(),
+            pool,
+        )
+        .await
+        .map_err(|err| {
+            ServiceError::BadRequest(format!(
+                "Could not get recommended chunk_metadatas from qdrant_point_ids: {}",
+                err
+            ))
+        })?,
+    };
 
     let recommended_chunk_metadatas_with_score = recommended_chunk_metadatas
         .into_iter()

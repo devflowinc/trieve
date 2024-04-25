@@ -1029,7 +1029,7 @@ pub async fn recommend_qdrant_groups_query(
         positive: positive_point_ids.clone(),
         negative: negative_point_ids.clone(),
         filter: Some(filters),
-        limit: limit.try_into().unwrap(),
+        limit: limit.try_into().unwrap_or(10),
         with_payload: None,
         params: None,
         score_threshold: None,
@@ -1062,7 +1062,10 @@ pub async fn recommend_qdrant_groups_query(
 
     let group_recommendation_results = data
         .result
-        .unwrap()
+        .ok_or(ServiceError::BadRequest(
+            "Failed to recommend groups points from qdrant with no result on data response"
+                .to_string(),
+        ))?
         .groups
         .iter()
         .filter_map(|point| {

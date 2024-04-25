@@ -317,6 +317,26 @@ impl ChunkMetadata {
     }
 }
 
+impl From<SlimChunkMetadata> for ChunkMetadata {
+    fn from(slim_chunk: SlimChunkMetadata) -> Self {
+        ChunkMetadata {
+            id: slim_chunk.id,
+            content: "".to_string(),
+            chunk_html: None,
+            link: slim_chunk.link,
+            qdrant_point_id: slim_chunk.qdrant_point_id,
+            created_at: slim_chunk.created_at,
+            updated_at: slim_chunk.updated_at,
+            tag_set: slim_chunk.tag_set,
+            metadata: slim_chunk.metadata,
+            tracking_id: slim_chunk.tracking_id,
+            time_stamp: slim_chunk.time_stamp,
+            dataset_id: slim_chunk.dataset_id,
+            weight: slim_chunk.weight,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IngestSpecificChunkMetadata {
     pub id: uuid::Uuid,
@@ -426,6 +446,7 @@ pub struct SlimChunkMetadata {
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
+    pub dataset_id: uuid::Uuid,
     pub weight: f64,
 }
 
@@ -441,6 +462,7 @@ impl From<ChunkMetadata> for SlimChunkMetadata {
             metadata: chunk.metadata,
             tracking_id: chunk.tracking_id,
             time_stamp: chunk.time_stamp,
+            dataset_id: chunk.dataset_id,
             weight: chunk.weight,
         }
     }

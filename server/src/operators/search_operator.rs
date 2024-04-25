@@ -1,5 +1,6 @@
 use super::chunk_operator::{
-    find_relevant_sentence, get_metadata_and_collided_chunks_from_point_ids_query,
+    find_relevant_sentence, get_chunk_metadatas_and_collided_chunks_from_point_ids_query,
+    get_slim_chunks_from_point_ids_query,
 };
 use super::group_operator::{
     get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query,
@@ -248,8 +249,6 @@ pub async fn get_metadata_filter_condition(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Filter, ServiceError> {
-    let mut metadata_filter = Filter::default();
-
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let key = filter
@@ -344,6 +343,7 @@ pub async fn get_metadata_filter_condition(
         .map(|uuid| (*uuid).clone().into())
         .collect::<Vec<PointId>>();
 
+    let mut metadata_filter = Filter::default();
     metadata_filter.must.push(Condition {
         condition_one_of: Some(HasId(HasIdCondition {
             has_id: matching_point_ids,
@@ -870,12 +870,13 @@ pub async fn retrieve_chunks_for_groups(
         .flat_map(|hit| hit.hits.iter().map(|point| point.point_id).collect_vec())
         .collect_vec();
 
-    let (metadata_chunks, collided_chunks) = get_metadata_and_collided_chunks_from_point_ids_query(
-        point_ids,
-        data.get_collisions.unwrap_or(false),
-        pool.clone(),
-    )
-    .await?;
+    let (metadata_chunks, collided_chunks) =
+        get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
+            point_ids,
+            data.get_collisions.unwrap_or(false),
+            pool.clone(),
+        )
+        .await?;
 
     let groups = get_groups_from_group_ids_query(
         search_over_groups_query_result
@@ -982,6 +983,7 @@ pub async fn retrieve_chunks_for_groups(
 pub async fn get_metadata_from_groups(
     search_over_groups_query_result: SearchOverGroupsQueryResult,
     get_collisions: Option<bool>,
+    slim_chunks: Option<bool>,
     pool: web::Data<Pool>,
 ) -> Result<Vec<GroupScoreChunk>, actix_web::Error> {
     let point_ids = search_over_groups_query_result
@@ -990,12 +992,24 @@ pub async fn get_metadata_from_groups(
         .flat_map(|hit| hit.hits.iter().map(|point| point.point_id).collect_vec())
         .collect_vec();
 
-    let (metadata_chunks, collided_chunks) = get_metadata_and_collided_chunks_from_point_ids_query(
-        point_ids,
-        get_collisions.unwrap_or(false),
-        pool.clone(),
-    )
-    .await?;
+    let (chunk_metadatas, collided_chunks) = match slim_chunks {
+        Some(true) => {
+            let slim_chunks = get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?;
+            let chunk_metadatas = slim_chunks
+                .iter()
+                .map(|slim_chunk| ChunkMetadata::from(slim_chunk.clone()))
+                .collect_vec();
+            (chunk_metadatas, vec![])
+        }
+        _ => {
+            get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
+                point_ids,
+                get_collisions.unwrap_or(false),
+                pool.clone(),
+            )
+            .await?
+        }
+    };
 
     let groups = get_groups_from_group_ids_query(
         search_over_groups_query_result
@@ -1017,7 +1031,7 @@ pub async fn get_metadata_from_groups(
                 .iter()
                 .map(|search_result| {
                     let chunk: ChunkMetadata =
-                        match metadata_chunks.iter().find(|metadata_chunk| {
+                        match chunk_metadatas.iter().find(|metadata_chunk| {
                             metadata_chunk.qdrant_point_id.unwrap_or_default() == search_result.point_id
                         }) {
                             Some(metadata_chunk) => metadata_chunk.clone(),
@@ -1111,12 +1125,13 @@ pub async fn retrieve_chunks_from_point_ids(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
-    let (metadata_chunks, collided_chunks) = get_metadata_and_collided_chunks_from_point_ids_query(
-        point_ids,
-        data.get_collisions.unwrap_or(false),
-        pool,
-    )
-    .await?;
+    let (metadata_chunks, collided_chunks) =
+        get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
+            point_ids,
+            data.get_collisions.unwrap_or(false),
+            pool,
+        )
+        .await?;
 
     let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
         .search_results
