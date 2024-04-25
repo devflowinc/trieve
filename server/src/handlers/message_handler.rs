@@ -7,7 +7,7 @@ use crate::{
     get_env,
     operators::{
         chunk_operator::{
-            find_relevant_sentence, get_metadata_and_collided_chunks_from_point_ids_query,
+            find_relevant_sentence, get_chunk_metadatas_and_collided_chunks_from_point_ids_query,
         },
         message_operator::{
             create_message_query, create_topic_message_query, delete_message_query,
@@ -661,7 +661,7 @@ pub async fn stream_response(
         .map(|chunk| chunk.point_id)
         .collect::<Vec<uuid::Uuid>>();
 
-    let (metadata_chunks, _) = get_metadata_and_collided_chunks_from_point_ids_query(
+    let (metadata_chunks, _) = get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
         retrieval_chunk_ids,
         false,
         pool.clone(),

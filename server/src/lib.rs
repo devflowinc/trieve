@@ -160,7 +160,7 @@ impl Modify for SecurityAddon {
         handlers::chunk_handler::delete_chunk,
         handlers::chunk_handler::get_recommended_chunks,
         handlers::chunk_handler::update_chunk_by_tracking_id,
-        handlers::chunk_handler::search_chunk,
+        handlers::chunk_handler::search_chunks,
         handlers::chunk_handler::generate_off_chunks,
         handlers::chunk_handler::get_chunk_by_tracking_id,
         handlers::chunk_handler::get_chunks_by_tracking_ids,
@@ -598,7 +598,7 @@ pub async fn main() -> std::io::Result<()> {
                             ))
                             .service(
                                 web::resource("/search")
-                                    .route(web::post().to(handlers::chunk_handler::search_chunk)),
+                                    .route(web::post().to(handlers::chunk_handler::search_chunks)),
                             )
                             .service(web::resource("/gen_suggestions").route(
                                 web::post().to(

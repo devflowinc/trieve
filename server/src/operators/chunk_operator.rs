@@ -1,6 +1,6 @@
 use crate::data::models::{
     ChunkCollision, ChunkGroupBookmark, Dataset, FullTextSearchResult, IngestSpecificChunkMetadata,
-    ServerDatasetConfiguration, UnifiedId,
+    ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
 };
 use crate::handlers::chunk_handler::UploadIngestionMessage;
 use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkData};
@@ -26,7 +26,7 @@ use qdrant_client::qdrant::{PointId, PointVectors};
 use simsearch::SimSearch;
 
 #[tracing::instrument(skip(pool))]
-pub async fn get_metadata_from_point_ids(
+pub async fn get_chunk_metadatas_from_point_ids(
     point_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<Vec<ChunkMetadata>, ServiceError> {
@@ -37,14 +37,48 @@ pub async fn get_metadata_from_point_ids(
         .await
         .expect("Failed to get connection from pool");
 
-    let chunk_metadata: Vec<ChunkMetadata> = chunk_metadata_columns::chunk_metadata
+    let chunk_metadatas: Vec<ChunkMetadata> = chunk_metadata_columns::chunk_metadata
         .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
         .select(ChunkMetadata::as_select())
         .load::<ChunkMetadata>(&mut conn)
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
 
-    Ok(chunk_metadata)
+    Ok(chunk_metadatas)
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn get_slim_chunk_metadatas_from_point_ids(
+    point_ids: Vec<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<Vec<SlimChunkMetadata>, ServiceError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
+
+    let slim_chunk_metadatas: Vec<SlimChunkMetadata> = chunk_metadata_columns::chunk_metadata
+        .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
+        .select((
+            chunk_metadata_columns::id,
+            chunk_metadata_columns::link,
+            chunk_metadata_columns::qdrant_point_id,
+            chunk_metadata_columns::created_at,
+            chunk_metadata_columns::updated_at,
+            chunk_metadata_columns::tag_set,
+            chunk_metadata_columns::metadata,
+            chunk_metadata_columns::tracking_id,
+            chunk_metadata_columns::time_stamp,
+            chunk_metadata_columns::dataset_id,
+            chunk_metadata_columns::weight,
+        ))
+        .load::<SlimChunkMetadata>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
+
+    Ok(slim_chunk_metadatas)
 }
 
 pub async fn get_point_ids_from_unified_chunk_ids(
@@ -102,7 +136,7 @@ pub struct ChunkMetadataWithQdrantId {
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
+pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
     point_ids: Vec<uuid::Uuid>,
     get_collisions: bool,
     pool: web::Data<Pool>,
@@ -133,8 +167,8 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
         "Fetching matching points from qdrant",
     );
 
-    // Fetch the chunk metadata for root cards
-    let chunk_search_result = {
+    // Fetch the chunk metadatas for root chunks
+    let chunk_metadatas = {
         let mut conn = pool.get().await.unwrap();
         let chunk_metadata = chunk_metadata_columns::chunk_metadata
             .left_outer_join(
@@ -229,13 +263,89 @@ pub async fn get_metadata_and_collided_chunks_from_point_ids_query(
         collision_search_span.finish();
         transaction.finish();
         // Return the chunk metadata and the collided chunks
-        Ok((chunk_search_result, collided_chunks))
+        Ok((chunk_metadatas, collided_chunks))
     } else {
         collision_search_span.finish();
         transaction.finish();
         // Return only the chunk metadata
-        Ok((chunk_search_result, vec![]))
+        Ok((chunk_metadatas, vec![]))
     }
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn get_slim_chunks_from_point_ids_query(
+    point_ids: Vec<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<Vec<SlimChunkMetadata>, ServiceError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+
+    let parent_span = sentry::configure_scope(|scope| scope.get_span());
+    let transaction: sentry::TransactionOrSpan = match &parent_span {
+        Some(parent) => parent
+            .start_child(
+                "Get slim chunk metadata of points",
+                "Hitting Postgres to fetch slim chunk metadata",
+            )
+            .into(),
+        None => {
+            let ctx = sentry::TransactionContext::new(
+                "Get slim chunk metadata of points",
+                "Hitting Postgres to fetch slim chunk metadata",
+            );
+            sentry::start_transaction(ctx).into()
+        }
+    };
+    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
+
+    let get_slim_chunks_span = transaction.start_child(
+        "Fetching matching points to slim chunks from qdrant",
+        "Fetching matching points to slim chunks from qdrant",
+    );
+
+    let slim_chunks = {
+        let mut conn = pool.get().await.unwrap();
+        let slim_chunk_metadatas: Vec<SlimChunkMetadata> = chunk_metadata_columns::chunk_metadata
+            .select((
+                chunk_metadata_columns::id,
+                chunk_metadata_columns::link,
+                chunk_metadata_columns::qdrant_point_id,
+                chunk_metadata_columns::created_at,
+                chunk_metadata_columns::updated_at,
+                chunk_metadata_columns::tag_set,
+                chunk_metadata_columns::metadata,
+                chunk_metadata_columns::tracking_id,
+                chunk_metadata_columns::time_stamp,
+                chunk_metadata_columns::dataset_id,
+                chunk_metadata_columns::weight,
+            ))
+            .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
+            .load(&mut conn)
+            .await
+            .map_err(|_| {
+                ServiceError::BadRequest("Failed to load slim chunk metadatas".to_string())
+            })?;
+
+        slim_chunk_metadatas
+            .iter()
+            .map(|slim_chunk| SlimChunkMetadata {
+                id: slim_chunk.id,
+                link: slim_chunk.link.clone(),
+                tag_set: slim_chunk.tag_set.clone(),
+                qdrant_point_id: slim_chunk.qdrant_point_id,
+                created_at: slim_chunk.created_at,
+                updated_at: slim_chunk.updated_at,
+                metadata: slim_chunk.metadata.clone(),
+                tracking_id: slim_chunk.tracking_id.clone(),
+                time_stamp: slim_chunk.time_stamp,
+                dataset_id: slim_chunk.dataset_id,
+                weight: slim_chunk.weight,
+            })
+            .collect::<Vec<SlimChunkMetadata>>()
+    };
+
+    get_slim_chunks_span.finish();
+
+    Ok(slim_chunks)
 }
 
 #[tracing::instrument(skip(pool))]

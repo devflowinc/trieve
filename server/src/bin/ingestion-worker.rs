@@ -18,7 +18,7 @@ use trieve_server::handlers::chunk_handler::{
 use trieve_server::handlers::group_handler::dataset_owns_group;
 use trieve_server::operators::chunk_operator::{
     bulk_insert_chunk_metadata_query, bulk_revert_insert_chunk_metadata_query,
-    get_metadata_from_point_ids, get_qdrant_id_from_chunk_id_query, insert_chunk_metadata_query,
+    get_chunk_metadatas_from_point_ids, get_qdrant_id_from_chunk_id_query, insert_chunk_metadata_query,
     insert_duplicate_chunk_metadata_query, update_chunk_metadata_query,
 };
 use trieve_server::operators::event_operator::create_event_query;
@@ -694,7 +694,7 @@ async fn upload_chunk(
             collision = Some(first_semantic_result.point_id);
 
             let score_chunk_result =
-                get_metadata_from_point_ids(vec![first_semantic_result.point_id], web_pool.clone())
+                get_chunk_metadatas_from_point_ids(vec![first_semantic_result.point_id], web_pool.clone())
                     .await;
 
             match score_chunk_result {
