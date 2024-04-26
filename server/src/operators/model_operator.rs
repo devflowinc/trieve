@@ -41,6 +41,8 @@ pub async fn create_embedding(
 
     let open_ai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set");
     let config_embedding_base_url = dataset_config.EMBEDDING_BASE_URL;
+    transaction.set_data("EMBEDDING_SERVER", config_embedding_base_url.as_str().into());
+    transaction.set_data("EMBEDDING_MODEL", dataset_config.EMBEDDING_MODEL_NAME.as_str().into());
 
     let embedding_base_url = match config_embedding_base_url.as_str() {
         "" => get_env!("OPENAI_BASE_URL", "OPENAI_BASE_URL must be set").to_string(),
