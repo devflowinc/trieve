@@ -1,5 +1,6 @@
 {{- $domain := .Values.domain }}
 {{- $externalDomain := .Values.externalDomain }}
+{{- if eq .Values.environment "local" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -29,7 +30,6 @@ spec:
       protocol: TCP
   selector:
     app.kubernetes.io/name: ingress-redis
-{{- if (eq .Values.environment "local") }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
