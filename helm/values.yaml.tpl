@@ -1,5 +1,8 @@
 region: $AWS_REGION
+accountId: $AWS_ACCOUNT_ID
 environment: local
+domain: $DOMAIN
+externalDomain: $EXTERNAL_DOMAIN
 useGpu: false
 containers:
   keycloak:

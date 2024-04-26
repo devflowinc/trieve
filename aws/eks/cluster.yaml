@@ -9,7 +9,7 @@ metadata:
 
 managedNodeGroups:
   - name: trieve-nodegroup
-    instanceType: m5a.2xlarge
+    instanceType: t2.medium
     minSize: 3
     desiredCapacity: 4
     maxSize: 5

@@ -1,3 +1,5 @@
+{{- $domain := .Values.domain }}
+{{- $externalDomain := .Values.externalDomain }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -36,7 +38,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: dashboard.trieve.ai
+    - host: dashboard.{{ $domain }}
       http:
         paths:
           - path: /
@@ -54,7 +56,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: chat.trieve.ai
+    - host: chat.{{ $domain }}
       http:
         paths:
           - path: /
@@ -72,7 +74,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: api.trieve.ai
+    - host: api.{{ $domain }}
       http:
         paths:
           - path: /
@@ -90,7 +92,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: search.trieve.ai
+    - host: search.{{ $domain }}
       http:
         paths:
           - path: /
@@ -108,7 +110,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: oidc.trieve.ai
+    - host: oidc.{{ $domain }}
       http:
         paths:
           - path: /
@@ -126,7 +128,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: data.trieve.ai
+    - host: data.{{ $domain }}
       http:
         paths:
           - path: /
@@ -150,11 +152,11 @@ metadata:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/scheme: internet-facing
-    external-dns.alpha.kubernetes.io/hostname: "dashboard.trieve-aws.ai"
+    external-dns.alpha.kubernetes.io/hostname: "dashboard.{{ $externalDomain }}"
 spec:
   ingressClassName: alb
   rules:
-    - host: "dashboard.trieve.ai"
+    - host: "dashboard.{{ $domain }}"
       http:
         paths:
           - path: /
@@ -176,11 +178,11 @@ metadata:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/scheme: internet-facing
-    external-dns.alpha.kubernetes.io/hostname: "chat.trieve-aws.ai"
+    external-dns.alpha.kubernetes.io/hostname: "chat.{{ $externalDomain }}"
 spec:
   ingressClassName: alb
   rules:
-    - host: "chat.trieve.ai"
+    - host: "chat.{{ $domain }}"
       http:
         paths:
           - path: /
@@ -202,11 +204,11 @@ metadata:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/scheme: internet-facing
-    external-dns.alpha.kubernetes.io/hostname: "api.trieve-aws.ai"
+    external-dns.alpha.kubernetes.io/hostname: "api.{{ $externalDomain }}"
 spec:
   ingressClassName: alb
   rules:
-    - host: "api.trieve.ai"
+    - host: "api.{{ $domain }}"
       http:
         paths:
           - path: /
@@ -228,11 +230,11 @@ metadata:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/scheme: internet-facing
-    external-dns.alpha.kubernetes.io/hostname: "search.trieve-aws.ai"
+    external-dns.alpha.kubernetes.io/hostname: "search.{{ $externalDomain }}"
 spec:
   ingressClassName: alb
   rules:
-    - host: "search.trieve.ai"
+    - host: "search.{{ $domain }}"
       http:
         paths:
           - path: /
@@ -254,11 +256,11 @@ metadata:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/scheme: internet-facing
-    external-dns.alpha.kubernetes.io/hostname: "oidc.trieve-aws.ai"
+    external-dns.alpha.kubernetes.io/hostname: "oidc.{{ $externalDomain }}"
 spec:
   ingressClassName: alb
   rules:
-    - host: "oidc.trieve.ai"
+    - host: "oidc.{{ $domain }}"
       http:
         paths:
           - path: /
@@ -280,11 +282,11 @@ metadata:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/scheme: internet-facing
-    external-dns.alpha.kubernetes.io/hostname: "data.trieve-aws.ai"
+    external-dns.alpha.kubernetes.io/hostname: "data.{{ $externalDomain }}"
 spec:
   ingressClassName: alb
   rules:
-    - host: "data.trieve.ai"
+    - host: "data.{{ $domain }}"
       http:
         paths:
           - path: /
