@@ -1748,8 +1748,6 @@ pub async fn get_recommended_chunks(
     "stream_response": true
 }))]
 pub struct GenerateChunksRequest {
-    /// The model to use for the chat. This can be any model from the openrouter model list. If no model is provided, gpt-3.5-turbo will be used.
-    pub model: Option<String>,
     /// The previous messages to be placed into the chat history. The last message in this array will be the prompt for the model to inference on. The length of this array must be at least 1.
     pub prev_messages: Vec<ChatMessageProxy>,
     /// The ids of the chunks to be retrieved and injected into the context window for RAG.
@@ -1907,7 +1905,7 @@ pub async fn generate_off_chunks(
     });
 
     let parameters = ChatCompletionParameters {
-        model: data.model.clone().unwrap_or(default_model),
+        model: default_model,
         stream: stream_response,
         messages,
         temperature: None,
