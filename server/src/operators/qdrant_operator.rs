@@ -1129,6 +1129,7 @@ pub async fn get_point_count_qdrant_query(
     Ok(data.result.expect("Failed to get result from qdrant").count)
 }
 
+#[tracing::instrument]
 pub async fn point_id_exists_in_qdrant(
     point_id: uuid::Uuid,
     config: ServerDatasetConfiguration,
@@ -1156,6 +1157,7 @@ pub async fn point_id_exists_in_qdrant(
     Ok(data.result.len() > 0)
 }
 
+#[tracing::instrument]
 pub async fn point_ids_exists_in_qdrant(
     point_ids: Vec<uuid::Uuid>,
     config: ServerDatasetConfiguration,

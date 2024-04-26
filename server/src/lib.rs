@@ -320,8 +320,8 @@ impl Modify for SecurityAddon {
 )]
 pub struct ApiDoc;
 
-#[actix_web::main]
-pub async fn main() -> std::io::Result<()> {
+#[tracing::instrument]
+pub fn main() -> std::io::Result<()> {
     dotenvy::dotenv().ok();
 
     let sentry_url = std::env::var("SENTRY_URL");
@@ -347,6 +347,7 @@ pub async fn main() -> std::io::Result<()> {
             )
             .init();
 
+        std::env::set_var("RUST_BACKTRACE", "1");
         Some(guard)
     } else {
         tracing_subscriber::Registry::default()
@@ -366,474 +367,478 @@ pub async fn main() -> std::io::Result<()> {
 
     run_migrations(database_url);
 
-    // create db connection pool
-    let mut config = ManagerConfig::default();
-    config.custom_setup = Box::new(establish_connection);
+    actix_web::rt::System::new().block_on(async move {
+        // create db connection pool
+        let mut config = ManagerConfig::default();
+        config.custom_setup = Box::new(establish_connection);
 
-    let mgr = AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new_with_config(
-        database_url,
-        config,
-    );
+        let mgr = AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new_with_config(
+            database_url,
+            config,
+        );
 
-    let pool = diesel_async::pooled_connection::deadpool::Pool::builder(mgr)
-        .max_size(10)
-        .build()
-        .unwrap();
+        let pool = diesel_async::pooled_connection::deadpool::Pool::builder(mgr)
+            .max_size(10)
+            .build()
+            .unwrap();
 
-    let redis_store = RedisSessionStore::new(redis_url)
-        .await
-        .expect("Failed to create redis store");
+        let redis_store = RedisSessionStore::new(redis_url)
+            .await
+            .expect("Failed to create redis store");
 
-    let redis_manager =
-        bb8_redis::RedisConnectionManager::new(redis_url).expect("Failed to connect to redis");
+        let redis_manager =
+            bb8_redis::RedisConnectionManager::new(redis_url).expect("Failed to connect to redis");
 
-    let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
-        .unwrap_or("200".to_string())
-        .parse()
-        .unwrap_or(200);
+        let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
+            .unwrap_or("200".to_string())
+            .parse()
+            .unwrap_or(200);
 
-    let redis_pool = bb8_redis::bb8::Pool::builder()
-        .max_size(redis_connections)
-        .build(redis_manager)
-        .await
-        .expect("Failed to create redis pool");
+        let redis_pool = bb8_redis::bb8::Pool::builder()
+            .max_size(redis_connections)
+            .build(redis_manager)
+            .await
+            .expect("Failed to create redis pool");
 
-    let oidc_client = build_oidc_client().await;
+        let oidc_client = build_oidc_client().await;
 
-    let quantize_vectors = std::env::var("QUANTIZE_VECTORS")
-        .unwrap_or("false".to_string())
-        .parse()
-        .unwrap_or(false);
+        let quantize_vectors = std::env::var("QUANTIZE_VECTORS")
+            .unwrap_or("false".to_string())
+            .parse()
+            .unwrap_or(false);
 
-    let _ = create_new_qdrant_collection_query(None, None, None, quantize_vectors)
-        .await
-        .map_err(|err| {
-            log::error!("Failed to create new qdrant collection: {:?}", err);
-        });
+        let _ = create_new_qdrant_collection_query(None, None, None, quantize_vectors)
+            .await
+            .map_err(|err| {
+                log::error!("Failed to create new qdrant collection: {:?}", err);
+            });
 
-    if std::env::var("ADMIN_API_KEY").is_ok() {
-        let _ = create_default_user(
-            &std::env::var("ADMIN_API_KEY").expect("ADMIN_API_KEY should be set"),
-            web::Data::new(pool.clone()),
-        )
-        .await
-        .map_err(|err| {
-            log::error!("Failed to create default user: {:?}", err);
-        });
-    }
-
-    HttpServer::new(move || {
-        App::new()
-            .app_data(PayloadConfig::new(134200000))
-            .app_data(
-                web::JsonConfig::default()
-                    .limit(134200000)
-                    .error_handler(|err, _req| ServiceError::BadRequest(format!("{}", err)).into()),
+        if std::env::var("ADMIN_API_KEY").is_ok() {
+            let _ = create_default_user(
+                &std::env::var("ADMIN_API_KEY").expect("ADMIN_API_KEY should be set"),
+                web::Data::new(pool.clone()),
             )
-            .app_data(
-                web::PathConfig::default()
-                    .error_handler(|err, _req| ServiceError::BadRequest(format!("{}", err)).into()),
-            )
-            .app_data(web::Data::new(pool.clone()))
-            .app_data(web::Data::new(oidc_client.clone()))
-            .app_data(web::Data::new(redis_pool.clone()))
-            .wrap(af_middleware::auth_middleware::AuthMiddlewareFactory)
-            .wrap(
-                IdentityMiddleware::builder()
-                    .login_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
-                    .visit_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
+            .await
+            .map_err(|err| {
+                log::error!("Failed to create default user: {:?}", err);
+            });
+        }
+
+        HttpServer::new(move || {
+            App::new()
+                .app_data(PayloadConfig::new(134200000))
+                .app_data(
+                    web::JsonConfig::default()
+                        .limit(134200000)
+                        .error_handler(|err, _req| ServiceError::BadRequest(format!("{}", err)).into()),
+                )
+                .app_data(
+                    web::PathConfig::default()
+                        .error_handler(|err, _req| ServiceError::BadRequest(format!("{}", err)).into()),
+                )
+                .app_data(web::Data::new(pool.clone()))
+                .app_data(web::Data::new(oidc_client.clone()))
+                .app_data(web::Data::new(redis_pool.clone()))
+                .wrap(sentry_actix::Sentry::with_transaction())
+                .wrap(af_middleware::auth_middleware::AuthMiddlewareFactory)
+                .wrap(
+                    IdentityMiddleware::builder()
+                        .login_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
+                        .visit_deadline(Some(std::time::Duration::from_secs(SECONDS_IN_DAY)))
+                        .build(),
+                )
+                .wrap(Cors::permissive())
+                .wrap(
+                    SessionMiddleware::builder(
+                        redis_store.clone(),
+                        Key::from(operators::user_operator::SECRET_KEY.as_bytes()),
+                    )
+                    .session_lifecycle(
+                        PersistentSession::default().session_ttl(time::Duration::days(1)),
+                    )
+                    .cookie_name("vault".to_owned())
+                    .cookie_same_site(
+                        if std::env::var("COOKIE_SECURE").unwrap_or("false".to_owned()) == "true" {
+                            SameSite::None
+                        } else {
+                            SameSite::Lax
+                        },
+                    )
+                    .cookie_secure(
+                        std::env::var("COOKIE_SECURE").unwrap_or("false".to_owned()) == "true",
+                    )
+                    .cookie_path("/".to_owned())
                     .build(),
-            )
-            .wrap(Cors::permissive())
-            .wrap(
-                SessionMiddleware::builder(
-                    redis_store.clone(),
-                    Key::from(operators::user_operator::SECRET_KEY.as_bytes()),
                 )
-                .session_lifecycle(
-                    PersistentSession::default().session_ttl(time::Duration::days(1)),
+                .wrap(middleware::Logger::default())
+                .service(Redoc::with_url("/redoc", ApiDoc::openapi()))
+                .service(
+                    SwaggerUi::new("/swagger-ui/{_:.*}")
+                        .url("/api-docs/openapi.json", ApiDoc::openapi())
                 )
-                .cookie_name("vault".to_owned())
-                .cookie_same_site(
-                    if std::env::var("COOKIE_SECURE").unwrap_or("false".to_owned()) == "true" {
-                        SameSite::None
-                    } else {
-                        SameSite::Lax
-                    },
+                .service(
+                    web::redirect("/swagger-ui", "/swagger-ui/")
                 )
-                .cookie_secure(
-                    std::env::var("COOKIE_SECURE").unwrap_or("false".to_owned()) == "true",
+                .service(
+                    web::resource("/auth/cli")
+                        .route(web::get().to(handlers::auth_handler::login_cli))
                 )
-                .cookie_path("/".to_owned())
-                .build(),
-            )
-            .wrap(sentry_actix::Sentry::new())
-            // enable logger
-            .wrap(middleware::Logger::default())
-            .service(Redoc::with_url("/redoc", ApiDoc::openapi()))
-            .service(
-                SwaggerUi::new("/swagger-ui/{_:.*}")
-                    .url("/api-docs/openapi.json", ApiDoc::openapi())
-            )
-            .service(
-                web::redirect("/swagger-ui", "/swagger-ui/")
-            )
-            .service(
-                web::resource("/auth/cli")
-                    .route(web::get().to(handlers::auth_handler::login_cli))
-            )
-            // everything under '/api/' route
-            .service(
-                web::scope("/api")
-                    .service(
-                        web::scope("/chunks")
-                            .service(
-                                web::resource("")
-                                    .route(web::post().to(handlers::chunk_handler::get_chunks_by_ids))
-                            ).service(
-                                web::resource("/tracking")
-                                    .route(web::post().to(handlers::chunk_handler::get_chunks_by_tracking_ids))
-                            )
-                    )
-                    .service(
-                        web::scope("/dataset")
-                            .service(
-                                web::resource("")
-                                    .route(
-                                        web::post().to(handlers::dataset_handler::create_dataset),
-                                    )
-                                    .route(web::put().to(handlers::dataset_handler::update_dataset))
-                            )
-                            .service(
-                                web::resource("/organization/{organization_id}").route(
-                                    web::get().to(
-                                        handlers::dataset_handler::get_datasets_from_organization,
-                                    ),
-                                ),
-                            )
-                            .service(web::resource("/envs").route(
-                                web::get().to(handlers::dataset_handler::get_client_dataset_config),
-                            ))
-                            .service(
-                                web::resource("/{dataset_id}")
-                                    .route(web::get().to(handlers::dataset_handler::get_dataset))
-                                    .route(
-                                        web::delete().to(handlers::dataset_handler::delete_dataset),
-                                    ),
-                            )
-                            .service(
-                                web::resource("/tracking_id/{tracking_id}")
-                                    .route(
-                                        web::get().to(handlers::dataset_handler::get_dataset_by_tracking_id),
-                                    )
-                                    .route(
-                                        web::delete().to(handlers::dataset_handler::delete_dataset_by_tracking_id),
-                                    ),
-                            )
-                            .service(
-                                web::resource("/groups/{dataset_id}/{page}").route(web::get().to(
-                                    handlers::group_handler::get_specific_dataset_chunk_groups,
-                                )),
-                            )
-                            .service(web::resource("/files/{dataset_id}/{page}").route(
-                                web::get().to(handlers::file_handler::get_dataset_files_handler),
-                            )),
-                    )
-                    .service(
-                        web::scope("/auth")
-                            .service(
-                                web::resource("")
-                                    .route(web::get().to(handlers::auth_handler::login))
-                                    .route(web::delete().to(handlers::auth_handler::logout)),
-                            )
-                            .service(
-                                web::resource("/me")
-                                    .route(web::get().to(handlers::auth_handler::get_me)),
-                            )
-                            .service(
-                                web::resource("/callback")
-                                    .route(web::get().to(handlers::auth_handler::callback)),
-                            ),
-                    )
-                    .service(
-                        web::resource("/topic")
-                            .route(web::post().to(handlers::topic_handler::create_topic))
-                            .route(web::put().to(handlers::topic_handler::update_topic)),
-                    )
-                    .service(
-                        web::resource("/topic/{topic_id}")
-                            .route(web::delete().to(handlers::topic_handler::delete_topic)),
-                    )
-                    .service(
-                        web::resource("/topic/owner/{user_id}")
-                            .route(web::get().to(handlers::topic_handler::get_all_topics_for_owner_id)),
-                    )
-                    .service(
-                        web::resource("/message")
-                            .route(
-                                web::post().to(
-                                    handlers::message_handler::create_message_completion_handler,
-                                ),
-                            )
-                            .route(web::put().to(handlers::message_handler::edit_message_handler))
-                            .route(
-                                web::delete()
-                                    .to(handlers::message_handler::regenerate_message_handler),
-                            ),
-                    )
-                    .service(
-                        web::resource("/messages/{messages_topic_id}").route(
-                            web::get().to(handlers::message_handler::get_all_topic_messages),
-                        ),
-                    )
-                    .service(
-                        web::scope("/chunk")
-                            .service(
-                                web::resource("")
-                                    .route(web::post().to(handlers::chunk_handler::create_chunk))
-                                    .route(web::put().to(handlers::chunk_handler::update_chunk)),
-                            )
-                            .service(web::resource("/recommend").route(
-                                web::post().to(handlers::chunk_handler::get_recommended_chunks),
-                            ))
-                            .service(
-                                web::resource("/search")
-                                    .route(web::post().to(handlers::chunk_handler::search_chunks)),
-                            )
-                            .service(web::resource("/gen_suggestions").route(
-                                web::post().to(
-                                    handlers::message_handler::create_suggested_queries_handler,
-                                ),
-                            ))
-                            .service(web::resource("/generate").route(
-                                web::post().to(handlers::chunk_handler::generate_off_chunks),
-                            ))
-                            .service(web::resource("/tracking_id/update").route(
-                                web::put().to(handlers::chunk_handler::update_chunk_by_tracking_id),
-                            ))
-                            .service(
-                                web::resource("/{id}")
-                                    .route(web::get().to(handlers::chunk_handler::get_chunk_by_id))
-                                    .route(web::delete().to(handlers::chunk_handler::delete_chunk)),
-                            )
-                            .service(
-                                web::resource("/tracking_id/{tracking_id}")
-                                    .route(
-                                        web::get()
-                                            .to(handlers::chunk_handler::get_chunk_by_tracking_id),
-                                    )
-                                    .route(
-                                        web::delete().to(
-                                            handlers::chunk_handler::delete_chunk_by_tracking_id,
+                // everything under '/api/' route
+                .service(
+                    web::scope("/api")
+                        .service(
+                            web::scope("/chunks")
+                                .service(
+                                    web::resource("")
+                                        .route(web::post().to(handlers::chunk_handler::get_chunks_by_ids))
+                                ).service(
+                                    web::resource("/tracking")
+                                        .route(web::post().to(handlers::chunk_handler::get_chunks_by_tracking_ids))
+                                )
+                        )
+                        .service(
+                            web::scope("/dataset")
+                                .service(
+                                    web::resource("")
+                                        .route(
+                                            web::post().to(handlers::dataset_handler::create_dataset),
+                                        )
+                                        .route(web::put().to(handlers::dataset_handler::update_dataset))
+                                )
+                                .service(
+                                    web::resource("/organization/{organization_id}").route(
+                                        web::get().to(
+                                            handlers::dataset_handler::get_datasets_from_organization,
                                         ),
                                     ),
-                            )
-                    )
-                    .service(
-                        web::scope("/user")
-                            .service(
-                                web::resource("")
-                                    .route(web::put().to(handlers::user_handler::update_user)),
-                            )
-                            .service(
-                                web::resource("/api_key")
-                                    .route(web::post().to(handlers::user_handler::set_user_api_key))
-                                    .route(web::get().to(handlers::user_handler::get_user_api_keys))
-                            )
-                            .service(
-                                web::resource("/api_key/{api_key_id}")
-                                    .route(
-                                        web::delete().to(handlers::user_handler::delete_user_api_key),
-                                    ),
-                            )
-                    )
-                    .service(
-                        web::scope("/chunk_group")
-                            .service(
-                                web::resource("")
-                                    .route(
-                                        web::post().to(handlers::group_handler::create_chunk_group),
-                                    )
-                                    .route(
-                                        web::put().to(handlers::group_handler::update_chunk_group),
+                                )
+                                .service(web::resource("/envs").route(
+                                    web::get().to(handlers::dataset_handler::get_client_dataset_config),
+                                ))
+                                .service(
+                                    web::resource("/{dataset_id}")
+                                        .route(web::get().to(handlers::dataset_handler::get_dataset))
+                                        .route(
+                                            web::delete().to(handlers::dataset_handler::delete_dataset),
+                                        ),
+                                )
+                                .service(
+                                    web::resource("/tracking_id/{tracking_id}")
+                                        .route(
+                                            web::get().to(handlers::dataset_handler::get_dataset_by_tracking_id),
+                                        )
+                                        .route(
+                                            web::delete().to(handlers::dataset_handler::delete_dataset_by_tracking_id),
+                                        ),
+                                )
+                                .service(
+                                    web::resource("/groups/{dataset_id}/{page}").route(web::get().to(
+                                        handlers::group_handler::get_specific_dataset_chunk_groups,
+                                    )),
+                                )
+                                .service(web::resource("/files/{dataset_id}/{page}").route(
+                                    web::get().to(handlers::file_handler::get_dataset_files_handler),
+                                )),
+                        )
+                        .service(
+                            web::scope("/auth")
+                                .service(
+                                    web::resource("")
+                                        .route(web::get().to(handlers::auth_handler::login))
+                                        .route(web::delete().to(handlers::auth_handler::logout)),
+                                )
+                                .service(
+                                    web::resource("/me")
+                                        .route(web::get().to(handlers::auth_handler::get_me)),
+                                )
+                                .service(
+                                    web::resource("/callback")
+                                        .route(web::get().to(handlers::auth_handler::callback)),
+                                ),
+                        )
+                        .service(
+                            web::resource("/topic")
+                                .route(web::post().to(handlers::topic_handler::create_topic))
+                                .route(web::put().to(handlers::topic_handler::update_topic)),
+                        )
+                        .service(
+                            web::resource("/topic/{topic_id}")
+                                .route(web::delete().to(handlers::topic_handler::delete_topic)),
+                        )
+                        .service(
+                            web::resource("/topic/owner/{user_id}")
+                                .route(web::get().to(handlers::topic_handler::get_all_topics_for_owner_id)),
+                        )
+                        .service(
+                            web::resource("/message")
+                                .route(
+                                    web::post().to(
+                                        handlers::message_handler::create_message_completion_handler,
                                     ),
                                 )
-                            .service(web::resource("/chunks").route(
-                                web::post().to(handlers::group_handler::get_groups_chunk_is_in),
-                            ))
-                            .service(
-                                web::resource("/search")
-                                    .route(web::post().to(handlers::group_handler::search_within_group)),
-                            )
-                            .service(
-                                web::resource("/group_oriented_search").route(
-                                    web::post().to(handlers::group_handler::search_over_groups),
+                                .route(web::put().to(handlers::message_handler::edit_message_handler))
+                                .route(
+                                    web::delete()
+                                        .to(handlers::message_handler::regenerate_message_handler),
                                 ),
-                            )
-                            .service(
-                                web::resource("/recommend").route(
-                                    web::post().to(handlers::group_handler::get_recommended_groups),
-                                ),
-                            )
-                            .service(
-                                web::resource("/chunk/{chunk_group_id}")
-                                    .route(
-                                        web::delete()
-                                            .to(handlers::group_handler::remove_chunk_from_group),
-                                    ).route(web::post().to(handlers::group_handler::add_chunk_to_group))
-                            )
-                            .service(
-                                web::scope("/tracking_id/{tracking_id}")
-                                    .service(
-                                        web::resource("")
-                                            .route(
-                                                web::get().to(
-                                                    handlers::group_handler::get_group_by_tracking_id,
-                                                ),
-                                            )
-                                            .route(
-                                                web::post().to(
-                                                    handlers::group_handler::add_chunk_to_group_by_tracking_id
-                                                )
-                                            )
-                                            .route(
-                                                web::delete().to(
-                                                    handlers::group_handler::delete_group_by_tracking_id,
-                                                )
-                                            )
-                                            .route(
-                                                web::put().to(handlers::group_handler::update_group_by_tracking_id),
-                                            )
-                                    ).service(
-                                        web::resource("/{page}").route(
-                                            web::get().to(
-                                                handlers::group_handler::get_chunks_in_group_by_tracking_id,
+                        )
+                        .service(
+                            web::resource("/messages/{messages_topic_id}").route(
+                                web::get().to(handlers::message_handler::get_all_topic_messages),
+                            ),
+                        )
+                        .service(
+                            web::scope("/chunk")
+                                .service(
+                                    web::resource("")
+                                        .route(web::post().to(handlers::chunk_handler::create_chunk))
+                                        .route(web::put().to(handlers::chunk_handler::update_chunk)),
+                                )
+                                .service(web::resource("/recommend").route(
+                                    web::post().to(handlers::chunk_handler::get_recommended_chunks),
+                                ))
+                                .service(
+                                    web::resource("/search")
+                                        .route(web::post().to(handlers::chunk_handler::search_chunks)),
+                                )
+                                .service(web::resource("/gen_suggestions").route(
+                                    web::post().to(
+                                        handlers::message_handler::create_suggested_queries_handler,
+                                    ),
+                                ))
+                                .service(web::resource("/generate").route(
+                                    web::post().to(handlers::chunk_handler::generate_off_chunks),
+                                ))
+                                .service(web::resource("/tracking_id/update").route(
+                                    web::put().to(handlers::chunk_handler::update_chunk_by_tracking_id),
+                                ))
+                                .service(
+                                    web::resource("/{id}")
+                                        .route(web::get().to(handlers::chunk_handler::get_chunk_by_id))
+                                        .route(web::delete().to(handlers::chunk_handler::delete_chunk)),
+                                )
+                                .service(
+                                    web::resource("/tracking_id/{tracking_id}")
+                                        .route(
+                                            web::get()
+                                                .to(handlers::chunk_handler::get_chunk_by_tracking_id),
+                                        )
+                                        .route(
+                                            web::delete().to(
+                                                handlers::chunk_handler::delete_chunk_by_tracking_id,
                                             ),
                                         ),
-                                    ),
-                            )
-                            .service(
-                                web::scope("/{group_id}")
-                                    .service(
-                                        web::resource("")
-                                            .route(web::get().to(handlers::group_handler::get_chunk_group))
-                                            .route(web::delete().to(handlers::group_handler::delete_chunk_group)),
-                                    )
-                                    .service(
-                                        web::resource("/{page}")
-                                            .route(web::get().to(handlers::group_handler::get_chunks_in_group)),
-                                    )
-                            )
-
-                    )
-                    .service(
-                        web::scope("/file")
-                            .service(
-                                web::resource("").route(
-                                    web::post().to(handlers::file_handler::upload_file_handler),
-                                ),
-                            )
-                            .service(
-                                web::resource("/{file_id}")
-                                    .route(web::get().to(handlers::file_handler::get_file_handler))
-                                    .route(
-                                        web::delete()
-                                            .to(handlers::file_handler::delete_file_handler),
-                                    ),
-                            )
-                            .service(
-                                web::resource("/get_signed_url/{file_name}")
-                                    .route(web::get().to(handlers::file_handler::get_signed_url)),
-                            )
-                            .service(
-                                web::resource(
-                                    "/pdf_from_range/{organization_id}/{file_start}/{file_end}/{prefix}/{file_name}/{ocr}",
                                 )
-                                .route(web::get().to(handlers::file_handler::get_pdf_from_range)),
-                            ),
-                    )
-                    .service(
-                        web::scope("/events").service(
-                            web::resource("")
-                                .route(web::post().to(handlers::event_handler::get_events)),
-                        ),
-                    )
-                    .service(
-                        web::resource("/health")
-                            .route(web::get().to(handlers::auth_handler::health_check)),
-                    )
-                    .service(
-                        web::scope("/organization")
-                            .service(
-                                web::resource("/usage/{organization_id}")
-                                    .route(web::get().to(
-                                        handlers::organization_handler::get_organization_usage,
-                                    )),
-                            )
-                            .service(
-                                web::resource("/users/{organization_id}")
-                                    .route(web::get().to(
-                                        handlers::organization_handler::get_organization_users,
-                                    )),
-                            )
-                            .service(
-                                web::resource("/{organization_id}")
-                                    .route(
-                                        web::get().to(
-                                            handlers::organization_handler::get_organization_by_id,
+                        )
+                        .service(
+                            web::scope("/user")
+                                .service(
+                                    web::resource("")
+                                        .route(web::put().to(handlers::user_handler::update_user)),
+                                )
+                                .service(
+                                    web::resource("/api_key")
+                                        .route(web::post().to(handlers::user_handler::set_user_api_key))
+                                        .route(web::get().to(handlers::user_handler::get_user_api_keys))
+                                )
+                                .service(
+                                    web::resource("/api_key/{api_key_id}")
+                                        .route(
+                                            web::delete().to(handlers::user_handler::delete_user_api_key),
+                                        ),
+                                )
+                        )
+                        .service(
+                            web::scope("/chunk_group")
+                                .service(
+                                    web::resource("")
+                                        .route(
+                                            web::post().to(handlers::group_handler::create_chunk_group),
+                                        )
+                                        .route(
+                                            web::put().to(handlers::group_handler::update_chunk_group),
                                         ),
                                     )
-                                    .route(web::delete().to(
-                                        handlers::organization_handler::delete_organization_by_id,
-                                    )),
-                            )
-                            .service(
-                                web::resource("")
-                                    .route(
-                                        web::post().to(
-                                            handlers::organization_handler::create_organization,
+                                .service(web::resource("/chunks").route(
+                                    web::post().to(handlers::group_handler::get_groups_chunk_is_in),
+                                ))
+                                .service(
+                                    web::resource("/search")
+                                        .route(web::post().to(handlers::group_handler::search_within_group)),
+                                )
+                                .service(
+                                    web::resource("/group_oriented_search").route(
+                                        web::post().to(handlers::group_handler::search_over_groups),
+                                    ),
+                                )
+                                .service(
+                                    web::resource("/recommend").route(
+                                        web::post().to(handlers::group_handler::get_recommended_groups),
+                                    ),
+                                )
+                                .service(
+                                    web::resource("/chunk/{chunk_group_id}")
+                                        .route(
+                                            web::delete()
+                                                .to(handlers::group_handler::remove_chunk_from_group),
+                                        ).route(web::post().to(handlers::group_handler::add_chunk_to_group))
+                                )
+                                .service(
+                                    web::scope("/tracking_id/{tracking_id}")
+                                        .service(
+                                            web::resource("")
+                                                .route(
+                                                    web::get().to(
+                                                        handlers::group_handler::get_group_by_tracking_id,
+                                                    ),
+                                                )
+                                                .route(
+                                                    web::post().to(
+                                                        handlers::group_handler::add_chunk_to_group_by_tracking_id
+                                                    )
+                                                )
+                                                .route(
+                                                    web::delete().to(
+                                                        handlers::group_handler::delete_group_by_tracking_id,
+                                                    )
+                                                )
+                                                .route(
+                                                    web::put().to(handlers::group_handler::update_group_by_tracking_id),
+                                                )
+                                        ).service(
+                                            web::resource("/{page}").route(
+                                                web::get().to(
+                                                    handlers::group_handler::get_chunks_in_group_by_tracking_id,
+                                                ),
+                                            ),
                                         ),
+                                )
+                                .service(
+                                    web::scope("/{group_id}")
+                                        .service(
+                                            web::resource("")
+                                                .route(web::get().to(handlers::group_handler::get_chunk_group))
+                                                .route(web::delete().to(handlers::group_handler::delete_chunk_group)),
+                                        )
+                                        .service(
+                                            web::resource("/{page}")
+                                                .route(web::get().to(handlers::group_handler::get_chunks_in_group)),
+                                        )
+                                )
+
+                        )
+                        .service(
+                            web::scope("/file")
+                                .service(
+                                    web::resource("").route(
+                                        web::post().to(handlers::file_handler::upload_file_handler),
+                                    ),
+                                )
+                                .service(
+                                    web::resource("/{file_id}")
+                                        .route(web::get().to(handlers::file_handler::get_file_handler))
+                                        .route(
+                                            web::delete()
+                                                .to(handlers::file_handler::delete_file_handler),
+                                        ),
+                                )
+                                .service(
+                                    web::resource("/get_signed_url/{file_name}")
+                                        .route(web::get().to(handlers::file_handler::get_signed_url)),
+                                )
+                                .service(
+                                    web::resource(
+                                        "/pdf_from_range/{organization_id}/{file_start}/{file_end}/{prefix}/{file_name}/{ocr}",
                                     )
-                                    .route(
-                                        web::put().to(
-                                            handlers::organization_handler::update_organization,
-                                        ),
-                                    ),
-                            ),
-                    )
-                    .service(
-                        web::resource("/invitation")
-                            .route(web::post().to(handlers::invitation_handler::post_invitation)),
-                    )
-                    .service(
-                        web::scope("/stripe")
-                            .service(
-                                web::resource("/webhook")
-                                    .route(web::post().to(handlers::stripe_handler::webhook)),
-                            )
-                            .service(web::resource("/subscription/{subscription_id}").route(
-                                web::delete().to(handlers::stripe_handler::cancel_subscription),
-                            ))
-                            .service(
-                                web::resource("/subscription_plan/{subscription_id}/{plan_id}")
-                                    .route(
-                                        web::patch()
-                                            .to(handlers::stripe_handler::update_subscription_plan),
-                                    ),
-                            )
-                            .service(
-                                web::resource("/payment_link/{plan_id}/{organization_id}").route(
-                                    web::get().to(handlers::stripe_handler::direct_to_payment_link),
+                                    .route(web::get().to(handlers::file_handler::get_pdf_from_range)),
                                 ),
-                            )
-                            .service(
-                                web::resource("/plans")
-                                    .route(web::get().to(handlers::stripe_handler::get_all_plans)),
+                        )
+                        .service(
+                            web::scope("/events").service(
+                                web::resource("")
+                                    .route(web::post().to(handlers::event_handler::get_events)),
                             ),
-                    ),
-            )
-    })
-    .bind(("0.0.0.0", 8090))?
-    .run()
-    .await
+                        )
+                        .service(
+                            web::resource("/health")
+                                .route(web::get().to(handlers::auth_handler::health_check)),
+                        )
+                        .service(
+                            web::scope("/organization")
+                                .service(
+                                    web::resource("/usage/{organization_id}")
+                                        .route(web::get().to(
+                                            handlers::organization_handler::get_organization_usage,
+                                        )),
+                                )
+                                .service(
+                                    web::resource("/users/{organization_id}")
+                                        .route(web::get().to(
+                                            handlers::organization_handler::get_organization_users,
+                                        )),
+                                )
+                                .service(
+                                    web::resource("/{organization_id}")
+                                        .route(
+                                            web::get().to(
+                                                handlers::organization_handler::get_organization_by_id,
+                                            ),
+                                        )
+                                        .route(web::delete().to(
+                                            handlers::organization_handler::delete_organization_by_id,
+                                        )),
+                                )
+                                .service(
+                                    web::resource("")
+                                        .route(
+                                            web::post().to(
+                                                handlers::organization_handler::create_organization,
+                                            ),
+                                        )
+                                        .route(
+                                            web::put().to(
+                                                handlers::organization_handler::update_organization,
+                                            ),
+                                        ),
+                                ),
+                        )
+                        .service(
+                            web::resource("/invitation")
+                                .route(web::post().to(handlers::invitation_handler::post_invitation)),
+                        )
+                        .service(
+                            web::scope("/stripe")
+                                .service(
+                                    web::resource("/webhook")
+                                        .route(web::post().to(handlers::stripe_handler::webhook)),
+                                )
+                                .service(web::resource("/subscription/{subscription_id}").route(
+                                    web::delete().to(handlers::stripe_handler::cancel_subscription),
+                                ))
+                                .service(
+                                    web::resource("/subscription_plan/{subscription_id}/{plan_id}")
+                                        .route(
+                                            web::patch()
+                                                .to(handlers::stripe_handler::update_subscription_plan),
+                                        ),
+                                )
+                                .service(
+                                    web::resource("/payment_link/{plan_id}/{organization_id}").route(
+                                        web::get().to(handlers::stripe_handler::direct_to_payment_link),
+                                    ),
+                                )
+                                .service(
+                                    web::resource("/plans")
+                                        .route(web::get().to(handlers::stripe_handler::get_all_plans)),
+                                ),
+                        ),
+                )
+        })
+        .bind(("0.0.0.0", 8090))?
+        .run()
+        .await
+
+    })?;
+
+    Ok(())
 }

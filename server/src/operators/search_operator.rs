@@ -244,6 +244,7 @@ pub async fn retrieve_qdrant_points_query(
     })
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn get_metadata_filter_condition(
     filter: &FieldCondition,
     dataset_id: uuid::Uuid,
@@ -353,6 +354,7 @@ pub async fn get_metadata_filter_condition(
     Ok(metadata_filter)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn get_group_metadata_filter_condition(
     filter: &FieldCondition,
     dataset_id: uuid::Uuid,
@@ -473,6 +475,7 @@ pub async fn get_group_metadata_filter_condition(
     Ok(metadata_filter)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn get_group_tag_set_filter_condition(
     filter: &FieldCondition,
     dataset_id: uuid::Uuid,
@@ -991,6 +994,7 @@ pub async fn retrieve_chunks_for_groups(
     })
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn get_metadata_from_groups(
     search_over_groups_query_result: SearchOverGroupsQueryResult,
     get_collisions: Option<bool>,
