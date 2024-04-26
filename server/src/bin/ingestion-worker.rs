@@ -154,13 +154,14 @@ fn main() {
         );
 }
 
+#[tracing::instrument(skip(should_terminate, web_pool, redis_pool))]
 async fn ingestion_worker(
     should_terminate: Arc<AtomicBool>,
-    thread_num: usize,
+    _thread_num: usize,
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
 ) {
-    log::info!("Starting ingestion service thread {:?}", thread_num);
+    log::info!("Starting ingestion service thread");
 
     let mut redis_conn_sleep = std::time::Duration::from_secs(1);
 
@@ -923,6 +924,7 @@ async fn update_chunk(
     Ok(())
 }
 
+#[tracing::instrument(skip(web_pool, redis_pool))]
 pub async fn readd_error_to_queue(
     message: IngestionMessage,
     error: ServiceError,

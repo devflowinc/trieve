@@ -339,6 +339,7 @@ async fn upload_file(
     Ok(Some(file_id))
 }
 
+#[tracing::instrument(skip(redis_pool))]
 pub async fn readd_error_to_queue(
     mut payload: FileWorkerMessage,
     error: ServiceError,

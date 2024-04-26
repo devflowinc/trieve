@@ -44,6 +44,8 @@ where
             let tx_ctx =
                 sentry::TransactionContext::new("middleware", "get dataset, org, and/or user");
             let transaction = sentry::start_transaction(tx_ctx);
+            sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
+
             let pool = req.app_data::<web::Data<Pool>>().unwrap().to_owned();
 
             let get_user_span = transaction.start_child("get_user", "Getting user");

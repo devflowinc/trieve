@@ -63,6 +63,7 @@ pub async fn get_dataset_by_id_query(
     Ok(dataset)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn get_dataset_and_organization_from_dataset_id_query(
     id: UnifiedId,
     pool: web::Data<Pool>,

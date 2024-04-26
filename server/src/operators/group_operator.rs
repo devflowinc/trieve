@@ -623,6 +623,7 @@ pub async fn create_group_from_file_query(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn get_point_ids_from_unified_group_ids(
     group_ids: Vec<UnifiedId>,
     dataset_id: uuid::Uuid,
@@ -682,6 +683,7 @@ pub async fn get_point_ids_from_unified_group_ids(
     Ok(qdrant_point_ids)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn get_groups_from_group_ids_query(
     group_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -697,6 +699,7 @@ pub async fn get_groups_from_group_ids_query(
         .map_err(|_| ServiceError::BadRequest("Failed to fetch group".to_string()))
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn check_group_ids_exist_query(
     group_ids: Vec<uuid::Uuid>,
     dataset_id: uuid::Uuid,

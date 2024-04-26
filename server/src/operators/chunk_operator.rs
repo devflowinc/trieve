@@ -81,6 +81,7 @@ pub async fn get_slim_chunk_metadatas_from_point_ids(
     Ok(slim_chunk_metadatas)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn get_point_ids_from_unified_chunk_ids(
     chunk_ids: Vec<UnifiedId>,
     dataset_id: uuid::Uuid,
@@ -1179,6 +1180,7 @@ pub async fn get_row_count_for_dataset_id_query(
     Ok(chunk_metadata_count as usize)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn create_chunk_metadata(
     chunks: Vec<ChunkData>,
     dataset_uuid: uuid::Uuid,
