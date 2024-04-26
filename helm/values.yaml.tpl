@@ -55,7 +55,7 @@ config:
     rerankerServerOrigin: http://embedding-reranker-service.default.cluster.local:80
     salt: $SALT
     secretKey: $SECRET_KEY
-    apiAdminKey: $ADMIN_API_KEY
+    apiAdminKey: $API_ADMIN_KEY
   oidc:
     clientSecret: $OIDC_CLIENT_SECRET
     clientId: vault
@@ -89,17 +89,21 @@ embeddings:
     port: 9999
     model: jinaai/jina-embeddings-v2-small-en
     revision: main
+    args: []
   - name: reranker
     model: BAAI/bge-reranker-large
     revision: refs/pr/4
     port: 7777
+    args: []
   - name: splade-doc
     model: naver/efficient-splade-VI-BT-large-doc
     revision: main
     port: 7070
+    args: []
   - name: splade-query
     model: naver/efficient-splade-VI-BT-large-query
     revision: main
     port: 7071
+    args: ["--pooling", "splade"]
 redis:
   enabled: true
