@@ -34,3 +34,4 @@ dashboard/.vite/*
 *.swp
 *.swo
 helm/values.yaml
+helm/.env

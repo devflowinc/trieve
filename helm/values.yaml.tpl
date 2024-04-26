@@ -30,8 +30,8 @@ config:
     apiHost: http://server.default.svc.cluster.local:8090/api
     searchUiUrl: https://search.trieve.ai
     frontmatterVals: "link,tag_set,time_stamp"
-    sentryChatDsn: ""
-    dashboardUrl: http://localhost:5173
+    sentryChatDsn: $SENTRY_CHAT_DSN
+    dashboardUrl: $DASHBOARD_URL
   keycloak:
     admin: $KEYCLOAK_ADMIN
     password: $KEYCLOAK_PASSWORD
@@ -48,20 +48,20 @@ config:
     cookieSecure: false
     baseServerUrl: http://server-service.default.svc.cluster.local:8090
     gpuServerOrigin: http://localhost:7070
-    sparseServerQueryOrigin: ""
-    sparseServerDocOrigin: ""
-    embeddingServerOrigin: ""
-    embeddingServerOriginBGEM3: ""
-    rerankerServerOrigin: ""
+    embeddingServerOrigin: http://embedding-jina-service.default.cluster.local:80
+    sparseServerQueryOrigin: http://embedding-splade-query-service.default.cluster.local:80
+    sparseServerDocOrigin: http://embedding-splade-doc-service.default.cluster.local:80
+    embeddingServerOriginBGEM3: http://embedding-bgem3-service.default.cluster.local:80
+    rerankerServerOrigin: http://embedding-reranker-service.default.cluster.local:80
     salt: $SALT
     secretKey: $SECRET_KEY
     apiAdminKey: $ADMIN_API_KEY
   oidc:
     clientSecret: $OIDC_CLIENT_SECRET
     clientId: vault
-    issuerUrl: http://keycloak-service.default.svc.cluster.local:8080/realms/trieve
-    authRedirectUrl: http://keycloak-service.default.svc.cluster.local:8080/realms/trieve/protocol/openid-connect/auth
-    redirectUrl: http://keycloak-service.default.svc.cluster.local:8080/realms/trieve/protocol/openid-connect/auth
+    issuerUrl: $ISSUER_URL
+    authRedirectUrl: $AUTH_REDIRECT_URL
+    redirectUrl: $REDIRECT_URL
   
   smtp:
     relay: $SMTP_RELAY
@@ -69,7 +69,7 @@ config:
     passworD: $SMTP_PASSWORD
     emailAddress: $SMTP_EMAIL_ADDRESS
   llm:
-    apiKey: $OPENAI_API_KEY
+    apiKey: $LLM_API_KEY
   openai:
     apiKey: $OPENAI_API_KEY
     baseUrl: $OPENAI_BASE_URL
@@ -81,7 +81,7 @@ config:
     bucket: $S3_BUCKET
   stripe:
     secret: $STRIPE_API_KEY
-    webhookSecret: $STRIPE_WEBHOOK_SERCRET
+    webhookSecret: $STRIPE_WEBHOOK_SECRET
     adminDashboardUrl: http://keycloak.default.svc.cluster.local:8080/admin
 embeddings:
   - name: jina
