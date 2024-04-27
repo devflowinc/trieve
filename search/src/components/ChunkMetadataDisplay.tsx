@@ -295,6 +295,23 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
               </div>
               <Show
                 when={
+                  props.chunk.tracking_id &&
+                  !$envs()
+                    .FRONTMATTER_VALS?.split(",")
+                    ?.find((val) => val == "tag_set")
+                }
+              >
+                <div class="flex space-x-2">
+                  <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                    Tracking ID:{" "}
+                  </span>
+                  <span class="line-clamp-1 break-all">
+                    {props.chunk.tracking_id}
+                  </span>
+                </div>
+              </Show>
+              <Show
+                when={
                   props.chunk.tag_set &&
                   !$envs()
                     .FRONTMATTER_VALS?.split(",")
