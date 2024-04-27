@@ -3,7 +3,7 @@ aws_region=us-west-1
 namespace=kube-system
 service_account=ebs-csi-controller-sa
 account_id=$(aws sts get-caller-identity --query "Account" --output text)
-oidc_provider=$(aws eks describe-cluster --name trieve --region $aws_region --query "cluster.identity.oidc.issuer" --output text | sed -e "s/^https:\/\///")
+oidc_provider=$(aws eks describe-cluster --name trieve-02 --region $aws_region --query "cluster.identity.oidc.issuer" --output text | sed -e "s/^https:\/\///")
 cat >aws-ebs-csi-driver-trust-policy.json <<EOF
 {
   "Version": "2012-10-17",

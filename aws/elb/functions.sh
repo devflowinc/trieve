@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cluster=trieve
+cluster=trieve-02
 function get_cluster() {
   echo $cluster
 }

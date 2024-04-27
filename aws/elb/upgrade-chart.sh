@@ -1,5 +1,5 @@
 #!/bin/bash
-cluster=trieve
+cluster=trieve-02
 
 function start_path() {
   echo $( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
