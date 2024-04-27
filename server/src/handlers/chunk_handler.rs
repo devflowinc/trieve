@@ -1082,6 +1082,25 @@ pub struct SearchChunkData {
     pub slim_chunks: Option<bool>,
 }
 
+impl Default for SearchChunkData {
+    fn default() -> Self {
+        SearchChunkData {
+            search_type: "hybrid".to_string(),
+            query: "".to_string(),
+            page: Some(1),
+            page_size: Some(10),
+            filters: None,
+            date_bias: None,
+            use_weights: None,
+            get_collisions: None,
+            highlight_results: None,
+            highlight_delimiters: None,
+            score_threshold: None,
+            slim_chunks: None,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 #[schema(example = json!({
     "metadata": [

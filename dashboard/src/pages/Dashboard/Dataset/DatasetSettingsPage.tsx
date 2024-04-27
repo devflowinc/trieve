@@ -42,6 +42,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   COLLISIONS_ENABLED: false,
   FULLTEXT_ENABLED: true,
   QDRANT_COLLECTION_NAME: null,
+  USE_MESSAGE_TO_QUERY_PROMPT: false,
 };
 
 export const FrontendSettingsForm = () => {
@@ -612,7 +613,7 @@ export const ServerSettingsForm = () => {
                 for="messageToQueryPrompt"
                 class="block text-sm font-medium leading-6"
               >
-                Message to Query Prompt
+                Message to Query Prompt (HyDE)
               </label>
               <textarea
                 value={serverConfig().MESSAGE_TO_QUERY_PROMPT}
@@ -678,6 +679,29 @@ export const ServerSettingsForm = () => {
                   {(model) => <option value={model.name}>{model.name}</option>}
                 </For>
               </select>
+            </div>
+
+            <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
+              <input
+                type="checkbox"
+                name="collisionsEnabled"
+                id="collisionsEnabled"
+                checked={serverConfig().USE_MESSAGE_TO_QUERY_PROMPT}
+                onInput={(e) =>
+                  setServerConfig((prev) => {
+                    return {
+                      ...prev,
+                      USE_MESSAGE_TO_QUERY_PROMPT: e.currentTarget.checked,
+                    };
+                  })
+                }
+              />
+              <label
+                for="collisionsEnabled"
+                class="block text-sm font-medium leading-6"
+              >
+                Use Message to Query Prompt (HyDE)
+              </label>
             </div>
 
             <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">

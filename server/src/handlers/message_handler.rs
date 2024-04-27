@@ -1,4 +1,7 @@
-use super::{auth_handler::LoggedUser, chunk_handler::ParsedQuery};
+use super::{
+    auth_handler::LoggedUser,
+    chunk_handler::{ParsedQuery, SearchChunkData},
+};
 use crate::{
     data::models::{
         self, ChunkMetadata, Dataset, DatasetAndOrgWithSubAndPlan, Pool, ServerDatasetConfiguration,
@@ -6,18 +9,13 @@ use crate::{
     errors::ServiceError,
     get_env,
     operators::{
-        chunk_operator::{
-            find_relevant_sentence, get_chunk_metadatas_and_collided_chunks_from_point_ids_query,
-        },
         message_operator::{
             create_message_query, create_topic_message_query, delete_message_query,
             get_message_by_sort_for_topic_query, get_messages_for_topic_query, get_topic_messages,
             user_owns_topic_query,
         },
-        model_operator::create_embedding,
         organization_operator::get_message_org_count,
-        qdrant_operator::VectorType,
-        search_operator::retrieve_qdrant_points_query,
+        search_operator::search_hybrid_chunks,
     },
 };
 use actix::Arbiter;
@@ -35,6 +33,7 @@ use openai_dive::v1::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use simple_server_timing_header::Timer;
 use tokio_stream::StreamExt;
 use utoipa::ToSchema;
 
@@ -540,6 +539,15 @@ pub async fn stream_response(
     let dataset_config =
         ServerDatasetConfiguration::from_json(dataset.server_configuration.clone());
 
+    let user_message = match messages.last() {
+        Some(message) => message.clone().content,
+        None => {
+            return Err(
+                ServiceError::BadRequest("No messages found for the topic".to_string()).into(),
+            );
+        }
+    };
+
     let openai_messages: Vec<ChatMessage> = messages
         .iter()
         .map(|message| ChatMessage::from(message.clone()))
@@ -572,132 +580,112 @@ pub async fn stream_response(
         messages_len
     };
 
-    let mut citation_chunks_stringified;
-    let mut citation_chunks_stringified1;
-
-    let message_to_query_prompt = dataset_config.MESSAGE_TO_QUERY_PROMPT.clone();
     let rag_prompt = dataset_config.RAG_PROMPT.clone();
     let chosen_model = dataset_config.LLM_DEFAULT_MODEL.clone();
 
-    let gen_inference_parameters = ChatCompletionParameters {
-        model: chosen_model.clone(),
-        messages: vec![ChatMessage {
-            role: Role::User,
-            content: ChatMessageContent::Text(format!(
-                "{}{}",
-                message_to_query_prompt,
-                match openai_messages
-                    .clone()
-                    .last()
-                    .expect("No messages")
-                    .clone()
-                    .content
-                {
-                    ChatMessageContent::Text(text) => text,
-                    _ => "".to_string(),
-                }
-            )),
-            tool_calls: None,
-            name: None,
-            tool_call_id: None,
-        }],
-        stream: Some(false),
-        temperature: None,
-        top_p: None,
-        n: None,
-        stop: None,
-        max_tokens: None,
-        presence_penalty: Some(0.8),
-        frequency_penalty: Some(0.8),
-        logit_bias: None,
-        user: None,
-        response_format: None,
-        tools: None,
-        tool_choice: None,
-        logprobs: None,
-        top_logprobs: None,
-        seed: None,
-    };
+    let mut query = user_message;
+    let use_message_to_query_prompt = dataset_config.USE_MESSAGE_TO_QUERY_PROMPT;
+    if use_message_to_query_prompt {
+        let message_to_query_prompt = dataset_config.MESSAGE_TO_QUERY_PROMPT.clone();
 
-    let search_query_from_message_to_query_prompt = client
-        .chat()
-        .create(gen_inference_parameters)
-        .await
-        .expect("No OpenAI Completion for chunk search");
-    let query = match &search_query_from_message_to_query_prompt
-        .choices
-        .first()
-        .expect("No response for OpenAI completion")
-        .message
-        .content
-    {
-        ChatMessageContent::Text(query) => query.clone(),
-        _ => "".to_string(),
-    };
-    let embedding_vector = create_embedding(query.clone(), "query", dataset_config.clone()).await?;
+        let gen_inference_parameters = ChatCompletionParameters {
+            model: chosen_model.clone(),
+            messages: vec![ChatMessage {
+                role: Role::User,
+                content: ChatMessageContent::Text(format!(
+                    "{}{}",
+                    message_to_query_prompt,
+                    match openai_messages
+                        .clone()
+                        .last()
+                        .expect("No messages")
+                        .clone()
+                        .content
+                    {
+                        ChatMessageContent::Text(text) => text,
+                        _ => "".to_string(),
+                    }
+                )),
+                tool_calls: None,
+                name: None,
+                tool_call_id: None,
+            }],
+            stream: Some(false),
+            temperature: None,
+            top_p: None,
+            n: None,
+            stop: None,
+            max_tokens: None,
+            presence_penalty: Some(0.8),
+            frequency_penalty: Some(0.8),
+            logit_bias: None,
+            user: None,
+            response_format: None,
+            tools: None,
+            tool_choice: None,
+            logprobs: None,
+            top_logprobs: None,
+            seed: None,
+        };
+
+        let search_query_from_message_to_query_prompt = client
+            .chat()
+            .create(gen_inference_parameters)
+            .await
+            .expect("No OpenAI Completion for chunk search");
+
+        query = match &search_query_from_message_to_query_prompt
+            .choices
+            .first()
+            .expect("No response for OpenAI completion")
+            .message
+            .content
+        {
+            ChatMessageContent::Text(query) => query.clone(),
+            _ => "".to_string(),
+        };
+    }
 
     let n_retrievals_to_include = dataset_config.N_RETRIEVALS_TO_INCLUDE;
-
-    let search_chunk_query_results = retrieve_qdrant_points_query(
-        VectorType::Dense(embedding_vector),
-        1,
-        n_retrievals_to_include.try_into().unwrap(),
-        None,
-        None,
-        ParsedQuery {
-            query: query.to_string(),
-            quote_words: None,
-            negated_words: None,
-        },
-        dataset.id,
-        pool.clone(),
-        config,
-    )
-    .await?;
-
-    let retrieval_chunk_ids = search_chunk_query_results
-        .search_results
-        .iter()
-        .map(|chunk| chunk.point_id)
-        .collect::<Vec<uuid::Uuid>>();
-
-    let (metadata_chunks, _) = get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
-        retrieval_chunk_ids,
-        false,
-        pool.clone(),
-    )
-    .await?;
-
-    let citation_chunks: Vec<ChunkMetadata> = metadata_chunks.to_vec();
-
-    let highlighted_citation_chunks = if highlight_citations.unwrap_or(true) {
-        citation_chunks
-            .iter()
-            .map(|chunk| {
-                find_relevant_sentence(
-                    chunk.clone(),
-                    query.to_string(),
-                    highlight_delimiters.clone().unwrap_or(vec![
-                        ".".to_string(),
-                        "!".to_string(),
-                        "?".to_string(),
-                        "\n".to_string(),
-                        "\t".to_string(),
-                        ",".to_string(),
-                    ]),
-                )
-                .unwrap_or(chunk.clone())
-            })
-            .collect::<Vec<ChunkMetadata>>()
-    } else {
-        citation_chunks.clone()
+    let search_chunk_data = SearchChunkData {
+        search_type: "hybrid".to_string(),
+        query: query.clone(),
+        page_size: Some(n_retrievals_to_include.try_into().unwrap_or(8)),
+        ..Default::default()
     };
+    let parsed_query = ParsedQuery {
+        query: query.clone(),
+        quote_words: None,
+        negated_words: None,
+    };
+    let mut search_timer = Timer::new();
+    let result_chunks = search_hybrid_chunks(
+        search_chunk_data,
+        parsed_query,
+        1,
+        pool.clone(),
+        dataset.clone(),
+        dataset_config,
+        &mut search_timer,
+    )
+    .await?;
+    let chunk_metadatas = result_chunks
+        .score_chunks
+        .iter()
+        .map(|score_chunk| {
+            score_chunk
+                .metadata
+                .first()
+                .expect("No metadata found")
+                .clone()
+        })
+        .collect::<Vec<ChunkMetadata>>();
 
-    citation_chunks_stringified = serde_json::to_string(&highlighted_citation_chunks)
-        .expect("Failed to serialize citation chunks");
-    citation_chunks_stringified1 = citation_chunks_stringified.clone();
+    let mut chunk_metadatas_stringified =
+        serde_json::to_string(&chunk_metadatas).expect("Failed to serialize citation chunks");
+    let mut chunk_metadatas_stringified1 = chunk_metadatas_stringified.clone();
 
-    let rag_content = citation_chunks
+    let rag_content = chunk_metadatas
         .iter()
         .enumerate()
         .map(|(idx, chunk)| format!("Doc {}: {}", idx + 1, chunk.content.clone()))
@@ -780,7 +768,7 @@ pub async fn stream_response(
         let new_message = models::Message::from_details(
             format!(
                 "{}{}",
-                citation_chunks_stringified,
+                chunk_metadatas_stringified,
                 completion_content.clone()
             ),
             topic_id,
@@ -806,9 +794,9 @@ pub async fn stream_response(
     let (s, r) = unbounded::<String>();
     let stream = client.chat().create_stream(parameters).await.unwrap();
 
-    if !citation_chunks_stringified.is_empty() {
-        citation_chunks_stringified = format!("{}||", citation_chunks_stringified);
-        citation_chunks_stringified1 = citation_chunks_stringified.clone();
+    if !chunk_metadatas_stringified.is_empty() {
+        chunk_metadatas_stringified = format!("{}||", chunk_metadatas_stringified);
+        chunk_metadatas_stringified1 = chunk_metadatas_stringified.clone();
     }
 
     Arbiter::new().spawn(async move {
@@ -816,7 +804,7 @@ pub async fn stream_response(
         let completion = chunk_v.join("");
 
         let new_message = models::Message::from_details(
-            format!("{}{}", citation_chunks_stringified, completion),
+            format!("{}{}", chunk_metadatas_stringified, completion),
             topic_id,
             next_message_order().try_into().unwrap(),
             "assistant".to_string(),
@@ -828,7 +816,7 @@ pub async fn stream_response(
         let _ = create_message_query(new_message, user_id, &pool).await;
     });
 
-    let new_stream = stream::iter(vec![Ok(Bytes::from(citation_chunks_stringified1))]);
+    let new_stream = stream::iter(vec![Ok(Bytes::from(chunk_metadatas_stringified1))]);
 
     Ok(HttpResponse::Ok().streaming(new_stream.chain(stream.map(
         move |response| -> Result<Bytes, actix_web::Error> {

@@ -1292,6 +1292,7 @@ impl DatasetAndUsage {
     "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
     "FULLTEXT_ENABLED": true,
     "EMBEDDING_QUERY_PREFIX": "Search for",
+    "USE_MESSAGE_TO_QUERY_PROMPT": false,
 }))]
 #[allow(non_snake_case)]
 pub struct ServerDatasetConfiguration {
@@ -1312,6 +1313,7 @@ pub struct ServerDatasetConfiguration {
     pub LLM_DEFAULT_MODEL: String,
     pub FULLTEXT_ENABLED: bool,
     pub EMBEDDING_QUERY_PREFIX: String,
+    pub USE_MESSAGE_TO_QUERY_PROMPT: bool,
 }
 
 impl ServerDatasetConfiguration {
@@ -1470,7 +1472,12 @@ impl ServerDatasetConfiguration {
                 .unwrap_or(&json!(""))
                 .as_str()
                 .map(|s| s.to_string())
-                .unwrap_or("".to_string())
+                .unwrap_or("".to_string()),
+            USE_MESSAGE_TO_QUERY_PROMPT: configuration
+                .get("USE_MESSAGE_TO_QUERY_PROMPT")
+                .unwrap_or(&json!(false))
+                .as_bool()
+                .unwrap_or(false),
         }
     }
 }
