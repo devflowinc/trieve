@@ -1,6 +1,6 @@
 source ./functions.sh
 oidc_id=$(get_oidc)
-region=us-east-2
+region=us-west-1
 account_id=$(aws sts get-caller-identity --query "Account" --output text)
 cat >load-balancer-role-trust-policy.json <<EOF
 {

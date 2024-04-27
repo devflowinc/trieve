@@ -4,13 +4,20 @@ apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 
 metadata:
-  name: trieve
-  region: us-east-2
+  name: trieve-0
+  region: us-west-1
 
 managedNodeGroups:
-  - name: trieve-nodegroup
-    instanceType: t2.medium
+  - name: trieve-0-nodegroup-gpu
+    instanceType: g4dn.xlarge
     minSize: 3
     desiredCapacity: 4
     maxSize: 5
     volumeSize: 30
+  - name: trieve-0-nodegroup-general
+    instanceType: m7g.xlarge
+    minSize: 3
+    desiredCapacity: 4
+    maxSize: 5
+    volumeSize: 40
+

@@ -1,5 +1,5 @@
 #!/bin/bash
-aws_region=us-east-2
+aws_region=us-west-1
 namespace=kube-system
 service_account=ebs-csi-controller-sa
 account_id=$(aws sts get-caller-identity --query "Account" --output text)
