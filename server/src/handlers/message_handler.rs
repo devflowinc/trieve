@@ -557,6 +557,15 @@ pub async fn stream_response(
         .into()
     };
 
+    let message_to_query_prompt = dataset_config.MESSAGE_TO_QUERY_PROMPT.clone();
+    let rag_prompt = dataset_config.RAG_PROMPT.clone();
+    let chosen_model = dataset_config.LLM_DEFAULT_MODEL.clone();
+
+    sentry::configure_scope(|scope| {
+        scope.set_tag("LLM_MODEL", chosen_model.clone());
+        scope.set_tag("LLM_BASE_URL", base_url.clone());
+    });
+
     let client = Client {
         api_key: llm_api_key,
         http_client: reqwest::Client::new(),
@@ -574,10 +583,6 @@ pub async fn stream_response(
 
     let mut citation_chunks_stringified;
     let mut citation_chunks_stringified1;
-
-    let message_to_query_prompt = dataset_config.MESSAGE_TO_QUERY_PROMPT.clone();
-    let rag_prompt = dataset_config.RAG_PROMPT.clone();
-    let chosen_model = dataset_config.LLM_DEFAULT_MODEL.clone();
 
     let gen_inference_parameters = ChatCompletionParameters {
         model: chosen_model.clone(),

@@ -37,12 +37,29 @@ pub async fn create_embedding(
             sentry::start_transaction(ctx).into()
         }
     };
-    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
     let open_ai_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set");
     let config_embedding_base_url = dataset_config.EMBEDDING_BASE_URL;
-    transaction.set_data("EMBEDDING_SERVER", config_embedding_base_url.as_str().into());
-    transaction.set_data("EMBEDDING_MODEL", dataset_config.EMBEDDING_MODEL_NAME.as_str().into());
+
+    transaction.set_data(
+        "EMBEDDING_SERVER",
+        config_embedding_base_url.as_str().into(),
+    );
+    transaction.set_data(
+        "EMBEDDING_MODEL",
+        dataset_config.EMBEDDING_MODEL_NAME.as_str().into(),
+    );
+    sentry::configure_scope(|scope| {
+        scope.set_span(Some(transaction.clone()));
+        scope.set_tag(
+            "EMBEDDING_SERVER",
+            config_embedding_base_url.as_str(),
+        );
+        scope.set_tag(
+            "EMBEDDING_MODEL",
+            dataset_config.EMBEDDING_MODEL_NAME.as_str(),
+        );
+    });
 
     let embedding_base_url = match config_embedding_base_url.as_str() {
         "" => get_env!("OPENAI_BASE_URL", "OPENAI_BASE_URL must be set").to_string(),
