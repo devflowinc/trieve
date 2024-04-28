@@ -303,6 +303,7 @@ impl Modify for SecurityAddon {
             data::models::ChunkMetadataWithScore,
             data::models::SlimChunkMetadataWithScore,
             data::models::GeoInfo,
+            data::models::GeoTypes,
             errors::ErrorResponseBody,
         )
     ),
