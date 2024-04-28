@@ -18,9 +18,8 @@ use trieve_server::handlers::chunk_handler::{
 use trieve_server::handlers::group_handler::dataset_owns_group;
 use trieve_server::operators::chunk_operator::{
     bulk_insert_chunk_metadata_query, bulk_revert_insert_chunk_metadata_query,
-    get_chunk_metadatas_from_point_ids, get_qdrant_id_from_chunk_id_query,
-    insert_chunk_metadata_query, insert_duplicate_chunk_metadata_query,
-    update_chunk_metadata_query,
+    get_chunk_metadatas_from_point_ids, get_qdrant_id_from_chunk_id_query, insert_chunk_metadata_query,
+    insert_duplicate_chunk_metadata_query, update_chunk_metadata_query,
 };
 use trieve_server::operators::event_operator::create_event_query;
 use trieve_server::operators::model_operator::{
@@ -428,7 +427,6 @@ pub async fn bulk_upload_chunks(
                 metadata: message.chunk.metadata.clone(),
                 tracking_id: chunk_tracking_id,
                 time_stamp: timestamp,
-                location: message.chunk.location.clone(),
                 dataset_id: payload.dataset_id,
                 weight: message.chunk.weight.unwrap_or(0.0),
             };
@@ -617,7 +615,6 @@ async fn upload_chunk(
         metadata: payload.chunk.metadata.clone(),
         tracking_id: chunk_tracking_id,
         time_stamp: timestamp,
-        location: payload.chunk.location.clone(),
         dataset_id: payload.ingest_specific_chunk_metadata.dataset_id,
         weight: payload.chunk.weight.unwrap_or(0.0),
     };
@@ -697,11 +694,9 @@ async fn upload_chunk(
             //Sets collision to collided chunk id
             collision = Some(first_semantic_result.point_id);
 
-            let score_chunk_result = get_chunk_metadatas_from_point_ids(
-                vec![first_semantic_result.point_id],
-                web_pool.clone(),
-            )
-            .await;
+            let score_chunk_result =
+                get_chunk_metadatas_from_point_ids(vec![first_semantic_result.point_id], web_pool.clone())
+                    .await;
 
             match score_chunk_result {
                 Ok(chunk_results) => chunk_results

@@ -1,12 +1,14 @@
 use crate::{
     data::models::{
-        ChunkGroup, ChunkGroupAndFile, ChunkMetadata, Dataset, FileGroup, Pool,
-        ServerDatasetConfiguration, UnifiedId,
+        ChunkGroup, ChunkMetadata, Dataset, FileGroup, Pool, ServerDatasetConfiguration, UnifiedId,
     },
     operators::chunk_operator::delete_chunk_metadata_query,
 };
 use crate::{
-    data::models::{ChunkGroupBookmark, SlimGroup},
+    data::models::{
+        ChunkGroupAndFileWithCount, ChunkGroupBookmark, ChunkMetadataWithCount,
+        FullTextSearchResult, SlimGroup,
+    },
     errors::ServiceError,
     operators::search_operator::get_metadata_query,
 };
@@ -116,7 +118,7 @@ pub async fn get_groups_for_specific_dataset_query(
     page: u64,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<(ChunkGroupAndFile, Option<i32>)>, ServiceError> {
+) -> Result<Vec<ChunkGroupAndFileWithCount>, ServiceError> {
     use crate::data::schema::chunk_group::dsl::*;
     use crate::data::schema::dataset_group_counts::dsl as dataset_group_count_columns;
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
@@ -133,17 +135,15 @@ pub async fn get_groups_for_specific_dataset_query(
                 .on(dataset_id.eq(dataset_group_count_columns::dataset_id.assume_not_null())),
         )
         .select((
-            (
-                id,
-                dataset_id,
-                name,
-                description,
-                created_at,
-                updated_at,
-                groups_from_files_columns::file_id.nullable(),
-                tracking_id,
-            ),
+            id,
+            dataset_id,
+            name,
+            description,
+            created_at,
+            updated_at,
+            groups_from_files_columns::file_id.nullable(),
             dataset_group_count_columns::group_count.nullable(),
+            tracking_id,
         ))
         .order_by(updated_at.desc())
         .filter(dataset_id.eq(dataset_uuid))
@@ -152,7 +152,7 @@ pub async fn get_groups_for_specific_dataset_query(
     let groups = groups
         .limit(10)
         .offset(((page - 1) * 10).try_into().unwrap_or(0))
-        .load::<(ChunkGroupAndFile, Option<i32>)>(&mut conn)
+        .load::<ChunkGroupAndFileWithCount>(&mut conn)
         .await
         .map_err(|_err| ServiceError::BadRequest("Error getting groups".to_string()))?;
 
@@ -404,7 +404,7 @@ pub async fn get_bookmarks_for_group_query(
         UnifiedId::TrieveUuid(id) => id,
     };
 
-    let (chunk_metadata, chunk_count, chunk_group) =
+    let bookmark_metadata: Vec<(ChunkMetadataWithCount, ChunkGroup)> =
         chunk_metadata_columns::chunk_metadata
             .inner_join(chunk_group_bookmarks_columns::chunk_group_bookmarks.on(
                 chunk_group_bookmarks_columns::chunk_metadata_id.eq(chunk_metadata_columns::id),
@@ -420,31 +420,68 @@ pub async fn get_bookmarks_for_group_query(
                     .and(chunk_metadata_columns::dataset_id.eq(dataset_uuid)),
             )
             .select((
-                ChunkMetadata::as_select(),
-                sql::<Int8>("count(*) OVER() AS full_count"),
+                (
+                    chunk_metadata_columns::id,
+                    chunk_metadata_columns::content,
+                    chunk_metadata_columns::link,
+                    chunk_metadata_columns::qdrant_point_id,
+                    chunk_metadata_columns::created_at,
+                    chunk_metadata_columns::updated_at,
+                    chunk_metadata_columns::tag_set,
+                    chunk_metadata_columns::chunk_html,
+                    chunk_metadata_columns::metadata,
+                    chunk_metadata_columns::tracking_id,
+                    chunk_metadata_columns::time_stamp,
+                    chunk_metadata_columns::dataset_id,
+                    chunk_metadata_columns::weight,
+                    sql::<Int8>("count(*) OVER() AS full_count"),
+                ),
                 ChunkGroup::as_select(),
             ))
             .limit(limit)
             .offset(((page - 1) * limit as u64).try_into().unwrap_or(0))
-            .load::<(ChunkMetadata, i64, ChunkGroup)>(&mut conn)
+            .load::<(ChunkMetadataWithCount, ChunkGroup)>(&mut conn)
             .await
-            .map_err(|_err| ServiceError::BadRequest("Error getting bookmarks".to_string()))?
-            .into_iter()
-            .fold((Vec::new(), 0, ChunkGroup::default()), |mut acc, item| {
-                acc.0.push(item.0);
-                acc.1 = item.1;
-                acc.2 = item.2;
-                acc
-            });
+            .map_err(|_err| ServiceError::BadRequest("Error getting bookmarks".to_string()))?;
 
-    let chunk_metadata_with_file_id = get_metadata_query(chunk_metadata, pool)
+    let chunk_group = if let Some(bookmark) = bookmark_metadata.get(0) {
+        bookmark.1.clone()
+    } else {
+        chunk_group_columns::chunk_group
+            .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
+            .filter(chunk_group_columns::id.eq(group_uuid))
+            .first::<ChunkGroup>(&mut conn)
+            .await
+            .map_err(|err| {
+                sentry::capture_message(
+                    &format!("Error getting group {:?}", err),
+                    sentry::Level::Error,
+                );
+                log::error!("Error getting group {:?}", err);
+                ServiceError::BadRequest("Error getting group".to_string())
+            })?
+    };
+
+    let converted_chunks: Vec<FullTextSearchResult> = bookmark_metadata
+        .iter()
+        .map(|(chunk, _chunk_group)| {
+            <ChunkMetadataWithCount as Into<FullTextSearchResult>>::into(chunk.clone())
+        })
+        .collect::<Vec<FullTextSearchResult>>();
+
+    let chunk_metadata_with_file_id = get_metadata_query(converted_chunks, pool)
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
+
+    let total_pages = match bookmark_metadata.get(0) {
+        Some(metadata) => (metadata.0.count as f64 / 10.0).ceil() as i64,
+        None => 0,
+    };
 
     Ok(GroupsBookmarkQueryResult {
         metadata: chunk_metadata_with_file_id,
         group: chunk_group,
-        total_pages: (chunk_count as f64 / 10.0).ceil() as i64,
+        total_pages,
     })
 }
 #[derive(Serialize, Deserialize, Debug, ToSchema)]

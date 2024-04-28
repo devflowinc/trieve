@@ -1,32 +1,15 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
-use std::io::Write;
-
-use crate::errors::ServiceError;
 use crate::get_env;
 
 use super::schema::*;
 use crate::handlers::chunk_handler::ScoreChunkDTO;
 use crate::handlers::file_handler::UploadFileData;
-use crate::operators::search_operator::{
-    get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
-    get_metadata_filter_condition,
-};
-use actix_web::web;
 use chrono::{DateTime, NaiveDateTime};
 use dateparser::DateTimeUtc;
 use diesel::expression::ValidGrouping;
-use diesel::{
-    deserialize::{self as deserialize, FromSql},
-    pg::sql_types::Jsonb,
-    pg::Pg,
-    pg::PgValue,
-    serialize::{self as serialize, IsNull, Output, ToSql},
-};
-use itertools::Itertools;
 use openai_dive::v1::resources::chat::{ChatMessage, ChatMessageContent, Role};
-use qdrant_client::qdrant::{GeoBoundingBox, GeoLineString, GeoPoint, GeoPolygon, GeoRadius};
-use qdrant_client::{prelude::Payload, qdrant, qdrant::RetrievedPoint};
+use qdrant_client::{prelude::Payload, qdrant::RetrievedPoint};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use utoipa::ToSchema;
@@ -216,31 +199,22 @@ impl Message {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, ToSchema, AsExpression)]
-#[diesel(sql_type = Jsonb)]
-pub struct GeoInfo {
-    pub lat: f64,
-    pub lon: f64,
-}
-
-impl FromSql<Jsonb, Pg> for GeoInfo {
-    fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
-        let bytes = bytes.as_bytes();
-
-        if bytes[0] != 1 {
-            return Err("Unsupported JSONB encoding version".into());
-        }
-        serde_json::from_slice(&bytes[1..]).map_err(Into::into)
-    }
-}
-
-impl ToSql<Jsonb, Pg> for GeoInfo {
-    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
-        out.write_all(&[1])?;
-        serde_json::to_writer(out, self)
-            .map(|_| IsNull::No)
-            .map_err(Into::into)
-    }
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
+pub struct ChunkMetadataWithCount {
+    pub id: uuid::Uuid,
+    pub content: String,
+    pub link: Option<String>,
+    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub tag_set: Option<String>,
+    pub chunk_html: Option<String>,
+    pub metadata: Option<serde_json::Value>,
+    pub tracking_id: Option<String>,
+    pub time_stamp: Option<NaiveDateTime>,
+    pub dataset_id: uuid::Uuid,
+    pub weight: f64,
+    pub count: i64,
 }
 
 #[derive(
@@ -276,7 +250,6 @@ pub struct ChunkMetadata {
     pub time_stamp: Option<NaiveDateTime>,
     pub dataset_id: uuid::Uuid,
     pub weight: f64,
-    pub location: Option<GeoInfo>,
 }
 
 impl ChunkMetadata {
@@ -290,7 +263,6 @@ impl ChunkMetadata {
         metadata: Option<serde_json::Value>,
         tracking_id: Option<String>,
         time_stamp: Option<NaiveDateTime>,
-        location: Option<GeoInfo>,
         dataset_id: uuid::Uuid,
         weight: f64,
     ) -> Self {
@@ -306,7 +278,6 @@ impl ChunkMetadata {
             metadata,
             tracking_id,
             time_stamp,
-            location,
             dataset_id,
             weight,
         }
@@ -325,7 +296,6 @@ impl ChunkMetadata {
         metadata: Option<serde_json::Value>,
         tracking_id: Option<String>,
         time_stamp: Option<NaiveDateTime>,
-        location: Option<GeoInfo>,
         dataset_id: uuid::Uuid,
         weight: f64,
     ) -> Self {
@@ -341,7 +311,6 @@ impl ChunkMetadata {
             metadata,
             tracking_id,
             time_stamp,
-            location,
             dataset_id,
             weight,
         }
@@ -362,7 +331,6 @@ impl From<SlimChunkMetadata> for ChunkMetadata {
             metadata: slim_chunk.metadata,
             tracking_id: slim_chunk.tracking_id,
             time_stamp: slim_chunk.time_stamp,
-            location: slim_chunk.location,
             dataset_id: slim_chunk.dataset_id,
             weight: slim_chunk.weight,
         }
@@ -399,6 +367,61 @@ impl ChunkCollision {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "content": "Hello, world!",
+    "link": "https://trieve.ai",
+    "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "tag_set": "tag1,tag2",
+    "chunk_html": "<p>Hello, world!</p>",
+    "metadata": {"key": "value"},
+    "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "time_stamp": "2021-01-01T00:00:00",
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "weight": 0.5,
+    "score": 0.9,
+}))]
+pub struct ChunkMetadataWithScore {
+    pub id: uuid::Uuid,
+    pub content: String,
+    pub link: Option<String>,
+    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub tag_set: Option<String>,
+    pub chunk_html: Option<String>,
+    pub metadata: Option<serde_json::Value>,
+    pub tracking_id: Option<String>,
+    pub time_stamp: Option<NaiveDateTime>,
+    pub dataset_id: uuid::Uuid,
+    pub weight: f64,
+    pub score: f32,
+}
+
+impl From<(ChunkMetadata, f32)> for ChunkMetadataWithScore {
+    fn from((chunk, score): (ChunkMetadata, f32)) -> Self {
+        ChunkMetadataWithScore {
+            id: chunk.id,
+            content: chunk.content,
+            link: chunk.link,
+            qdrant_point_id: chunk.qdrant_point_id,
+            created_at: chunk.created_at,
+            updated_at: chunk.updated_at,
+            tag_set: chunk.tag_set,
+            chunk_html: chunk.chunk_html,
+            metadata: chunk.metadata,
+            tracking_id: chunk.tracking_id,
+            time_stamp: chunk.time_stamp,
+            dataset_id: chunk.dataset_id,
+            weight: chunk.weight,
+            score,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, ToSchema)]
 #[schema(example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
@@ -423,7 +446,6 @@ pub struct SlimChunkMetadata {
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
-    pub location: Option<GeoInfo>,
     pub dataset_id: uuid::Uuid,
     pub weight: f64,
 }
@@ -440,9 +462,55 @@ impl From<ChunkMetadata> for SlimChunkMetadata {
             metadata: chunk.metadata,
             tracking_id: chunk.tracking_id,
             time_stamp: chunk.time_stamp,
-            location: chunk.location,
             dataset_id: chunk.dataset_id,
             weight: chunk.weight,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "link": "https://trieve.ai",
+    "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "created_at": "2021-01-01T00:00:00",
+    "updated_at": "2021-01-01T00:00:00",
+    "tag_set": "tag1,tag2",
+    "metadata": {"key": "value"},
+    "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "time_stamp": "2021-01-01T00:00:00",
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "weight": 0.5,
+    "score": 0.9,
+}))]
+pub struct SlimChunkMetadataWithScore {
+    pub id: uuid::Uuid,
+    pub link: Option<String>,
+    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub tag_set: Option<String>,
+    pub metadata: Option<serde_json::Value>,
+    pub tracking_id: Option<String>,
+    pub time_stamp: Option<NaiveDateTime>,
+    pub weight: f64,
+    pub score: f32,
+}
+
+impl From<ChunkMetadataWithScore> for SlimChunkMetadataWithScore {
+    fn from(chunk: ChunkMetadataWithScore) -> Self {
+        SlimChunkMetadataWithScore {
+            id: chunk.id,
+            link: chunk.link,
+            qdrant_point_id: chunk.qdrant_point_id,
+            created_at: chunk.created_at,
+            updated_at: chunk.updated_at,
+            tag_set: chunk.tag_set,
+            metadata: chunk.metadata,
+            tracking_id: chunk.tracking_id,
+            time_stamp: chunk.time_stamp,
+            weight: chunk.weight,
+            score: chunk.score,
         }
     }
 }
@@ -668,6 +736,34 @@ pub struct ChunkGroupAndFile {
     pub tracking_id: Option<String>,
 }
 
+#[derive(Debug, Default, Serialize, Deserialize, Queryable)]
+pub struct ChunkGroupAndFileWithCount {
+    pub id: uuid::Uuid,
+    pub dataset_id: uuid::Uuid,
+    pub name: String,
+    pub description: String,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub file_id: Option<uuid::Uuid>,
+    pub group_count: Option<i32>,
+    pub tracking_id: Option<String>,
+}
+
+impl From<ChunkGroupAndFileWithCount> for ChunkGroupAndFile {
+    fn from(group: ChunkGroupAndFileWithCount) -> Self {
+        ChunkGroupAndFile {
+            id: group.id,
+            dataset_id: group.dataset_id,
+            name: group.name,
+            description: group.description,
+            created_at: group.created_at,
+            updated_at: group.updated_at,
+            file_id: group.file_id,
+            tracking_id: group.tracking_id,
+        }
+    }
+}
+
 #[derive(
     Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema,
 )]
@@ -737,6 +833,91 @@ pub struct UserDTOWithChunks {
     pub created_at: chrono::NaiveDateTime,
     pub total_chunks_created: i64,
     pub chunks: Vec<ChunkMetadata>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable, Default)]
+pub struct FullTextSearchResult {
+    pub id: uuid::Uuid,
+    pub content: String,
+    pub link: Option<String>,
+    pub qdrant_point_id: Option<uuid::Uuid>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub tag_set: Option<String>,
+    pub chunk_html: Option<String>,
+    pub metadata: Option<serde_json::Value>,
+    pub tracking_id: Option<String>,
+    pub time_stamp: Option<NaiveDateTime>,
+    pub dataset_id: uuid::Uuid,
+    pub weight: f64,
+    pub score: Option<f64>,
+    pub count: i64,
+}
+
+impl From<ChunkMetadata> for FullTextSearchResult {
+    fn from(chunk: ChunkMetadata) -> Self {
+        FullTextSearchResult {
+            id: chunk.id,
+            content: chunk.content,
+            link: chunk.link,
+            qdrant_point_id: chunk.qdrant_point_id,
+            created_at: chunk.created_at,
+            updated_at: chunk.updated_at,
+            tag_set: chunk.tag_set,
+            chunk_html: chunk.chunk_html,
+            metadata: chunk.metadata,
+            tracking_id: chunk.tracking_id,
+            time_stamp: chunk.time_stamp,
+            dataset_id: chunk.dataset_id,
+            weight: chunk.weight,
+            score: None,
+            count: 0,
+        }
+    }
+}
+
+impl From<&ChunkMetadata> for FullTextSearchResult {
+    fn from(chunk: &ChunkMetadata) -> Self {
+        FullTextSearchResult {
+            id: chunk.id,
+            content: chunk.content.clone(),
+            link: chunk.link.clone(),
+            qdrant_point_id: chunk.qdrant_point_id,
+            created_at: chunk.created_at,
+            updated_at: chunk.updated_at,
+            tag_set: chunk.tag_set.clone(),
+            chunk_html: chunk.chunk_html.clone(),
+            tracking_id: chunk.tracking_id.clone(),
+            time_stamp: chunk.time_stamp,
+            metadata: chunk.metadata.clone(),
+            dataset_id: chunk.dataset_id,
+            weight: chunk.weight,
+            score: None,
+            count: 0,
+        }
+    }
+}
+
+impl From<ChunkMetadataWithCount> for FullTextSearchResult {
+    fn from(chunk: ChunkMetadataWithCount) -> Self {
+        FullTextSearchResult {
+            id: chunk.id,
+            content: chunk.content,
+            link: chunk.link,
+            qdrant_point_id: chunk.qdrant_point_id,
+            created_at: chunk.created_at,
+            updated_at: chunk.updated_at,
+            tag_set: chunk.tag_set,
+            chunk_html: chunk.chunk_html,
+            metadata: chunk.metadata,
+            tracking_id: chunk.tracking_id,
+            time_stamp: chunk.time_stamp,
+            dataset_id: chunk.dataset_id,
+            weight: chunk.weight,
+            score: None,
+            count: chunk.count,
+        }
+    }
 }
 
 #[derive(
@@ -1329,7 +1510,7 @@ pub struct ClientDatasetConfiguration {
     pub IMAGE_RANGE_END_KEY: Option<String>,
     pub DOCUMENT_UPLOAD_FEATURE: Option<bool>,
     pub FILE_NAME_KEY: String,
-    pub IMAGE_METADATA_KEY: String,
+    pub IMAGE_METADATA_KEY: String
 }
 
 impl ClientDatasetConfiguration {
@@ -1399,7 +1580,7 @@ impl ClientDatasetConfiguration {
                 .unwrap_or(&json!(""))
                 .as_str()
                 .unwrap_or("")
-                .to_string(),
+                .to_string()
         }
     }
 }
@@ -2080,270 +2261,6 @@ impl From<UploadFileData> for FileDataDTO {
             metadata: upload_file_data.metadata,
             create_chunks: upload_file_data.create_chunks,
             group_tracking_id: upload_file_data.group_tracking_id,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-#[serde(untagged)]
-pub enum RangeCondition {
-    String(String),
-    Float(f64),
-    Int(i64),
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-#[schema(example = json!({
-    "gte": 0.0,
-    "lte": 1.0,
-    "gt": 0.0,
-    "lt": 1.0
-}))]
-pub struct Range {
-    // gte is the lower bound of the range. This is inclusive.
-    pub gte: Option<RangeCondition>,
-    // lte is the upper bound of the range. This is inclusive.
-    pub lte: Option<RangeCondition>,
-    // gt is the lower bound of the range. This is exclusive.
-    pub gt: Option<RangeCondition>,
-    // lt is the upper bound of the range. This is exclusive.
-    pub lt: Option<RangeCondition>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-#[serde(untagged)]
-pub enum MatchCondition {
-    Text(String),
-    Integer(i64),
-}
-
-impl MatchCondition {
-    #[allow(clippy::inherent_to_string)]
-    pub fn to_string(&self) -> String {
-        match self {
-            MatchCondition::Text(text) => text.clone(),
-            MatchCondition::Integer(int) => int.to_string(),
-        }
-    }
-
-    pub fn to_i64(&self) -> i64 {
-        match self {
-            MatchCondition::Text(text) => text.parse().unwrap(),
-            MatchCondition::Integer(int) => *int,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-pub struct LocationBoundingBox {
-    pub top_left: GeoInfo,
-    pub bottom_right: GeoInfo,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-pub struct LocationRadius {
-    pub center: GeoInfo,
-    pub radius: f64,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-pub struct LocationPolygon {
-    pub exterior: Vec<GeoInfo>,
-    pub interior: Option<Vec<Vec<GeoInfo>>>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-#[schema(example = json!({
-    "field": "metadata.key1",
-    "match": ["value1", "value2"],
-    "range": {
-        "gte": 0.0,
-        "lte": 1.0,
-        "gt": 0.0,
-        "lt": 1.0
-    }
-}))]
-pub struct FieldCondition {
-    /// Field is the name of the field to filter on. The field value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`.
-    pub field: String,
-    /// Match is the value to match on the field. The match value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata.
-    pub r#match: Option<Vec<MatchCondition>>,
-    /// Range is a JSON object which can be used to filter chunks by a range of values. This only works for numerical fields. You can specify this if you want values in a certain range.
-    pub range: Option<Range>,
-    /// Geo Bounding Box search is useful for when you want to find points inside a rectangular area. This is useful for when you want to filter chunks by location. The bounding box is defined by two points: the top-left and bottom-right corners of the box.
-    pub geo_bounding_box: Option<LocationBoundingBox>,
-    /// Geo Radius search is useful for when you want to find points within a certain distance of a point. This is useful for when you want to filter chunks by location. The radius is in meters.
-    pub geo_radius: Option<LocationRadius>,
-    /// Geo Polygons search is useful for when you want to find points inside an irregularly shaped area, for example a country boundary or a forest boundary. A polygon always has an exterior ring and may optionally include interior rings. When defining a ring, you must pick either a clockwise or counterclockwise ordering for your points. The first and last point of the polygon must be the same.
-    pub geo_polygon: Option<LocationPolygon>,
-}
-
-fn convert_to_date_time(time_stamp: String) -> Result<Option<f64>, ServiceError> {
-    Ok(Some(
-        time_stamp
-            .parse::<DateTimeUtc>()
-            .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))?
-            .0
-            .with_timezone(&chrono::Local)
-            .naive_local()
-            .timestamp() as f64,
-    ))
-}
-
-pub fn get_range(range: Range) -> Result<qdrant::Range, ServiceError> {
-    fn convert_range(range: Option<RangeCondition>) -> Result<Option<f64>, ServiceError> {
-        match range {
-            Some(RangeCondition::Float(val)) => Ok(Some(val)),
-            Some(RangeCondition::String(val)) => convert_to_date_time(val.to_string()),
-            Some(RangeCondition::Int(val)) => Ok(Some(val as f64)),
-            None => Ok(None),
-        }
-    }
-
-    // Based on the determined type, process the values
-
-    let gt = convert_range(range.gt)?;
-    let gte = convert_range(range.gte)?;
-    let lt = convert_range(range.lt)?;
-    let lte = convert_range(range.lte)?;
-
-    Ok(qdrant::Range { gt, gte, lt, lte })
-}
-
-impl FieldCondition {
-    pub async fn convert_to_qdrant_condition(
-        &self,
-        pool: web::Data<Pool>,
-        dataset_id: uuid::Uuid,
-    ) -> Result<Option<qdrant::Condition>, ServiceError> {
-        if self.r#match.is_none() && self.range.is_none() {
-            return Ok(None);
-        }
-
-        if self.r#match.is_some() && self.range.is_some() {
-            return Err(ServiceError::BadRequest(
-                "Cannot have both match and range conditions".to_string(),
-            ));
-        }
-
-        if self.field.starts_with("metadata.") {
-            return Ok(Some(
-                get_metadata_filter_condition(self, dataset_id, pool)
-                    .await?
-                    .into(),
-            ));
-        }
-
-        if self.field.starts_with("group_metadata.") {
-            return Ok(Some(
-                get_group_metadata_filter_condition(self, dataset_id, pool)
-                    .await?
-                    .into(),
-            ));
-        }
-
-        if self.field == "group_tag_set" {
-            return Ok(Some(
-                get_group_tag_set_filter_condition(self, dataset_id, pool)
-                    .await?
-                    .into(),
-            ));
-        }
-
-        if let Some(range) = self.range.clone() {
-            let range = get_range(range)?;
-            return Ok(Some(qdrant::Condition::range(self.field.as_str(), range)));
-        };
-
-        if let Some(geo_bounding_box) = self.geo_bounding_box.clone() {
-            let top_left = geo_bounding_box.top_left;
-            let bottom_right = geo_bounding_box.bottom_right;
-
-            return Ok(Some(qdrant::Condition::geo_bounding_box(
-                self.field.as_str(),
-                GeoBoundingBox {
-                    top_left: Some(GeoPoint {
-                        lat: top_left.lat,
-                        lon: top_left.lon,
-                    }),
-                    bottom_right: Some(GeoPoint {
-                        lat: bottom_right.lat,
-                        lon: bottom_right.lon,
-                    }),
-                },
-            )));
-        }
-
-        if let Some(geo_radius) = self.geo_radius.clone() {
-            let center = geo_radius.center;
-            let radius = geo_radius.radius;
-            return Ok(Some(qdrant::Condition::geo_radius(
-                self.field.as_str(),
-                GeoRadius {
-                    center: Some(GeoPoint {
-                        lat: center.lat,
-                        lon: center.lon,
-                    }),
-                    radius: radius as f32,
-                },
-            )));
-        }
-
-        if let Some(geo_polygon) = self.geo_polygon.clone() {
-            let exterior = geo_polygon.exterior;
-            let interior = geo_polygon.interior;
-            let exterior = exterior
-                .iter()
-                .map(|point| GeoPoint {
-                    lat: point.lat,
-                    lon: point.lon,
-                })
-                .collect();
-
-            let interior = interior
-                .map(|interior| {
-                    interior
-                        .iter()
-                        .map(|points| {
-                            let points = points
-                                .iter()
-                                .map(|point| GeoPoint {
-                                    lat: point.lat,
-                                    lon: point.lon,
-                                })
-                                .collect();
-                            GeoLineString { points }
-                        })
-                        .collect()
-                })
-                .unwrap_or_default();
-
-            return Ok(Some(qdrant::Condition::geo_polygon(
-                self.field.as_str(),
-                GeoPolygon {
-                    exterior: Some(GeoLineString { points: exterior }),
-                    interiors: interior,
-                },
-            )));
-        }
-
-        let matches = match self.r#match.clone() {
-            Some(matches) => matches,
-            // Return nothing, there isn't a
-            None => return Ok(None),
-        };
-
-        match matches.first().ok_or(ServiceError::BadRequest(
-            "Should have at least one value for match".to_string(),
-        ))? {
-            MatchCondition::Text(_) => Ok(Some(qdrant::Condition::matches(
-                self.field.as_str(),
-                matches.iter().map(|x| x.to_string()).collect_vec(),
-            ))),
-            MatchCondition::Integer(_) => Ok(Some(qdrant::Condition::matches(
-                self.field.as_str(),
-                matches.iter().map(|x| x.to_i64()).collect_vec(),
-            ))),
         }
     }
 }

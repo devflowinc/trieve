@@ -9,18 +9,18 @@ use super::model_operator::{create_embedding, cross_encoder, get_sparse_vector};
 use super::qdrant_operator::{
     get_point_count_qdrant_query, search_over_groups_query, GroupSearchResults, VectorType,
 };
-use crate::data::models::{ChunkGroup, ChunkMetadata, Dataset, ServerDatasetConfiguration};
+use crate::data::models::{
+    ChunkGroup, ChunkMetadata, Dataset, FullTextSearchResult, ServerDatasetConfiguration,
+};
 use crate::handlers::chunk_handler::{
-    ChunkFilter, ParsedQuery, ScoreChunkDTO, SearchChunkData, SearchChunkQueryResponseBody,
+    get_range, ChunkFilter, FieldCondition, MatchCondition, ParsedQuery, ScoreChunkDTO,
+    SearchChunkData, SearchChunkQueryResponseBody,
 };
 use crate::handlers::group_handler::{
     SearchOverGroupsData, SearchWithinGroupData, SearchWithinGroupResults,
 };
 use crate::operators::qdrant_operator::{get_qdrant_connection, search_qdrant_query};
-use crate::{
-    data::models::{get_range, FieldCondition, MatchCondition, Pool},
-    errors::ServiceError,
-};
+use crate::{data::models::Pool, errors::ServiceError};
 use actix_web::web;
 use diesel::dsl::sql;
 use diesel::sql_types::Text;
@@ -77,9 +77,6 @@ async fn convert_group_tracking_ids_to_group_ids(
             field: "group_ids".to_string(),
             r#match: Some(correct_matches),
             range: None,
-            geo_bounding_box: None,
-            geo_polygon: None,
-            geo_radius: None,
         })
     } else {
         Ok(condition)
@@ -754,7 +751,7 @@ pub async fn search_within_chunk_group_query(
 
 #[tracing::instrument(skip(pool))]
 pub async fn get_metadata_query(
-    chunk_metadata: Vec<ChunkMetadata>,
+    chunk_metadata: Vec<FullTextSearchResult>,
     pool: web::Data<Pool>,
 ) -> Result<Vec<ChunkMetadata>, ServiceError> {
     use crate::data::schema::chunk_collisions::dsl as chunk_collisions_columns;
@@ -813,7 +810,6 @@ pub async fn get_metadata_query(
                 metadata: metadata.metadata,
                 tracking_id: metadata.tracking_id,
                 time_stamp: metadata.time_stamp,
-                location: metadata.location,
                 dataset_id: metadata.dataset_id,
                 weight: metadata.weight
             }
@@ -942,7 +938,6 @@ pub async fn retrieve_chunks_for_groups(
                                     metadata: None,
                                     tracking_id: None,
                                     time_stamp: None,
-                                    location: None,
                                     dataset_id: uuid::Uuid::default(),
                                     weight: 1.0,
                                 }
@@ -1077,7 +1072,6 @@ pub async fn get_metadata_from_groups(
                                     metadata: None,
                                     tracking_id: None,
                                     time_stamp: None,
-                                    location: None,
                                     dataset_id: uuid::Uuid::default(),
                                     weight: 1.0,
                                 }
@@ -1198,7 +1192,6 @@ pub async fn retrieve_chunks_from_point_ids(
                         metadata: None,
                         tracking_id: None,
                         time_stamp: None,
-                        location: None,
                         dataset_id: uuid::Uuid::default(),
                         weight: 1.0,
                     }

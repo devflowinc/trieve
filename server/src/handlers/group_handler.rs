@@ -161,7 +161,7 @@ pub async fn get_specific_dataset_chunk_groups(
     Ok(HttpResponse::Ok().json(GroupData {
         groups: groups
             .iter()
-            .map(|(group, _)| ChunkGroupAndFile {
+            .map(|group| ChunkGroupAndFile {
                 id: group.id,
                 dataset_id: group.dataset_id,
                 name: group.name.clone(),
@@ -174,7 +174,7 @@ pub async fn get_specific_dataset_chunk_groups(
             .collect(),
         total_pages: groups
             .first()
-            .map(|(_, count)| (count.unwrap_or(10) as f64 / 10.0).ceil() as i64)
+            .map(|group| (group.group_count.unwrap_or(10) as f64 / 10.0).ceil() as i64)
             .unwrap_or(1),
     }))
 }
