@@ -49,7 +49,6 @@ diesel::table! {
         time_stamp -> Nullable<Timestamp>,
         dataset_id -> Uuid,
         weight -> Float8,
-        location -> Nullable<Jsonb>,
     }
 }
 

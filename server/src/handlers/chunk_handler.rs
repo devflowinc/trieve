@@ -1,8 +1,9 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    ChatMessageProxy, ChunkMetadata, DatasetAndOrgWithSubAndPlan, FieldCondition, GeoInfo,
+    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithScore, DatasetAndOrgWithSubAndPlan,
     IngestSpecificChunkMetadata, Pool, RedisPool, ScoreSlimChunks,
-    SearchSlimChunkQueryResponseBody, ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
+    SearchSlimChunkQueryResponseBody, ServerDatasetConfiguration, SlimChunkMetadata,
+    SlimChunkMetadataWithScore, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -12,7 +13,9 @@ use crate::operators::qdrant_operator::{
     point_id_exists_in_qdrant, point_ids_exists_in_qdrant, recommend_qdrant_query,
 };
 use crate::operators::search_operator::{
-    search_full_text_chunks, search_hybrid_chunks, search_semantic_chunks,
+    get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
+    get_metadata_filter_condition, search_full_text_chunks, search_hybrid_chunks,
+    search_semantic_chunks,
 };
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
@@ -23,6 +26,7 @@ use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{
     ChatCompletionParameters, ChatMessage, ChatMessageContent, Role,
 };
+use qdrant_client::qdrant;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -67,8 +71,6 @@ pub struct ChunkData {
     pub group_tracking_ids: Option<Vec<String>>,
     /// Time_stamp should be an ISO 8601 combined date and time without timezone. It is used for time window filtering and recency-biasing search results.
     pub time_stamp: Option<String>,
-    /// Location is a GeoInfo object which lets you specify a latitude and longitude which can be used later to filter results.
-    pub location: Option<GeoInfo>,
     /// Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset.
     pub weight: Option<f64>,
     /// Split avg is a boolean which tells the server to split the text in the chunk_html into smaller chunks and average their resulting vectors. This is useful for when you want to create a chunk from a large piece of text and want to split it into smaller chunks to create a more fuzzy average dense vector. The sparse vector will be generated normally with no averaging. By default this is false.
@@ -445,8 +447,6 @@ pub struct UpdateChunkData {
     group_ids: Option<Vec<uuid::Uuid>>,
     /// Group tracking_ids are the tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to update a chunk and add it to a group or multiple groups in one request.
     group_tracking_ids: Option<Vec<String>>,
-    /// Location is a GeoInfo object which lets you specify a latitude and longitude which can be used later to filter results.
-    pub location: Option<GeoInfo>,
     /// Convert HTML to raw text before processing to avoid adding noise to the vector embeddings. By default this is true. If you are using HTML content that you want to be included in the vector embeddings, set this to false.
     pub convert_html_to_text: Option<bool>,
 }
@@ -549,7 +549,6 @@ pub async fn update_chunk(
             })
             .transpose()?
             .or(chunk_metadata.time_stamp),
-        update_chunk_data.location.clone(),
         dataset_id,
         update_chunk_data.weight.unwrap_or(1.0),
     );
@@ -698,7 +697,6 @@ pub async fn update_chunk_by_tracking_id(
             })
             .transpose()?
             .or(chunk_metadata.time_stamp),
-        None,
         dataset_org_plan_sub.dataset.id,
         update_chunk_data.weight.unwrap_or(1.0),
     );
@@ -742,6 +740,220 @@ pub async fn update_chunk_by_tracking_id(
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     Ok(HttpResponse::NoContent().finish())
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(untagged)]
+pub enum RangeCondition {
+    String(String),
+    Float(f64),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[schema(example = json!({
+    "gte": 0.0,
+    "lte": 1.0,
+    "gt": 0.0,
+    "lt": 1.0
+}))]
+pub struct Range {
+    // gte is the lower bound of the range. This is inclusive.
+    pub gte: Option<RangeCondition>,
+    // lte is the upper bound of the range. This is inclusive.
+    pub lte: Option<RangeCondition>,
+    // gt is the lower bound of the range. This is exclusive.
+    pub gt: Option<RangeCondition>,
+    // lt is the upper bound of the range. This is exclusive.
+    pub lt: Option<RangeCondition>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(untagged)]
+pub enum MatchCondition {
+    Text(String),
+    Integer(i64),
+}
+
+impl MatchCondition {
+    #[allow(clippy::inherent_to_string)]
+    pub fn to_string(&self) -> String {
+        match self {
+            MatchCondition::Text(text) => text.clone(),
+            MatchCondition::Integer(int) => int.to_string(),
+        }
+    }
+
+    pub fn to_i64(&self) -> i64 {
+        match self {
+            MatchCondition::Text(text) => text.parse().unwrap(),
+            MatchCondition::Integer(int) => *int,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[schema(example = json!({
+    "field": "metadata.key1",
+    "match": ["value1", "value2"],
+    "range": {
+        "gte": 0.0,
+        "lte": 1.0,
+        "gt": 0.0,
+        "lt": 1.0
+    }
+}))]
+pub struct FieldCondition {
+    /// Field is the name of the field to filter on. The field value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`.
+    pub field: String,
+    /// Match is the value to match on the field. The match value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata.
+    pub r#match: Option<Vec<MatchCondition>>,
+    /// Range is a JSON object which can be used to filter chunks by a range of values. This only works for numerical fields. You can specify this if you want values in a certain range.
+    pub range: Option<Range>,
+}
+
+fn convert_to_date_time(time_stamp: String) -> Result<Option<f64>, ServiceError> {
+    Ok(Some(
+        time_stamp
+            .parse::<DateTimeUtc>()
+            .map_err(|_| ServiceError::BadRequest("Invalid timestamp format".to_string()))?
+            .0
+            .with_timezone(&chrono::Local)
+            .naive_local()
+            .timestamp() as f64,
+    ))
+}
+
+pub fn get_range(range: Range) -> Result<qdrant::Range, ServiceError> {
+    #[derive(PartialEq)]
+    enum RangeValueType {
+        Float,
+        String,
+        None,
+    }
+
+    // Determine the type of the range value if present
+    let mut range_value_type = RangeValueType::None;
+
+    // First pass to determine the consistent type of the range, if any
+    let range_values = [&range.gt, &range.gte, &range.lt, &range.lte];
+    for value in range_values {
+        match value {
+            Some(RangeCondition::Float(_)) => {
+                if range_value_type == RangeValueType::String {
+                    return Err(ServiceError::BadRequest(
+                        "Mixed types in range conditions".to_string(),
+                    ));
+                }
+                range_value_type = RangeValueType::Float;
+            }
+            Some(RangeCondition::String(_)) => {
+                if range_value_type == RangeValueType::Float {
+                    return Err(ServiceError::BadRequest(
+                        "Mixed types in range conditions".to_string(),
+                    ));
+                }
+                range_value_type = RangeValueType::String;
+            }
+            None => {}
+        }
+    }
+
+    // Based on the determined type, process the values
+    match range_value_type {
+        RangeValueType::Float | RangeValueType::String => {
+            let gt = match &range.gt {
+                Some(RangeCondition::Float(value)) => Some(*value),
+                Some(RangeCondition::String(value)) => convert_to_date_time(value.to_string())?,
+                None => None,
+            };
+            let gte = match &range.gte {
+                Some(RangeCondition::Float(value)) => Some(*value),
+                Some(RangeCondition::String(value)) => convert_to_date_time(value.to_string())?,
+                None => None,
+            };
+            let lt = match &range.lt {
+                Some(RangeCondition::Float(value)) => Some(*value),
+                Some(RangeCondition::String(value)) => convert_to_date_time(value.to_string())?,
+                None => None,
+            };
+            let lte = match &range.lte {
+                Some(RangeCondition::Float(value)) => Some(*value),
+                Some(RangeCondition::String(value)) => convert_to_date_time(value.to_string())?,
+                None => None,
+            };
+
+            Ok(qdrant::Range { gt, gte, lt, lte })
+        }
+        RangeValueType::None => Err(ServiceError::BadRequest(
+            "No range conditions provided".to_string(),
+        )),
+    }
+}
+
+impl FieldCondition {
+    pub async fn convert_to_qdrant_condition(
+        &self,
+        pool: web::Data<Pool>,
+        dataset_id: uuid::Uuid,
+    ) -> Result<Option<qdrant::Condition>, ServiceError> {
+        if self.r#match.is_none() && self.range.is_none() {
+            return Ok(None);
+        }
+
+        if self.r#match.is_some() && self.range.is_some() {
+            return Err(ServiceError::BadRequest(
+                "Cannot have both match and range conditions".to_string(),
+            ));
+        }
+
+        if self.field.starts_with("metadata.") {
+            return Ok(Some(
+                get_metadata_filter_condition(self, dataset_id, pool)
+                    .await?
+                    .into(),
+            ));
+        }
+
+        if self.field.starts_with("group_metadata.") {
+            return Ok(Some(
+                get_group_metadata_filter_condition(self, dataset_id, pool)
+                    .await?
+                    .into(),
+            ));
+        }
+
+        if self.field == "group_tag_set" {
+            return Ok(Some(
+                get_group_tag_set_filter_condition(self, dataset_id, pool)
+                    .await?
+                    .into(),
+            ));
+        }
+
+        if let Some(range) = self.range.clone() {
+            let range = get_range(range)?;
+            return Ok(Some(qdrant::Condition::range(self.field.as_str(), range)));
+        };
+
+        let matches = match self.r#match.clone() {
+            Some(matches) => matches,
+            // Return nothing, there isn't a
+            None => return Ok(None),
+        };
+
+        match matches.first().ok_or(ServiceError::BadRequest(
+            "Should have at least one value for match".to_string(),
+        ))? {
+            MatchCondition::Text(_) => Ok(Some(qdrant::Condition::matches(
+                self.field.as_str(),
+                matches.iter().map(|x| x.to_string()).collect_vec(),
+            ))),
+            MatchCondition::Integer(_) => Ok(Some(qdrant::Condition::matches(
+                self.field.as_str(),
+                matches.iter().map(|x| x.to_i64()).collect_vec(),
+            ))),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
@@ -1512,14 +1724,18 @@ pub async fn get_recommended_chunks(
                 .map(|recommend_qdrant_result| recommend_qdrant_result.score)
                 .unwrap_or(0.0);
 
-            (chunk_metadata, score)
+            ChunkMetadataWithScore::from((chunk_metadata, score))
         })
-        .collect::<Vec<(ChunkMetadata, f32)>>();
+        .collect::<Vec<ChunkMetadataWithScore>>();
 
     let recommended_chunk_metadatas_with_score = recommended_chunk_metadatas_with_score
         .into_iter()
-        .sorted_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal))
-        .collect::<Vec<(ChunkMetadata, f32)>>();
+        .sorted_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
+        .collect::<Vec<ChunkMetadataWithScore>>();
 
     timer.add("finish get_metadata_from_point_ids and return results");
 
@@ -1527,7 +1743,7 @@ pub async fn get_recommended_chunks(
         let res = recommended_chunk_metadatas_with_score
             .into_iter()
             .map(|chunk| chunk.into())
-            .collect::<Vec<(ChunkMetadata, f32)>>();
+            .collect::<Vec<SlimChunkMetadataWithScore>>();
 
         return Ok(HttpResponse::PartialContent().json(res));
     }
