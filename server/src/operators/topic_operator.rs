@@ -128,5 +128,7 @@ pub async fn get_all_topics_for_owner_id_query(
         .order(topics_columns::updated_at.desc())
         .load::<Topic>(&mut conn)
         .await
-        .map_err(|_db_error| ServiceError::BadRequest("Error getting topics for the specified owner_id".to_string()))
+        .map_err(|_db_error| {
+            ServiceError::BadRequest("Error getting topics for the specified owner_id".to_string())
+        })
 }
