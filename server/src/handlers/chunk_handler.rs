@@ -1,9 +1,8 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    ChatMessageProxy, ChunkMetadata, ChunkMetadataWithScore, DatasetAndOrgWithSubAndPlan,
-    FieldCondition, GeoInfo, IngestSpecificChunkMetadata, Pool, RedisPool, ScoreSlimChunks,
-    SearchSlimChunkQueryResponseBody, ServerDatasetConfiguration, SlimChunkMetadata,
-    SlimChunkMetadataWithScore, UnifiedId,
+    ChatMessageProxy, ChunkMetadata, DatasetAndOrgWithSubAndPlan, FieldCondition, GeoInfo,
+    IngestSpecificChunkMetadata, Pool, RedisPool, ScoreSlimChunks,
+    SearchSlimChunkQueryResponseBody, ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -1513,18 +1512,14 @@ pub async fn get_recommended_chunks(
                 .map(|recommend_qdrant_result| recommend_qdrant_result.score)
                 .unwrap_or(0.0);
 
-            ChunkMetadataWithScore::from((chunk_metadata, score))
+            (chunk_metadata, score)
         })
-        .collect::<Vec<ChunkMetadataWithScore>>();
+        .collect::<Vec<(ChunkMetadata, f32)>>();
 
     let recommended_chunk_metadatas_with_score = recommended_chunk_metadatas_with_score
         .into_iter()
-        .sorted_by(|a, b| {
-            b.score
-                .partial_cmp(&a.score)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        })
-        .collect::<Vec<ChunkMetadataWithScore>>();
+        .sorted_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal))
+        .collect::<Vec<(ChunkMetadata, f32)>>();
 
     timer.add("finish get_metadata_from_point_ids and return results");
 
@@ -1532,7 +1527,7 @@ pub async fn get_recommended_chunks(
         let res = recommended_chunk_metadatas_with_score
             .into_iter()
             .map(|chunk| chunk.into())
-            .collect::<Vec<SlimChunkMetadataWithScore>>();
+            .collect::<Vec<(ChunkMetadata, f32)>>();
 
         return Ok(HttpResponse::PartialContent().json(res));
     }

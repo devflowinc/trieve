@@ -297,11 +297,6 @@ impl Modify for SecurityAddon {
             data::models::SearchOverGroupsSlimResults,
             data::models::GroupScoreSlimChunks,
             data::models::RangeCondition,
-            data::models::LocationBoundingBox,
-            data::models::LocationPolygon,
-            data::models::LocationRadius,
-            data::models::ChunkMetadataWithScore,
-            data::models::SlimChunkMetadataWithScore,
             errors::ErrorResponseBody,
         )
     ),
