@@ -216,27 +216,11 @@ impl Message {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, ToSchema)]
-#[serde(untagged)]
-pub enum GeoTypes {
-    Int(i64),
-    Float(f64),
-}
-
-impl Into<f64> for GeoTypes {
-    fn into(self) -> f64 {
-        match self {
-            GeoTypes::Int(i) => i as f64,
-            GeoTypes::Float(f) => f,
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, ToSchema, AsExpression)]
 #[diesel(sql_type = Jsonb)]
 pub struct GeoInfo {
-    pub lat: GeoTypes,
-    pub lon: GeoTypes,
+    pub lat: f64,
+    pub lon: f64,
 }
 
 impl FromSql<Jsonb, Pg> for GeoInfo {
@@ -256,15 +240,6 @@ impl ToSql<Jsonb, Pg> for GeoInfo {
         serde_json::to_writer(out, self)
             .map(|_| IsNull::No)
             .map_err(Into::into)
-    }
-}
-
-impl Default for GeoInfo {
-    fn default() -> Self {
-        GeoInfo {
-            lat: GeoTypes::Float(0.0),
-            lon: GeoTypes::Float(0.0),
-        }
     }
 }
 
@@ -525,6 +500,7 @@ impl From<ChunkMetadataWithScore> for SlimChunkMetadataWithScore {
         }
     }
 }
+
 
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, ToSchema)]
 #[schema(example = json!({
@@ -1318,7 +1294,7 @@ impl ServerDatasetConfiguration {
                 .get("RAG_PROMPT")
                 .unwrap_or(&json!("Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:".to_string()))
                 .as_str()
-                .map(|s|
+                .map(|s| 
                     if s.is_empty() {
                         "Use the following retrieved documents in your response. Include footnotes in the format of the document number that you used for a sentence in square brackets at the end of the sentences like [^n] where n is the doc number. These are the docs:".to_string()
                     } else {
@@ -2018,14 +1994,13 @@ impl From<String> for UnifiedId {
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct QdrantPayload {
-    pub tag_set: Option<Vec<String>>,
-    pub link: Option<String>,
-    pub metadata: Option<serde_json::Value>,
-    pub time_stamp: Option<i64>,
+    pub tag_set: Vec<String>,
+    pub link: String,
+    pub metadata: serde_json::Value,
+    pub time_stamp: i64,
     pub dataset_id: uuid::Uuid,
     pub content: String,
-    pub group_ids: Option<Vec<uuid::Uuid>>,
-    pub location: Option<GeoInfo>,
+    pub group_ids: Vec<uuid::Uuid>,
 }
 
 impl From<QdrantPayload> for Payload {
@@ -2046,37 +2021,50 @@ impl QdrantPayload {
         QdrantPayload {
             tag_set: chunk_metadata
                 .tag_set
-                .map(|x| x.split(',').map(|s| s.to_string()).collect()),
-            link: chunk_metadata.link,
-            metadata: chunk_metadata.metadata,
-            time_stamp: chunk_metadata.time_stamp.map(|x| x.timestamp()),
+                .unwrap_or("".to_string())
+                .split(',')
+                .map(|tag| tag.to_string())
+                .collect(),
+            link: chunk_metadata.link.unwrap_or("".to_string()),
+            metadata: chunk_metadata.metadata.unwrap_or_default(),
+            time_stamp: chunk_metadata.time_stamp.unwrap_or_default().timestamp(),
             dataset_id: dataset_id.unwrap_or(chunk_metadata.dataset_id),
             content: chunk_metadata.content,
-            group_ids: group_ids,
-            location: chunk_metadata.location,
+            group_ids: group_ids.unwrap_or_default(),
         }
     }
 
     pub fn new_from_point(point: RetrievedPoint, group_ids: Option<Vec<uuid::Uuid>>) -> Self {
         QdrantPayload {
-            tag_set: point.payload.get("tag_set").cloned().map(|x| {
-                x.as_list()
-                    .expect("tag_set should be a list")
-                    .iter()
-                    .map(|value| value.to_string())
-                    .collect()
-            }),
-            link: point.payload.get("link").cloned().map(|x| x.to_string()),
+            tag_set: point
+                .payload
+                .get("tag_set")
+                .cloned()
+                .unwrap_or_default()
+                .as_list()
+                .expect("tag_set should be a list")
+                .iter()
+                .map(|value| value.to_string())
+                .collect(),
+            link: point
+                .payload
+                .get("link")
+                .cloned()
+                .unwrap_or_default()
+                .to_string(),
             metadata: point
                 .payload
                 .get("metadata")
                 .cloned()
-                .map(|value| value.into()),
+                .unwrap_or_default()
+                .into(),
             time_stamp: point
                 .payload
                 .get("time_stamp")
                 .cloned()
-                .map(|x| x.as_integer().expect("time_stamp should be an integer")),
+                .unwrap_or_default()
+                .as_integer()
+                .expect("time_stamp should be an integer"),
             dataset_id: point
                 .payload
                 .get("dataset_id")
@@ -2085,47 +2073,50 @@ impl QdrantPayload {
                 .as_str()
                 .map(|s| uuid::Uuid::parse_str(s).unwrap())
                 .unwrap_or_default(),
-            group_ids: group_ids,
+            group_ids: group_ids.unwrap_or_default(),
             content: point
                 .payload
                 .get("content")
                 .cloned()
                 .unwrap_or_default()
                 .to_string(),
-            location: point
-                .payload
-                .get("location")
-                .cloned()
-                .map(|value| {
-                    serde_json::from_value(value.into()).expect("Failed to parse location")
-                })
-                .unwrap_or_default(),
         }
     }
 }
 
 impl From<RetrievedPoint> for QdrantPayload {
-    fn from(point: RetrievedPoint) -> Self {
+    fn from(current_point: RetrievedPoint) -> Self {
         QdrantPayload {
-            tag_set: point.payload.get("tag_set").cloned().map(|x| {
-                x.as_list()
-                    .expect("tag_set should be a list")
-                    .iter()
-                    .map(|value| value.to_string())
-                    .collect()
-            }),
-            link: point.payload.get("link").cloned().map(|x| x.to_string()),
-            metadata: point
+            tag_set: current_point
+                .payload
+                .get("tag_set")
+                .cloned()
+                .unwrap_or_default()
+                .as_list()
+                .expect("tag_set should be a list")
+                .iter()
+                .map(|value| value.to_string())
+                .collect(),
+            link: current_point
+                .payload
+                .get("link")
+                .cloned()
+                .unwrap_or_default()
+                .to_string(),
+            metadata: current_point
                 .payload
                 .get("metadata")
                 .cloned()
-                .map(|value| value.into()),
-            time_stamp: point
+                .unwrap_or_default()
+                .into(),
+            time_stamp: current_point
                 .payload
                 .get("time_stamp")
                 .cloned()
-                .map(|x| x.as_integer().expect("time_stamp should be an integer")),
-            dataset_id: point
+                .unwrap_or_default()
+                .as_integer()
+                .expect("time_stamp should be an integer"),
+            dataset_id: current_point
                 .payload
                 .get("dataset_id")
                 .cloned()
@@ -2133,32 +2124,22 @@ impl From<RetrievedPoint> for QdrantPayload {
                 .as_str()
                 .map(|s| uuid::Uuid::parse_str(s).unwrap())
                 .unwrap_or_default(),
-            group_ids: point.payload.get("group_ids").cloned().map(|x| {
-                x.as_list()
-                    .expect("group_ids should be a list")
-                    .iter()
-                    .map(|value| {
-                        value
-                            .to_string()
-                            .parse()
-                            .expect("failed to parse group_ids")
-                    })
-                    .collect()
-            }),
-            content: point
+            group_ids: current_point
+                .payload
+                .get("group_ids")
+                .cloned()
+                .unwrap_or_default()
+                .as_list()
+                .expect("group_ids should be a list")
+                .iter()
+                .map(|value| value.to_string().parse().expect("Failed to parse group_id"))
+                .collect(),
+            content: current_point
                 .payload
                 .get("content")
                 .cloned()
                 .unwrap_or_default()
                 .to_string(),
-            location: point
-                .payload
-                .get("location")
-                .cloned()
-                .map(|value| {
-                    serde_json::from_value(value.into()).expect("Failed to parse location")
-                })
-                .unwrap_or_default(),
         }
     }
 }
@@ -2338,6 +2319,10 @@ impl FieldCondition {
         pool: web::Data<Pool>,
         dataset_id: uuid::Uuid,
     ) -> Result<Option<qdrant::Condition>, ServiceError> {
+        if self.r#match.is_none() && self.range.is_none() {
+            return Ok(None);
+        }
+
         if self.r#match.is_some() && self.range.is_some() {
             return Err(ServiceError::BadRequest(
                 "Cannot have both match and range conditions".to_string(),
@@ -2381,12 +2366,12 @@ impl FieldCondition {
                 self.field.as_str(),
                 GeoBoundingBox {
                     top_left: Some(GeoPoint {
-                        lat: top_left.lat.into(),
-                        lon: top_left.lon.into(),
+                        lat: top_left.lat,
+                        lon: top_left.lon,
                     }),
                     bottom_right: Some(GeoPoint {
-                        lat: bottom_right.lat.into(),
-                        lon: bottom_right.lon.into(),
+                        lat: bottom_right.lat,
+                        lon: bottom_right.lon,
                     }),
                 },
             )));
@@ -2399,8 +2384,8 @@ impl FieldCondition {
                 self.field.as_str(),
                 GeoRadius {
                     center: Some(GeoPoint {
-                        lat: center.lat.into(),
-                        lon: center.lon.into(),
+                        lat: center.lat,
+                        lon: center.lon,
                     }),
                     radius: radius as f32,
                 },
@@ -2413,8 +2398,8 @@ impl FieldCondition {
             let exterior = exterior
                 .iter()
                 .map(|point| GeoPoint {
-                    lat: point.lat.into(),
-                    lon: point.lon.into(),
+                    lat: point.lat,
+                    lon: point.lon,
                 })
                 .collect();
 
@@ -2426,8 +2411,8 @@ impl FieldCondition {
                             let points = points
                                 .iter()
                                 .map(|point| GeoPoint {
-                                    lat: point.lat.into(),
-                                    lon: point.lon.into(),
+                                    lat: point.lat,
+                                    lon: point.lon,
                                 })
                                 .collect();
                             GeoLineString { points }
