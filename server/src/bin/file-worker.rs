@@ -322,7 +322,10 @@ async fn upload_file(
         return Ok(None);
     }
 
-    let create_file_chunks_span = transaction.start_child("Queue chunks for creation for file", "Queue chunks for creation for file");
+    let create_file_chunks_span = transaction.start_child(
+        "Queue chunks for creation for file",
+        "Queue chunks for creation for file",
+    );
 
     create_chunks_with_handler(
         created_file.id,

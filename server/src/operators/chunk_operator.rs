@@ -1,5 +1,5 @@
 use crate::data::models::{
-    ChunkCollision, ChunkGroupBookmark, Dataset, FullTextSearchResult, IngestSpecificChunkMetadata,
+    ChunkCollision, ChunkGroupBookmark, Dataset, IngestSpecificChunkMetadata,
     ServerDatasetConfiguration, SlimChunkMetadata, UnifiedId,
 };
 use crate::handlers::chunk_handler::UploadIngestionMessage;
@@ -71,6 +71,7 @@ pub async fn get_slim_chunk_metadatas_from_point_ids(
             chunk_metadata_columns::metadata,
             chunk_metadata_columns::tracking_id,
             chunk_metadata_columns::time_stamp,
+            chunk_metadata_columns::location,
             chunk_metadata_columns::dataset_id,
             chunk_metadata_columns::weight,
         ))
@@ -203,6 +204,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                 metadata: chunk.0.metadata.clone(),
                 tracking_id: chunk.0.tracking_id.clone(),
                 time_stamp: chunk.0.time_stamp,
+                location: chunk.0.location.clone(),
                 dataset_id: chunk.0.dataset_id,
                 weight: chunk.0.weight,
             })
@@ -250,6 +252,7 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                         metadata: chunk.0.metadata.clone(),
                         tracking_id: chunk.0.tracking_id.clone(),
                         time_stamp: chunk.0.time_stamp,
+                        location: chunk.0.location.clone(),
                         dataset_id: chunk.0.dataset_id,
                         weight: chunk.0.weight,
                     };
@@ -316,6 +319,7 @@ pub async fn get_slim_chunks_from_point_ids_query(
                 chunk_metadata_columns::metadata,
                 chunk_metadata_columns::tracking_id,
                 chunk_metadata_columns::time_stamp,
+                chunk_metadata_columns::location,
                 chunk_metadata_columns::dataset_id,
                 chunk_metadata_columns::weight,
             ))
@@ -338,6 +342,7 @@ pub async fn get_slim_chunks_from_point_ids_query(
                 metadata: slim_chunk.metadata.clone(),
                 tracking_id: slim_chunk.tracking_id.clone(),
                 time_stamp: slim_chunk.time_stamp,
+                location: slim_chunk.location.clone(),
                 dataset_id: slim_chunk.dataset_id,
                 weight: slim_chunk.weight,
             })
@@ -433,12 +438,8 @@ pub async fn get_metadata_from_tracking_ids_query(
         .load::<ChunkMetadata>(&mut conn)
         .await
         .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
-    let full_text_metadatas = metadatas
-        .iter()
-        .map_into::<FullTextSearchResult>()
-        .collect_vec();
 
-    Ok(get_metadata_query(full_text_metadatas, pool)
+    Ok(get_metadata_query(metadatas, pool)
         .await
         .unwrap_or_default())
 }
@@ -1225,6 +1226,7 @@ pub async fn create_chunk_metadata(
             chunk.metadata.clone(),
             chunk_tracking_id,
             timestamp,
+            chunk.location.clone(),
             dataset_uuid,
             chunk.weight.unwrap_or(0.0),
         );
