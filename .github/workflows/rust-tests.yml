@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Cargo fmt
-        run: cargo fmt -- --check
+        run: cargo fmt --manifest-path=./server/Cargo.toml -- --check
   clippy_check_ingestion:
     runs-on: blacksmith-8vcpu-ubuntu-2204
     steps:
