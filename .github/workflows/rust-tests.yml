@@ -10,6 +10,12 @@ on:
     - 'server/**'
 
 jobs:
+  cargo-fmt:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v1
+      - name: Cargo fmt
+        run: cargo fmt -- --check
   clippy_check_ingestion:
     runs-on: blacksmith-8vcpu-ubuntu-2204
     steps:
