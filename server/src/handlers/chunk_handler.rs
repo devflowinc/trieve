@@ -262,6 +262,13 @@ pub async fn create_chunk(
     let chunk_count = get_row_count_for_dataset_id_query(count_dataset_id, pool.clone()).await?;
     timer.add("get dataset count");
 
+    if chunks.len() > 120 {
+        return Err(ServiceError::BadRequest(
+            "Too many chunks provided in bulk. The limit is 120 chunks per bulk upload".to_string(),
+        )
+        .into());
+    }
+
     if chunk_count + chunks.len()
         > dataset_org_plan_sub
             .organization
