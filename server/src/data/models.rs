@@ -1428,7 +1428,6 @@ impl ServerDatasetConfiguration {
                             }
                         })
                         .unwrap_or("text-embedding-3-small".to_string());
-    
                     if model_name == "jina-base-en" {
                         json!("Search for")
                     } else {
