@@ -42,6 +42,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   COLLISIONS_ENABLED: false,
   FULLTEXT_ENABLED: true,
   QDRANT_COLLECTION_NAME: null,
+  EMBEDDING_QUERY_PREFIX: "",
   USE_MESSAGE_TO_QUERY_PROMPT: false,
 };
 
@@ -657,10 +658,18 @@ export const ServerSettingsForm = () => {
             </div>
 
             <div class="col-span-4 space-y-1 sm:col-span-2">
-              <AiOutlineInfoCircle
-                class="h-5 w-5 text-neutral-400"
-                title="Embedding Model is only editable on creation"
-              />
+              <div class="flex">
+                <label
+                  for="embeddingSize"
+                  class="mr-2 block text-sm font-medium leading-6"
+                >
+                  Embedding Model
+                </label>
+                <AiOutlineInfoCircle
+                  class="h-5 w-5 text-neutral-400"
+                  title="Embedding Model is only editable on creation"
+                />
+              </div>
               <select
                 id="embeddingSize"
                 aria-readonly
@@ -679,6 +688,30 @@ export const ServerSettingsForm = () => {
                   {(model) => <option value={model.name}>{model.name}</option>}
                 </For>
               </select>
+            </div>
+
+            <div class="col-span-4 space-y-1 sm:col-span-2">
+              <label
+                for="embeddingSize"
+                class="mr-2 block text-sm font-medium leading-6"
+              >
+                Embedding Query Prefix
+              </label>
+              <input
+                type="text"
+                name="embeddingQueryPrefix"
+                id="embeddingQueryPrefix"
+                class="mt-2 block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                value={serverConfig().EMBEDDING_QUERY_PREFIX}
+                onInput={(e) =>
+                  setServerConfig((prev) => {
+                    return {
+                      ...prev,
+                      EMBEDDING_QUERY_PREFIX: e.currentTarget.value,
+                    };
+                  })
+                }
+              />
             </div>
 
             <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">

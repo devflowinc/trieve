@@ -98,6 +98,7 @@ export interface ServerEnvsConfiguration {
   COLLISIONS_ENABLED: boolean;
   FULLTEXT_ENABLED: boolean;
   QDRANT_COLLECTION_NAME: string | null;
+  EMBEDDING_QUERY_PREFIX: string;
   USE_MESSAGE_TO_QUERY_PROMPT: boolean;
 }
 
