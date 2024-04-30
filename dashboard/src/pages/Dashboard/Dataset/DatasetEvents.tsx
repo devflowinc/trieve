@@ -8,7 +8,11 @@ import {
 } from "solid-js";
 import { DatasetContext } from "../../../contexts/DatasetContext";
 import { Event, isEvent, isEventDTO } from "../../../types/apiTypes";
-import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
+import {
+  BiRegularChevronDown,
+  BiRegularChevronLeft,
+  BiRegularChevronRight,
+} from "solid-icons/bi";
 import { MultiSelect } from "../../../components/MultiSelect";
 
 export const DatasetEvents = () => {
@@ -91,12 +95,16 @@ export const DatasetEvents = () => {
                     name: "File Uploaded",
                   },
                   {
+                    id: "file_upload_failed",
+                    name: "File Upload Failed",
+                  },
+                  {
                     id: "chunk_action_failed",
                     name: "Chunk Upload Failed",
                   },
                   {
-                    id: "chunk_uploaded",
-                    name: "Chunk Uploaded",
+                    id: "chunks_uploaded",
+                    name: "Chunks Uploaded",
                   },
                   {
                     id: "chunk_updated",
@@ -105,6 +113,10 @@ export const DatasetEvents = () => {
                   {
                     id: "qdrant_index_failed",
                     name: "Qdrant Index Failed",
+                  },
+                  {
+                    id: "bulk_chunk_action_failed",
+                    name: "Bulk Chunk Action Failed",
                   },
                 ]}
                 setSelected={(
@@ -152,33 +164,60 @@ export const DatasetEvents = () => {
                       </thead>
                       <tbody class="bg-white">
                         <For each={events()}>
-                          {(event) => (
-                            <tr class="even:bg-gray-50">
-                              <td
-                                classList={{
-                                  "whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium sm:pl-3":
-                                    true,
-                                  "text-gray-900":
-                                    !event.event_type.includes("failed"),
-                                  "text-red-500":
-                                    event.event_type.includes("failed"),
-                                }}
-                              >
-                                {event.event_type.includes("failed")
-                                  ? "ERROR"
-                                  : "INFO"}
-                              </td>
-                              <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 sm:pl-3">
-                                {event.event_type}
-                              </td>
-                              <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                {event.created_at}
-                              </td>
-                              <td class="text-wrap max-w-md overflow-ellipsis break-words px-3 py-4 text-sm text-gray-500">
-                                {JSON.stringify(event.event_data)}
-                              </td>
-                            </tr>
-                          )}
+                          {(event) => {
+                            const [isExpanded, setIsExpanded] =
+                              createSignal(false);
+                            return (
+                              <tr class="max-h-3 even:bg-gray-50">
+                                <td
+                                  classList={{
+                                    "whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium sm:pl-3":
+                                      true,
+                                    "text-gray-900":
+                                      !event.event_type.includes("failed"),
+                                    "text-red-500":
+                                      event.event_type.includes("failed"),
+                                  }}
+                                >
+                                  {event.event_type.includes("failed")
+                                    ? "ERROR"
+                                    : "INFO"}
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 sm:pl-3">
+                                  {event.event_type}
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                  {event.created_at}
+                                </td>
+                                <td
+                                  classList={{
+                                    "px-3 py-4 text-sm text-gray-500 max-w-lg text-wrap":
+                                      true,
+                                    "whitespace-normal break-words overflow-ellipsis":
+                                      isExpanded(),
+                                    "whitespace-nowrap overflow-hidden overflow-ellipsis":
+                                      !isExpanded(),
+                                  }}
+                                >
+                                  <div class="flex items-start overflow-hidden overflow-ellipsis break-words">
+                                    <button
+                                      onClick={() =>
+                                        setIsExpanded(!isExpanded())
+                                      }
+                                      class="mr-1 focus:outline-none"
+                                    >
+                                      {isExpanded() ? (
+                                        <BiRegularChevronDown class="h-5 w-5 fill-current" />
+                                      ) : (
+                                        <BiRegularChevronRight class="h-5 w-5 fill-current" />
+                                      )}
+                                    </button>
+                                    {JSON.stringify(event.event_data)}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          }}
                         </For>
                       </tbody>
                     </table>
