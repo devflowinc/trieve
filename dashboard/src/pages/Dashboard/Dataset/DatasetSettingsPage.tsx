@@ -42,7 +42,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   COLLISIONS_ENABLED: false,
   FULLTEXT_ENABLED: true,
   QDRANT_COLLECTION_NAME: null,
-  EMBEDDING_QUERY_PREFIX: "",
+  EMBEDDING_QUERY_PREFIX: "Search for: ",
   USE_MESSAGE_TO_QUERY_PROMPT: false,
 };
 
