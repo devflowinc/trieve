@@ -692,16 +692,18 @@ export const ServerSettingsForm = () => {
             </div>
 
             <div class="col-span-4 space-y-1 sm:col-span-2">
-              <label
-                for="embeddingSize"
-                class="mr-2 block text-sm font-medium leading-6"
-              >
-                Embedding Query Prefix
-              </label>
-              <AiOutlineInfoCircle
-                class="h-5 w-5 text-neutral-400"
-                title="For some embedding models, the training data includes query prefixes. The default for Jina is 'Search for: '. You can experiment with different values."
-              />
+              <div class="flex">
+                <label
+                  for="embeddingSize"
+                  class="mr-2 block text-sm font-medium leading-6"
+                >
+                  Embedding Query Prefix
+                </label>
+                <AiOutlineInfoCircle
+                  class="h-5 w-5 text-neutral-400"
+                  title="For some embedding models, the training data includes query prefixes. The default for Jina is 'Search for: '. You can experiment with different values."
+                />
+              </div>
               <input
                 type="text"
                 name="embeddingQueryPrefix"
