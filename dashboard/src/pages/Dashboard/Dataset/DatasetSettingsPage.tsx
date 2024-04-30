@@ -698,6 +698,10 @@ export const ServerSettingsForm = () => {
               >
                 Embedding Query Prefix
               </label>
+              <AiOutlineInfoCircle
+                class="h-5 w-5 text-neutral-400"
+                title="For some embedding models, the training data includes query prefixes. The default for Jina is 'Search for: '. You can experiment with different values."
+              />
               <input
                 type="text"
                 name="embeddingQueryPrefix"
