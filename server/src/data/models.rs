@@ -1415,7 +1415,26 @@ impl ServerDatasetConfiguration {
                 .unwrap_or(get_env!("QDRANT_COLLECTION", "Must provide QDRANT_COLLECTION").to_string()),
             EMBEDDING_QUERY_PREFIX: configuration
                 .get("EMBEDDING_QUERY_PREFIX")
-                .unwrap_or(&json!("Search for:"))
+                .unwrap_or(&{
+                    let model_name = configuration
+                        .get("EMBEDDING_MODEL_NAME")
+                        .unwrap_or(&json!("text-embedding-3-small"))
+                        .as_str()
+                        .map(|s| {
+                            if s.is_empty() {
+                                "text-embedding-3-small".to_string()
+                            } else {
+                                s.to_string()
+                            }
+                        })
+                        .unwrap_or("text-embedding-3-small".to_string());
+    
+                    if model_name == "jina-base-en" {
+                        json!("Search for")
+                    } else {
+                        json!("")
+                    }
+                })
                 .as_str()
                 .map(|s| s.to_string())
                 .unwrap_or("".to_string()),
