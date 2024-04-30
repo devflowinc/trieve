@@ -30,6 +30,7 @@ export const DatasetEvents = () => {
       name: string;
     }[]
   >([]);
+  const [showChevron, setShowChevron] = createSignal(false);
 
   const getEvents = () => {
     const datasetId = datasetContext.dataset?.()?.id;
@@ -167,6 +168,7 @@ export const DatasetEvents = () => {
                           {(event) => {
                             const [isExpanded, setIsExpanded] =
                               createSignal(false);
+
                             return (
                               <tr class="max-h-3 even:bg-gray-50">
                                 <td
@@ -198,20 +200,32 @@ export const DatasetEvents = () => {
                                     "whitespace-nowrap overflow-hidden overflow-ellipsis":
                                       !isExpanded(),
                                   }}
+                                  ref={(el) => {
+                                    if (
+                                      el.scrollHeight > el.clientHeight ||
+                                      el.scrollWidth > el.clientWidth
+                                    ) {
+                                      setShowChevron(true);
+                                    } else {
+                                      setShowChevron(false);
+                                    }
+                                  }}
                                 >
                                   <div class="flex items-start overflow-hidden overflow-ellipsis break-words">
-                                    <button
-                                      onClick={() =>
-                                        setIsExpanded(!isExpanded())
-                                      }
-                                      class="mr-1 focus:outline-none"
-                                    >
-                                      {isExpanded() ? (
-                                        <BiRegularChevronDown class="h-5 w-5 fill-current" />
-                                      ) : (
-                                        <BiRegularChevronRight class="h-5 w-5 fill-current" />
-                                      )}
-                                    </button>
+                                    <Show when={showChevron()}>
+                                      <button
+                                        onClick={() =>
+                                          setIsExpanded(!isExpanded())
+                                        }
+                                        class="mr-1 focus:outline-none"
+                                      >
+                                        {isExpanded() ? (
+                                          <BiRegularChevronDown class="h-5 w-5 fill-current" />
+                                        ) : (
+                                          <BiRegularChevronRight class="h-5 w-5 fill-current" />
+                                        )}
+                                      </button>
+                                    </Show>
                                     {JSON.stringify(event.event_data)}
                                   </div>
                                 </td>
