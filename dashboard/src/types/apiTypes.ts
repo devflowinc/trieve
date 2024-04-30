@@ -90,6 +90,7 @@ export interface ServerEnvsConfiguration {
   LLM_BASE_URL: string;
   LLM_DEFAULT_MODEL: string;
   EMBEDDING_BASE_URL: string;
+  EMBEDDING_MODEL_NAME: string;
   MESSAGE_TO_QUERY_PROMPT: string;
   RAG_PROMPT: string;
   N_RETRIEVALS_TO_INCLUDE: number;

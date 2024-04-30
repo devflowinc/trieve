@@ -32,6 +32,7 @@ export const defaultServerEnvsConfiguration: ServerEnvsConfiguration = {
   LLM_BASE_URL: "",
   LLM_DEFAULT_MODEL: "",
   EMBEDDING_BASE_URL: "https://embedding.trieve.ai",
+  EMBEDDING_MODEL_NAME: "jina-base-en",
   MESSAGE_TO_QUERY_PROMPT: "",
   RAG_PROMPT: "",
   EMBEDDING_SIZE: 768,
