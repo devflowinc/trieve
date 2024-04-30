@@ -225,6 +225,7 @@ pub enum CreateChunkData {
 /// Create or Upsert Chunk or Chunks
 ///
 /// Create a new chunk. If the chunk has the same tracking_id as an existing chunk, the request will fail. Once a chunk is created, it can be searched for using the search endpoint.
+/// If uploading in bulk, the maximum amount of chunks that can be uploaded at once is 120 chunks.
 #[utoipa::path(
     post,
     path = "/chunk",
