@@ -344,6 +344,23 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                   </span>
                 </div>
               </Show>
+              <Show
+                when={
+                  props.chunk.tracking_id &&
+                  !$envs()
+                    .FRONTMATTER_VALS?.split(",")
+                    ?.find((val) => val == "location")
+                }
+              >
+                <div class="flex space-x-2">
+                  <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                    Location:{" "}
+                  </span>
+                  <span class="line-clamp-1 break-all">
+                    [{props.chunk.location?.lat}, {props.chunk.location?.lon}]
+                  </span>
+                </div>
+              </Show>
               <Show when={Object.keys(props.chunk.metadata ?? {}).length > 0}>
                 <button
                   class="mt-2 flex w-fit items-center space-x-1 rounded-md border bg-neutral-200/50 px-2 py-1 font-semibold text-magenta-500 hover:bg-neutral-200/90 dark:bg-neutral-700/60 dark:text-magenta-400"

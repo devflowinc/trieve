@@ -64,7 +64,7 @@ export const getLocalTime = (strDate: string | Date) => {
 const ScoreChunk = (props: ScoreChunkProps) => {
   const frontMatterVals = (
     (import.meta.env.VITE_FRONTMATTER_VALS as string | undefined) ??
-    "link,tag_set,time_stamp"
+    "link,tag_set,time_stamp,location"
   ).split(",");
   const searchURL =
     (import.meta.env.VITE_SEARCH_UI_URL as string | undefined) ??
@@ -169,11 +169,24 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                   </div>
                 </Show>
                 <Show
+                  when={props.chunk.location && frontMatterVal == "location"}
+                >
+                  <div class="flex space-x-2">
+                    <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                      Location:{" "}
+                    </span>
+                    <span class="line-clamp-1 break-all">
+                      [{props.chunk.location?.lat}, {props.chunk.location?.lon}]
+                    </span>
+                  </div>
+                </Show>
+                <Show
                   when={
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                     frontMatterVal !== "link" &&
                     frontMatterVal !== "tag_set" &&
                     frontMatterVal !== "time_stamp" &&
+                    frontMatterVal !== "location" &&
                     props.chunk.metadata &&
                     indirectHasOwnProperty(
                       props.chunk.metadata,
