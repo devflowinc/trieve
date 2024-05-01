@@ -18,6 +18,8 @@ export const CreateNewDocChunkForm = () => {
   const [docChunkLink, setDocChunkLink] = createSignal("");
   const [tagSet, setTagSet] = createSignal("");
   const [weight, setWeight] = createSignal(1);
+  const [locationLat, setLocationLat] = createSignal(0);
+  const [locationLon, setLocationLon] = createSignal(0);
   const [errorText, setErrorText] = createSignal<
     string | number | boolean | Node | JSX.ArrayElement | null | undefined
   >("");
@@ -57,6 +59,10 @@ export const CreateNewDocChunkForm = () => {
       link: docChunkLinkValue,
       tag_set: tagSet().split(","),
       weight: weight(),
+      location: {
+        lat: locationLat(),
+        lon: locationLon(),
+      },
     };
 
     if (timestamp()) {
@@ -257,6 +263,25 @@ export const CreateNewDocChunkForm = () => {
               setTimestamp(e.currentTarget.value);
             }}
           />
+          <div>Location Latitude and Longitude</div>
+          <div class="flex space-x-2">
+            <input
+              type="number"
+              step="0.00000001"
+              placeholder="Latitude"
+              value={locationLat()}
+              onInput={(e) => setLocationLat(Number(e.currentTarget.value))}
+              class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+            />
+            <input
+              type="number"
+              step="0.00000001"
+              placeholder="Longitude"
+              value={locationLon()}
+              onInput={(e) => setLocationLon(Number(e.currentTarget.value))}
+              class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+            />
+          </div>
           <div>Weight for Merchandise Tuning</div>
           <input
             type="number"

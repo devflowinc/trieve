@@ -346,7 +346,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
               </Show>
               <Show
                 when={
-                  props.chunk.tracking_id &&
+                  props.chunk.location != null &&
                   !$envs()
                     .FRONTMATTER_VALS?.split(",")
                     ?.find((val) => val == "location")
