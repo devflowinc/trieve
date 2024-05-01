@@ -26,7 +26,6 @@ import { ConfirmModal } from "./Atoms/ConfirmModal";
 import { PaginationController } from "./Atoms/PaginationController";
 import { ScoreChunkArray } from "./ScoreChunkArray";
 import SearchForm from "./SearchForm";
-import type { Filters } from "./ResultsPage";
 import ChunkMetadataDisplay from "./ChunkMetadataDisplay";
 import { Portal } from "solid-js/web";
 import ChatPopup from "./ChatPopup";
@@ -52,7 +51,6 @@ export const GroupPage = (props: GroupPageProps) => {
   const [query, setQuery] = createSignal<string>("");
   const [page, setPage] = createSignal<number>(1);
   const [searchType, setSearchType] = createSignal<string>("hybrid");
-  const [filters, setFilters] = createSignal<Filters | undefined>(undefined);
   const [searchLoading, setSearchLoading] = createSignal(false);
   const [chunkMetadatas, setChunkMetadatas] = createSignal<ChunkMetadata[]>([]);
   const [searchMetadatasWithVotes, setSearchMetadatasWithVotes] = createSignal<
@@ -101,41 +99,6 @@ export const GroupPage = (props: GroupPageProps) => {
     setQuery(location.query.q ?? "");
     setPage(Number(location.query.page) || 1);
     setSearchType(location.query.searchType ?? "hybrid");
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const metadataFilters: any = {};
-
-    const params = new URLSearchParams(location.search);
-    params.forEach((value, key) => {
-      if (
-        key === "q" ||
-        key === "page" ||
-        key === "searchType" ||
-        key === "Tag Set" ||
-        key === "link" ||
-        key === "start" ||
-        key === "end" ||
-        key === "dataset" ||
-        key === "groupUnique" ||
-        key === "organization"
-      ) {
-        return;
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      metadataFilters[key] = value.split(",");
-    });
-
-    const dataTypeFilters: Filters = {
-      tagSet: params.get("Tag Set")?.split(",") ?? [],
-      link: params.get("link")?.split(",") ?? [],
-      start: params.get("start") ?? "",
-      end: params.get("end") ?? "",
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      metadataFilters,
-    };
-
-    setFilters(dataTypeFilters);
   });
 
   createEffect(() => {
@@ -184,11 +147,7 @@ export const GroupPage = (props: GroupPageProps) => {
         credentials: "include",
         body: JSON.stringify({
           query: query(),
-          tag_set: filters()?.tagSet,
-          link: filters()?.link,
           page: page(),
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          filters: filters()?.metadataFilters,
           group_id: props.groupID,
           search_type: searchType(),
         }),
@@ -518,15 +477,12 @@ export const GroupPage = (props: GroupPageProps) => {
                   "mt-8": query() == "",
                 }}
               >
-                <Show when={filters()}>
-                  {(nonUndefinedFilters) => (
-                    <SearchForm
-                      query={query()}
-                      filters={nonUndefinedFilters()}
-                      searchType={searchType()}
-                      groupID={props.groupID}
-                    />
-                  )}
+                <Show when={query()}>
+                  <SearchForm
+                    query={query()}
+                    searchType={searchType()}
+                    groupID={props.groupID}
+                  />
                 </Show>
               </div>
             </div>

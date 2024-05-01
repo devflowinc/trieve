@@ -16,8 +16,6 @@ import {
   type ScoreChunkDTO,
   ChunkBookmarksDTO,
   GroupScoreChunkDTO,
-  ChunkFilter,
-  MatchCondition,
 } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { PaginationController } from "./Atoms/PaginationController";
@@ -29,19 +27,11 @@ import ChatPopup from "./ChatPopup";
 import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { FaSolidChevronDown, FaSolidChevronUp } from "solid-icons/fa";
+import { Filters } from "./FilterModal";
 
-export interface Filters {
-  tagSet: string[];
-  link: string[];
-  start: string;
-  end: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  metadataFilters: any;
-}
 export interface ResultsPageProps {
   query: string;
   page: number;
-  filters: Filters;
   searchType: string;
   groupUnique?: boolean;
   loading: Accessor<boolean>;
@@ -73,6 +63,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
   const [noResults, setNoResults] = createSignal(false);
+  const [filters, setFilters] = createSignal<Filters>({} as Filters);
 
   const fetchChunkCollections = () => {
     if (!$currentUser?.()) return;
@@ -126,56 +117,11 @@ const ResultsPage = (props: ResultsPageProps) => {
     const dataset = $dataset?.();
     if (!dataset) return;
 
-    const filters: ChunkFilter = {
-      must: [],
-    };
-
-    if (props.filters.tagSet.length > 0) {
-      filters.must = filters.must || [];
-      filters.must.push({
-        field: "tags",
-        match: props.filters.tagSet,
-      });
-    }
-    if (props.filters.link.length > 0) {
-      filters.must = filters.must || [];
-      filters.must.push({
-        field: "link",
-        match: props.filters.link,
-      });
-    }
-    if (props.filters.start || props.filters.end) {
-      filters.must = filters.must || [];
-      filters.must.push({
-        field: "timestamp",
-        range: {
-          gte: Date.parse(
-            props.filters.start ? props.filters.start + " 00:00:00" : "null",
-          ),
-          lte: Date.parse(
-            props.filters.end ? props.filters.end + " 00:00:00" : "null",
-          ),
-        },
-      });
-    }
-    if (props.filters.metadataFilters) {
-      filters.must = filters.must || [];
-      for (const [key, value] of Object.entries(
-        props.filters.metadataFilters as Record<string, unknown>,
-      )) {
-        filters.must.push({
-          field: "metadata." + key,
-          match: value as MatchCondition[],
-        });
-      }
-    }
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const requestBody: any = {
       query: props.query,
       page: props.page,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      filters: filters,
+      filters: filters(),
       search_type: props.searchType,
       get_collisions: true,
     };
@@ -245,6 +191,18 @@ const ResultsPage = (props: ResultsPageProps) => {
 
   onMount(() => {
     fetchBookmarks();
+
+    const filters = localStorage.getItem("filters");
+    if (filters) {
+      setFilters(JSON.parse(filters));
+    }
+
+    window.addEventListener("filtersUpdated", () => {
+      const filters = JSON.parse(
+        localStorage.getItem("filters") ?? "{}",
+      ) as Filters;
+      setFilters(filters);
+    });
   });
 
   createEffect(() => {
