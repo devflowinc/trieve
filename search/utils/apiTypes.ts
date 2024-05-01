@@ -15,6 +15,10 @@ export interface ChunkMetadata {
   metadata: Record<string, never> | null;
   dataset_id: string;
   weight: number;
+  location: {
+    lat: number;
+    lon: number;
+  } | null;
 }
 
 export interface ChunkMetadataWithScore {
@@ -31,6 +35,10 @@ export interface ChunkMetadataWithScore {
   metadata: Record<string, never> | null;
   dataset_id: string;
   weight: number;
+  location: {
+    lat: number;
+    lon: number;
+  } | null;
   score: number;
 }
 
