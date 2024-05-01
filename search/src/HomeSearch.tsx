@@ -4,7 +4,6 @@ import { DatasetAndUserContext } from "./components/Contexts/DatasetAndUserConte
 import SearchForm from "./components/SearchForm";
 import { DefaultQueries } from "./components/DefaultQueries";
 import { Footer } from "./components/Footer";
-import { Filters } from "./components/ResultsPage";
 
 export const HomeSearch = () => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
@@ -47,14 +46,6 @@ export const HomeSearch = () => {
     });
   });
 
-  const dataTypeFilters: Filters = {
-    tagSet: params.get("Tag Set")?.split(",") ?? [],
-    link: params.get("link")?.split(",") ?? [],
-    start: params.get("start") ?? "",
-    end: params.get("end") ?? "",
-    metadataFilters,
-  };
-
   return (
     <div class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white">
       <HomeNavbar />
@@ -77,12 +68,8 @@ export const HomeSearch = () => {
             </div>
           </a>
         </div>
-        <div class="mt-8 w-full max-w-4xl px-4 sm:px-8 md:px-20">
-          <SearchForm
-            filters={dataTypeFilters}
-            searchType={searchType}
-            groupUniqueSearch={groupUnique}
-          />
+        <div class="mt-8 w-full max-w-6xl px-4 sm:px-8 md:px-20">
+          <SearchForm searchType={searchType} groupUniqueSearch={groupUnique} />
         </div>
       </div>
       <DefaultQueries suggestedQueries={suggestedQueries ?? []} />
