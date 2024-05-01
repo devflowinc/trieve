@@ -525,6 +525,23 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                   </span>
                 </div>
               </Show>
+              <Show
+                when={
+                  props.chunk.location &&
+                  !$envs()
+                    .FRONTMATTER_VALS?.split(",")
+                    ?.find((val) => val == "location")
+                }
+              >
+                <div class="flex space-x-2">
+                  <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                    Location:{" "}
+                  </span>
+                  <span class="line-clamp-1 break-all">
+                    [{props.chunk.location?.lat}, {props.chunk.location?.lon}]
+                  </span>
+                </div>
+              </Show>
               <Show when={imageLink() != null}>
                 <img class="w-40" src={imageLink() ?? ""} alt="" />
               </Show>
