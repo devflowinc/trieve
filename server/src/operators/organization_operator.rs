@@ -234,7 +234,14 @@ pub async fn get_org_from_id_query(
         .filter(organizations_columns::id.eq(organization_id))
         .first::<(Organization, Option<StripePlan>, Option<StripeSubscription>)>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest("Could not find organizations".to_string()))?;
+        .map_err(|e| {
+            log::error!(
+                "Error getting org from id in get_org_from_id_query: {:?}",
+                e
+            );
+
+            ServiceError::NotFound("Organization not found".to_string())
+        })?;
 
     let org_with_plan_sub: OrganizationWithSubAndPlan =
         OrganizationWithSubAndPlan::from_components(org_plan_sub.0, org_plan_sub.1, org_plan_sub.2);

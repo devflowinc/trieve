@@ -196,6 +196,7 @@ pub struct GetGroupByTrackingIDData {
     responses(
         (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroup),
         (status = 400, description = "Service error relating to getting the group with the given tracking id", body = ErrorResponseBody),
+        (status = 404, description = "Group not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -241,6 +242,7 @@ pub struct GetGroupData {
     responses(
         (status = 200, description = "JSON body representing the group with the given tracking id", body = ChunkGroup),
         (status = 400, description = "Service error relating to getting the group with the given tracking id", body = ErrorResponseBody),
+        (status = 404, description = "Group not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -677,6 +679,7 @@ pub struct GetAllBookmarksData {
     responses(
         (status = 200, description = "Chunks present within the specified group", body = BookmarkData),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
+        (status = 404, description = "Group not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -704,8 +707,7 @@ pub async fn get_chunks_in_group(
         dataset_id,
         pool,
     )
-    .await
-    .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?;
+    .await?;
 
     Ok(HttpResponse::Ok().json(BookmarkData {
         chunks: bookmarks.metadata,
@@ -731,6 +733,7 @@ pub struct GetAllBookmarksByTrackingIdData {
     responses(
         (status = 200, description = "Chunks present within the specified group", body = BookmarkData),
         (status = 400, description = "Service error relating to getting the groups that the chunk is in", body = ErrorResponseBody),
+        (status = 404, description = "Group not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -759,8 +762,7 @@ pub async fn get_chunks_in_group_by_tracking_id(
             dataset_id,
             pool,
         )
-        .await
-        .map_err(<ServiceError as std::convert::Into<actix_web::Error>>::into)?
+        .await?
     };
 
     Ok(HttpResponse::Ok().json(BookmarkData {

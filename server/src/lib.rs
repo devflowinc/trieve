@@ -108,7 +108,10 @@ struct SecurityAddon;
 
 impl Modify for SecurityAddon {
     fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
-        let components = openapi.components.as_mut().unwrap(); // we can unwrap safely since there already is components registered.
+        let components = openapi
+            .components
+            .as_mut()
+            .expect("Safe to expect since the component was already registered");
         components.add_security_scheme(
             "ApiKey",
             SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("Authorization"))),
@@ -130,7 +133,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.7.5",
+        version = "0.7.6",
     ),
     servers(
         (url = "https://api.trieve.ai",

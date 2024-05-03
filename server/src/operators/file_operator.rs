@@ -238,12 +238,20 @@ pub async fn get_file_query(
         .filter(files_columns::dataset_id.eq(dataset_id))
         .get_result(&mut conn)
         .await
-        .map_err(|_| ServiceError::NotFound)?;
+        .map_err(|e| {
+            log::error!("File with specified id not found {:?}", e);
+
+            ServiceError::NotFound("File with specified id not found".to_string())
+        })?;
 
     let bucket = get_aws_bucket()?;
     let s3_url = bucket
         .presign_get(file_metadata.id.to_string(), 300, None)
-        .map_err(|_| ServiceError::BadRequest("Could not get presigned url".to_string()))?;
+        .map_err(|e| {
+            log::error!("Could not get presigned url {:?}", e);
+
+            ServiceError::NotFound("Could not get presigned url".to_string())
+        })?;
 
     let file_dto: FileDTO = file_metadata.into();
     let file_dto: FileDTO = FileDTO { s3_url, ..file_dto };
@@ -280,7 +288,7 @@ pub async fn get_dataset_file_query(
         .offset(((page - 1) * 10).try_into().unwrap_or(0))
         .load(&mut conn)
         .await
-        .map_err(|_| ServiceError::NotFound)?;
+        .map_err(|_| ServiceError::NotFound("No dataset found".to_string()))?;
 
     Ok(file_metadata)
 }
@@ -304,7 +312,7 @@ pub async fn delete_file_query(
         .filter(files_columns::dataset_id.eq(dataset.id))
         .get_result(&mut conn)
         .await
-        .map_err(|_| ServiceError::NotFound)?;
+        .map_err(|_| ServiceError::NotFound("File with specified id not found".to_string()))?;
 
     let bucket = get_aws_bucket()?;
     bucket
