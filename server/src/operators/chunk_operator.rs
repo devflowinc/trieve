@@ -369,9 +369,7 @@ pub async fn get_metadata_from_id_query(
         .select(ChunkMetadata::as_select())
         .first::<ChunkMetadata>(&mut conn)
         .await
-        .map_err(|e| {
-            log::error!("Chunk with id not found in the specified dataset: {:?}", e);
-
+        .map_err(|_| {
             ServiceError::NotFound("Chunk with id not found in the specified dataset".to_string())
         })
 }
@@ -392,12 +390,7 @@ pub async fn get_metadata_from_tracking_id_query(
         .select(ChunkMetadata::as_select())
         .first::<ChunkMetadata>(&mut conn)
         .await
-        .map_err(|e| {
-            log::error!(
-                "Chunk with tracking_id not found in the specified dataset: {:?}",
-                e
-            );
-
+        .map_err(|_| {
             ServiceError::NotFound(
                 "Chunk with tracking_id not found in the specified dataset".to_string(),
             )
