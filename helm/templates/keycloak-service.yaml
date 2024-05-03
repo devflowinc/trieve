@@ -19,10 +19,6 @@ spec:
       targetPort: 8080
       protocol: TCP
       name: keycloak-a
-    - port: 9000
-      targetPort: 9000
-      protocol: TCP
-      name: keycloak-b
     - port: 42625
       targetPort: 42625
       protocol: TCP

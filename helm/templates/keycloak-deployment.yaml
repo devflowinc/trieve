@@ -23,7 +23,6 @@ spec:
         image: {{ printf "%s%s:%s" (ternary (printf "%s.dkr.ecr.%s.amazonaws.com/" .Values.accountId .Values.region) "localhost:5000/" (eq .Values.environment "aws")) "keycloak" .Values.containers.keycloak.tag }}
         ports:
           - containerPort: 8080
-          - containerPort: 9000
           - containerPort: 42625
         volumeMounts:
           - name: keycloak-data

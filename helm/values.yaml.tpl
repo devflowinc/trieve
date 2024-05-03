@@ -102,7 +102,7 @@ embeddings:
     model: naver/efficient-splade-VI-BT-large-doc
     revision: main
     port: 7070
-    args: []
+    args: ["--pooling", "splade"]
   - name: splade-query
     model: naver/efficient-splade-VI-BT-large-query
     revision: main

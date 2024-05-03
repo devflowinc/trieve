@@ -145,7 +145,6 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ingress-dashboard
-  namespace: ingress-nginx
   labels:
     app: trieve
   annotations:
@@ -156,8 +155,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: "dashboard.{{ $domain }}"
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix
@@ -171,7 +169,6 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ingress-chat
-  namespace: ingress-nginx
   labels:
     app: trieve
   annotations:
@@ -182,8 +179,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: "chat.{{ $domain }}"
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix
@@ -197,7 +193,6 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ingress-server
-  namespace: ingress-nginx
   labels:
     app: trieve
   annotations:
@@ -208,8 +203,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: "api.{{ $domain }}"
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix
@@ -223,7 +217,6 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ingress-search
-  namespace: ingress-nginx
   labels:
     app: trieve
   annotations:
@@ -234,8 +227,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: "search.{{ $domain }}"
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix
@@ -249,7 +241,6 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ingress-keycloak
-  namespace: ingress-nginx
   labels:
     app: trieve
   annotations:
@@ -260,8 +251,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: "oidc.{{ $domain }}"
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix
@@ -269,13 +259,12 @@ spec:
               service:
                 name: keycloak-service
                 port:
-                  number: 9000
+                  number: 8080
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ingress-s3
-  namespace: ingress-nginx
   labels:
     app: trieve
   annotations:
@@ -286,8 +275,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: "data.{{ $domain }}"
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix
