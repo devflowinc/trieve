@@ -369,7 +369,11 @@ pub async fn get_metadata_from_id_query(
         .select(ChunkMetadata::as_select())
         .first::<ChunkMetadata>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))
+        .map_err(|e| {
+            log::error!("Chunk with id not found in the specified dataset: {:?}", e);
+
+            ServiceError::NotFound("Chunk with id not found in the specified dataset".to_string())
+        })
 }
 
 #[tracing::instrument(skip(pool))]
@@ -390,12 +394,12 @@ pub async fn get_metadata_from_tracking_id_query(
         .await
         .map_err(|e| {
             log::error!(
-                "Failed to load execute get_metadata_from_tracking_id_query: {:?}",
+                "Chunk with tracking_id not found in the specified dataset: {:?}",
                 e
             );
 
-            ServiceError::BadRequest(
-                "Failed to execute get_metadata_from_tracking_id_query".to_string(),
+            ServiceError::NotFound(
+                "Chunk with tracking_id not found in the specified dataset".to_string(),
             )
         })
 }

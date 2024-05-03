@@ -24,6 +24,7 @@ use utoipa::ToSchema;
     responses(
         (status = 200, description = "Organization with the id that was requested", body = Organization),
         (status = 400, description = "Service error relating to finding the organization by id", body = ErrorResponseBody),
+        (status = 404, description = "Organization not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Organization" = String, Header, description = "The organization id to use for the request"),

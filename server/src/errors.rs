@@ -30,7 +30,7 @@ pub enum ServiceError {
     Forbidden,
 
     #[display(fmt = "Not Found")]
-    NotFound,
+    NotFound(String),
 }
 
 // impl ResponseError trait allows to convert our errors into http responses with appropriate data
@@ -58,9 +58,11 @@ impl ResponseError for ServiceError {
             ServiceError::Forbidden => HttpResponse::Forbidden().json(ErrorResponseBody {
                 message: "Forbidden".to_string(),
             }),
-            ServiceError::NotFound => HttpResponse::NotFound().json(ErrorResponseBody {
-                message: "Record not found".to_string(),
-            }),
+            ServiceError::NotFound(ref message) => {
+                HttpResponse::NotFound().json(ErrorResponseBody {
+                    message: format!("Not Found: {}", message),
+                })
+            }
         }
     }
 }

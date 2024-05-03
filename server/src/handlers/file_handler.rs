@@ -231,6 +231,7 @@ pub async fn upload_file_handler(
     responses(
         (status = 200, description = "The signed s3 url corresponding to the file_id requested", body = FileDTO),
         (status = 400, description = "Service error relating to finding the file", body = ErrorResponseBody),
+        (status = 404, description = "File not found", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),

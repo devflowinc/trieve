@@ -1099,6 +1099,7 @@ pub async fn search_chunks(
     responses(
         (status = 200, description = "chunk with the id that you were searching for", body = ChunkMetadata),
         (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = ErrorResponseBody),
+        (status = 404, description = "Chunk not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -1134,7 +1135,7 @@ pub async fn get_chunk_by_id(
     if pointid_exists {
         Ok(HttpResponse::Ok().json(chunk))
     } else {
-        Err(ServiceError::NotFound)
+        Err(ServiceError::NotFound("Chunk not found".to_string()))
     }
 }
 
@@ -1149,6 +1150,7 @@ pub async fn get_chunk_by_id(
     responses(
         (status = 200, description = "chunk with the tracking_id that you were searching for", body = ChunkMetadata),
         (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = ErrorResponseBody),
+        (status = 404, description = "Chunk not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -1188,7 +1190,7 @@ pub async fn get_chunk_by_tracking_id(
     if pointid_exists {
         Ok(HttpResponse::Ok().json(chunk))
     } else {
-        Err(ServiceError::NotFound)
+        Err(ServiceError::NotFound("Chunk not found".to_string()))
     }
 }
 
@@ -1209,6 +1211,7 @@ pub struct GetChunksData {
     responses(
         (status = 200, description = "chunks with the id that you were searching for", body = Vec<ChunkMetadata>),
         (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = ErrorResponseBody),
+        (status = 404, description = "Any one of the specified chunks not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -1242,7 +1245,9 @@ pub async fn get_chunks_by_ids(
     if pointids_exists {
         Ok(HttpResponse::Ok().json(chunks))
     } else {
-        Err(ServiceError::NotFound)
+        Err(ServiceError::NotFound(
+            "Any one of the specified chunks not found".to_string(),
+        ))
     }
 }
 
@@ -1263,6 +1268,7 @@ pub struct GetTrackingChunksData {
     responses(
         (status = 200, description = "chunk with the id that you were searching for", body = ChunkMetadata),
         (status = 400, description = "Service error relating to fidning a chunk by tracking_id", body = ErrorResponseBody),
+        (status = 404, description = "Any one of the specified chunks not found", body = ErrorResponseBody)
     ),
     params(
         ("TR-Dataset" = String, Header, description = "The dataset id to use for the request"),
@@ -1296,7 +1302,9 @@ pub async fn get_chunks_by_tracking_ids(
     if pointids_exists {
         Ok(HttpResponse::Ok().json(chunks))
     } else {
-        Err(ServiceError::NotFound)
+        Err(ServiceError::NotFound(
+            "Any one of the specified chunks not found".to_string(),
+        ))
     }
 }
 
