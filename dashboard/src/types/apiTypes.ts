@@ -61,6 +61,7 @@ export interface OrganizationUsageCount {
   user_count: number;
   file_storage: number;
   message_count: number;
+  chunk_count: number;
 }
 
 export interface Dataset {

@@ -91,6 +91,7 @@ export const Overview = () => {
             user_count: 0,
             file_storage: 0,
             message_count: 0,
+            chunk_count: 0,
           });
           return;
         }

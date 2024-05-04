@@ -10,11 +10,8 @@ import {
 } from "solid-js";
 import {
   ApiKeyDTO,
-  DatasetUsageCount,
   fromI32ToApiKeyRole,
   fromI32ToUserRole,
-  OrganizationAndSubAndPlan,
-  StripePlan,
 } from "../../../types/apiTypes";
 import { UserContext } from "../../../contexts/UserContext";
 import { BiRegularInfoCircle, BiRegularLinkExternal } from "solid-icons/bi";
@@ -33,8 +30,6 @@ export const DatasetStart = () => {
 
   const [apiKeys, setApiKeys] = createSignal<ApiKeyDTO[]>([]);
   const [openModal, setOpenModal] = createSignal<boolean>(false);
-  const [usage, setUsage] = createSignal<DatasetUsageCount>();
-  const [plan, setPlan] = createSignal<StripePlan | null>();
 
   const selectedOrganization = createMemo(() => {
     const selectedOrgId = userContext.selectedOrganizationId?.();
@@ -89,48 +84,11 @@ export const DatasetStart = () => {
     });
   };
 
-  const getDatasetUsage = (abortController: AbortController) => {
-    const datasetId = curDataset()?.id;
-    if (!datasetId) return;
-    void fetch(`${api_host}/dataset/usage/${datasetId}`, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        "TR-Dataset": datasetId,
-      },
-      signal: abortController.signal,
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setUsage(data);
-      });
-  };
-
-  const getPlanLimits = (abortController: AbortController) => {
-    const selectedOrgId = selectedOrganization()?.id;
-    if (!selectedOrgId) return;
-
-    void fetch(`${api_host}/organization/${selectedOrganization()?.id}`, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        "TR-Organization": selectedOrgId,
-      },
-      signal: abortController.signal,
-    })
-      .then((res) => res.json())
-      .then((data: OrganizationAndSubAndPlan) => {
-        setPlan(data.plan);
-      });
-  };
-
   createEffect(
     on(openModal, () => {
       const abortController = new AbortController();
 
       getApiKeys(abortController);
-      getPlanLimits(abortController);
-      getDatasetUsage(abortController);
 
       onCleanup(() => {
         abortController.abort();
@@ -315,29 +273,6 @@ export const DatasetStart = () => {
                   Create New API Key +
                 </button>
               </div>
-            </div>
-          </section>
-          <section
-            class="flex-col space-y-4 bg-white px-4 py-6 shadow sm:overflow-hidden sm:rounded-md sm:p-6 lg:col-span-2"
-            aria-labelledby="organization-details-name"
-          >
-            <h2 id="user-details-name" class="text-lg font-medium leading-6">
-              Dataset Usage
-            </h2>
-            <div class="mb-3 grid grid-cols-1 gap-5 lg:grid-cols-6">
-              <dl class="col-span-6 grid grid-cols-1 divide-y divide-gray-200 overflow-hidden rounded-lg bg-white shadow md:grid-cols-3 md:divide-x md:divide-y-0">
-                <div class="px-4 py-5 sm:p-6">
-                  <dt class="text-base font-normal"> Total Chunks </dt>
-                  <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
-                    <div class="flex items-baseline text-2xl font-semibold text-magenta">
-                      {usage()?.chunk_count}
-                      <span class="ml-2 text-sm font-medium text-neutral-600">
-                        of {plan()?.chunk_count}
-                      </span>
-                    </div>
-                  </dd>
-                </div>
-              </dl>
             </div>
           </section>
           <section
