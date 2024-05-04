@@ -1,0 +1,48 @@
+{{- range $index, $service := .Values.embeddings }}
+{{- $revision := (get $service "revision") }}
+{{- $model := (get $service "model") }}
+{{- $name := (get $service "name") }}
+{{- $args := (get $service "args") }}
+{{- if ne $index 0 }}
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: embedding-{{ $name }}
+  labels:
+    app.kubernetes.io/name: embedding-{{ $name }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+    app.kubernetes.io/managed-by: Helm
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: embedding-{{ $name }}
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: embedding-{{ $name }}
+        app.kubernetes.io/instance: {{ $.Release.Name }}
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      containers:
+        - name: embedding-{{ $name }}
+          image: {{ ternary "ghcr.io/huggingface/text-embeddings-inference:86-1.1" "ghcr.io/huggingface/text-embeddings-inference:cpu-1.2" $.Values.useGpu }}
+          args: 
+            {{ (concat (list "--model-id" $model "--revision" $revision) $args) | toJson }}
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: embedding-data
+              mountPath: /data
+{{- if $.Values.useGpu }}
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+{{- end }}
+      volumes:
+        - name: embedding-data
+          persistentVolumeClaim:
+            claimName: embedding-{{ $name }}-pvc
+{{- end }}
