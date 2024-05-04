@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "qdrant.fullname" . }}
+data:
+  initialize.sh: |
+    #!/bin/sh
+    SET_INDEX=${HOSTNAME##*-}
+    {{- if and (.Values.snapshotRestoration.enabled) (eq (.Values.replicaCount | quote)  (1 | quote)) }}
+    echo "Starting initializing for pod $SET_INDEX and snapshots restoration"
+    exec ./entrypoint.sh --uri 'http://{{ include "qdrant.fullname" . }}-0.{{ include "qdrant.fullname" . }}-headless:6335' {{ range .Values.snapshotRestoration.snapshots }} --snapshot {{ . }} {{ end }}
+    {{- else }}
+    echo "Starting initializing for pod $SET_INDEX"
+    if [ "$SET_INDEX" = "0" ]; then
+      exec ./entrypoint.sh --uri 'http://{{ include "qdrant.fullname" . }}-0.{{ include "qdrant.fullname" . }}-headless:6335'
+    else
+      exec ./entrypoint.sh --bootstrap 'http://{{ include "qdrant.fullname" . }}-0.{{ include "qdrant.fullname" . }}-headless:6335' --uri 'http://{{ include "qdrant.fullname" . }}-'"$SET_INDEX"'.{{ include "qdrant.fullname" . }}-headless:6335'
+    fi
+    {{ end }}
+  production.yaml: |
+    {{- toYaml .Values.config | nindent 4 }}

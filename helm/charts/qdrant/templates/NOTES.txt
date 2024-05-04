@@ -1,0 +1,24 @@
+Qdrant {{ .Chart.AppVersion }} has been deployed successfully.
+
+The full Qdrant documentation is available at https://qdrant.tech/documentation/.
+
+To forward Qdrant's ports execute one of the following commands:
+  export POD_NAME=$(kubectl get pods --namespace {{ $.Release.Namespace }} -l "app.kubernetes.io/name={{ include "qdrant.name" . }},app.kubernetes.io/instance={{ $.Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+
+{{- if contains "ClusterIP" .Values.service.type }}
+  {{- range .Values.service.ports }}
+
+If you want to use Qdrant via {{ .name }} execute the following commands
+  kubectl --namespace {{ $.Release.Namespace }} port-forward $POD_NAME {{ .targetPort }}:{{ .targetPort }}
+  {{- end }}
+{{- end }}
+
+{{- if .Values.ingress.enabled }}
+
+If you want to access Qdrant through the ingress controller
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: search
+  labels:
+    app.kubernetes.io/name: search
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: Helm
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: search
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: search
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      containers:
+      - name: search
+        image: {{ printf "%s%s:%s" (ternary (printf "%s.dkr.ecr.%s.amazonaws.com/" $.Values.accountId $.Values.region) "localhost:5000/" (eq $.Values.environment "aws")) "search" $.Values.containers.search.tag }}
+        ports:
+          - containerPort: 80
+        env:
+          - name: VITE_API_HOST
+            value: {{ $.Values.config.vite.apiHost }}
+          - name: VITE_SEARCH_UI_URL
+            value: {{ $.Values.config.vite.searchUiUrl }}
