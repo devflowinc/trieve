@@ -354,6 +354,15 @@ pub async fn get_org_usage_by_id_query(
     let org_usage_count: OrganizationUsageCount =
         crate::data::schema::organization_usage_counts::dsl::organization_usage_counts
             .filter(crate::data::schema::organization_usage_counts::dsl::org_id.eq(org_id))
+            .select((
+                crate::data::schema::organization_usage_counts::dsl::id,
+                crate::data::schema::organization_usage_counts::dsl::org_id,
+                crate::data::schema::organization_usage_counts::dsl::dataset_count,
+                crate::data::schema::organization_usage_counts::dsl::user_count,
+                crate::data::schema::organization_usage_counts::dsl::file_storage,
+                crate::data::schema::organization_usage_counts::dsl::message_count,
+                crate::data::schema::organization_usage_counts::dsl::chunk_count.assume_not_null(),
+            ))
             .first(&mut conn)
             .await
             .map_err(|_| {

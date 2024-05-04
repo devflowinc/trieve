@@ -231,25 +231,3 @@ pub async fn get_datasets_by_organization_id(
 
     Ok(dataset_and_usages)
 }
-
-#[tracing::instrument(skip(pool))]
-pub async fn get_dataset_usage_by_id_query(
-    id: uuid::Uuid,
-    pool: web::Data<Pool>,
-) -> Result<DatasetUsageCount, ServiceError> {
-    use crate::data::schema::dataset_usage_counts::dsl as dataset_usage_counts_columns;
-
-    let mut conn = pool
-        .get()
-        .await
-        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
-
-    let usage = dataset_usage_counts_columns::dataset_usage_counts
-        .filter(dataset_usage_counts_columns::dataset_id.eq(id))
-        .select(DatasetUsageCount::as_select())
-        .first(&mut conn)
-        .await
-        .map_err(|_| ServiceError::BadRequest("Could not find dataset usage".to_string()))?;
-
-    Ok(usage)
-}
