@@ -1891,6 +1891,7 @@ impl UserOrganization {
     "user_count": 5,
     "file_storage": 512,
     "message_count": 1000,
+    "chunk_count": 1000,
 }))]
 #[diesel(table_name = organization_usage_counts)]
 pub struct OrganizationUsageCount {
@@ -1900,6 +1901,7 @@ pub struct OrganizationUsageCount {
     pub user_count: i32,
     pub file_storage: i64,
     pub message_count: i32,
+    pub chunk_count: i32,
 }
 
 #[derive(Debug)]
