@@ -675,6 +675,7 @@ pub async fn stream_response(
             negated_words: None,
         },
         dataset.id,
+        false,
         pool.clone(),
         config,
     )
