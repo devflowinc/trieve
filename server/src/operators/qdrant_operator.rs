@@ -711,7 +711,9 @@ pub async fn search_over_groups_query(
 
     let point_ids: Vec<GroupSearchResults> = data
         .result
-        .unwrap()
+        .ok_or(ServiceError::BadRequest(
+            "Failed to serialize response from Qdrant".to_string(),
+        ))?
         .groups
         .iter()
         .filter_map(|point| {
@@ -743,6 +745,7 @@ pub async fn search_over_groups_query(
                 Some(GroupSearchResults { group_id, hits })
             }
         })
+        .skip((page - 1) as usize * limit as usize)
         .collect();
 
     Ok(point_ids)
