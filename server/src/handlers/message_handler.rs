@@ -663,6 +663,7 @@ pub async fn stream_response(
         search_chunk_data,
         parsed_query,
         1,
+        false,
         pool.clone(),
         dataset.clone(),
         dataset_config,

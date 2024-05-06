@@ -861,6 +861,8 @@ pub struct SearchChunkData {
     pub page: Option<u64>,
     /// Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
     pub page_size: Option<u64>,
+    /// Get total page count for the query accounting for the applied filters. Defaults to true, but can be set to false to reduce latency in edge cases performance.
+    pub get_total_pages: Option<bool>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
     /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
@@ -885,6 +887,7 @@ impl Default for SearchChunkData {
             search_type: "hybrid".to_string(),
             query: "".to_string(),
             page: Some(1),
+            get_total_pages: None,
             page_size: Some(10),
             filters: None,
             date_bias: None,
@@ -1010,6 +1013,7 @@ pub async fn search_chunks(
     );
 
     let page = data.page.unwrap_or(1);
+    let get_total_pages = data.get_total_pages.unwrap_or(true);
 
     let parsed_query = parse_query(data.query.clone());
 
@@ -1031,6 +1035,7 @@ pub async fn search_chunks(
                 data.clone(),
                 parsed_query,
                 page,
+                get_total_pages,
                 pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
@@ -1043,6 +1048,7 @@ pub async fn search_chunks(
                 data.clone(),
                 parsed_query,
                 page,
+                get_total_pages,
                 pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
@@ -1055,6 +1061,7 @@ pub async fn search_chunks(
                 data.clone(),
                 parsed_query,
                 page,
+                get_total_pages,
                 pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,

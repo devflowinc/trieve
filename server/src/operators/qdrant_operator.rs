@@ -1119,7 +1119,12 @@ pub async fn recommend_qdrant_groups_query(
 pub async fn get_point_count_qdrant_query(
     filters: Filter,
     config: ServerDatasetConfiguration,
+    get_total_pages: bool,
 ) -> Result<u64, ServiceError> {
+    if !get_total_pages {
+        return Ok(0);
+    };
+
     let qdrant_collection = config.QDRANT_COLLECTION_NAME;
 
     let qdrant =
