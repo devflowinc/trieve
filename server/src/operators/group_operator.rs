@@ -307,7 +307,7 @@ pub async fn update_chunk_group_query(
     new_name: Option<String>,
     new_description: Option<String>,
     new_metadata: Option<serde_json::Value>,
-    new_tag_set: Option<Vec<String>>,
+    new_tag_set: Option<String>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
@@ -324,7 +324,7 @@ pub async fn update_chunk_group_query(
         name.eq(new_name.unwrap_or(group.name)),
         description.eq(new_description.unwrap_or(group.description)),
         metadata.eq(new_metadata.unwrap_or(group.metadata.unwrap_or_default())),
-        tag_set.eq(new_tag_set),
+        tag_set.eq(new_tag_set.unwrap_or(group.tag_set.unwrap_or_default())),
     ))
     .execute(&mut conn)
     .await

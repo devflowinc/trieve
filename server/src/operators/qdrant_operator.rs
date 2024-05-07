@@ -172,119 +172,13 @@ pub async fn create_new_qdrant_collection_query(
                     if err.to_string().contains("already exists") {
                         return ServiceError::BadRequest("Collection already exists".into());
                     }
-                    ServiceError::BadRequest(format!("Failed to create Collection {:?}", err))
+                    ServiceError::BadRequest("Failed to create Collection".into())
                 })?;
         }
     } else {
-        let mut sparse_vector_config = HashMap::new();
-        sparse_vector_config.insert(
-            "sparse_vectors".to_string(),
-            SparseVectorParams {
-                index: Some(SparseIndexConfig {
-                    on_disk: Some(false),
-                    ..Default::default()
-                }),
-            },
-        );
-
-        let quantization_config = if quantize {
-            Some(QuantizationConfig {
-                quantization: Some(Quantization::Binary(BinaryQuantization {
-                    always_ram: Some(true),
-                })),
-            })
-        } else {
-            None
-        };
-
-        qdrant_client
-            .create_collection(&CreateCollection {
-                collection_name: qdrant_collection.clone(),
-                vectors_config: Some(VectorsConfig {
-                    config: Some(qdrant_client::qdrant::vectors_config::Config::ParamsMap(
-                        VectorParamsMap {
-                            map: HashMap::from([
-                                (
-                                    "384_vectors".to_string(),
-                                    VectorParams {
-                                        size: 384,
-                                        distance: Distance::Cosine.into(),
-                                        hnsw_config: None,
-                                        quantization_config: quantization_config.clone(),
-                                        on_disk: None,
-                                    },
-                                ),
-                                (
-                                    "512_vectors".to_string(),
-                                    VectorParams {
-                                        size: 512,
-                                        distance: Distance::Cosine.into(),
-                                        hnsw_config: None,
-                                        quantization_config: None,
-                                        on_disk: None,
-                                    },
-                                ),
-                                (
-                                    "768_vectors".to_string(),
-                                    VectorParams {
-                                        size: 768,
-                                        distance: Distance::Cosine.into(),
-                                        hnsw_config: None,
-                                        quantization_config: quantization_config.clone(),
-                                        on_disk: None,
-                                    },
-                                ),
-                                (
-                                    "1024_vectors".to_string(),
-                                    VectorParams {
-                                        size: 1024,
-                                        distance: Distance::Cosine.into(),
-                                        hnsw_config: None,
-                                        quantization_config: quantization_config.clone(),
-                                        on_disk: None,
-                                    },
-                                ),
-                                (
-                                    "3072_vectors".to_string(),
-                                    VectorParams {
-                                        size: 3072,
-                                        distance: Distance::Cosine.into(),
-                                        hnsw_config: None,
-                                        quantization_config: quantization_config.clone(),
-                                        on_disk: None,
-                                    },
-                                ),
-                                (
-                                    "1536_vectors".to_string(),
-                                    VectorParams {
-                                        size: 1536,
-                                        distance: Distance::Cosine.into(),
-                                        hnsw_config: None,
-                                        quantization_config,
-                                        on_disk: None,
-                                    },
-                                ),
-                            ]),
-                        },
-                    )),
-                }),
-                hnsw_config: Some(HnswConfigDiff {
-                    payload_m: Some(16),
-                    m: Some(0),
-                    ..Default::default()
-                }),
-                sparse_vectors_config: Some(SparseVectorConfig {
-                    map: sparse_vector_config,
-                }),
-                ..Default::default()
-            })
-            .await
-            .map_err(|err| {
-                if err.to_string().contains("already exists") {
-                    return ServiceError::BadRequest("Collection already exists".into());
-                }
-                ServiceError::BadRequest(format!("Failed to create Collection {:?}", err))
-            })?;
+        return Err(ServiceError::BadRequest(
+            "Failed to create Collection".into(),
+        ));
     }
 
     qdrant_client

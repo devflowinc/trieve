@@ -29,8 +29,8 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   const [evidenceLink, setEvidenceLink] = createSignal<string>(
     initialChunkMetadata?.link ?? "",
   );
-  const [tagSet, setTagSet] = createSignal<string[]>(
-    initialChunkMetadata?.tag_set ?? [],
+  const [tagSet, setTagSet] = createSignal<string>(
+    initialChunkMetadata?.tag_set ?? "",
   );
   const [weight, setWeight] = createSignal(initialChunkMetadata?.weight ?? 1);
   const [metadata, setMetadata] = createSignal(initialChunkMetadata?.metadata);
@@ -79,7 +79,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
       body: JSON.stringify({
         chunk_id: curChunkId,
         link: evidenceLinkValue,
-        tag_set: tagSet(),
+        tag_set: tagSet().split(","),
         tracking_id: trackingId(),
         metadata: metadata(),
         chunk_html: chunkHTMLContentValue,
@@ -142,7 +142,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
       if (response.ok) {
         void response.json().then((data: ChunkMetadata) => {
           setEvidenceLink(data.link ?? "");
-          setTagSet(data.tag_set ?? []);
+          setTagSet(data.tag_set ?? "");
           setMetadata(data.metadata);
           setTrackingId(data.tracking_id);
           setChunkHtml(data.chunk_html ?? "");
@@ -327,7 +327,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
                   type="text"
                   placeholder="(Optional) tag1,tag2,tag3"
                   value={tagSet()}
-                  onInput={(e) => setTagSet(e.target.value.split(","))}
+                  onInput={(e) => setTagSet(e.target.value)}
                   classList={{
                     "w-full bg-neutral-100 rounded-md px-4 py-1 dark:bg-neutral-700":
                       true,

@@ -504,7 +504,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                     Tag Set:{" "}
                   </span>
                   <span class="line-clamp-1 break-all">
-                    {props.chunk.tag_set?.join(", ")}
+                    {props.chunk.tag_set}
                   </span>
                 </div>
               </Show>
