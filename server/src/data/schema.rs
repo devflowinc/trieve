@@ -134,7 +134,6 @@ diesel::table! {
         email -> Varchar,
         organization_id -> Uuid,
         used -> Bool,
-        expires_at -> Timestamp,
         created_at -> Timestamp,
         updated_at -> Timestamp,
         role -> Int4,

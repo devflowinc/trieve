@@ -106,12 +106,6 @@ pub async fn check_inv_valid(
         ));
     }
 
-    if invitation.expired() {
-        return Err(ServiceError::BadRequest(
-            "Invitation has expired".to_string(),
-        ));
-    }
-
     if invitation.used {
         return Err(ServiceError::BadRequest(
             "Invitation has already been used".to_string(),
