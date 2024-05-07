@@ -524,10 +524,7 @@ pub async fn update_chunk(
         .clone()
         .filter(|chunk_tracking| !chunk_tracking.is_empty());
 
-    let chunk_tag_set = update_chunk_data
-        .tag_set
-        .clone()
-        .map(|tag_set| tag_set.join(","));
+    let chunk_tag_set = update_chunk_data.tag_set.clone();
 
     let chunk_html = match update_chunk_data.chunk_html.clone() {
         Some(chunk_html) => Some(chunk_html),
@@ -539,7 +536,11 @@ pub async fn update_chunk(
         "".to_string(),
         &chunk_html,
         &Some(link),
-        &chunk_tag_set.or(chunk_metadata.tag_set),
+        &chunk_tag_set.or(chunk_metadata.tag_set.map(|t| {
+            t.into_iter()
+                .map(|s| s.unwrap_or(String::from("")))
+                .collect()
+        })),
         chunk_metadata.qdrant_point_id,
         <std::option::Option<serde_json::Value> as Clone>::clone(&update_chunk_data.metadata)
             .or(chunk_metadata.metadata),
@@ -688,7 +689,11 @@ pub async fn update_chunk_by_tracking_id(
         "".to_string(),
         &chunk_html,
         &Some(link),
-        &chunk_metadata.tag_set,
+        &chunk_metadata.tag_set.map(|t| {
+            t.into_iter()
+                .map(|s| s.unwrap_or(String::from("")))
+                .collect()
+        }),
         chunk_metadata.qdrant_point_id,
         <std::option::Option<serde_json::Value> as Clone>::clone(&update_chunk_data.metadata)
             .or(chunk_metadata.metadata),

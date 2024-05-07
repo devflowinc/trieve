@@ -323,7 +323,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                     Tag Set:{" "}
                   </span>
                   <span class="line-clamp-1 break-all">
-                    {props.chunk.tag_set}
+                    {props.chunk.tag_set?.join(", ")}
                   </span>
                 </div>
               </Show>

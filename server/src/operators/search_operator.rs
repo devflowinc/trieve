@@ -24,7 +24,9 @@ use crate::{
 use actix_web::web;
 use diesel::dsl::sql;
 use diesel::sql_types::Text;
-use diesel::{ExpressionMethods, JoinOnDsl, PgTextExpressionMethods, QueryDsl};
+use diesel::{
+    ExpressionMethods, JoinOnDsl, PgArrayExpressionMethods, PgTextExpressionMethods, QueryDsl,
+};
 use diesel_async::RunQueryDsl;
 
 use itertools::Itertools;
@@ -506,31 +508,17 @@ pub async fn get_group_tag_set_filter_condition(
             .into_boxed();
 
     if let Some(matches) = &filter.r#match {
-        if let Some(first_val) = matches.get(0) {
-            match first_val {
-                MatchCondition::Text(string_val) => {
-                    query = query
-                        .filter(chunk_group_columns::tag_set.ilike(format!("%{}%", string_val)));
-                }
-                MatchCondition::Integer(id_val) => {
-                    query =
-                        query.filter(chunk_group_columns::tag_set.ilike(format!("%{}%", id_val)));
-                }
-            }
-        }
-
-        for match_condition in matches.iter().skip(1) {
-            match match_condition {
-                MatchCondition::Text(string_val) => {
-                    query = query
-                        .or_filter(chunk_group_columns::tag_set.ilike(format!("%{}%", string_val)));
-                }
-                MatchCondition::Integer(id_val) => {
-                    query = query
-                        .or_filter(chunk_group_columns::tag_set.ilike(format!("%{}%", id_val)));
-                }
-            }
-        }
+        query = query.or_filter(
+            chunk_group_columns::tag_set.contains(
+                matches
+                    .into_iter()
+                    .map(|tag| match tag {
+                        MatchCondition::Text(string_val) => string_val.clone(),
+                        MatchCondition::Integer(id_val) => id_val.to_string(),
+                    })
+                    .collect_vec(),
+            ),
+        );
     };
 
     if filter.range.is_some() {
@@ -938,7 +926,7 @@ pub async fn retrieve_chunks_for_groups(
                                     content: "".to_string(),
                                     chunk_html: Some("".to_string()),
                                     link: Some("".to_string()),
-                                    tag_set: Some("".to_string()),
+                                    tag_set: Some(vec![Some(String::from(""))]),
                                     metadata: None,
                                     tracking_id: None,
                                     time_stamp: None,
@@ -1073,7 +1061,7 @@ pub async fn get_metadata_from_groups(
                                     content: "".to_string(),
                                     chunk_html: Some("".to_string()),
                                     link: Some("".to_string()),
-                                    tag_set: Some("".to_string()),
+                                    tag_set: Some(vec![Some(String::from(""))]),
                                     metadata: None,
                                     tracking_id: None,
                                     time_stamp: None,
@@ -1194,7 +1182,7 @@ pub async fn retrieve_chunks_from_point_ids(
                         content: "".to_string(),
                         chunk_html: Some("".to_string()),
                         link: Some("".to_string()),
-                        tag_set: Some("".to_string()),
+                        tag_set: Some(vec![Some(String::from(""))]),
                         metadata: None,
                         tracking_id: None,
                         time_stamp: None,
