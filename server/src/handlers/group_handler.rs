@@ -101,7 +101,7 @@ pub async fn create_chunk_group(
         dataset_org_plan_sub.dataset.id,
         body.tracking_id.clone(),
         body.metadata.clone(),
-        body.tag_set.clone().map(|tags| tags.join(",")),
+        body.tag_set.clone(),
     );
     {
         let group = group.clone();
@@ -321,7 +321,7 @@ pub async fn update_group_by_tracking_id(
         data.name.clone(),
         data.description.clone(),
         data.metadata.clone(),
-        data.tag_set.clone().map(|tags| tags.join(",")),
+        data.tag_set.clone(),
         dataset_org_plan_sub.dataset.id,
         pool,
     )
@@ -518,7 +518,7 @@ pub async fn update_chunk_group(
         name,
         description,
         body.metadata.clone(),
-        body.tag_set.clone().map(|tags| tags.join(",")),
+        body.tag_set.clone(),
         dataset_org_plan_sub.dataset.id,
         pool,
     )
