@@ -3,13 +3,13 @@ import {
   createEffect,
   createSignal,
   For,
-  onMount,
   Setter,
   Accessor,
   Match,
   Switch,
   useContext,
   onCleanup,
+  createMemo,
 } from "solid-js";
 import {
   type ChunkGroupDTO,
@@ -114,6 +114,11 @@ const ResultsPage = (props: ResultsPageProps) => {
     });
   };
 
+  const curDatasetFiltersKey = createMemo(
+    () =>
+      `filters-${datasetAndUserContext.currentDataset?.()?.dataset.id ?? ""}`,
+  );
+
   createEffect(() => {
     const dataset = $dataset?.();
     if (!dataset) return;
@@ -194,21 +199,28 @@ const ResultsPage = (props: ResultsPageProps) => {
     });
   });
 
-  onMount(() => {
+  createEffect((prevFiltersKey) => {
+    const filtersKey = curDatasetFiltersKey();
+    if (prevFiltersKey === filtersKey) {
+      return filtersKey;
+    }
+
     fetchBookmarks();
 
-    const filters = localStorage.getItem("filters");
+    const filters = localStorage.getItem(filtersKey);
     if (filters) {
       setFilters(JSON.parse(filters));
     }
 
     window.addEventListener("filtersUpdated", () => {
       const filters = JSON.parse(
-        localStorage.getItem("filters") ?? "{}",
+        localStorage.getItem(filtersKey) ?? "{}",
       ) as Filters;
       setFilters(filters);
     });
-  });
+
+    return filtersKey;
+  }, "");
 
   createEffect(() => {
     if (!openChat()) {

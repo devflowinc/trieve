@@ -844,8 +844,8 @@ async fn upload_chunk(
 
         let point = PointStruct::new(qdrant_point_id.clone().to_string(), vector_payload, payload);
         let insert_tx = transaction.start_child(
-            "calling_create_new_qdrant_point_query",
-            "calling_create_new_qdrant_point_query",
+            "calling_bulk_create_new_qdrant_points_query",
+            "calling_bulk_create_new_qdrant_points_query",
         );
 
         if let Err(e) = bulk_create_new_qdrant_points_query(vec![point], dataset_config).await {

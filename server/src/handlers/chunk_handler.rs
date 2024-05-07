@@ -534,7 +534,7 @@ pub async fn update_chunk(
         None => chunk_metadata.chunk_html,
     };
 
-    let metadata = ChunkMetadata::from_details_with_id(
+    let chunk_metadata = ChunkMetadata::from_details_with_id(
         chunk_metadata.id,
         "".to_string(),
         &chunk_html,
@@ -583,7 +583,7 @@ pub async fn update_chunk(
     };
 
     let message = UpdateIngestionMessage {
-        chunk_metadata: metadata.clone(),
+        chunk_metadata: chunk_metadata.clone(),
         server_dataset_config,
         dataset_id,
         group_ids,

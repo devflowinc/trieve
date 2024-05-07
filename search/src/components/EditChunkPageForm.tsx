@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { JSX, Show, createEffect, createSignal, useContext } from "solid-js";
 import { ChunkMetadata, isActixChunkUpdateError } from "../../utils/apiTypes";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
@@ -26,7 +30,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   const [formErrorFields, setFormErrorFields] = createSignal<string[]>([]);
   const [isUpdating, setIsUpdating] = createSignal(false);
   const [chunkHtml, setChunkHtml] = createSignal<string>("");
-  const [evidenceLink, setEvidenceLink] = createSignal<string>(
+  const [link, setLink] = createSignal<string>(
     initialChunkMetadata?.link ?? "",
   );
   const [tagSet, setTagSet] = createSignal<string>(
@@ -35,10 +39,49 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   const [weight, setWeight] = createSignal(initialChunkMetadata?.weight ?? 1);
   const [metadata, setMetadata] = createSignal(initialChunkMetadata?.metadata);
   const [trackingId, setTrackingId] = createSignal(
-    initialChunkMetadata?.tracking_id,
+    initialChunkMetadata?.tracking_id ?? "",
+  );
+  const [locationLat, setLocationLat] = createSignal(
+    props.defaultResultChunk.metadata?.location?.lat ?? 0,
+  );
+  const [locationLon, setLocationLon] = createSignal(
+    props.defaultResultChunk.metadata?.location?.lon ?? 0,
+  );
+  const [timestamp, setTimestamp] = createSignal(
+    props.defaultResultChunk.metadata?.time_stamp ?? null,
   );
   const [fetching, setFetching] = createSignal(true);
   const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
+  const [groupIds, setGroupIds] = createSignal<string[]>();
+
+  createEffect(() => {
+    const currentDatasetId = $dataset?.()?.dataset.id;
+    if (!currentDatasetId) return;
+
+    void fetch(`${apiHost}/chunk_group/chunks`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "TR-Dataset": currentDatasetId,
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        chunk_ids: [props.chunkId],
+      }),
+    }).then((response) => {
+      if (response.ok) {
+        void response.json().then((data) => {
+          const tempGroupIds = [] as string[];
+          data.forEach((chunkAndSlimGroups: { slim_groups: any[] }) => {
+            chunkAndSlimGroups.slim_groups.forEach((group) => {
+              tempGroupIds.push(group.id);
+            });
+          });
+          setGroupIds(tempGroupIds);
+        });
+      }
+    });
+  });
 
   if (props.defaultResultChunk.status == 401) {
     setTopLevelError("You are not authorized to view this chunk.");
@@ -51,10 +94,9 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
     const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
-    const chunkHTMLContentValue =
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-      (window as any).tinymce.activeEditor.getContent() as unknown as string;
-    const evidenceLinkValue = evidenceLink();
+    const chunkHTMLContentValue = (
+      window as any
+    ).tinymce.activeEditor.getContent() as unknown as string;
     const curChunkId = props.chunkId;
 
     if (!chunkHTMLContentValue) {
@@ -78,12 +120,18 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
       credentials: "include",
       body: JSON.stringify({
         chunk_id: curChunkId,
-        link: evidenceLinkValue,
+        link: link(),
         tag_set: tagSet().split(","),
         tracking_id: trackingId(),
         metadata: metadata(),
         chunk_html: chunkHTMLContentValue,
         weight: weight() ?? 1,
+        group_ids: groupIds(),
+        location: {
+          lat: locationLat(),
+          lon: locationLon(),
+        },
+        time_stamp: timestamp(),
       }),
     }).then((response) => {
       if (response.ok) {
@@ -141,10 +189,10 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
     }).then((response) => {
       if (response.ok) {
         void response.json().then((data: ChunkMetadata) => {
-          setEvidenceLink(data.link ?? "");
+          setLink(data.link ?? "");
           setTagSet(data.tag_set ?? "");
           setMetadata(data.metadata);
-          setTrackingId(data.tracking_id);
+          setTrackingId(data.tracking_id ?? "");
           setChunkHtml(data.chunk_html ?? "");
           setWeight(data.weight ?? 0);
           setTopLevelError("");
@@ -313,8 +361,8 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
                 <input
                   type="text"
                   placeholder="(Optional) https://example.com"
-                  value={evidenceLink()}
-                  onInput={(e) => setEvidenceLink(e.target.value)}
+                  value={link()}
+                  onInput={(e) => setLink(e.target.value)}
                   classList={{
                     "w-full bg-neutral-100 rounded-md px-4 py-1 dark:bg-neutral-700":
                       true,
@@ -335,6 +383,38 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
                       formErrorFields().includes("tagset"),
                   }}
                 />
+                <div>Date</div>
+                <input
+                  type="date"
+                  class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+                  onInput={(e) => {
+                    setTimestamp(e.currentTarget.value);
+                  }}
+                  value={timestamp() ?? ""}
+                />
+                <div>Location Latitude and Longitude</div>
+                <div class="flex space-x-2">
+                  <input
+                    type="number"
+                    step="0.00000001"
+                    placeholder="Latitude"
+                    value={locationLat()}
+                    onInput={(e) =>
+                      setLocationLat(Number(e.currentTarget.value))
+                    }
+                    class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+                  />
+                  <input
+                    type="number"
+                    step="0.00000001"
+                    placeholder="Longitude"
+                    value={locationLon()}
+                    onInput={(e) =>
+                      setLocationLon(Number(e.currentTarget.value))
+                    }
+                    class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+                  />
+                </div>
                 <div>Weight for Merchandise Tuning</div>
                 <input
                   type="number"

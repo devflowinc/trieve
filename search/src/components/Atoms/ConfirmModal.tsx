@@ -19,7 +19,7 @@ export const ConfirmModal = (props: ConfirmModalProps) => {
       >
         <div class="min-w-[250px] sm:min-w-[300px]">
           <BiRegularXCircle class="mx-auto h-8 w-8 fill-current !text-red-500" />
-          <div class="mb-4 text-center text-xl font-bold text-current">
+          <div class="mb-4 text-center text-xl font-bold text-current dark:text-white">
             {props.message || "Are you sure you want to delete this?"}
           </div>
           <div class="mx-auto flex w-fit space-x-3">
