@@ -1612,7 +1612,6 @@ pub struct Invitation {
     pub email: String,
     pub organization_id: uuid::Uuid,
     pub used: bool,
-    pub expires_at: chrono::NaiveDateTime,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub role: i32,
@@ -1626,14 +1625,10 @@ impl Invitation {
             email,
             organization_id,
             used: false,
-            expires_at: chrono::Utc::now().naive_local() + chrono::Duration::days(3),
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             role,
         }
-    }
-    pub fn expired(&self) -> bool {
-        self.expires_at < chrono::Utc::now().naive_local()
     }
 }
 
