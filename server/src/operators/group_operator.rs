@@ -93,11 +93,32 @@ pub async fn update_group_by_tracking_id_query(
 #[tracing::instrument(skip(pool))]
 pub async fn create_group_query(
     new_group: ChunkGroup,
+    upsert_by_tracking_id: bool,
     pool: web::Data<Pool>,
 ) -> Result<ChunkGroup, ServiceError> {
     use crate::data::schema::chunk_group::dsl::*;
 
     let mut conn = pool.get().await.unwrap();
+
+    if let Some(other_tracking_id) = new_group.tracking_id.clone() {
+        if upsert_by_tracking_id {
+            if let Ok(existing_group) = get_group_from_tracking_id_query(
+                other_tracking_id.clone(),
+                new_group.dataset_id,
+                pool.clone(),
+            )
+            .await
+            {
+                let mut update_group = new_group.clone();
+                update_group.id = existing_group.id;
+                update_group.created_at = existing_group.created_at;
+
+                let updated_group = update_chunk_group_query(update_group, pool.clone()).await?;
+
+                return Ok(updated_group);
+            }
+        }
+    }
 
     diesel::insert_into(chunk_group)
         .values(&new_group)
@@ -304,35 +325,28 @@ pub async fn delete_group_by_id_query(
 #[tracing::instrument(skip(pool))]
 pub async fn update_chunk_group_query(
     group: ChunkGroup,
-    new_name: Option<String>,
-    new_description: Option<String>,
-    new_metadata: Option<serde_json::Value>,
-    new_tag_set: Option<String>,
-    dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<(), ServiceError> {
+) -> Result<ChunkGroup, ServiceError> {
     use crate::data::schema::chunk_group::dsl::*;
 
     let mut conn = pool.get().await.unwrap();
 
-    diesel::update(
+    let updated_group: ChunkGroup = diesel::update(
         chunk_group
             .filter(id.eq(group.id))
-            .filter(dataset_id.eq(dataset_uuid)),
+            .filter(dataset_id.eq(group.dataset_id)),
     )
     .set((
-        name.eq(new_name.unwrap_or(group.name)),
-        description.eq(new_description.unwrap_or(group.description)),
-        metadata.eq(new_metadata.unwrap_or(group.metadata.unwrap_or_default())),
-        tag_set.eq(new_tag_set.unwrap_or(group.tag_set.unwrap_or_default())),
+        name.eq(group.name),
+        description.eq(group.description),
+        metadata.eq(group.metadata),
+        tag_set.eq(group.tag_set),
     ))
-    .execute(&mut conn)
+    .get_result(&mut conn)
     .await
     .map_err(|_err| ServiceError::BadRequest("Error updating group".to_string()))?;
 
-    //TODO: update bookmarks within the group
-
-    Ok(())
+    Ok(updated_group)
 }
 
 #[tracing::instrument(skip(pool))]

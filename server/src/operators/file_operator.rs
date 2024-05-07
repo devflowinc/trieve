@@ -122,7 +122,7 @@ pub async fn create_chunks_with_handler(
         None,
     );
 
-    let chunk_group = create_group_query(chunk_group, pool.clone())
+    let chunk_group = create_group_query(chunk_group, false, pool.clone())
         .await
         .map_err(|e| {
             log::error!("Could not create group {:?}", e);
