@@ -1,4 +1,4 @@
-{{ $storage := (ternary "10Gi" "500Gi" (eq .Values.environment  "local")) }}
+{{ $storage := (ternary "10Gi" "50Gi" (eq .Values.environment  "local")) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

@@ -6,27 +6,23 @@ externalDomain: $EXTERNAL_DOMAIN
 useGpu: false
 containers:
   keycloak:
-    tag: 0.1.0
+    tag: 23.0.7
   minio:
-    tag: 0.1.0
-  postgres:
-    tag: 0.1.0
-  redis:
-    tag: 0.1.0
+    tag: RELEASE.2023-09-27T15-22-50Z
   tika:
-    tag: 0.1.0
+    tag: 2.9.1.0-full
   mc:
-    tag: 0.1.0
+    tag: latest
   server:
-    tag: 0.1.0
+    tag: no-ocr
   ingest:
-    tag: 0.1.0
+    tag: latest
   search:
-    tag: 0.1.0
+    tag: latest
   chat:
-    tag: 0.1.0
+    tag: latest
   dashboard:
-    tag: 0.1.0
+    tag: latest
 config:
   quantizeVectors: false
   vite:
@@ -46,6 +42,8 @@ config:
     password: redis
   qdrant:
     collection: collection
+  ingest:
+    replicas: 5
   trieve:
     unlimited: true
     cookieSecure: false
@@ -88,24 +86,24 @@ config:
 embeddings:
   - name: jina
     revision: main
-    port: 9999
+    port: 80
     model: jinaai/jina-embeddings-v2-small-en
     revision: main
     args: []
   - name: reranker
     model: BAAI/bge-reranker-large
     revision: refs/pr/4
-    port: 7777
+    port: 80
     args: []
   - name: splade-doc
     model: naver/efficient-splade-VI-BT-large-doc
     revision: main
-    port: 7070
+    port: 80
     args: ["--pooling", "splade"]
   - name: splade-query
     model: naver/efficient-splade-VI-BT-large-query
     revision: main
-    port: 7071
+    port: 80
     args: ["--pooling", "splade"]
 redis:
   enabled: true

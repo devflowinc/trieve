@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
         - name: embedding-{{ $name }}
-          image: {{ ternary "ghcr.io/huggingface/text-embeddings-inference:86-1.1" "ghcr.io/huggingface/text-embeddings-inference:cpu-1.2" $.Values.useGpu }}
+          image: {{ ternary "ghcr.io/huggingface/text-embeddings-inference:turing-1.2" "ghcr.io/huggingface/text-embeddings-inference:cpu-1.2" $.Values.useGpu }}
           args: 
             {{ (concat (list "--model-id" $model "--revision" $revision) $args) | toJson }}
           ports:

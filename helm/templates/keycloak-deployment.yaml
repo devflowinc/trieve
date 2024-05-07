@@ -1,3 +1,5 @@
+{{- if eq .Values.environment "local" }}
+{{- $domain := .Values.domain }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -20,7 +22,7 @@ spec:
     spec:
       containers:
       - name: keycloak
-        image: {{ printf "%s%s:%s" (ternary (printf "%s.dkr.ecr.%s.amazonaws.com/" .Values.accountId .Values.region) "localhost:5000/" (eq .Values.environment "aws")) "keycloak" .Values.containers.keycloak.tag }}
+        image: {{ printf "%s%s:%s" (ternary "quay.io/keycloak/" "localhost:5000/" (eq .Values.environment "aws")) "keycloak" .Values.containers.keycloak.tag }}
         ports:
           - containerPort: 8080
           - containerPort: 42625
@@ -42,7 +44,14 @@ spec:
             value: {{ default "password" .Values.config.keycloak.dbPassword }}
           - name: KC_HEALTH_ENABLED
             value: "true"
+          - name: KC_PROXY_HEADERS
+            value: "xforwarded"
+          - name: PROXY_ADDRESS_FORWARDING
+            value: "true"
+          - name: KC_HOSTNAME
+            value:  "https://oidc.{{ $domain }}"
       volumes:
       - name: keycloak-data
         persistentVolumeClaim:
           claimName: keycloak-pvc
+{{- end }}

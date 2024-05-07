@@ -155,7 +155,8 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - http:
+    - host: "dashboard.{{ $externalDomain }}"
+      http:
         paths:
           - path: /
             pathType: Prefix
@@ -179,7 +180,8 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - http:
+    - host: "chat.{{ $externalDomain }}"
+      http:
         paths:
           - path: /
             pathType: Prefix
@@ -199,11 +201,14 @@ metadata:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/healthcheck-path: "/api/health"
+    alb.ingress.kubernetes.io/healthcheck-port: "8090"
     external-dns.alpha.kubernetes.io/hostname: "api.{{ $externalDomain }}"
 spec:
   ingressClassName: alb
   rules:
-    - http:
+    - host: "api.{{ $externalDomain }}"
+      http:
         paths:
           - path: /
             pathType: Prefix
@@ -227,7 +232,8 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - http:
+    - host: "search.{{ $externalDomain }}"
+      http:
         paths:
           - path: /
             pathType: Prefix
@@ -247,11 +253,16 @@ metadata:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     external-dns.alpha.kubernetes.io/hostname: "oidc.{{ $externalDomain }}"
 spec:
   ingressClassName: alb
+  tls:
+    - hosts:
+        - "oidc.{{ $externalDomain }}"
   rules:
-    - http:
+    - host: "oidc.{{ $externalDomain }}"
+      http:
         paths:
           - path: /
             pathType: Prefix
@@ -275,7 +286,8 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - http:
+    - host: "data.{{ $externalDomain }}"
+      http:
         paths:
           - path: /
             pathType: Prefix
@@ -284,4 +296,26 @@ spec:
                 name: minio-service
                 port:
                   number: 9000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-ingress
+spec:
+  podSelector: {}
+  ingress:
+  - {}
+  policyTypes:
+  - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-egress
+spec:
+  podSelector: {}
+  egress:
+  - {}
+  policyTypes:
+  - Egress
 {{- end }}
