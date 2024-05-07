@@ -14,19 +14,19 @@ import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 export interface Filter {
   field: string;
   geo_radius?: {
-    center: {
-      lat: number;
-      lon: number;
-    };
-    radius: number;
-  };
-  match?: string[] | number[];
+    center?: {
+      lat?: number | null;
+      lon?: number | null;
+    } | null;
+    radius?: number | null;
+  } | null;
+  match?: (string | number)[] | null;
   range?: {
-    gte?: number;
-    lte?: number;
-    gt?: number;
-    lt?: number;
-  };
+    gte?: number | null;
+    lte?: number | null;
+    gt?: number | null;
+    lt?: number | null;
+  } | null;
 }
 
 export interface Filters {
@@ -264,29 +264,30 @@ export const FilterItem = (props: FilterItemProps) => {
   const [tempFilterField, setTempFilterField] = createSignal<string>(
     props.initialFilter?.field ?? "",
   );
-  const [latitude, setLatitude] = createSignal<number>(
-    props.initialFilter?.geo_radius?.center.lat ?? 0,
+  const [latitude, setLatitude] = createSignal<number | null>(
+    props.initialFilter?.geo_radius?.center?.lat ?? null,
   );
-  const [longitude, setLongitude] = createSignal<number>(
-    props.initialFilter?.geo_radius?.center.lon ?? 0,
+  const [longitude, setLongitude] = createSignal<number | null>(
+    props.initialFilter?.geo_radius?.center?.lon ?? null,
   );
-  const [radius, setRadius] = createSignal<number>(
-    props.initialFilter?.geo_radius?.radius ?? 0,
+  const [radius, setRadius] = createSignal<number | null>(
+    props.initialFilter?.geo_radius?.radius ?? null,
   );
-  const [greaterThan, setGreaterThan] = createSignal<number>(
-    props.initialFilter?.range?.gt ?? 0,
+  const [greaterThan, setGreaterThan] = createSignal<number | null>(
+    props.initialFilter?.range?.gt ?? null,
   );
-  const [lessThan, setLessThan] = createSignal<number>(
-    props.initialFilter?.range?.lt ?? 0,
+  const [lessThan, setLessThan] = createSignal<number | null>(
+    props.initialFilter?.range?.lt ?? null,
   );
-  const [greaterThanOrEqual, setGreaterThanOrEqual] = createSignal<number>(
-    props.initialFilter?.range?.gte ?? 0,
+  const [greaterThanOrEqual, setGreaterThanOrEqual] = createSignal<
+    number | null
+  >(props.initialFilter?.range?.gte ?? null);
+
+  const [lessThanOrEqual, setLessThanOrEqual] = createSignal<number | null>(
+    props.initialFilter?.range?.lte ?? null,
   );
-  const [lessThanOrEqual, setLessThanOrEqual] = createSignal<number>(
-    props.initialFilter?.range?.lte ?? 0,
-  );
-  const [match, setMatch] = createSignal<string[] | number[]>(
-    props.initialFilter?.match ?? [],
+  const [match, setMatch] = createSignal<(string | number)[] | null>(
+    props.initialFilter?.match ?? null,
   );
 
   createEffect(() => {
@@ -392,7 +393,7 @@ export const FilterItem = (props: FilterItemProps) => {
               onChange={(e) => {
                 setLatitude(parseFloat(e.currentTarget.value));
               }}
-              value={latitude()}
+              value={latitude() ?? ""}
             />
           </div>
           <div class="grid w-full grid-cols-2 items-center gap-y-1">
@@ -404,7 +405,7 @@ export const FilterItem = (props: FilterItemProps) => {
               onChange={(e) => {
                 setLongitude(parseFloat(e.currentTarget.value));
               }}
-              value={longitude()}
+              value={longitude() ?? ""}
             />
           </div>
           <div class="grid w-full grid-cols-2 items-center gap-y-1">
@@ -416,7 +417,7 @@ export const FilterItem = (props: FilterItemProps) => {
               onChange={(e) => {
                 setRadius(parseFloat(e.currentTarget.value));
               }}
-              value={radius()}
+              value={radius() ?? ""}
             />
           </div>
         </div>
@@ -432,7 +433,7 @@ export const FilterItem = (props: FilterItemProps) => {
               onChange={(e) => {
                 setGreaterThan(parseFloat(e.currentTarget.value));
               }}
-              value={greaterThan()}
+              value={greaterThan() ?? ""}
             />
             <label aria-label="Less Than">Less Than:</label>
             <input
@@ -442,7 +443,7 @@ export const FilterItem = (props: FilterItemProps) => {
               onChange={(e) => {
                 setLessThan(parseFloat(e.currentTarget.value));
               }}
-              value={lessThan()}
+              value={lessThan() ?? ""}
             />
           </div>
           <div class="grid w-full grid-cols-2 items-center gap-y-1">
@@ -456,7 +457,7 @@ export const FilterItem = (props: FilterItemProps) => {
               onChange={(e) => {
                 setGreaterThanOrEqual(parseFloat(e.currentTarget.value));
               }}
-              value={greaterThanOrEqual()}
+              value={greaterThanOrEqual() ?? ""}
             />
             <label aria-label="Less Than or Equal">Less Than or Equal:</label>
             <input
@@ -466,7 +467,7 @@ export const FilterItem = (props: FilterItemProps) => {
               onChange={(e) => {
                 setLessThanOrEqual(parseFloat(e.currentTarget.value));
               }}
-              value={lessThanOrEqual()}
+              value={lessThanOrEqual() ?? ""}
             />
           </div>
         </div>
@@ -482,7 +483,7 @@ export const FilterItem = (props: FilterItemProps) => {
               onChange={(e) => {
                 setMatch(e.currentTarget.value.split(","));
               }}
-              value={match().join(",")}
+              value={(match() ?? []).join(",")}
             />
           </div>
         </div>
