@@ -25,6 +25,7 @@ use actix_web::{
 };
 use crossbeam_channel::unbounded;
 use futures_util::stream;
+use itertools::Itertools;
 use openai_dive::v1::{
     api::Client,
     resources::chat::{
@@ -34,6 +35,7 @@ use openai_dive::v1::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use simple_server_timing_header::Timer;
+use simsearch::SimSearch;
 use tokio_stream::StreamExt;
 use utoipa::ToSchema;
 
@@ -933,9 +935,8 @@ pub async fn create_suggested_queries_handler(
         .join("\n\n");
 
     let content = ChatMessageContent::Text(format!(
-        "Here is some context for the dataset for which the user is querying for {}. Generate 3 suggested keyword searches based off this query a user made. Your only response should be the 3 keyword searches which are seperated by new lines and are just text and you do not add any other context or information about the keyword searches. This should not be a list, so do not number each keyword search. These keyword searches should be related to the user query and within the domain of the dataset. Here is the user query: {}",
-        rag_content,
-        data.query,
+        "Here is some context for the dataset for which the user is querying for {}. Generate 10 suggested followup keyword searches based off the domain of this dataset. Your only response should be the 10 followup keyword searches which are seperated by new lines and are just text and you do not add any other context or information about the followup keyword searches. This should not be a list, so do not number each keyword search. These followup keyword searches should be related to the domain of the dataset.",
+        rag_content
     ));
 
     let message = ChatMessage {
@@ -1020,9 +1021,33 @@ pub async fn create_suggested_queries_handler(
             ChatMessageContent::Text(content) => content.clone(),
             _ => "".to_string(),
         }
-        .split(',')
+        .split('\n')
         .map(|query| query.to_string().trim().trim_matches('\n').to_string())
         .collect();
     }
+
+    let mut engine: SimSearch<String> = SimSearch::new();
+
+    chunk_metadatas.iter().for_each(|chunk| {
+        engine.insert(
+            chunk.metadata.first().unwrap().content.clone(),
+            &chunk.metadata.first().unwrap().content.clone(),
+        );
+    });
+
+    let sortable_queries = queries
+        .iter()
+        .map(|query| (query, engine.search(query).len()))
+        .collect_vec();
+
+    //search for the query
+    queries = sortable_queries
+        .iter()
+        .sorted_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+        .map(|(content, _length)| content)
+        .cloned()
+        .cloned()
+        .collect_vec();
+
     Ok(HttpResponse::Ok().json(SuggestedQueriesResponse { queries }))
 }
