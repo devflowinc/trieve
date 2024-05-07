@@ -1320,12 +1320,12 @@ pub async fn search_hybrid_chunks(
     let search_chunk_query_results = retrieve_qdrant_points_query(
         VectorType::Dense(embedding_vector),
         page,
+        get_total_pages,
         data.page_size.unwrap_or(10),
         data.score_threshold,
         data.filters.clone(),
         parsed_query.clone(),
         dataset.id,
-        get_total_pages,
         pool.clone(),
         config.clone(),
     );

@@ -1169,6 +1169,7 @@ impl Default for SearchChunkData {
             get_collisions: None,
             highlight_results: None,
             highlight_delimiters: None,
+            quote_negated_words: None,
             score_threshold: None,
             slim_chunks: None,
         }

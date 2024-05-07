@@ -666,6 +666,7 @@ pub async fn stream_response(
     let search_chunk_query_results = retrieve_qdrant_points_query(
         VectorType::Dense(embedding_vector),
         1,
+        false,
         n_retrievals_to_include.try_into().unwrap(),
         None,
         None,
@@ -675,7 +676,6 @@ pub async fn stream_response(
             negated_words: None,
         },
         dataset.id,
-        false,
         pool.clone(),
         config,
     )
