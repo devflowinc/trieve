@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Show,
   createEffect,
@@ -28,6 +30,7 @@ import { IoDocumentOutline, IoDocumentsOutline } from "solid-icons/io";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { FaSolidChevronDown, FaSolidChevronUp } from "solid-icons/fa";
 import { Filters } from "./FilterModal";
+import { createToast } from "./ShowToasts";
 
 export interface ResultsPageProps {
   query: string;
@@ -183,6 +186,23 @@ const ResultsPage = (props: ResultsPageProps) => {
             setNoResults(true);
           }
         });
+      } else {
+        void response
+          .json()
+          .then((data) => {
+            createToast({
+              type: "error",
+              message: data.message,
+            });
+          })
+          .catch(() => {
+            createToast({
+              type: "error",
+              message: "An unknown error occurred while searching",
+            });
+          });
+
+        setNoResults(true);
       }
 
       setClientSideRequestFinished(true);
@@ -261,7 +281,10 @@ const ResultsPage = (props: ResultsPageProps) => {
             </div>
           </Match>
           <Match when={noResults()}>
-            <div class="text-2xl">No results found</div>
+            <div class="mt-6 flex flex-col items-center">
+              <p class="text-3xl">No Results Found</p>
+              <p class="text-lg">You may need to adjust your filters</p>
+            </div>
           </Match>
           <Match when={!props.loading() && groupResultChunks().length == 0}>
             <div class="flex w-full max-w-7xl flex-col space-y-4 px-1 min-[360px]:px-4 sm:px-8 md:px-20">

@@ -40,7 +40,6 @@ const SearchForm = (props: {
   const [textareaInput, setTextareaInput] = createSignal("");
   const [typewriterEffect, setTypewriterEffect] = createSignal("");
   const [textareaFocused, setTextareaFocused] = createSignal(false);
-  const [showFilters, setShowFilters] = createSignal(false);
   const [groupUniqueSearch, setGroupUniqueSearch] = createSignal(
     // eslint-disable-next-line solid/reactivity
     props.groupUniqueSearch ?? false,
@@ -236,18 +235,42 @@ const SearchForm = (props: {
             </div>
           </div>
           <div class="flex space-x-2">
-            <button
-              classList={{
-                "flex items-center space-x-1 text-sm pb-1 rounded": true,
-                "bg-neutral-200 dark:bg-neutral-700": showFilters(),
-              }}
-              onClick={(e) => {
-                e.preventDefault();
-                setShowFilters(!showFilters());
-              }}
-            >
-              <span class="p-1">Filters</span>
-            </button>
+            <Popover defaultOpen={false} class="relative">
+              {({ isOpen, setState }) => (
+                <>
+                  <PopoverButton
+                    aria-label="Toggle filters"
+                    type="button"
+                    class="flex items-center space-x-1 pb-1 text-sm"
+                  >
+                    <span class="p-1">Filters</span>{" "}
+                    <svg
+                      fill="currentColor"
+                      stroke-width="0"
+                      style={{ overflow: "visible", color: "currentColor" }}
+                      viewBox="0 0 16 16"
+                      class="h-3.5 w-3.5 "
+                      height="1em"
+                      width="1em"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />
+                    </svg>
+                  </PopoverButton>
+                  <Show when={isOpen()}>
+                    <PopoverPanel
+                      unmount={false}
+                      class="absolute z-10 mt-2 h-fit w-fit rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-700"
+                    >
+                      <FilterModal
+                        showFilterModal={isOpen}
+                        setShowFilterModal={setState}
+                      />
+                    </PopoverPanel>
+                  </Show>
+                </>
+              )}
+            </Popover>
             <Popover defaultOpen={false} class="relative">
               {({ isOpen, setState }) => (
                 <>
@@ -277,7 +300,7 @@ const SearchForm = (props: {
                   <Show when={isOpen()}>
                     <PopoverPanel
                       unmount={false}
-                      class="absolute z-10 mt-2 h-fit w-[180px]  rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-800"
+                      class="absolute z-10 mt-2 h-fit w-[180px] rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-800"
                     >
                       <Menu class="ml-1 space-y-1">
                         <For each={searchTypes()}>
@@ -355,10 +378,6 @@ const SearchForm = (props: {
           </div>
         </form>
       </div>
-      <FilterModal
-        showFilterModal={showFilters}
-        setShowFilterModal={setShowFilters}
-      />
     </>
   );
 };
