@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: dashboard
-        image: {{ printf "%s%s:%s" (ternary (printf "%s.dkr.ecr.%s.amazonaws.com/" .Values.accountId .Values.region) "localhost:5000/" (eq .Values.environment "aws")) "dashboard" .Values.containers.dashboard.tag }}
+        image: {{ printf "%s%s:%s" (ternary "trieve/" "localhost:5000/" (eq .Values.environment "aws")) "dashboard" .Values.containers.dashboard.tag }}
         ports:
           - containerPort: 80
         env:

@@ -240,10 +240,7 @@ pub async fn retrieve_qdrant_points_query(
         .ceil() as i64;
 
     Ok(SearchChunkQueryResult {
-        search_results: point_ids.map_err(|e| {
-            log::error!("Failed to get points from Qdrant {:?}", e);
-            ServiceError::BadRequest("Failed to get points from Qdrant".to_string())
-        })?,
+        search_results: point_ids?,
         total_chunk_pages: pages,
     })
 }
@@ -617,10 +614,7 @@ pub async fn retrieve_group_qdrant_points_query(
         .ceil() as i64;
 
     Ok(SearchOverGroupsQueryResult {
-        search_results: point_ids.map_err(|e| {
-            log::error!("Failed to get points from Qdrant {:?}", e);
-            ServiceError::BadRequest("Failed to get points from Qdrant".to_string())
-        })?,
+        search_results: point_ids?,
         total_chunk_pages: pages,
     })
 }
@@ -747,10 +741,7 @@ pub async fn search_within_chunk_group_query(
         .ceil() as i64;
 
     Ok(SearchChunkQueryResult {
-        search_results: point_ids.map_err(|e| {
-            log::error!("Failed to get points from Qdrant {:?}", e);
-            ServiceError::BadRequest("Failed to get points from Qdrant".to_string())
-        })?,
+        search_results: point_ids?,
         total_chunk_pages: pages,
     })
 }

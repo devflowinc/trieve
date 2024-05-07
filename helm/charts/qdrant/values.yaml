@@ -1,4 +1,4 @@
-replicaCount: 4
+replicaCount: 10
 
 image:
   repository: docker.io/qdrant/qdrant
@@ -83,13 +83,11 @@ additionalLabels: {}
 podAnnotations: {}
 podLabels: {}
 
-resources: {}
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+resources:
+  limits:
+    memory: 200Gi
+  requests:
+    memory: 100Gi
 
 containerSecurityContext:
   runAsNonRoot: true
@@ -117,7 +115,7 @@ topologySpreadConstraints: []
 
 persistence:
   accessModes: ["ReadWriteOnce"]
-  size: 10Gi
+  size: 200Gi
   annotations: {}
   # storageClassName: local-path
 
@@ -189,7 +187,7 @@ podDisruptionBudget:
 # false: no api key will be configured
 # true: an api key will be auto-generated
 # string: the given string will be set as an apikey
-apiKey: false
+apiKey: "therealestshitever"
 # read-only api key for authentication at qdrant
 # false: no read-only api key will be configured
 # true: an read-only api key will be auto-generated

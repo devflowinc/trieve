@@ -4,7 +4,7 @@
 {{- if ne $index 0 }}
 ---
 {{- end }}
-{{- $serviceName := (printf "embedding-%s-service" $name) }}
+{{- $serviceName := (printf "embedding-%s" $name) }}
 {{- $selector := (printf "embedding-%s" $name) }}
 kind: Service
 apiVersion: v1
@@ -21,7 +21,7 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: {{ $port }}
+    - port: 80
       targetPort: 80
       protocol: TCP
       name: svc

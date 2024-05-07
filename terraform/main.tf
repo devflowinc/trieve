@@ -7,12 +7,22 @@ terraform {
   }
 }
 
+variable "ssh_pub_key_file" {
+  type    = string
+  default = "~/.ssh/id_ed25519.pub"
+}
+
+variable "region" {
+  type = string
+  default = "us-west-1"
+}
+
 ###############################################################
 # VPC configuration
 ###############################################################
 # Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
 provider "aws" {
-  region = "us-west-1"
+  region = var.region
 }
 
 module "vpc" {
@@ -47,7 +57,7 @@ module "eks" {
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
 
-  cluster_name                   = "trieve"
+  cluster_name                   = "trieve-cluster"
   cluster_version                = "1.29"
   cluster_endpoint_public_access = true
   cluster_addons = {
@@ -67,14 +77,34 @@ module "eks" {
 
   eks_managed_node_groups = {
 
-    trieve-nodegroup-gpu = {
-      name = "nodegroup-gpu"
+    # trieve-nodegroup-gpu = {
+    #   name = "nodegroup-gpu"
+    #
+    #   instance_types = ["g4dn.xlarge"]
+    #   ami_type       = "BOTTLEROCKET_x86_64_NVIDIA"
+    #
+    #
+    #   min_size     = 2
+    #   max_size     = 5
+    #   desired_size = 4
+    #
+    #   # Argument for GPU inference
+    #   kubelet_extra_args = "--node-labels=k8s.amazonaws.com/accelerator=vgpu"
+    #
+    #   # Needed by the aws-ebs-csi-driver
+    #   iam_role_additional_policies = {
+    #     AmazonEBSCSIDriverPolicy = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+    #   }
+    # }
 
-      instance_types = ["g4dn.xlarge"]
+    trieve-nodegroup-general = {
+      name = "nodegroup-general"
 
-      min_size     = 1
-      max_size     = 2
-      desired_size = 2
+      instance_types = ["m7i.xlarge"]
+
+      desired_size = 5
+      min_size     = 3
+      max_size     = 8
 
       # Needed by the aws-ebs-csi-driver
       iam_role_additional_policies = {
@@ -82,14 +112,14 @@ module "eks" {
       }
     }
 
-    trieve-nodegroup-general = {
-      name = "nodegroup-general"
+    trieve-nodegroup-highmem = {
+      name = "nodegroup-highmem"
 
-      instance_types = ["m7i.xlarge"]
+      instance_types = ["m7i.4xlarge"]
 
+      desired_size = 2
       min_size     = 2
-      max_size     = 5
-      desired_size = 3
+      max_size     = 3
 
       # Needed by the aws-ebs-csi-driver
       iam_role_additional_policies = {
@@ -110,8 +140,8 @@ module "eks" {
 #
 
 data "aws_eks_cluster" "cluster" {
-  depends_on = [ module.eks ]
-  name = "trieve"
+  depends_on = [module.eks]
+  name       = "trieve-cluster"
 }
 
 data "aws_iam_openid_connect_provider" "oidc_provider" {
@@ -146,5 +176,5 @@ module "alb_controller" {
   cluster_name                     = "trieve"
   cluster_identity_oidc_issuer     = data.aws_eks_cluster.cluster.identity.0.oidc.0.issuer
   cluster_identity_oidc_issuer_arn = data.aws_iam_openid_connect_provider.oidc_provider.arn
-  aws_region                       = "us-west-1"
+  aws_region                       = var.region
 }

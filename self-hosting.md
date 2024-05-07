@@ -21,13 +21,13 @@ This should provision an eks cluster with elb and ebs drivers
 ### 3 Create values.yaml
 
 ```sh
-export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
-export AWS_REGION=us-west-1
+export AWS_ACCOUNT_ID='"$(aws sts get-caller-identity --query "Account" --output text)"'
+export AWS_REGION=us-east-1
 
 export SENTRY_CHAT_DSN=https://********************************@sentry.trieve.ai/6
 export ENVIRONMENT=aws
-export DOMAIN= # Only used for local
-export EXTERNAL_DOMAIN=trieve.ai
+export DOMAIN=ansear.ai # Only used for local
+export EXTERNAL_DOMAIN=ansear.ai
 export DASHBOARD_URL=https://dashboard.trieve.ai
 export KEYCLOAK_ADMIN=admin
 export KEYCLOAK_PASSWORD=admin
@@ -60,17 +60,10 @@ helm/from-env.sh
 
 This step generates a file in `helm/values.yaml`. It alllows you to modify the environment variables
 
-### 4. Build and push Dockerimages 
+### 4. Deploy the helm chart
 
 ```sh
-bash scripts/login-docker.sh
-bash scripts/docker-build-eks.sh
-```
-
-### 5. Deploy the helm chart
-
-```sh
-aws eks update-kubeconfig --name trieve
+aws eks update-kubeconfig --region us-west-1 --name trieve-cluster
 helm install -f helm/values.yaml trieve helm/
 ```
 
@@ -80,9 +73,22 @@ Ensure everything has been deployed with
 kubectl get pods
 ```
 
-Notice the server isn't working yet. That is because it tries to connect with keycloak using the public url.
-DNS records need to be set for the server to fully spin up.
+Notice the services that require ecr don't stand up. We need to build and push ecr docker images
 
+### 4. Build and push Dockerimages 
+
+```sh
+bash scripts/login-docker.sh
+bash scripts/docker-build-eks.sh
+```
+
+After this all other services should be working and verifieid by. 
+
+```
+kubectl get pods
+```
+
+`server` isn't up because CNAME and ssl are needed.
 
 ### 6. Set CNAME links
 

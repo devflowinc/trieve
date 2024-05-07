@@ -42,7 +42,7 @@ function build_images() {
   docker_build -t trieve/dashboard .
   cd $startpath/../server
   docker_build -t trieve/server -f Dockerfile.no-ocr . 
-  docker_build -t trieve/ingest -f Dockerfile.microservice .
+  # docker_build -t trieve/ingest -f Dockerfile.microservice .
 }
 
 function tag_images() {

@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: server
-        image: {{ printf "%s%s:%s" (ternary (printf "%s.dkr.ecr.%s.amazonaws.com/" .Values.accountId .Values.region) "localhost:5000/" (eq .Values.environment "aws")) "server" .Values.containers.server.tag }}
+        image: {{ printf "%s%s:%s" (ternary "trieve/" "localhost:5000/" (eq .Values.environment "aws")) "server" .Values.containers.server.tag }}
         ports:
           - containerPort: 8090
         env:
@@ -31,7 +31,7 @@ spec:
           - name: REDIS_URL
             value: "redis://:redis@trieve-redis-master.default.svc.cluster.local:6379"
           - name: QDRANT_URL
-            value: qdrant.default.svc.cluster.local
+            value: http://trieve-qdrant.default.svc.cluster.local:6334
           - name: QDRANT_API_KEY
             value: {{ .Values.config.qdrant.apiKey }}
           - name: DATABASE_URL
@@ -88,8 +88,10 @@ spec:
             value: {{ .Values.config.trieve.gpuServerOrigin }}
           - name: AWS_REGION
             value: {{ .Values.region }}
-          - name: SPARSE_SERVER_ORIGIN
-            value: {{ .Values.config.trieve.sparseServerOrigin }}
+          - name: SPARSE_SERVER_QUERY_ORIGIN
+            value: {{ .Values.config.trieve.sparseServerQueryOrigin }}
+          - name: SPARSE_SERVER_DOC_ORIGIN
+            value: {{ .Values.config.trieve.sparseServerDocOrigin }}
           - name: EMBEDDING_SERVER_ORIGIN
             value: {{ .Values.config.trieve.embeddingServerOrigin }}
           - name: EMBEDDING_SERVER_ORIGIN_BGEM3
