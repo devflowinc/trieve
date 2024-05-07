@@ -287,7 +287,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                           <div class="flex w-full items-center justify-between space-x-2">
                             <A
                               href={`/group/${group.id}`}
-                              class="max-w-[80%] underline"
+                              class="max-w-[80%] break-all underline"
                             >
                               {group.name}
                             </A>

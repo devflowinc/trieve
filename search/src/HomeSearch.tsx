@@ -68,7 +68,7 @@ export const HomeSearch = () => {
             </div>
           </a>
         </div>
-        <div class="mt-8 w-full max-w-6xl px-4 sm:px-8 md:px-20">
+        <div class="mt-8 w-full max-w-7xl px-4 sm:px-8 md:px-20">
           <SearchForm searchType={searchType} groupUniqueSearch={groupUnique} />
         </div>
       </div>
