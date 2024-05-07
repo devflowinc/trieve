@@ -67,13 +67,13 @@ pub async fn get_slim_chunk_metadatas_from_point_ids(
             chunk_metadata_columns::qdrant_point_id,
             chunk_metadata_columns::created_at,
             chunk_metadata_columns::updated_at,
+            chunk_metadata_columns::tag_set,
             chunk_metadata_columns::metadata,
             chunk_metadata_columns::tracking_id,
             chunk_metadata_columns::time_stamp,
             chunk_metadata_columns::location,
             chunk_metadata_columns::dataset_id,
             chunk_metadata_columns::weight,
-            chunk_metadata_columns::tag_set,
         ))
         .load::<SlimChunkMetadata>(&mut conn)
         .await
@@ -315,13 +315,13 @@ pub async fn get_slim_chunks_from_point_ids_query(
                 chunk_metadata_columns::qdrant_point_id,
                 chunk_metadata_columns::created_at,
                 chunk_metadata_columns::updated_at,
+                chunk_metadata_columns::tag_set,
                 chunk_metadata_columns::metadata,
                 chunk_metadata_columns::tracking_id,
                 chunk_metadata_columns::time_stamp,
                 chunk_metadata_columns::location,
                 chunk_metadata_columns::dataset_id,
                 chunk_metadata_columns::weight,
-                chunk_metadata_columns::tag_set,
             ))
             .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
             .load(&mut conn)
@@ -1190,7 +1190,7 @@ pub async fn create_chunk_metadata(
     let mut chunk_metadatas = vec![];
 
     for chunk in chunks {
-        let chunk_tag_set = chunk.tag_set.clone();
+        let chunk_tag_set = chunk.tag_set.clone().map(|tag_set| tag_set.join(","));
 
         let chunk_tracking_id = chunk
             .tracking_id
