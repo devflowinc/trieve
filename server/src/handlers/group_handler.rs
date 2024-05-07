@@ -1105,6 +1105,8 @@ pub struct SearchWithinGroupData {
     pub page: Option<u64>,
     /// The page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
     pub page_size: Option<u64>,
+    /// Get total page count for the query accounting for the applied filters. Defaults to true, but can be set to false to reduce latency in edge cases performance.
+    pub get_total_pages: Option<bool>,
     /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
     /// Group specifies the group to search within. Results will only consist of chunks which are bookmarks within the specified group.
@@ -1133,6 +1135,7 @@ impl From<SearchWithinGroupData> for SearchChunkData {
             query: data.query,
             page: data.page,
             page_size: data.page_size,
+            get_total_pages: data.get_total_pages,
             filters: data.filters,
             search_type: data.search_type,
             date_bias: data.date_bias,
@@ -1188,6 +1191,7 @@ pub async fn search_within_group(
 
     //search over the links as well
     let page = data.page.unwrap_or(1);
+    let get_total_pages = data.get_total_pages.unwrap_or(true);
     let group_id = data.group_id;
     let dataset_id = dataset_org_plan_sub.dataset.id;
     let search_pool = pool.clone();
@@ -1221,6 +1225,7 @@ pub async fn search_within_group(
                 parsed_query,
                 group,
                 page,
+                get_total_pages,
                 search_pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
@@ -1233,6 +1238,7 @@ pub async fn search_within_group(
                 parsed_query,
                 group,
                 page,
+                get_total_pages,
                 search_pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
@@ -1245,6 +1251,7 @@ pub async fn search_within_group(
                 parsed_query,
                 group,
                 page,
+                get_total_pages,
                 search_pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
@@ -1282,6 +1289,8 @@ pub struct SearchOverGroupsData {
     pub page: Option<u64>,
     /// Page size is the number of group results to fetch. The default is 10.
     pub page_size: Option<u32>,
+    /// Get total page count for the query accounting for the applied filters. Defaults to true, but can be set to false to reduce latency in edge cases performance.
+    pub get_total_pages: Option<bool>,
     /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
     /// Set get_collisions to true to get the collisions for each chunk. This will only apply if environment variable COLLISIONS_ENABLED is set to true.
@@ -1330,8 +1339,8 @@ pub async fn search_over_groups(
         dataset_org_plan_sub.dataset.server_configuration.clone(),
     );
 
-    //search over the links as well
     let page = data.page.unwrap_or(1);
+    let get_total_pages = data.get_total_pages.unwrap_or(true);
 
     let parsed_query = parse_query(data.query.clone());
 
@@ -1350,6 +1359,7 @@ pub async fn search_over_groups(
                 data.clone(),
                 parsed_query,
                 page,
+                get_total_pages,
                 pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
@@ -1362,6 +1372,7 @@ pub async fn search_over_groups(
                 data.clone(),
                 parsed_query,
                 page,
+                get_total_pages,
                 pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,
@@ -1374,6 +1385,7 @@ pub async fn search_over_groups(
                 data.clone(),
                 parsed_query,
                 page,
+                get_total_pages,
                 pool,
                 dataset_org_plan_sub.dataset,
                 server_dataset_config,

@@ -184,6 +184,7 @@ pub async fn assemble_qdrant_filter(
 pub async fn retrieve_qdrant_points_query(
     vector: VectorType,
     page: u64,
+    get_total_pages: bool,
     limit: u64,
     score_threshold: Option<f32>,
     filters: Option<ChunkFilter>,
@@ -227,7 +228,7 @@ pub async fn retrieve_qdrant_points_query(
         config.clone(),
     );
 
-    let count_future = get_point_count_qdrant_query(filter, config);
+    let count_future = get_point_count_qdrant_query(filter, config, get_total_pages);
 
     let (point_ids, count) = futures::join!(point_ids_future, count_future);
 
@@ -573,6 +574,7 @@ pub struct SearchOverGroupsQueryResult {
 pub async fn retrieve_group_qdrant_points_query(
     vector: VectorType,
     page: u64,
+    get_total_pages: bool,
     filters: Option<ChunkFilter>,
     limit: u32,
     score_threshold: Option<f32>,
@@ -603,7 +605,7 @@ pub async fn retrieve_group_qdrant_points_query(
         config.clone(),
     );
 
-    let count_future = get_point_count_qdrant_query(filter, config);
+    let count_future = get_point_count_qdrant_query(filter, config, get_total_pages);
 
     let (point_ids, count) = futures::join!(point_id_future, count_future);
 
@@ -700,6 +702,7 @@ pub async fn global_unfiltered_top_match_query(
 pub async fn search_within_chunk_group_query(
     embedding_vector: VectorType,
     page: u64,
+    get_total_pages: bool,
     pool: web::Data<Pool>,
     filters: Option<ChunkFilter>,
     limit: u64,
@@ -732,7 +735,7 @@ pub async fn search_within_chunk_group_query(
         config.clone(),
     );
 
-    let count_future = get_point_count_qdrant_query(filter, config);
+    let count_future = get_point_count_qdrant_query(filter, config, get_total_pages);
 
     let (point_ids, count) = futures::join!(point_ids_future, count_future);
 
@@ -1288,6 +1291,7 @@ pub async fn search_semantic_chunks(
     data: SearchChunkData,
     parsed_query: ParsedQuery,
     page: u64,
+    get_total_pages: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1318,6 +1322,7 @@ pub async fn search_semantic_chunks(
     let search_chunk_query_results = retrieve_qdrant_points_query(
         VectorType::Dense(embedding_vector),
         page,
+        get_total_pages,
         data.page_size.unwrap_or(10),
         data.score_threshold,
         data.filters.clone(),
@@ -1349,6 +1354,7 @@ pub async fn search_full_text_chunks(
     data: SearchChunkData,
     parsed_query: ParsedQuery,
     page: u64,
+    get_total_pages: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1378,6 +1384,7 @@ pub async fn search_full_text_chunks(
     let search_chunk_query_results = retrieve_qdrant_points_query(
         VectorType::Sparse(sparse_vector),
         page,
+        get_total_pages,
         data.page_size.unwrap_or(10),
         data.score_threshold,
         data.filters.clone(),
@@ -1421,6 +1428,7 @@ pub async fn search_hybrid_chunks(
     data: SearchChunkData,
     parsed_query: ParsedQuery,
     page: u64,
+    get_total_pages: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1445,6 +1453,7 @@ pub async fn search_hybrid_chunks(
         data.clone(),
         parsed_query.clone(),
         page,
+        get_total_pages,
         pool.clone(),
         dataset.clone(),
         config.clone(),
@@ -1455,6 +1464,7 @@ pub async fn search_hybrid_chunks(
         data.clone(),
         parsed_query,
         page,
+        get_total_pages,
         pool.clone(),
         dataset,
         config,
@@ -1539,6 +1549,7 @@ pub async fn search_semantic_groups(
     parsed_query: ParsedQuery,
     group: ChunkGroup,
     page: u64,
+    get_total_pages: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1552,6 +1563,7 @@ pub async fn search_semantic_groups(
     let search_semantic_chunk_query_results = search_within_chunk_group_query(
         VectorType::Dense(embedding_vector),
         page,
+        get_total_pages,
         pool.clone(),
         data.filters.clone(),
         data.page_size.unwrap_or(10),
@@ -1587,6 +1599,7 @@ pub async fn search_full_text_groups(
     parsed_query: ParsedQuery,
     group: ChunkGroup,
     page: u64,
+    get_total_pages: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1599,6 +1612,7 @@ pub async fn search_full_text_groups(
     let search_chunk_query_results = search_within_chunk_group_query(
         VectorType::Sparse(sparse_vector),
         page,
+        get_total_pages,
         pool.clone(),
         data_inner.filters.clone(),
         data.page_size.unwrap_or(10),
@@ -1634,6 +1648,7 @@ pub async fn search_hybrid_groups(
     parsed_query: ParsedQuery,
     group: ChunkGroup,
     page: u64,
+    get_total_pages: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1652,6 +1667,7 @@ pub async fn search_hybrid_groups(
     let semantic_future = search_within_chunk_group_query(
         VectorType::Dense(dense_embedding_vector),
         page,
+        get_total_pages,
         pool.clone(),
         data.filters.clone(),
         data.page_size.unwrap_or(10),
@@ -1665,6 +1681,7 @@ pub async fn search_hybrid_groups(
     let full_text_future = search_within_chunk_group_query(
         VectorType::Sparse(sparse_vector),
         page,
+        get_total_pages,
         pool.clone(),
         data_inner.filters.clone(),
         data.page_size.unwrap_or(10),
@@ -1756,6 +1773,7 @@ pub async fn semantic_search_over_groups(
     data: SearchOverGroupsData,
     parsed_query: ParsedQuery,
     page: u64,
+    get_total_pages: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1774,6 +1792,7 @@ pub async fn semantic_search_over_groups(
     let search_over_groups_qdrant_result = retrieve_group_qdrant_points_query(
         VectorType::Dense(embedding_vector),
         page,
+        get_total_pages,
         data.filters.clone(),
         data.page_size.unwrap_or(10),
         data.score_threshold,
@@ -1818,6 +1837,7 @@ pub async fn full_text_search_over_groups(
     data: SearchOverGroupsData,
     parsed_query: ParsedQuery,
     page: u64,
+    get_total_pages: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1834,6 +1854,7 @@ pub async fn full_text_search_over_groups(
     let search_over_groups_qdrant_result = retrieve_group_qdrant_points_query(
         VectorType::Sparse(sparse_vector),
         page,
+        get_total_pages,
         data.filters.clone(),
         data.page_size.unwrap_or(10),
         data.score_threshold,
@@ -1925,6 +1946,7 @@ pub async fn hybrid_search_over_groups(
     data: SearchOverGroupsData,
     parsed_query: ParsedQuery,
     page: u64,
+    get_total_pages: bool,
     pool: web::Data<Pool>,
     dataset: Dataset,
     config: ServerDatasetConfiguration,
@@ -1955,6 +1977,7 @@ pub async fn hybrid_search_over_groups(
     let semantic_future = retrieve_group_qdrant_points_query(
         VectorType::Dense(dense_embedding_vector),
         page,
+        get_total_pages,
         data.filters.clone(),
         data.page_size.unwrap_or(10),
         data.score_threshold,
@@ -1968,6 +1991,7 @@ pub async fn hybrid_search_over_groups(
     let full_text_future = retrieve_group_qdrant_points_query(
         VectorType::Sparse(sparse_embedding_vector),
         page,
+        get_total_pages,
         data.filters.clone(),
         data.page_size.unwrap_or(10),
         data.score_threshold,
