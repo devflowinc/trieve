@@ -913,6 +913,7 @@ pub async fn create_suggested_queries_handler(
             negated_words: None,
         },
         1,
+        false,
         pool,
         dataset_org_plan_sub.dataset.clone(),
         dataset_config,
