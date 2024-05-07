@@ -25,9 +25,9 @@ export const DatasetSelectBox = () => {
             <PopoverButton
               aria-label="Toggle filters"
               type="button"
-              class="flex items-center space-x-1 pb-1 text-sm"
+              class="flex min-w-fit items-center space-x-1 pb-1 text-sm"
             >
-              <span class="line-clamp-1 text-left text-sm">
+              <span class="line-clamp-1 min-w-fit text-left text-sm">
                 {$currentDataset?.()?.dataset.name}
               </span>
               <svg
@@ -36,8 +36,6 @@ export const DatasetSelectBox = () => {
                 style={{ overflow: "visible", color: "currentColor" }}
                 viewBox="0 0 16 16"
                 class="h-3.5 w-3.5 "
-                height="1em"
-                width="1em"
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />

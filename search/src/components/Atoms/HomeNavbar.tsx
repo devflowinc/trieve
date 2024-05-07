@@ -21,7 +21,7 @@ export const HomeNavbar = () => {
         <div class="flex h-16 items-center justify-between">
           <div class="mx-auto flex h-[60px] w-full max-w-7xl items-center justify-between">
             <Show when={$currentUser?.()}>
-              <div class="flex items-center space-x-2">
+              <div class="flex min-w-fit items-center space-x-2">
                 <OrganizationSelectBox />
                 <span class="text-2xl">/</span>
                 <DatasetSelectBox />
