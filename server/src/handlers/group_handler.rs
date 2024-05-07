@@ -63,6 +63,8 @@ pub struct CreateChunkGroupData {
     pub metadata: Option<serde_json::Value>,
     /// Optional tags to assign to the chunk_group. This is a list of strings that can be used to categorize the chunks inside the chunk_group.
     pub tag_set: Option<Vec<String>>,
+    /// Upsert when a chunk_group with the same tracking_id exists. By default this is false, and the request will fail if a chunk_group with the same tracking_id exists. If this is true, the chunk_group will be updated if a chunk_group with the same tracking_id exists.
+    pub upsert_by_tracking_id: Option<bool>,
 }
 
 /// Create Chunk Group
@@ -105,7 +107,7 @@ pub async fn create_chunk_group(
     );
     {
         let group = group.clone();
-        create_group_query(group, pool).await?;
+        create_group_query(group, body.upsert_by_tracking_id.unwrap_or(false), pool).await?;
     }
 
     Ok(HttpResponse::Ok().json(group))
@@ -316,16 +318,16 @@ pub async fn update_group_by_tracking_id(
     )
     .await?;
 
-    update_chunk_group_query(
-        group,
-        data.name.clone(),
-        data.description.clone(),
-        data.metadata.clone(),
-        data.tag_set.clone().map(|tags| tags.join(",")),
+    let new_group = ChunkGroup::from_details(
+        data.name.clone().unwrap_or(group.name.clone()),
+        data.description.clone().or(Some(group.description.clone())),
         dataset_org_plan_sub.dataset.id,
-        pool,
-    )
-    .await?;
+        Some(data.tracking_id.clone()),
+        data.metadata.clone().or(group.metadata.clone()),
+        data.tag_set.clone().map(|tags| tags.join(",")),
+    );
+
+    update_chunk_group_query(new_group, pool).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -494,6 +496,7 @@ pub async fn update_chunk_group(
     let name = body.name.clone();
     let description = body.description.clone();
     let group_id = body.group_id;
+    let tag_set = body.tag_set.clone().map(|tags| tags.join(","));
 
     let group = if let Some(group_id) = group_id {
         dataset_owns_group(
@@ -513,16 +516,16 @@ pub async fn update_chunk_group(
         return Err(ServiceError::BadRequest("No group id or tracking id provided".into()).into());
     };
 
-    update_chunk_group_query(
-        group,
-        name,
-        description,
-        body.metadata.clone(),
-        body.tag_set.clone().map(|tags| tags.join(",")),
+    let new_chunk_group = ChunkGroup::from_details(
+        name.unwrap_or(group.name.clone()),
+        description.or(Some(group.description.clone())),
         dataset_org_plan_sub.dataset.id,
-        pool,
-    )
-    .await?;
+        body.tracking_id.clone().or(group.tracking_id.clone()),
+        body.metadata.clone().or(group.metadata.clone()),
+        tag_set.or(group.tag_set.clone()),
+    );
+
+    update_chunk_group_query(new_chunk_group, pool).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
