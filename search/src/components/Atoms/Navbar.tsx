@@ -1,6 +1,8 @@
 import { A } from "@solidjs/router";
 import { Show, createSignal, useContext } from "solid-js";
 import { DatasetAndUserContext } from "../Contexts/DatasetAndUserContext";
+import { OrganizationSelectBox } from "../OrganizationSelectBox";
+import { DatasetSelectBox } from "../DatasetSelectBox";
 
 export const Navbar = () => {
   const dashboardUrl = import.meta.env.VITE_DASHBOARD_URL as string;
@@ -8,7 +10,7 @@ export const Navbar = () => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
 
   const $envs = datasetAndUserContext.clientConfig;
-  const $datasetName = datasetAndUserContext.currentDataset?.()?.dataset.name;
+  const $currentUser = datasetAndUserContext.user;
 
   const [isOpen, setIsOpen] = createSignal(false);
 
@@ -17,22 +19,23 @@ export const Navbar = () => {
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 items-center justify-between">
           <div class="mx-auto flex h-[60px] w-full max-w-7xl items-center justify-between">
-            <a class="flex items-center space-x-2" href="/">
-              <img
-                class="w-6 sm:w-12"
-                src="https://cdn.trieve.ai/trieve-logo.png"
-                alt="Logo"
-              />
-              <div class="hidden min-[450px]:block ">
-                <div class="mb-[-4px] w-full text-end align-bottom leading-3 text-turquoise sm:mb-[-10px] sm:text-lg">
-                  {$datasetName}
+            <div class="flex min-w-fit items-center space-x-2">
+              <a href="/">
+                <img
+                  class="w-6 sm:w-12"
+                  src="https://cdn.trieve.ai/trieve-logo.png"
+                  alt="Logo"
+                />
+              </a>
+              <Show when={$currentUser?.()}>
+                <div class="flex min-w-fit items-center space-x-2">
+                  <OrganizationSelectBox />
+                  <span class="text-2xl">/</span>
+                  <DatasetSelectBox />
                 </div>
-                <div class="min-[380px]:text-xl sm:text-4xl">
-                  <span>Trieve</span>
-                  <span class="text-magenta">Search</span>
-                </div>
-              </div>
-            </a>
+              </Show>
+            </div>
+
             <div class="flex w-full items-center justify-end space-x-1 sm:space-x-4">
               <a
                 href={dashboardUrl}
