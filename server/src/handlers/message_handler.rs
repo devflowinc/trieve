@@ -867,17 +867,19 @@ pub struct SuggestedQueriesResponse {
     )
 
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(pool))]
 pub async fn create_suggested_queries_handler(
     data: web::Json<SuggestedQueriesRequest>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    pool: web::Data<Pool>,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, ServiceError> {
-    let dataset_config =
-        ServerDatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+    let dataset_config = ServerDatasetConfiguration::from_json(
+        dataset_org_plan_sub.dataset.clone().server_configuration,
+    );
 
-    let base_url = dataset_config.LLM_BASE_URL;
-    let default_model = dataset_config.LLM_DEFAULT_MODEL;
+    let base_url = dataset_config.LLM_BASE_URL.clone();
+    let default_model = dataset_config.LLM_DEFAULT_MODEL.clone();
 
     let base_url = if base_url.is_empty() {
         "https://api.openai.com/api/v1".into()
@@ -895,12 +897,50 @@ pub async fn create_suggested_queries_handler(
         .into()
     };
 
+    let chunk_metadatas = search_hybrid_chunks(
+        SearchChunkData {
+            search_type: "hybrid".to_string(),
+            query: data.query.clone(),
+            page_size: Some(10),
+            ..Default::default()
+        },
+        ParsedQuery {
+            query: data.query.clone(),
+            quote_words: None,
+            negated_words: None,
+        },
+        1,
+        pool,
+        dataset_org_plan_sub.dataset.clone(),
+        dataset_config,
+        &mut Timer::new(),
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.to_string()))?
+    .score_chunks;
+
+    let rag_content = chunk_metadatas
+        .iter()
+        .enumerate()
+        .map(|(idx, chunk)| {
+            format!(
+                "Doc {}: {}",
+                idx + 1,
+                chunk.metadata.first().unwrap().content.clone()
+            )
+        })
+        .collect::<Vec<String>>()
+        .join("\n\n");
+
+    let content = ChatMessageContent::Text(format!(
+        "Here is some context for the dataset for which the user is querying for {}. Generate 3 suggested keyword searches based off this query a user made. Your only response should be the 3 keyword searches which are seperated by new lines and are just text and you do not add any other context or information about the keyword searches. This should not be a list, so do not number each keyword search. These keyword searches should be related to the user query and within the domain of the dataset. Here is the user query: {}",
+        rag_content,
+        data.query,
+    ));
+
     let message = ChatMessage {
         role: Role::User,
-        content: ChatMessageContent::Text(format!(
-            "Generate 3 suggested queries based off this query a user made. Your only response should be the 3 queries which are comma seperated and are just text and you do not add any other context or information about the queries.  Here is the query: {}",
-            data.query
-        )),
+        content,
         tool_calls: None,
         name: None,
         tool_call_id: None,
@@ -960,7 +1000,7 @@ pub async fn create_suggested_queries_handler(
         ChatMessageContent::Text(content) => content.clone(),
         _ => "".to_string(),
     }
-    .split(',')
+    .split('\n')
     .map(|query| query.to_string().trim().trim_matches('\n').to_string())
     .collect();
 
