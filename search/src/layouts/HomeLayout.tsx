@@ -1,4 +1,5 @@
 import { DatasetAndUserContextWrapper } from "../components/Contexts/DatasetAndUserContext";
+import ShowToast from "../components/ShowToasts";
 import { HomeSearch } from "../HomeSearch";
 
 export const Home = () => {
@@ -37,6 +38,7 @@ export const Home = () => {
   return (
     <DatasetAndUserContextWrapper>
       <HomeSearch />
+      <ShowToast />
     </DatasetAndUserContextWrapper>
   );
 };

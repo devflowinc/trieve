@@ -39,7 +39,7 @@ const ShowToast = () => {
             (prevToastDetail) => prevToastDetail !== toastEvent.detail,
           ),
         );
-      }, 5000);
+      }, 1500);
     };
 
     window.addEventListener("show-toast", showToastEvent);
@@ -55,7 +55,7 @@ const ShowToast = () => {
       <For each={toastDetails()}>
         {(toastDetail) => (
           <div
-            class={`flex w-auto items-center justify-between space-x-4 rounded border-t-4 bg-gray-100 px-5 py-2 text-center dark:bg-neutral-900 ${
+            class={`flex w-auto items-center justify-between space-x-4 rounded border-t-4 bg-gray-100 px-5 py-2 text-center dark:bg-neutral-900 dark:text-white ${
               toastDetail.type === "success"
                 ? "border-green-600"
                 : "border-red-700"

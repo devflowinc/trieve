@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   Accessor,
-  Setter,
   Show,
   For,
   createSignal,
@@ -10,7 +9,6 @@ import {
   useContext,
   createMemo,
 } from "solid-js";
-import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export interface Filter {
@@ -39,7 +37,7 @@ export interface Filters {
 
 export interface FilterModalProps {
   showFilterModal: Accessor<boolean>;
-  setShowFilterModal: Setter<boolean>;
+  setShowFilterModal: (open: boolean) => void;
 }
 
 const defaultFilter = {
@@ -86,171 +84,164 @@ export const FilterModal = (props: FilterModalProps) => {
   }, "");
 
   return (
-    <Show when={props.showFilterModal()}>
-      <FullScreenModal
-        isOpen={props.showFilterModal}
-        setIsOpen={props.setShowFilterModal}
-      >
-        <div class="flex max-h-[75vh] min-w-[75vw] max-w-[75vw] flex-col space-y-2 overflow-auto pr-2 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-thumb-rounded-md dark:text-white dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600">
-          <div class="flex w-full items-center space-x-2 border-b border-gray-200 py-2 dark:border-gray-700">
-            <label aria-label="Change Filter Type">
-              <span class="p-1">Filter Type:</span>
-            </label>
-            <select
-              class="h-fit rounded-md border border-gray-200 bg-neutral-200 p-1 dark:border-gray-700 dark:bg-neutral-800"
-              onChange={(e) => {
-                setTempFilterType(e.currentTarget.value);
+    <div class="flex max-h-[50vh] min-w-[50vw] max-w-[75vw] flex-col space-y-2 overflow-auto px-2 pr-2 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-400 scrollbar-thumb-rounded-md dark:text-white dark:scrollbar-track-neutral-800 dark:scrollbar-thumb-neutral-600">
+      <div class="flex w-full items-center space-x-2 border-b border-neutral-400 py-2 dark:border-neutral-900">
+        <label aria-label="Change Filter Type">
+          <span class="p-1">Filter Type:</span>
+        </label>
+        <select
+          class="h-fit rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+          onChange={(e) => {
+            setTempFilterType(e.currentTarget.value);
+          }}
+          value={tempFilterType()}
+        >
+          <For each={["must", "must not", "should"]}>
+            {(filter_type) => {
+              return (
+                <option
+                  classList={{
+                    "flex w-full items-center justify-between rounded p-1":
+                      true,
+                    "bg-neutral-300 dark:bg-neutral-900":
+                      filter_type === tempFilterType(),
+                  }}
+                >
+                  {filter_type}
+                </option>
+              );
+            }}
+          </For>
+        </select>
+        <button
+          class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+          onClick={() => {
+            const curFilterType = tempFilterType();
+            if (curFilterType === "must") {
+              setMustFilters([...mustFilters(), defaultFilter]);
+            }
+            if (curFilterType === "must not") {
+              setMustNotFilters([...mustNotFilters(), defaultFilter]);
+            }
+            if (curFilterType === "should") {
+              setShouldFilters([...shouldFilters(), defaultFilter]);
+            }
+          }}
+        >
+          + Add Filter
+        </button>
+        <div class="flex-1" />
+        <button
+          class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+          onClick={() => {
+            setMustFilters([]);
+            setMustNotFilters([]);
+            setShouldFilters([]);
+          }}
+        >
+          Reset Filters
+        </button>
+        <button
+          class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+          onClick={() => saveFilters()}
+        >
+          Apply Filters
+        </button>
+      </div>
+      <Show when={mustFilters().length > 0}>
+        <div class="border-b border-neutral-400 py-2 dark:border-neutral-900">
+          must: [
+          <div class="flex flex-col gap-y-2">
+            <For each={mustFilters()}>
+              {(filter, index) => {
+                const onFilterChange = (newFilter: Filter) => {
+                  const newFilters = mustFilters();
+                  newFilters[index()] = newFilter;
+                  setMustFilters(newFilters);
+                };
+
+                return (
+                  <div
+                    classList={{
+                      "border-b border-dotted border-neutral-400 dark:border-neutral-900":
+                        index() < mustFilters().length - 1,
+                    }}
+                  >
+                    <FilterItem
+                      initialFilter={filter}
+                      onFilterChange={onFilterChange}
+                    />
+                  </div>
+                );
               }}
-              value={tempFilterType()}
-            >
-              <For each={["must", "must not", "should"]}>
-                {(filter_type) => {
-                  return (
-                    <option
-                      classList={{
-                        "flex w-full items-center justify-between rounded p-1":
-                          true,
-                        "bg-neutral-300 dark:bg-neutral-900":
-                          filter_type === tempFilterType(),
-                      }}
-                    >
-                      {filter_type}
-                    </option>
-                  );
-                }}
-              </For>
-            </select>
-            <div class="flex-1" />
-            <button
-              class="rounded-md border border-gray-200 bg-neutral-200 p-1 dark:border-gray-700 dark:bg-neutral-800"
-              onClick={() => {
-                const curFilterType = tempFilterType();
-                if (curFilterType === "must") {
-                  setMustFilters([...mustFilters(), defaultFilter]);
-                }
-                if (curFilterType === "must not") {
-                  setMustNotFilters([...mustNotFilters(), defaultFilter]);
-                }
-                if (curFilterType === "should") {
-                  setShouldFilters([...shouldFilters(), defaultFilter]);
-                }
-              }}
-            >
-              + Add Filter
-            </button>
-            <button
-              class="rounded-md border border-gray-200 bg-neutral-200 p-1 dark:border-gray-700 dark:bg-neutral-800"
-              onClick={() => {
-                setMustFilters([]);
-                setMustNotFilters([]);
-                setShouldFilters([]);
-              }}
-            >
-              Reset Filters
-            </button>
-            <button
-              class="rounded-md border border-gray-200 bg-neutral-200 p-1 dark:border-gray-700 dark:bg-neutral-800"
-              onClick={() => saveFilters()}
-            >
-              Save Filters
-            </button>
+            </For>
           </div>
-          <Show when={mustFilters().length > 0}>
-            <div class="border-b border-gray-200 py-2 dark:border-gray-700">
-              must: [
-              <div class="flex flex-col gap-y-2">
-                <For each={mustFilters()}>
-                  {(filter, index) => {
-                    const onFilterChange = (newFilter: Filter) => {
-                      const newFilters = mustFilters();
-                      newFilters[index()] = newFilter;
-                      setMustFilters(newFilters);
-                    };
-
-                    return (
-                      <div
-                        classList={{
-                          "border-b border-dotted border-gray-200 dark:border-gray-700":
-                            index() < mustFilters().length - 1,
-                        }}
-                      >
-                        <FilterItem
-                          initialFilter={filter}
-                          onFilterChange={onFilterChange}
-                        />
-                      </div>
-                    );
-                  }}
-                </For>
-              </div>
-              ]
-            </div>
-          </Show>
-          <Show when={mustNotFilters().length > 0}>
-            <div class="border-b border-gray-200 py-2 dark:border-gray-700">
-              must not: [
-              <div class="flex flex-col gap-y-2">
-                <For each={mustNotFilters()}>
-                  {(filter, index) => {
-                    const onFilterChange = (newFilter: Filter) => {
-                      const newFilters = mustNotFilters();
-                      newFilters[index()] = newFilter;
-                      setMustNotFilters(newFilters);
-                    };
-
-                    return (
-                      <div
-                        classList={{
-                          "border-b border-dotted border-gray-200 dark:border-gray-700":
-                            index() < mustNotFilters().length - 1,
-                        }}
-                      >
-                        <FilterItem
-                          initialFilter={filter}
-                          onFilterChange={onFilterChange}
-                        />
-                      </div>
-                    );
-                  }}
-                </For>
-              </div>
-              ]
-            </div>
-          </Show>
-          <Show when={shouldFilters().length > 0}>
-            <div class="border-b border-gray-200 py-2 dark:border-gray-700">
-              should: [
-              <div class="flex flex-col gap-y-2">
-                <For each={shouldFilters()}>
-                  {(filter, index) => {
-                    const onFilterChange = (newFilter: Filter) => {
-                      const newFilters = shouldFilters();
-                      newFilters[index()] = newFilter;
-                      setShouldFilters(newFilters);
-                    };
-
-                    return (
-                      <div
-                        classList={{
-                          "border-b border-dotted border-gray-200 dark:border-gray-700":
-                            index() < shouldFilters().length - 1,
-                        }}
-                      >
-                        <FilterItem
-                          initialFilter={filter}
-                          onFilterChange={onFilterChange}
-                        />
-                      </div>
-                    );
-                  }}
-                </For>
-              </div>
-              ]
-            </div>
-          </Show>
+          ]
         </div>
-      </FullScreenModal>
-    </Show>
+      </Show>
+      <Show when={mustNotFilters().length > 0}>
+        <div class="border-b border-neutral-400 py-2 dark:border-neutral-900">
+          must not: [
+          <div class="flex flex-col gap-y-2">
+            <For each={mustNotFilters()}>
+              {(filter, index) => {
+                const onFilterChange = (newFilter: Filter) => {
+                  const newFilters = mustNotFilters();
+                  newFilters[index()] = newFilter;
+                  setMustNotFilters(newFilters);
+                };
+
+                return (
+                  <div
+                    classList={{
+                      "border-b border-dotted border-neutral-400 dark:border-neutral-900":
+                        index() < mustNotFilters().length - 1,
+                    }}
+                  >
+                    <FilterItem
+                      initialFilter={filter}
+                      onFilterChange={onFilterChange}
+                    />
+                  </div>
+                );
+              }}
+            </For>
+          </div>
+          ]
+        </div>
+      </Show>
+      <Show when={shouldFilters().length > 0}>
+        <div class="border-b border-neutral-400 py-2 dark:border-neutral-900">
+          should: [
+          <div class="flex flex-col gap-y-2">
+            <For each={shouldFilters()}>
+              {(filter, index) => {
+                const onFilterChange = (newFilter: Filter) => {
+                  const newFilters = shouldFilters();
+                  newFilters[index()] = newFilter;
+                  setShouldFilters(newFilters);
+                };
+
+                return (
+                  <div
+                    classList={{
+                      "border-b border-dotted border-neutral-400 dark:border-neutral-900":
+                        index() < shouldFilters().length - 1,
+                    }}
+                  >
+                    <FilterItem
+                      initialFilter={filter}
+                      onFilterChange={onFilterChange}
+                    />
+                  </div>
+                );
+              }}
+            </For>
+          </div>
+          ]
+        </div>
+      </Show>
+    </div>
   );
 };
 
@@ -354,7 +345,7 @@ export const FilterItem = (props: FilterItemProps) => {
         <input
           type="text"
           placeholder="Filter Field"
-          class="rounded-md border border-gray-200 bg-neutral-200 p-1 dark:border-gray-700 dark:bg-neutral-800"
+          class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
           onChange={(e) => {
             setTempFilterField(e.currentTarget.value);
           }}
@@ -366,13 +357,13 @@ export const FilterItem = (props: FilterItemProps) => {
           <span class="p-1">Filter Mode:</span>
         </label>
         <select
-          class="h-fit w-48 rounded-md border border-gray-200 bg-neutral-200 p-1 dark:border-gray-700 dark:bg-neutral-800"
+          class="h-fit w-48 rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
           onChange={(e) => {
             setTempFilterMode(e.currentTarget.value);
           }}
           value={tempFilterMode()}
         >
-          <For each={["match", "any", "geo_radius", "range"]}>
+          <For each={["match", "geo_radius", "range"]}>
             {(filter_mode) => {
               return (
                 <option
@@ -397,7 +388,7 @@ export const FilterItem = (props: FilterItemProps) => {
             <input
               type="number"
               placeholder="Latitude"
-              class="rounded-md border border-gray-200 bg-neutral-200 p-1 dark:border-gray-700 dark:bg-neutral-800"
+              class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
               onChange={(e) => {
                 setLatitude(parseFloat(e.currentTarget.value));
               }}
@@ -409,7 +400,7 @@ export const FilterItem = (props: FilterItemProps) => {
             <input
               type="number"
               placeholder="Longitude"
-              class="rounded-md border border-gray-200 bg-neutral-200 p-1 dark:border-gray-700 dark:bg-neutral-800"
+              class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
               onChange={(e) => {
                 setLongitude(parseFloat(e.currentTarget.value));
               }}
@@ -421,7 +412,7 @@ export const FilterItem = (props: FilterItemProps) => {
             <input
               type="number"
               placeholder="Radius"
-              class="rounded-md border border-gray-200 bg-neutral-200 p-1 dark:border-gray-700 dark:bg-neutral-800"
+              class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
               onChange={(e) => {
                 setRadius(parseFloat(e.currentTarget.value));
               }}
@@ -437,7 +428,7 @@ export const FilterItem = (props: FilterItemProps) => {
             <input
               type="number"
               placeholder="Greater Than"
-              class="rounded-md border border-gray-200 bg-neutral-200 p-1 dark:border-gray-700 dark:bg-neutral-800"
+              class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
               onChange={(e) => {
                 setGreaterThan(parseFloat(e.currentTarget.value));
               }}
@@ -447,7 +438,7 @@ export const FilterItem = (props: FilterItemProps) => {
             <input
               type="number"
               placeholder="Less Than"
-              class="rounded-md border border-gray-200 bg-neutral-200 p-1 dark:border-gray-700 dark:bg-neutral-800"
+              class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
               onChange={(e) => {
                 setLessThan(parseFloat(e.currentTarget.value));
               }}
@@ -461,7 +452,7 @@ export const FilterItem = (props: FilterItemProps) => {
             <input
               type="number"
               placeholder="Greater Than or Equal"
-              class="rounded-md border border-gray-200 bg-neutral-200 p-1 dark:border-gray-700 dark:bg-neutral-800"
+              class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
               onChange={(e) => {
                 setGreaterThanOrEqual(parseFloat(e.currentTarget.value));
               }}
@@ -471,7 +462,7 @@ export const FilterItem = (props: FilterItemProps) => {
             <input
               type="number"
               placeholder="Less Than or Equal"
-              class="rounded-md border border-gray-200 bg-neutral-200 p-1 dark:border-gray-700 dark:bg-neutral-800"
+              class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
               onChange={(e) => {
                 setLessThanOrEqual(parseFloat(e.currentTarget.value));
               }}
@@ -481,13 +472,13 @@ export const FilterItem = (props: FilterItemProps) => {
         </div>
       </Show>
       <Show when={tempFilterMode() === "match"}>
-        <div class="flex flex-col gap-y-1 py-2 pl-2">
+        <div class="flex flex-col gap-y-1 py-2 pl-4">
           <div class="grid grid-cols-2 items-center">
             <label aria-label="Match">Comma Separated Values:</label>
             <input
               type="text"
               placeholder="h1, h2, h3"
-              class="rounded-md border border-gray-200 bg-neutral-200 p-1 dark:border-gray-700 dark:bg-neutral-800"
+              class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
               onChange={(e) => {
                 setMatch(e.currentTarget.value.split(","));
               }}
