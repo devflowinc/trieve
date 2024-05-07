@@ -64,6 +64,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
   const [noResults, setNoResults] = createSignal(false);
   const [filters, setFilters] = createSignal<Filters>({} as Filters);
+  const [totalPages, setTotalPages] = createSignal(0);
 
   const fetchChunkCollections = () => {
     if (!$currentUser?.()) return;
@@ -156,6 +157,8 @@ const ResultsPage = (props: ResultsPageProps) => {
           if (groupUnique) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             const groupResult = data.group_chunks as GroupScoreChunkDTO[];
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            setTotalPages(data.total_pages);
 
             setGroupResultChunks(groupResult);
 
@@ -167,6 +170,8 @@ const ResultsPage = (props: ResultsPageProps) => {
             resultingChunks = data.score_chunks as ScoreChunkDTO[];
 
             setResultChunks(resultingChunks);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            setTotalPages(data.total_chunk_pages);
           }
 
           if (resultingChunks.length === 0) {
@@ -270,7 +275,10 @@ const ResultsPage = (props: ResultsPageProps) => {
             </div>
             <Show when={resultChunks().length > 0}>
               <div class="mx-auto my-12 flex items-center space-x-2">
-                <PaginationController page={props.page} totalPages={100} />
+                <PaginationController
+                  page={props.page}
+                  totalPages={totalPages()}
+                />
               </div>
             </Show>
             <div>
@@ -394,7 +402,10 @@ const ResultsPage = (props: ResultsPageProps) => {
             </For>
             <Show when={groupResultChunks().length > 0}>
               <div class="mx-auto my-12 flex items-center space-x-2">
-                <PaginationController page={props.page} totalPages={100} />
+                <PaginationController
+                  page={props.page}
+                  totalPages={totalPages()}
+                />
               </div>
             </Show>
             <div>
