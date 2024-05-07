@@ -203,9 +203,8 @@ pub async fn create_new_qdrant_collection_query(
                                     VectorParams {
                                         size: 384,
                                         distance: Distance::Cosine.into(),
-                                        hnsw_config: None,
                                         quantization_config: quantization_config.clone(),
-                                        on_disk: None,
+                                        ..Default::default()
                                     },
                                 ),
                                 (
@@ -213,9 +212,8 @@ pub async fn create_new_qdrant_collection_query(
                                     VectorParams {
                                         size: 512,
                                         distance: Distance::Cosine.into(),
-                                        hnsw_config: None,
-                                        quantization_config: None,
-                                        on_disk: None,
+                                        quantization_config: quantization_config.clone(),
+                                        ..Default::default()
                                     },
                                 ),
                                 (
@@ -223,9 +221,8 @@ pub async fn create_new_qdrant_collection_query(
                                     VectorParams {
                                         size: 768,
                                         distance: Distance::Cosine.into(),
-                                        hnsw_config: None,
                                         quantization_config: quantization_config.clone(),
-                                        on_disk: None,
+                                        ..Default::default()
                                     },
                                 ),
                                 (
@@ -233,9 +230,8 @@ pub async fn create_new_qdrant_collection_query(
                                     VectorParams {
                                         size: 1024,
                                         distance: Distance::Cosine.into(),
-                                        hnsw_config: None,
                                         quantization_config: quantization_config.clone(),
-                                        on_disk: None,
+                                        ..Default::default()
                                     },
                                 ),
                                 (
@@ -243,9 +239,8 @@ pub async fn create_new_qdrant_collection_query(
                                     VectorParams {
                                         size: 3072,
                                         distance: Distance::Cosine.into(),
-                                        hnsw_config: None,
                                         quantization_config: quantization_config.clone(),
-                                        on_disk: None,
+                                        ..Default::default()
                                     },
                                 ),
                                 (
@@ -253,9 +248,8 @@ pub async fn create_new_qdrant_collection_query(
                                     VectorParams {
                                         size: 1536,
                                         distance: Distance::Cosine.into(),
-                                        hnsw_config: None,
                                         quantization_config,
-                                        on_disk: None,
+                                        ..Default::default()
                                     },
                                 ),
                             ]),
