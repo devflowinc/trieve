@@ -761,7 +761,7 @@ pub async fn search_over_groups_query(
         },
     };
 
-    let data = match vector {
+    let qdrant_search_results = match vector {
         VectorType::Dense(embedding_vector) => {
             qdrant
                 .search_groups(&SearchPointGroups {
@@ -803,7 +803,7 @@ pub async fn search_over_groups_query(
         ServiceError::BadRequest("Failed to search points on Qdrant".to_string())
     })?;
 
-    let point_ids: Vec<GroupSearchResults> = data
+    let point_ids: Vec<GroupSearchResults> = qdrant_search_results
         .result
         .unwrap()
         .groups
@@ -837,6 +837,7 @@ pub async fn search_over_groups_query(
                 Some(GroupSearchResults { group_id, hits })
             }
         })
+        .skip((page - 1) as usize * limit as usize)
         .collect();
 
     Ok(point_ids)

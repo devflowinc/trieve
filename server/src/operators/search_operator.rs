@@ -912,9 +912,8 @@ pub async fn retrieve_chunks_for_groups(
     let group_chunks: Vec<GroupScoreChunk> = search_over_groups_query_result
         .search_results
         .iter()
-        .enumerate()
-        .map(|(i, group)| {
-            let score_chunk: Vec<ScoreChunkDTO> = group
+        .map(|group_search_result| {
+            let score_chunks: Vec<ScoreChunkDTO> = group_search_result
                 .hits
                 .iter()
                 .map(|search_result| {
@@ -983,15 +982,15 @@ pub async fn retrieve_chunks_for_groups(
                 })
                 .collect_vec();
 
-            let group_data = groups.get(i);
+            let group_data = groups.iter().find(|group| group.id == group_search_result.group_id);
             let group_tracking_id = group_data.and_then(|group| group.tracking_id.clone());
             let group_name = group_data.map(|group| group.name.clone());
 
             GroupScoreChunk {
-                group_id: group.group_id,
+                group_id: group_search_result.group_id,
                 group_name,
                 group_tracking_id,
-                metadata: score_chunk,
+                metadata: score_chunks,
             }
         })
         .collect_vec();

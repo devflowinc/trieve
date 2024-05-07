@@ -166,7 +166,7 @@ const ResultsPage = (props: ResultsPageProps) => {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             const groupResult = data.group_chunks as GroupScoreChunkDTO[];
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            setTotalPages(data.total_pages);
+            setTotalPages(data.total_chunk_pages);
 
             setGroupResultChunks(groupResult);
 
