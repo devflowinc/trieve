@@ -7,9 +7,11 @@ import {
   For,
   createSignal,
   createEffect,
-  onMount,
+  useContext,
+  createMemo,
 } from "solid-js";
 import { FullScreenModal } from "./Atoms/FullScreenModal";
+import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 
 export interface Filter {
   field: string;
@@ -45,10 +47,17 @@ const defaultFilter = {
 };
 
 export const FilterModal = (props: FilterModalProps) => {
+  const datasetAndUserContext = useContext(DatasetAndUserContext);
+
   const [tempFilterType, setTempFilterType] = createSignal<string>("must");
   const [mustFilters, setMustFilters] = createSignal<Filter[]>([]);
   const [mustNotFilters, setMustNotFilters] = createSignal<Filter[]>([]);
   const [shouldFilters, setShouldFilters] = createSignal<Filter[]>([]);
+
+  const curDatasetFiltersKey = createMemo(
+    () =>
+      `filters-${datasetAndUserContext.currentDataset?.()?.dataset.id ?? ""}`,
+  );
 
   const saveFilters = () => {
     const filters = {
@@ -56,20 +65,25 @@ export const FilterModal = (props: FilterModalProps) => {
       must_not: mustNotFilters(),
       should: shouldFilters(),
     };
-    localStorage.setItem("filters", JSON.stringify(filters));
+    localStorage.setItem(curDatasetFiltersKey(), JSON.stringify(filters));
     window.dispatchEvent(new Event("filtersUpdated"));
     props.setShowFilterModal(false);
   };
 
-  onMount(() => {
-    const savedFilters = localStorage.getItem("filters");
+  createEffect((prevFiltersKey) => {
+    const filtersKey = curDatasetFiltersKey();
+    if (prevFiltersKey === filtersKey) {
+      return filtersKey;
+    }
+
+    const savedFilters = localStorage.getItem(filtersKey);
     if (savedFilters) {
       const parsedFilters = JSON.parse(savedFilters) as Filters;
       setMustFilters(parsedFilters.must);
       setMustNotFilters(parsedFilters.must_not);
       setShouldFilters(parsedFilters.should);
     }
-  });
+  }, "");
 
   return (
     <Show when={props.showFilterModal()}>
@@ -358,7 +372,7 @@ export const FilterItem = (props: FilterItemProps) => {
           }}
           value={tempFilterMode()}
         >
-          <For each={["match", "geo_radius", "range"]}>
+          <For each={["match", "any", "geo_radius", "range"]}>
             {(filter_mode) => {
               return (
                 <option
