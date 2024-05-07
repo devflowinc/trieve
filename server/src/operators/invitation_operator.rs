@@ -49,7 +49,7 @@ pub async fn get_invitation_by_id_query(
 #[tracing::instrument]
 pub async fn send_invitation(inv_url: String, invitation: Invitation) -> Result<(), ServiceError> {
     let sg_email_content = format!(
-        "You have been invited to join an Trieve AI dataset. <br/>
+        "You have been invited to join a Trieve organization. <br/>
          Please click on the link below to register. <br/>
          <a href=\"{}\">
          {}</a>",
