@@ -926,6 +926,7 @@ pub async fn search_over_groups_query(
                 Some(GroupSearchResults { group_id, hits })
             }
         })
+        .skip((page - 1) as usize * limit as usize)
         .collect();
 
     Ok(point_ids)
