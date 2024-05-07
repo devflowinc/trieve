@@ -1229,7 +1229,7 @@ pub async fn get_point_count_qdrant_query(
         .count(&CountPoints {
             collection_name: qdrant_collection,
             filter: Some(filters),
-            exact: Some(false),
+            exact: Some(true),
             read_consistency: None,
             shard_key_selector: None,
         })
