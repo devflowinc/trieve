@@ -15,7 +15,6 @@ use crate::{
             user_owns_topic_query,
         },
         organization_operator::get_message_org_count,
-        parse_operator::convert_html_to_text,
         search_operator::search_hybrid_chunks,
     },
 };
@@ -692,13 +691,7 @@ pub async fn stream_response(
     let rag_content = chunk_metadatas
         .iter()
         .enumerate()
-        .map(|(idx, chunk)| {
-            format!(
-                "Doc {}: {}",
-                idx + 1,
-                convert_html_to_text(&chunk.chunk_html)
-            )
-        })
+        .map(|(idx, chunk)| format!("Doc {}: {}", idx + 1, chunk.content.clone()))
         .collect::<Vec<String>>()
         .join("\n\n");
 
@@ -937,7 +930,7 @@ pub async fn create_suggested_queries_handler(
             format!(
                 "Doc {}: {}",
                 idx + 1,
-                convert_html_to_text(&chunk.metadata.first().unwrap().chunk_html.clone())
+                chunk.metadata.first().unwrap().content.clone()
             )
         })
         .collect::<Vec<String>>()
@@ -1038,9 +1031,10 @@ pub async fn create_suggested_queries_handler(
     let mut engine: SimSearch<String> = SimSearch::new();
 
     chunk_metadatas.iter().for_each(|chunk| {
-        let content = convert_html_to_text(&chunk.metadata.first().unwrap().chunk_html.clone());
-
-        engine.insert(content.clone(), &content);
+        engine.insert(
+            chunk.metadata.first().unwrap().content.clone(),
+            &chunk.metadata.first().unwrap().content.clone(),
+        );
     });
 
     let sortable_queries = queries
