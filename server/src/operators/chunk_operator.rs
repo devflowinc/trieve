@@ -1012,8 +1012,12 @@ pub async fn delete_chunk_metadata_query(
                     });
             }
             TransactionResult::ChunkCollisionDetected(latest_collision_metadata) => {
-                let collision_content =
-                    convert_html_to_text(&latest_collision_metadata.chunk_html.clone());
+                let collision_content = convert_html_to_text(
+                    &(latest_collision_metadata
+                        .chunk_html
+                        .clone()
+                        .unwrap_or_default()),
+                );
 
                 let new_embedding_vector = create_embedding(
                     collision_content,
@@ -1113,7 +1117,7 @@ pub fn find_relevant_sentence(
     query: String,
     split_chars: Vec<String>,
 ) -> Result<ChunkMetadata, ServiceError> {
-    let content = convert_html_to_text(&input.chunk_html.clone());
+    let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
     let mut engine: SimSearch<String> = SimSearch::new();
     let mut split_content = content
         .split_inclusive(|c: char| split_chars.contains(&c.to_string()))
@@ -1146,7 +1150,7 @@ pub fn find_relevant_sentence(
         split_content[sentence_index] = highlighted_sentence;
     }
 
-    new_output.chunk_html = split_content.iter().join("");
+    new_output.chunk_html = Some(split_content.iter().join(""));
     Ok(new_output)
 }
 
@@ -1208,7 +1212,7 @@ pub async fn create_chunk_metadata(
         };
 
         let chunk_metadata = ChunkMetadata::from_details(
-            chunk.chunk_html.clone(),
+            &Some(chunk.chunk_html.clone()),
             &chunk.link,
             &chunk_tag_set,
             None,

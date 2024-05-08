@@ -531,7 +531,7 @@ pub async fn update_chunk(
         .map(|tag_set| tag_set.join(","));
 
     let chunk_html = match update_chunk_data.chunk_html.clone() {
-        Some(chunk_html) => chunk_html,
+        Some(chunk_html) => Some(chunk_html),
         None => chunk_metadata.chunk_html,
     };
 
@@ -679,7 +679,7 @@ pub async fn update_chunk_by_tracking_id(
         .unwrap_or_else(|| chunk_metadata.link.clone().unwrap_or_default());
 
     let chunk_html = match update_chunk_data.chunk_html.clone() {
-        Some(chunk_html) => chunk_html,
+        Some(chunk_html) => Some(chunk_html),
         None => chunk_metadata.chunk_html,
     };
 
@@ -1687,7 +1687,7 @@ pub async fn generate_off_chunks(
             .cmp(&data.chunk_ids.iter().position(|&id| id == b.id).unwrap())
     });
     chunks.iter().enumerate().for_each(|(idx, bookmark)| {
-        let content = convert_html_to_text(&bookmark.chunk_html);
+        let content = convert_html_to_text(&(bookmark.chunk_html.clone().unwrap_or_default()));
         let first_240_words = content
             .split_whitespace()
             .take(240)

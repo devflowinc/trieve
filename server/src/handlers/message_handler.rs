@@ -696,7 +696,7 @@ pub async fn stream_response(
             format!(
                 "Doc {}: {}",
                 idx + 1,
-                convert_html_to_text(&chunk.chunk_html)
+                convert_html_to_text(&(chunk.chunk_html.clone().unwrap_or_default()))
             )
         })
         .collect::<Vec<String>>()
@@ -937,7 +937,15 @@ pub async fn create_suggested_queries_handler(
             format!(
                 "Doc {}: {}",
                 idx + 1,
-                convert_html_to_text(&chunk.metadata.first().unwrap().chunk_html.clone())
+                convert_html_to_text(
+                    &(chunk
+                        .metadata
+                        .first()
+                        .unwrap()
+                        .chunk_html
+                        .clone()
+                        .unwrap_or_default())
+                )
             )
         })
         .collect::<Vec<String>>()
@@ -1038,7 +1046,15 @@ pub async fn create_suggested_queries_handler(
     let mut engine: SimSearch<String> = SimSearch::new();
 
     chunk_metadatas.iter().for_each(|chunk| {
-        let content = convert_html_to_text(&chunk.metadata.first().unwrap().chunk_html.clone());
+        let content = convert_html_to_text(
+            &chunk
+                .metadata
+                .first()
+                .unwrap()
+                .chunk_html
+                .clone()
+                .unwrap_or_default(),
+        );
 
         engine.insert(content.clone(), &content);
     });
