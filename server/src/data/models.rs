@@ -4,6 +4,7 @@ use std::io::Write;
 
 use crate::errors::ServiceError;
 use crate::get_env;
+use crate::operators::parse_operator::convert_html_to_text;
 
 use super::schema::*;
 use crate::handlers::chunk_handler::ScoreChunkDTO;
@@ -273,7 +274,6 @@ impl Default for GeoInfo {
 )]
 #[schema(example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "content": "Hello, world!",
     "link": "https://trieve.ai",
     "qdrant_point_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "created_at": "2021-01-01T00:00:00",
@@ -289,13 +289,12 @@ impl Default for GeoInfo {
 #[diesel(table_name = chunk_metadata)]
 pub struct ChunkMetadata {
     pub id: uuid::Uuid,
-    pub content: String,
     pub link: Option<String>,
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub tag_set: Option<String>,
-    pub chunk_html: Option<String>,
+    pub chunk_html: String,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
@@ -307,8 +306,7 @@ pub struct ChunkMetadata {
 impl ChunkMetadata {
     #[allow(clippy::too_many_arguments)]
     pub fn from_details<S: Into<String>>(
-        content: S,
-        chunk_html: &Option<String>,
+        chunk_html: S,
         link: &Option<String>,
         tag_set: &Option<String>,
         qdrant_point_id: Option<uuid::Uuid>,
@@ -321,8 +319,7 @@ impl ChunkMetadata {
     ) -> Self {
         ChunkMetadata {
             id: uuid::Uuid::new_v4(),
-            content: content.into(),
-            chunk_html: chunk_html.clone(),
+            chunk_html: chunk_html.into(),
             link: link.clone(),
             qdrant_point_id,
             created_at: chrono::Utc::now().naive_local(),
@@ -342,8 +339,7 @@ impl ChunkMetadata {
     #[allow(clippy::too_many_arguments)]
     pub fn from_details_with_id<S: Into<String>, T: Into<uuid::Uuid>>(
         id: T,
-        content: S,
-        chunk_html: &Option<String>,
+        chunk_html: S,
         link: &Option<String>,
         tag_set: &Option<String>,
         qdrant_point_id: Option<uuid::Uuid>,
@@ -356,8 +352,7 @@ impl ChunkMetadata {
     ) -> Self {
         ChunkMetadata {
             id: id.into(),
-            content: content.into(),
-            chunk_html: chunk_html.clone(),
+            chunk_html: chunk_html.into(),
             link: link.clone(),
             qdrant_point_id,
             created_at: chrono::Utc::now().naive_local(),
@@ -377,8 +372,7 @@ impl From<SlimChunkMetadata> for ChunkMetadata {
     fn from(slim_chunk: SlimChunkMetadata) -> Self {
         ChunkMetadata {
             id: slim_chunk.id,
-            content: "".to_string(),
-            chunk_html: None,
+            chunk_html: "".to_string(),
             link: slim_chunk.link,
             qdrant_point_id: slim_chunk.qdrant_point_id,
             created_at: slim_chunk.created_at,
@@ -443,13 +437,12 @@ impl ChunkCollision {
 }))]
 pub struct ChunkMetadataWithScore {
     pub id: uuid::Uuid,
-    pub content: String,
     pub link: Option<String>,
     pub qdrant_point_id: Option<uuid::Uuid>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub tag_set: Option<String>,
-    pub chunk_html: Option<String>,
+    pub chunk_html: String,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
@@ -462,7 +455,6 @@ impl From<(ChunkMetadata, f32)> for ChunkMetadataWithScore {
     fn from((chunk, score): (ChunkMetadata, f32)) -> Self {
         ChunkMetadataWithScore {
             id: chunk.id,
-            content: chunk.content,
             link: chunk.link,
             qdrant_point_id: chunk.qdrant_point_id,
             created_at: chunk.created_at,
@@ -2070,7 +2062,7 @@ impl QdrantPayload {
             metadata: chunk_metadata.metadata,
             time_stamp: chunk_metadata.time_stamp.map(|x| x.timestamp()),
             dataset_id: dataset_id.unwrap_or(chunk_metadata.dataset_id),
-            content: chunk_metadata.content,
+            content: convert_html_to_text(&chunk_metadata.chunk_html),
             group_ids: group_ids,
             location: chunk_metadata.location,
         }

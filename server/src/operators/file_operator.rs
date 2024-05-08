@@ -140,7 +140,7 @@ pub async fn create_chunks_with_handler(
 
     for (i, chunk_html) in chunk_htmls.iter().enumerate() {
         let create_chunk_data = ChunkData {
-            chunk_html: Some(chunk_html.clone()),
+            chunk_html: chunk_html.clone(),
             link: upload_file_data.link.clone(),
             tag_set: upload_file_data.tag_set.clone(),
             metadata: upload_file_data.metadata.clone(),

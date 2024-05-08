@@ -37,13 +37,12 @@ diesel::table! {
 diesel::table! {
     chunk_metadata (id) {
         id -> Uuid,
-        content -> Text,
         link -> Nullable<Text>,
         qdrant_point_id -> Nullable<Uuid>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
         tag_set -> Nullable<Text>,
-        chunk_html -> Nullable<Text>,
+        chunk_html -> Text,
         metadata -> Nullable<Jsonb>,
         tracking_id -> Nullable<Text>,
         time_stamp -> Nullable<Timestamp>,
