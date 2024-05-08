@@ -28,7 +28,7 @@ export const Navbar = () => {
                 />
               </a>
               <Show when={$currentUser?.()}>
-                <div class="flex min-w-fit items-center space-x-2">
+                <div class="flex min-w-fit items-center space-x-2 bg-white dark:bg-shark-800">
                   <OrganizationSelectBox />
                   <span class="text-2xl">/</span>
                   <DatasetSelectBox />
