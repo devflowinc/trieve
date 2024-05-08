@@ -1212,7 +1212,7 @@ pub async fn create_chunk_metadata(
         };
 
         let chunk_metadata = ChunkMetadata::from_details(
-            &Some(chunk.chunk_html.clone()),
+            &chunk.chunk_html.clone(),
             &chunk.link,
             &chunk_tag_set,
             None,
