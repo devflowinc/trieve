@@ -764,31 +764,29 @@ pub async fn update_chunk_metadata_query(
 
     let mut conn = pool.get().await.unwrap();
 
-    let updated_chunk = conn
-        .transaction::<_, diesel::result::Error, _>(|conn| {
-            async move {
-                let updated_chunk: ChunkMetadata = diesel::update(
-                    chunk_metadata_columns::chunk_metadata
-                        .filter(chunk_metadata_columns::id.eq(chunk_data.id))
-                        .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid)),
-                )
-                .set((
-                    chunk_metadata_columns::link.eq(chunk_data.link),
-                    chunk_metadata_columns::chunk_html.eq(chunk_data.chunk_html),
-                    chunk_metadata_columns::content.eq(chunk_data.content),
-                    chunk_metadata_columns::metadata.eq(chunk_data.metadata),
-                    chunk_metadata_columns::tag_set.eq(chunk_data.tag_set),
-                    chunk_metadata_columns::weight.eq(chunk_data.weight),
-                ))
-                .get_result::<ChunkMetadata>(conn)
-                .await?;
+    let updated_chunk: ChunkMetadata = diesel::update(
+        chunk_metadata_columns::chunk_metadata
+            .filter(chunk_metadata_columns::id.eq(chunk_data.id))
+            .filter(chunk_metadata_columns::dataset_id.eq(dataset_uuid)),
+    )
+    .set((
+        chunk_metadata_columns::link.eq(chunk_data.link),
+        chunk_metadata_columns::chunk_html.eq(chunk_data.chunk_html),
+        chunk_metadata_columns::content.eq(chunk_data.content),
+        chunk_metadata_columns::metadata.eq(chunk_data.metadata),
+        chunk_metadata_columns::tag_set.eq(chunk_data.tag_set),
+        chunk_metadata_columns::tracking_id.eq(chunk_data.tracking_id),
+        chunk_metadata_columns::time_stamp.eq(chunk_data.time_stamp),
+        chunk_metadata_columns::location.eq(chunk_data.location),
+        chunk_metadata_columns::weight.eq(chunk_data.weight),
+    ))
+    .get_result::<ChunkMetadata>(&mut conn)
+    .await
+    .map_err(|e| {
+        log::error!("Failed to update chunk_metadata: {:?}", e);
 
-                Ok(updated_chunk)
-            }
-            .scope_boxed()
-        })
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to update chunk metadata".to_string()))?;
+        ServiceError::BadRequest("Failed to update chunk metadata".to_string())
+    })?;
 
     if let Some(group_ids) = group_ids {
         let group_id1 = group_ids.clone();

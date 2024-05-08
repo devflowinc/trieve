@@ -273,7 +273,7 @@ pub async fn create_new_qdrant_collection_query(
 }
 
 #[tracing::instrument(skip(points))]
-pub async fn bulk_create_new_qdrant_points_query(
+pub async fn bulk_upsert_qdrant_points_query(
     points: Vec<PointStruct>,
     config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {

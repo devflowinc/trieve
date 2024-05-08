@@ -63,7 +63,7 @@ const SearchForm = (props: {
   );
   const [highlightDelimiters, setHighlightDelimiters] = createSignal(
     // eslint-disable-next-line solid/reactivity
-    props.highlightDelimiters ?? ["?", ",", ".", "!"],
+    props.highlightDelimiters ?? ["?", ".", "!"],
   );
 
   const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
@@ -176,14 +176,14 @@ const SearchForm = (props: {
 
       if (!isDeleting && currentCharIndex === currentText.length) {
         isDeleting = true;
-        timeoutRefOne = setTimeout(typeText, 1000);
+        timeoutRefOne = setTimeout(typeText, 1000) as unknown as number;
       } else if (isDeleting && currentCharIndex === 0) {
         isDeleting = false;
         currentTextIndex = (currentTextIndex + 1) % textArray.length;
-        timeoutRefTwo = setTimeout(typeText, typingSpeed);
+        timeoutRefTwo = setTimeout(typeText, typingSpeed) as unknown as number;
       } else {
         const speed = isDeleting ? deleteSpeed : typingSpeed;
-        timeoutRefThree = setTimeout(typeText, speed);
+        timeoutRefThree = setTimeout(typeText, speed) as unknown as number;
       }
     };
 
@@ -241,6 +241,8 @@ const SearchForm = (props: {
                     ((e.ctrlKey || e.metaKey) && e.key === "Enter") ||
                     (!e.shiftKey && e.key === "Enter")
                   ) {
+                    window.dispatchEvent(new Event("triggerSearch"));
+
                     onSubmit(e);
                   }
                 }}
@@ -415,7 +417,7 @@ const SearchForm = (props: {
                               setSlimChunks(false);
                               setGetTotalPages(false);
                               setHighlightResults(true);
-                              setHighlightDelimiters(["?", ",", ".", "!"]);
+                              setHighlightDelimiters(["?", ".", "!"]);
                               setState(false);
                               onSubmit(e);
                             }}

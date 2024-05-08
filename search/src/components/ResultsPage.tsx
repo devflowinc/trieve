@@ -72,6 +72,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   const [noResults, setNoResults] = createSignal(false);
   const [filters, setFilters] = createSignal<Filters>({} as Filters);
   const [totalPages, setTotalPages] = createSignal(0);
+  const [triggerSearch, setTriggerSearch] = createSignal(false);
 
   const fetchChunkCollections = () => {
     if (!$currentUser?.()) return;
@@ -130,6 +131,8 @@ const ResultsPage = (props: ResultsPageProps) => {
     const dataset = $dataset?.();
     if (!dataset) return;
 
+    triggerSearch();
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const requestBody: any = {
       query: props.query,
@@ -140,7 +143,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       slim_chunks: props.slimChunks ?? false,
       get_total_pages: props.getTotalPages ?? false,
       highlight_results: props.highlightResults ?? true,
-      highlight_delimiters: props.highlightDelimiters ?? ["?", ",", ".", "!"],
+      highlight_delimiters: props.highlightDelimiters ?? ["?", ".", "!"],
     };
 
     let searchRoute = "chunk/search";
@@ -249,6 +252,12 @@ const ResultsPage = (props: ResultsPageProps) => {
 
     return filtersKey;
   }, "");
+
+  createEffect(() => {
+    window.addEventListener("triggerSearch", () => {
+      setTriggerSearch((prev) => !prev);
+    });
+  });
 
   createEffect(() => {
     if (!openChat()) {

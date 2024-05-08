@@ -112,7 +112,7 @@ export const GroupPage = (props: GroupPageProps) => {
     setGetTotalPages(location.query.getTotalPages === "true");
     setHighlightResults(location.query.highlightResults === "true");
     setHighlightDelimiters(
-      location.query.highlightDelimiters?.split(",") ?? ["?", ",", ".", "!"],
+      location.query.highlightDelimiters?.split(",") ?? ["?", ".", "!"],
     );
   });
 
