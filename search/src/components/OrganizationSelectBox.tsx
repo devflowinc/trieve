@@ -1,4 +1,4 @@
-import { Show, For, createMemo, useContext } from "solid-js";
+import { Show, For, createMemo, useContext, Switch, Match } from "solid-js";
 import {
   Menu,
   MenuItem,
@@ -8,6 +8,7 @@ import {
 } from "solid-headless";
 import { FaSolidCheck } from "solid-icons/fa";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
+import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
 
 export const OrganizationSelectBox = () => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
@@ -30,23 +31,19 @@ export const OrganizationSelectBox = () => {
                 <span class="line-clamp-1 text-left text-sm">
                   {$currentOrganization?.()?.name}
                 </span>
-                <svg
-                  fill="currentColor"
-                  stroke-width="0"
-                  style={{ overflow: "visible", color: "currentColor" }}
-                  viewBox="0 0 16 16"
-                  class="h-3.5 w-3.5 "
-                  height="1em"
-                  width="1em"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />
-                </svg>
+                <Switch>
+                  <Match when={isOpen()}>
+                    <FiChevronUp class="h-3.5 w-3.5" />
+                  </Match>
+                  <Match when={!isOpen()}>
+                    <FiChevronDown class="h-3.5 w-3.5" />
+                  </Match>
+                </Switch>
               </PopoverButton>
               <Show when={isOpen()}>
                 <PopoverPanel
                   unmount={false}
-                  class="absolute left-0 z-10 mt-2 h-fit w-[180px] rounded-md border p-1 dark:bg-neutral-800"
+                  class="absolute left-0 z-10 mt-2 h-fit w-[180px] rounded-md border bg-white p-1 dark:bg-neutral-800"
                 >
                   <Menu class="mx-1 space-y-0.5">
                     <For each={organizationsList()}>
