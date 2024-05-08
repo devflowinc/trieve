@@ -864,8 +864,8 @@ pub struct SearchChunkData {
     pub get_total_pages: Option<bool>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
-    /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
-    pub date_bias: Option<bool>,
+    /// Recency Bias lets you determine how much of an effect the recency of chunks will have on the search results. If not specified, this defaults to 0.0.
+    pub recency_bias: Option<f32>,
     /// Set use_weights to true to use the weights of the chunks in the result set in order to sort them. If not specified, this defaults to true.
     pub use_weights: Option<bool>,
     /// Set get_collisions to true to get the collisions for each chunk. This will only apply if environment variable COLLISIONS_ENABLED is set to true.
@@ -889,7 +889,7 @@ impl Default for SearchChunkData {
             get_total_pages: None,
             page_size: Some(10),
             filters: None,
-            date_bias: None,
+            recency_bias: None,
             use_weights: None,
             get_collisions: None,
             highlight_results: None,
