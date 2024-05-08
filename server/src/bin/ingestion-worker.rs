@@ -389,14 +389,14 @@ pub async fn bulk_upload_chunks(
     }
 
     #[allow(clippy::type_complexity)]
-    let ingestion_data: Vec<(ChunkMetadata, Option<Vec<uuid::Uuid>>, bool)> = payload
+    let ingestion_data: Vec<(ChunkMetadata, String, Option<Vec<uuid::Uuid>>, bool)> = payload
         .ingestion_messages
         .iter()
         .map(|message| {
             let content = if message.chunk.convert_html_to_text.unwrap_or(true) {
-                convert_html_to_text(&message.chunk.chunk_html.clone().unwrap_or_default())
+                convert_html_to_text(&message.chunk.chunk_html.clone())
             } else {
-                message.chunk.chunk_html.clone().unwrap_or_default()
+                message.chunk.chunk_html.clone()
             };
 
             let qdrant_point_id = message
@@ -430,7 +430,6 @@ pub async fn bulk_upload_chunks(
 
             let chunk_metadata = ChunkMetadata {
                 id: message.ingest_specific_chunk_metadata.id,
-                content: content.clone(),
                 link: message.chunk.link.clone(),
                 qdrant_point_id: Some(qdrant_point_id),
                 created_at: chrono::Utc::now().naive_local(),
@@ -447,6 +446,7 @@ pub async fn bulk_upload_chunks(
 
             (
                 chunk_metadata,
+                content,
                 message.chunk.group_ids.clone(),
                 message.upsert_by_tracking_id,
             )
@@ -474,12 +474,12 @@ pub async fn bulk_upload_chunks(
     // Only embed the things we get returned from here, this reduces the number of times we embed data that are just duplicates
     let all_content: Vec<String> = inserted_chunk_metadatas
         .iter()
-        .map(|(chunk_metadata, _, _)| chunk_metadata.content.clone())
+        .map(|(_, content, _, _)| content.clone())
         .collect();
 
     let inserted_chunk_metadata_ids: Vec<uuid::Uuid> = inserted_chunk_metadatas
         .iter()
-        .map(|(chunk_metadata, _, _)| chunk_metadata.id)
+        .map(|(chunk_metadata, _, _, _)| chunk_metadata.id)
         .collect();
 
     let embedding_transaction = transaction.start_child(
@@ -545,7 +545,7 @@ pub async fn bulk_upload_chunks(
         splade_vectors.iter(),
     )
     .filter_map(
-        |((chunk_metadata, group_ids, _), embedding_vector, splade_vector)| {
+        |((chunk_metadata, _, group_ids, _), embedding_vector, splade_vector)| {
             let qdrant_point_id = chunk_metadata.qdrant_point_id;
 
             let payload = QdrantPayload::new(chunk_metadata, group_ids, None).into();
@@ -615,8 +615,8 @@ async fn upload_chunk(
 
     let mut qdrant_point_id = uuid::Uuid::new_v4();
     let content = match payload.chunk.convert_html_to_text.unwrap_or(true) {
-        true => convert_html_to_text(&payload.chunk.chunk_html.clone().unwrap_or_default()),
-        false => payload.chunk.chunk_html.clone().unwrap_or_default(),
+        true => convert_html_to_text(&payload.chunk.chunk_html.clone()),
+        false => payload.chunk.chunk_html.clone(),
     };
 
     let chunk_tag_set = payload
@@ -649,7 +649,6 @@ async fn upload_chunk(
 
     let chunk_metadata = ChunkMetadata {
         id: payload.ingest_specific_chunk_metadata.id,
-        content: content.clone(),
         link: payload.chunk.link.clone(),
         qdrant_point_id: Some(qdrant_point_id),
         created_at: chrono::Utc::now().naive_local(),
@@ -873,22 +872,11 @@ async fn update_chunk(
     server_dataset_config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
     let content = match payload.convert_html_to_text.unwrap_or(true) {
-        true => convert_html_to_text(
-            &payload
-                .chunk_metadata
-                .chunk_html
-                .clone()
-                .unwrap_or_default(),
-        ),
-        false => payload
-            .chunk_metadata
-            .chunk_html
-            .clone()
-            .unwrap_or_default(),
+        true => convert_html_to_text(&payload.chunk_metadata.chunk_html.clone()),
+        false => payload.chunk_metadata.chunk_html.clone(),
     };
 
-    let mut chunk_metadata = payload.chunk_metadata.clone();
-    chunk_metadata.content = content.clone();
+    let chunk_metadata = payload.chunk_metadata.clone();
 
     let embedding_vector =
         create_embedding(content.to_string(), "doc", server_dataset_config.clone())
