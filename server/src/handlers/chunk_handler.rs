@@ -9,7 +9,6 @@ use crate::errors::ServiceError;
 use crate::get_env;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::chunk_operator::*;
-use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{
     point_id_exists_in_qdrant, point_ids_exists_in_qdrant, recommend_qdrant_query,
 };
@@ -50,7 +49,7 @@ use utoipa::ToSchema;
 }))]
 pub struct ChunkData {
     /// HTML content of the chunk. This can also be plaintext. The innerText of the HTML will be used to create the embedding vector. The point of using HTML is for convienience, as some users have applications where users submit HTML content.
-    pub chunk_html: String,
+    pub chunk_html: Option<String>,
     /// Link to the chunk. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation.
     pub link: Option<String>,
     /// Tag set is a list of tags. This can be used to filter chunks by tag. Unlike with metadata filtering, HNSW indices will exist for each tag such that there is not a performance hit for filtering on them.
@@ -531,13 +530,14 @@ pub async fn update_chunk(
         .map(|tag_set| tag_set.join(","));
 
     let chunk_html = match update_chunk_data.chunk_html.clone() {
-        Some(chunk_html) => chunk_html,
+        Some(chunk_html) => Some(chunk_html),
         None => chunk_metadata.chunk_html,
     };
 
     let chunk_metadata = ChunkMetadata::from_details_with_id(
         chunk_metadata.id,
-        chunk_html,
+        "".to_string(),
+        &chunk_html,
         &Some(link),
         &chunk_tag_set.or(chunk_metadata.tag_set),
         chunk_metadata.qdrant_point_id,
@@ -679,13 +679,14 @@ pub async fn update_chunk_by_tracking_id(
         .unwrap_or_else(|| chunk_metadata.link.clone().unwrap_or_default());
 
     let chunk_html = match update_chunk_data.chunk_html.clone() {
-        Some(chunk_html) => chunk_html,
+        Some(chunk_html) => Some(chunk_html),
         None => chunk_metadata.chunk_html,
     };
 
     let metadata = ChunkMetadata::from_details_with_id(
         chunk_metadata.id,
-        chunk_html,
+        "".to_string(),
+        &chunk_html,
         &Some(link),
         &chunk_metadata.tag_set,
         chunk_metadata.qdrant_point_id,
@@ -1687,8 +1688,8 @@ pub async fn generate_off_chunks(
             .cmp(&data.chunk_ids.iter().position(|&id| id == b.id).unwrap())
     });
     chunks.iter().enumerate().for_each(|(idx, bookmark)| {
-        let content = convert_html_to_text(&bookmark.chunk_html);
-        let first_240_words = content
+        let first_240_words = bookmark
+            .content
             .split_whitespace()
             .take(240)
             .collect::<Vec<_>>()

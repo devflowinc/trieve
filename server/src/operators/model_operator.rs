@@ -9,8 +9,6 @@ use openai_dive::v1::{
 use serde::{Deserialize, Serialize};
 use std::ops::IndexMut;
 
-use super::parse_operator::convert_html_to_text;
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EmbeddingParameters {
     /// Input text to embed, encoded as a string or array of tokens.
@@ -569,7 +567,7 @@ pub async fn cross_encoder(
     let request_docs = results
         .clone()
         .into_iter()
-        .map(|x| convert_html_to_text(&x.metadata[0].clone().chunk_html))
+        .map(|x| x.metadata[0].clone().content)
         .collect::<Vec<String>>();
 
     let resp = ureq::post(&embedding_server_call)
