@@ -384,7 +384,7 @@ const SearchForm = (props: {
               )}
             </Popover>
             <Popover defaultOpen={false} class="relative">
-              {({ isOpen }) => (
+              {({ isOpen, setState }) => (
                 <>
                   <PopoverButton
                     aria-label="Toggle options"
@@ -407,6 +407,22 @@ const SearchForm = (props: {
                       class="absolute z-10 mt-2 h-fit w-[480px] rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-700"
                     >
                       <div class="items flex flex-col space-y-1">
+                        <div class="mt-1">
+                          <button
+                            class="rounded-md border border-neutral-400 bg-neutral-100 px-2 py-1 dark:border-neutral-900 dark:bg-neutral-800"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setSlimChunks(false);
+                              setGetTotalPages(false);
+                              setHighlightResults(true);
+                              setHighlightDelimiters(["?", ",", ".", "!"]);
+                              setState(false);
+                              onSubmit(e);
+                            }}
+                          >
+                            Reset
+                          </button>
+                        </div>
                         <div class="flex items-center justify-between space-x-2 p-1">
                           <label>Slim Chunks (Latency Improvement):</label>
                           <input

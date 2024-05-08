@@ -871,7 +871,7 @@ pub struct SearchChunkData {
     pub use_weights: Option<bool>,
     /// Set get_collisions to true to get the collisions for each chunk. This will only apply if environment variable COLLISIONS_ENABLED is set to true.
     pub get_collisions: Option<bool>,
-    /// Set highlight_results to true to highlight the results. If not specified, this defaults to true.
+    /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add <b><mark> tags to the chunk_html of the chunks to highlight matching sub-sentences.
     pub highlight_results: Option<bool>,
     /// Set highlight_delimiters to a list of strings to use as delimiters for highlighting. If not specified, this defaults to ["?", ",", ".", "!"].
     pub highlight_delimiters: Option<Vec<String>>,

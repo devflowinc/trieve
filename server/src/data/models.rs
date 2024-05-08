@@ -618,6 +618,8 @@ pub struct SearchSlimChunkQueryResponseBody {
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[schema(example = json!({
     "group_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "group_tracking_id": "example_tracking_id",
+    "group_name": "Example Group",
     "metadata": [
         {
             "metadata": [
@@ -640,6 +642,8 @@ pub struct SearchSlimChunkQueryResponseBody {
 }))]
 pub struct GroupScoreSlimChunks {
     pub group_id: uuid::Uuid,
+    pub group_tracking_id: Option<String>,
+    pub group_name: Option<String>,
     pub metadata: Vec<ScoreSlimChunks>,
 }
 
