@@ -2,7 +2,9 @@ import { BiRegularSearch, BiRegularX } from "solid-icons/bi";
 import { useNavigate } from "@solidjs/router";
 import {
   For,
+  Match,
   Show,
+  Switch,
   createEffect,
   createMemo,
   createSignal,
@@ -19,11 +21,16 @@ import {
 import { FaSolidCheck } from "solid-icons/fa";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { FilterModal } from "./FilterModal";
+import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
 
 const SearchForm = (props: {
   query?: string;
   searchType: string;
   groupUniqueSearch?: boolean;
+  slimChunks?: boolean;
+  getTotalPages?: boolean;
+  highlightResults?: boolean;
+  highlightDelimiters?: string[];
   groupID?: string;
 }) => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
@@ -43,6 +50,20 @@ const SearchForm = (props: {
   const [groupUniqueSearch, setGroupUniqueSearch] = createSignal(
     // eslint-disable-next-line solid/reactivity
     props.groupUniqueSearch ?? false,
+  );
+  // eslint-disable-next-line solid/reactivity
+  const [slimChunks, setSlimChunks] = createSignal(props.slimChunks ?? false);
+  const [getTotalPages, setGetTotalPages] = createSignal(
+    // eslint-disable-next-line solid/reactivity
+    props.getTotalPages ?? false,
+  );
+  const [highlightResults, setHighlightResults] = createSignal(
+    // eslint-disable-next-line solid/reactivity
+    props.highlightResults ?? true,
+  );
+  const [highlightDelimiters, setHighlightDelimiters] = createSignal(
+    // eslint-disable-next-line solid/reactivity
+    props.highlightDelimiters ?? ["?", ",", ".", "!"],
   );
 
   const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
@@ -69,12 +90,29 @@ const SearchForm = (props: {
       : "";
 
     const groupUniqueUrlParam = groupUniqueSearch() ? "&groupUnique=true" : "";
+    const slimChunksUrlParam = slimChunks() ? "&slimChunks=true" : "";
+    const getTotalPagesUrlParam = getTotalPages() ? "&getTotalPages=true" : "";
+    const highlightResultsUrlParam = highlightResults()
+      ? "&highlightResults=true"
+      : "";
+    const highlightDelimitersUrlParam = highlightDelimiters().length
+      ? `&highlightDelimiters=${highlightDelimiters().join(",")}`
+      : "";
 
     const urlToNavigateTo = props.groupID
       ? `/group/${props.groupID}?q=${searchQuery}` +
         searchTypeUrlParam +
-        groupUniqueUrlParam
-      : `/search?q=${searchQuery}` + searchTypeUrlParam + groupUniqueUrlParam;
+        slimChunksUrlParam +
+        getTotalPagesUrlParam +
+        highlightDelimitersUrlParam +
+        highlightResultsUrlParam
+      : `/search?q=${searchQuery}` +
+        searchTypeUrlParam +
+        groupUniqueUrlParam +
+        slimChunksUrlParam +
+        getTotalPagesUrlParam +
+        highlightDelimitersUrlParam +
+        highlightResultsUrlParam;
 
     navigate(urlToNavigateTo);
   };
@@ -234,7 +272,7 @@ const SearchForm = (props: {
               </Show>
             </div>
           </div>
-          <div class="flex space-x-2">
+          <div class="flex space-x-3">
             <Popover defaultOpen={false} class="relative">
               {({ isOpen, setState }) => (
                 <>
@@ -243,19 +281,15 @@ const SearchForm = (props: {
                     type="button"
                     class="flex items-center space-x-1 pb-1 text-sm"
                   >
-                    <span class="p-1">Filters</span>{" "}
-                    <svg
-                      fill="currentColor"
-                      stroke-width="0"
-                      style={{ overflow: "visible", color: "currentColor" }}
-                      viewBox="0 0 16 16"
-                      class="h-3.5 w-3.5 "
-                      height="1em"
-                      width="1em"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />
-                    </svg>
+                    <span>Filters</span>
+                    <Switch>
+                      <Match when={isOpen()}>
+                        <FiChevronUp class="h-3.5 w-3.5" />
+                      </Match>
+                      <Match when={!isOpen()}>
+                        <FiChevronDown class="h-3.5 w-3.5" />
+                      </Match>
+                    </Switch>
                   </PopoverButton>
                   <Show when={isOpen()}>
                     <PopoverPanel
@@ -279,23 +313,19 @@ const SearchForm = (props: {
                     type="button"
                     class="flex items-center space-x-1 pb-1 text-sm"
                   >
-                    <span class="p-1">
+                    <span>
                       Type:{" "}
                       {searchTypes().find((type) => type.isSelected)?.name ??
                         "Hybrid"}
-                    </span>{" "}
-                    <svg
-                      fill="currentColor"
-                      stroke-width="0"
-                      style={{ overflow: "visible", color: "currentColor" }}
-                      viewBox="0 0 16 16"
-                      class="h-3.5 w-3.5 "
-                      height="1em"
-                      width="1em"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M2 5.56L2.413 5h11.194l.393.54L8.373 11h-.827L2 5.56z" />
-                    </svg>
+                    </span>
+                    <Switch>
+                      <Match when={isOpen()}>
+                        <FiChevronUp class="h-3.5 w-3.5" />
+                      </Match>
+                      <Match when={!isOpen()}>
+                        <FiChevronDown class="h-3.5 w-3.5" />
+                      </Match>
+                    </Switch>
                   </PopoverButton>
                   <Show when={isOpen()}>
                     <PopoverPanel
@@ -353,9 +383,111 @@ const SearchForm = (props: {
                 </>
               )}
             </Popover>
+            <Popover defaultOpen={false} class="relative">
+              {({ isOpen }) => (
+                <>
+                  <PopoverButton
+                    aria-label="Toggle options"
+                    type="button"
+                    class="flex items-center space-x-1 pb-1 text-sm"
+                  >
+                    <span>Options</span>
+                    <Switch>
+                      <Match when={isOpen()}>
+                        <FiChevronUp class="h-3.5 w-3.5" />
+                      </Match>
+                      <Match when={!isOpen()}>
+                        <FiChevronDown class="h-3.5 w-3.5" />
+                      </Match>
+                    </Switch>
+                  </PopoverButton>
+                  <Show when={isOpen()}>
+                    <PopoverPanel
+                      unmount={false}
+                      class="absolute z-10 mt-2 h-fit w-[480px] rounded-md bg-neutral-200 p-1 shadow-lg dark:bg-neutral-700"
+                    >
+                      <div class="items flex flex-col space-y-1">
+                        <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>Slim Chunks (Latency Improvement):</label>
+                          <input
+                            class="h-4 w-4"
+                            type="checkbox"
+                            checked={props.slimChunks}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSlimChunks(true);
+                              } else {
+                                setSlimChunks(false);
+                              }
+
+                              onSubmit(e);
+                            }}
+                          />
+                        </div>
+                        <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>Get Total Pages (Latency Penalty):</label>
+                          <input
+                            class="h-4 w-4"
+                            type="checkbox"
+                            checked={props.getTotalPages}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setGetTotalPages(true);
+                              } else {
+                                setGetTotalPages(false);
+                              }
+
+                              onSubmit(e);
+                            }}
+                          />
+                        </div>
+                        <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>Highlight Results (Latency Penalty):</label>
+                          <input
+                            class="h-4 w-4"
+                            type="checkbox"
+                            checked={props.highlightResults}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setHighlightResults(true);
+                              } else {
+                                setHighlightResults(false);
+                              }
+
+                              onSubmit(e);
+                            }}
+                          />
+                        </div>
+                        <div class="items flex justify-between space-x-2 p-1">
+                          <label>Highlight Delimiters (Comma Separated):</label>
+                          <input
+                            class="w-32 rounded border border-neutral-400 p-0.5 text-black"
+                            type="text"
+                            value={highlightDelimiters().join(",")}
+                            onInput={(e) => {
+                              if (e.currentTarget.value === " ") {
+                                setHighlightDelimiters([" "]);
+                              }
+
+                              setHighlightDelimiters(
+                                e.currentTarget.value.split(","),
+                              );
+                            }}
+                            onBlur={(e) => {
+                              onSubmit(e);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </PopoverPanel>
+                  </Show>
+                </>
+              )}
+            </Popover>
             <Show when={!props.groupID}>
               <div class="flex-1" />
-              <div class="flex items-center space-x-1 justify-self-center">
+              <div class="flex items-center space-x-2 justify-self-center">
+                <label class="text-sm">Group Search</label>
                 <input
                   class="h-4 w-4"
                   type="checkbox"
@@ -370,9 +502,6 @@ const SearchForm = (props: {
                     onSubmit(e);
                   }}
                 />
-                <div class="flex items-center space-x-1">
-                  <label class="text-sm">Group Search</label>
-                </div>
               </div>
             </Show>
           </div>

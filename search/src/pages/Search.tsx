@@ -13,6 +13,15 @@ export const Search = () => {
   const [page, setPage] = createSignal<number>(1);
   const [searchType, setSearchType] = createSignal<string>("hybrid");
   const [groupUnique, setGroupUnique] = createSignal<boolean>(false);
+  const [slimChunks, setSlimChunks] = createSignal<boolean>(false);
+  const [getTotalPages, setGetTotalPages] = createSignal<boolean>(false);
+  const [highlightResults, setHighlightResults] = createSignal<boolean>(true);
+  const [highlightDelimiters, setHighlightDelimiters] = createSignal<string[]>([
+    "?",
+    ",",
+    ".",
+    "!",
+  ]);
 
   createEffect(() => {
     setLoading(true);
@@ -21,6 +30,12 @@ export const Search = () => {
     setPage(Number(location.query.page) || 1);
     setSearchType(location.query.searchType ?? "hybrid");
     setGroupUnique(location.query.groupUnique === "true" || false);
+    setSlimChunks(location.query.slimChunks === "true" || false);
+    setGetTotalPages(location.query.getTotalPages === "true" || false);
+    setHighlightResults(location.query.highlightResults === "true" || false);
+    setHighlightDelimiters(
+      location.query.highlightDelimiters?.split(",") ?? ["?", ",", ".", "!"],
+    );
   });
 
   return (
@@ -32,7 +47,11 @@ export const Search = () => {
               <SearchForm
                 query={query()}
                 groupUniqueSearch={groupUnique()}
+                slimChunks={slimChunks()}
                 searchType={searchType()}
+                getTotalPages={getTotalPages()}
+                highlightResults={highlightResults()}
+                highlightDelimiters={highlightDelimiters()}
               />
               {/* <SuggestedQueries query={query()} /> */}
             </div>
@@ -41,6 +60,10 @@ export const Search = () => {
             page={page()}
             query={query()}
             groupUnique={groupUnique()}
+            slimChunks={slimChunks()}
+            getTotalPages={getTotalPages()}
+            highlightResults={highlightResults()}
+            highlightDelimiters={highlightDelimiters()}
             searchType={searchType()}
             loading={loading}
             setLoading={setLoading}

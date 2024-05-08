@@ -76,6 +76,7 @@ export const ScoreChunkArray = (props: ScoreChunkAraryProps) => {
         begin={beginTime()}
         end={endTime()}
         showExpand={props.showExpand}
+        defaultShowMetadata={props.defaultShowMetadata}
       />
       <div class="w-[16px] min-[360px]:w-[32px]">
         <Show when={curChunk() < props.chunks.length - 1}>
