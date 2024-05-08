@@ -871,8 +871,10 @@ pub async fn retrieve_chunks_for_groups(
         .flat_map(|hit| hit.hits.iter().map(|point| point.point_id).collect_vec())
         .collect_vec();
 
-    let (metadata_chunks, collided_chunks) = match data.slim_chunks {
-        Some(true) => {
+    let (metadata_chunks, collided_chunks) = match data.slim_chunks.unwrap_or(false)
+        && !(data.search_type == "hybrid")
+    {
+        true => {
             let slim_chunks = get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?;
             let chunk_metadatas = slim_chunks
                 .iter()
@@ -1138,8 +1140,10 @@ pub async fn retrieve_chunks_from_point_ids(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
-    let (metadata_chunks, collided_chunks) = match data.slim_chunks {
-        Some(true) => {
+    let (metadata_chunks, collided_chunks) = match data.slim_chunks.unwrap_or(false)
+        && !(data.search_type == "hybrid")
+    {
+        true => {
             let slim_chunks = get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?;
             let chunk_metadatas = slim_chunks
                 .iter()
