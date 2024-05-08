@@ -20,31 +20,13 @@ export const HomeSearch = () => {
   const params = new URLSearchParams(requestParams);
   const searchType: string = params.get("searchType") ?? "search";
   const groupUnique = params.get("groupUnique") === "true" || false;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const metadataFilters: any[] = [];
-
-  params.forEach((value, key) => {
-    if (
-      key === "q" ||
-      key === "page" ||
-      key === "searchType" ||
-      key === "Tag Set" ||
-      key === "link" ||
-      key === "start" ||
-      key === "end" ||
-      key === "dataset" ||
-      key === "groupUnique" ||
-      key === "organization"
-    ) {
-      return;
-    }
-
-    metadataFilters.push({
-      key,
-      value,
-    });
-  });
+  const slimChunks = params.get("slimChunks") === "true" || false;
+  const getTotalPages = params.get("getTotalPages") === "true" || false;
+  const highlightResults = params.get("highlightResults") === "true" || false;
+  const highlightDelimiters = params
+    .get("highlightDelimiters")
+    ?.split(",")
+    .filter((delimiter) => delimiter !== "") ?? ["?", ",", ".", "!"];
 
   return (
     <div class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white">
@@ -69,7 +51,14 @@ export const HomeSearch = () => {
           </a>
         </div>
         <div class="mt-8 w-full max-w-7xl px-4 sm:px-8 md:px-20">
-          <SearchForm searchType={searchType} groupUniqueSearch={groupUnique} />
+          <SearchForm
+            searchType={searchType}
+            groupUniqueSearch={groupUnique}
+            slimChunks={slimChunks}
+            getTotalPages={getTotalPages}
+            highlightDelimiters={highlightDelimiters}
+            highlightResults={highlightResults}
+          />
         </div>
       </div>
       <DefaultQueries suggestedQueries={suggestedQueries ?? []} />

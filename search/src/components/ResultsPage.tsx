@@ -37,6 +37,10 @@ export interface ResultsPageProps {
   page: number;
   searchType: string;
   groupUnique?: boolean;
+  slimChunks?: boolean;
+  getTotalPages?: boolean;
+  highlightResults?: boolean;
+  highlightDelimiters?: string[];
   loading: Accessor<boolean>;
   setLoading: Setter<boolean>;
 }
@@ -133,6 +137,10 @@ const ResultsPage = (props: ResultsPageProps) => {
       filters: filters(),
       search_type: props.searchType,
       get_collisions: true,
+      slim_chunks: props.slimChunks ?? false,
+      get_total_pages: props.getTotalPages ?? false,
+      highlight_results: props.highlightResults ?? true,
+      highlight_delimiters: props.highlightDelimiters ?? ["?", ",", ".", "!"],
     };
 
     let searchRoute = "chunk/search";
@@ -300,6 +308,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                       setOnDelete={setOnDelete}
                       setShowConfirmModal={setShowConfirmDeleteModal}
                       showExpand={clientSideRequestFinished()}
+                      defaultShowMetadata={props.slimChunks}
                       setChunkGroups={setChunkCollections}
                       setSelectedIds={setSelectedIds}
                       selectedIds={selectedIds}

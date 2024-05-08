@@ -71,6 +71,7 @@ export interface ScoreChunkProps {
   initialExpanded?: boolean;
   bookmarks?: ChunkBookmarksDTO[];
   showExpand?: boolean;
+  defaultShowMetadata?: boolean;
   setChunkGroups?: Setter<ChunkGroupDTO[]>;
   counter: string;
   order?: string;
@@ -97,7 +98,9 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const [copied, setCopied] = createSignal(false);
   const [showImageModal, setShowImageModal] = createSignal(false);
   const [showMetadata, setShowMetadata] = createSignal(false);
-  const [expandMetadata, setExpandMetadata] = createSignal(false);
+  const [expandMetadata, setExpandMetadata] = createSignal(
+    props.defaultShowMetadata ?? false,
+  );
   const [fileLink, setFileLink] = createSignal<string | null>(null);
   const [imageLink, setImageLink] = createSignal<string | null>(null);
 

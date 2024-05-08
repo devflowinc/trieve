@@ -1,7 +1,6 @@
-import { BiRegularLogIn, BiRegularXCircle, BiSolidFile } from "solid-icons/bi";
 import { Show, createSignal, useContext } from "solid-js";
-import { FullScreenModal } from "./Atoms/FullScreenModal";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
+import { BiSolidFile } from "solid-icons/bi";
 
 export const UploadFile = () => {
   const datasetAndUserContext = useContext(DatasetAndUserContext);
@@ -12,7 +11,6 @@ export const UploadFile = () => {
   const [link, setLink] = createSignal("");
   const [tagSet, setTagSet] = createSignal("");
   const [isSubmitting, setIsSubmitting] = createSignal(false);
-  const [showNeedLoginModal, setShowNeedLoginModal] = createSignal(false);
   const [errorText, setErrorText] = createSignal("");
   const [submitted, setSubmitted] = createSignal(false);
   const [timestamp, setTimestamp] = createSignal("");
@@ -79,11 +77,6 @@ export const UploadFile = () => {
       credentials: "include",
       body: JSON.stringify(requestBody),
     }).then((response) => {
-      if (response.status === 401) {
-        setShowNeedLoginModal(true);
-        setIsSubmitting(false);
-        return;
-      }
       if (!response.ok) {
         setIsSubmitting(false);
         setErrorText("Something went wrong. Please try again.");
@@ -205,30 +198,6 @@ export const UploadFile = () => {
           </button>
         </div>
       </div>
-      <Show when={showNeedLoginModal()}>
-        <FullScreenModal
-          isOpen={showNeedLoginModal}
-          setIsOpen={setShowNeedLoginModal}
-        >
-          <div class="min-w-[250px] sm:min-w-[300px]">
-            <BiRegularXCircle class="mx-auto h-8 w-8 !text-red-500" />
-            <div class="mb-4 text-xl font-bold">
-              Cannot upload files without an account
-            </div>
-            <div class="mx-auto flex w-fit flex-col space-y-3">
-              <a
-                class="flex space-x-2 rounded-md bg-magenta-500 p-2 text-white"
-                href={`${apiHost}/auth?dataset_id=${
-                  $dataset?.()?.dataset.name ?? ""
-                }`}
-              >
-                Login/Register
-                <BiRegularLogIn class="h-6 w-6" />
-              </a>
-            </div>
-          </div>
-        </FullScreenModal>
-      </Show>
     </>
   );
 };

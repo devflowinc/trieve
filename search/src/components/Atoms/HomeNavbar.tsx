@@ -53,7 +53,7 @@ export const HomeNavbar = () => {
                   href="/upload"
                   class="hidden text-center min-[420px]:text-lg min-[920px]:block"
                 >
-                  Upload Files
+                  Upload File
                 </A>
               </Show>
             </div>
@@ -114,7 +114,7 @@ export const HomeNavbar = () => {
               href="/upload"
               class="block rounded-md bg-neutral-200 px-3 py-2 text-base font-medium hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-800"
             >
-              Upload Files
+              Upload File
             </a>
           </Show>
         </div>
