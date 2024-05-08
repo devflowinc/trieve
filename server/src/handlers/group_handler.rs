@@ -1117,8 +1117,8 @@ pub struct SearchWithinGroupData {
     pub group_tracking_id: Option<String>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using BAAI/bge-reranker-large. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
     pub search_type: String,
-    /// Set date_bias to true to bias search results towards more recent chunks. This will work best in hybrid search mode.
-    pub date_bias: Option<bool>,
+    /// Recency Bias lets you determine how much of an effect the recency of chunks will have on the search results. If not specified, this defaults to 0.0.
+    pub recency_bias: Option<f32>,
     /// Set use_weights to true to use the weights of the chunks in the result set in order to sort them. If not specified, this defaults to true.
     pub use_weights: Option<bool>,
     /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add <b><mark> tags to the chunk_html of the chunks to highlight matching sub-sentences.
@@ -1140,7 +1140,7 @@ impl From<SearchWithinGroupData> for SearchChunkData {
             get_total_pages: data.get_total_pages,
             filters: data.filters,
             search_type: data.search_type,
-            date_bias: data.date_bias,
+            recency_bias: data.recency_bias,
             use_weights: data.use_weights,
             get_collisions: Some(false),
             highlight_results: data.highlight_results,

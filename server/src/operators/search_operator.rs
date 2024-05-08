@@ -1243,7 +1243,7 @@ pub async fn retrieve_chunks_from_point_ids(
 #[tracing::instrument]
 pub fn rerank_chunks(
     chunks: Vec<ScoreChunkDTO>,
-    date_bias: Option<bool>,
+    recency_weight: Option<f32>,
     use_weights: Option<bool>,
 ) -> Vec<ScoreChunkDTO> {
     let mut reranked_chunks = Vec::new();
@@ -1259,22 +1259,57 @@ pub fn rerank_chunks(
         reranked_chunks = chunks;
     }
 
-    if date_bias.is_some() && date_bias.unwrap() {
-        reranked_chunks.sort_by(|a, b| {
-            if let (Some(time_stamp_a), Some(time_stamp_b)) =
-                (a.metadata[0].time_stamp, b.metadata[0].time_stamp)
-            {
-                return time_stamp_b.timestamp().cmp(&time_stamp_a.timestamp());
-            }
-            a.score.total_cmp(&b.score)
-        });
-    } else {
-        reranked_chunks.sort_by(|a, b| {
-            b.score
-                .partial_cmp(&a.score)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
+    if recency_weight.is_some() && recency_weight.unwrap() > 0.0 {
+        let recency_weight = recency_weight.unwrap();
+        let min_timestamp = reranked_chunks
+            .iter()
+            .filter_map(|chunk| chunk.metadata[0].time_stamp)
+            .min();
+        let max_timestamp = reranked_chunks
+            .iter()
+            .filter_map(|chunk| chunk.metadata[0].time_stamp)
+            .max();
+        let max_score = reranked_chunks
+            .iter()
+            .map(|chunk| chunk.score)
+            .max_by(|a, b| a.partial_cmp(b).unwrap());
+        let min_score = reranked_chunks
+            .iter()
+            .map(|chunk| chunk.score)
+            .min_by(|a, b| a.partial_cmp(b).unwrap());
+
+        if let (Some(min), Some(max)) = (min_timestamp, max_timestamp) {
+            let min_duration = chrono::Utc::now().signed_duration_since(min.and_utc());
+            let max_duration = chrono::Utc::now().signed_duration_since(max.and_utc());
+
+            reranked_chunks = reranked_chunks
+                .iter_mut()
+                .map(|chunk| {
+                    if let Some(time_stamp) = chunk.metadata[0].time_stamp {
+                        let duration =
+                            chrono::Utc::now().signed_duration_since(time_stamp.and_utc());
+                        let normalized_recency_score = (duration.num_seconds() as f32
+                            - min_duration.num_seconds() as f32)
+                            / (max_duration.num_seconds() as f32
+                                - min_duration.num_seconds() as f32);
+
+                        let normalized_chunk_score = (chunk.score - min_score.unwrap_or(0.0))
+                            / (max_score.unwrap_or(1.0) - min_score.unwrap_or(0.0));
+
+                        chunk.score = (normalized_chunk_score * (1.0 / recency_weight) as f64)
+                            + (recency_weight * normalized_recency_score) as f64
+                    }
+                    chunk.clone()
+                })
+                .collect::<Vec<ScoreChunkDTO>>();
+        }
     }
+
+    reranked_chunks.sort_by(|a, b| {
+        b.score
+            .partial_cmp(&a.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     reranked_chunks
 }
@@ -1333,8 +1368,11 @@ pub async fn search_semantic_chunks(
 
     timer.add("finish fetching from postgres; start to rerank");
 
-    result_chunks.score_chunks =
-        rerank_chunks(result_chunks.score_chunks, data.date_bias, data.use_weights);
+    result_chunks.score_chunks = rerank_chunks(
+        result_chunks.score_chunks,
+        data.recency_bias,
+        data.use_weights,
+    );
 
     timer.add("finish reranking and return result");
     transaction.finish();
@@ -1395,8 +1433,11 @@ pub async fn search_full_text_chunks(
 
     timer.add("finish fetching from postgres; start to rerank");
 
-    result_chunks.score_chunks =
-        rerank_chunks(result_chunks.score_chunks, data.date_bias, data.use_weights);
+    result_chunks.score_chunks = rerank_chunks(
+        result_chunks.score_chunks,
+        data.recency_bias,
+        data.use_weights,
+    );
 
     timer.add("finish reranking and return result");
 
@@ -1503,7 +1544,7 @@ pub async fn search_hybrid_chunks(
             .await?;
 
             let score_chunks =
-                rerank_chunks(cross_encoder_results, data.date_bias, data.use_weights);
+                rerank_chunks(cross_encoder_results, data.recency_bias, data.use_weights);
 
             score_chunks
                 .iter()
@@ -1518,7 +1559,7 @@ pub async fn search_hybrid_chunks(
             )
             .await?;
 
-            rerank_chunks(cross_encoder_results, data.date_bias, data.use_weights)
+            rerank_chunks(cross_encoder_results, data.recency_bias, data.use_weights)
         };
 
         reranked_chunks.truncate(data.page_size.unwrap_or(10) as usize);
@@ -1575,8 +1616,11 @@ pub async fn search_semantic_groups(
     )
     .await?;
 
-    result_chunks.score_chunks =
-        rerank_chunks(result_chunks.score_chunks, data.date_bias, data.use_weights);
+    result_chunks.score_chunks = rerank_chunks(
+        result_chunks.score_chunks,
+        data.recency_bias,
+        data.use_weights,
+    );
 
     Ok(SearchWithinGroupResults {
         bookmarks: result_chunks.score_chunks,
@@ -1624,8 +1668,11 @@ pub async fn search_full_text_groups(
     )
     .await?;
 
-    result_chunks.score_chunks =
-        rerank_chunks(result_chunks.score_chunks, data.date_bias, data.use_weights);
+    result_chunks.score_chunks = rerank_chunks(
+        result_chunks.score_chunks,
+        data.recency_bias,
+        data.use_weights,
+    );
 
     Ok(SearchWithinGroupResults {
         bookmarks: result_chunks.score_chunks,
@@ -1730,7 +1777,7 @@ pub async fn search_hybrid_groups(
             )
             .await?;
             let score_chunks =
-                rerank_chunks(cross_encoder_results, data.date_bias, data.use_weights);
+                rerank_chunks(cross_encoder_results, data.recency_bias, data.use_weights);
 
             score_chunks
                 .iter()
@@ -1745,7 +1792,7 @@ pub async fn search_hybrid_groups(
             )
             .await?;
 
-            rerank_chunks(cross_encoder_results, data.date_bias, data.use_weights)
+            rerank_chunks(cross_encoder_results, data.recency_bias, data.use_weights)
         };
 
         SearchChunkQueryResponseBody {
