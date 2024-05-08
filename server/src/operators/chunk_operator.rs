@@ -8,6 +8,7 @@ use crate::operators::group_operator::{
     check_group_ids_exist_query, get_group_ids_from_tracking_ids_query,
 };
 use crate::operators::model_operator::create_embedding;
+use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::get_qdrant_connection;
 use crate::operators::search_operator::get_metadata_query;
 use crate::{
@@ -190,7 +191,6 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
             .iter()
             .map(|chunk| ChunkMetadata {
                 id: chunk.0.id,
-                content: chunk.0.content.clone(),
                 link: chunk.0.link.clone(),
                 tag_set: chunk.0.tag_set.clone(),
                 qdrant_point_id: Some(chunk.0.qdrant_point_id.unwrap_or_else(|| {
@@ -242,7 +242,6 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
                 .map(|chunk| {
                     let chunk_metadata = ChunkMetadata {
                         id: chunk.0.id,
-                        content: chunk.0.content.clone(),
                         link: chunk.0.link.clone(),
                         tag_set: chunk.0.tag_set.clone(),
                         qdrant_point_id: Some(chunk.0.qdrant_point_id.unwrap_or(chunk.1)),
@@ -446,10 +445,10 @@ pub async fn get_metadata_from_tracking_ids_query(
 #[tracing::instrument(skip(pool))]
 pub async fn bulk_insert_chunk_metadata_query(
     // ChunkMetadata, group_ids, upsert_by_tracking_id
-    mut insertion_data: Vec<(ChunkMetadata, Option<Vec<uuid::Uuid>>, bool)>,
+    mut insertion_data: Vec<(ChunkMetadata, String, Option<Vec<uuid::Uuid>>, bool)>,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Vec<(ChunkMetadata, Option<Vec<uuid::Uuid>>, bool)>, ServiceError> {
+) -> Result<Vec<(ChunkMetadata, String, Option<Vec<uuid::Uuid>>, bool)>, ServiceError> {
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
@@ -458,7 +457,7 @@ pub async fn bulk_insert_chunk_metadata_query(
     let chunkmetadata_to_insert: Vec<ChunkMetadata> = insertion_data
         .clone()
         .iter()
-        .map(|(chunk_metadata, _, _)| chunk_metadata.clone())
+        .map(|(chunk_metadata, _, _, _)| chunk_metadata.clone())
         .collect();
 
     let inserted_chunks = diesel::insert_into(chunk_metadata_columns::chunk_metadata)
@@ -477,7 +476,7 @@ pub async fn bulk_insert_chunk_metadata_query(
         })?;
 
     // mutates in place
-    insertion_data.retain(|(chunk_metadata, _, _)| {
+    insertion_data.retain(|(chunk_metadata, _, _, _)| {
         inserted_chunks
             .iter()
             .any(|inserted_chunk| inserted_chunk.id == chunk_metadata.id)
@@ -486,7 +485,7 @@ pub async fn bulk_insert_chunk_metadata_query(
     let chunk_group_bookmarks_to_insert: Vec<ChunkGroupBookmark> = insertion_data
         .clone()
         .iter()
-        .filter_map(|(chunk_metadata, group_ids, _)| {
+        .filter_map(|(chunk_metadata, _, group_ids, _)| {
             group_ids.as_ref().map(|group_ids| {
                 group_ids
                     .clone()
@@ -772,7 +771,6 @@ pub async fn update_chunk_metadata_query(
     .set((
         chunk_metadata_columns::link.eq(chunk_data.link),
         chunk_metadata_columns::chunk_html.eq(chunk_data.chunk_html),
-        chunk_metadata_columns::content.eq(chunk_data.content),
         chunk_metadata_columns::metadata.eq(chunk_data.metadata),
         chunk_metadata_columns::tag_set.eq(chunk_data.tag_set),
         chunk_metadata_columns::tracking_id.eq(chunk_data.tracking_id),
@@ -784,7 +782,6 @@ pub async fn update_chunk_metadata_query(
     .await
     .map_err(|e| {
         log::error!("Failed to update chunk_metadata: {:?}", e);
-
         ServiceError::BadRequest("Failed to update chunk metadata".to_string())
     })?;
 
@@ -1015,10 +1012,8 @@ pub async fn delete_chunk_metadata_query(
                     });
             }
             TransactionResult::ChunkCollisionDetected(latest_collision_metadata) => {
-                let collision_content = latest_collision_metadata
-                    .chunk_html
-                    .clone()
-                    .unwrap_or(latest_collision_metadata.content.clone());
+                let collision_content =
+                    convert_html_to_text(&latest_collision_metadata.chunk_html.clone());
 
                 let new_embedding_vector = create_embedding(
                     collision_content,
@@ -1118,7 +1113,7 @@ pub fn find_relevant_sentence(
     query: String,
     split_chars: Vec<String>,
 ) -> Result<ChunkMetadata, ServiceError> {
-    let content = &input.chunk_html.clone().unwrap_or(input.content.clone());
+    let content = convert_html_to_text(&input.chunk_html.clone());
     let mut engine: SimSearch<String> = SimSearch::new();
     let mut split_content = content
         .split_inclusive(|c: char| split_chars.contains(&c.to_string()))
@@ -1151,7 +1146,7 @@ pub fn find_relevant_sentence(
         split_content[sentence_index] = highlighted_sentence;
     }
 
-    new_output.chunk_html = Some(split_content.iter().join(""));
+    new_output.chunk_html = split_content.iter().join("");
     Ok(new_output)
 }
 
@@ -1213,8 +1208,7 @@ pub async fn create_chunk_metadata(
         };
 
         let chunk_metadata = ChunkMetadata::from_details(
-            "".to_string(),
-            &chunk.chunk_html,
+            chunk.chunk_html.clone(),
             &chunk.link,
             &chunk_tag_set,
             None,
