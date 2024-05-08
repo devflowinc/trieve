@@ -6,6 +6,8 @@
 </strong>
 </p>
 
+foo
+
 <p align="center">
     <a href="https://github.com/devflowinc/trieve/stargazers">
         <img src="https://img.shields.io/github/stars/devflowinc/trieve.svg?style=flat&color=yellow" alt="Github stars"/>
