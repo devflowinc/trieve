@@ -435,7 +435,7 @@ pub async fn bulk_upload_chunks(
                 created_at: chrono::Utc::now().naive_local(),
                 updated_at: chrono::Utc::now().naive_local(),
                 tag_set: chunk_tag_set,
-                chunk_html: message.chunk.chunk_html.clone(),
+                chunk_html: Some(message.chunk.chunk_html.clone()),
                 metadata: message.chunk.metadata.clone(),
                 tracking_id: chunk_tracking_id,
                 time_stamp: timestamp,
@@ -654,7 +654,7 @@ async fn upload_chunk(
         created_at: chrono::Utc::now().naive_local(),
         updated_at: chrono::Utc::now().naive_local(),
         tag_set: chunk_tag_set,
-        chunk_html: payload.chunk.chunk_html.clone(),
+        chunk_html: Some(payload.chunk.chunk_html.clone()),
         metadata: payload.chunk.metadata.clone(),
         tracking_id: chunk_tracking_id,
         time_stamp: timestamp,
@@ -872,8 +872,18 @@ async fn update_chunk(
     server_dataset_config: ServerDatasetConfiguration,
 ) -> Result<(), ServiceError> {
     let content = match payload.convert_html_to_text.unwrap_or(true) {
-        true => convert_html_to_text(&payload.chunk_metadata.chunk_html.clone()),
-        false => payload.chunk_metadata.chunk_html.clone(),
+        true => convert_html_to_text(
+            &(payload
+                .chunk_metadata
+                .chunk_html
+                .clone()
+                .unwrap_or_default()),
+        ),
+        false => payload
+            .chunk_metadata
+            .chunk_html
+            .clone()
+            .unwrap_or_default(),
     };
 
     let chunk_metadata = payload.chunk_metadata.clone();

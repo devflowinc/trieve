@@ -42,7 +42,7 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         tag_set -> Nullable<Text>,
-        chunk_html -> Text,
+        chunk_html -> Nullable<Text>,
         metadata -> Nullable<Jsonb>,
         tracking_id -> Nullable<Text>,
         time_stamp -> Nullable<Timestamp>,

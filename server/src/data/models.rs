@@ -294,7 +294,7 @@ pub struct ChunkMetadata {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub tag_set: Option<String>,
-    pub chunk_html: String,
+    pub chunk_html: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
@@ -305,8 +305,8 @@ pub struct ChunkMetadata {
 
 impl ChunkMetadata {
     #[allow(clippy::too_many_arguments)]
-    pub fn from_details<S: Into<String>>(
-        chunk_html: S,
+    pub fn from_details(
+        chunk_html: &Option<String>,
         link: &Option<String>,
         tag_set: &Option<String>,
         qdrant_point_id: Option<uuid::Uuid>,
@@ -319,7 +319,7 @@ impl ChunkMetadata {
     ) -> Self {
         ChunkMetadata {
             id: uuid::Uuid::new_v4(),
-            chunk_html: chunk_html.into(),
+            chunk_html: chunk_html.clone(),
             link: link.clone(),
             qdrant_point_id,
             created_at: chrono::Utc::now().naive_local(),
@@ -337,9 +337,9 @@ impl ChunkMetadata {
 
 impl ChunkMetadata {
     #[allow(clippy::too_many_arguments)]
-    pub fn from_details_with_id<S: Into<String>, T: Into<uuid::Uuid>>(
+    pub fn from_details_with_id<T: Into<uuid::Uuid>>(
         id: T,
-        chunk_html: S,
+        chunk_html: Option<String>,
         link: &Option<String>,
         tag_set: &Option<String>,
         qdrant_point_id: Option<uuid::Uuid>,
@@ -352,7 +352,7 @@ impl ChunkMetadata {
     ) -> Self {
         ChunkMetadata {
             id: id.into(),
-            chunk_html: chunk_html.into(),
+            chunk_html: chunk_html.clone(),
             link: link.clone(),
             qdrant_point_id,
             created_at: chrono::Utc::now().naive_local(),
@@ -372,7 +372,7 @@ impl From<SlimChunkMetadata> for ChunkMetadata {
     fn from(slim_chunk: SlimChunkMetadata) -> Self {
         ChunkMetadata {
             id: slim_chunk.id,
-            chunk_html: "".to_string(),
+            chunk_html: Some("".to_string()),
             link: slim_chunk.link,
             qdrant_point_id: slim_chunk.qdrant_point_id,
             created_at: slim_chunk.created_at,
@@ -442,7 +442,7 @@ pub struct ChunkMetadataWithScore {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub tag_set: Option<String>,
-    pub chunk_html: String,
+    pub chunk_html: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub tracking_id: Option<String>,
     pub time_stamp: Option<NaiveDateTime>,
@@ -2062,7 +2062,7 @@ impl QdrantPayload {
             metadata: chunk_metadata.metadata,
             time_stamp: chunk_metadata.time_stamp.map(|x| x.timestamp()),
             dataset_id: dataset_id.unwrap_or(chunk_metadata.dataset_id),
-            content: convert_html_to_text(&chunk_metadata.chunk_html),
+            content: convert_html_to_text(&chunk_metadata.chunk_html.unwrap_or_default()),
             group_ids: group_ids,
             location: chunk_metadata.location,
         }
