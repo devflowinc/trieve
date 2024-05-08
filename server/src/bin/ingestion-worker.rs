@@ -394,9 +394,9 @@ pub async fn bulk_upload_chunks(
         .iter()
         .map(|message| {
             let content = if message.chunk.convert_html_to_text.unwrap_or(true) {
-                convert_html_to_text(&message.chunk.chunk_html.clone())
+                convert_html_to_text(&(message.chunk.chunk_html.clone().unwrap_or_default()))
             } else {
-                message.chunk.chunk_html.clone()
+                message.chunk.chunk_html.clone().unwrap_or_default()
             };
 
             let qdrant_point_id = message
@@ -435,7 +435,7 @@ pub async fn bulk_upload_chunks(
                 created_at: chrono::Utc::now().naive_local(),
                 updated_at: chrono::Utc::now().naive_local(),
                 tag_set: chunk_tag_set,
-                chunk_html: Some(message.chunk.chunk_html.clone()),
+                chunk_html: message.chunk.chunk_html.clone(),
                 metadata: message.chunk.metadata.clone(),
                 tracking_id: chunk_tracking_id,
                 time_stamp: timestamp,
@@ -615,8 +615,8 @@ async fn upload_chunk(
 
     let mut qdrant_point_id = uuid::Uuid::new_v4();
     let content = match payload.chunk.convert_html_to_text.unwrap_or(true) {
-        true => convert_html_to_text(&payload.chunk.chunk_html.clone()),
-        false => payload.chunk.chunk_html.clone(),
+        true => convert_html_to_text(&(payload.chunk.chunk_html.clone().unwrap_or_default())),
+        false => payload.chunk.chunk_html.clone().unwrap_or_default(),
     };
 
     let chunk_tag_set = payload
@@ -654,7 +654,7 @@ async fn upload_chunk(
         created_at: chrono::Utc::now().naive_local(),
         updated_at: chrono::Utc::now().naive_local(),
         tag_set: chunk_tag_set,
-        chunk_html: Some(payload.chunk.chunk_html.clone()),
+        chunk_html: payload.chunk.chunk_html.clone(),
         metadata: payload.chunk.metadata.clone(),
         tracking_id: chunk_tracking_id,
         time_stamp: timestamp,
