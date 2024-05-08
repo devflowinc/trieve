@@ -34,7 +34,7 @@ export const Search = () => {
     setGetTotalPages(location.query.getTotalPages === "true" || false);
     setHighlightResults(location.query.highlightResults === "true" || false);
     setHighlightDelimiters(
-      location.query.highlightDelimiters?.split(",") ?? ["?", ",", ".", "!"],
+      location.query.highlightDelimiters?.split(",") ?? ["?", ".", "!"],
     );
   });
 

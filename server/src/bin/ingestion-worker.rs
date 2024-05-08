@@ -30,7 +30,7 @@ use trieve_server::operators::parse_operator::{
     average_embeddings, coarse_doc_chunker, convert_html_to_text,
 };
 use trieve_server::operators::qdrant_operator::{
-    bulk_create_new_qdrant_points_query, update_qdrant_point_query,
+    bulk_upsert_qdrant_points_query, update_qdrant_point_query,
 };
 use trieve_server::operators::search_operator::global_unfiltered_top_match_query;
 use trieve_server::{establish_connection, get_env};
@@ -584,7 +584,7 @@ pub async fn bulk_upload_chunks(
     );
 
     let create_point_result =
-        bulk_create_new_qdrant_points_query(qdrant_points, dataset_config.clone()).await;
+        bulk_upsert_qdrant_points_query(qdrant_points, dataset_config.clone()).await;
 
     insert_tx.finish();
 
@@ -848,7 +848,9 @@ async fn upload_chunk(
             "calling_bulk_create_new_qdrant_points_query",
         );
 
-        if let Err(e) = bulk_create_new_qdrant_points_query(vec![point], dataset_config).await {
+        if let Err(e) = bulk_upsert_qdrant_points_query(vec![point], dataset_config).await {
+            log::error!("Failed to create qdrant point: {:?}", e);
+
             bulk_revert_insert_chunk_metadata_query(vec![inserted_chunk.id], web_pool.clone())
                 .await?;
 

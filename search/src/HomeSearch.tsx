@@ -22,11 +22,11 @@ export const HomeSearch = () => {
   const groupUnique = params.get("groupUnique") === "true" || false;
   const slimChunks = params.get("slimChunks") === "true" || false;
   const getTotalPages = params.get("getTotalPages") === "true" || false;
-  const highlightResults = params.get("highlightResults") === "true" || false;
+  const highlightResults = params.get("highlightResults") === "true" || true;
   const highlightDelimiters = params
     .get("highlightDelimiters")
     ?.split(",")
-    .filter((delimiter) => delimiter !== "") ?? ["?", ",", ".", "!"];
+    .filter((delimiter) => delimiter !== "") ?? ["?", ".", "!"];
 
   return (
     <div class="flex min-h-screen flex-col bg-white dark:bg-shark-800 dark:text-white">
