@@ -444,7 +444,6 @@ pub fn main() -> std::io::Result<()> {
                     web::PathConfig::default()
                         .error_handler(|err, _req| ServiceError::BadRequest(format!("{}", err)).into()),
                 )
-             
                 .app_data(web::Data::new(pool.clone()))
                 .app_data(web::Data::new(oidc_client.clone()))
                 .app_data(web::Data::new(redis_pool.clone()))
