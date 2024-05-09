@@ -261,6 +261,12 @@ export const availableEmbeddingModels = [
     dimension: 1024,
   },
   {
+    id: "jina-embeddings-v2-base-code",
+    name: "jina-embeddings-v2-base-code (securely hosted by Trieve)",
+    url: "https://embedding.trieve.ai/jina-code",
+    dimension: 1024,
+  },
+  {
     id: "text-embedding-3-small",
     name: "text-embedding-3-small (hosted by OpenAI)",
     url: "https://api.openai.com/v1",

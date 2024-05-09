@@ -9,12 +9,11 @@ use actix_web::web;
 use qdrant_client::{
     client::{QdrantClient, QdrantClientConfig},
     qdrant::{
-        group_id::Kind, payload_index_params::IndexParams, point_id::PointIdOptions,
-        quantization_config::Quantization, BinaryQuantization, CountPoints, CreateCollection,
-        Distance, FieldType, Filter, HnswConfigDiff, PayloadIndexParams, PointId, PointStruct,
-        QuantizationConfig, RecommendPointGroups, RecommendPoints, RecommendStrategy,
-        SearchPointGroups, SearchPoints, SparseIndexConfig, SparseVectorConfig, SparseVectorParams,
-        TextIndexParams, TokenizerType, Value, Vector, VectorParams, VectorParamsMap,
+        group_id::Kind, point_id::PointIdOptions, quantization_config::Quantization,
+        BinaryQuantization, CountPoints, CreateCollection, Distance, FieldType, Filter,
+        HnswConfigDiff, PointId, PointStruct, QuantizationConfig, RecommendPointGroups,
+        RecommendPoints, RecommendStrategy, SearchPointGroups, SearchPoints, SparseIndexConfig,
+        SparseVectorConfig, SparseVectorParams, Value, Vector, VectorParams, VectorParamsMap,
         VectorsConfig,
     },
 };
@@ -255,15 +254,8 @@ pub async fn create_new_qdrant_collection_query(
         .create_field_index(
             qdrant_collection.clone(),
             "content",
-            FieldType::Text,
-            Some(&PayloadIndexParams {
-                index_params: Some(IndexParams::TextIndexParams(TextIndexParams {
-                    tokenizer: TokenizerType::Word as i32,
-                    min_token_len: Some(2),
-                    max_token_len: Some(10),
-                    lowercase: Some(true),
-                })),
-            }),
+            FieldType::Keyword,
+            None,
             None,
         )
         .await

@@ -1119,38 +1119,33 @@ pub fn find_relevant_sentence(
 ) -> Result<ChunkMetadata, ServiceError> {
     let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
     let mut engine: SimSearch<String> = SimSearch::new();
-    let mut split_content = content
+    let split_content = content
         .split_inclusive(|c: char| split_chars.contains(&c.to_string()))
         .map(|x| x.to_string())
         .collect::<Vec<String>>();
 
     //insert all sentences into the engine
-    split_content
-        .iter()
-        .enumerate()
-        .for_each(|(idx, sentence)| {
-            engine.insert(
-                format!("{:?}¬{}", idx, &sentence.clone()),
-                &sentence.clone(),
-            );
-        });
+    split_content.iter().for_each(|(sentence)| {
+        engine.insert(sentence.clone(), &sentence.clone());
+    });
 
     let mut new_output = input;
 
     //search for the query
     let results = engine.search(&query);
+    let mut matched_phrases = vec![];
     let amount = if split_content.len() < 5 { 2 } else { 3 };
     for x in results.iter().take(amount) {
-        let split_x: Vec<&str> = x.split('¬').collect();
-        if split_x.len() < 2 {
-            continue;
-        }
-        let sentence_index = split_x[0].parse::<usize>().unwrap();
-        let highlighted_sentence = format!("{}{}{}", "<b><mark>", split_x[1], "</mark></b>");
-        split_content[sentence_index] = highlighted_sentence;
+        matched_phrases.push(x.clone());
     }
 
-    new_output.chunk_html = Some(split_content.iter().join(""));
+    for phrase in matched_phrases {
+        new_output.chunk_html = new_output
+            .chunk_html
+            .clone()
+            .map(|x| x.replace(&phrase, &format!("<mark><b>{}</b></mark>", phrase)));
+    }
+
     Ok(new_output)
 }
 
