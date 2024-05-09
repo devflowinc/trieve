@@ -1136,7 +1136,6 @@ pub fn find_relevant_sentence(
     let mut matched_phrases = vec![];
     let amount = if split_content.len() < 5 { 2 } else { 3 };
     for x in results.iter().take(amount) {
-        println!("Matched phrase: {}", x);
         matched_phrases.push(x.clone());
     }
 
