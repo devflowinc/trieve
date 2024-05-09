@@ -60,24 +60,17 @@ pub async fn create_embedding(
         "https://embedding.trieve.ai" => std::env::var("EMBEDDING_SERVER_ORIGIN")
             .ok()
             .filter(|s| !s.is_empty())
-            .unwrap_or(
-                get_env!(
-                    "GPU_SERVER_ORIGIN",
-                    "GPU_SERVER_ORIGIN should be set if this is called"
-                )
-                .to_string(),
-            ),
+            .unwrap_or("https://embedding.trieve.ai".to_string()),
         "https://embedding.trieve.ai/bge-m3" => std::env::var("EMBEDDING_SERVER_ORIGIN_BGEM3")
             .ok()
             .filter(|s| !s.is_empty())
-            .unwrap_or(
-                get_env!(
-                    "GPU_SERVER_ORIGIN",
-                    "GPU_SERVER_ORIGIN should be set if this is called"
-                )
-                .to_string(),
-            )
-            .to_string(),
+            .unwrap_or("https://embedding.trieve.ai/bge-m3".to_string()),
+        "https://embedding.trieve.ai/jinaai-code" => {
+            std::env::var("EMBEDDING_SERVER_ORIGIN_JINA_CODE")
+                .ok()
+                .filter(|s| !s.is_empty())
+                .unwrap_or("https://embedding.trieve.ai/jinaai-code".to_string())
+        }
         _ => config_embedding_base_url,
     };
 
@@ -167,14 +160,13 @@ pub async fn get_sparse_vector(
         _ => unreachable!("Invalid embed_type passed"),
     };
 
-    let server_origin = match std::env::var(origin_key).ok().filter(|s| !s.is_empty()) {
-        Some(origin) => origin,
-        None => get_env!(
-            "GPU_SERVER_ORIGIN",
-            "GPU_SERVER_ORIGIN should be set if this is called"
-        )
-        .to_string(),
-    };
+    let server_origin = std::env::var(origin_key)
+        .ok()
+        .filter(|s| !s.is_empty())
+        .ok_or(ServiceError::BadRequest(format!(
+            "{} does not exist",
+            origin_key
+        )))?;
 
     let embedding_server_call = format!("{}/embed_sparse", server_origin);
 
@@ -256,23 +248,16 @@ pub async fn create_embeddings(
         "https://embedding.trieve.ai" => std::env::var("EMBEDDING_SERVER_ORIGIN")
             .ok()
             .filter(|s| !s.is_empty())
-            .unwrap_or(
-                get_env!(
-                    "GPU_SERVER_ORIGIN",
-                    "GPU_SERVER_ORIGIN should be set if this is called"
-                )
-                .to_string(),
-            ),
+            .unwrap_or("https://embedding.trieve.ai".to_string()),
         "https://embedding.trieve.ai/bge-m3" => std::env::var("EMBEDDING_SERVER_ORIGIN_BGEM3")
             .ok()
             .filter(|s| !s.is_empty())
-            .unwrap_or(
-                get_env!(
-                    "GPU_SERVER_ORIGIN",
-                    "GPU_SERVER_ORIGIN should be set if this is called"
-                )
-                .to_string(),
-            )
+            .unwrap_or("https://embedding.trieve.ai/bge-m3".to_string())
+            .to_string(),
+        "https://embedding.trieve.ai/jina-code" => std::env::var("EMBEDDING_SERVER_ORIGIN_BGEM3")
+            .ok()
+            .filter(|s| !s.is_empty())
+            .unwrap_or("https://embedding.trieve.ai/jina-code".to_string())
             .to_string(),
         _ => config_embedding_base_url,
     };
@@ -432,17 +417,16 @@ pub async fn get_sparse_vectors(
                 _ => unreachable!("Invalid embed_type passed"),
             };
 
-            let server_origin = match std::env::var(origin_key).ok().filter(|s| !s.is_empty()) {
-                Some(origin) => origin,
-                None => get_env!(
-                    "GPU_SERVER_ORIGIN",
-                    "GPU_SERVER_ORIGIN should be set if this is called"
-                )
-                .to_string(),
-            };
-            let embedding_server_call = format!("{}/embed_sparse", server_origin);
-
             async move {
+                let server_origin = std::env::var(origin_key)
+                    .ok()
+                    .filter(|s| !s.is_empty())
+                    .ok_or(ServiceError::BadRequest(format!(
+                        "env flag {} is not set",
+                        origin_key
+                    )))?;
+                let embedding_server_call = format!("{}/embed_sparse", server_origin);
+
                 let sparse_embed_req = CustomSparseEmbedData {
                     inputs: thirty_messages.to_vec(),
                     encode_type: embed_type.to_string(),
@@ -548,17 +532,12 @@ pub async fn cross_encoder(
     };
     sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
-    let server_origin: String = match std::env::var("RERANKER_SERVER_ORIGIN")
+    let server_origin: String = std::env::var("RERANKER_SERVER_ORIGIN")
         .ok()
         .filter(|s| !s.is_empty())
-    {
-        Some(origin) => origin,
-        None => get_env!(
-            "GPU_SERVER_ORIGIN",
-            "GPU_SERVER_ORIGIN should be set if this is called"
-        )
-        .to_string(),
-    };
+        .ok_or(ServiceError::BadRequest(
+            "env flag RERANKER_SERVER_ORIGIN is not set".to_string(),
+        ))?;
 
     let embedding_server_call = format!("{}/rerank", server_origin);
 

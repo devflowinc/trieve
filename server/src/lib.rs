@@ -334,8 +334,6 @@ pub fn main() -> std::io::Result<()> {
 
     let sentry_url = std::env::var("SENTRY_URL");
     let _guard = if let Ok(sentry_url) = sentry_url {
-        log::info!("Sentry monitoring enabled");
-
         let guard = sentry::init((
             sentry_url,
             sentry::ClientOptions {
@@ -356,6 +354,7 @@ pub fn main() -> std::io::Result<()> {
             .init();
 
         std::env::set_var("RUST_BACKTRACE", "1");
+        log::info!("Sentry monitoring enabled");
         Some(guard)
     } else {
         tracing_subscriber::Registry::default()
@@ -447,7 +446,7 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(pool.clone()))
                 .app_data(web::Data::new(oidc_client.clone()))
                 .app_data(web::Data::new(redis_pool.clone()))
-                .wrap(sentry_actix::Sentry::with_transaction())
+                .wrap(sentry_actix::Sentry::new())
                 .wrap(af_middleware::auth_middleware::AuthMiddlewareFactory)
                 .wrap(
                     IdentityMiddleware::builder()
