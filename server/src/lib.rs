@@ -133,7 +133,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.8.2",
+        version = "0.8.3",
     ),
     servers(
         (url = "https://api.trieve.ai",

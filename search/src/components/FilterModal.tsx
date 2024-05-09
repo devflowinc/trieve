@@ -27,6 +27,12 @@ export interface Filter {
     gt?: number | null;
     lt?: number | null;
   } | null;
+  date_range?: {
+    gte?: string | null;
+    lte?: string | null;
+    gt?: string | null;
+    lt?: string | null;
+  } | null;
 }
 
 export interface Filters {
@@ -259,33 +265,35 @@ export const FilterItem = (props: FilterItemProps) => {
       ? "geo_radius"
       : props.initialFilter?.range
         ? "range"
-        : "match",
+        : props.initialFilter?.date_range
+          ? "date_range"
+          : props.initialFilter?.match
+            ? "match"
+            : "match",
   );
   const [tempFilterField, setTempFilterField] = createSignal<string>(
     props.initialFilter?.field ?? "",
   );
-  const [latitude, setLatitude] = createSignal<number | null>(
-    props.initialFilter?.geo_radius?.center?.lat ?? null,
-  );
-  const [longitude, setLongitude] = createSignal<number | null>(
-    props.initialFilter?.geo_radius?.center?.lon ?? null,
-  );
-  const [radius, setRadius] = createSignal<number | null>(
-    props.initialFilter?.geo_radius?.radius ?? null,
-  );
-  const [greaterThan, setGreaterThan] = createSignal<number | null>(
-    props.initialFilter?.range?.gt ?? null,
-  );
-  const [lessThan, setLessThan] = createSignal<number | null>(
-    props.initialFilter?.range?.lt ?? null,
-  );
-  const [greaterThanOrEqual, setGreaterThanOrEqual] = createSignal<
-    number | null
-  >(props.initialFilter?.range?.gte ?? null);
+  const [location, setLocation] = createSignal({
+    lat: props.initialFilter?.geo_radius?.center?.lat ?? null,
+    lon: props.initialFilter?.geo_radius?.center?.lon ?? null,
+    radius: props.initialFilter?.geo_radius?.radius ?? null,
+  });
 
-  const [lessThanOrEqual, setLessThanOrEqual] = createSignal<number | null>(
-    props.initialFilter?.range?.lte ?? null,
-  );
+  const [range, setRange] = createSignal({
+    gt: props.initialFilter?.range?.gt ?? null,
+    lt: props.initialFilter?.range?.lt ?? null,
+    gte: props.initialFilter?.range?.gte ?? null,
+    lte: props.initialFilter?.range?.lte ?? null,
+  });
+
+  const [dateRange, setDateRange] = createSignal({
+    gt: props.initialFilter?.date_range?.gt ?? null,
+    lt: props.initialFilter?.date_range?.lt ?? null,
+    gte: props.initialFilter?.date_range?.gte ?? null,
+    lte: props.initialFilter?.date_range?.lte ?? null,
+  });
+
   const [match, setMatch] = createSignal<(string | number)[] | null>(
     props.initialFilter?.match ?? null,
   );
@@ -305,10 +313,10 @@ export const FilterItem = (props: FilterItemProps) => {
         field: tempFilterField(),
         geo_radius: {
           center: {
-            lat: latitude(),
-            lon: longitude(),
+            lat: location().lat,
+            lon: location().lon,
           },
-          radius: radius(),
+          radius: location().radius,
         },
       });
     }
@@ -317,10 +325,10 @@ export const FilterItem = (props: FilterItemProps) => {
       setCurFilter({
         field: tempFilterField(),
         range: {
-          gt: greaterThan(),
-          lt: lessThan(),
-          gte: greaterThanOrEqual(),
-          lte: lessThanOrEqual(),
+          gt: range().gt,
+          lt: range().lt,
+          gte: range().gte,
+          lte: range().lte,
         },
       });
     }
@@ -329,6 +337,18 @@ export const FilterItem = (props: FilterItemProps) => {
       setCurFilter({
         field: tempFilterField(),
         match: match(),
+      });
+    }
+
+    if (changedMode === "date_range") {
+      setCurFilter({
+        field: tempFilterField(),
+        date_range: {
+          gt: dateRange().gt,
+          lt: dateRange().lt,
+          gte: dateRange().gte,
+          lte: dateRange().lte,
+        },
       });
     }
   });
@@ -397,7 +417,7 @@ export const FilterItem = (props: FilterItemProps) => {
           }}
           value={tempFilterMode()}
         >
-          <For each={["match", "geo_radius", "range"]}>
+          <For each={["match", "geo_radius", "range", "date_range"]}>
             {(filter_mode) => {
               return (
                 <option
@@ -424,9 +444,12 @@ export const FilterItem = (props: FilterItemProps) => {
               placeholder="Latitude"
               class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
               onChange={(e) => {
-                setLatitude(parseFloat(e.currentTarget.value));
+                setLocation({
+                  ...location(),
+                  lat: parseFloat(e.currentTarget.value),
+                });
               }}
-              value={latitude() ?? ""}
+              value={location().lat ?? ""}
             />
           </div>
           <div class="grid w-full grid-cols-2 items-center gap-y-1">
@@ -436,9 +459,12 @@ export const FilterItem = (props: FilterItemProps) => {
               placeholder="Longitude"
               class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
               onChange={(e) => {
-                setLongitude(parseFloat(e.currentTarget.value));
+                setLocation({
+                  ...location(),
+                  lon: parseFloat(e.currentTarget.value),
+                });
               }}
-              value={longitude() ?? ""}
+              value={location().lon ?? ""}
             />
           </div>
           <div class="grid w-full grid-cols-2 items-center gap-y-1">
@@ -448,9 +474,12 @@ export const FilterItem = (props: FilterItemProps) => {
               placeholder="Radius"
               class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
               onChange={(e) => {
-                setRadius(parseFloat(e.currentTarget.value));
+                setLocation({
+                  ...location(),
+                  radius: parseFloat(e.currentTarget.value),
+                });
               }}
-              value={radius() ?? ""}
+              value={location().radius ?? ""}
             />
           </div>
         </div>
@@ -464,9 +493,9 @@ export const FilterItem = (props: FilterItemProps) => {
               placeholder="Greater Than"
               class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
               onChange={(e) => {
-                setGreaterThan(parseFloat(e.currentTarget.value));
+                setRange({ ...range(), gt: parseFloat(e.currentTarget.value) });
               }}
-              value={greaterThan() ?? ""}
+              value={range().gt ?? ""}
             />
             <label aria-label="Less Than">Less Than:</label>
             <input
@@ -474,9 +503,9 @@ export const FilterItem = (props: FilterItemProps) => {
               placeholder="Less Than"
               class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
               onChange={(e) => {
-                setLessThan(parseFloat(e.currentTarget.value));
+                setRange({ ...range(), lt: parseFloat(e.currentTarget.value) });
               }}
-              value={lessThan() ?? ""}
+              value={range().lt ?? ""}
             />
           </div>
           <div class="grid w-full grid-cols-2 items-center gap-y-1">
@@ -488,9 +517,12 @@ export const FilterItem = (props: FilterItemProps) => {
               placeholder="Greater Than or Equal"
               class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
               onChange={(e) => {
-                setGreaterThanOrEqual(parseFloat(e.currentTarget.value));
+                setRange({
+                  ...range(),
+                  gte: parseFloat(e.currentTarget.value),
+                });
               }}
-              value={greaterThanOrEqual() ?? ""}
+              value={range().gte ?? ""}
             />
             <label aria-label="Less Than or Equal">Less Than or Equal:</label>
             <input
@@ -498,9 +530,73 @@ export const FilterItem = (props: FilterItemProps) => {
               placeholder="Less Than or Equal"
               class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
               onChange={(e) => {
-                setLessThanOrEqual(parseFloat(e.currentTarget.value));
+                setRange({
+                  ...range(),
+                  lte: parseFloat(e.currentTarget.value),
+                });
               }}
-              value={lessThanOrEqual() ?? ""}
+              value={range().lte ?? ""}
+            />
+          </div>
+        </div>
+      </Show>
+      <Show when={tempFilterMode() === "date_range"}>
+        <div class="flex w-full flex-col gap-y-1 pl-2">
+          <div class="grid w-full grid-cols-2 items-center gap-y-1">
+            <label aria-label="Greater Than">Greater Than:</label>
+            <input
+              type="date"
+              class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+              onChange={(e) => {
+                setDateRange({
+                  ...dateRange(),
+                  gt: e.currentTarget.value + " 00:00:00",
+                });
+              }}
+              value={dateRange().gt?.replace(" 00:00:00", "") ?? ""}
+            />
+            <label aria-label="Less Than">Less Than:</label>
+            <input
+              type="date"
+              placeholder="Less Than"
+              class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+              onChange={(e) => {
+                setDateRange({
+                  ...dateRange(),
+                  lt: e.currentTarget.value + " 00:00:00",
+                });
+              }}
+              value={dateRange().lt?.replace(" 00:00:00", "") ?? ""}
+            />
+          </div>
+          <div class="grid w-full grid-cols-2 items-center gap-y-1">
+            <label aria-label="Greater Than or Equal">
+              Greater Than or Equal:
+            </label>
+            <input
+              type="date"
+              placeholder="Greater Than or Equal"
+              class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+              onChange={(e) => {
+                setDateRange({
+                  ...dateRange(),
+                  gte: e.currentTarget.value + " 00:00:00",
+                });
+              }}
+              value={dateRange().gte?.replace(" 00:00:00", "") ?? ""}
+            />
+            <label aria-label="Less Than or Equal">Less Than or Equal:</label>
+            <input
+              type="date"
+              placeholder="Less Than or Equal"
+              class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+              onChange={(e) => {
+                setDateRange({
+                  ...dateRange(),
+                  lte: e.currentTarget.value + " 00:00:00",
+                });
+              }}
+              value={dateRange().lte?.replace(" 00:00:00", "") ?? ""}
             />
           </div>
         </div>
